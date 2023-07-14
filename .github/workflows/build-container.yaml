@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     container: # MLOps Dev container for Compose Automation
-      image: ${{ secrets.REGISTRY }}/aiops/compose-dev
+      image: ${{ vars.GHA_IMAGE }}
       env: # Add ENVS to control compose building
         http_proxy: ${{ secrets.HTTP_PROXY }}
         https_proxy: ${{ secrets.HTTPS_PROXY }}
@@ -31,7 +31,7 @@ jobs:
       matrix:
         container: ["devel", "prod"] # name of Compose container
     container:
-      image: ${{ secrets.REGISTRY }}/aiops/compose-dev
+      image: ${{ vars.GHA_IMAGE }}
       env: # Add ENVS to control compose building
         http_proxy: ${{ secrets.HTTP_PROXY }}
         https_proxy: ${{ secrets.HTTPS_PROXY }}
