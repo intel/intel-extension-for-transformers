@@ -2,6 +2,8 @@
 
 #include <torch/script.h>
 
-torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, int64_t nthread,
-                             int64_t bits, const std::string& alg, int64_t block_size,
-                             const std::string& scale_dtype, const std::string& gemm_isa);
+torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose,
+                             int64_t bits, const std::string& alg,
+                             int64_t block_size,
+                             const std::string& compute_type,
+                             const std::string& scale_dtype = "bf16");

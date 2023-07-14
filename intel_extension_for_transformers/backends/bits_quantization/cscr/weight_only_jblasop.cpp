@@ -5,12 +5,11 @@
 #include "jblas_weights4block_f32_linear.hpp"
 
 static torch::Tensor jblas_quantize(const torch::Tensor& Fp32Wei,
-                                    int64_t nthread, int64_t bits,
+                                    bool transpose, int64_t bits,
                                     const std::string& alg, int64_t block_size,
-                                    const std::string& scale_dtype,
-                                    const std::string& gemm_isa) {
-  return quant_launcher(Fp32Wei, nthread, bits, alg, block_size, scale_dtype,
-                        gemm_isa);
+                                    const std::string& compute_type) {
+  return quant_launcher(Fp32Wei, transpose, bits, alg, block_size,
+                        compute_type);
 }
 
 static void jblas_weights4block_f32_linear(const torch::Tensor& activation,
