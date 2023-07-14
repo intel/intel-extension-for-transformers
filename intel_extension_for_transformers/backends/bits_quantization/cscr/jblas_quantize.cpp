@@ -70,21 +70,32 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose,
     n = tmp;
   }
 
-  using GemmKernel =
+  using S4GemmKernel =
       jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
-  using GemmVnniKernel = jblas::wrapper::gemm_default::weight_comp::
+  using S4GemmVnniKernel = jblas::wrapper::gemm_default::weight_comp::
       avx512_vnni::GemmKernelDynamicQuantS4KBlock;
-  GemmKernel kernel;
-  GemmVnniKernel vnnikernel;
+  using S8GemmKernel =
+      jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock;
+  S4GemmKernel s4kernel;
+  S8GemmKernel s8kernel;
+  S4GemmVnniKernel vnnikernel;
   jblas::prologue::PackedWeight* packedw = NULL;
   auto type = NE_FTYPE_MAP[std::make_tuple(bits, alg, scale_dtype)];
   if (compute_type == "int8") {
-    packedw =
-        computeDispatch<GemmVnniKernel>(&vnnikernel, Fp32Wei.data_ptr<float>(),
-                                        transpose, n, k, blocksize, type);
+    TORCH_CHECK(bits == 4, "only support 4bit quant when compute_type==int8");
+    packedw = computeDispatch<S4GemmVnniKernel>(
+        &vnnikernel, Fp32Wei.data_ptr<float>(), transpose, n, k, blocksize,
+        type);
   } else {
-    packedw = computeDispatch<GemmKernel>(&kernel, Fp32Wei.data_ptr<float>(),
-                                          transpose, n, k, blocksize, type);
+    if (bits == 4) {
+      packedw =
+          computeDispatch<S4GemmKernel>(&s4kernel, Fp32Wei.data_ptr<float>(),
+                                        transpose, n, k, blocksize, type);
+    } else {
+      packedw =
+          computeDispatch<S8GemmKernel>(&s8kernel, Fp32Wei.data_ptr<float>(),
+                                        transpose, n, k, blocksize, type);
+    }
   }
   auto tsize = packedw->getSerializedSize();
   torch::Tensor output = torch::zeros(tsize, torch::kInt8);

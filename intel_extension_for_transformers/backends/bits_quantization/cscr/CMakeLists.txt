@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(weight_only_jblasop LANGUAGES C CXX)
 
-set(CMAKE_CXX_FLAGS "-Wno-narrowing")
+set(CMAKE_CXX_FLAGS "-g -O0 -Wno-narrowing")
 
-execute_process(COMMAND python -c "import torch; print(torch.__path__[0])"
-                OUTPUT_VARIABLE torch_path
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
+# execute_process(COMMAND python -c "import torch; print(torch.__path__[0])"
+#                 OUTPUT_VARIABLE torch_path
+#                 OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 find_package(Torch REQUIRED
-PATHS ${torch_path}
+# PATHS ${torch_path}
+PATHS /home/zhe/miniconda3/envs/s4fp16gemm/lib/python3.9/site-packages/torch
 NO_DEFAULT_PATH)
 
 
