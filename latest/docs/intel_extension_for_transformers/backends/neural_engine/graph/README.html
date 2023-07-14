@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ITREX Graph &mdash; Intel® Extension for Transformers 0.1.dev1+g3d79875 documentation</title>
+  <title>ITREX Graph &mdash; Intel® Extension for Transformers 0.1.dev1+g4269f96 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -111,22 +111,21 @@ ninja
 <span class="c1"># convert the pytorch 7B model to llama.cpp format</span>
 python<span class="w"> </span>scripts/convert_llama.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span>models/7B/
 
-./build/bin/quant_llama<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q4_j.bin<span class="w"> </span>q4_j_vnni_b128<span class="w">  </span><span class="c1">#q8_0 for int8, q4_j_vnni_b128 for int4(recommend)  </span>
+./build/bin/quant_llama<span class="w"> </span>--model_file<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q4_j.bin<span class="w"> </span>--bits<span class="w"> </span><span class="m">4</span><span class="w"> </span>--block_size<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="c1"># bits=4, block_size=128, gemm_isa=vnni means q4_j_vnni_b128(recommend)  </span>
 
 <span class="c1"># convert the pytorch gptneox model to llama.cpp format</span>
-python<span class="w"> </span>scripts/convert_gptneox.py<span class="w">  </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span><span class="w"> </span><span class="m">0</span>
+python<span class="w"> </span>scripts/convert_gptneox.py<span class="w">  </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>
 
-./build/bin/quant_gptneox<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q8.bin<span class="w"> </span><span class="s2">&quot;q8_0&quot;</span><span class="w"> </span><span class="c1">#q8_0 for int8, q4_0 for int4</span>
+./build/bin/quant_gptneox<span class="w"> </span>--model_file<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q4_j.bin<span class="w"> </span>--bits<span class="w"> </span><span class="m">4</span>
 
 <span class="c1"># convert the pytorch mpt model to llama.cpp format</span>
-python<span class="w"> </span>scripts/convert_mpt.py<span class="w"> </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span><span class="w"> </span><span class="m">0</span>
+python<span class="w"> </span>scripts/convert_mpt.py<span class="w"> </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>
 
-./build/bin/quant_mpt<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q8.bin<span class="w"> </span><span class="s2">&quot;q8_0&quot;</span><span class="w"> </span><span class="c1">#q8_0 for int8, q4_0 for int4</span>
-
+./build/bin/quant_mpt<span class="w"> </span>--model_file<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q4_j.bin<span class="w"> </span>--bits<span class="w"> </span><span class="m">4</span>
 <span class="c1"># convert the pytorch falcon model to llama.cpp format (0 for fp32 model type)</span>
-python<span class="w"> </span>scripts/convert_falcon.py<span class="w"> </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span><span class="w"> </span><span class="m">0</span>
+python<span class="w"> </span>scripts/convert_falcon.py<span class="w"> </span><span class="si">${</span><span class="nv">input_model_name_or_path</span><span class="si">}</span><span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>
 
-./build/bin/quant_falcon<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q8.bin<span class="w"> </span>q8_0<span class="w"> </span>
+./build/bin/quant_falcon<span class="w"> </span>--model_file<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q4_j.bin<span class="w"> </span>--bits<span class="w"> </span><span class="m">4</span>
 </pre></div>
 </div>
 </section>
@@ -136,14 +135,20 @@ python<span class="w"> </span>scripts/convert_falcon.py<span class="w"> </span><
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>./build/bin/main_llama<span class="w"> </span>-m<span class="w"> </span>~/llama.cpp/models/ne-model-q4_j.bin<span class="w"> </span>--seed<span class="w"> </span><span class="m">12</span><span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>--keep<span class="w"> </span><span class="m">48</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--repeat-penalty<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
 </pre></div>
 </div>
-<p>Running GPT-NEOX/ MPT / FALCON model, please use <code class="docutils literal notranslate"><span class="pre">main_gptneox</span></code> / <code class="docutils literal notranslate"><span class="pre">main_mpt</span></code> / <code class="docutils literal notranslate"><span class="pre">main_falcon</span></code>.</p>
+<p>Running GPT-NEOX/ MPT / FALCON / GPT-J model, please use <code class="docutils literal notranslate"><span class="pre">main_gptneox</span></code> / <code class="docutils literal notranslate"><span class="pre">main_mpt</span></code> / <code class="docutils literal notranslate"><span class="pre">main_falcon</span></code> / <code class="docutils literal notranslate"><span class="pre">main_gptj</span></code>.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>./build/bin/main_gptneox<span class="w"> </span>-m<span class="w"> </span><span class="si">${</span><span class="nv">output_path</span><span class="si">}</span>/ne-q8.bin<span class="w"> </span>--seed<span class="w"> </span><span class="m">12</span><span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--repeat-penalty<span class="w"> </span><span class="m">1</span>.0<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span>
+</pre></div>
+</div>
+<p>for GPT-J, you can also try python binds which is experimental currently:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp<span class="w"> </span>scripts/gptj_binding.py<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+python<span class="w"> </span>gptj_binding.py
 </pre></div>
 </div>
 </section>
 <section id="supported-model">
 <h3>Supported model<a class="headerlink" href="#supported-model" title="Permalink to this heading"></a></h3>
-<p>Now we supports <a class="reference external" href="https://github.com/EleutherAI/gpt-neox">GPT-NeoX</a>, <a class="reference external" href="https://github.com/facebookresearch/llama">LLaMA</a>, <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a>, <a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">FALCON</a></p>
+<p>Now we supports <a class="reference external" href="https://github.com/EleutherAI/gpt-neox">GPT-NeoX</a>, <a class="reference external" href="https://github.com/facebookresearch/llama">LLaMA</a>, <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a>, <a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">FALCON</a>, <a class="reference external" href="https://huggingface.co/docs/transformers/model_doc/gptj">GPT-J</a></p>
 </section>
 </section>
 </section>
