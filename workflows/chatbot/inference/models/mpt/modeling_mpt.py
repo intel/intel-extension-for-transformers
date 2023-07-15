@@ -134,7 +134,7 @@ class MPTModel(MPTPreTrainedModel):
         attn_bias = attn_bias.masked_fill(cannot_attend, min_val)
         return attn_bias
 
-    def forward(self, input_ids: torch.LongTensor, past_key_values: Optional[List[Tuple[torch.FloatTensor]]]=None, attention_mask: Optional[torch.ByteTensor]=None, prefix_mask: Optional[torch.ByteTensor]=None, sequence_id: Optional[torch.LongTensor]=None, return_dict: Optional[bool]=None, output_attentions: Optional[bool]=None, output_hidden_states: Optional[bool]=None, use_cache: Optional[bool]=None):
+    def forward(self, input_ids: torch.LongTensor, past_key_values: Optional[List[Tuple[torch.FloatTensor]]]=None, attention_mask: Optional[torch.ByteTensor]=None, prefix_mask: Optional[torch.ByteTensor]=None, sequence_id: Optional[torch.LongTensor]=None, return_dict: Optional[bool]=None, output_attentions: Optional[bool]=None, output_hidden_states: Optional[bool]=None, use_cache: Optional[bool]=None,token_idx: Optional[torch.Tensor] = None):
         return_dict = return_dict if return_dict is not None else self.config.return_dict
         use_cache = use_cache if use_cache is not None else self.config.use_cache
         if attention_mask is not None:
@@ -191,7 +191,7 @@ class MPTModel(MPTPreTrainedModel):
                 assert all_hidden_states is not None
                 all_hidden_states = all_hidden_states + (x,)
             past_key_value = past_key_values[b_idx] if past_key_values is not None else None
-            (x, attn_weights, past_key_value) = block(x, past_key_value=past_key_value, attn_bias=attn_bias, attention_mask=attention_mask, is_causal=self.is_causal)
+            (x, attn_weights, past_key_value) = block(x, past_key_value=past_key_value, attn_bias=attn_bias, attention_mask=attention_mask, is_causal=self.is_causal, token_idx=token_idx)
             if past_key_values is not None:
                 past_key_values[b_idx] = past_key_value
             if output_attentions:
@@ -251,11 +251,11 @@ class MPTForCausalLM(MPTPreTrainedModel):
     def get_decoder(self):
         return self.transformer
 
-    def forward(self, input_ids: torch.LongTensor, past_key_values: Optional[List[Tuple[torch.FloatTensor]]]=None, attention_mask: Optional[torch.ByteTensor]=None, prefix_mask: Optional[torch.ByteTensor]=None, sequence_id: Optional[torch.LongTensor]=None, labels: Optional[torch.LongTensor]=None, return_dict: Optional[bool]=None, output_attentions: Optional[bool]=None, output_hidden_states: Optional[bool]=None, use_cache: Optional[bool]=None):
+    def forward(self, input_ids: torch.LongTensor, past_key_values: Optional[List[Tuple[torch.FloatTensor]]]=None, attention_mask: Optional[torch.ByteTensor]=None, prefix_mask: Optional[torch.ByteTensor]=None, sequence_id: Optional[torch.LongTensor]=None, labels: Optional[torch.LongTensor]=None, return_dict: Optional[bool]=None, output_attentions: Optional[bool]=None, output_hidden_states: Optional[bool]=None, use_cache: Optional[bool]=None, token_idx: Optional[torch.Tensor] = None):
         return_dict = return_dict if return_dict is not None else self.config.return_dict
         use_cache = use_cache if use_cache is not None else self.config.use_cache
         past_key_values = list(past_key_values) if past_key_values is not None else None
-        outputs = self.transformer(input_ids=input_ids, past_key_values=past_key_values, attention_mask=attention_mask, prefix_mask=prefix_mask, sequence_id=sequence_id, return_dict=return_dict, output_attentions=output_attentions, output_hidden_states=output_hidden_states, use_cache=use_cache)
+        outputs = self.transformer(input_ids=input_ids, past_key_values=past_key_values, attention_mask=attention_mask, prefix_mask=prefix_mask, sequence_id=sequence_id, return_dict=return_dict, output_attentions=output_attentions, output_hidden_states=output_hidden_states, use_cache=use_cache,token_idx=token_idx)
         if self.config.torchscript:
             logits = F.linear(outputs[0].to(self.transformer.wte.weight.device), self.transformer.wte.weight)
         else:
@@ -284,25 +284,32 @@ class MPTForCausalLM(MPTPreTrainedModel):
     def activation_checkpointing_fn(self, module):
         return isinstance(module, MPTBlock)
 
-    def prepare_inputs_for_generation(self, input_ids, past_key_values=None, inputs_embeds=None, **kwargs):
+    def prepare_inputs_for_generation(self, input_ids, past_key_values=None, inputs_embeds=None, token_idx=None, **kwargs):
         if inputs_embeds is not None:
             raise NotImplementedError('inputs_embeds is not implemented for MPT yet')
         attention_mask = kwargs['attention_mask'].bool()
-        if attention_mask[:, -1].sum() != attention_mask.shape[0]:
-            raise NotImplementedError('MPT does not support generation with right padding.')
+        if token_idx != None:
+            if attention_mask[:, token_idx - 1].sum() != attention_mask.shape[0]:
+                raise NotImplementedError('MPT does not support generation with right padding.')
+        else:
+            if attention_mask[:, -1].sum() != attention_mask.shape[0]:
+                raise NotImplementedError('MPT does not support generation with right padding.')
         if self.transformer.attn_uses_sequence_id and self.training:
             sequence_id = torch.zeros_like(input_ids[:1])
         else:
             sequence_id = None
         if past_key_values is not None:
-            input_ids = input_ids[:, -1].unsqueeze(-1)
+            if token_idx is not None:
+                input_ids = torch.index_select(input_ids, 1, token_idx - 1)
+            else:
+                input_ids = input_ids[:, -1].unsqueeze(-1)
         if self.transformer.prefix_lm:
             prefix_mask = torch.ones_like(attention_mask)
             if kwargs.get('use_cache') == False:
                 raise NotImplementedError('MPT with prefix_lm=True does not support use_cache=False.')
         else:
             prefix_mask = None
-        return {'input_ids': input_ids, 'attention_mask': attention_mask, 'prefix_mask': prefix_mask, 'sequence_id': sequence_id, 'past_key_values': past_key_values, 'use_cache': kwargs.get('use_cache', True)}
+        return {'input_ids': input_ids, 'attention_mask': attention_mask, 'prefix_mask': prefix_mask, 'sequence_id': sequence_id, 'past_key_values': past_key_values, 'use_cache': kwargs.get('use_cache', True), "token_idx": token_idx}
 
     @staticmethod
     def _reorder_cache(past_key_values, beam_idx):

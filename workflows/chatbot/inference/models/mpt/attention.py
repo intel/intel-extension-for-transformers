@@ -17,15 +17,23 @@ def _reset_is_causal(num_query_tokens: int, num_key_tokens: int, original_is_cau
             return False
     return original_is_causal
 
-def scaled_multihead_dot_product_attention(query, key, value, n_heads, past_key_value=None, softmax_scale=None, attn_bias=None, key_padding_mask=None, is_causal=False, dropout_p=0.0, training=False, needs_weights=False, multiquery=False):
+def scaled_multihead_dot_product_attention(query, key, value, n_heads, past_key_value=None, softmax_scale=None, attn_bias=None, key_padding_mask=None, is_causal=False, dropout_p=0.0, training=False, needs_weights=False, multiquery=False,token_idx=None):
     q = rearrange(query, 'b s (h d) -> b h s d', h=n_heads)
     kv_n_heads = 1 if multiquery else n_heads
     k = rearrange(key, 'b s (h d) -> b h d s', h=kv_n_heads)
     v = rearrange(value, 'b s (h d) -> b h s d', h=kv_n_heads)
     if past_key_value is not None:
-        if len(past_key_value) != 0:
-            k = torch.cat([past_key_value[0], k], dim=3)
-            v = torch.cat([past_key_value[1], v], dim=2)
+        if token_idx is not None:
+            # HPU bug WA
+            if len(past_key_value) != 0:
+                past_key_value[0].index_add_(3, token_idx - 1, k - torch.index_select(past_key_value[0], 3, token_idx - 1))
+                past_key_value[1].index_add_(2, token_idx - 1, v - torch.index_select(past_key_value[1], 2, token_idx - 1))
+                k = past_key_value[0]
+                v = past_key_value[1]
+        else:
+            if len(past_key_value) != 0:
+                k = torch.cat((past_key_value[0], k), dim=3)
+                v = torch.cat((past_key_value[1], v), dim=2)
         past_key_value = (k, v)
     (b, _, s_q, d) = q.shape
     s_k = k.size(-1)
@@ -46,10 +54,10 @@ def scaled_multihead_dot_product_attention(query, key, value, n_heads, past_key_
         attn_weight = attn_weight.masked_fill(~key_padding_mask.view((b, 1, 1, s_k)), min_val)
     if is_causal and (not q.size(2) == 1):
         s = max(s_q, s_k)
-        causal_mask = attn_weight.new_ones(s, s, dtype=torch.bool)
-        causal_mask = causal_mask.tril()
-        causal_mask = causal_mask.to(torch.bool)
-        causal_mask = ~causal_mask
+        #causal_mask = attn_weight.new_ones(s, s, dtype=torch.bool)
+        #causal_mask = causal_mask.tril()
+        causal_mask = torch.tril(torch.ones((s, s), dtype=torch.bfloat16, device=attn_weight.device))
+        causal_mask = ~causal_mask.to(torch.bool)
         causal_mask = causal_mask[-s_q:, -s_k:]
         attn_weight = attn_weight.masked_fill(causal_mask.view(1, 1, s_q, s_k), min_val)
     attn_weight = torch.softmax(attn_weight, dim=-1)
@@ -188,7 +196,7 @@ class MultiheadAttention(nn.Module):
         self.out_proj = nn.Linear(self.d_model, self.d_model, device=device)
         self.out_proj._is_residual = True
 
-    def forward(self, x, past_key_value=None, attn_bias=None, attention_mask=None, is_causal=True, needs_weights=False):
+    def forward(self, x, past_key_value=None, attn_bias=None, attention_mask=None, is_causal=True, needs_weights=False,token_idx=None):
         qkv = self.Wqkv(x)
         if self.clip_qkv:
             qkv.clamp_(min=-self.clip_qkv, max=self.clip_qkv)
@@ -198,7 +206,7 @@ class MultiheadAttention(nn.Module):
             dtype = query.dtype
             query = self.q_ln(query).to(dtype)
             key = self.k_ln(key).to(dtype)
-        (context, attn_weights, past_key_value) = self.attn_fn(query, key, value, self.n_heads, past_key_value=past_key_value, softmax_scale=self.softmax_scale, attn_bias=attn_bias, key_padding_mask=key_padding_mask, is_causal=is_causal, dropout_p=self.attn_dropout_p, training=self.training, needs_weights=needs_weights)
+        (context, attn_weights, past_key_value) = self.attn_fn(query, key, value, self.n_heads, past_key_value=past_key_value, softmax_scale=self.softmax_scale, attn_bias=attn_bias, key_padding_mask=key_padding_mask, is_causal=is_causal, dropout_p=self.attn_dropout_p, training=self.training, needs_weights=needs_weights, token_idx=token_idx)
         return (self.out_proj(context), attn_weights, past_key_value)
 
 class MultiQueryAttention(nn.Module):
