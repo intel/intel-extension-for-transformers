@@ -22,7 +22,8 @@ void quantweight_f32_linear_launcher(const torch::Tensor& activation,
                                      int64_t ldo) {
   auto wtmp = jblas::prologue::weight_comp::gemm::CompressedPackedWeight::
       deserialBuffer(weight.data_ptr<int8_t>(), 0);
-  if (wtmp->mType == static_cast<int>(CompType::S4_Bf16)) {
+  if (wtmp->mType == static_cast<int>(CompType::S4_Bf16) ||
+      wtmp->mType == static_cast<int>(CompType::S4_F32)) {
     if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
         wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::
