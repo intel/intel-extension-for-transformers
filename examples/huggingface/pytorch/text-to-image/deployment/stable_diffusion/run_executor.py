@@ -108,6 +108,7 @@ def main():
     if args.pipeline == "text2img":
         dpm = DPMSolverMultistepScheduler.from_pretrained(args.input_model, subfolder="scheduler")
         pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model, scheduler=dpm)
+        pipe.safety_checker = lambda images, clip_input: (images, False)
         generator = torch.Generator("cpu").manual_seed(args.seed)
         if args.mode == "latency":
             benchmark(pipe, neural_engine_graph, generator)
