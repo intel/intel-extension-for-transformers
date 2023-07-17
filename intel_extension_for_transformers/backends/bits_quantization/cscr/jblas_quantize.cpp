@@ -32,7 +32,7 @@ PackedWeight* compressWeight(KER* ker, bool transpose, const int N, const int K,
     return (*weiptr).template compressWeightTranspose<ISA_T>(N, K, B, K,
                                                              blocksize, type);
   } else {
-    return (*weiptr).template compressWeight<ISA_T>(N, K, B, K, blocksize,
+    return (*weiptr).template compressWeight<ISA_T>(N, K, B, N, blocksize,
                                                     type);
   }
 }
@@ -69,7 +69,6 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose,
     k = n;
     n = tmp;
   }
-
   using S4GemmKernel =
       jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
   using S4GemmVnniKernel = jblas::wrapper::gemm_default::weight_comp::
