@@ -114,7 +114,25 @@ Please refer to the [README](./backend/chat/README.md) for instructions on runni
 You can use the following command to trigger inference:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"model": "mpt-7b-chat", "prompt": "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human questions.\nHuman: What are the potential benefits and risks of cryptocurrency investments?\nAssistant:", "stop":"<|endoftext|>"}' http://localhost:80/worker_generate_stream
+curl -X POST -H "Content-Type: application/json" -d '{"model": "mpt-7b-chat", "prompt": "What are the potential benefits and risks of cryptocurrency investments?"}' http://localhost:80/worker_generate_stream
+```
+
+Please make sure to update the URL 'http://localhost:80/worker_generate_stream' with your server's IP address and port.
+
+If you prefer to use the Python API to access the service, you can use the code snippet below:
+
+```python
+import requests
+
+url = 'http://localhost:80/worker_generate_stream'
+headers = {'Content-Type': 'application/json'}
+data = {
+    'model': 'mpt-7b-chat',
+    'prompt': 'What are the potential benefits and risks of cryptocurrency investments?'
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
 ```
 
 You can also use [chatcli](../demo/chatcli/) to access the service.

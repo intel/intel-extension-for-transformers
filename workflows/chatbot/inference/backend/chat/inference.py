@@ -3,7 +3,7 @@ import abc
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel, AutoConfig
 
-from conversation import conv_templates, SeparatorStyle
+from conversation import conv_templates, get_default_conv_template, SeparatorStyle
 from compression import compress_module
 
 import time
@@ -185,10 +185,14 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
     return logits
 
 @torch.inference_mode()
-def generate_stream(model, tokenizer, params, device,
+def generate_stream(model, model_name, tokenizer, params, device,
                     context_len=2048, stream_interval=2):
     prompt = params["prompt"]
     l_prompt = len(prompt)
+    conv = get_default_conv_template(model_name)
+    conv.append_message(conv.roles[0], prompt)
+    conv.append_message(conv.roles[1], None)
+    prompt = conv.get_prompt()
     temperature = float(params.get("temperature", 1.0))
     max_new_tokens = int(params.get("max_new_tokens", 256))
     stop_str = params.get("stop", None)
@@ -331,7 +335,7 @@ def chat_loop(model_name: str, device: str, num_gpus: str, load_8bit: bool,
         }
 
         chatio.prompt_for_output(conv.roles[1])
-        output_stream = generate_stream_func(model, tokenizer, params, device)
+        output_stream = generate_stream_func(model, model_name, tokenizer, params, device)
         outputs = chatio.stream_output(output_stream, skip_echo_len)
         # NOTE: strip is important to align with the training data.
         conv.messages[-1][-1] = outputs.strip()
