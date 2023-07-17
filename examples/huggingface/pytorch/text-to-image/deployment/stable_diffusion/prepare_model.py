@@ -53,13 +53,13 @@ def _export_bf16_onnx_model(fp32_model_path, bf16_model_path):
     onnx.save(model, bf16_model_path)
 
 
-def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
+def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype: str, bf16):
     device = 'cpu'
     dtype = torch.float32
     output_path = Path(output_path)
     pipeline = StableDiffusionPipeline.from_pretrained(model_name, torch_dtype=dtype).to(device)
 
-    # # TEXT ENCODER
+    # TEXT ENCODER
     num_tokens = pipeline.text_encoder.config.max_position_embeddings
     text_hidden_size = pipeline.text_encoder.config.hidden_size
     text_input = pipeline.tokenizer(
@@ -89,7 +89,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
         opset_version=opset,
     )
 
-    if bf16:
+    if expected_dtype == 'bf16':
         text_encoder_bf16 = output_path / "text_encoder_bf16" / "model.onnx"
         text_encoder_bf16_dir = output_path / "text_encoder_bf16"
         if os.path.exists(text_encoder_bf16_dir):
@@ -137,7 +137,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
 
     unet_model_path = str(unet_path.absolute().as_posix())
 
-    if bf16:
+    if expected_dtype == 'bf16':
         unet_bf16_model_path = output_path / "unet_bf16" / "model.onnx"
         unet_bf16_dir = output_path / "unet_bf16"
         if os.path.exists(unet_bf16_dir):
@@ -160,7 +160,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
         location="weights.pb",
         convert_attribute=False,
     )
-    if bf16:
+    if expected_dtype == 'bf16':
         unet_bf16_model_path = str(unet_bf16_model_path.absolute().as_posix())
         onnx.save_model(
             unet_bf16_model,
@@ -201,7 +201,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
         opset_version=opset,
     )
 
-    if bf16:
+    if expected_dtype == 'bf16':
         vae_decoder_bf16_model = output_path / "vae_decoder_bf16" / "model.onnx"
         vae_decoder_bf16_dir = output_path / "vae_decoder_bf16"
         if os.path.exists(vae_decoder_bf16_dir):
@@ -209,6 +209,10 @@ def prepare_model(model_name: str, output_path: Path, opset: int, bf16):
         os.mkdir(shlex.quote(vae_decoder_bf16_dir.as_posix()))
         _export_bf16_onnx_model(vae_decoder_path.as_posix(), vae_decoder_bf16_model.as_posix())
     del pipeline.vae
+
+
+def prepare_qat_model():
+    
 
 
 if __name__ == "__main__":
@@ -231,7 +235,17 @@ if __name__ == "__main__":
         help="The version of the ONNX operator set to use.",
     )
     parser.add_argument("--bf16", action="store_true", help="Export the models in `bfloat16` mode")
+    parser.add_argument("--int8", action="store_true", help="Export the models in `bfloat16` mode")
 
     args = parser.parse_args()
 
-    prepare_model(args.input_model, args.output_path, args.opset, args.bf16)
+    expected_dtype = 'fp32'
+    if args.bf16:
+        expected_dtype = 'bf16'
+    elif args.int8:
+        expected_dtype = 'int8'
+
+    if expected_dtype = 'int8':
+        prepare_qat_model(args.input_model, args.output_path, args.opset, expected_dtype)
+    else:
+        prepare_model(args.input_model, args.output_path, args.opset, expected_dtype)
