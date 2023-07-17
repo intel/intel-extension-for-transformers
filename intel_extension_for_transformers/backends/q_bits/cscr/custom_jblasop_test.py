@@ -5,8 +5,8 @@ raw_wei = torch.rand(256,512, dtype=torch.float)
 trans_raw_wei=torch.rand(512,256,dtype=torch.float)
 correct=torch.matmul(activation,raw_wei)
 trans_correct=torch.matmul(activation,torch.transpose(trans_raw_wei,1,0))
-quant_wei = torch.ops.weight_only_jblasop.jblas_quantize(raw_wei,False,8,"sym",32,"fp32");
-trans_quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(trans_raw_wei,True,8,"sym",32,"fp32");
+quant_wei = torch.ops.weight_only_jblasop.jblas_quantize(raw_wei,False,8,"sym",32,"fp32")
+trans_quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(trans_raw_wei,True,8,"sym",32,"fp32")
 trans_dst = torch.zeros(512,512,dtype=torch.float)
 dst = torch.zeros(512,512,dtype=torch.float)
 torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear(activation,quant_wei,dst,512,512,256,256,512)
