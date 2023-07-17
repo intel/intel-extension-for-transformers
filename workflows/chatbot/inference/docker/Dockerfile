@@ -93,7 +93,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     apt-get install git-lfs && \
     git-lfs install
 
-RUN pip install optimum[habana] && \
+RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
     pip install peft && \
     pip install einops && \
     pip install datasets && \

@@ -53,5 +53,7 @@ python generate.py \
         --base_model_path "./mpt-7b-chat" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
+        --use_hpu_graphs \
+        --use_kv_cache \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
