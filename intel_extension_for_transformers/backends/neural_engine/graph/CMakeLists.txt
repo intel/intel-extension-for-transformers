@@ -74,6 +74,10 @@ option(NE_PROFILING              "neural_engine: use Profiling"                 
 if (NE_PROFILING)
     add_compile_definitions(NE_PERF)
 endif()
+option(NE_GELU_VEC               "neural_engine: enable vec in gelu"                             ON)
+if (NE_GELU_VEC)
+    add_compile_definitions(NE_GELU_USE_VEC)
+endif()
 
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS NOMINMAX)
