@@ -40,6 +40,14 @@ inline static void ne_vec_set_f16(const int n, ne_fp16_t* x, const int32_t v) {
   for (int i = 0; i < n; ++i) x[i] = v;
 }
 
+inline static void ne_vec_srl_i32(const int n, int32_t* z, const int32_t* x, int32_t v) {
+  for (int i = 0; i < n; ++i) z[i] = x[i] >>v;
+}
+
+inline static void ne_vec_and_i32(const int n, int32_t* z, const int32_t* x, const int32_t* y) {
+  for (int i = 0; i < n; ++i) z[i] = x[i] & y[i];
+}
+
 inline static void ne_vec_add_f32(const int n, float* z, const float* x, const float* y) {
   for (int i = 0; i < n; ++i) z[i] = x[i] + y[i];
 }
@@ -171,22 +179,38 @@ inline static void ne_vec_gelu_f16(const int n, ne_fp16_t* y, const ne_fp16_t* x
   }
 }
 
-#ifdef NE_GELU_FP16
-inline static void ne_vec_gelu_f32(const int n, float* y, const float* x) {
-  uint16_t t;
-  for (int i = 0; i < n; ++i) {
-    ne_fp16_t fp16 = NE_FP32_TO_FP16(x[i]);
-    memcpy(&t, &fp16, sizeof(uint16_t));
-    y[i] = NE_FP16_TO_FP32(table_gelu_f16[t]);
-  }
+inline static void ne_vec_tanh_f32(const int n, float* y, const float* x) {
+  for(int i=0;i<n;i++) y[i]=tanhf(x[i]);
 }
-#else
+
 inline static void ne_vec_gelu_f32(const int n, float* y, const float* x) {
+#ifdef NE_GELU_USE_VEC
+  // compute G(x) = sqrt_root_two_over_pi * x * (1 + fitting_const * x * x)
+  float* aux0=(float*)malloc(n*sizeof(float));
+  ne_vec_sqr_f32(n,aux0,x);
+  float* aux1=(float*)malloc(n*sizeof(float));
+  ne_vec_set_f32(n,aux1,1.0f);
+  ne_vec_mad_f32(n,aux1,aux0,GELU_COEF_A);
+  ne_vec_mul_f32(n,aux0,x,aux1);
+  ne_vec_set_f32(n,aux1,SQRT_2_OVER_PI);
+  ne_vec_mul_f32(n,aux1,aux0,aux1);
+
+  // compute tanh(G(x))
+  ne_vec_tanh_f32(n,aux0,aux1);
+  // Gelu(x)= 0.5f * x * (1.0f + tanh(G(x)))
+  ne_vec_acc1_f32(n,aux0,1.0f);
+  ne_vec_mul_f32(n,y,x,aux0);
+  ne_vec_set_f32(n,aux0,0.5f);
+  ne_vec_mul_f32(n,y,y,aux0);
+
+  free(aux0);
+  free(aux1);
+#else
   for (int i = 0; i < n; ++i) {
     y[i] = ne_gelu_f32(x[i]);
   }
-}
 #endif
+}
 
 // Sigmoid Linear Unit (SiLU) function
 inline static float ne_silu_f32(float x) { return x / (1.0f + expf(-x)); }
