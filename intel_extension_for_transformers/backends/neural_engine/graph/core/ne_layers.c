@@ -2021,9 +2021,9 @@ struct ne_tensor* ne_ffn_gelu(struct ne_context* ctx, struct ne_tensor* w1, stru
   }
 
   const int64_t ne[4] = {w2->ne[1], src->ne[1], src->ne[2], src->ne[3]};
-  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, ne);//, NE_SIZE_CALC
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, ne, NE_SIZE_CALC);
   const int64_t tne[4] = {w1->ne[1], src->ne[1], src->ne[2], src->ne[3]};
-  struct ne_tensor* tmp = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, tne);
+  struct ne_tensor* tmp = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, tne, NE_SIZE_CALC);
 
   result->op = NE_OP_MUL_FFN_GELU;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
