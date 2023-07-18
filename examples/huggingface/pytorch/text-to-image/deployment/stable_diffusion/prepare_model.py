@@ -183,7 +183,6 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
     vae_decoder_path = output_path / "vae_decoder_fp32" / "model.onnx"
     vae_decoder_path.parent.mkdir(parents=True, exist_ok=True)
 
-    unet_sample_size = pipeline.unet.config.sample_size
     torch.onnx.export(
         vae_decoder,
         args=(

@@ -174,9 +174,12 @@ def compile(model, config=None) -> Graph:
             _scan_nodes_graph_dtype(model, checker, 'bf16')
             _revert_logits_output_dtype(model, "bf16")
 
-            for nodes in model.nodes:
-                if nodes.op_type == 'BinaryAdd' or nodes.op_type == 'BinaryOp':
-                    nodes.attr['output_dtype'] = 'bf16'
+            for node in model.nodes:
+                if node.op_type == 'BinaryAdd' or node.op_type == 'BinaryOp':
+                    # for the first BinaryOp /time_proj/Mul
+                    if model.get_node_by_name(node.output_tensors[0].dest_op[0]).op_type == 'CosSin':
+                        continue
+                    node.attr['output_dtype'] = 'bf16'
             return model
 
         _mixed_bf16_precision(model)

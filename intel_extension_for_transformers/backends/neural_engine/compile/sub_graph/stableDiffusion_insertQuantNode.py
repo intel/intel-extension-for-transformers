@@ -211,7 +211,8 @@ class StableDiffusion_InsertQuantNode(Pattern):
 
             # convert bias for Innerproduct and Conv
             for node in model.nodes:
-                if node.op_type == 'InnerProduct':
+                if node.op_type in EXECUTOR_TYPE and \
+                    EXECUTOR_TYPE[node.op_type] == 'InnerProduct':
                     # convert s32 bias to fp32 bias due to ONEDNN 3.0 required
                     weight_s8 = node.input_tensors[1].data
                     bias_s32 = node.input_tensors[2].data
@@ -224,20 +225,16 @@ class StableDiffusion_InsertQuantNode(Pattern):
                     weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
                                     127).astype(float)
                     bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32)
-                    if node.op_type == "Convolution":
-                        axis = tuple(range(1, len(weight_s8.shape)))
+                    if node.attr.get("src1_perm", "0,1") == "0,1":
                         compensation = activation_min * weight_scale * weight_s8.sum(
-                            axis).astype(np.float32)
+                            -1).astype(np.float32)
                     else:
-                        if node.attr.get("src1_perm", "0,1") == "0,1":
-                            compensation = activation_min * weight_scale * weight_s8.sum(
-                                -1).astype(np.float32)
-                        else:
-                            compensation = activation_min * weight_scale * weight_s8.sum(
-                                0).astype(np.float32)
+                        compensation = activation_min * weight_scale * weight_s8.sum(
+                            0).astype(np.float32)
                     node.input_tensors[2].data = (bias_fp32 + compensation).astype(np.float32)
                 
-                if node.op_type == 'Convolution':
+                if node.op_type in EXECUTOR_TYPE and \
+                    EXECUTOR_TYPE[node.op_type] == 'Convolution':
                     # convert s32 bias to fp32 bias due to ONEDNN 3.0 required
                     weight_s8 = node.input_tensors[1].data
                     bias_s32 = node.input_tensors[2].data
@@ -250,18 +247,7 @@ class StableDiffusion_InsertQuantNode(Pattern):
                     weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
                                     128).astype(float)
                     bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32) 
-                    if node.op_type == "Convolution":
-                        axis = tuple(range(1, len(weight_s8.shape)))
-                        compensation = activation_min * weight_scale * weight_s8.sum(
-                            axis).astype(np.float32)
-                        compensation = 0
-                    else:
-                        if node.attr.get("src1_perm", "0,1") == "0,1":
-                            compensation = activation_min * weight_scale * weight_s8.sum(
-                                -1).astype(np.float32)
-                        else:
-                            compensation = activation_min * weight_scale * weight_s8.sum(
-                                0).astype(np.float32)
+                    compensation = 0
                     node.input_tensors[2].data = (bias_fp32 + compensation).astype(np.float32) 
 
         return model
