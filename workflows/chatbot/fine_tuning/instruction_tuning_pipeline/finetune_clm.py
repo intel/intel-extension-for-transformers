@@ -50,12 +50,18 @@ from typing import Optional, List
 import copy
 import re
 import torch
+import importlib.util
+from transformers.utils.import_utils import is_optimum_available
 
 IGNORE_INDEX = -100
 
 os.environ["WANDB_DISABLED"] = "true"
 
 logger = logging.getLogger(__name__)
+
+
+def is_optimum_habana_available():
+    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
 
 @dataclass
@@ -114,6 +120,7 @@ class ModelArguments:
             "help": "should enable when using custom model architecture that is not yet part of the Hugging Face transformers package like MPT)."
         },
     )
+
 
 @dataclass
 class DataArguments:
@@ -257,6 +264,10 @@ class FinetuneArguments:
         default=True,
         metadata={"help": "if False, masks out inputs in loss"},
     )
+    habana: bool = field(
+        default=False,
+        metadata={"help": "if False, masks out inputs in loss"},
+    )
 
 
 PROMPT_DICT = {
@@ -293,10 +304,16 @@ def main():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
+    if not is_optimum_habana_available():
+        parser = HfArgumentParser(
+            (ModelArguments, DataArguments, TrainingArguments, FinetuneArguments)
+        )
+    else:
+        from optimum.habana import GaudiTrainingArguments
 
-    parser = HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments, FinetuneArguments)
-    )
+        parser = HfArgumentParser(
+            (ModelArguments, DataArguments, GaudiTrainingArguments, FinetuneArguments)
+        )
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
@@ -311,6 +328,11 @@ def main():
             finetune_args,
         ) = parser.parse_args_into_dataclasses()
 
+    if finetune_args.habana:
+        if not is_optimum_habana_available():
+            raise ImportError(
+                "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
+            )
     # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
@@ -470,17 +492,32 @@ def main():
     # Load model
     if model_args.model_name_or_path:
         model_dtype = torch.bfloat16 if training_args.bf16 else None
-        model = AutoModelForCausalLM.from_pretrained(
-            model_args.model_name_or_path,
-            from_tf=bool(".ckpt" in model_args.model_name_or_path),
-            config=config,
-            cache_dir=model_args.cache_dir,
-            revision=model_args.model_revision,
-            use_auth_token=True if model_args.use_auth_token else None,
-            trust_remote_code=True if model_args.trust_remote_code else None,
-            torch_dtype=model_dtype,
-            low_cpu_mem_usage=True,
-        )
+        if re.search("mpt", model_args.model_name_or_path, re.IGNORECASE):
+            from models.mpt.modeling_mpt import MPTForCausalLM
+
+            model = MPTForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+                trust_remote_code=True if model_args.trust_remote_code else None,
+                torch_dtype=model_dtype,
+                low_cpu_mem_usage=True,
+            )
+        else:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+                trust_remote_code=True if model_args.trust_remote_code else None,
+                torch_dtype=model_dtype,
+                low_cpu_mem_usage=True,
+            )
     else:
         raise ValueError(
             "Must provide model_name_or_path to load a pretrained CausalLM model."
@@ -642,15 +679,33 @@ def main():
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
 
-        # Initialize our Trainer
-        trainer = Trainer(
-            model=model,
-            args=training_args,
-            train_dataset=train_dataset if training_args.do_train else None,
-            eval_dataset=eval_dataset if training_args.do_eval else None,
-            tokenizer=tokenizer,
-            data_collator=data_collator,
-        )
+        if not finetune_args.habana:
+            # Initialize our Trainer
+            trainer = Trainer(
+                model=model,
+                args=training_args,
+                train_dataset=train_dataset if training_args.do_train else None,
+                eval_dataset=eval_dataset if training_args.do_eval else None,
+                tokenizer=tokenizer,
+                data_collator=data_collator,
+            )
+        else:
+            from optimum.habana import GaudiConfig, GaudiTrainer
+
+            gaudi_config = GaudiConfig()
+            gaudi_config.use_fused_adam = True
+            gaudi_config.use_fused_clip_norm = True
+            # Initialize our Trainer
+            trainer = GaudiTrainer(
+                model=model,
+                gaudi_config=gaudi_config,
+                args=training_args,
+                train_dataset=train_dataset if training_args.do_train else None,
+                eval_dataset=eval_dataset if training_args.do_eval else None,
+                tokenizer=tokenizer,
+                data_collator=data_collator,
+            )
+
         trainer.train(resume_from_checkpoint=training_args.resume_from_checkpoint)
         with training_args.main_process_first(desc="save model"):
             if is_main_process(training_args.local_rank):
