@@ -625,8 +625,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
                 # The ITREX Unet Code
                 t_1d = torch.tensor([t], dtype=torch.float32)
                 engine_output = engine_graph[1].inference([latent_model_input, t_1d, prompt_embeds])
-                #noise_pred = torch.from_numpy(engine_output['out_sample:0'])
-                noise_pred = torch.from_numpy(engine_output['/conv_out/Conv_output_0:0'])
+                noise_pred = torch.from_numpy(engine_output['out_sample:0'])
 
                 # perform guidance
                 if do_classifier_free_guidance:
@@ -671,63 +670,6 @@ def neural_engine_init(ir_path):
     unet_conf = uent_path + 'conf.yaml'
     unet_bin = uent_path + 'model.bin'
     unet_graph.graph_init(unet_conf, unet_bin, True)
-
-    for node in unet_graph.nodes:
-        if node.op_type == 'InnerProduct':
-            # 将S32 -> FP32， ONEDNN要的都是FP32的
-            weight_s8 = node.input_tensors[1].data
-            bias_s32 = node.input_tensors[2].data
-            offset = 1 if node.attr.get("append_op", "") == "sum" else 0
-            activation_min = node.input_tensors[3 + offset].data
-            activation_max = node.input_tensors[4 + offset].data
-            weight_min = node.input_tensors[5 + offset].data
-            weight_max = node.input_tensors[6 + offset].data
-            activation_scale = ((activation_max - activation_min) / 255).astype(float)
-            weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
-                            127).astype(float)
-            bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32)
-            if node.op_type == "Convolution":
-                axis = tuple(range(1, len(weight_s8.shape)))
-                compensation = activation_min * weight_scale * weight_s8.sum(
-                    axis).astype(np.float32)
-            else:
-                if node.attr.get("src1_perm", "0,1") == "0,1":
-                    compensation = activation_min * weight_scale * weight_s8.sum(
-                        -1).astype(np.float32)
-                else:
-                    compensation = activation_min * weight_scale * weight_s8.sum(
-                        0).astype(np.float32)
-            #print(node.name, node.input_tensors[2].name)
-            node.input_tensors[2].data = (bias_fp32 + compensation).astype(np.float32)
-        
-        if node.op_type == 'Convolution':
-            # 将S32 -> FP32， ONEDNN要的都是FP32的
-            weight_s8 = node.input_tensors[1].data
-            bias_s32 = node.input_tensors[2].data
-            offset = 1 if node.attr.get("append_op", "") == "sum" else 0
-            activation_min = node.input_tensors[3 + offset].data
-            activation_max = node.input_tensors[4 + offset].data
-            weight_min = node.input_tensors[5 + offset].data
-            weight_max = node.input_tensors[6 + offset].data
-            activation_scale = ((activation_max - activation_min) / 255).astype(float)
-            weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
-                            128).astype(float)
-            bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32) 
-            if node.op_type == "Convolution":
-                axis = tuple(range(1, len(weight_s8.shape)))
-                compensation = activation_min * weight_scale * weight_s8.sum(
-                    axis).astype(np.float32)
-                compensation = 0
-                #import pdb;pdb.set_trace()
-            else:
-                if node.attr.get("src1_perm", "0,1") == "0,1":
-                    compensation = activation_min * weight_scale * weight_s8.sum(
-                        -1).astype(np.float32)
-                else:
-                    compensation = activation_min * weight_scale * weight_s8.sum(
-                        0).astype(np.float32)
-            #print(node.name, node.input_tensors[2].name)
-            node.input_tensors[2].data = (bias_fp32 + compensation).astype(np.float32)
 
     vae_decoder_graph = Graph()
     vae_decoder_path = ir_path + '/vae_decoder/'

@@ -47,68 +47,15 @@ unet = pipeline.unet
 #     setattr(pipeline, "unet", unet)
 # elif os.path.exists(os.path.join('./', "fake_quant_model_qinit.pt")):
 #elif os.path.exists(os.path.join(args.pretrained_model_name_or_path, "fake_quant_model_qinit.pt")):
-from fake_quant_modules import find_and_replace, convert2quantized_model, disable_all_observers
+#from ...quantization.qat.quantization_modules import find_and_replace, convert2quantized_model
+#from ...quantization.qat import find_and_replace, convert2quantized_model
+
+from quantization_modules import find_and_replace, convert2quantized_model
 find_and_replace(unet)
-# disable_all_observers(unet)
 unet.load_state_dict(torch.load(os.path.join('./', "fake_quant_model_qinit.pt")))
 unet = convert2quantized_model(unet)
 unet.eval()
 setattr(pipeline, "unet", unet)
-
-# pipeline = pipeline.to(unet.device)
-
-# onnx_model_path = 'onnx_fp32/model.onnx'
-# os.makedirs(os.path.dirname(onnx_model_path), exist_ok=True)
-# if os.path.exists(os.path.dirname(onnx_model_path)):
-#     torch.onnx.export(
-#         unet_fp32,
-#         #pipeline.unet,
-#         args=(
-#             torch.randn(2, 4, 64, 64).to(device=device,dtype=torch.float32),
-#             torch.randn(2).to(device=device, dtype=torch.float32),
-#             torch.randn(2, 77, 768).to(device=device, dtype=torch.float32),
-#             #False,
-#         ),
-#         f=onnx_model_path,
-#         input_names=["sample", "timestep", "encoder_hidden_states"],
-#         output_names=["out_sample"],  # has to be different from "sample" for correct tracing
-#         dynamic_axes={
-#             "sample": {
-#                 0: "batch",
-#                 1: "channels",
-#                 2: "height",
-#                 3: "width"
-#             },
-#             "timestep": {
-#                 0: "batch"
-#             },
-#             "encoder_hidden_states": {
-#                 0: "batch",
-#                 1: "sequence"
-#             },
-#         },
-#         do_constant_folding=True,
-#         opset_version=14,
-#     )
-
-#     unet_dir = os.path.dirname(onnx_model_path)
-#     unet_fp32_onnx = onnx.load(onnx_model_path)
-#     # clean up existing tensor files
-#     import shutil, shlex
-#     shutil.rmtree(unet_dir)
-#     os.mkdir(shlex.quote(unet_dir))
-#     # collate external tensor files into one
-#     onnx.save_model(
-#         unet_fp32_onnx,
-#         onnx_model_path,
-#         save_as_external_data=True,
-#         all_tensors_to_one_file=True,
-#         location="weights.pb",
-#         convert_attribute=False,
-#     )
-
-
-
 
 onnx_model_path = 'onnx_int8/model.onnx'
 os.makedirs(os.path.dirname(onnx_model_path), exist_ok=True)
