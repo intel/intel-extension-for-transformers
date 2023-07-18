@@ -299,11 +299,12 @@ if __name__ == '__main__':
         with autocast(args.dtype):
             graph = compile(args.onnx_model, args.pattern_config)
             graph.save(args.output_path)
-    elif args.dtype == "qat":
+    elif args.dtype == "qat_int8":
         args.pattern_config = qat_unet_pattern_config
         args.pattern_config['pattern_switch']['StableDiffusion_MHA'] = True
-        graph = compile(args.onnx_model, args.pattern_config)
-        graph.save(args.output_path)
+        with autocast(args.dtype):
+            graph = compile(args.onnx_model, args.pattern_config)
+            graph.save(args.output_path)
     else:
         graph = compile(args.onnx_model, args.pattern_config)
         graph.save(args.output_path)

@@ -36,6 +36,8 @@ pip install -v .
 Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion
+
+# Please update the requirements.txt manually to install the transformers==4.28.1
 pip install -r requirements.txt
 ```
 >**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
@@ -74,6 +76,14 @@ By setting --bf16 to export FP32 and BF16 models.
 python prepare_model.py --input_model=CompVis/stable-diffusion-v1-4 --output_path=./model --bf16
 ```
 
+By setting --qat_int8 to export INT8 models, **only support runwayml/stable-diffusion-v1-5**.
+
+**NOTE**: You should get a fake_quantized_model_qinit.pt before prepare qat models. Please refer the [link](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-to-image/quantization/qat/README.md).
+```python
+# Don't forget to get a fake_quantized_model_qinit.pt first.
+python prepare_model.py --input_model=runwayml/stable-diffusion-v1-5 --output_path=./model --qat_int8
+```
+
 ### 1.2 Compile Models
 
 Export three FP32 onnx sub models of the stable diffusion to Nerual Engine IRs.
@@ -97,18 +107,27 @@ Export mixed FP32 & dynamic quantized Int8 IRs.
 bash export_model.sh --input_model=model --precision=fp32 --cast_type=dynamic_int8
 ```
 
+Export mixed BF16 & QAT quantized Int8 IRs.
+```bash
+# running the follow comand to get mixed BF16 & QAT quantized Int8 IRs.
+bash export_model.sh --input_model=model --precision=bf16 --cast_type=qat_int8
+```
+
 ## 2. Performance
 
 Python API command as follows:
 ```python
-# FP32 IR
+# FP32 IRs
 python run_executor.py --ir_path=./fp32_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
 
 # mixed FP32 & dynamic quantized Int8 IRs.
 python run_executor.py --ir_path=./fp32_dynamic_int8_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
 
-# BF16 IR
+# BF16 IRs
 python run_executor.py --ir_path=./bf16_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
+
+# QAT INT8 IRs
+python run_executor.py --ir_path=./qat_int8_ir --mode=latency --input_model=runwayml/stable-diffusion-v1-5
 ```
 
 ## 3. Accuracy
@@ -125,6 +144,9 @@ python run_executor.py --ir_path=./fp32_dynamic_int8_ir --mode=accuracy --input_
 
 # BF16 IR
 python run_executor.py --ir_path=./bf16_ir --mode=accuracy --input_model=CompVis/stable-diffusion-v1-4
+
+# QAT INT8 IRs
+python run_executor.py --ir_path=./qat_int8_ir --mode=accuracy --input_model=runwayml/stable-diffusion-v1-5
 ```
 
 ## 4. Try Text to Image

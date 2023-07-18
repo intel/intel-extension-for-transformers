@@ -53,7 +53,7 @@ def _export_bf16_onnx_model(fp32_model_path, bf16_model_path):
     onnx.save(model, bf16_model_path)
 
 
-def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype: str, bf16):
+def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype: str):
     device = 'cpu'
     dtype = torch.float32
     output_path = Path(output_path)
@@ -89,7 +89,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
         opset_version=opset,
     )
 
-    if expected_dtype == 'bf16':
+    if expected_dtype == 'bf16' or expected_dtype == 'qat_int8':
         text_encoder_bf16 = output_path / "text_encoder_bf16" / "model.onnx"
         text_encoder_bf16_dir = output_path / "text_encoder_bf16"
         if os.path.exists(text_encoder_bf16_dir):
@@ -100,6 +100,9 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
     del pipeline.text_encoder
 
     # UNET
+    if expected_dtype == 'qat_int8':
+        prepare_qat_model(model_name)
+
     unet_in_channels = pipeline.unet.config.in_channels
     unet_sample_size = pipeline.unet.config.sample_size
     unet_path = output_path / "unet_fp32" / "model.onnx"
@@ -137,7 +140,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
 
     unet_model_path = str(unet_path.absolute().as_posix())
 
-    if expected_dtype == 'bf16':
+    if expected_dtype == 'bf16' or expected_dtype == 'qat_int8':
         unet_bf16_model_path = output_path / "unet_bf16" / "model.onnx"
         unet_bf16_dir = output_path / "unet_bf16"
         if os.path.exists(unet_bf16_dir):
@@ -160,7 +163,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
         location="weights.pb",
         convert_attribute=False,
     )
-    if expected_dtype == 'bf16':
+    if expected_dtype == 'bf16' or expected_dtype == 'qat_int8':
         unet_bf16_model_path = str(unet_bf16_model_path.absolute().as_posix())
         onnx.save_model(
             unet_bf16_model,
@@ -179,6 +182,8 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
 
     vae_decoder_path = output_path / "vae_decoder_fp32" / "model.onnx"
     vae_decoder_path.parent.mkdir(parents=True, exist_ok=True)
+
+    unet_sample_size = pipeline.unet.config.sample_size
     torch.onnx.export(
         vae_decoder,
         args=(
@@ -201,7 +206,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
         opset_version=opset,
     )
 
-    if expected_dtype == 'bf16':
+    if expected_dtype == 'bf16' or expected_dtype == 'qat_int8':
         vae_decoder_bf16_model = output_path / "vae_decoder_bf16" / "model.onnx"
         vae_decoder_bf16_dir = output_path / "vae_decoder_bf16"
         if os.path.exists(vae_decoder_bf16_dir):
@@ -211,8 +216,62 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
     del pipeline.vae
 
 
-def prepare_qat_model():
-    
+def prepare_qat_model(model_name: str):
+    device = 'cpu'
+    pipeline = StableDiffusionPipeline.from_pretrained(model_name).to(device)
+    unet = pipeline.unet
+
+    from quantization_modules import find_and_replace, convert2quantized_model
+    find_and_replace(unet)
+    unet.load_state_dict(torch.load(os.path.join('./', "fake_quant_model_qinit.pt")))
+    unet = convert2quantized_model(unet)
+    unet.eval()
+    setattr(pipeline, "unet", unet)
+
+    onnx_model_path = 'model/unet_qat_int8/model.onnx'
+    os.makedirs(os.path.dirname(onnx_model_path), exist_ok=True)
+    if os.path.exists(os.path.dirname(onnx_model_path)):
+        def model_wrapper(model_fn):
+        # export doesn't support a dictionary output, so manually turn it into a tuple
+        # refer to https://discuss.tvm.apache.org/t/how-to-deal-with-prim-dictconstruct/11978
+            def wrapper(*args, **kwargs):
+                output = model_fn(*args, **kwargs)
+                if isinstance(output, dict):
+                    return tuple(v for v in output.values() if v is not None)
+                else:
+                    return output
+            return wrapper
+        unet.forward = model_wrapper(unet.forward)
+        
+        torch.onnx.export(
+            unet,
+            args=(
+                torch.randn(2, 4, 64, 64).to(device=device,dtype=torch.float32),
+                torch.randn(2).to(device=device, dtype=torch.float32),
+                torch.randn(2, 77, 768).to(device=device, dtype=torch.float32),
+                #False,
+            ),
+            f=onnx_model_path,
+            input_names=["sample", "timestep", "encoder_hidden_states"],# "return_dict"],
+            output_names=["out_sample"],  # has to be different from "sample" for correct tracing
+            dynamic_axes={
+                "sample": {
+                    0: "batch",
+                    1: "channels",
+                    2: "height",
+                    3: "width"
+                },
+                "timestep": {
+                    0: "batch"
+                },
+                "encoder_hidden_states": {
+                    0: "batch",
+                    1: "sequence"
+                },
+            },
+            do_constant_folding=True,
+            opset_version=14,
+        )
 
 
 if __name__ == "__main__":
@@ -235,17 +294,14 @@ if __name__ == "__main__":
         help="The version of the ONNX operator set to use.",
     )
     parser.add_argument("--bf16", action="store_true", help="Export the models in `bfloat16` mode")
-    parser.add_argument("--int8", action="store_true", help="Export the models in `bfloat16` mode")
+    parser.add_argument("--qat_int8", action="store_true", help="Export the models in `bfloat16` mode")
 
     args = parser.parse_args()
 
     expected_dtype = 'fp32'
     if args.bf16:
         expected_dtype = 'bf16'
-    elif args.int8:
-        expected_dtype = 'int8'
+    elif args.qat_int8:
+        expected_dtype = 'qat_int8'
 
-    if expected_dtype = 'int8':
-        prepare_qat_model(args.input_model, args.output_path, args.opset, expected_dtype)
-    else:
-        prepare_model(args.input_model, args.output_path, args.opset, expected_dtype)
+    prepare_model(args.input_model, args.output_path, args.opset, expected_dtype)
