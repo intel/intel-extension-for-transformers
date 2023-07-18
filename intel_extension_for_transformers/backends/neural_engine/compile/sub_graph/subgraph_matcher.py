@@ -124,6 +124,13 @@ pattern_default_setting = {
     'StableDiffusion_MHAReshape': False,
     'StableDiffusion_MHA': False,
     'ExplicitNHWCTransposeForConv': False,
+    'ExplicitNHWCTransposeForConvQAT': False,
+
+    # QAT for the stable diffusion
+    'StableDiffusion_InsertQuantNode': False,
+    'StableDiffusion_CollectQuantInfo': False,
+    'CollectQuantInfo': True,
+    'InsertQuantNode': True,
     
     #GPT-J
     'TorchEmbedding': True,
