@@ -20,6 +20,8 @@ from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
 from .. import logger
+from .subgraph_matcher import EXECUTOR_TYPE
+import numpy as np
 
 
 @pattern_registry(pattern_type='ExplicitNHWCTransposeForConvQAT')
@@ -140,6 +142,61 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
                             target_node.input_tensors[0] = transpose_node.output_tensors[0]
 
             model.remove_nodes(remove_node_name)
+
+            #Convert Innerproduct and Conv bias for ONEDNN 3.x
+            for node in model.nodes:
+                if node.op_type in EXECUTOR_TYPE and \
+                    EXECUTOR_TYPE[node.op_type] == 'InnerProduct':
+                    # convert s32 bias to fp32 bias due to ONEDNN 3.x required
+                    weight_s8 = node.input_tensors[1].data
+                    bias_s32 = node.input_tensors[2].data
+                    offset = 1 if node.attr.get("append_op", "") == "sum" else 0
+                    activation_min = node.input_tensors[3 + offset].data
+                    activation_max = node.input_tensors[4 + offset].data
+                    weight_min = node.input_tensors[5 + offset].data
+                    weight_max = node.input_tensors[6 + offset].data
+                    activation_scale = ((activation_max - activation_min) / 255).astype(float)
+                    weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
+                                    127).astype(float)
+                    bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32)
+                    if node.attr.get("src1_perm", "0,1") == "0,1":
+                        compensation = activation_min * weight_scale * weight_s8.sum(
+                            -1).astype(np.float32)
+                    else:
+                        compensation = activation_min * weight_scale * weight_s8.sum(
+                            0).astype(np.float32)
+
+                    node.input_tensors[2].data = (bias_fp32 + compensation).astype(np.float32)
+                    node.input_tensors[2].dtype = 'fp32'
+
+                    for bias in model.nodes[0].output_tensors:
+                        if node.input_tensors[2].name == bias.name:
+                            bias.dtype = 'fp32'
+                            bias.data = node.input_tensors[2].data
+                
+                if node.op_type in EXECUTOR_TYPE and \
+                    EXECUTOR_TYPE[node.op_type] == 'Convolution':
+                    # convert s32 bias to fp32 bias due to ONEDNN 3.x required
+                    weight_s8 = node.input_tensors[1].data
+                    bias_s32 = node.input_tensors[2].data
+                    offset = 1 if node.attr.get("append_op", "") == "sum" else 0
+                    activation_min = node.input_tensors[3 + offset].data
+                    activation_max = node.input_tensors[4 + offset].data
+                    weight_min = node.input_tensors[5 + offset].data
+                    weight_max = node.input_tensors[6 + offset].data
+                    activation_scale = ((activation_max - activation_min) / 255).astype(float)
+                    weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
+                                    127).astype(float)
+                    bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32) 
+                    compensation = 0
+                    node.input_tensors[2].data = (bias_fp32 + compensation).astype(np.float32)
+
+                    node.input_tensors[2].dtype = 'fp32'
+
+                    for bias in model.nodes[0].output_tensors:
+                        if node.input_tensors[2].name == bias.name:
+                            bias.dtype = 'fp32'
+                            bias.data = node.input_tensors[2].data
 
         # modify output name and remove useless outputs
         for tensor in model.nodes[-1].input_tensors:
