@@ -108,15 +108,6 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
                 attr_2['dst_perm'] = '0,3,1,2'
                 reorder_post_node.attr = attr_2
 
-                # if 'output_dtype' in conv_attr:
-                #     if 'fp32' in conv_attr['output_dtype']:
-                #         reorder_pre_node.attr['output_dtype'] = 'bf16'
-                #         conv_node.attr['output_dtype'] = 'bf16'
-                #         reorder_post_node.attr['output_dtype'] = 'fp32'
-                #     else:
-                #         reorder_post_node.attr['output_dtype'] = conv_attr['output_dtype']
-                #         reorder_pre_node.attr['output_dtype'] = conv_attr['output_dtype']
-
                 if 'output_dtype' in conv_attr:
                     if 'fp32' in conv_attr['output_dtype']:
                         reorder_pre_node.attr['output_dtype'] = 'bf16'
@@ -149,5 +140,15 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
                             target_node.input_tensors[0] = transpose_node.output_tensors[0]
 
             model.remove_nodes(remove_node_name)
+
+        # modify output name and remove useless outputs
+        for tensor in model.nodes[-1].input_tensors:
+            if  model.nodes[-2].output_tensors[0].name == tensor.name:
+                model.nodes[-2].output_tensors[0].name = 'out_sample:0'
+                tensor.name = model.nodes[-2].output_tensors[0].name
+                model.nodes[-2].attr['output_dtype'] = 'fp32'
+
+        if len(model.nodes[-1].input_tensors) != 1:
+            del model.nodes[-1].input_tensors[:-1]
 
         return model
