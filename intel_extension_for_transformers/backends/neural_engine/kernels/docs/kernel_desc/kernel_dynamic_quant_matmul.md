@@ -19,9 +19,9 @@ The whole weight matrix preprocessing process can be represented by the followin
 ![wei_preprocess](../imgs/kernel_dynamic_quant_matmul_wei_preprocess.png)  
 
 ### different jit-paths for different weight size
- In our internal implementation of dynamic_quant_matmul, the weight matrix has a very high spatial locality, and we hope that the L2 cache can cache the entire weight matrix that the core is responsible for processing, so we will generate different jit kernels to meet the above requirements for different weight size. When the reuse-data-size is less than `L2-cache-size`×`large_wei_threshold` (can be specified by the user, default is 1), we will enable small_wei path, otherwise enable large_wei path.  
+ In our internal implementation of dynamic_quant_matmul, the weight matrix has a very high spatial locality, and we hope that the L2 cache can cache the entire weight matrix that the core is responsible for processing, so we will generate different jit kernels to meet the above requirements for different weight size. When the reuse-data-size is less than `L2-cache-size`×`large_wei_threshold` (can be specified by the user, default is 1) and each core will process enough row (M assigned for each core >= 16, avoid to waste AMX), we will enable one-stage path, otherwise enable two-stage path.  
 
-#### small_wei jit-path
+#### one-stage jit-path
 In this jit-path, we will have a `16xpad_n` tmp_buffer, which is used for data write-back of `tilestored` instruction, dequantize of dst tile, and the calculation of scale and quantize of dst tile are all done on this tmp buffer, so this buffer also has a very high spatial locality. When `(16xpad_n+weight)`x`large_wei_threshold`<`L2-cache-size`, this path has better performance for matmul. Specifically, this jit-path will parallelize on the `M-dim`, each core caches the entire weight matrix, and the pseudo code description of the kernel calculation process is as follows
 ```cpp
 for (int m = 0; m < M; m += TILE_M) {
@@ -40,18 +40,15 @@ for (int m = 0; m < M; m += TILE_M) {
     }
 }
 ```
-#### large_wei jit-path
+#### two-stage jit-path
 In this jit-path, the calculation of dynamic_quant_matmul will be done by two kernels
 
 1. s8(activation)s8(weight)bf16(dst) matmul
-2. per-channel-dynamic-quantization
+2. scale_reduce_quantization
 
-The `per_channel_dynamic_quantization` kernel can be directly called by users through the kernel proxy, which provides a more flexible way to implement matmul with dynamic quantization (e.g. matmul from other acceleration libraries + per-channel-dynamic-quantization).
+The `scale_reduce_quantization` kernel can reduce the scales then apply dynamic-quantization. All of the cores will do reduce calculation and store the scales to their private buffer but only one core will write to the real-scale-dst address so we needn't reduce-scale-sync. `scale_reduce_quantization` also promise the data processed by each core in 2nd stage is same as the previous (s8s8bf16 gemm) stage, which make the most cache-friendliness. 
 
-In the first step of s8s8_dynamic_dequant matmul, the kernel will parallelize on both `M-dim` and `N-dim` as the weight is too large. It desides the `M` and `N` that each core is responsible for processing duing initialization. The principle is to make the sliced weight as large as possible under the premise of being smaller than L2-cache, so that:
-
-1. It can improve the utilization rate of L2-cache
-2. It can allocate more cores for the `M-dim`, thereby reducing the number of memory accesses and write-backs of activation and dst matrix for each core.
+In the first step of s8s8_dynamic_dequant matmul, the kernel will parallelize on both `M-dim` and `N-dim` as the weight is too large or the M assign to each core is too small in one-stage jit-path. It desides the `M` and `N` that each core is responsible for processing duing initialization. We split N-dim until the size of the weight processed by each core is less than L2-cache meanwhile the M processed by each core is large enough.
 
 The activation, weight and dst that each core is responsible for processing are roughly as follows
 

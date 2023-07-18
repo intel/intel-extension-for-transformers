@@ -9,12 +9,13 @@ We have enabled distillation for quantization in `textual_inversion.py` to do qu
 Before running the scripts, make sure to install the library's training dependencies:
 
 ```bash
+pip install transformers~=4.21.0
 pip install -r requirements.txt
 ```
 
 ## Get a FP32 Textual Inversion model
 
-Please refer to this [Textual Inversion example](../README.md) in Intel® Neural Compressor for more details.
+Please refer to this [Textual Inversion example](https://github.com/intel/neural-compressor/blob/master/examples/pytorch/diffusion_model/diffusers/textual_inversion/README.md) in Intel® Neural Compressor for more details.
 
 ## Do distillation for quantization
 

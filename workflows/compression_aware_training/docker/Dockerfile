@@ -1,4 +1,7 @@
-FROM intel/intel-optimized-pytorch:pip-ipex-1.13.100-ubuntu-22.04
+# Copyright (C) 2023 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+
+FROM intel/ai-tools:itrex-0.1.1
 
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     build-essential \

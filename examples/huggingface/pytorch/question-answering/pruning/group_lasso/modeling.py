@@ -696,8 +696,11 @@ class BertPreTrainedModel(nn.Module):
             tempdir = tempfile.mkdtemp()
             logger.info("extracting archive file {} to temp dir {}".format(
                 resolved_archive_file, tempdir))
-            with tarfile.open(resolved_archive_file, 'r:gz') as archive:
-                archive.extractall(tempdir)
+            if os.path.isfile(resolved_archive_file) and tarfile.is_tarfile(resolved_archive_file):
+                with tarfile.open(resolved_archive_file, 'r:gz') as archive:
+                    archive.extractall(tempdir)
+            else:
+                logger.error("Invalid tar file {}".format(resolved_archive_file))
             serialization_dir = tempdir
         # Load config
         config_file = os.path.join(serialization_dir, CONFIG_NAME)

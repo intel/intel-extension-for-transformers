@@ -195,7 +195,8 @@ void jit_mmsoftmax_batch_amx_s8_ab_BA16b4a_u8_16x::generate() {
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
   {
     constexpr auto tmp_mem_size = BYTES_ZMM;
-    regs_pool rp(this, 1, {12, 32, 0}, (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size, true, 64);
+    const auto stack_size = (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size;
+    regs_pool rp(this, 1, {12, 32, 0}, stack_size, regs_pool::DefaultFlags, 64);
     std::shared_ptr<void> local_cfg;
     if (need_cfg_amx) {  // create a local amx config environment
       sttilecfg(ptr[rsp]);
@@ -429,7 +430,8 @@ void jit_mmexp_amx_s8_ab_BA16b4a_u8_16x::generate() {
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
   {
     constexpr auto tmp_mem_size = 16 * BYTES_ZMM;  // for addr_max
-    regs_pool rp(this, 1, {10, 32, 0}, (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size, true, 64);
+    const auto stack_size = (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size;
+    regs_pool rp(this, 1, {10, 32, 0}, stack_size, regs_pool::DefaultFlags, 64);
     std::shared_ptr<void> local_cfg;
     if (need_cfg_amx) {  // create a local amx config environment
       sttilecfg(ptr[rsp]);
@@ -675,7 +677,8 @@ void jit_mm_batch_amx_u8s8_ab_AB16a4b_dynamic_quant_16x::generate() {
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
   {
     constexpr auto tmp_mem_size = BYTES_ZMM;
-    regs_pool rp(this, 1, {12, 32, 1}, (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size, true, 64);
+    const auto stack_size = (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size;
+    regs_pool rp(this, 1, {12, 32, 1}, stack_size, regs_pool::DefaultFlags, 64);
     std::shared_ptr<void> local_cfg;
     if (need_cfg_amx) {  // create a local amx config environment
       sttilecfg(ptr[rsp]);
@@ -799,15 +802,17 @@ void jit_scale_mm_amx_u8s8_ab_BA16b_16x::mm_absmax(regs_pool* const rp, std::arr
   xor_(reg_nbiter.cvt32(), reg_nbiter.cvt32());
   const auto reg_dst = rp->reg<Reg64>();
   mov(reg_dst, qword[rp->p[0] + PARAM_OFF(dst)]);
+  const auto reg_lb_dst = rp->reg<Reg64>();
+  imul(reg_lb_dst.cvt32(), dword[rp->p[0] + PARAM_OFF(ld_dst)], sizeof(float));
 
   const auto mm_absmax_16xkxtw = [&](int tw) {
     const auto reg_prescale0 = rp->reg<Reg64>();
     mov(reg_prescale0, qword[rp->p[0] + PARAM_OFF(prescale_src0)]);
 
     const std::array<Tmm, 3> tmm_dst{tmm0, tmm1, tmm2};
-    const auto reg_64ULL = rp->reg<Reg64>();
-    mov(reg_64ULL, 64ULL);
     {  // k loop part
+      const auto reg_64ULL = rp->reg<Reg64>();
+      mov(reg_64ULL, 64ULL);
       const std::array<Tmm, 1> tmm_src0{tmm4};
       const std::array<Tmm, 3> tmm_src1{tmm5, tmm6, tmm7};
       const auto reg_ld_src1 = rp->reg<Reg64>();
@@ -869,13 +874,15 @@ void jit_scale_mm_amx_u8s8_ab_BA16b_16x::mm_absmax(regs_pool* const rp, std::arr
       imul(reg_src1scale, reg_nbiter, BYTES_ZMM);
       add(reg_src1scale, qword[rp->p[0] + PARAM_OFF(scale_src1)]);
       for (int ii = 0; ii < 16; ++ii) {
+        const auto reg_curr_dst = rp->reg<Reg64>();
+        (ii == 0) ? mov(reg_curr_dst, reg_dst) : lea(reg_curr_dst, ptr[reg_curr_dst + reg_lb_dst]);
         for (int j = 0; j < tw; ++j) {
           if (ii == 0) {
-            tilestored(ptr[reg_dst + reg_64ULL + j * BYTES_TMM], tmm_dst[j]);
+            tilestored(ptr[reg_dst + reg_lb_dst + j * BYTES_ZMM], tmm_dst[j]);
             vmovups(vreg_scale[j], zword[reg_src1scale + j * BYTES_ZMM]);
           }
 
-          const auto tmp_dst_addr = ptr[reg_dst + j * BYTES_TMM + ii * BYTES_ZMM];
+          const auto tmp_dst_addr = ptr[reg_curr_dst + j * BYTES_ZMM];
           vcvtdq2ps(zmm_x, tmp_dst_addr);
           vmulps(zmm_x, zmm_x, vreg_scale[j]);
           vmulps(zmm_x, zmm_x, zword_b[reg_src0scale + ii * sizeof(float)]);
@@ -891,7 +898,7 @@ void jit_scale_mm_amx_u8s8_ab_BA16b_16x::mm_absmax(regs_pool* const rp, std::arr
   jle(l_nloop_mm_end, T_NEAR);
   L(l_nloop_mm);
   mm_absmax_16xkxtw(TW_);  // n loop body
-  lea(reg_dst, ptr[reg_dst + TW_ * BYTES_TMM]);
+  lea(reg_dst, ptr[reg_dst + TW_ * BYTES_ZMM]);
   lea(reg_nbiter, ptr[reg_nbiter + TW_]);
   {  // scope tmp to check break condition
     const auto tmp = rp->reg<Xbyak::Reg32>();
@@ -930,7 +937,7 @@ void jit_scale_mm_amx_u8s8_ab_BA16b_16x::generate() {
   std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
   {
     constexpr auto tmp_mem_size = BYTES_TMM * TH_;
-    regs_pool rp(this, 1, {9, 32, 0}, (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size, true, 64);
+    regs_pool rp(this, 1, {10, 32, 0}, (need_cfg_amx ? sizeof(tileconfig_t) : 0) + tmp_mem_size, 0, 64);
     std::shared_ptr<void> local_cfg;
     if (need_cfg_amx) {  // create a local amx config environment
       sttilecfg(ptr[rsp]);

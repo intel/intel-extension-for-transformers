@@ -58,10 +58,12 @@ class mha_dense_k_t;
  */
 class mha_dense_kd_t : public kernel_desc_t {
   using io = exposed_enum::mha_dense::io;
+  using io_src = exposed_enum::mha_dense_src::src;
+  using io_dst = exposed_enum::mha_dense_dst::dst;
+  using io_shape = exposed_enum::mha_dense_shape::shape;
 
  public:
-  explicit mha_dense_kd_t(const operator_desc& op_desc)
-      : kernel_desc_t(kernel_kind::mha_dense), op_desc_(op_desc) {}
+  explicit mha_dense_kd_t(const operator_desc& op_desc) : kernel_desc_t(kernel_kind::mha_dense), op_desc_(op_desc) {}
   virtual ~mha_dense_kd_t() {}
 
   bool init() override;
@@ -82,6 +84,9 @@ class mha_dense_kd_t : public kernel_desc_t {
 
 class mha_dense_k_t : public kernel_t {
   using io = exposed_enum::mha_dense::io;
+  using io_src = exposed_enum::mha_dense_src::src;
+  using io_dst = exposed_enum::mha_dense_dst::dst;
+  using io_shape = exposed_enum::mha_dense_shape::shape;
 
  public:
   using kd_t = mha_dense_kd_t;
@@ -109,11 +114,13 @@ class mha_dense_k_t : public kernel_t {
 
   size_t get_workspace_size() const override { return omp_get_max_threads() * thread_workspace_size_; }
   bool init() override;
-  bool execute(const std::vector<const void*>& rt_data) const override;
+  [[deprecated("Please use exec_context_t instead of rt_data")]] bool execute(
+      const std::vector<const void*>& rt_data) const override;
+  bool execute(const exec_context_t& context) const override;
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 
  private:
-  bool execute_tiny(const std::vector<const void*>& rt_data) const;
+  bool execute_tiny(void** src_data, void** dst_data, void* workspace, dim_t* shape_data) const;
   const std::vector<tensor_desc>& ts_desc;
   const data_type dst_dt_;
   const format_type kv_ft_;

@@ -46,7 +46,7 @@ bool check_result(const test_params_t& t) {
 
     data1 = {p.dst->data(), p.scale->data()};
     data2 = {q.dst->data(), q.scale->data()};
-    if (op_attr["input_dt"] == "bf16") {
+    if (op_desc.tensor_dtypes()[io::SRC] == jd::data_type::bf16) {
       data1.insert(data1.begin(), p.bf16_mat->data());
       data2.insert(data2.begin(), q.bf16_mat->data());
     } else {
@@ -62,11 +62,8 @@ bool check_result(const test_params_t& t) {
                                                                                 dynamic_quant_ref_desc);
     dynamic_quant_ref_ker->execute(data2);
   } catch (const std::exception& e) {
-    if (t.expect_to_fail) {
-      return true;
-    } else {
-      return false;
-    }
+    SPARSE_LOG(ERROR) << e.what();
+    return t.expect_to_fail;
   }
 
   if (!t.expect_to_fail) {
@@ -125,12 +122,12 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_
 static auto case_func = []() {
   std::vector<test_params_t> cases;
   std::vector<std::vector<dim_t>> problem_size = {{512, 10240}, {512, 1280},  {2048, 5120},
-                                                    {2048, 640},  {8192, 2560}, {8192, 320}};
+                                                  {2048, 640},  {8192, 2560}, {8192, 320}};
   for (auto&& shape : problem_size) {
-    jd::tensor_desc src_desc = {shape, jd::data_type::bf16, jd::format_type::undef};
-    jd::tensor_desc dst_mat_desc = {shape, jd::data_type::s8, jd::format_type::undef};
-    jd::tensor_desc scale_desc = {{shape[0]}, jd::data_type::fp32, jd::format_type::undef};
-    cases.push_back({gen_case({src_desc, dst_mat_desc, scale_desc}, {{"input_dt", "bf16"}}), false});
+    jd::tensor_desc src_desc = {shape, jd::data_type::bf16, jd::format_type::ab};
+    jd::tensor_desc dst_mat_desc = {shape, jd::data_type::s8, jd::format_type::ab};
+    jd::tensor_desc scale_desc = {{shape[0]}, jd::data_type::fp32, jd::format_type::a};
+    cases.push_back({gen_case({src_desc, dst_mat_desc, scale_desc}, {}), false});
   }
 
   return ::testing::ValuesIn(cases);

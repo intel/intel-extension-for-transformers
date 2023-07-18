@@ -73,7 +73,9 @@ def apply_delta_low_cpu_mem(base_model_path, target_model_path, delta_path):
 
     if os.path.exists(target_model_path):
         shutil.rmtree(target_model_path)
-    os.makedirs(target_model_path)
+    target_model_path = os.path.abspath(target_model_path)
+    if not os.path.exists(target_model_path):
+        os.makedirs(target_model_path)
 
     split_size = 4 * GB
 

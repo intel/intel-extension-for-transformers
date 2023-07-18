@@ -108,20 +108,20 @@ void matmul_avx512f_8bit_bench::gen_case() {
     attrs2["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(aligned_allocator_t<int8_t>::allocate(N * K)));
   } else if (src1_dtype == jd::data_type::s8) {
     std::function<int8_t(int8_t)> cast_func_s8 = [](int8_t x) { return x; };
-    int8_t* weight_8bit = new int8_t[N * K];
+    int8_t* weight_8bit = aligned_allocator_t<int8_t>::allocate(N * K);
     int8_t* src1_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data1[io::SRC1]));
     jd::pack<int8_t, int8_t>(weight_8bit, src1_s8, N, K, cast_func_s8);
     attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(weight_8bit));
   } else if (src1_dtype == jd::data_type::f8_e4m3) {
     std::function<jd::float8_e4m3_t(jd::float8_e4m3_t)> cast_func_fp8 = [](jd::float8_e4m3_t x) { return x; };
     jd::float8_e4m3_t* src1_fp8 = reinterpret_cast<jd::float8_e4m3_t*>(const_cast<void*>(rt_data1[io::SRC1]));
-    jd::float8_e4m3_t* weight_8bit = new jd::float8_e4m3_t[N * K];
+    jd::float8_e4m3_t* weight_8bit = aligned_allocator_t<jd::float8_e4m3_t>::allocate(N * K);
     jd::pack<jd::float8_e4m3_t, jd::float8_e4m3_t>(weight_8bit, src1_fp8, N, K, cast_func_fp8);
     attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(weight_8bit));
   } else if (src1_dtype == jd::data_type::f8_e5m2) {
     std::function<jd::float8_e5m2_t(jd::float8_e5m2_t)> cast_func_fp8 = [](jd::float8_e5m2_t x) { return x; };
     jd::float8_e5m2_t* src1_fp8 = reinterpret_cast<jd::float8_e5m2_t*>(const_cast<void*>(rt_data1[io::SRC1]));
-    jd::float8_e5m2_t* weight_8bit = new jd::float8_e5m2_t[N * K];
+    jd::float8_e5m2_t* weight_8bit = aligned_allocator_t<jd::float8_e5m2_t>::allocate(N * K);
     jd::pack<jd::float8_e5m2_t, jd::float8_e5m2_t>(weight_8bit, src1_fp8, N, K, cast_func_fp8);
     attrs1["weight_8bit"] = std::to_string(reinterpret_cast<intptr_t>(weight_8bit));
   }

@@ -2,8 +2,6 @@
 
 ## 🚀 Basic Frontend
 
-[https://huggingface.co/spaces/Intel/NeuralChat-MPT](https://huggingface.co/spaces/Intel/NeuralChat-MPT)
-
 The Basic Frontend is a frontend component for the simple chatbot demo. It provides a straightforward user interface for interacting with the chatbot system.
 
 ### 📸 Project Screenshots
@@ -13,8 +11,6 @@ The Basic Frontend is a frontend component for the simple chatbot demo. It provi
 For detailed information, please refer to the [README](./basic_frontend/README.md).
 
 ## 🚀 Advanced Frontend
-
-[http://neuralstudio.intel.com/NeuralChat](http://neuralstudio.intel.com/NeuralChat)
 
 The Advanced Frontend is another frontend component of the NeuralChat. It offers an enhanced and feature-rich user interface compared to the Basic Frontend.
 
@@ -33,4 +29,4 @@ Our system offers three distinct backends, each designed for specific use cases:
 - 'fastrag' backend: knowledge-based chatbot backend.
 - 'sd' backend: powers our text-to-image application.
 
-For detailed information, please refer to the [CHAT_README](./backend/chat/README.md), [FASTRAG_README](./backend/fastrag/README.md), and [SD_README](./backend/sd/README.md).
+For detailed information, please refer to the [CHAT_README](../inference/backend/chat/README.md), [FASTRAG_README](../inference/backend/fastrag/README.md), and [SD_README](../inference/backend/sd/README.md).

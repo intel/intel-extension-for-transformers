@@ -109,8 +109,8 @@ class SPARSE_TEST_API_ kernel_t {
   virtual bool init(const exec_context_t&) { return true; }
 
   virtual bool execute(const std::vector<const void*>&) const { return true; }
-  virtual bool execute(const exec_context_t&) { return true; }
-  virtual bool execute() const { return true; }
+  virtual bool execute(const exec_context_t&) const { return true; }
+  virtual bool execute() const { return false; }
   virtual size_t get_workspace_size() const { return 0; }
 
  public:

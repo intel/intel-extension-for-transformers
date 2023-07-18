@@ -43,7 +43,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
 install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
-opt_install_requires_list = ['neural_compressor', 'transformers<=4.29.1']
+opt_install_requires_list = ['neural_compressor', 'transformers']
 project_name = "intel_extension_for_transformers"
 
 if BACKENDS_ONLY:
@@ -82,6 +82,19 @@ class CMakeBuild(build_ext):
             return True
         return False
 
+    @staticmethod
+    def _get_files(scope: str, repo: str):
+        ''' Equivalent of `git ls-files --recurse-submodules -- $scope` for git-v1.x '''
+        files = [os.path.join(repo, f) for f in subprocess.check_output(
+                ["git", "ls-files", "--", scope], cwd=repo
+        ).decode("utf-8").splitlines()]
+        submodules = subprocess.check_output(
+            ["git", "submodule", "--quiet", "foreach", f'echo $sm_path'], cwd=repo).decode("utf-8").splitlines()
+        for sm in submodules:
+            sm_path = os.path.join(repo, sm)
+            files.extend(CMakeBuild._get_files(sm_path, sm_path))
+        return files
+
     def get_source_files(self):
         """ The primary purpose of this function is to help populating the `sdist` with all the files necessary to build the distribution. -- setuptools doc"""
         files = super().get_source_files()
@@ -91,11 +104,8 @@ class CMakeBuild(build_ext):
         for ext in self.extensions:
             if not isinstance(ext, CMakeExtension):
                 continue
-            files.extend(
-                subprocess.check_output(
-                    ["git", "ls-files", "--recurse-submodules", "--", ext.sourcedir], cwd=cwd
-                ).decode("utf-8").splitlines()
-            )
+            files.extend(os.path.relpath(f, cwd)
+                         for f in self._get_files(ext.sourcedir, cwd))
         return files
 
     def build_extension(self, ext: CMakeExtension) -> None:
@@ -222,7 +232,7 @@ def check_submodules():
         print(' --- Trying to initialize submodules')
         start = time.time()
         subprocess.check_call(
-            ["git", "submodule", "update", "--init", "--recursive", "--depth=1"], cwd=cwd)
+            ["git", "submodule", "update", "--init", "--recursive"], cwd=cwd)
         end = time.time()
         print(f' --- Submodule initialization took {end - start:.2f} sec')
     except Exception:

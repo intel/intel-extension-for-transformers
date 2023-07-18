@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import re
+import os
 import math
 import torch
 import torch.nn.functional as F
@@ -98,6 +99,7 @@ class HuggingFaceAutoLM(BaseLM):
         dtype: Optional[Union[str, torch.dtype]] = None,
         device: Optional[Union[int, str]] = "cuda",
         init_empty_weights: Optional[bool] = False,
+        model_format: Optional[str] = "torch"
     ):
         """Initializes a HuggingFace `AutoModel` and `AutoTokenizer` for evaluation.
         Args:
@@ -144,6 +146,8 @@ class HuggingFaceAutoLM(BaseLM):
                 Use `dtype="auto"` to derive the type from the model’s weights.
             init_empty_weights (bool, optional, defaults to False):):
                 Initialize model with empty weights if model is not used for inference.
+            model_format (str, optional, defaults to torch):
+                The format of target model, support 'torch' and 'onnx'
         """
         super().__init__()
 
@@ -174,7 +178,7 @@ class HuggingFaceAutoLM(BaseLM):
         )
 
         self._add_special_tokens = add_special_tokens
-        if re.search("llama", pretrained):
+        if re.search("llama", pretrained.lower()):
             from transformers import LlamaTokenizer    # pylint: disable=E0611
             self.tokenizer = LlamaTokenizer.from_pretrained(
                     pretrained,
@@ -196,14 +200,15 @@ class HuggingFaceAutoLM(BaseLM):
                 max_cpu_memory,
                 offload_folder,
             )
-        self.model = self._create_auto_model(
-            pretrained=pretrained,
-            revision=revision,
-            subfolder=subfolder,
-            torch_dtype=_get_dtype(dtype, self._config),
-            **accelerate_kwargs,
-        )
-        self.model.eval()
+        if model_format == "torch":
+            self.model = self._create_auto_model(
+                pretrained=pretrained,
+                revision=revision,
+                subfolder=subfolder,
+                torch_dtype=_get_dtype(dtype, self._config),
+                **accelerate_kwargs,
+            )
+            self.model.eval()
         torch.set_grad_enabled(False)
 
         self._device = device
@@ -342,9 +347,14 @@ class HuggingFaceAutoLM(BaseLM):
         ):
             context = [c[0] for c in chunk]
             request_args = chunk[0][1]
-            stop_sequences = request_args["stop_sequences"]
-            max_generation_length = request_args["max_generation_length"]
-            num_fewshot = request_args["num_fewshot"]
+            if isinstance(request_args, list):
+                stop_sequences = None
+                max_generation_length = None
+                num_fewshot = None
+            else:
+                stop_sequences = request_args["stop_sequences"]
+                max_generation_length = request_args["max_generation_length"]
+                num_fewshot = request_args["num_fewshot"]
 
             assert (
                 isinstance(max_generation_length, int) or max_generation_length is None
@@ -391,6 +401,43 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
 
+    def __init__(self, *args, pretrained, model_format, **kwargs):
+        super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
+
+        self.model_format = model_format
+        if self.model_format == "onnx":
+            if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")):
+                raise ValueError(
+                "Couldn't find decoder_model.onnx in {}.".format(pretrained)
+                )
+
+            import onnxruntime as ort
+            from transformers import PretrainedConfig
+            from optimum.onnxruntime import ORTModelForCausalLM
+
+            model_config = PretrainedConfig.from_pretrained(pretrained)
+            sess_options = ort.SessionOptions()
+            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            if os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
+                sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                    os.path.join(pretrained, "decoder_model.onnx"),
+                    os.path.join(pretrained, "decoder_with_past_model.onnx"),
+                    session_options=sess_options)
+                self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                 model_config,
+                                                 pretrained,
+                                                 sessions[1],
+                                                 use_cache=True)
+            else:
+                sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                    os.path.join(pretrained, "decoder_model.onnx"),
+                    session_options=sess_options)
+                self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                 model_config,
+                                                 pretrained,
+                                                 use_cache=False,
+                                                 use_io_binding=False)
+
     def _create_auto_tokenizer(
         self,
         *,
@@ -411,7 +458,8 @@ class AutoCausalLM(HuggingFaceAutoLM):
     def _model_call(
         self, inputs: TokenSequence, labels: Optional[TokenSequence] = None
     ) -> TokenSequence:
-        output = self.model(inputs)
+        output = self.model(inputs) if self.model_format != "onnx" else \
+                self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64))
         if isinstance(output, tuple):
             return output[0]
         return output["logits"]
@@ -458,6 +506,48 @@ class AutoSeq2SeqLM(HuggingFaceAutoLM):
     """
 
     AUTO_MODEL_CLASS = transformers.AutoModelForSeq2SeqLM
+
+    def __init__(self, *args, pretrained, model_format, **kwargs):
+        super().__init__(*args, pretrained=pretrained, model_format=model_format, **kwargs)
+
+        self.model_format = model_format
+        if self.model_format == "onnx":
+            if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) or \
+                not os.path.exists(os.path.join(pretrained, "encoder_model.onnx")):
+                raise ValueError(
+                    "Please ensure decoder_model.onnx and encoder_model.onnx are under {}.".format(pretrained)
+                )
+
+            import onnxruntime as ort
+            from transformers import PretrainedConfig
+            from optimum.onnxruntime import ORTModelForSeq2SeqLM
+
+            model_config = PretrainedConfig.from_pretrained(pretrained)
+            sess_options = ort.SessionOptions()
+            sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+            if os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
+                sessions = ORTModelForSeq2SeqLM.load_model(
+                                os.path.join(pretrained, 'encoder_model.onnx'),
+                                os.path.join(pretrained, 'decoder_model.onnx'),
+                                os.path.join(pretrained, 'decoder_with_past_model.onnx'))
+
+                self.model = ORTModelForSeq2SeqLM(sessions[0],
+                                                  sessions[1],
+                                                  model_config,
+                                                  pretrained,
+                                                  sessions[2],
+                                                  use_cache=True)
+            else:
+                sessions = ORTModelForSeq2SeqLM.load_model(  # pylint: disable=E1120
+                                os.path.join(pretrained, 'encoder_model.onnx'),
+                                os.path.join(pretrained, 'decoder_model.onnx'))
+
+                self.model = ORTModelForSeq2SeqLM(sessions[0],
+                                                  sessions[1],
+                                                  model_config,
+                                                  pretrained,
+                                                  use_cache=False,
+                                                  use_io_binding=False)
 
     @property
     def max_length(self) -> int:
@@ -586,7 +676,16 @@ class AutoSeq2SeqLM(HuggingFaceAutoLM):
     def _model_call(
         self, inputs: TokenSequence, labels: Optional[TokenSequence] = None
     ) -> TokenSequence:
-        return self.model(**inputs, labels=labels["input_ids"])
+        if self.model_format == "onnx":
+            decoder_start_token_id = self._config.decoder_start_token_id
+            pad_token_id = self._config.pad_token_id
+            shifted_input_ids = labels["input_ids"].new_zeros(labels["input_ids"].shape)
+            shifted_input_ids[..., 1:] = labels["input_ids"][..., :-1].clone()
+            shifted_input_ids[..., 0] = decoder_start_token_id
+            shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
+            return self.model(**inputs, decoder_input_ids=shifted_input_ids, labels=labels["input_ids"])
+        else:
+            return self.model(**inputs, labels=labels["input_ids"])
 
     def _model_generate(
         self,

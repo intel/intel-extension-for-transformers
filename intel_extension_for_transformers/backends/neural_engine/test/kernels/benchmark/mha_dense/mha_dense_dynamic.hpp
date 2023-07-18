@@ -50,8 +50,11 @@ class mha_dense_dynamic_bench : public mha_dense_bench {
     return FLOPs;
   }
   std::vector<int> get_refresh_data_idx() const override {
-    return std::vector<int>{io::SRC_Q,   io::SRC_K,   io::MASK,    io::SRC_V,    io::DST,
-                            io::Q_SCALE, io::K_SCALE, io::V_SCALE, io::DST_SCALE};
+    return std::vector<int>{io::SRC_Q, io::SRC_K, io::MASK, io::SRC_V, io::DST,
+                            // TODO(Yi): seems that refreshing QKV scale needs to be very careful as bad values of these
+                            // scale will affect performance dramatically
+                            /*io::Q_SCALE, io::K_SCALE, io::V_SCALE,*/
+                            io::DST_SCALE};
   }
   // Just like that in gtest file
   void get_true_data() override;

@@ -25,6 +25,14 @@
 
 #include "activation_dag.hpp"
 
+#ifdef _WIN32
+#include <malloc.h>
+#define aligned_alloc(alignment, size) _aligned_malloc(size, alignment)
+#define aligned_free(ptr) _aligned_free(ptr)
+#else
+#define aligned_free free
+#endif
+
 namespace executor {
 using std::map;
 using std::pair;
@@ -58,10 +66,10 @@ class StaticCompressedBuffer {
     }
   }
   ~StaticCompressedBuffer() {
-    if (activation_buffer_ != nullptr) free(activation_buffer_);
+    if (activation_buffer_ != nullptr) aligned_free(activation_buffer_);
     if (debug_mode_) {
       for (auto&& i : memory_map_) {
-        if (i.second != nullptr) free(i.second);
+        if (i.second != nullptr) aligned_free(i.second);
       }
     }
   }

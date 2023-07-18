@@ -1,3 +1,4 @@
+serviceAccountName: argo
 metadata:
   name: compression-aware
 proxy: nil

@@ -15,13 +15,14 @@ docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${h
 # Run the Demo
 
 ## Get the LLM model
-You have the option to download either the official llama-7b or gpt-j-6b model for chatbot backend. Additionally, you can contact us via email(inc.maintainers@intel.com) to acquire the optimized models.
+You have the option to download either the official llama-7b, mpt-7b or gpt-j-6b model for chatbot backend. Additionally, you can contact us via email(inc.maintainers@intel.com) to acquire the optimized models.
 
 ```
 mkdir models
 cd models
 git clone https://huggingface.co/decapoda-research/llama-7b-hf
 git clone https://huggingface.co/EleutherAI/gpt-j-6b
+git clone https://huggingface.co/mosaicml/mpt-7b
 ```
 
 

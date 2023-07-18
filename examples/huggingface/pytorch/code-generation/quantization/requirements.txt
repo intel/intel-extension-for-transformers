@@ -1,0 +1,12 @@
+accelerate
+einops
+datasets >= 2.0
+protobuf
+sentencepiece != 0.1.92
+torch >= 1.10.0
+transformers
+intel_extension_for_pytorch
+neural-compressor
+git+https://github.com/huggingface/optimum.git
+git+https://github.com/huggingface/optimum-intel.git@1f57059e9bd65380f93c8951f16da58d56ad0859
+# please source install https://github.com/bigcode-project/bigcode-evaluation-harness

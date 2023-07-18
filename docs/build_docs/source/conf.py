@@ -6,9 +6,11 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../intel_extension_for_transformers/'))
-import version as ver
 
-version= ver.__version__
+from setuptools_scm import get_version
+
+# See https://pypi.org/project/setuptools-scm/#programmatic-usage
+version = get_version(root='../..', relative_to=__file__)
 release = version
 
 repo_url = "https://github.com/intel/intel-extension-for-transformers/tree/v{}".format(version)

@@ -21,6 +21,16 @@ import importlib
 import os
 from neural_compressor.utils.utility import LazyImport
 
+
+CONFIG_NAME = "best_configure.yaml"
+ENGINE_MODEL_NAME = "model.bin"
+ENGINE_MODEL_CONFIG = "conf.yaml"
+ENCODER_NAME = "encoder_model.bin"
+DECODER_NAME = "decoder_model.bin"
+DECODER_WITH_PAST_NAME = "decoder_with_past_model.bin"
+WEIGHTS_NAME = "pytorch_model.bin"
+
+
 def distributed_init(backend="gloo", world_size=1, rank=-1, init_method=None,
                      master_addr='127.0.0.1', master_port='12345'):
     """Init the distibute environment."""

@@ -12,11 +12,27 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #include "mha_dense_static.hpp"
+
+#include <algorithm>
 #include <utility>
+
+#include "include/engine.hpp"
+#include "include/engine_factory.hpp"
 #include "src/cpu/kernels/mha_dense_ref.hpp"
 
+using jd::engine_factory;
+using jd::engine_t;
+using jd::exec_context_t;
+using jd::kernel_desc_t;
+using jd::kernel_t;
+using jd::memory_storage_t;
+using jd::mha_dense_ref_k_t;
+using jd::mha_dense_ref_kd_t;
+using jd::stream_t;
+
 namespace bench {
-std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_desc, float min_value, float max_value) {
+namespace {
+std::pair<void*, void*> make_tensor_obj(const jd::tensor_desc& ts_desc, float min_value, float max_value) {
   int64_t elem_num = ts_desc.size();
   if (elem_num == 0) return {nullptr, nullptr};
   int bytes_size = elem_num * jd::type_size[ts_desc.dtype()];
@@ -48,13 +64,22 @@ std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_de
   memcpy(data_ptr_copy, data_ptr, bytes_size);
   return {data_ptr, data_ptr_copy};
 }
-std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_desc, float value) {
+std::pair<void*, void*> make_tensor_obj(const jd::tensor_desc& ts_desc, float value) {
   return make_tensor_obj(ts_desc, value, value);
 }
-std::pair<const void*, const void*> make_tensor_obj(const jd::tensor_desc& ts_desc) {
+std::pair<void*, void*> make_tensor_obj(const jd::tensor_desc& ts_desc) {
   return ts_desc.dtype() == jd::data_type::bf16 ? make_tensor_obj(ts_desc, -1.f, 1.f)
                                                 : make_tensor_obj(ts_desc, -10.f, 10.f);
 }
+static engine_factory factory;
+static const engine_t* cpu_engine = factory.create(jd::engine_kind::cpu, jd::runtime_kind::undef);
+auto create_cpu_memory_storage(void* ptr) {
+  memory_storage_t* mem;
+  cpu_engine->create_memory_storage(&mem);
+  if (ptr) mem->set_handle(ptr);
+  return mem;
+}
+}  // namespace
 
 double mha_dense_static_bench::calc_flop() const {
   double flops = 0;
@@ -104,41 +129,37 @@ bench_res_t mha_dense_static_bench::set_config(int argc, char** argv) {
   if (ft_kv == jd::format_type::undef) return {bench_status::wrong_input};
   return {bench_status::success};
 }
+
 void mha_dense_static_bench::get_true_data() {
-  const auto& q = args.second;
-  std::shared_ptr<const jd::kernel_desc_t> mha_dense_ref_desc;
-  jd::kernel_desc_t::create<jd::mha_dense_ref_kd_t>(mha_dense_ref_desc, q.op_desc);
-  std::shared_ptr<const jd::kernel_t> mha_dense_ref_kernel;
-  jd::kernel_t::create<jd::mha_dense_ref_k_t, jd::mha_dense_ref_kd_t>(mha_dense_ref_kernel, mha_dense_ref_desc);
-  const auto workspace_q = aligned_allocator_t<char>::allocate(mha_dense_ref_kernel->get_workspace_size());
-  std::vector<const void*> data_q(q.rt_data);
-  data_q[io::WORKSPACE] = workspace_q;
-  mha_dense_ref_kernel->execute(data_q);
-  aligned_allocator_t<char>::deallocate(workspace_q);
+  std::shared_ptr<const kernel_desc_t> mha_dense_ref_desc;
+  kernel_desc_t::create<mha_dense_ref_kd_t>(mha_dense_ref_desc, bench_data.op_desc);
+  std::shared_ptr<const kernel_t> mha_dense_ref_kernel;
+  kernel_t::create<mha_dense_ref_k_t, mha_dense_ref_kd_t>(mha_dense_ref_kernel, mha_dense_ref_desc);
+  const auto ref_workspace_size = mha_dense_ref_kernel->get_workspace_size();
+  const auto tmp_ref =
+      std::shared_ptr<char>(aligned_allocator_t<char>::allocate(std::max(static_cast<size_t>(64), ref_workspace_size)),
+                            [](char* ptr) { aligned_allocator_t<char>::deallocate(ptr); });
+  std::unique_ptr<memory_storage_t> tmp_ref_mem(create_cpu_memory_storage(tmp_ref.get()));
+  bench_data.ctx_ref.set_workspace(tmp_ref_mem.get());
+  mha_dense_ref_kernel->execute(bench_data.ctx_ref);
 }
+
 bool mha_dense_static_bench::check_result() {
-  const auto& p = args.first;
-  const auto& q = args.second;
-  std::shared_ptr<const jd::kernel_desc_t> mha_dense_ref_desc;
-  jd::kernel_desc_t::create<jd::mha_dense_ref_kd_t>(mha_dense_ref_desc, q.op_desc);
-  std::shared_ptr<const jd::kernel_t> mha_dense_ref_kernel;
-  jd::kernel_t::create<jd::mha_dense_ref_k_t, jd::mha_dense_ref_kd_t>(mha_dense_ref_kernel, mha_dense_ref_desc);
-  mha_dense_ref_kernel->execute(q.rt_data);
-  auto buf1 = p.rt_data[io::DST];
-  auto size1 = p.op_desc.tensor_descs()[io::DST].size();
-  auto buf2 = q.rt_data[io::DST];
-  auto size2 = q.op_desc.tensor_descs()[io::DST].size();
-  // Should compare buffer with different addresses
-  if (buf1 == buf2) return false;
-  switch (p.op_desc.tensor_descs()[io::DST].dtype()) {
+  get_true_data();
+  void *buf1, *buf2;
+  bench_data.ctx_kern.output(io_dst::DST)->get_handle(&buf1);
+  bench_data.ctx_ref.output(io_dst::DST)->get_handle(&buf2);
+  auto dst_size = bench_data.op_desc.tensor_descs()[io::DST].size();
+  if (buf1 == buf2) return false;  // Should compare buffer with different addresses
+  switch (bench_data.op_desc.tensor_descs()[io::DST].dtype()) {
     case jd::data_type::fp32:
-      return compare_data<float>(buf1, size1, buf2, size2, 5e-3);
+      return compare_data<float>(buf1, dst_size, buf2, dst_size, 5e-3);
     case jd::data_type::bf16:
-      return compare_data<jd::bfloat16_t>(buf1, size1, buf2, size2, 5e-2);
+      return compare_data<jd::bfloat16_t>(buf1, dst_size, buf2, dst_size, 5e-2);
     case jd::data_type::u8:
-      return compare_data<uint8_t>(buf1, size1, buf2, size2, 8e-3);
+      return compare_data<uint8_t>(buf1, dst_size, buf2, dst_size, 8e-3);
     case jd::data_type::s8:
-      return compare_data<int8_t>(buf1, size1, buf2, size2, 8e-3);
+      return compare_data<int8_t>(buf1, dst_size, buf2, dst_size, 8e-3);
     default:
       SPARSE_LOG(ERROR) << "Unexpected dst type";
   }
@@ -166,11 +187,15 @@ void mha_dense_static_bench::gen_case() {
                                 jd::plain_format(badd_dim)};
   }
   ts_descs[io::ATT_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_src == jd::data_type::s8) ts_descs[io::Q_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_src == jd::data_type::s8) ts_descs[io::K_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_src == jd::data_type::s8) ts_descs[io::V_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_dst != jd::data_type::bf16) ts_descs[io::SRC_DST_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
-  if (dt_dst != jd::data_type::bf16) ts_descs[io::SRC_DST_ZP] = {{1}, jd::data_type::s32, jd::format_type::a};
+  if (dt_src == jd::data_type::s8) {
+    ts_descs[io::Q_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+    ts_descs[io::K_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+    ts_descs[io::V_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+  }
+  if (dt_src != jd::data_type::bf16) {  // TODO(Yi): support dst sc/zp for bf16 MHA
+    ts_descs[io::SRC_DST_SCALE] = {{1}, jd::data_type::fp32, jd::format_type::a};
+    ts_descs[io::SRC_DST_ZP] = {{1}, jd::data_type::s32, jd::format_type::a};
+  }
   // Step 2: Construct Tensor ptr
   auto Qs = make_tensor_obj(ts_descs[io::SRC_Q]);
   auto Ks = make_tensor_obj(ts_descs[io::SRC_K]);
@@ -184,35 +209,72 @@ void mha_dense_static_bench::gen_case() {
   auto v_scales = make_tensor_obj(ts_descs[io::V_SCALE], 1.2f);
   auto dst_scales = make_tensor_obj(ts_descs[io::SRC_DST_SCALE], 1.2f);
   auto dst_zps = make_tensor_obj(ts_descs[io::SRC_DST_ZP], 10.f);
-  std::vector<const void*> data_p(io::SIZE, nullptr);
-  data_p[io::SRC_Q] = Qs.first;
-  data_p[io::SRC_K] = Ks.first;
-  data_p[io::SRC_V] = Vs.first;
-  data_p[io::MASK] = masks.first;
-  data_p[io::DST] = dsts.first;
-  data_p[io::BINARY_ADD] = badds.first;
-  data_p[io::ATT_SCALE] = att_scales.first;
-  data_p[io::Q_SCALE] = q_scales.first;
-  data_p[io::K_SCALE] = k_scales.first;
-  data_p[io::V_SCALE] = v_scales.first;
-  data_p[io::SRC_DST_SCALE] = dst_scales.first;
-  data_p[io::SRC_DST_ZP] = dst_zps.first;
-  std::vector<const void*> data_q(io::SIZE, nullptr);
-  data_q[io::SRC_Q] = Qs.second;
-  data_q[io::SRC_K] = Ks.second;
-  data_q[io::SRC_V] = Vs.second;
-  data_q[io::MASK] = masks.second;
-  data_q[io::DST] = dsts.second;
-  data_q[io::BINARY_ADD] = badds.second;
-  data_q[io::ATT_SCALE] = att_scales.second;
-  data_q[io::Q_SCALE] = q_scales.second;
-  data_q[io::K_SCALE] = k_scales.second;
-  data_q[io::V_SCALE] = v_scales.second;
-  data_q[io::SRC_DST_SCALE] = dst_scales.second;
-  data_q[io::SRC_DST_ZP] = dst_zps.second;
+
+  stream_t *stream = nullptr, *ref_stream = nullptr;
+  cpu_engine->create_stream(&stream);
+  cpu_engine->create_stream(&ref_stream);
+  exec_context_t ctx_kern(stream), ctx_ref(ref_stream);
+
+  std::vector<memory_storage_t*> mem_src(io_src::SIZE), mem_dst(io_dst::SIZE);
+  std::vector<dim_t> dynamic_shapes(io_shape::SIZE);
+  mem_src[io_src::SRC_Q] = create_cpu_memory_storage(Qs.first);
+  mem_src[io_src::SRC_K] = create_cpu_memory_storage(Ks.first);
+  mem_src[io_src::SRC_V] = create_cpu_memory_storage(Vs.first);
+  mem_src[io_src::MASK] = create_cpu_memory_storage(masks.first);
+  mem_src[io_src::BINARY_ADD] = create_cpu_memory_storage(badds.first);
+  mem_src[io_src::ATT_SCALE] = create_cpu_memory_storage(att_scales.first);
+  mem_src[io_src::Q_SCALE] = create_cpu_memory_storage(q_scales.first);
+  mem_src[io_src::Q_ZP] = create_cpu_memory_storage(nullptr);
+  mem_src[io_src::K_SCALE] = create_cpu_memory_storage(k_scales.first);
+  mem_src[io_src::K_ZP] = create_cpu_memory_storage(nullptr);
+  mem_src[io_src::V_SCALE] = create_cpu_memory_storage(v_scales.first);
+  mem_src[io_src::V_ZP] = create_cpu_memory_storage(nullptr);
+  mem_src[io_src::SRC_DST_SCALE] = create_cpu_memory_storage(dst_scales.first);
+  mem_src[io_src::SRC_DST_ZP] = create_cpu_memory_storage(dst_zps.first);
+  mem_dst[io_dst::DST] = create_cpu_memory_storage(dsts.first);
+  mem_dst[io_dst::DST_SCALE] = create_cpu_memory_storage(nullptr);
+  mem_dst[io_dst::DST_ZP] = create_cpu_memory_storage(nullptr);
+  dynamic_shapes[io_shape::BATCH_SIZE] = 0;
+  dynamic_shapes[io_shape::HEAD_NUM] = 0;
+  dynamic_shapes[io_shape::HEAD_SIZE] = 0;
+  dynamic_shapes[io_shape::M] = 0;
+  dynamic_shapes[io_shape::N] = 0;
+  ctx_kern.set_outputs(mem_dst);
+  ctx_kern.set_inputs(mem_src);
+  ctx_kern.set_dynamic_shape(dynamic_shapes);
+
+  std::vector<memory_storage_t*> ref_mem_src(io_src::SIZE), ref_mem_dst(io_dst::SIZE);
+  std::vector<dim_t> ref_dynamic_shapes(io_shape::SIZE);
+  ref_mem_src[io_src::SRC_Q] = create_cpu_memory_storage(Qs.second);
+  ref_mem_src[io_src::SRC_K] = create_cpu_memory_storage(Ks.second);
+  ref_mem_src[io_src::SRC_V] = create_cpu_memory_storage(Vs.second);
+  ref_mem_src[io_src::MASK] = create_cpu_memory_storage(masks.second);
+  ref_mem_src[io_src::BINARY_ADD] = create_cpu_memory_storage(badds.second);
+  ref_mem_src[io_src::ATT_SCALE] = create_cpu_memory_storage(att_scales.second);
+  ref_mem_src[io_src::Q_SCALE] = create_cpu_memory_storage(q_scales.second);
+  ref_mem_src[io_src::Q_ZP] = create_cpu_memory_storage(nullptr);
+  ref_mem_src[io_src::K_SCALE] = create_cpu_memory_storage(k_scales.second);
+  ref_mem_src[io_src::K_ZP] = create_cpu_memory_storage(nullptr);
+  ref_mem_src[io_src::V_SCALE] = create_cpu_memory_storage(v_scales.second);
+  ref_mem_src[io_src::V_ZP] = create_cpu_memory_storage(nullptr);
+  ref_mem_src[io_src::SRC_DST_SCALE] = create_cpu_memory_storage(dst_scales.second);
+  ref_mem_src[io_src::SRC_DST_ZP] = create_cpu_memory_storage(dst_zps.second);
+  ref_mem_dst[io_dst::DST] = create_cpu_memory_storage(dsts.second);
+  ref_mem_dst[io_dst::DST_SCALE] = create_cpu_memory_storage(nullptr);
+  ref_mem_dst[io_dst::DST_ZP] = create_cpu_memory_storage(nullptr);
+  ref_dynamic_shapes[io_shape::BATCH_SIZE] = 0;
+  ref_dynamic_shapes[io_shape::HEAD_NUM] = 0;
+  ref_dynamic_shapes[io_shape::HEAD_SIZE] = 0;
+  ref_dynamic_shapes[io_shape::M] = 0;
+  ref_dynamic_shapes[io_shape::N] = 0;
+  ctx_ref.set_outputs(ref_mem_dst);
+  ctx_ref.set_inputs(ref_mem_src);
+  ctx_ref.set_dynamic_shape(ref_dynamic_shapes);
+
   jd::operator_desc op_desc(jd::kernel_kind::mha_dense, jd::kernel_prop::forward_inference, jd::engine_kind::cpu,
                             ts_descs, op_attrs);
+
   // Step 3: op_args_t testcase pair
-  args = {{op_desc, data_p}, {op_desc, data_q}};
+  bench_data = {op_desc, ctx_kern, ctx_ref};
 }
 }  // namespace bench

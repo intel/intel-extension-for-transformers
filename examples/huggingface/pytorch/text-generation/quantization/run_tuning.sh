@@ -91,6 +91,12 @@ function run_tuning {
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi
+    elif [ "${topology}" = "bloom_1b7" ]; then
+        script="run_generation.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/bloom-1b7"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
     elif [ "${topology}" = "bloomz-3b" ]; then
         script="run_generation.py"
         model_name_or_path="bigscience/bloomz-3b"
@@ -117,7 +123,13 @@ function run_tuning {
 	    extra_cmd=$extra_cmd" --int8_bf16_mixed"
 	    alpha=1.0
         fi
-
+    elif [ "${topology}" = "mpt_7b_chat" ]; then
+        script="run_generation.py"
+        model_name_or_path="mosaicml/mpt-7b-chat"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+            alpha=0.95
+        fi
     fi
 
     if [ ${script} = "run_generation.py" ];then

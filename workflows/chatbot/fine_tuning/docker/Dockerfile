@@ -60,15 +60,14 @@ RUN conda init bash && \
     echo "conda activate chatbot-finetuning" >> ~/.bashrc && \
     source ~/.bashrc && \
     python -m pip install oneccl_bind_pt==1.13 -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    pip install datasets torch accelerate SentencePiece peft evaluate nltk rouge_score protobuf==3.20.1 tokenizers==0.13.2
+    pip install datasets torch accelerate SentencePiece git+https://github.com/huggingface/peft.git evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops
 
 # Build ITREX
 RUN cd /itrex && pip install -v .
 
 # Copy the model files to the Docker image
 # Please update the local model path here with the actual path
-COPY llama-7b-hf /llama_7b/ 
-#COPY flan-t5-xl /flan/
+COPY flan-t5-xl /flan/
 
 COPY alpaca_data.json /dataset/
 WORKDIR /itrex/workflows/chatbot

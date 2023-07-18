@@ -14,6 +14,19 @@ $it_per_core=300
 48 static 4 1 16 256 bf16 s8 -1 2 32 acbd
 48 static 4 1 16 256 bf16 s8 -1 2 64
 48 static 4 1 16 256 bf16 s8 -1 2 64 acbd
+$it_per_core=100
+56 static 1 1 16 256 u8 s8 -1 2 1500
+56 static 1 1 16 256 u8 s8 -1 2 1500 acbd
+56 static 1 1 16 256 u8 s8 -1 2 1600
+56 static 1 1 16 256 u8 s8 -1 2 1600 acbd
+56 static 1 1 16 256 u8 s8 -1 2 1700
+56 static 1 1 16 256 u8 s8 -1 2 1700 acbd
+56 static 1 1 16 256 u8 s8 -1 2 1800
+56 static 1 1 16 256 u8 s8 -1 2 1800 acbd
+56 static 1 1 16 256 u8 s8 -1 2 1900
+56 static 1 1 16 256 u8 s8 -1 2 1900 acbd
+56 static 1 1 16 256 u8 s8 -1 2 2000
+56 static 1 1 16 256 u8 s8 -1 2 2000 acbd
 
 $it_per_core=100
 4 static 4 384 16 64 u8 s8

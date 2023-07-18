@@ -1,4 +1,4 @@
-transformers<=4.29.1
+transformers
 datasets
 torchprofile
 torch

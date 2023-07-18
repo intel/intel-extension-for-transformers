@@ -1,0 +1,9 @@
+datasets
+torch
+git+https://github.com/huggingface/transformers.git
+sentencepiece
+peft
+evaluate
+nltk
+rouge_score
+einops

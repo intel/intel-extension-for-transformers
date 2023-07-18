@@ -73,7 +73,7 @@ class MultiHeadAttentionOperator : public Operator {
   jd::mha_dense mha_dense_;
   jd::transpose_mha mha_transpose_;
   std::vector<const void*> rt_data_;
-  void* workspace_;
+  void* workspace_ = nullptr;
 };
 
 }  // namespace executor

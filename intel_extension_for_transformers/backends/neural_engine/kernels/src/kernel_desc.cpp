@@ -15,6 +15,8 @@
 #include "kernel_desc.hpp"
 
 namespace jd {
-kernel_desc_t::kernel_desc_t(const jd::kernel_kind& ker_kind) : ker_kind_(ker_kind) {}
+kernel_desc_t::kernel_desc_t(const jd::kernel_kind& ker_kind) : ker_kind_(ker_kind) {
+  if (!info_.is_initialized()) info_.init(ker_kind_, shape());
+}
 
 }  // namespace jd

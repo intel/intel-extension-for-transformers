@@ -1,0 +1,11 @@
+accelerate
+sentencepiece != 0.1.92
+protobuf
+datasets
+transformers
+onnx
+rouge-score
+nltk
+neural-compressor
+optimum-intel
+git+https://github.com/intel/intel-extension-for-pytorch.git

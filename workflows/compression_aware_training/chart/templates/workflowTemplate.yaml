@@ -3,6 +3,7 @@ kind: WorkflowTemplate
 metadata:
   name: {{ .Values.metadata.name }}
 spec:
+  serviceAccountName: {{ .Values.serviceAccountName }}
   templates:
     - name: main
       dag:

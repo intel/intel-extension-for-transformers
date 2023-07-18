@@ -27,9 +27,12 @@
 #include "kernels/dynamic_quant_matmul_types.hpp"
 #include "src/cpu/jit_domain/jit_amx_s8s8_dynamic_quant_matmul.hpp"
 #include "src/cpu/jit_domain/jit_amx_s8s8_dynamic_dequant_matmul.hpp"
-#include "src/cpu/jit_domain/jit_dynamic_quant.hpp"
+#include "src/cpu/jit_domain/jit_dynamic_quant_matmul_reduce_scale_quant.hpp"
 
 namespace jd {
+
+enum split_n_strategy { based_L2_cache, based_M };
+
 class dynamic_quant_matmul_k_t;
 class dynamic_quant_matmul_kd_t : public kernel_desc_t {
  public:
@@ -45,7 +48,9 @@ class dynamic_quant_matmul_kd_t : public kernel_desc_t {
   const operator_desc& get_operator_desc() const override { return op_desc_; }
   inline std::vector<dim_t> shape() const override { return prob_size_; }
   const std::vector<ssd::dynamic_quant_matmul_param_t>& params() const { return params_; }
-  const dynamic_quant_param_t& get_quant_param() const { return quant_param_; }
+  const std::vector<dynamic_quant_matmul_reduce_scale_quant_param_t>& reduce_scale_quant_params() const {
+    return reduce_scale_quant_params_;
+  }
   bool check_split_execute() const { return split_execute_; }
   bool split_execute_init();
   const std::pair<int, int>& get_assign_cores() const { return assign_cores_; }
@@ -53,10 +58,12 @@ class dynamic_quant_matmul_kd_t : public kernel_desc_t {
  private:
   operator_desc op_desc_;
   std::vector<ssd::dynamic_quant_matmul_param_t> params_;
-  dynamic_quant_param_t quant_param_;
+  std::vector<dynamic_quant_matmul_reduce_scale_quant_param_t> reduce_scale_quant_params_;
   std::vector<dim_t> prob_size_;
   static constexpr int L2_size_ = 1 << 21;  // 2 Mb L2 cache.
+  int core_num;
   std::pair<int, int> assign_cores_;
+  split_n_strategy split_strategy_;
   bool split_execute_ = false;
 };
 
@@ -67,7 +74,7 @@ class dynamic_quant_matmul_k_t : public kernel_t {
   virtual ~dynamic_quant_matmul_k_t() {
     for (auto&& ker : jit_kers_) safe_delete(ker);
     for (auto&& ker : jit_s8s8_dynamic_dequant_kers_) safe_delete(ker);
-    for (auto&& ker : jit_quant_kers_) safe_delete(ker);
+    for (auto&& ker : jit_reduce_scale_quant_kers_) safe_delete(ker);
   }
   // Delete move constructor and move operator
   dynamic_quant_matmul_k_t(dynamic_quant_matmul_k_t&& other) = delete;
@@ -96,13 +103,15 @@ class dynamic_quant_matmul_k_t : public kernel_t {
  private:
   std::vector<jit_amx_s8s8_dynamic_quant_matmul_t*> jit_kers_;
   std::vector<jit_amx_s8s8_dynamic_dequant_matmul_t*> jit_s8s8_dynamic_dequant_kers_;
-  std::vector<jit_dynamic_quant_t*> jit_quant_kers_;
+  std::vector<jit_dynamic_quant_matmul_reduce_scale_quant_t*> jit_reduce_scale_quant_kers_;
   std::vector<int> m_offset_list_;
   std::vector<int> n_offset_list_;
-  std::vector<int> quant_channel_offset_list_;
+  std::vector<int> scale_offset_list_;
   int total_tmp_buf_size_;
   int single_tmp_buf_size_;
   int bf16_tmp_buf_offset_;
+  int activation_cores_;
+  int weight_cores_;
   bool has_bias_;
   bool split_execute_ = false;
   bool quant_stage_ = true;

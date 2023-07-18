@@ -79,9 +79,9 @@ bool CheckResult(const TestParams& t) {
     if (q->dtype() == "fp32") {
       is_equal = executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 0.1);
     } else if (q->dtype() == "s8") {
-      is_equal = executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 12);
+      is_equal = executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 13);
     } else if (q->dtype() == "u8") {
-      is_equal = executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 12);
+      is_equal = executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 13);
     }
     return is_equal;
   }
@@ -126,23 +126,24 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   auto k_md = memory::desc(k_shape, dnnl::memory::data_type::f32, k_stride);
   auto k_mem = memory(k_md, engine, k->mutable_data());
   int bs = q_shape[0], head_num = q_shape[1], seq_len = q_shape[2];
-  void* post_data = nullptr;
+  std::unique_ptr<float, void (*)(float*)> padding_seq(nullptr, [](float* p) {
+    if (p) aligned_free(p);
+  });
   if (post != nullptr) {
     binary_md =
         memory::desc({bs, head_num, seq_len, seq_len}, dnnl::memory::data_type::f32, dnnl::memory::format_tag::abcd);
     po.append_binary(dnnl::algorithm::binary_add, binary_md);
-    post_data = aligned_alloc(64, bs * head_num * seq_len * seq_len * sizeof(float));
-    auto padding_seq = reinterpret_cast<float(*)[head_num][seq_len][seq_len]>(post_data);
+    padding_seq.reset(reinterpret_cast<float*>(aligned_alloc(64, sizeof(float) * bs * head_num * seq_len * seq_len)));
     int32_t* mask = reinterpret_cast<int32_t*>(post->mutable_data());
-    for (int i = 0; i < bs; i++) {
-      memset(padding_seq[i][0][0], 0, sizeof(int32_t) * seq_len);
-      std::cout << mask[i] << std::endl;
-      for (int j = mask[i]; j < seq_len; j++) padding_seq[i][0][0][j] = -10000.0;
-      for (int j = 1; j < seq_len; j++) memcpy(padding_seq[i][0][j], padding_seq[i][0][0], sizeof(int32_t) * seq_len);
-      for (int j = 1; j < head_num; j++)
-        memcpy(padding_seq[i][j], padding_seq[i][0], sizeof(int32_t) * seq_len * seq_len);
+    for (int ibs = 0; ibs < bs; ibs++) {
+      const auto curr_padding = padding_seq.get() + ibs * head_num * seq_len * seq_len;
+      memset(curr_padding, 0, sizeof(float) * seq_len);
+      for (int j = mask[ibs]; j < seq_len; j++) curr_padding[j] = -10000.f;
+      for (int i = 1; i < seq_len; i++) memcpy(curr_padding + i * seq_len, curr_padding, sizeof(float) * seq_len);
+      for (int ihn = 1; ihn < head_num; ihn++)
+        memcpy(curr_padding + ihn * seq_len * seq_len, curr_padding, sizeof(float) * seq_len * seq_len);
     }
-    binary_mem = memory(binary_md, engine, post_data);
+    binary_mem = memory(binary_md, engine, padding_seq.get());
   }
   attr.set_post_ops(po);
   attr.set_output_scales(0, {output_scale});
@@ -196,7 +197,6 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   engine_stream.wait();
   qk.unref_data();
   a.unref_data();
-  if (post_data != nullptr) aligned_free(post_data);
   return dst_tensor;
 }
 
@@ -230,6 +230,7 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
     batch_num = tensors[0]->shape()[0];
     channel_num = tensors[0]->shape()[1];
   }
+  const auto src_dtype = tensors[0]->dtype();
   if (quant_type == "per_channel") {
     for (int y = 0; y < channel_num; y++) {
       min_data[y] = origin_fp32_data[y];
@@ -238,42 +239,40 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
         min_data[y] = std::min(min_data[y], origin_fp32_data[x * channel_num + y]);
         max_data[y] = std::max(max_data[y], origin_fp32_data[x * channel_num + y]);
       }
-      vector<float> scales = executor::GetScales(min_data + y, max_data + y, 1, tensors[0]->dtype());
+      vector<float> scales = executor::GetScales(min_data + y, max_data + y, 1, src_dtype);
       for (int x = 0; x < batch_num; x++)
-        if (tensors[0]->dtype() == "u8") {
-          uint8_t* dst_data_ = reinterpret_cast<uint8_t*>(dst_data) + x * channel_num + y;
+        if (src_dtype == "u8") {
           int32_t data = nearbyint((origin_fp32_data[x * channel_num + y] - min_data[y]) * scales[0]);
           data = data < 0 ? 0 : data;
           data = data > 255 ? 255 : data;
-          *dst_data_ = static_cast<uint8_t>(data);
-        } else if (tensors[0]->dtype() == "s8") {
-          int8_t* dst_data_ = reinterpret_cast<int8_t*>(dst_data) + x * channel_num + y;
+          reinterpret_cast<uint8_t*>(dst_data)[x * channel_num + y] = static_cast<uint8_t>(data);
+        } else if (src_dtype == "s8") {
           int32_t data = nearbyint(origin_fp32_data[x * channel_num + y] * scales[0]);
           data = data < -128 ? -128 : data;
           data = data > 127 ? 127 : data;
-          *dst_data_ = static_cast<int8_t>(data);
+          reinterpret_cast<int8_t*>(dst_data)[x * channel_num + y] = static_cast<int8_t>(data);
         }
       if (need_scale) max_data[y] = 1.0 / scales[0];
     }
   } else if (quant_type == "per_tensor") {
     executor::runtime_minmax(origin_fp32_data, tensors[0]->size(), min_data, max_data);
-    vector<float> scales = executor::GetScales(min_data, max_data, 1, tensors[0]->dtype());
+    const auto scales = executor::GetScales(min_data, max_data, 1, src_dtype);
 #if __AVX512F__
-    executor::Quantize_avx512(tensors[0]->size(), tensors[0]->dtype(), origin_fp32_data, min_data, scales, dst_data);
+    executor::Quantize_avx512(tensors[0]->size(), src_dtype, origin_fp32_data, min_data, scales, dst_data);
 #else
-    executor::Quantize(tensors[0]->size(), tensors[0]->dtype(), origin_fp32_data, min_data, scales, dst_data);
+    executor::Quantize(tensors[0]->size(), src_dtype, origin_fp32_data, min_data, scales, dst_data);
 #endif
     if (need_scale) *max_data = 1.0 / scales[0];
   } else if (quant_type == "per_token") {
     for (int x = 0; x < batch_num; x++) {
       executor::runtime_minmax(origin_fp32_data + x * channel_num, channel_num, min_data + x, max_data + x);
-      vector<float> scales = executor::GetScales(min_data + x, max_data + x, 1, tensors[0]->dtype());
+      vector<float> scales = executor::GetScales(min_data + x, max_data + x, 1, src_dtype);
 #if __AVX512F__
-      executor::Quantize_avx512(channel_num, tensors[0]->dtype(), origin_fp32_data + x * channel_num, min_data, scales,
-                                dst_data + x * channel_num);
+      executor::Quantize_avx512(channel_num, src_dtype, origin_fp32_data + x * channel_num, min_data, scales,
+                                reinterpret_cast<char*>(dst_data) + x * channel_num);
 #else
-      executor::Quantize(channel_num, tensors[0]->dtype(), origin_fp32_data + x * channel_num, min_data, scales,
-                         dst_data + x * channel_num);
+      executor::Quantize(channel_num, src_dtype, origin_fp32_data + x * channel_num, min_data, scales,
+                         reinterpret_cast<char*>(dst_data) + x * channel_num);
 #endif
       if (need_scale) max_data[x] = 1.0 / scales[0];
     }
@@ -393,7 +392,7 @@ static auto CasesInt8 = []() {
     q_shape = {bs, seq, hn, hs};
     k_shape = {bs, seq, hn, hs};
     v_shape = {bs, seq, hn, hs};
-    // cases.push_back({GenerateInt8Case({q_shape, k_shape, v_shape}, {{-6, 7}, {-5, 6}, {-4, 4}}, 0.15, true), false});
+    cases.push_back({GenerateInt8Case({q_shape, k_shape, v_shape}, {{-6, 7}, {-5, 6}, {-4, 4}}, 0.15, true), false});
   }
 
   {

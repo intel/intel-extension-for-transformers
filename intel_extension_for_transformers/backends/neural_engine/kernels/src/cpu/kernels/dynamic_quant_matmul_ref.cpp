@@ -68,12 +68,13 @@ void dequant_add_bias(float* mat, const float* scale_a, const float* scale_w, in
                       const float* bias, const std::vector<postop_attr>& postop_list) {
   for (int batch = 0; batch < b; batch++) {
 #pragma omp parallel for
-    for (int i = 0; i < m; i++)
+    for (int i = 0; i < m; i++) {
       for (int j = 0; j < n; j++) {
         mat[batch * m * n + i * n + j] = mat[batch * m * n + i * n + j] * scale_a[batch * m + i] * scale_w[j];
         if (add_bias) mat[batch * m * n + i * n + j] += bias[j];
         mat[batch * m * n + i * n + j] = apply_postop_list(mat[batch * m * n + i * n + j], postop_list);
       }
+    }
   }
 }
 

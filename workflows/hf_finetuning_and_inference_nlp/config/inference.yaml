@@ -16,9 +16,9 @@ args:
   # Add the Inference configurations below
   pipeline: "inference"   
   infer_impl: "itrex"
-  dtype_inf: "fp32"
+  dtype_inf: "bf16"
   use_ipex: true 
-  use_onednn: true
+  use_onednn: true 
   max_seq_len: 64
   smoke_test: false
   max_train_samples: null
@@ -27,8 +27,9 @@ args:
   overwrite_cache: true
   inference_output: inference_predictions_report.yaml
   multi_instance: false
+  save_detailed_performance_metrics: True
 
 training_args:
   do_predict: true
-  per_device_eval_batch_size: 100
+  per_device_eval_batch_size: 512
   output_dir: "./output_dir"

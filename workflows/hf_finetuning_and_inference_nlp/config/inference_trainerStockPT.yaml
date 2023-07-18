@@ -1,0 +1,34 @@
+args:
+  model_name_or_path: "bert-base-uncased" # input the fine-tuned model path
+  tokenizer_name: "bert-base-uncased" # input the fine-tuned model path
+  dataset: "imdb" # local or huggingface datasets name
+
+  # Add local dataset configurations below. Skip for HF datasets.
+  local_dataset:
+    inference_input : '/workspace/dataset/annotation.csv'
+    delimiter: ","
+    features:
+      class_label: "label"
+      data_column: "symptoms"
+      id: "Patient_ID"
+    label_list: ["Malignant", "Normal", "Benign"]
+  
+  # Add the Inference configurations below
+  pipeline: "inference"   
+  infer_impl: "trainer" # Use trainer for default stock PT Huggingface NLP Trainer
+  dtype_inf: "fp32" # bf16 is ineffective for stockPTtrainer: Use infer_impl=itrex & use_ipex=true. 
+  use_ipex: false # No effect / Not valid when using trainer 
+  use_onednn: false # No effect / not valid when using trainer
+  max_seq_len: 64
+  smoke_test: false
+  max_train_samples: null
+  max_test_samples: null
+  preprocessing_num_workers: 8
+  overwrite_cache: true
+  inference_output: inference_predictions_report.yaml
+  multi_instance: false
+
+training_args:
+  do_predict: true
+  per_device_eval_batch_size: 512
+  output_dir: "./output_dir"

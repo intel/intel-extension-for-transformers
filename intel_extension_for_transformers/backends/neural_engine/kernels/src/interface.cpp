@@ -82,7 +82,10 @@ bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_r
 
 size_t kernel_proxy::get_workspace_size() const { return get_sp()->get_workspace_size(); }
 
-void kernel_proxy::execute(const std::vector<const void*>& rt_data) const {
+namespace {
+// Helper function to implement execute with rt_data & ctx at the same time
+template <typename T>
+inline void execute_(const std::shared_ptr<const jd::kernel_t> sp, const T& data) {
   bool status = false;
 #ifdef SPARSE_LIB_USE_VTUNE
   auto vtune_wrapper = vtune_wrapper_t();
@@ -92,15 +95,15 @@ void kernel_proxy::execute(const std::vector<const void*>& rt_data) const {
 #endif
   if (get_verbose()) {
     double start_ms = get_msec();
-    status = get_sp()->execute(rt_data);
+    status = sp->execute(data);
     double duration_ms = get_msec() - start_ms;
     std::string stamp;
     if (get_verbose_timestamp()) stamp = "," + std::to_string(start_ms);
 
-    printf("sparselib_verbose%s,exec,%s,%g\n", stamp.c_str(), get_sp()->kd()->info(), duration_ms);
+    printf("sparselib_verbose%s,exec,%s,%g\n", stamp.c_str(), sp->kd()->info(), duration_ms);
     fflush(stdout);
   } else {
-    status = get_sp()->execute(rt_data);
+    status = sp->execute(data);
   }
 #ifdef SPARSE_LIB_USE_VTUNE
   if (get_vtune()) {
@@ -110,4 +113,8 @@ void kernel_proxy::execute(const std::vector<const void*>& rt_data) const {
   if (!status) SPARSE_LOG(ERROR) << "Execution failed" << std::endl;
   return;
 }
+}  // namespace
+
+void kernel_proxy::execute(const std::vector<const void*>& rt_data) const { execute_(get_sp(), rt_data); }
+void kernel_proxy::execute(const exec_context_t& ctx) const { execute_(get_sp(), ctx); }
 }  // namespace jd

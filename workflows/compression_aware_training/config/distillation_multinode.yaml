@@ -1,0 +1,12 @@
+model_name_or_path: "prajjwal1/bert-mini"
+teacher_model_name_or_path: "bert-base-uncased"
+task_name: "sst2"
+distillation: true
+do_train: true
+do_eval: true
+max_train_samples: 16000
+output_dir: "./output"
+overwrite_output_dir: true
+
+perf_tol: 0.03
+no_cuda: true

@@ -6,6 +6,16 @@ quantization:                                        # optional. tuning constrai
   approach: post_training_static_quant
   calibration:
     sampling_size: [1000]
+  op_wise: {                                         # optional. tuning constraints on op-wise for advance user to reduce tuning space. 
+         'vit.embeddings.patch_embeddings.projection.module': {                       # optional. set default qconfig to fp32 for FX model
+           'activation':  {'dtype': ['fp32']},
+           'weight': {'dtype': ['fp32']}
+         },
+         'vit.embeddings.dropout': {                       # optional. set default qconfig to fp32 for FX model
+           'activation':  {'dtype': ['fp32']},
+           'weight': {'dtype': ['fp32']}
+         },
+       }
 
 tuning:
   accuracy_criterion:

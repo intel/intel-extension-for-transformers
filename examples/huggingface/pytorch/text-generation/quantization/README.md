@@ -1,5 +1,5 @@
 # Step-by-Step
-We provide the inference benchmarking script `run_generation.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B),  [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1), [facebook/opt-1.3b](https://huggingface.co/facebook/opt-1.3b), [facebook/opt-2.7b](https://huggingface.co/facebook/opt-2.7b), [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b) more models are working in progress.
+We provide the inference benchmarking script `run_generation.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B),  [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1), [facebook/opt-1.3b](https://huggingface.co/facebook/opt-1.3b), [facebook/opt-2.7b](https://huggingface.co/facebook/opt-2.7b), [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b), [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat), more models are working in progress.
 
 >**Note**: The default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
 
@@ -29,11 +29,13 @@ We use the local GPTJ defination script `modeling_gptj.py` in `run_generation.py
 ```
 The changes for `llama` series models in `modeling_llama.py`, `dolly_v2_3b` series models in `modeling_gpt_neox.py`， `bloom` series models in `modeling_bloom.py` and `opt` series models in `modeling_opt.py` are similar to the above.
 
+`mosaicml/mpt-7b` has been updated frequently, and has not yet been integrated into `transformers`, so we fixed a commit number `68e1a8e0ebb9b30f3c45c1ef6195980f29063ae2` as a local folder to enable it.
+
 # Run
 
 ## 1. Quantization
-
 ``` bash
+
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --quantize \
@@ -44,6 +46,7 @@ python run_generation.py \
 ```
 ## 2. Performance
 ```bash
+
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --benchmark \
@@ -52,6 +55,7 @@ python run_generation.py \
 ```
 ## 3. Accuracy
 ```bash
+
 python run_generation.py \
    --model EleutherAI/gpt-j-6b \
    --accuracy \

@@ -24,7 +24,6 @@ Output Length: 32
 | Model |  Beam  | FP32 | BF16 | INT8 |
 |---------------------|:------:|:----------------------:|-----------------------|-----------------------------------|
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 4 | 4163.67 (ms) | 1879.61 (ms) | 1612.24 (ms) |
-| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 4 | 4356.79 (ms) | 1941.63 (ms) | 1773.22 (ms) |
 
 > Note: Performance results test on ​​06/09/2023 with Intel(R) Xeon(R) Platinum 8480+.
 Performance varies by use, configuration and other factors. See platform configuration for configuration details. For more complete information about performance and benchmark results, visit www.intel.com/benchmarks
@@ -114,22 +113,22 @@ Performance varies by use, configuration and other factors. See platform configu
 
 
 
-### Last Token Accuracy with Smoothquant
+### Last Word Accuracy with Smoothquant
 
 
 Neural Compressor: 2.1
 
-IPEX (Intel Extension for PyTorch): 2.0
+IPEX (Intel Extension for PyTorch): 2.1
 
 Dataset: lambada-openai
 
 
-| Model |  smoothquant config  | FP32  | BF16 | INT8 (mixed precision) |
+| Model |  Smoothquant Config  | FP32  | BF16 | INT8 (mixed precision) |
 |---------------------|:------:|:----------------------:|-----------------------|-----------------------------------|
 | EleutherAI/gpt-j-6B | alpha 1.0 | 68.31% | 67.86% | 68.21% (w/o BF16) |
-| decapoda-research/llama-7b-hf | alpha 0.8 | 73.61% | 73.26% | 73.57% (w/ FP32) |
-| decapoda-research/llama-13b-hf | alpha 0.7 | 76.27% | 76.01% | 75.90% (w/ FP32) |
-| decapoda-research/llama-30b-hf | alpha 0.7 | 77.57% | 77.53% | 78.40% (w/ FP32) |
+| decapoda-research/llama-7b-hf | alpha 0.8 | 73.61% | 73.26% | 73.57% (w/o BF16) |
+| decapoda-research/llama-13b-hf | alpha 0.7 | 76.27% | 76.01% | 75.90% (w/o BF16) |
+| decapoda-research/llama-30b-hf | alpha 0.7 | 77.57% | 77.53% | 78.40% (w/o BF16) |
 | facebook/opt-125m   | alpha 0.5 | 37.9% | 37.63% | 37.57% (w/o BF16) |
 | facebook/opt-350m   | alpha 0.8 | 45.16% | 45.06% | 45.53% (w/o BF16) |
 | facebook/opt-2.7b   | alpha 0.5 | 63.65% | 63.23% | 64.04% (w/ BF16) |
@@ -144,3 +143,35 @@ Dataset: lambada-openai
 | databricks/dolly-v2-3b   | alpha 0.5 | 62.97% | 60.86% | 62.47% (w/o BF16) |
 
 
+## Purpose of the Language Models Optimization for Intel Architecture 
+
+ 
+- Demonstrate the AI workloads and deep learning models Intel has optimized and validated to run on Intel hardware 
+
+- Show how to efficiently execute, train, and deploy Intel-optimized models 
+
+- Make it easy to get started running Intel-optimized models on Intel hardware in the cloud or on bare metal 
+
+ 
+
+DISCLAIMER: These scripts are not intended for benchmarking Intel platforms. For any performance and/or benchmarking information on specific Intel platforms, visit https://www.intel.ai/blog. 
+
+ 
+
+Intel is committed to the respect of human rights and avoiding complicity in human rights abuses, a policy reflected in the Intel Global Human Rights Principles. Accordingly, by accessing the Intel material on this platform you agree that you will not use the material in a product or application that causes or contributes to a violation of an internationally recognized human right. 
+
+ 
+
+### Models 
+
+To the extent that any model(s) are referenced by Intel or accessed using tools or code on this site those models are provided by the third party indicated as the source.  Intel does not create the model(s) and does not warrant their accuracy or quality.  You understand that you are responsible for understanding the terms of use and that your use complies with the applicable license. 
+
+  
+
+### Datasets 
+
+To the extent that any public or datasets are referenced by Intel or accessed using tools or code on this site those items are provided by the third party indicated as the source of the data. Intel does not create the data, or datasets, and does not warrant their accuracy or quality. By accessing the public dataset(s) you agree to the terms associated with those datasets and that your use complies with the applicable license.
+
+ 
+
+Intel expressly disclaims the accuracy, adequacy, or completeness of any public datasets, and is not liable for any errors, omissions, or defects in the data, or for any reliance on the data.  Intel is not liable for any liability or damages relating to your use of public datasets. 

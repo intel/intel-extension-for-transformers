@@ -191,7 +191,6 @@ std::pair<op_args_t, op_args_t> gen_case(const std::vector<jd::tensor_desc>& ts_
 
 static auto case_func = []() {
   std::vector<test_params_t> cases;
-
   std::vector<std::vector<dim_t>> shapes = {{512, 1280, 1280}, {512, 1280, 10240}, {77, 768, 1024}};
 
   std::vector<dim_t> batchs = {1, 2};
@@ -200,14 +199,14 @@ static auto case_func = []() {
   for (auto&& batch : batchs) {
     for (auto&& shape : shapes) {
       for (auto&& data_type : dt_types) {
-        jd::tensor_desc activation_desc = {{batch, shape[0], shape[2]}, jd::data_type::s8, jd::format_type::undef};
-        jd::tensor_desc weight_desc = {{shape[2], shape[1]}, jd::data_type::s8, jd::format_type::undef};
-        jd::tensor_desc dst_desc = {{batch, shape[0], shape[1]}, data_type, jd::format_type::undef};
-        jd::tensor_desc sclae_a_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
-        jd::tensor_desc scale_w_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
-        jd::tensor_desc scale_dst_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::undef};
-        jd::tensor_desc workspace_desc = {{}, jd::data_type::undef, jd::format_type::undef};
-        jd::tensor_desc bias_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::undef};
+        jd::tensor_desc activation_desc = {{batch, shape[0], shape[2]}, jd::data_type::s8, jd::format_type::abc};
+        jd::tensor_desc weight_desc = {{shape[2], shape[1]}, jd::data_type::s8, jd::format_type::ab};
+        jd::tensor_desc dst_desc = {{batch, shape[0], shape[1]}, data_type, jd::format_type::abc};
+        jd::tensor_desc sclae_a_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::ab};
+        jd::tensor_desc scale_w_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
+        jd::tensor_desc scale_dst_desc = {{batch, shape[0]}, jd::data_type::fp32, jd::format_type::ab};
+        jd::tensor_desc workspace_desc = {{}, jd::data_type::undef, jd::format_type::a};
+        jd::tensor_desc bias_desc = {{shape[1]}, jd::data_type::fp32, jd::format_type::a};
         std::unordered_map<std::string, std::string> op_attrs = {{"large_wei_threshold", "0.8"}};
         if (data_type == jd::data_type::fp32) op_attrs["append_sum"] = true;
         cases.push_back({gen_case({activation_desc, weight_desc, dst_desc, sclae_a_desc, scale_w_desc, scale_dst_desc,

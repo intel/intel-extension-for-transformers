@@ -60,7 +60,7 @@ RUN conda init bash && \
     echo "conda activate document_indexing" >> ~/.bashrc && \
     source ~/.bashrc
 
-SHELL ["conda", "run", "-n", "document_indexing", "/bin/bash", "--login", "-c"]
+SHELL ["/bin/bash", "--login", "-c", "conda", "run", "-n", "chatbot-demo"]
 RUN pip install langchain chromadb PyPDF2 farm-haystack python-docx pandas InstructorEmbedding
 
 WORKDIR /itrex/workflows/chatbot/inference/document_indexing/

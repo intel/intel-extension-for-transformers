@@ -26,31 +26,30 @@ struct dynamic_quant_param_t {
   data_type input_dt;
   data_type output_dt;
   size_t quantized_dim_elt_num;
-  int quantized_dim_tail_elt_num;
-  size_t channel_num;
+  size_t ld_src;  // src leading dimension in terms of #elements
+  size_t ld_dst;  // dst leading dimension in terms of #elements
 };
 
 struct dynamic_quant_data_t {
   void* src;
   void* mat_dst;
-  void* scale_dst;
+  void* scale;  // use as rcp input if scale_input_ is true
   // int process_channel;
 };
 
 class jit_dynamic_quant_t : public jit_generator {
  public:
-  explicit jit_dynamic_quant_t(const dynamic_quant_param_t& param, int process_channel)
-      : jit_generator(), param_(param), process_channel_(process_channel) {}
+  explicit jit_dynamic_quant_t(const dynamic_quant_param_t& param, int process_channel, bool scale_input = false)
+      : jit_generator(), param_(param), process_channel_(process_channel), scale_input_(scale_input) {}
   virtual ~jit_dynamic_quant_t() {}
 
  private:
   dynamic_quant_param_t param_;
   int process_channel_;
+  bool scale_input_;  // whether use scales input or dynamically calculate scales
 
  private:
   void generate() override;
-  Opmask dim_tail_mask = Opmask(2);
-  Opmask channel_tail_mask = Opmask(3);
 };
 }  // namespace jd
 

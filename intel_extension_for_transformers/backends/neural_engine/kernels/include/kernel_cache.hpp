@@ -25,7 +25,7 @@
 namespace jd {
 class kernel_cache {
  public:
-  explicit kernel_cache(int64_t capacity = 1024) : capacity_(capacity) {}
+  explicit kernel_cache(int64_t capacity = 1024) : capacity_(capacity), cv_(), mtx_() {}
   virtual ~kernel_cache() {}
 
  public:
@@ -39,7 +39,7 @@ class kernel_cache {
 
  private:
   uint64_t capacity_;
-  std::unordered_map<operator_desc, std::shared_ptr<const kernel_t>, hash_t> cache_;
+  std::unordered_map<operator_desc, std::shared_ptr<const kernel_t>, hash_t> cache_ = {};
 
   std::condition_variable cv_;
   std::mutex mtx_;

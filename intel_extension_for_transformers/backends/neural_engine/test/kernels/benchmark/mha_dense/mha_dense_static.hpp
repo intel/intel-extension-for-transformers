@@ -45,6 +45,10 @@ class mha_dense_static_bench : public mha_dense_bench {
   bench_res_t set_config(int argc, char** argv) override;
   double calc_flop() const final;
   std::vector<int> get_refresh_data_idx() const override { return {io::SRC_Q, io::SRC_K, io::SRC_V, io::DST}; }
+  std::vector<int> get_refresh_src_data_idx() const override { return {io_src::SRC_Q, io_src::SRC_K, io_src::SRC_V}; }
+  std::vector<int> get_refresh_src_desc_idx() const override { return {io::SRC_Q, io::SRC_K, io::SRC_V}; }
+  std::vector<int> get_refresh_dst_data_idx() const override { return {io_dst::DST}; }
+  std::vector<int> get_refresh_dst_desc_idx() const override { return {io::DST}; }
   // Just like that in gtest file
   void get_true_data() override;
   // Just like that in gtest file
@@ -52,7 +56,7 @@ class mha_dense_static_bench : public mha_dense_bench {
   // Just like that in gtest file
   void gen_case() override;
   void set_kernel_proxy() override {
-    jd::mha_dense_desc mha_dense_desc(args.first.op_desc);
+    jd::mha_dense_desc mha_dense_desc(bench_data.op_desc);
     kp = std::make_shared<jd::mha_dense>(mha_dense_desc);
   }
 };

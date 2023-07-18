@@ -15,15 +15,6 @@
 #include "dynamic_quant_mha.hpp"
 
 #include <algorithm>
-#ifdef WITH_GCC_FLAGS
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105593
-#pragma GCC diagnostic ignored "-Wuninitialized"
-#include <immintrin.h>
-#pragma GCC diagnostic pop
-#else
-#include <immintrin.h>
-#endif
 
 namespace jd {
 
@@ -126,6 +117,16 @@ bool dynamic_quant_mha_k_t::init() {
   if (!ker_qxk_->create_kernel()) return false;
   ker_axv_.reset(new jit_scale_mm_amx_u8s8_ab_BA16b_16x({/*.pre_amx_cfg = */ &amx_full_tile_param_}));
   if (!ker_axv_->create_kernel()) return false;
+  ker_quant_.reset(new jit_dynamic_quant_t(  //
+      dynamic_quant_param_t{
+          /* .input_dt = */ data_type::fp32,
+          /* .output_dt = */ data_type::s8,
+          /* .quantized_dim_elt_num = */ static_cast<size_t>(head_size_),
+          /* .ld_src = */ static_cast<size_t>(pad_to(head_size_, 16)),
+          /* .ld_dst = */ static_cast<size_t>(head_size_ * head_num_),
+      },
+      16, true));
+  if (!ker_quant_->create_kernel()) return false;
 
   return true;
 }
@@ -138,6 +139,7 @@ size_t dynamic_quant_mha_k_t::get_workspace_size() const {
              (pad_to(N_, 64) + head_num_ * pad_to(head_size_, 16));  // exp &  dst
 }
 
+#ifdef __AVX512F__
 bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) const {
   const auto max_threads = omp_get_max_threads();
   const auto src_q = reinterpret_cast<const int8_t*>(rt_data[io::SRC_Q]);
@@ -297,42 +299,29 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
               /*.K = */ N,
               /*.N = */ head_size,
               /*.ld_src1 = */ N_pad64 * 16,
+              /*.ld_dst = */ head_size_pad16,
           };
           (*ker_axv_)(&mm_av_data);
         }
       }
       {
         constexpr float epsilon = 1e-9f;
+        alignas(64) float rcp_scale[16];
         const auto ld_dst = head_size * head_num;
         const auto curr_dst = dst + (ibs * M + i) * ld_dst;
         const auto curr_dst_scale = dst_scale + ibs * M + i;
-        __m512 rcp_scale[16];
+#pragma omp simd
         for (int ii = 0; ii < 16; ++ii) {
           curr_dst_scale[ii] = absmax_dst[ii] / 127.f;
-          rcp_scale[ii] = _mm512_set1_ps(127.f / (absmax_dst[ii] + epsilon));
+          rcp_scale[ii] = 127.f / (absmax_dst[ii] + epsilon);
         }
-        const auto nloop = (head_size - 1) / 16 * 16;
-        const auto ntail = head_size - nloop;
-        const __mmask16 ntail_mask = (1 << ntail) - 1;
         for (int ihn = 0; ihn < head_num; ++ihn) {
-          const auto dst_f32 = curr_tmp_dst + ihn * 16 * head_size_pad16;
-          const auto dst_s8 = curr_dst + ihn * head_size;
-          int jj = 0;
-          for (; jj < nloop; jj += 16)
-            for (int ii = 0; ii < 16; ++ii) {
-              auto x = _mm512_load_ps(dst_f32 + (ii + jj) * 16);
-              x = _mm512_mul_ps(x, rcp_scale[ii]);
-              auto x_pd = _mm512_cvtps_epi32(x);
-              auto x_s8 = _mm512_cvtepi32_epi8(x_pd);
-              _mm_storeu_si128(reinterpret_cast<__m128i*>(dst_s8 + jj + ii * ld_dst), x_s8);
-            }
-          for (int ii = 0; ii < 16; ++ii) {
-            auto x = _mm512_load_ps(dst_f32 + (ii + jj) * 16);
-            x = _mm512_mul_ps(x, rcp_scale[ii]);
-            auto x_pd = _mm512_cvtps_epi32(x);
-            auto x_s8 = _mm512_cvtepi32_epi8(x_pd);
-            _mm_mask_storeu_epi8(reinterpret_cast<__m128i*>(dst_s8 + jj + ii * ld_dst), ntail_mask, x_s8);
-          }
+          dynamic_quant_data_t quant_data{
+              /* .src = */ curr_tmp_dst + ihn * 16 * head_size_pad16,
+              /* .mat_dst = */ curr_dst + ihn * head_size,
+              /* .scale = */ rcp_scale,
+          };
+          (*ker_quant_)(&quant_data);
         }
       }
     }
@@ -343,8 +332,11 @@ bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>& rt_data) con
 
   return true;
 }
-
-#ifdef WITH_GCC_FLAGS
-#pragma GCC diagnostic pop
+#else
+bool dynamic_quant_mha_k_t::execute(const std::vector<const void*>&) const {
+  SPARSE_LOG(ERROR) << "dynamic_quant_mha execute for AVX2 not implemented!";
+  return false;
+}
 #endif
+
 }  // namespace jd

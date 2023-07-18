@@ -1,7 +1,7 @@
 Step-by-Step
 =========
 
-In this example, we provide the inference benchmarking script `run_llm.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) and [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) etc.
+In this example, we provide the inference benchmarking script `run_llm.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) and [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) etc.
 
 >**Note**: The default search algorithm is beam search with num_beams = 4
 
@@ -29,11 +29,10 @@ export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 ```
 ## Performance
 
-The fp32 model is from Hugging Face [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), and gpt-j int8 model has been publiced on [Intel/gpt-j-6B-pytorch-int8-static](https://huggingface.co/Intel/gpt-j-6B-pytorch-int8-static).
+The fp32 model is from Hugging Face [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B), [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b, and gpt-j int8 model has been publiced on [Intel/gpt-j-6B-pytorch-int8-static](https://huggingface.co/Intel/gpt-j-6B-pytorch-int8-static).
 
 ### Generate Neural Engine model
 ```bash
-# For fp32 / bf16, for llama model please add --model_type=(llama_7b|llama_13b)
 python optimize_llm.py --model=EleutherAI/gpt-j-6B --dtype=(fp32|bf16) --output_model=<path to engine model>
 
 # int8
@@ -44,13 +43,13 @@ python optimize_llm.py --model=EleutherAI/gpt-j-6B --dtype=int8 --output_model=<
 - When the input dtype is int8, the int8 trace model should exist.
 
 ### Inference 
-We support inference with FP32/BF16/INT8 Neural Engine model; for llama model please add `--model_type=(llama_7b|llama_13b)`.
+We support inference with FP32/BF16/INT8 Neural Engine model.
 ```bash
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_llm.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --model_path <path to engine model>
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_llm.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --model <model name> --model_path <path to engine model>
 ```
 
 ### Advanced Inference
 Neural Engine also supports weight compression to `fp8_4e3m`, `fp8_5e2m` and `int8` **only when runing bf16 graph**. If you want to try, please add arg `--weight_type`, like:
 ```bash
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_llm.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --model_path <path to bf16 engine model> --weight_type=fp8_5e2m
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_llm.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --model_path <path to bf16 engine model> --model <model name> --weight_type=fp8_5e2m
 ```

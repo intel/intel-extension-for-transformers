@@ -17,11 +17,12 @@
 #include <memory>
 #include <unordered_map>
 
+#include "common.h"
 #include "param_types.hpp"
 
 namespace jd {
 class engine_t;
-class engine_factory {
+class SPARSE_API_ engine_factory {
  public:
   engine_factory();
   const engine_t* create(const engine_kind& engine_kind, const runtime_kind& runtime_kind);

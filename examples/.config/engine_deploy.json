@@ -476,7 +476,7 @@
       }
     }
   },
-  "stable_diffusion": {
+  "stable_diffusion_v1_4": {
     "working_dir": "huggingface/pytorch/text-to-image/deployment/stable_diffusion",
     "data_dir": "",
     "hf_model_name": "CompVis/stable-diffusion-v1-4",
@@ -491,7 +491,52 @@
       "cmd": "python run_executor.py",
       "params": {
         "ir_path": "_ir",
-        "mode": "benchmark"        
+        "mode": "benchmark",
+        "input_model" : "CompVis/stable-diffusion-v1-4"
+      }
+    },
+    "launcher": {
+    }
+  },
+  "stable_diffusion_v1_5": {
+    "working_dir": "huggingface/pytorch/text-to-image/deployment/stable_diffusion",
+    "data_dir": "",
+    "hf_model_name": "runwayml/stable-diffusion-v1-5",
+    "prepare": {
+      "cmd": "bash -x export_model.sh",
+      "params": {
+         "input_model": "/tf_dataset2/models/nlp_toolkit/stable-diffusion-v1-5",
+         "precision": "fp32/bf16"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_executor.py",
+      "params": {
+        "ir_path": "_ir",
+        "mode": "benchmark",
+        "input_model" : "runwayml/stable-diffusion-v1-5"
+      }
+    },
+    "launcher": {
+    }
+  },
+  "stable_diffusion_v2_1": {
+    "working_dir": "huggingface/pytorch/text-to-image/deployment/stable_diffusion",
+    "data_dir": "",
+    "hf_model_name": "stabilityai/stable-diffusion-2-1",
+    "prepare": {
+      "cmd": "bash -x export_model.sh",
+      "params": {
+         "input_model": "/tf_dataset2/models/nlp_toolkit/stable-diffusion-v2-1",
+         "precision": "fp32/bf16"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_executor.py",
+      "params": {
+        "ir_path": "_ir",
+        "mode": "benchmark",
+        "input_model" : "stabilityai/stable-diffusion-2-1" 
       }
     },
     "launcher": {
@@ -560,7 +605,55 @@
       "cmd": "python run_llm.py",
       "params": {
         "max-new-tokens": "32",
-	"model": "decapoda-research/llama-7b-hf",
+	      "model": "/tf_dataset2/models/nlp_toolkit/llama-7b-hf",
+        "model_path": "ir"
+      }
+    },
+    "launcher": {
+    }
+  },
+  "dolly-v2-3b": {
+    "working_dir": "huggingface/pytorch/text-generation/deployment",
+    "data_dir": "",
+    "hf_model_name": "databricks/dolly-v2-3b",
+    "prepare": {
+      "cmd": "python optimize_llm.py",
+      "params": {
+         "model": "/tf_dataset2/models/nlp_toolkit/dolly-v2-3b",
+         "dtype": "fp32/bf16/int8",
+         "output_model": "ir",
+         "pt_file": "pt"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_llm.py",
+      "params": {
+        "max-new-tokens": "32",
+        "model": "/tf_dataset2/models/nlp_toolkit/dolly-v2-3b",
+        "model_path": "ir"
+      }
+    },
+    "launcher": {
+    }
+  },
+  "gpt-neox-20b": {
+    "working_dir": "huggingface/pytorch/text-generation/deployment",
+    "data_dir": "",
+    "hf_model_name": "EleutherAI/gpt-neox-20b",
+    "prepare": {
+      "cmd": "python optimize_llm.py",
+      "params": {
+         "model": "/tf_dataset2/models/nlp_toolkit/gpt-neox-20b",
+         "dtype": "fp32/bf16/int8",
+         "output_model": "ir",
+         "pt_file": "pt"
+      }
+    },
+    "benchmark": {
+      "cmd": "python run_llm.py",
+      "params": {
+        "max-new-tokens": "32",
+        "model": "/tf_dataset2/models/nlp_toolkit/gpt-neox-20b",
         "model_path": "ir"
       }
     },

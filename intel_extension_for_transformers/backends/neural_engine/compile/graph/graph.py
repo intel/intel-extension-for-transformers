@@ -437,7 +437,6 @@ class Graph(object):
                            self._nodes[i].input_tensors[j].data.dtype:
                             logger.error("tensor {} has different dtypes in multi-nodes!".
                                          format(t.name))
-                            import sys; sys.exit(1)
                         dest_op = set(self._nodes[0].output_tensors[const_info[t.name]].dest_op +
                                       self._nodes[i].input_tensors[j].dest_op)
                         self._nodes[0].output_tensors[const_info[t.name]].dest_op = list(dest_op)

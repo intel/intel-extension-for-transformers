@@ -33,6 +33,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--model", nargs="?", default="EleutherAI/gpt-j-6B", const="EleutherAI/gpt-j-6B"
 )
+parser.add_argument("--revision", default=None, type=str)
+parser.add_argument("--trust_remote_code", default=True)
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
@@ -77,19 +79,32 @@ if re.search("llama", args.model.lower()):
     user_model = LlamaForCausalLM.from_pretrained(
         args.model,
         torchscript=True
-        if args.ipex
+        if args.sq
         else False,  # torchscript will force `return_dict=False` to avoid jit errors
     )
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
-
+elif re.search("mpt", args.model.lower()):
+    from mpt_7b.modeling_mpt import MPTForCausalLM
+    user_model = MPTForCausalLM.from_pretrained(
+        args.model,
+        torchscript=True
+        if args.sq
+        else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        trust_remote_code=args.trust_remote_code,
+        revision=args.revision
+    )
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+    user_model.config.use_cache = True
 else:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
         torchscript=True
         if args.ipex
         else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        trust_remote_code=args.trust_remote_code,
+        revision=args.revision
     )
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 # to channels last
 user_model = user_model.to(memory_format=torch.channels_last)
@@ -111,21 +126,24 @@ if args.quantize:
         hidden_size = normalized_config.hidden_size
         d_k = hidden_size // num_attention_heads
 
-        if user_model.config.model_type != "bloom":
-            new_shape = [input_bs, num_attention_heads, 0, d_k]
-            empty_tensor = torch.empty(size=new_shape)
-            past_key_values = tuple(
-                tuple(empty_tensor for _ in range(nb_pkv)) for _ in range(num_layers)
-            )
-            pkv = tuple(empty_tensor for _ in range(nb_pkv))
-        else:
+        if user_model.config.model_type == "bloom":
             pkv = ()
             for nb_pkv in range(nb_pkv):
                 if nb_pkv % 2 == 0:
-                    new_shape = [input_bs * num_attention_heads, d_k, 0]
+                    new_shape = [input_bs * num_attention_heads, d_k, 1]
                 else:
-                    new_shape = [input_bs * num_attention_heads, 0, d_k]
-                pkv = pkv + (torch.empty(size=new_shape),)
+                    new_shape = [input_bs * num_attention_heads, 1, d_k]
+                pkv = pkv + (torch.ones(size=new_shape),)
+        elif user_model.config.model_type == "mpt":
+            new_key_shape = [input_bs, num_attention_heads, d_k, 1]
+            new_value_shape = [input_bs, num_attention_heads, 1, d_k]
+            dummy_key_tensor = torch.ones(size=new_key_shape)
+            dummy_value_tensor = torch.ones(size=new_value_shape)
+            pkv= tuple([dummy_key_tensor, dummy_value_tensor])
+        else:
+            new_shape = [input_bs, num_attention_heads, 1, d_k]
+            dummy_tensor = torch.ones(size=new_shape)
+            pkv = tuple(dummy_tensor for _ in range(nb_pkv))
         past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
         return past_key_values
 
@@ -195,7 +213,8 @@ if args.quantize:
     input_ids = user_model.dummy_inputs["input_ids"]
     input_bs, input_len = input_ids.shape
     past_key_values = generate_dummy_past_key_values(input_bs, user_model)
-    attention_mask = torch.ones(input_bs, input_len)
+    attention_mask = torch.ones(input_bs, input_len + 1)
+    attention_mask[:,0] = 0
     example_inputs = (
         input_ids,
         tuple(past_key_values),
@@ -206,7 +225,8 @@ if args.quantize:
         for i, (input_ids, last_ind) in enumerate(calib_dataloader):
             input_bs, input_len = input_ids.shape
             past_key_values = generate_dummy_past_key_values(input_bs, user_model)
-            attention_mask = torch.ones(input_bs, input_len)
+            attention_mask = torch.ones(input_bs, input_len + 1)
+            attention_mask[:,0] = 0
             if i >= args.calib_iters:
                 break
             prepared_model(
@@ -222,6 +242,11 @@ if args.quantize:
     ):
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+        }
+    elif re.search("mpt", user_model.config.model_type):
+        op_type_dict = {
+            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+            "<built-in function linear>":{"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
     else:
         op_type_dict = {}
@@ -259,7 +284,7 @@ if args.int8 or args.int8_bf16_mixed:
     # TorchScript model don't attribute generate method, the wrapper is provided.
     if args.ipex:
         user_model = TSModelForCausalLM.from_pretrained(
-            args.output_dir, file_name="best_model.pt"
+            args.output_dir, file_name="best_model.pt", trust_remote_code=args.trust_remote_code
         )
     else:
         from neural_compressor.utils.pytorch import load
@@ -278,6 +303,7 @@ if args.benchmark:
     num_iter = args.iters
     num_warmup = args.num_warmup
     prompt = [prompt] * args.batch_size
+    total_token_num = 0
 
     with torch.inference_mode(), torch.no_grad():
         for i in range(num_iter):
@@ -288,18 +314,22 @@ if args.benchmark:
             )
             gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
             toc = time.time()
+            # please check the gen_ids if include input_ids.
+            input_tokens_num = input_ids.numel()
+            output_tokens_num = gen_ids.numel() - input_tokens_num
             print(gen_text, flush=True)
             if i >= num_warmup:
                 total_time += toc - tic
+                total_token_num += output_tokens_num
 
     print("\n", "-" * 10, "Summary:", "-" * 10)
-    latency = total_time / (num_iter - num_warmup)
+    latency = total_time / total_token_num
     print("Inference latency: %.3f sec." % latency)
-    throughput = (num_iter - num_warmup) / total_time
+    throughput = total_token_num / total_time
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    from intel_extension_for_transformers.evaluation import evaluate
+    from intel_extension_for_transformers.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',

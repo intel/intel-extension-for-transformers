@@ -26,9 +26,9 @@ void jit_gather_t::generate_() {
   using VMM = std::conditional_t<USE_AVX512, Zmm, Ymm>;
   constexpr auto BYTES_VMM = USE_AVX512 ? BYTES_ZMM : BYTES_YMM;
   constexpr auto stack_size = USE_AVX512 ? 0 : BYTES_VMM;
+  const auto rp_flags = USE_AVX512 ? regs_pool::DefaultFlags : regs_pool::DisableEvex;
 
-  regs_pool rp(this, 1, {3 + static_cast<int>(binaryop_attrs_.size()), 1, 2},  //
-               stack_size, true, BYTES_VMM, USE_AVX512);
+  regs_pool rp(this, 1, {3 + static_cast<int>(binaryop_attrs_.size()), 1, 2}, stack_size, rp_flags, BYTES_VMM);
   const auto src_addr = rp.reg<Reg64>();
   mov(src_addr, ptr[rp.p[0] + GET_OFF(src)]);
   {

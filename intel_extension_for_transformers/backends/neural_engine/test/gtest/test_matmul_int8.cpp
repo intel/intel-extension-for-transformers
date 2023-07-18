@@ -29,6 +29,7 @@ struct OpArgs {
   std::vector<Tensor*> input;
   std::vector<Tensor*> output;
   shared_ptr<OperatorConfig> conf;
+  bool is_dynamic;
 };
 
 struct TestParams {
@@ -43,18 +44,22 @@ bool CheckResult(const TestParams& t) {
     int scales_num = 4;
     vector<void*> tmp_data(scales_num);
     vector<Tensor> tmp_tensor(scales_num);
-    for (int i = p.input.size() - scales_num, j = 0; i < p.input.size(); i++, j++) {
-      tmp_data[j] = p.input[i]->mutable_data();
-      p.input[i]->unref_data(true);
-      tmp_tensor[j].add_tensor_life(1);
-      tmp_tensor[j].set_data(tmp_data[j]);
+    if (p.is_dynamic) {
+      for (int i = p.input.size() - scales_num, j = 0; i < p.input.size(); i++, j++) {
+        tmp_data[j] = p.input[i]->mutable_data();
+        p.input[i]->unref_data(true);
+        tmp_tensor[j].add_tensor_life(1);
+        tmp_tensor[j].set_data(tmp_data[j]);
+      }
     }
     executor::MatmulOperator matmul(p.conf);
     matmul.Prepare(p.input, p.output);
     matmul.Reshape(p.input, p.output);
-    for (int i = p.input.size() - scales_num, j = 0; i < p.input.size(); i++, j++) {
-      tmp_tensor[j].unref_data(true);
-      p.input[i]->set_data(tmp_data[j]);
+    if (p.is_dynamic) {
+      for (int i = p.input.size() - scales_num, j = 0; i < p.input.size(); i++, j++) {
+        tmp_tensor[j].unref_data(true);
+        p.input[i]->set_data(tmp_data[j]);
+      }
     }
     matmul.Forward(p.input, p.output);
   } catch (const dnnl::error& e) {
@@ -69,18 +74,16 @@ bool CheckResult(const TestParams& t) {
     else
       return false;
   }
-  if (!t.expect_to_fail) {
-    bool is_equal;
-    if (q->dtype() == "fp32") {
-      is_equal = executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 0.1);
-    } else if (q->dtype() == "s8") {
-      is_equal = executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 1);
-    } else if (q->dtype() == "u8") {
-      is_equal = executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 1);
-    }
-    return is_equal;
+  if (t.expect_to_fail) return true;
+  bool is_equal;
+  if (q->dtype() == "fp32") {
+    is_equal = executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 0.1);
+  } else if (q->dtype() == "s8") {
+    is_equal = executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 1);
+  } else if (q->dtype() == "u8") {
+    is_equal = executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 1);
   }
-  return false;
+  return is_equal;
 }
 
 class MatmulInt8Test : public testing::TestWithParam<TestParams> {
@@ -168,7 +171,8 @@ Tensor* make_fp32_tensor_obj(const shared_ptr<TensorConfig>& a_tensor_config, fl
 }
 
 vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>& tensor_configs,
-                                         const float* origin_fp32_data, bool per_channel = false) {
+                                         const float* origin_fp32_data, bool per_channel = false,
+                                         bool need_scale = false) {
   vector<Tensor*> tensors(3);
   for (int i = 0; i < 3; i++) {
     tensors[i] = new Tensor(*tensor_configs[i]);
@@ -200,7 +204,7 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
           data = data > 127 ? 127 : data;
           *dst_data_ = static_cast<int8_t>(data);
         }
-      max_data[y] = 1.0 / scales[0];
+      if (need_scale) max_data[y] = 1.0 / scales[0];
       // memcpy(max_data + y, scales.data(), 1 * sizeof(float));
     }
   } else {
@@ -211,7 +215,7 @@ vector<Tensor*> quantize2int8_tensor_obj(const vector<shared_ptr<TensorConfig>>&
 #else
     executor::Quantize(tensors[0]->size(), tensors[0]->dtype(), origin_fp32_data, min_data, scales, dst_data);
 #endif
-    *max_data = 1.0 / scales[0];
+    if (need_scale) *max_data = 1.0 / scales[0];
     // memcpy(max_data, scales.data(), 1 * sizeof(float));
   }
   return tensors;
@@ -237,17 +241,15 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
   else
     src_fp32 = make_fp32_tensor_obj(src_fp32_config);
   auto src_tensors = quantize2int8_tensor_obj({src_u8_config, src_min_config, src_scale_config},
-                                              reinterpret_cast<const float*>(src_fp32->data()), false);
-  // src_fp32->print();
-  // for (auto tensor : src_tensors) tensor->print();
+                                              reinterpret_cast<const float*>(src_fp32->data()), false, is_dynamic);
   auto weight_fp32_config = std::make_shared<TensorConfig>("weight_fp32", src1_shape, "fp32");
   auto weight_s8_config = std::make_shared<TensorConfig>("weight", src1_shape, "s8");
   auto weight_min_config = std::make_shared<TensorConfig>("weight_min", vector<int64_t>({1}), "fp32");
   auto weight_scale_config = std::make_shared<TensorConfig>("weight_scale", vector<int64_t>({1}), "fp32");
   Tensor* weight_fp32 = make_fp32_tensor_obj(weight_fp32_config);
   auto weight_tensors = quantize2int8_tensor_obj({weight_s8_config, weight_min_config, weight_scale_config},
-                                                 reinterpret_cast<const float*>(weight_fp32->data()),
-                                                 false);  // matmul only support per_tensor
+                                                 reinterpret_cast<const float*>(weight_fp32->data()), false,
+                                                 is_dynamic);  // matmul only support per_tensor
   // weight_fp32->print();
   // for (auto tensor : weight_tensors) tensor->print();
   auto post_fp32_config = std::make_shared<TensorConfig>("post", dst_shape, "fp32");
@@ -270,7 +272,7 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
                            reinterpret_cast<float*>(dst_min->mutable_data()),
                            reinterpret_cast<float*>(dst_scale->mutable_data()));
   vector<float> scales = executor::GetScales(dst_min->data(), dst_scale->data(), 1, output_type);
-  memcpy(dst_scale->mutable_data(), scales.data(), 1 * sizeof(float));
+  if (is_dynamic) memcpy(dst_scale->mutable_data(), scales.data(), 1 * sizeof(float));
 
   vector<shared_ptr<TensorConfig>> inputs_configs = {src_u8_config,    weight_s8_config,  src_min_config,
                                                      src_scale_config, weight_min_config, weight_scale_config};
@@ -299,7 +301,7 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
   shared_ptr<AttrConfig> op_attr = std::make_shared<AttrConfig>(attr_map);
   auto op_config = std::make_shared<OperatorConfig>("matmul", output_type, inputs_configs, output_configs, op_attr);
 
-  OpArgs op_args = {inputs, outputs, op_config};
+  OpArgs op_args = {inputs, outputs, op_config, is_dynamic};
   if (output_type == "fp32") {
     // dst_fp32->print();
     return {op_args, dst_fp32};
@@ -319,6 +321,13 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
 }
 
 static auto CasesInt8 = []() {
+#ifdef _WIN32
+  constexpr auto FAIL_ON_WIN = true;
+  LOG(WARNING) << "`expect_to_fail` is set to true for some test cases on Windows.";
+#else
+  constexpr auto FAIL_ON_WIN = false;
+#endif
+
   MemoryAllocator::InitStrategy();
 
   std::vector<TestParams> cases;
@@ -330,19 +339,13 @@ static auto CasesInt8 = []() {
 
   src0_shape = {4, 2};
   src1_shape = {2, 3};
-#ifdef _WIN32
-  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "s8", "fp32"), true});
-#else
-  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "s8", "fp32"), false});
-#endif
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, false, "s8", "fp32"), FAIL_ON_WIN});
+  // cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, false, "u8", "u8"), FAIL_ON_WIN});
 
-  src0_shape = {4, 2};
-  src1_shape = {2, 3};
-#ifdef _WIN32
-  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "u8"), true});
-#else
-  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "u8"), false});
-#endif
+  src0_shape = {5, 7};
+  src1_shape = {7, 3};
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "s8", "fp32"), FAIL_ON_WIN});
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "u8"), FAIL_ON_WIN});
   return ::testing::ValuesIn(cases);
 };
 

@@ -105,6 +105,21 @@ function run_tuning {
                 approach="PostTrainingStatic"
 		extra_cmd=$extra_cmd" --int8_bf16_mixed"
         fi
+    elif [ "${topology}" = "mpt_7b_chat" ]; then
+	if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="mosaicml/mpt-7b-chat"
+        approach="PostTrainingStatic"
+	alpha=0.95
+    elif [ "${topology}" = "falcon_7b_instruct" ]; then
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="tiiuae/falcon-7b-instruct"
+        approach="PostTrainingStatic"
+        alpha=0.7
     elif [ "${topology}" = "opt_1.3b" ]; then
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"

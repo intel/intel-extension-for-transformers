@@ -2052,15 +2052,19 @@ class BaseTrainer():
         it = iter(eval_dataloader)
         input = next(it)
         self._remove_label(input)
-        if model.__class__.__name__ == 'XLNetForSequenceClassification':
+
+        # convert to a dict
+        input = dict(input.items())       
+
+        if model.__class__.__name__ == 'XLNetForSequenceClassification': # pragma: no cover
             input.pop('token_type_ids')
         # Set variable length axes
         symbolic_names = {0: 'batch_size', 1: 'max_seq_len'}
         axes_dict = {k: symbolic_names for k in input.keys()}
-        import torch
+
         torch.onnx.export(
             model,
-            tuple(input.values()),
+            (input, ),
             onnx_save_path,
             opset_version=opset_version,
             input_names=list(input.keys()),
@@ -2157,7 +2161,7 @@ class BaseTrainer():
             logger.error("export_to_onnx API only supports INC model right now.")
             sys.exit(0)
 
-        if self.enable_executor:
+        if self.enable_executor: # pragma: no cover
             # Will deprecate after engine supports QDQ format and other op_types.
             op_types_to_quantize = ['MatMul']
             pytorch_op_types_to_quantize = ['Linear']
@@ -2336,8 +2340,8 @@ class BaseTrainer():
         elif 'S8S8' in dtype:
             activation_type = ortq.QuantType.QInt8
             weight_type = ortq.QuantType.QInt8
-        elif 'U8S8' in dtype:
-            if not self.enable_executor:  # pragma: no cover
+        elif 'U8S8' in dtype: # pragma: no cover
+            if not self.enable_executor: 
                 logger.error("Right now, we don't support dtype: {}, please use \
                               U8U8/S8S8 or set trainer.enable_executor=True \
                               for U8S8.".format(dtype))
@@ -2356,9 +2360,9 @@ class BaseTrainer():
         # Calibrate_method, min/max method as default.
         if 'minmax' in calibrate_method:
             calibrate_method = ortq.CalibrationMethod.MinMax
-        elif 'percentile' in calibrate_method:
+        elif 'percentile' in calibrate_method: # pragma: no cover
             calibrate_method = ortq.CalibrationMethod.Percentile
-        elif 'entropy' in calibrate_method:
+        elif 'entropy' in calibrate_method: # pragma: no cover
             calibrate_method = ortq.CalibrationMethod.Entropy
 
         if 'dynamic' in self.opt_model.q_config['approach']:
