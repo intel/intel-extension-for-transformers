@@ -22,6 +22,7 @@ from .. import graph_utils as util
 from .. import logger
 from .subgraph_matcher import EXECUTOR_TYPE
 import numpy as np
+import copy
 
 
 @pattern_registry(pattern_type='ExplicitNHWCTransposeForConvQAT')
@@ -166,14 +167,8 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
                         compensation = activation_min * weight_scale * weight_s8.sum(
                             0).astype(np.float32)
 
-                    node.input_tensors[2].data = (bias_fp32 + compensation).astype(np.float32)
-                    node.input_tensors[2].dtype = 'fp32'
+                    node.input_tensors[2].data = copy.deepcopy((bias_fp32 + compensation).astype(np.float32))
 
-                    for bias in model.nodes[0].output_tensors:
-                        if node.input_tensors[2].name == bias.name:
-                            bias.dtype = 'fp32'
-                            bias.data = node.input_tensors[2].data
-                
                 if node.op_type in EXECUTOR_TYPE and \
                     EXECUTOR_TYPE[node.op_type] == 'Convolution':
                     # convert s32 bias to fp32 bias due to ONEDNN 3.x required
@@ -186,17 +181,10 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
                     weight_max = node.input_tensors[6 + offset].data
                     activation_scale = ((activation_max - activation_min) / 255).astype(float)
                     weight_scale = (np.maximum(abs(weight_max), abs(weight_min)) /
-                                    127).astype(float)
+                                    128).astype(float)
                     bias_fp32 = (bias_s32 * activation_scale * weight_scale).astype(np.float32) 
                     compensation = 0
-                    node.input_tensors[2].data = (bias_fp32 + compensation).astype(np.float32)
-
-                    node.input_tensors[2].dtype = 'fp32'
-
-                    for bias in model.nodes[0].output_tensors:
-                        if node.input_tensors[2].name == bias.name:
-                            bias.dtype = 'fp32'
-                            bias.data = node.input_tensors[2].data
+                    node.input_tensors[2].data = copy.deepcopy((bias_fp32 + compensation).astype(np.float32))
 
         # modify output name and remove useless outputs
         for tensor in model.nodes[-1].input_tensors:
