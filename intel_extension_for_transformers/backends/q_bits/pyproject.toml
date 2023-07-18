@@ -1,0 +1,12 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "setuptools_scm[toml]>=6.2",
+    "wheel",
+    "ninja",
+    "cmake>=3.16",
+    "torch",
+    "torchvision",
+    "torchaudio",
+]
+build-backend = "setuptools.build_meta"

@@ -3,9 +3,18 @@ project(weight_only_jblasop LANGUAGES C CXX)
 
 set(CMAKE_CXX_FLAGS "-g -O0 -Wno-narrowing")
 
-execute_process(COMMAND python -c "import torch; print(torch.__path__[0])"
-                OUTPUT_VARIABLE torch_path
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
+set(QBITS_TORCH_PATH "" CACHE STRING "Torch install path")
+
+if(QBITS_TORCH_PATH)
+    set(torch_path ${QBITS_TORCH_PATH})
+    unset(TORCH_LIBRARY CACHE)  # force find_package torch
+    unset(c10_LIBRARY CACHE)
+    unset(TORCH_DIR CACHE)
+else()
+    execute_process(COMMAND python -c "import torch; print(torch.__path__[0])"
+                    OUTPUT_VARIABLE torch_path
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 
 find_package(Torch REQUIRED
 PATHS ${torch_path}

@@ -1,11 +1,14 @@
-import glob
 import os
+import os.path
 import sys
 import subprocess
 from cmake import CMAKE_BIN_DIR
 from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+
+import torch
+TORCH_PATH: str = torch.__path__[0]
 
 # define install requirements
 # install_requires_list = ['neural_compressor']
@@ -36,10 +39,11 @@ def read(fname):
 class CMakeExtension(Extension):
     """CMakeExtension class."""
 
-    def __init__(self, name, sourcedir=""):
+    def __init__(self, name, sourcedir="", lib_only=False):
         """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
+        self.optional = lib_only  # we only deliver shared object but not as a python extension module
 
 
 class CMakeBuild(build_ext):
@@ -97,6 +101,7 @@ class CMakeBuild(build_ext):
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={CMAKE_BUILD_TYPE}",
             f"-DQBITS_VERSION_STRING={self.distribution.get_version()}",
+            f"-DQBITS_TORCH_PATH={TORCH_PATH}",  # so that cmake won't use old torch path
         ]
         if sys.platform == "linux":  # relative_rpath
             cmake_args.append('-DCMAKE_BUILD_RPATH=$ORIGIN/')
@@ -207,8 +212,7 @@ setup(
     url="https://github.com/intel/intel-extension-for-transformers/backend/q_bits",
     packages=find_packages(),
     # package_data={"": libs},
-    ext_modules=[CMakeExtension(
-            "q_bits.q_bits_py", 'cscr')],
+    ext_modules=[CMakeExtension("q_bits.q_bits_py", 'cscr', True)],
     cmdclass={'build_ext': CMakeBuild},
     entry_points={
         'console_scripts': [
