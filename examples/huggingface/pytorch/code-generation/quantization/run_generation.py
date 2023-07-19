@@ -27,10 +27,10 @@ parser.add_argument(
     "--model", nargs="?", default="bigcode/starcoderbase", const="bigcode/starcoderbase"
 )
 parser.add_argument(
-    "--dataset", nargs="?", default="openai_humaneval", const="openai_humaneval"
+    "--dataset", nargs="?", default="mbpp", const="mbpp"
 )
 parser.add_argument(
-    "--calib_split", nargs="?", default="train", const="train"
+    "--calib_split", nargs="?", default="test", const="test"
 )
 parser.add_argument("--dtype", type=str, default="int8")
 parser.add_argument(
@@ -82,8 +82,8 @@ parser.add_argument("--seed", default=0, type=int)
 
 # Generation config
 parser.add_argument("--max_length_generation", default=512, type=int)
-parser.add_argument("--temperature", default=0.8)
-parser.add_argument("--top_p", default=0.95)
+parser.add_argument("--temperature", default=0.8, type=float)
+parser.add_argument("--top_p", default=0.95, type=float)
 parser.add_argument("--top_k", default=0, type=int)
 parser.add_argument("--do_sample", action="store_true")
 

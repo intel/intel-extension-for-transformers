@@ -8,7 +8,6 @@ Recommend python 3.7 or higher version is recommended. The dependent packages ar
 
 ```shell
 git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit
-git checkout maktukmak/starcode_dev
 pip install frameworks.ai.nlp-toolkit.intel-nlp-toolkit/
 ```
 Here is how to install intel-extension-for-pytorch from source.
@@ -54,23 +53,25 @@ accelerate launch run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --quantize \
-    --int8 \
     --sq \
-    --alpha 0.5  \
+    --alpha 0.7  \
     --ipex \
-    --calib_iters 4 \
-    --calib_batch_size 8 \
+    --calib_iters 500 \
+    --calib_batch_size 1 \
+    --dataset "mbpp" \
+    --calib_split "test"
 ```
 
 ## 2. Performance
 ```bash
+# --int8 is used for int8 model
 accelerate launch run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --int8 \
     --ipex \
     --benchmark \
-    --batch_size 1 \
+    --batch_size 1
 ```
 
 ## 3. Accuracy
@@ -82,14 +83,16 @@ pip install -e .
 ```
 And then, run the accuracy command.
 ```bash
+# --int8 is used for int8 model
 accelerate launch run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
-    --int8 \
+    --int8 \    
     --ipex \
-    --batch_size 10 \
+    --batch_size 20 \
     --accuracy \
-    --n_samples 10 \
+    --n_samples 20 \
     --allow_code_execution \
-    --do_sample \
+    --temperature 0.2 \
+    --do_sample
 ```
