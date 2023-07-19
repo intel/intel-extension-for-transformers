@@ -4,7 +4,7 @@ Intel® Extension for Transformers
 ===========================
 <h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
 
-[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Cpp inference](./intel_extension_for_transformers/backends/neural_engine/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/backends/neural_engine/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
 ---
@@ -23,7 +23,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 *  [NeuralChat](workflows/chatbot), a custom Chatbot trained on Intel CPUs through parameter-efficient fine-tuning [PEFT](https://github.com/huggingface/peft) on domain knowledge
 
-*  [CPP Inference](intel_extension_for_transformers/backends/neural_engine/graph), inference of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatFALCON)
+*  [Inference](intel_extension_for_transformers/backends/neural_engine/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatFALCON)
 
 
 ## Installation
@@ -147,6 +147,7 @@ output = model(**input).logits.argmax().item()
 
 
 ## Selected Publications/Events
+* Blog of Intel Developer News: [Accelerate Llama 2 with Intel AI Hardware and Software Optimizations](https://www.intel.com/content/www/us/en/developer/articles/news/llama2.html) (July 2023)
 * Arxiv: [An Efficient Sparse Inference Software Accelerator for Transformer-based Language Models on CPUs](https://arxiv.org/abs/2306.16601) (June 2023)
 * Blog published on Medium: [Simplify Your Custom Chatbot Deployment](https://medium.com/intel-analytics-software/simplify-your-custom-chatbot-deployment-on-intel-platforms-c8a911d906cf) (June 2023)
 * Blog published on Medium: [Create Your Own Custom Chatbot](https://medium.com/intel-analytics-software/create-your-own-chatbot-on-cpus-b8d186cfefb2) (April 2023)
