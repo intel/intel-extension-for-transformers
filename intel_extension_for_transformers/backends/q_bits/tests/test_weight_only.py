@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import unittest
 from q_bits import convert_to_quantized_model, QBitsConfig
@@ -16,7 +17,7 @@ class M(torch.nn.Module):
 class TestWeightOnly(unittest.TestCase):
     def test_int4(self):
         raw_wei = torch.rand(2,3, dtype=torch.float)
-        torch.ops.weight_only_jblasop.jblas_symqdq_s4weight(raw_wei,True,32)
+        torch.ops.weight_only_jblasop.jblas_symqdq_weight(raw_wei, True, 4, 32)
         model = M()
         with torch.no_grad():
             model.linear.weight = torch.nn.Parameter(raw_wei)
