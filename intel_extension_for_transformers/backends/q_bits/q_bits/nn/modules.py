@@ -46,11 +46,7 @@ class QuantizedLinearBits(nn.Linear):
 
         if getattr(self.weight, 'quant_state', None) is None:
             print('FP4 quantization state not initialized. Please call .quantize_weights().')
-        inp_dtype = x.dtype
-        if self.compute_dtype is not None:
-            x = x.to(self.compute_dtype)
 
-        bias = None if self.bias is None else self.bias.to(self.compute_dtype)
         m = x.size()[0]
         out = torch.zeros(m, self.out_features, dtype=torch.float)
         torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear(
@@ -61,9 +57,10 @@ class QuantizedLinearBits(nn.Linear):
     def set_weights(self, data):
         weight = torch.ops.weight_only_jblasop.jblas_quantize(
             data, True, self.quant_bits, self.scheme, self.blocksize, self.compute_dtype)
+        quant_type = self.quant_type
         self.weight = ParamsForBits(
-            weight, False, {"scheme": self.scheme}, blocksize=self.blocksize, 
-            compress_statistics=self.compress_statistics, quant_type=self.quant_tpye
+            data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics, quant_type=quant_type
         )
 
 
@@ -73,14 +70,14 @@ class QuantizedLinearINT4(QuantizedLinearBits):
         input_features,
         output_features,
         bias=True,
-        compute_dtype="int8",
+        compute_dtype="fp32",
         compress_statistics=True,
         blocksize=32,
         scheme="sym",
         device=None,
     ):
         super().__init__(input_features, output_features, bias, compute_dtype, compress_statistics,
-                         "int4", blocksize, scheme, device)
+                         4, "int4", blocksize, scheme, device)
 
 class QuantizedLinearINT8(QuantizedLinearBits):
     def __init__(
@@ -88,11 +85,11 @@ class QuantizedLinearINT8(QuantizedLinearBits):
         input_features,
         output_features,
         bias=True,
-        compute_dtype="int8",
+        compute_dtype="fp32",
         compress_statistics=True,
         blocksize=32,
         scheme="sym",
         device=None,
     ):
         super().__init__(input_features, output_features, bias, compute_dtype, compress_statistics,
-                         "int8", blocksize, scheme, device)
+                         8, "int8", blocksize, scheme, device)

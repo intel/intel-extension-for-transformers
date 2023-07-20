@@ -14,15 +14,19 @@ def _quantization_method(config):
     This method returns the quantization method used for the model. If the model is not quantizable, it returns
     `None`.
     """
-    if config.load_in_8bit:
+    if config.quant_bits == 8:
         return "int8"
-    elif config.load_in_4bit and config.bit4_quant_type == "int4":
+    elif config.quant_bits and config.quant_type == "int4":
         return "int4"
     else:
         return None
 
 
 def replace_linear(model, modules_to_not_convert=None, current_key_name=None, quantization_config=None):
+    if modules_to_not_convert is None:
+        modules_to_not_convert = []
+    if quantization_config.llm_int8_skip_modules:
+        modules_to_not_convert = modules_to_not_convert.extend(quantization_config.llm_int8_skip_modules)
     model, is_replaced = _replace_linear(
         model, modules_to_not_convert, current_key_name, quantization_config
     )
@@ -45,14 +49,12 @@ def _replace_linear(
 
     Returns the converted model and a boolean that indicates if the conversion has been successfull or not.
     """
-    modules_to_not_convert = modules_to_not_convert.extend(quantization_config.llm_int8_skip_modules) if modules_to_not_convert else \
-        quantization_config.llm_int8_skip_modules
     for name, module in model.named_children():
         if current_key_name is None:
             current_key_name = []
         current_key_name.append(name)
 
-        if isinstance(module, nn.Linear) and modules_to_not_convert and name not in modules_to_not_convert:
+        if isinstance(module, nn.Linear) and name not in modules_to_not_convert:
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
@@ -83,7 +85,7 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                    model._modules[name].set_weights(module.weight.data)
+                model._modules[name].set_weights(module.weight.data)
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
                 module,

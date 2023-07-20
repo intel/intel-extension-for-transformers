@@ -16,12 +16,12 @@ class M(torch.nn.Module):
 
 class TestWeightOnly(unittest.TestCase):
     def test_int4(self):
-        raw_wei = torch.rand(2,3, dtype=torch.float)
+        raw_wei = torch.rand(2,32, dtype=torch.float)
         torch.ops.weight_only_jblasop.jblas_symqdq_weight(raw_wei, True, 4, 32)
         model = M()
         with torch.no_grad():
             model.linear.weight = torch.nn.Parameter(raw_wei)
-        activation = torch.rand(1,3, dtype=torch.float)
+        activation = torch.rand(1,32, dtype=torch.float)
         output = model(activation)
 
         config = QBitsConfig(quant_bits=4, quant_type="int4")
