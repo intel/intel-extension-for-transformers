@@ -1,1 +1,1 @@
-from modules import QuantizedLinearINT4, QuantizedLinearINT8
+from .modules import QuantizedLinearINT4, QuantizedLinearINT8

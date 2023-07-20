@@ -6,7 +6,5 @@ requires = [
     "ninja",
     "cmake>=3.16",
     "torch",
-    "torchvision",
-    "torchaudio",
 ]
 build-backend = "setuptools.build_meta"

@@ -52,7 +52,7 @@ def _replace_linear(
             current_key_name = []
         current_key_name.append(name)
 
-        if isinstance(module, nn.Linear)and name not in modules_to_not_convert:
+        if isinstance(module, nn.Linear) and modules_to_not_convert and name not in modules_to_not_convert:
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
@@ -112,4 +112,4 @@ def convert_to_quantized_model(model, config):
         },
     )
     model = quantization.fit(model, conf)
-    replace_linear(model, None, None, config)
+    replace_linear(model.model, None, None, config)

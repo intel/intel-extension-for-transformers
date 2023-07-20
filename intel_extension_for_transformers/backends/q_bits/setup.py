@@ -1,20 +1,25 @@
 import os
 import os.path
+import re
 import sys
 import subprocess
 from cmake import CMAKE_BIN_DIR
 from pathlib import Path
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
-
 import torch
+
 TORCH_PATH: str = torch.__path__[0]
 
+try:
+    filepath = './q_bits/version.py'
+    with open(filepath) as version_file:
+        __version__, = re.findall('__version__ = "(.*)"', version_file.read())
+except Exception as error:
+    assert False,  "Error: Could not open '%s' due %s\n" % (filepath, error)
+
 # define install requirements
-# install_requires_list = ['neural_compressor']
-# libs = list(glob.glob("./bitsandbytes/libbitsandbytes*.so"))
-# libs = [os.path.basename(p) for p in libs]
-# print("libs:", libs)
+install_requires_list = ["neural_compressor", "torch", "accelerate"]
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
@@ -203,22 +208,18 @@ class CMakeBuild(build_ext):
 
 setup(
     name=f"q_bits",
-    version=f"0.0",
+    version=__version__,
     author="Intel AIA/AIPC Team",
     author_email="feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
     description="k-bit optimizers and matrix multiplication routines.",
     license="Apache 2.0",
     keywords="quantization, weight_only, 8-bits, 4-bits",
     url="https://github.com/intel/intel-extension-for-transformers/backend/q_bits",
+    install_requires=install_requires_list,
+    dependency_links=["https://download.pytorch.org/whl/cpu"],
     packages=find_packages(),
-    # package_data={"": libs},
     ext_modules=[CMakeExtension("q_bits.q_bits_py", 'cscr', True)],
     cmdclass={'build_ext': CMakeBuild},
-    entry_points={
-        'console_scripts': [
-            'q_bits = q_bits:q_bits_bin',
-        ]
-    },
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     classifiers=[

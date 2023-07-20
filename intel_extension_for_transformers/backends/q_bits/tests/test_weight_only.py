@@ -1,24 +1,35 @@
 import torch
 import unittest
-from ..bits_quantization import convert_to_quantized_model, QBitsConfig
+from q_bits import convert_to_quantized_model, QBitsConfig
+
+torch.ops.load_library("../q_bits/libweight_only_jblasop.so")
+
+class M(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = torch.nn.Linear(3, 2)
+
+    def forward(self, x):
+        return self.linear(x)
 
 
 class TestWeightOnly(unittest.TestCase):
     def test_int4(self):
-        torch.ops.load_library("../cscr/build/libweight_only_jblasop.so")
         raw_wei = torch.rand(2,3, dtype=torch.float)
-        quant_wei = torch.ops.weight_only_jblasop.jblas_quantize(raw_wei, True, 8, "sym", 32, "int8")
-        # fake_weight = 
-        linear = torch.nn.linear(3, 2)
+        torch.ops.weight_only_jblasop.jblas_symqdq_s4weight(raw_wei,True,32)
+        model = M()
         with torch.no_grad():
-            linear.weight = torch.nn.Parameter(raw_wei)
+            model.linear.weight = torch.nn.Parameter(raw_wei)
         activation = torch.rand(1,3, dtype=torch.float)
-        output = linear(activation)
+        output = model(activation)
 
-        config = QBitsConfig()
-        convert_to_quantized_model(linear, config)
-        output_quant = linear(activation)
+        config = QBitsConfig(quant_bits=4, quant_type="int4")
+        convert_to_quantized_model(model, config)
+        output_quant = model(activation)
         print(output)
         print(output_quant)
         assert torch.allclose(output, output_quant)
 
+
+if __name__ == "__main__":
+    unittest.main()
