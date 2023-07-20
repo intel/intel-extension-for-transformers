@@ -104,8 +104,8 @@ void InnerProductGraphOperator::Reshape(const vector<Tensor*>& input, const vect
   logical_outputs_.push_back(ip_out_desc);
 
   dnnl::graph::op ip_op(0, dnnl::graph::op::kind::MatMul, logical_inputs_, {ip_out_desc}, "matmul");
-  ip_op.set_attr<bool>("transpose_a", transpose_a_);
-  ip_op.set_attr<bool>("transpose_b", transpose_b_);
+  ip_op.set_attr<bool>(dnnl::graph::op::attr::transpose_a, transpose_a_);
+  ip_op.set_attr<bool>(dnnl::graph::op::attr::transpose_b, transpose_b_);
   g_.add_op(ip_op);
 
   // append

@@ -238,8 +238,7 @@ void MatmulOperator::DstReshapeFusion(const vector<Tensor*>& input, const vector
 void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   MapTensors(input, output);
   dst_->set_dtype(output_dtype_);
-  is_dynamic_ =
-      output.size() > 1 || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
+  is_dynamic_ = src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared();
   if (is_dynamic_) {
     DLOG(INFO) << this->name() << " is DYNAMIC!!!";
 #ifdef _WIN32
@@ -247,16 +246,51 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
     throw std::string("Windows");
 #endif
   }
-  if (!is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
-    int ic_dim = 0;
+  if (!is_dynamic_ && (src0_min_ != nullptr || src1_min_ != nullptr)) {
     vector<float> rescales;
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
-      ic_dim = src1_min_->size() > 1 ? 0 | (1 << 1) : 0;
-      vector<float> src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
-      vector<float> src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
-      if (dst_min_ != nullptr)
+      src0_scales_ = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
+      src1_scales_ = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
+      src0_zps_ = GetZeroPoints(src0_min_->data(), src0_scales_, src0_->dtype());
+      if (dst_min_) {
         dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
-      rescales = GetRescales(src0_scales, src1_scales, dst_scales_, dst_->dtype(), append_eltwise_);
+        rescales = GetRescales(src0_scales_, src1_scales_, dst_scales_, dst_->dtype(), append_eltwise_);
+      }
+      if (dst_min_ != nullptr && (dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
+        attr_.set_scales_mask(DNNL_ARG_DST, /* mask */ 0);
+        dst_zps_ = GetZeroPoints(dst_min_->data(), dst_scales_, dst_->dtype());
+        for (int i = 0; i < dst_scales_.size(); i++) dst_scales_[i] = 1.0 / dst_scales_[i];
+        auto dst_scale_md = memory::desc({dst_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+        auto dst_scales_m_ = memory(dst_scale_md, eng_, reinterpret_cast<void*>(dst_scales_.data()));
+        memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_DST] = dst_scales_m_;
+        if (dst_->dtype() == "u8") {
+          attr_.set_zero_points_mask(DNNL_ARG_DST, /* mask */ 0);
+          auto dst_zps_md = memory::desc({dst_zps_.size()}, memory::data_type::s32, memory::format_tag::x);
+          auto dst_zps_m = memory(dst_zps_md, eng_, reinterpret_cast<void*>(dst_zps_.data()));
+          memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_DST] = dst_zps_m;
+        }
+      }
+
+      for (int i = 0; i < src0_scales_.size(); i++) src0_scales_[i] = 1.0 / src0_scales_[i] * output_scale_;
+      for (int i = 0; i < src1_scales_.size(); i++) src1_scales_[i] = 1.0 / src1_scales_[i];
+
+      attr_.set_scales_mask(DNNL_ARG_SRC, /* mask */ 0);
+      auto src_scale_md = memory::desc({src0_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+      auto src_scales_m = memory(src_scale_md, eng_, reinterpret_cast<void*>(src0_scales_.data()));
+      memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC] = src_scales_m;
+
+      if (src0_->dtype() == "u8") {
+        attr_.set_zero_points_mask(DNNL_ARG_SRC, /* mask */ 0);
+        auto src_zps_md = memory::desc({src0_zps_.size()}, memory::data_type::s32, memory::format_tag::x);
+        auto src_zps_m = memory(src_zps_md, eng_, reinterpret_cast<void*>(src0_zps_.data()));
+        memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = src_zps_m;
+      }
+
+      attr_.set_scales_mask(DNNL_ARG_WEIGHTS, /* mask */ src1_scales_.size() > 1 ? 2 : 0);
+      auto src1_scale_md = memory::desc({src1_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+      auto src1_scales_m = memory(src1_scale_md, eng_, reinterpret_cast<void*>(src1_scales_.data()));
+      memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS] = src1_scales_m;
+
     } else {
       rescales = vector<float>(1, 1.f);
     }
@@ -265,7 +299,6 @@ void MatmulOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*>
         rescales[i] *= output_scale_;
       }
     }
-    attr_.set_output_scales(ic_dim, rescales);
     rescales_ = rescales;
   }
   SetTransposeMode();
@@ -320,7 +353,7 @@ void MatmulOperator::ReshapewithTransMode(const vector<Tensor*>& input, const ve
   vector<jd::tensor_desc> ts_descs;
   if (dst_->dtype() == "u8") {
     ts_descs = {src0_desc_, src1_desc_, dst_desc_, binary_desc_, scale_desc_, zp_desc_};
-    ouput_zp_ = -1 * static_cast<const float*>(dst_min_->data())[0] * dst_scales_[0];
+    ouput_zp_ = -1 * static_cast<const float*>(dst_min_->data())[0] * 1.0 / dst_scales_[0];
   } else {
     ts_descs = {src0_desc_, src1_desc_, dst_desc_, binary_desc_};
   }
@@ -415,30 +448,20 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
     src1_md = dnnl::memory::desc(src1_shape, type2mem[src1_->dtype()], memory::format_tag::any);
   }
 
-  // 2.2 Prepare op descriptors
-  dnnl::matmul::desc matmul_d =
-      has_bias_ ? dnnl::matmul::desc(src0_md, src1_md, bias_md, dst_md) : dnnl::matmul::desc(src0_md, src1_md, dst_md);
-
-  if (format_any_) {
-    matmul_d = has_bias_ ? dnnl::matmul::desc(any_src0_md, any_src1_md, any_bias_md, any_dst_md)
-                         : dnnl::matmul::desc(any_src0_md, any_src1_md, any_dst_md);
-  }
-
   // 2.3 Prepare primitive descriptors (cached)
   vector<float> src0_scales;
   vector<float> src1_scales;
   vector<float> dst_scales;
   vector<float> rescales;
   dnnl::post_ops po;
-  int ic_dim = 0;  // matmul only support per_tensor now
   if (is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
-      attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
+      attr_.set_scales_mask(DNNL_ARG_DST, 0);
       scale_f32_mem_ = memory({{1}, memory::data_type::f32, {1}}, eng_, DNNL_MEMORY_NONE);
       zp_src0_mem_ = memory({{1}, memory::data_type::s32, {1}}, eng_, DNNL_MEMORY_NONE);
       // need zero point when src0 is u8
       if (src0_->dtype() == "u8") {
-        attr_.set_zero_points(DNNL_ARG_SRC, ic_dim, {DNNL_RUNTIME_S32_VAL});
+        attr_.set_zero_points_mask(DNNL_ARG_SRC, 0);
       }
     }
   }
@@ -450,29 +473,19 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
     float op_scale = 1.0;
     float op_alpha = 0.0;
     float op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_gelu_erf, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_gelu_erf, op_alpha, op_beta);
   }
   if (gelu_tanh_) {
     float op_scale = 1.0;
     float op_alpha = 0.0;
     float op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_gelu_tanh, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_gelu_tanh, op_alpha, op_beta);
   }
   if (tanh_) {
     auto op_scale = 1.0;
     auto op_alpha = 0.0;
     auto op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_tanh, op_alpha, op_beta);
-  }
-  if (!is_dynamic_ && dst_->dtype() == "u8" && dst_min_->data() != nullptr) {
-    if (append_eltwise_) {
-      float zero_point = -1 * static_cast<const float*>(dst_min_->data())[0];
-      po.append_eltwise(dst_scales_[0], algorithm::eltwise_linear, 1., zero_point);
-    } else {
-      vector<int> dst_zero_points;
-      dst_zero_points = GetZeroPoints(dst_min_->data(), dst_scales_, dst_->dtype());
-      attr_.set_zero_points(DNNL_ARG_DST, ic_dim, dst_zero_points);
-    }
+    po.append_eltwise(algorithm::eltwise_tanh, op_alpha, op_beta);
   }
   if (binary_add_) {
     vector<int64_t> post_shape = post_->shape();
@@ -481,11 +494,28 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
     po.append_binary(algorithm::binary_add, binary_md);
     binary_m_ = memory(binary_md, eng_, DNNL_MEMORY_NONE);
   }
+  if (src0_min_ == nullptr && output_scale_ != 1.f) {
+    append_eltwise_ = true;
+    po.append_eltwise(algorithm::eltwise_linear, output_scale_, 0);
+  }
   attr_.set_post_ops(po);
 
   attr_.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 
-  matmul_pd_ = dnnl::matmul::primitive_desc(matmul_d, attr_, eng_);
+  // Create primitive descriptor.
+  if (format_any_) {
+    if (has_bias_) {
+      matmul_pd_ = dnnl::matmul::primitive_desc(eng_, any_src0_md, any_src1_md, any_bias_md, any_dst_md, attr_);
+    } else {
+      matmul_pd_ = dnnl::matmul::primitive_desc(eng_, any_src0_md, any_src1_md, any_dst_md, attr_);
+    }
+  } else {
+    if (has_bias_) {
+      matmul_pd_ = dnnl::matmul::primitive_desc(eng_, src0_md, src1_md, bias_md, dst_md, attr_);
+    } else {
+      matmul_pd_ = dnnl::matmul::primitive_desc(eng_, src0_md, src1_md, dst_md, attr_);
+    }
+  }
 
   memory::desc scratchpad_md = matmul_pd_.scratchpad_desc();
 
@@ -494,8 +524,8 @@ void MatmulOperator::ReshapewithOnednn(const vector<Tensor*>& input, const vecto
     scratchpad_ = nullptr;
   }
 
-  scratchpad_ = reinterpret_cast<void*>(
-    aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
+  scratchpad_ =
+      reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
 
   memory scratchpad_m = memory(scratchpad_md, eng_, scratchpad_);
   memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
@@ -601,9 +631,9 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   }
 
   // 1. Prepare memory objects with data_ptr
-  src0_m_.set_data_handle(const_cast<void*>(src0_data), eng_stream_);
-  src1_m_.set_data_handle(const_cast<void*>(src1_data), eng_stream_);
-  dst_m_.set_data_handle(dst_data, eng_stream_);
+  src0_m_.set_data_handle(const_cast<void*>(src0_data));
+  src1_m_.set_data_handle(const_cast<void*>(src1_data));
+  dst_m_.set_data_handle(dst_data);
 
   // 2. Reorder the data when the primitive memory and user memory are different
 
@@ -629,10 +659,9 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   // the runtime calculation of dynamic quantization
 
   vector<int32_t> src0_zero_points;
-  vector<float> rescales;
   vector<float> dynamic_bias;
   if (is_dynamic_) {
-    DynamicForward(&src0_zero_points, &rescales, &dynamic_bias);
+    DynamicForward(&src0_zero_points, &dynamic_bias);
   }
 
   // 3. Insert memory args
@@ -643,7 +672,7 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   // has post_op: binary_add
   if (post_ != nullptr && binary_add_) {
     void* post_ptr = post_->mutable_data();
-    binary_m_.set_data_handle(post_ptr, eng_stream_);
+    binary_m_.set_data_handle(post_ptr);
     memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = binary_m_;
   }
 
@@ -656,8 +685,6 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
   }
 
   eng_stream_.wait();
-  // 6. unref tensors
-  this->unref_tensors(input);
 
   if (is_dynamic_) {
     // quantize the fp32 result of matmul
@@ -691,6 +718,8 @@ void MatmulOperator::ForwardwithOnednn(const vector<Tensor*>& input, const vecto
       dst_->set_data(res_ptr);
     }
   }
+  // 6. unref tensors
+  this->unref_tensors(input);
 }
 
 void MatmulOperator::RuntimeMinmax() {
@@ -702,29 +731,27 @@ void MatmulOperator::RuntimeMinmax() {
   memory reduce_max(dst_md, eng_);
   reduce_min.set_data_handle(dst_min_->mutable_data());
   reduce_max.set_data_handle(dst_max_->mutable_data());
-  dnnl::reduction::desc reduce_min_d(algorithm::reduction_min, dst_m_.get_desc(), dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_min_pd(reduce_min_d, eng_);
-  dnnl::reduction(reduce_min_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_min}});
-  dnnl::reduction::desc reduce_max_d(algorithm::reduction_max, dst_m_.get_desc(), dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_max_pd(reduce_max_d, eng_);
-  dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
+  // dnnl::reduction::desc reduce_min_d(algorithm::reduction_min, dst_m_.get_desc(), dst_md, 0.f, 0.f);
+  // dnnl::reduction::primitive_desc reduce_min_pd(reduce_min_d, eng_);
+  // dnnl::reduction(reduce_min_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_min}});
+  // dnnl::reduction::desc reduce_max_d(algorithm::reduction_max, dst_m_.get_desc(), dst_md, 0.f, 0.f);
+  // dnnl::reduction::primitive_desc reduce_max_pd(reduce_max_d, eng_);
+  // dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
 }
 
-void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
-                                    vector<float>* dynamic_bias_ptr) {
-  auto& rescales = *rescales_ptr;
+void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* dynamic_bias_ptr) {
   int channel_size = src1_min_->size();  // channel_size=1 represent per_tensor
-  rescales.resize(channel_size);
+  rescales_.resize(channel_size);
   const float* src0_scales = reinterpret_cast<const float*>(src0_max_->data());
   const float* src1_scales = reinterpret_cast<const float*>(src1_max_->data());
   if (channel_size == 1) {
-    rescales[0] = output_scale_ * src0_scales[0] * src1_scales[0];
+    rescales_[0] = output_scale_ / src0_scales[0] / src1_scales[0];
   } else {
 #pragma omp parallel for
-    for (int i = 0; i < channel_size; i++) rescales[i] = output_scale_ * src0_scales[0] * src1_scales[i];
+    for (int i = 0; i < channel_size; i++) rescales_[i] = output_scale_ / src0_scales[0] / src1_scales[i];
   }
-  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales.data()), eng_stream_);
-  memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
+  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales_.data()));
+  memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_DST] = scale_f32_mem_;
 
   // The bias loaded from file is not scaled. So need rescaled runtime.
   if (has_bias_) {
@@ -735,12 +762,12 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
       float* bias_data = reinterpret_cast<float*>(bias_m_data);
       if (channel_size == 1) {
 #pragma omp parallel for
-        for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[0];
+        for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] * rescales_[0];
       } else {
 #pragma omp parallel for
-        for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[i];
+        for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] * rescales_[i];
       }
-      bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
+      bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()));
     }
   }
 
@@ -749,7 +776,7 @@ void MatmulOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vecto
     float tmp = 1.0 / *src0_scales;
     src0_zero_points =
         GetZeroPoints(reinterpret_cast<const float*>(src0_min_->data()), &tmp, src0_->dtype(), src0_min_->size());
-    zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);
+    zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()));
     memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = zp_src0_mem_;
   }
 }

@@ -146,17 +146,21 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
     binary_mem = memory(binary_md, engine, padding_seq.get());
   }
   attr.set_post_ops(po);
-  attr.set_output_scales(0, {output_scale});
+  attr.set_scales_mask(DNNL_ARG_SRC, /* mask */ 0);
+  std::unordered_map<int, memory> qk_matmul_args;
+  auto src_scale_md = memory::desc({1}, memory::data_type::f32, memory::format_tag::x);
+  auto src_scales_m = memory(src_scale_md, engine, reinterpret_cast<void*>(&output_scale));
+  qk_matmul_args[DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC] = src_scales_m;
+
   auto qk_shape = q_shape;
   qk_shape[3] = k_shape[3];
   Tensor qk(nullptr, qk_shape, "fp32");
   qk.add_tensor_life(1);
   auto qk_md = memory::desc(qk_shape, dnnl::memory::data_type::f32, dnnl::memory::format_tag::abcd);
   auto qk_mem = memory(qk_md, engine, qk.mutable_data());
-  auto qk_matmul_d = matmul::desc(q_md, k_md, qk_md);
-  auto qk_matmul_pd = matmul::primitive_desc(qk_matmul_d, attr, engine);
+  auto qk_matmul_pd = matmul::primitive_desc(engine, q_md, k_md, qk_md, attr);
   auto qk_matmul_prim = matmul(qk_matmul_pd);
-  std::unordered_map<int, memory> qk_matmul_args;
+  
   qk_matmul_args.insert({DNNL_ARG_SRC, q_mem});
   qk_matmul_args.insert({DNNL_ARG_WEIGHTS, k_mem});
   if (post != nullptr) qk_matmul_args.insert({DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, binary_mem});
@@ -165,8 +169,8 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   qk.set_name("qk");
   // qk.to_file();
   // softmax
-  dnnl::softmax_forward::desc softmax_d(dnnl::prop_kind::forward_inference, qk_md, 3);
-  dnnl::softmax_forward::primitive_desc softmax_pd(softmax_d, engine);
+  auto softmax_pd = dnnl::softmax_forward::primitive_desc(engine, dnnl::prop_kind::forward_inference,
+                                                        dnnl::algorithm::softmax_accurate, qk_md, qk_md, 3);
   dnnl::softmax_forward softmax_p = dnnl::softmax_forward(softmax_pd);
   Tensor a(nullptr, qk_shape, "fp32");
   a.set_name("a");
@@ -186,8 +190,7 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   auto dst_stride = executor::GetStrides(dst_tensor->shape(), executor::ReversePerm({0, 2, 1, 3}));
   auto dst_md = memory::desc(dst_shape, dnnl::memory::data_type::f32, dst_stride);
   auto dst_mem = memory(dst_md, engine, dst_tensor->mutable_data());
-  auto av_matmul_d = matmul::desc(qk_md, v_md, dst_md);
-  auto av_matmul_pd = matmul::primitive_desc(av_matmul_d, engine);
+  auto av_matmul_pd = matmul::primitive_desc(engine, qk_md, v_md, dst_md);
   auto av_matmul_prim = matmul(av_matmul_pd);
   std::unordered_map<int, memory> av_matmul_args;
   av_matmul_args.insert({DNNL_ARG_SRC, a_mem});

@@ -204,13 +204,10 @@ void LayerNormOperator::ReshapewithOnednn(const vector<Tensor*>& input, const ve
 
   //// Part2: Derive operator's format_any memory::desc and memory.
   // 2.1 Prepare format_any memory descriptors
-  // 2.2 Prepare op descriptors
-  dnnl::layer_normalization_forward::desc lnorm_d(prop_kind::forward_inference, src_md, epsilon_,
-                                                  dnnl::normalization_flags::use_scale_shift);
-
   // 2.3 Prepare primitive descriptors
-  dnnl::layer_normalization_forward::primitive_desc lnorm_pd(lnorm_d, eng_);
-
+  auto lnorm_pd = dnnl::layer_normalization_forward::primitive_desc(eng_, prop_kind::forward_inference,
+                              src_md, dst_md, epsilon_,
+                              dnnl::normalization_flags::use_scale | dnnl::normalization_flags::use_shift);
   // 2.4 Prepare primitive objects (cached)
   lnorm_p_ = dnnl::layer_normalization_forward(lnorm_pd);
 
@@ -221,26 +218,34 @@ void LayerNormOperator::ReshapewithOnednn(const vector<Tensor*>& input, const ve
   memory variance_m(lnorm_pd.variance_desc(), eng_);
 
   if (!weight_cached_) {
-    scale_shift_m = memory(scale_shift_md, eng_);
-    if (input[1]->is_shared() && input[2]->is_shared()) {
-      int64_t scale_shift_size = scale_shift_m.get_desc().get_size();
-      string scale_shift_name = input[1]->name() + input[2]->name();
-      void* scale_shift_shm_ptr =
-          MemoryAllocator::ManagedShm().find_or_construct<char>(scale_shift_name.c_str())[scale_shift_size](0);
-      scale_shift_m.set_data_handle(scale_shift_shm_ptr);
-    }
-    void* scale_shift_buf = scale_shift_m.get_data_handle();
+    // scale_shift_m = memory(scale_shift_md, eng_);
+    scale_mem_ = memory(scale_shift_md, eng_);
+    shift_mem_ = memory(scale_shift_md, eng_);
+
+    // if (input[1]->is_shared() && input[2]->is_shared()) {
+    //   int64_t scale_shift_size = scale_shift_m.get_desc().get_size();
+    //   string scale_shift_name = input[1]->name() + input[2]->name();
+    //   void* scale_shift_shm_ptr =
+    //       MemoryAllocator::ManagedShm().find_or_construct<char>(scale_shift_name.c_str())[scale_shift_size](0);
+    //   scale_shift_m.set_data_handle(scale_shift_shm_ptr);
+    // }
+
+    void* scale_buf = scale_mem_.get_data_handle();
     const auto& gamma_data = input[1]->data();
+    std::memcpy(scale_buf, gamma_data, sizeof(float) * scale_size);
+
+    void* shift_buf = shift_mem_.get_data_handle();
     const auto& beta_data = input[2]->data();
-    std::memcpy(scale_shift_buf, gamma_data, sizeof(float) * scale_size);
-    std::memcpy(reinterpret_cast<float*>(scale_shift_buf) + scale_size, beta_data, sizeof(float) * scale_size);
+    std::memcpy(shift_buf, beta_data, sizeof(float) * scale_size);
+
     weight_cached_ = true;
   }
 
   // 2.6 Prepare memory args (cached)
   memory_args_[DNNL_ARG_MEAN] = mean_m;
   memory_args_[DNNL_ARG_VARIANCE] = variance_m;
-  memory_args_[DNNL_ARG_SCALE_SHIFT] = scale_shift_m;
+  memory_args_[DNNL_ARG_SCALE] = scale_mem_;
+  memory_args_[DNNL_ARG_SHIFT] = shift_mem_;
 }
 
 vector<vector<string>> LayerNormOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -276,8 +281,8 @@ void LayerNormOperator::ForwardwithOnednn(const vector<Tensor*>& input, const ve
 
   // 1. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  src_m_.set_data_handle(const_cast<void*>(src_data), s);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  src_m_.set_data_handle(const_cast<void*>(src_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   // 2. Reorder the data when the primitive memory and user memory are different
   // 3. Insert memory args

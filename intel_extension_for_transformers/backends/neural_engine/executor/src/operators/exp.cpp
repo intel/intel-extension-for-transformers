@@ -46,11 +46,9 @@ void ExpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& o
   dst_tensor_ptr->set_shape(dst_shape);
 
   //// Part2: Derive operator's format_any memory::desc and memory.
-  // 2.2 Prepare op descriptors. last float p, float eps should be ignored in mean algorithm
-  dnnl::eltwise_forward::desc exp_d(prop_kind::forward_inference, algorithm::eltwise_exp, src_md, 0.f, 0.f);
-
-  // 2.3 Prepare primitive descriptors (cached)
-  dnnl::eltwise_forward::primitive_desc exp_pd(exp_d, eng_);
+  // 2.2 Prepare primitive descriptors (cached). last float p, float eps should be ignored in mean algorithm
+  auto exp_pd = dnnl::eltwise_forward::primitive_desc(eng_, dnnl::prop_kind::forward_inference,
+                                                      dnnl::algorithm::eltwise_exp, src_md, dst_md, 0.f, 0.f);
 
   // 2.4 Prepare primitive objects (cached)
   exp_p_ = dnnl::eltwise_forward(exp_pd);
@@ -68,8 +66,8 @@ void ExpOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& o
 
   // 1. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  src_m_.set_data_handle(const_cast<void*>(src_data), s);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  src_m_.set_data_handle(const_cast<void*>(src_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   // 2. Reorder the data when the primitive memory and user memory are different
   // 3. Insert memory args

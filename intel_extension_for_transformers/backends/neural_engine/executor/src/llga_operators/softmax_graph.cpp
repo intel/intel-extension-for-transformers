@@ -19,7 +19,7 @@
 namespace executor {
 
 SoftmaxGraphOperator::SoftmaxGraphOperator(const shared_ptr<OperatorConfig>& conf) :
-                      Operator(conf), g_(dnnl::graph::engine::kind::cpu) {
+                      Operator(conf), g_(dnnl::engine::kind::cpu) {
   auto attrs_map = operator_conf_->attributes();
   auto iter = attrs_map.find("axis");
   axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : -1;
@@ -67,18 +67,21 @@ void SoftmaxGraphOperator::Reshape(const vector<Tensor*>& input, const vector<Te
   logical_tensor dst_desc {1, data_type::f32, input[0]->shape(), layout_type::any};
   logical_inputs_.push_back(src_desc);
   logical_outputs_.push_back(dst_desc);
-
   dnnl::graph::op softmax_op(0, dnnl::graph::op::kind::SoftMax, {src_desc}, {dst_desc}, "softmax");
-  softmax_op.set_attr("axis", static_cast<int64_t>(axis_));
+  softmax_op.set_attr(dnnl::graph::op::attr::axis, static_cast<int64_t>(axis_));
   g_.add_op(softmax_op);
+  g_.finalize();
 
   auto partitions = g_.get_partitions();
   assert(partitions.size() == 1);
   partition_ = partitions[0];
-  cp_ = partition_.compile(logical_inputs_, logical_outputs_, eng_);
 }
 
 void SoftmaxGraphOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*>& output) {
+  dnnl::graph::allocator alloc {};
+  dnnl::engine eng_ = dnnl::graph::make_engine_with_allocator(dnnl::engine::kind::cpu, 0, alloc);
+  dnnl::stream strm_(eng_);
+  cp_ = partition_.compile(logical_inputs_, logical_outputs_, eng_);
   std::vector<dnnl::graph::tensor> inputs_ts, outputs_ts;
   inputs_ts.reserve(logical_inputs_.size());
   outputs_ts.reserve(logical_outputs_.size());

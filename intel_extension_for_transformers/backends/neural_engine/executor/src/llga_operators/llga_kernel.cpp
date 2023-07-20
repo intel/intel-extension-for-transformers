@@ -20,7 +20,7 @@ namespace executor {
 
 void LLGAKernel::Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // set dtype of output according to partition's logical tensors
-  vector<logical_tensor> outputs = partition_.get_out_ports();
+  vector<logical_tensor> outputs = partition_.get_output_ports();
   for (size_t idx = 0; idx < outputs.size(); ++idx) {
     output[idx]->set_dtype(llga_info_->ConvertType(outputs[idx].get_data_type()));
   }
@@ -37,8 +37,8 @@ int GetTensorIndexFromID(const vector<logical_tensor>& lts, int id) {
 
 void LLGAKernel::Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) {
   // compile partition and query output shape
-  inputs_lt = partition_.get_in_ports();
-  outputs_lt = partition_.get_out_ports();
+  inputs_lt = partition_.get_input_ports();
+  outputs_lt = partition_.get_output_ports();
   for (size_t idx = 0; idx < inputs_lt.size(); ++idx) {
     size_t id = inputs_lt[idx].get_id();
     logical_tensor temp_lt = llga_info_->GetLogicalTensor(id);

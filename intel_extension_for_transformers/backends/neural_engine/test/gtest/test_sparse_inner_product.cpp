@@ -176,8 +176,7 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   auto weights_mem = memory(weights_md, engine, weight->mutable_data());
   auto bias_mem = memory(bias_md, engine, bias->mutable_data());
   auto dst_mem = memory(dst_md, engine, dst_tensor->mutable_data());
-  auto matmul_d = matmul::desc(src_md, weights_md, bias_md, dst_md);
-  auto matmul_pd = matmul::primitive_desc(matmul_d, engine);
+  auto matmul_pd = matmul::primitive_desc(engine, src_md, weights_md, bias_md, dst_md);
   auto matmul_prim = matmul(matmul_pd);
   std::unordered_map<int, memory> matmul_args;
   matmul_args.insert({DNNL_ARG_SRC, src_mem});

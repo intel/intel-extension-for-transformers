@@ -55,14 +55,18 @@ class BinaryAddOperator : public Operator {
   memory user_dst_m_;
   unordered_map<int, memory> memory_args_;
   algorithm algo_ = algorithm::undef;
-  dnnl::binary::desc PrepareBroadcastBinaryDesc(const memory::dims& src0_shape_origin,
+  dnnl::binary::primitive_desc PrepareBroadcastBinaryDesc(const memory::dims& src0_shape_origin,
                                                 const memory::dims& src1_shape_origin,
                                                 const vector<Tensor*>& input,
-                                                const vector<Tensor*>& output);
-  dnnl::binary::desc PrepareStrideBinaryDesc(const memory::dims& src0_shape_origin,
+                                                const vector<Tensor*>& output,
+                                                const dnnl::primitive_attr& attr,
+                                                const dnnl::engine& eng);
+  dnnl::binary::primitive_desc PrepareStrideBinaryDesc(const memory::dims& src0_shape_origin,
                                              const memory::dims& src1_shape_origin,
                                              const vector<Tensor*>& input,
-                                             const vector<Tensor*>& output);
+                                             const vector<Tensor*>& output,
+                                             const dnnl::primitive_attr& attr,
+                                             const dnnl::engine& eng);
   memory::dims GetBroadcastBinaryDstShape(const memory::dims& src0_shape_origin, const memory::dims& src1_shape_origin);
   memory::dims GetStrideBinaryDstShape(const memory::dims& src0_shape_origin, const memory::dims& src1_shape_origin);
   memory::format_tag SetFormatTag(int tensor_dim);

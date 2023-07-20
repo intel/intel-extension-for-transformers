@@ -89,10 +89,11 @@ void ReorderOperator::Prepare(const vector<Tensor*>& input, const vector<Tensor*
   dnnl::primitive_attr attr;
   if (src_min_ != nullptr && src_max_ != nullptr) {
     const int ic_dim = src_min_->size() > 1 ? 0 | (1 << 1) : 0;
-    vector<float> src_scales = GetScales(src_min_->data(), src_max_->data(), src_min_->size(), dst_->dtype());
-    vector<int> zero_point = GetZeroPoints(src_min_->data(), src_scales, dst_->dtype());
-    attr.set_output_scales(ic_dim, src_scales);
-    attr.set_zero_points(DNNL_ARG_DST, ic_dim, zero_point);
+    src_scales_ = GetScales(src_min_->data(), src_max_->data(), src_min_->size(), dst_->dtype());
+    vector<int> zero_point = GetZeroPoints(src_min_->data(), src_scales_, dst_->dtype());
+    // attr.set_output_scales(ic_dim, src_scales);
+    // attr.set_zero_points(DNNL_ARG_DST, ic_dim, zero_point);
+    attr.set_scales_mask(DNNL_ARG_DST, 1 << ic_dim);
   }
 
   if (append_sum_) {
@@ -140,6 +141,13 @@ void ReorderOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
 
   src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
   dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
+
+  // Primitive arguments.
+  if (src_scales_.size()) {
+    auto dst_scales_mem = memory({{src_scales_.size()}, memory::data_type::f32, memory::format_tag::x}, eng_);
+    dst_scales_mem.set_data_handle(reinterpret_cast<void*>(src_scales_.data()));
+    reorder_args[DNNL_ARG_ATTR_SCALES | DNNL_ARG_DST] = dst_scales_mem;
+  }
 }
 
 vector<vector<string>> ReorderOperator::InplacePairs(const vector<Tensor*>& input, const vector<Tensor*>& output) {
@@ -173,9 +181,11 @@ void ReorderOperator::Forward(const vector<Tensor*>& input, const vector<Tensor*
   }
 
   dnnl::stream s(eng_);
-  src_m_.set_data_handle(const_cast<void*>(src_->data()), s);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_->mutable_data()), s);
-  reorder_prim_.execute(s, {{DNNL_ARG_SRC, src_m_}, {DNNL_ARG_DST, dst_m_}});
+  src_m_.set_data_handle(const_cast<void*>(src_->data()));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_->mutable_data()));
+  reorder_args[DNNL_ARG_SRC] = src_m_;
+  reorder_args[DNNL_ARG_DST] = dst_m_;
+  reorder_prim_.execute(s, reorder_args);
   this->unref_tensors(input);
 }
 

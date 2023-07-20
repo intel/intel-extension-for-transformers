@@ -90,7 +90,6 @@ target_link_libraries(host_operators
     PUBLIC
         ${CMAKE_THREAD_LIBS_INIT}
         dnnl
-        dnnl_graph
         yaml-cpp
         glog
         xbyak::xbyak

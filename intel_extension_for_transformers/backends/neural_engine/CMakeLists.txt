@@ -59,12 +59,9 @@ if(NOT NE_WITH_SPARSELIB_ONLY)
   endif()
   message(STATUS "DNNL_LIBRARY_TYPE: ${DNNL_LIBRARY_TYPE}")
   message(STATUS "DNNL_GRAPH_LIBRARY_TYPE: ${DNNL_GRAPH_LIBRARY_TYPE}")
-  if(NE_WITH_ONEDNN_GRAPH)
-    add_compile_definitions(WITH_ONEDNN_GRAPH)
-    add_subdirectory(${NE_THIRD_PARTY_DIR}/oneDNNGraph)
-  else()
-    add_subdirectory(${NE_THIRD_PARTY_DIR}/oneDNN)
-  endif()
+  
+  add_subdirectory(${NE_THIRD_PARTY_DIR}/oneDNN)
+  
   add_subdirectory(${NE_THIRD_PARTY_DIR}/pybind11)
 endif()
 

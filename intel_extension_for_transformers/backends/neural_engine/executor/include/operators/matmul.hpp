@@ -57,8 +57,7 @@ class MatmulOperator : public Operator {
 
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
-                      vector<float>* dynamic_bias_ptr);
+  void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* dynamic_bias_ptr);
   void RuntimeMinmax();
   void SetTransposeMode();
   void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
@@ -83,12 +82,17 @@ class MatmulOperator : public Operator {
   float ouput_zp_ = 0.f;
   void* scratchpad_ = nullptr;
   string output_dtype_ = "fp32";
-  vector<float> dst_scales_;
   vector<int64_t> src0_perm_;
   vector<int64_t> src1_perm_;
   vector<int64_t> dst_perm_;
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
+
+  vector<float> src0_scales_;
+  vector<int> src0_zps_;
+  vector<float> src1_scales_;
+  vector<float> dst_scales_;
+  vector<int> dst_zps_;
   vector<float> rescales_;
   dnnl::primitive_attr attr_;
   memory scale_f32_mem_;

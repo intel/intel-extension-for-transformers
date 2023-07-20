@@ -58,9 +58,6 @@ set(DEP_LIBS
      yaml-cpp
      glog
 )
-if(NE_WITH_ONEDNN_GRAPH)
-list(APPEND DEP_LIBS dnnl_graph)
-endif()
 add_dependencies(neural_engine
   ${DEP_LIBS}
 )
