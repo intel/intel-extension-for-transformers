@@ -1,5 +1,5 @@
 torch
-transformers
+transformers==4.30.0
 numpy
 sentencepiece
 protobuf<3.20
