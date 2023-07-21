@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "common.h"
-#include "ne.h"
 
 struct mpt_hparams {
   int32_t d_model = 0;
@@ -33,7 +32,7 @@ struct mpt_hparams {
 };
 
 // quantize a model
-bool mpt_model_quantize(const std::string& fname_inp, const std::string& fname_out, ne_ftype ftype) {
+bool mpt_model_quantize(const std::string& fname_inp, const std::string& fname_out, quant_params& params) {
   printf("%s: loading model from '%s'\n", __func__, fname_inp.c_str());
 
   auto finp = std::ifstream(fname_inp, std::ios::binary);
@@ -74,6 +73,8 @@ bool mpt_model_quantize(const std::string& fname_inp, const std::string& fname_o
     finp.read((char*)&hparams.ftype, sizeof(hparams.ftype));
 
     const int32_t qntvr_src = hparams.ftype / NE_QNT_VERSION_FACTOR;
+    ne_ftype ftype = quant_params_to_ftype(params);
+
     const int32_t ftype_dst = NE_QNT_VERSION * NE_QNT_VERSION_FACTOR + ftype;
 
     printf("%s: d_model        = %d\n", __func__, hparams.d_model);
@@ -121,7 +122,7 @@ bool mpt_model_quantize(const std::string& fname_inp, const std::string& fname_o
       ".*weight",
   };
 
-  if (!ne_common_quantize_0(finp, fout, ftype, to_quant, {"transformer.wte.weight"})) {
+  if (!ne_common_quantize_0(finp, fout, params, to_quant, {"transformer.wte.weight"})) {
     fprintf(stderr, "%s: failed to quantize model '%s'\n", __func__, fname_inp.c_str());
     return false;
   }
@@ -143,9 +144,6 @@ int main(int argc, char** argv) {
     fprintf(stderr, "invalid file names '%s'\n", fname_inp.c_str());
     return 1;
   }
-  ne_ftype ftype = NE_FTYPE_MAP[
-      std::make_tuple(q_params.bits, q_params.alg, q_params.block_size, q_params.scale_dtype, q_params.gemm_isa)];
-
   // needed to initialize f16 tables
   {
     struct ne_init_params params = {0, NULL, false};
@@ -161,7 +159,7 @@ int main(int argc, char** argv) {
   {
     const int64_t t_start_us = ne_time_us();
 
-    if (!mpt_model_quantize(fname_inp, fname_out, ne_ftype(ftype))) {
+    if (!mpt_model_quantize(fname_inp, fname_out, q_params)) {
       fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, fname_inp.c_str());
       return 1;
     }

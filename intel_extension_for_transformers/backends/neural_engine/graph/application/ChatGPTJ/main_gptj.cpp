@@ -93,12 +93,12 @@ bool gptj_model_load(const std::string& fname, gptj_model& model, gpt_vocab& voc
     fprintf(stderr, "%s: failed to open '%s'\n", __func__, fname.c_str());
     return false;
   }
-  
+
   uint32_t magic;
-  fin.read((char *) &magic, sizeof(magic));
+  fin.read((char*)&magic, sizeof(magic));
   if (magic != NE_FILE_MAGIC) {
-      fprintf(stderr, "%s: invalid model file '%s' (bad magic)\n", __func__, fname.c_str());
-      return false;
+    fprintf(stderr, "%s: invalid model file '%s' (bad magic)\n", __func__, fname.c_str());
+    return false;
   }
   // load hparams
   auto& hparams = model.hparams;

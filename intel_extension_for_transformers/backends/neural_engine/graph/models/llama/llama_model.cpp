@@ -23,6 +23,7 @@
 #include "llama_model.h"
 
 #include "core/ne_layers.h"
+#include "application/common.h"
 #include "jblas/jblas/jit_blas_weight_compression.h"
 
 #include <array>
@@ -107,7 +108,7 @@ struct model_load_tensor {
     calc_type();
     calc_split_type();
     calc_ne();
-    if (type == NE_TYPE_Q4_JBLAS) {
+    if (type == NE_TYPE_JBLAS) {
       size = shards[0].size;
     } else {
       calc_size();
@@ -264,7 +265,7 @@ struct model_file_loader {
         case NE_TYPE_Q5_0:
         case NE_TYPE_Q5_1:
         case NE_TYPE_Q8_0:
-        case NE_TYPE_Q4_JBLAS:
+        case NE_TYPE_JBLAS:
           break;
         default: {
           throw format("unrecognized tensor type %u\n", shard.type);
@@ -277,7 +278,7 @@ struct model_file_loader {
       }
       shard.file_idx = file_idx;
       shard.file_off = file.tell();
-      if (shard.type == NE_TYPE_Q4_JBLAS) {
+      if (shard.type == NE_TYPE_JBLAS) {
         size_t size = 0;
         file.read_raw(&size, sizeof(size_t));
         shard.size = size;
@@ -346,7 +347,7 @@ struct model_file_saver {
       case NE_TYPE_Q5_0:
       case NE_TYPE_Q5_1:
       case NE_TYPE_Q8_0:
-      case NE_TYPE_Q4_JBLAS:
+      case NE_TYPE_JBLAS:
         break;
       default:
         MODEL_ASSERT(false);
@@ -357,7 +358,7 @@ struct model_file_saver {
     file.write_raw(tensor.ne.data(), sizeof(tensor.ne[0]) * tensor.ne.size());
     file.write_raw(tensor.name.data(), tensor.name.size());
     file.seek(-static_cast<ptrdiff_t>(file.tell()) & 31, SEEK_CUR);
-    if (new_type != NE_TYPE_Q4_JBLAS) MODEL_ASSERT(new_size == model_calc_tensor_size(tensor.ne, new_type));
+    if (new_type != NE_TYPE_JBLAS) MODEL_ASSERT(new_size == model_calc_tensor_size(tensor.ne, new_type));
     file.write_raw(new_data, new_size);
   }
 };
@@ -441,7 +442,7 @@ struct model_model_loader {
   struct ne_tensor* get_tensor_for(model_load_tensor& lt, ne_backend backend) {
     struct ne_tensor* tensor;
     if (lt.ne.size() == 2) {
-      if (lt.type == NE_TYPE_Q4_JBLAS) {
+      if (lt.type == NE_TYPE_JBLAS) {
         tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1), lt.size);
       } else {
         tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1), NE_SIZE_CALC);
@@ -1453,7 +1454,7 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
 //
 
 static void model_model_quantize_internal(const std::string& fname_inp, const std::string& fname_out,
-                                          enum ne_ftype ftype, int nthread) {
+                                          const quant_params& params, enum ne_ftype ftype, int nthread) {
   ne_type quantized_type;
   switch (ftype) {
     case NE_FTYPE_MOSTLY_Q4_0:
@@ -1471,14 +1472,8 @@ static void model_model_quantize_internal(const std::string& fname_inp, const st
     case NE_FTYPE_MOSTLY_Q8_0:
       quantized_type = NE_TYPE_Q8_0;
       break;
-    case NE_FTYPE_MOSTLY_Q4_JBLAS_B32:
-    case NE_FTYPE_MOSTLY_Q4_JBLAS_B128:
-    case NE_FTYPE_MOSTLY_Q4_JBLAS_B1024:
-    case NE_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32:
-    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32:
-    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32:
-    case NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128:
-      quantized_type = NE_TYPE_Q4_JBLAS;
+    case NE_FTYPE_MOSTLY_Q_JBLAS:
+      quantized_type = NE_TYPE_JBLAS;
       break;
     default:
       throw format("invalid output file type %d\n", ftype);
@@ -1554,67 +1549,14 @@ static void model_model_quantize_internal(const std::string& fname_inp, const st
 
       printf("quantizing .. ");
       fflush(stdout);
-      if (quantized_type == NE_TYPE_Q4_JBLAS) {
+      if (quantized_type == NE_TYPE_JBLAS) {
         if (!embedd) {  // emedding of Q4 is not supported now
-          using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
-          using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
-          using GemmVnniKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
-          GemmKernel kernel;
-          GemmVnniKernel vnnikernel;
           int k_ = tensor.ne.at(0);
           int n_ = tensor.ne.at(1);
-          jblas::prologue::PackedWeight* packedw = NULL;
-          int blocksize = 32;
-          auto type = CompType::S4_F32;
-          if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_B32) {
-            blocksize = 32;
-            type = CompType::S4_F32;
-          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_B128) {
-            blocksize = 128;
-            type = CompType::S4_F32;
-          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_B1024) {
-            blocksize = 1024;
-            type = CompType::S4_F32;
-          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_BF16_B32) {
-            blocksize = 32;
-            type = CompType::S4_Bf16;
-          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32) {
-            blocksize = 32;
-            type = CompType::S4_F32;
-          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128) {
-            blocksize = 128;
-            type = CompType::S4_F32;
-          } else if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32) {
-            blocksize = 32;
-            type = CompType::S4_Bf16;
-          }
-          auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-          if (ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B32 || ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_B128 ||
-              ftype == NE_FTYPE_MOSTLY_Q4_JBLAS_VNNI_BF16_B32) {
-            if (cd->AVX512F()) {
-              packedw = vnnikernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n_, k_, (float*)tensor.data,
-                                                                                         k_, blocksize, type);
-            } else {
-              packedw = vnnikernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n_, k_, (float*)tensor.data, k_,
-                                                                                        blocksize, type);
-            }
-          } else {
-            if (cd->AVX512F()) {
-              packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n_, k_, (float*)tensor.data, k_,
-                                                                                     blocksize, type);
-            } else {
-              packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n_, k_, (float*)tensor.data, k_,
-                                                                                    blocksize, type);
-            }
-          }
-
-          auto tsize = packedw->getSerializedSize();
-          work.resize(tsize);  // upper bound on size
-          packedw->serializeToBuffer((int8_t*)work.addr);
-          delete packedw;
+          work.resize(nelements * 4);  // upper bound on size
+          new_size = jblas_quantize((float*)tensor.data, work.addr, params, n_, k_);
           new_type = quantized_type;
           new_data = work.addr;
-          new_size = tsize;
           printf("JBLAS size = %8.2f MB -> %8.2f MB\n", tensor.size / 1024.0 / 1024.0, new_size / 1024.0 / 1024.0);
           goto __WRITE_BACK;
         } else {
@@ -1783,9 +1725,10 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-int model_model_quantize(const char* fname_inp, const char* fname_out, enum ne_ftype ftype, int nthread) {
+int model_model_quantize(const char* fname_inp, const char* fname_out, const quant_params& params, enum ne_ftype ftype,
+                         int nthread) {
   try {
-    model_model_quantize_internal(fname_inp, fname_out, ftype, nthread);
+    model_model_quantize_internal(fname_inp, fname_out, params, ftype, nthread);
     return 0;
   } catch (const std::string& err) {
     fprintf(stderr, "%s: failed to quantize: %s\n", __func__, err.c_str());

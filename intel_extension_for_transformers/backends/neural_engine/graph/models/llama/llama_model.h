@@ -19,6 +19,7 @@
 #include <stdbool.h>
 
 #include "model_types.h"
+#include "application/common.h"
 
 #ifdef MODEL_SHARED
 #if defined(_WIN32) && !defined(__MINGW32__)
@@ -73,7 +74,8 @@ MODEL_API void model_free(struct model_context* ctx);
 // TODO: not great API - very likely to change
 // Returns 0 on success
 // nthread - how many threads to use. If <=0, will use std::thread::hardware_concurrency(), else the number given
-MODEL_API int model_model_quantize(const char* fname_inp, const char* fname_out, ne_ftype ftype, int nthread);
+MODEL_API int model_model_quantize(const char* fname_inp, const char* fname_out, const quant_params& param,
+                                   ne_ftype ftype, int nthread);
 
 // Apply a LoRA adapter to a loaded model
 // path_base_model is the path to a higher quality model to use as a base for

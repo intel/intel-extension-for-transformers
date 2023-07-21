@@ -32,7 +32,7 @@
 #include "llama_config.h"
 #include "data_types.h"
 #include "ne.h"
-#include "util.h"
+#include "models/util.h"
 
 void process_escapes(std::string& input) {
   std::size_t input_len = input.length();
@@ -434,36 +434,6 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   fprintf(stderr, "\n");
 }
 
-std::string gpt_random_prompt(std::mt19937& rng) {
-  const int r = rng() % 10;
-  switch (r) {
-    case 0:
-      return "So";
-    case 1:
-      return "Once upon a time";
-    case 2:
-      return "When";
-    case 3:
-      return "The";
-    case 4:
-      return "After";
-    case 5:
-      return "If";
-    case 6:
-      return "import";
-    case 7:
-      return "He";
-    case 8:
-      return "She";
-    case 9:
-      return "They";
-    default:
-      return "To";
-  }
-
-  return "The";
-}
-
 // evaluate the transformer
 //
 //   - lctx:      model context
@@ -534,7 +504,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       cur = ne_mul(ctx0, cur, model.layers[il].attention_norm);
     }
     ne_tensor *Qcur, *Kcur, *Vcur;
-    if (model.layers[il].wq->type == NE_TYPE_Q4_JBLAS) {  // fused execution of QKV
+    if (model.layers[il].wq->type == NE_TYPE_JBLAS) {  // fused execution of QKV
       struct ne_tensor* QKVcur = ne_mul_qkv(ctx0, model.layers[il].wq, model.layers[il].wk, model.layers[il].wv, cur);
       Qcur = ne_rope_inplace(
           ctx0,
@@ -652,7 +622,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
         cur = ne_mul(ctx0, cur, model.layers[il].ffn_norm);
       }
 
-      if (model.layers[il].w1->type == NE_TYPE_Q4_JBLAS) {
+      if (model.layers[il].w1->type == NE_TYPE_JBLAS) {
         cur = ne_ffn_silu(ctx0, model.layers[il].w1, model.layers[il].w2, model.layers[il].w3, cur);
       } else {
         struct ne_tensor* tmp = ne_mul_mat(ctx0, model.layers[il].w3, cur);

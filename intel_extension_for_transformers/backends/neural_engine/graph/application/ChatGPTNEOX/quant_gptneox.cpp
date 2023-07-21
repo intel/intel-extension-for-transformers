@@ -34,7 +34,8 @@ struct gpt_neox_hparams {
 };
 
 // quantize a model
-bool gpt_neox_model_quantize(const std::string& fname_inp, const std::string& fname_out, ne_ftype ftype) {
+bool gpt_neox_model_quantize(const std::string& fname_inp, const std::string& fname_out, const quant_params& params,
+                             ne_ftype ftype) {
   gpt_vocab vocab;
 
   printf("%s: loading model from '%s'\n", __func__, fname_inp.c_str());
@@ -124,7 +125,7 @@ bool gpt_neox_model_quantize(const std::string& fname_inp, const std::string& fn
       ".*weight",
   };
 
-  if (!ne_common_quantize_0(finp, fout, ftype, to_quant, {"gpt_neox.embed_in.weight", "embed_out.weight"})) {
+  if (!ne_common_quantize_0(finp, fout, params, to_quant, {"gpt_neox.embed_in.weight", "embed_out.weight"})) {
     fprintf(stderr, "%s: failed to quantize model '%s'\n", __func__, fname_inp.c_str());
     return false;
   }
@@ -134,10 +135,10 @@ bool gpt_neox_model_quantize(const std::string& fname_inp, const std::string& fn
   return true;
 }
 
-int main(int argc, char ** argv) {
+int main(int argc, char** argv) {
   quant_params q_params;
   if (quant_params_parse(argc, argv, q_params) == false) {
-      return 1;
+    return 1;
   }
   const std::string fname_inp = q_params.model_file;
   const std::string fname_out = q_params.out_file;
@@ -146,14 +147,13 @@ int main(int argc, char ** argv) {
     return 1;
   }
 
-  ne_ftype ftype = NE_FTYPE_MAP[
-      std::make_tuple(q_params.bits, q_params.alg, q_params.block_size, q_params.scale_dtype, q_params.gemm_isa)];
+  ne_ftype ftype = quant_params_to_ftype(q_params);
 
   // needed to initialize f16 tables
   {
-      struct ne_init_params params = { 0, NULL, false };
-      struct ne_context * ctx = ne_init(params);
-      ne_free(ctx);
+    struct ne_init_params params = {0, NULL, false};
+    struct ne_context* ctx = ne_init(params);
+    ne_free(ctx);
   }
 
   const int64_t t_main_start_us = ne_time_us();
@@ -164,14 +164,13 @@ int main(int argc, char ** argv) {
   {
     const int64_t t_start_us = ne_time_us();
 
-    if (!gpt_neox_model_quantize(fname_inp, fname_out, ne_ftype(ftype))) {
+    if (!gpt_neox_model_quantize(fname_inp, fname_out, q_params, ne_ftype(ftype))) {
       fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, fname_inp.c_str());
       return 1;
     }
 
     t_quantize_us = ne_time_us() - t_start_us;
   }
-
 
   // report timing
   {

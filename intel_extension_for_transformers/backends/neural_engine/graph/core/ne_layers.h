@@ -119,7 +119,7 @@ NE_API struct ne_tensor* ne_new_tensor_3d(struct ne_context* ctx, enum ne_type t
 NE_API struct ne_tensor* ne_new_tensor_4d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1,
                                           int64_t ne2, int64_t ne3, size_t size);
 
-#define d_ne_new_tensor(...) ne_new_tensor(__VA_ARGS__,NE_SIZE_CALC)
+#define d_ne_new_tensor(...) ne_new_tensor(__VA_ARGS__, NE_SIZE_CALC)
 #define d_ne_new_tensor_1d(...) ne_new_tensor_1d(__VA_ARGS__, NE_SIZE_CALC)
 #define d_ne_new_tensor_2d(...) ne_new_tensor_2d(__VA_ARGS__, NE_SIZE_CALC)
 #define d_ne_new_tensor_3d(...) ne_new_tensor_3d(__VA_ARGS__, NE_SIZE_CALC)
