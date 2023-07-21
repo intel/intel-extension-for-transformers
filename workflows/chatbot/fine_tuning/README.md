@@ -241,7 +241,7 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
 you could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LORA,
 see https://github.com/huggingface/peft
 
-## 1. Single Node Fine-tuning in Habana DL1
+## 1. Single Card Fine-tuning in Habana DL1
 
 Follow install guidance in [optimum-habana](https://github.com/huggingface/optimum-habana)
 
@@ -256,14 +256,16 @@ python finetune_clm.py \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
         --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --logging_steps 1 \
         --do_train \
-        --learning_rate 1e-4 \
         --num_train_epochs 3 \
-        --logging_steps 100 \
-        --save_total_limit 2 \
         --overwrite_output_dir \
         --log_level info \
-        --save_strategy epoch \
         --output_dir ./llama_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer false \
@@ -283,14 +285,89 @@ python finetune_clm.py \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
         --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --logging_steps 1 \
         --do_train \
-        --learning_rate 1e-4 \
         --num_train_epochs 3 \
-        --logging_steps 100 \
-        --save_total_limit 2 \
         --overwrite_output_dir \
         --log_level info \
-        --save_strategy epoch \
+        --output_dir ./mpt_peft_finetuned_model \
+        --peft lora \
+        --trust_remote_code True \
+        --tokenizer_name "EleutherAI/gpt-neox-20b" \
+        --habana \
+        --use_habana \
+        --use_lazy_mode \
+```
+Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
+
+For finetuning on SPR, add `--bf16` argument will speedup the finetuning process without the loss of model's performance.
+You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
+see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
+
+Add option **"--use_fast_tokenizer False"** when using latest transformers if you met failure in llama fast tokenizer for llama, The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`
+
+
+## 2. Multi Card Fine-tuning in Habana DL1
+
+Follow install guidance in [optimum-habana](https://github.com/huggingface/optimum-habana)
+
+For LLaMA, use the below command line for finetuning on the Alpaca dataset.
+
+```bash
+python ../../habana/gaudi_spawn.py \
+        --world_size 8 --use_mpi finetune_clm.py \
+        --model_name_or_path "decapoda-research/llama-7b-hf" \
+        --bf16 True \
+        --train_file "/path/to/alpaca_data.json" \
+        --dataset_concatenation \
+        --per_device_train_batch_size 2 \
+        --per_device_eval_batch_size 2 \
+        --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --logging_steps 1 \
+        --do_train \
+        --num_train_epochs 3 \
+        --overwrite_output_dir \
+        --log_level info \
+        --output_dir ./llama_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer false \
+        --habana \
+        --use_habana \
+        --use_lazy_mode \
+```
+
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+
+```bash
+python ../../habana/gaudi_spawn.py \
+        --world_size 8 --use_mpi finetune_clm.py \
+        --model_name_or_path "mosaicml/mpt-7b" \
+        --bf16 True \
+        --train_file "/path/to/alpaca_data.json" \
+        --dataset_concatenation \
+        --per_device_train_batch_size 2 \
+        --per_device_eval_batch_size 2 \
+        --gradient_accumulation_steps 4 \
+        --evaluation_strategy "no" \
+        --save_strategy "steps" \
+        --save_steps 2000 \
+        --save_total_limit 1 \
+        --learning_rate 1e-4  \
+        --logging_steps 1 \
+        --do_train \
+        --num_train_epochs 3 \
+        --overwrite_output_dir \
+        --log_level info \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
         --trust_remote_code True \

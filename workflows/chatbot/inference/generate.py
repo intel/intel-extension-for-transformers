@@ -35,6 +35,7 @@ PROMPT_DICT = {
     ),
 }
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-bm", "--base_model_path", type=str, default="")
@@ -77,7 +78,7 @@ def parse_args():
     parser.add_argument(
         "--num_beams",
         type=int,
-        default=1,
+        default=0,
         help="The number of beams for beam search.",
     )
     parser.add_argument(
@@ -233,6 +234,11 @@ def get_ds_injection_policy(config):
             from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXLayer
 
             policy = {GPTNeoXLayer: ("attention.dense", "mlp.dense_4h_to_h")}
+
+        if model_type == "llama":
+            from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+
+            policy = {LlamaDecoderLayer: ("self_attn.o_proj", "mlp.down_proj")}
 
     return policy
 
@@ -414,7 +420,7 @@ def predict_stream(**params):
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
-    num_beams = int(params["num_beams"]) if "num_beams" in params else 1
+    num_beams = int(params["num_beams"]) if "num_beams" in params else 0
     model_name = (
         params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
     )
@@ -432,6 +438,9 @@ def predict_stream(**params):
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
     )
+    if num_beams == 0:
+        num_beams = 1
+        do_sample = True
     if device == "cpu":
         input_tokens = tokenizer.batch_encode_plus(
             [prompt], return_tensors="pt", padding=True
@@ -512,13 +521,17 @@ def predict_stream(**params):
         generation_config = copy.deepcopy(model.generation_config)
         generation_config.max_new_tokens = max_new_tokens
         generation_config.use_cache = use_cache
-        # TODO there is an issue when do_sample is set to True for Habana
-        generation_config.do_sample = False
+        generation_config.do_sample = do_sample
         generation_config.num_beams = num_beams
         generation_config.bad_words_ids = bad_words_ids
         generation_config.force_words_ids = force_words_ids
         generation_config.num_return_sequences = num_return_sequences
         generation_config.static_shapes = is_graph_optimized
+        generation_config.top_k = top_k
+        # TODO there is an issue when top_p is used in Habana
+        # generation_config.top_p = top_p
+        generation_config.temperature = temperature
+        generation_config.repetition_penalty = repetition_penalty
 
         def generate_output():
             with torch.no_grad():
@@ -532,6 +545,7 @@ def predict_stream(**params):
                     max_new_tokens=max_new_tokens,
                     lazy_mode=True,
                     hpu_graphs=use_hpu_graphs,
+                    ignore_eos = False,
                 )
 
         generation_thread = Thread(target=generate_output)
@@ -589,7 +603,7 @@ def predict(**params):
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
     do_sample = params["do_sample"] if "do_sample" in params else True
-    num_beams = int(params["num_beams"]) if "num_beams" in params else 1
+    num_beams = int(params["num_beams"]) if "num_beams" in params else 0
     model_name = (
         params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
     )
@@ -603,7 +617,9 @@ def predict(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
-
+    if num_beams == 0:
+        num_beams = 1
+        do_sample = True
     if device == "cpu":
         input_tokens = tokenizer.batch_encode_plus(
             [prompt], return_tensors="pt", padding=True
@@ -678,13 +694,18 @@ def predict(**params):
         generation_config = copy.deepcopy(model.generation_config)
         generation_config.max_new_tokens = max_new_tokens
         generation_config.use_cache = use_cache
-        # TODO there is an issue when do_sample is set to True for Habana
-        generation_config.do_sample = False
+        generation_config.do_sample = do_sample
         generation_config.num_beams = num_beams
         generation_config.bad_words_ids = bad_words_ids
         generation_config.force_words_ids = force_words_ids
         generation_config.num_return_sequences = num_return_sequences
         generation_config.static_shapes = is_graph_optimized
+        generation_config.top_k = top_k
+        # TODO there is an issue when top_p is used in Habana
+        # generation_config.top_p = top_p
+        generation_config.temperature = temperature
+        generation_config.repetition_penalty = repetition_penalty
+
         with torch.no_grad():
             generation_output = model.generate(
                 **input_tokens,
@@ -695,6 +716,7 @@ def predict(**params):
                 max_new_tokens=max_new_tokens,
                 lazy_mode=True,
                 hpu_graphs=use_hpu_graphs,
+                ignore_eos = False,
             )
     output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
@@ -843,6 +865,7 @@ def main():
         logger.info(f"duration: {time.time() - start_time}")
 
     for idx, tp in enumerate(zip(prompts, args.instructions)):
+        set_seed(args.seed)
         prompt, instruction = tp
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
@@ -850,6 +873,8 @@ def main():
             logger.info(f"Instruction: {instruction}")
             start_time = time.time()
             logger.info("Response: ")
+        first_token = True
+        token_len = 0
         for new_text in predict_stream(
             model_name=base_model_path,
             device="hpu" if args.habana else "cpu",
@@ -866,12 +891,19 @@ def main():
             num_return_sequences=args.num_return_sequences,
         ):
             if args.local_rank in [-1, 0]:
+                if first_token:
+                    first_time_stamp = time.time()
+                    logger.info(f"first token latency: {first_time_stamp - start_time}")
+                    first_token = False
                 print(new_text, end="", flush=True)
+                token_len = token_len + 1
         if args.local_rank in [-1, 0]:
-            logger.info(f"duration: {time.time() - start_time}")
+            duration = time.time() - first_time_stamp
+            logger.info(f"duration: {time.time() - start_time}, msecond_per_token = {duration*1000/(token_len-1)}")
             logger.info("=" * (60 + len(idxs)))
 
     for idx, tp in enumerate(zip(prompts, args.instructions)):
+        set_seed(args.seed)
         prompt, instruction = tp
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
