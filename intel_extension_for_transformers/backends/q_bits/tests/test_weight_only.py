@@ -17,8 +17,6 @@ class TestWeightOnly(unittest.TestCase):
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
         torch.ops.weight_only_jblasop.jblas_symqdq_weight(raw_wei, True, 8, 32)
-        raw_wei.reshape(32, 2)
-        raw_wei.transpose(0, 1)
 
         model = M()
         with torch.no_grad():
@@ -31,7 +29,7 @@ class TestWeightOnly(unittest.TestCase):
         output_quant = model(activation)
         print(output)
         print(output_quant)
-        assert torch.allclose(output, output_quant, rtol=0.1)
+        assert torch.allclose(output, output_quant, rtol=0.01)
 
 
 if __name__ == "__main__":
