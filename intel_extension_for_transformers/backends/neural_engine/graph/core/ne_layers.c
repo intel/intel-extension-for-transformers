@@ -2781,7 +2781,7 @@ struct ne_tensor* ne_alibi(struct ne_context* ctx, struct ne_tensor* a, int n_pa
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2, NE_SIZE_CALC);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_head;
