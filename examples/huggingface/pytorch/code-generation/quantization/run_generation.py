@@ -70,7 +70,7 @@ parser.add_argument("--allow_code_execution", action="store_true")
 #parser.add_argument("--precision", default="fp32")
 parser.add_argument("--prefix", default="")
 parser.add_argument("--generation_only", action="store_true")
-parser.add_argument("--postprocess", action="store_true")
+parser.add_argument("--postprocess", action="store_false")
 parser.add_argument("--save_references", action="store_true")
 parser.add_argument("--save_generations", action="store_true")
 parser.add_argument("--instruction_tokens", default=None)
@@ -86,7 +86,6 @@ parser.add_argument("--temperature", default=0.8, type=float)
 parser.add_argument("--top_p", default=0.95, type=float)
 parser.add_argument("--top_k", default=0, type=int)
 parser.add_argument("--do_sample", action="store_true")
-
 args = parser.parse_args()
 
 
@@ -96,7 +95,22 @@ user_model = AutoModelForCausalLM.from_pretrained(
     if args.ipex
     else False,  # torchscript will force `return_dict=False` to avoid jit errors
 )
-tokenizer = AutoTokenizer.from_pretrained(args.model)
+tokenizer = AutoTokenizer.from_pretrained(
+    args.model,
+    # revision=args.revision,
+    # trust_remote_code=args.trust_remote_code,
+    # use_auth_token=args.use_auth_token,
+    truncation_side="left",
+    padding_side="right",
+)
+if not tokenizer.eos_token:
+    if tokenizer.bos_token:
+        tokenizer.eos_token = tokenizer.bos_token
+        print("bos_token used as eos_token")
+    else:
+        raise ValueError("No eos_token or bos_token found")
+
+tokenizer.pad_token = tokenizer.eos_token
 
 # to channels last
 user_model = user_model.to(memory_format=torch.channels_last)

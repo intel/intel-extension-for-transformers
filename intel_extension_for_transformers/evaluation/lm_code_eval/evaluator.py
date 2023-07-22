@@ -29,6 +29,7 @@ from lm_eval.arguments import EvalArguments # pylint: disable=E0611, E0401
 from lm_eval.evaluator import Evaluator # pylint: disable=E0611, E0401
 from lm_eval.tasks import ALL_TASKS # pylint: disable=E0611, E0401
 
+
 def pattern_match(patterns, source_list):
     """Returns a list containing all values of the source_list that
     match at least one of the patterns"""
@@ -48,6 +49,13 @@ def evaluate(model,
     """Instantiate and evaluate a model on a list of tasks.
 
     """
+    try:
+        import transformers
+        import  datasets
+        transformers.logging.set_verbosity_error()
+        datasets.logging.set_verbosity_error()
+    except:
+        pass
     if tasks is None:
         task_names = ALL_TASKS
     else:
@@ -59,9 +67,15 @@ def evaluate(model,
 
     results = {}
 
-    
-    evaluator = Evaluator(accelerator, model, tokenizer, args)
+    if not tokenizer.eos_token:
+        if tokenizer.bos_token:
+            tokenizer.eos_token = tokenizer.bos_token
+            print("bos_token used as eos_token")
+        else:
+            raise ValueError("No eos_token or bos_token found")
+
     tokenizer.pad_token = tokenizer.eos_token
+    evaluator = Evaluator(accelerator, model, tokenizer, args)
 
     for task in task_names:
         if args.generation_only:
