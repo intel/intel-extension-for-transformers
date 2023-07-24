@@ -15,13 +15,13 @@
 
 #pragma once
 
-#include "llama_model.h"
-
-#include <string>
-#include <vector>
 #include <random>
+#include <string>
 #include <thread>
 #include <unordered_map>
+#include <vector>
+
+#include "models/model_utils/model_types.h"
 
 #if !defined(_WIN32)
 #include <stdio.h>
@@ -29,6 +29,8 @@
 #endif
 
 struct gpt_params {
+  model_name name;
+  int n_layers;
   int32_t seed = -1;  // RNG seed
   int32_t n_threads = get_num_physical_cores();
   int32_t n_predict = -1;    // new tokens to predict
@@ -53,11 +55,16 @@ struct gpt_params {
   float mirostat_eta = 0.10f;       // learning rate
 
   std::string model = "models/7B/ne_core-model.bin";  // model path
+
+  // if input are words
   std::string prompt = "";
   std::string path_prompt_cache = "";   // path to file for saving/loading prompt eval state
   std::string input_prefix = "";        // string to prefix user inputs with
   std::string input_suffix = "";        // string to suffix user inputs with
   std::vector<std::string> antiprompt;  // string upon seeing which more user input is prompted
+
+  // if input are ids
+  std::vector<model_token> ids;
 
   std::string lora_adapter = "";  // lora adapter path
   std::string lora_base = "";     // base model path for the lora adapter
@@ -84,8 +91,6 @@ struct gpt_params {
 bool gpt_params_parse(int argc, char** argv, gpt_params& params);
 
 void gpt_print_usage(int argc, char** argv, const gpt_params& params);
-
-std::string gpt_random_prompt(std::mt19937& rng);
 
 //
 // Vocab utils

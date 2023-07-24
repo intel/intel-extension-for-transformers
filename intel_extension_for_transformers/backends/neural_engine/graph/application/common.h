@@ -71,6 +71,8 @@ void gpt_print_usage(int argc, char** argv, const common_params& params);
 
 std::string gpt_random_prompt(std::mt19937& rng);
 
+std::vector<int> gpt_random_ids(std::mt19937& rng);
+
 //
 // Vocab utils
 //
@@ -136,6 +138,7 @@ gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float*
                                             const int32_t* last_n_tokens_data, size_t last_n_tokens_data_size,
                                             int top_k, double top_p, double temp, int repeat_last_n,
                                             float repeat_penalty, std::mt19937& rng);
+
 struct quant_params {
   std::string model_file = "";
   std::string out_file = "";

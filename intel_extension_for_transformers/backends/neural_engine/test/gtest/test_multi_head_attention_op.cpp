@@ -160,7 +160,7 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   auto qk_mem = memory(qk_md, engine, qk.mutable_data());
   auto qk_matmul_pd = matmul::primitive_desc(engine, q_md, k_md, qk_md, attr);
   auto qk_matmul_prim = matmul(qk_matmul_pd);
-  
+
   qk_matmul_args.insert({DNNL_ARG_SRC, q_mem});
   qk_matmul_args.insert({DNNL_ARG_WEIGHTS, k_mem});
   if (post != nullptr) qk_matmul_args.insert({DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1, binary_mem});
@@ -170,7 +170,7 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   // qk.to_file();
   // softmax
   auto softmax_pd = dnnl::softmax_forward::primitive_desc(engine, dnnl::prop_kind::forward_inference,
-                                                        dnnl::algorithm::softmax_accurate, qk_md, qk_md, 3);
+                                                          dnnl::algorithm::softmax_accurate, qk_md, qk_md, 3);
   dnnl::softmax_forward softmax_p = dnnl::softmax_forward(softmax_pd);
   Tensor a(nullptr, qk_shape, "fp32");
   a.set_name("a");

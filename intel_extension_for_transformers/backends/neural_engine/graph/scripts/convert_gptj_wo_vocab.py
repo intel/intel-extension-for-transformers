@@ -91,6 +91,27 @@ DATA_TYPE_TO_NUMPY: Dict[DataType, 'np.dtype[Any]'] = {
 NUMPY_TYPE_TO_DATA_TYPE: Dict['np.dtype[Any]', DataType] = \
     {dtype: data_type for (data_type, dtype) in DATA_TYPE_TO_NUMPY.items()}
 
+# ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
+def bytes_to_unicode():
+    """
+    Returns list of utf-8 byte and a corresponding list of unicode strings.
+    The reversible bpe codes work on unicode strings.
+    This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
+    When you're at something like a 10B token dataset you end up needing around 5K for decent coverage.
+    This is a signficant percentage of your normal, say, 32K bpe vocab.
+    To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
+    And avoids mapping to whitespace/control characters the bpe code barfs on.
+    """
+    bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+    cs = bs[:]
+    n = 0
+    for b in range(2**8):
+        if b not in bs:
+            bs.append(b)
+            cs.append(2**8+n)
+            n += 1
+    cs = [chr(n) for n in cs]
+    return dict(zip(bs, cs))
 
 class NEFileType(enum.Enum):
     AllF32 = 0
@@ -112,7 +133,7 @@ class NEFileType(enum.Enum):
         elif self == NEFileType.MostlyQ4_1:
             return DT_Q4_1
         elif self == NEFileType.PerLayerIsQ4_1:
-            if name in ('output.weight', 'tok_embeddings.weight'):
+            if name in ('lm_head.weight', 'transformer.wte.weight', 'transformer.ln_f.weight'):
                 return DT_F16
             else:
                 return DT_Q4_1
@@ -122,21 +143,24 @@ class NEFileType(enum.Enum):
 
 def make_tensors_list() -> List[str]:
     ret = [
-        'tok_embeddings.weight',
-        'norm.weight',
-        'output.weight',
+        'transformer.wte.weight',
+        'transformer.ln_f.weight',
+        'transformer.ln_f.bias',
+        'lm_head.weight',
+        'lm_head.bias'
     ]
     for i in range(80):  # maximum number of layer
         ret += [
-            f'layers.{i}.attention.wq.weight',
-            f'layers.{i}.attention.wk.weight',
-            f'layers.{i}.attention.wv.weight',
-            f'layers.{i}.attention.wo.weight',
-            f'layers.{i}.attention_norm.weight',
-            f'layers.{i}.feed_forward.w1.weight',
-            f'layers.{i}.feed_forward.w2.weight',
-            f'layers.{i}.feed_forward.w3.weight',
-            f'layers.{i}.ffn_norm.weight',
+            f'transformer.h.{i}.ln_1.weight',
+            f'transformer.h.{i}.ln_1.bias',
+            f'transformer.h.{i}.attn.q_proj.weight',
+            f'transformer.h.{i}.attn.k_proj.weight',
+            f'transformer.h.{i}.attn.v_proj.weight',
+            f'transformer.h.{i}.attn.out_proj.weight',
+            f'transformer.h.{i}.mlp.fc_in.weight',
+            f'transformer.h.{i}.mlp.fc_in.bias',
+            f'transformer.h.{i}.mlp.fc_out.weight',
+            f'transformer.h.{i}.mlp.fc_out.bias',
         ]
     return ret
 
@@ -152,65 +176,47 @@ class Params:
     n_mult: int
     n_head: int
     n_layer: int
+    n_rot: int
     file_type: NEFileType
 
     @staticmethod
     def guessed(model: 'LazyModel', file_type: NEFileType) -> 'Params':
-        n_vocab, n_embd = model["tok_embeddings.weight"].shape
+        n_vocab, n_embd = model["transformer.wte.weight"].shape
 
         return Params(
             n_vocab=n_vocab,
             n_embd=n_embd,
             n_mult=256,
-            n_head=n_embd // 128,
-            n_layer=next(i for i in itertools.count() if f"layers.{i}.attention.wq.weight" not in model),
+            n_head=n_embd // 256,
+            n_layer=next(i for i in itertools.count() if f"transformer.h.{i}.attn.q_proj.weight" not in model),
+            n_rot=64,
             file_type=file_type,
         )
 
 
+
 class SentencePieceVocab:
     def __init__(self, fname_tokenizer: Path, fname_added_tokens: Optional[Path]) -> None:
-        self.sentencepiece_tokenizer = SentencePieceProcessor(str(fname_tokenizer))
-        added_tokens: Dict[str, int]
-        if fname_added_tokens is not None:
-            added_tokens = json.load(open(fname_added_tokens))
-        else:
-            added_tokens = {}
-        vocab_size: int = self.sentencepiece_tokenizer.vocab_size()
-        expected_ids = list(range(vocab_size, vocab_size + len(added_tokens)))
-        actual_ids = sorted(added_tokens.values())
-        if expected_ids != actual_ids:
-            raise Exception(f"Expected added token IDs to be sequential and start at {len(added_tokens)}; got {actual_ids}")
-        items = sorted(added_tokens.items(), key=lambda text_idx: text_idx[1])
-        self.added_tokens_list = [text for (text, idx) in items]
-        self.vocab_size_base: int = vocab_size
-        self.vocab_size: int = self.vocab_size_base + len(self.added_tokens_list)
-        self.fname_tokenizer = fname_tokenizer
-        self.fname_added_tokens = fname_added_tokens
+        with open(fname_tokenizer, "r", encoding="utf-8") as f:
+            self.encoder = json.load(f)
+    
+        with open(fname_added_tokens, "r", encoding="utf-8") as f:
+            self.encoder_added = json.load(f)
+        self.byte_encoder = bytes_to_unicode()
+        self.byte_decoder = {v:k for k, v in self.byte_encoder.items()}
+        self.vocab_size = len(self.encoder) + len(self.encoder_added)
 
     def sentencepiece_tokens(self) -> Iterable[Tuple[bytes, float]]:
-        tokenizer = self.sentencepiece_tokenizer
-        for i in range(tokenizer.vocab_size()):
-            text: bytes
-            if tokenizer.is_unknown(i):
-                text = " \u2047 ".encode("utf-8")
-            elif tokenizer.is_control(i):
-                text = b""
-            elif tokenizer.is_byte(i):
-                piece = tokenizer.id_to_piece(i)
-                if len(piece) != 6:
-                    raise Exception(f"Invalid token: {piece}")
-                byte_value = int(piece[3:-1], 16)
-                text = struct.pack("B", byte_value)
-            else:
-                text = tokenizer.id_to_piece(i).replace("\u2581", " ").encode("utf-8")
-            score: float = tokenizer.get_score(i)
+        for key in self.encoder:
+            text = key.encode("utf-8")
+            score = -1000.0
             yield text, score
 
     def added_tokens(self) -> Iterable[Tuple[bytes, float]]:
-        for text in self.added_tokens_list:
+        for key in self.encoder_added:
+            text = key.encode("utf-8")#bytearray([self.byte_decoder[c] for c in key])
             score = -1000.0
-            yield text.encode("utf-8"), score
+            yield text, score
 
     def all_tokens(self) -> Iterable[Tuple[bytes, float]]:
         yield from self.sentencepiece_tokens()
@@ -218,7 +224,6 @@ class SentencePieceVocab:
 
     def __repr__(self) -> str:
         return f"<SentencePieceVocab with {self.vocab_size_base} base tokens and {len(self.added_tokens_list)} added tokens>"
-
 
 class NEVocab:
     def __init__(self, tokens: List[Tuple[bytes, float]]):
@@ -549,7 +554,7 @@ def merge_sharded(models: List[LazyModel]) -> LazyModel:
     names = {name: None for model in models for name in model}
 
     def convert(name: str) -> LazyTensor:
-        lazy_tensors: List[LazyTensor] = [model[name] for model in models]
+        lazy_tensors: List[LazyTensor] = [model[name] for model in models if name in model]
         if len(lazy_tensors) == 1:
             # only one file; don't go through this procedure since there might
             # be quantized tensors
@@ -557,9 +562,9 @@ def merge_sharded(models: List[LazyModel]) -> LazyModel:
         if len(lazy_tensors[0].shape) == 1:
             # the tensor is just duplicated in every file
             return lazy_tensors[0]
-        if name.startswith('tok_embeddings.') or \
-           name.endswith('.attention.wo.weight') or \
-           name.endswith('.feed_forward.w2.weight'):
+        if name.startswith('transformer.wte.weight') or \
+           name.endswith('.out_proj.weight') or \
+           name.endswith('.fc_out.weight'):
             # split by columns
             axis = 1
         else:
@@ -605,29 +610,6 @@ def permute_lazy(lazy_tensor: LazyTensor, n_head: int) -> LazyTensor:
         return lazy_tensor.load().permute(n_head)
     return LazyTensor(load, lazy_tensor.shape, lazy_tensor.data_type, f'permute({n_head}) ' + lazy_tensor.description)
 
-
-def convert_transformers_to_orig(model: LazyModel) -> LazyModel:
-    out: LazyModel = {}
-    out["tok_embeddings.weight"] = model["model.embed_tokens.weight"]
-    out["norm.weight"] = model["model.norm.weight"]
-    out["output.weight"] = model["lm_head.weight"]
-
-    n_head = model["model.layers.0.self_attn.q_proj.weight"].shape[1] // 128
-    for i in itertools.count():
-        if f"model.layers.{i}.self_attn.q_proj.weight" not in model:
-            break
-        out[f"layers.{i}.attention.wq.weight"] = permute_lazy(model[f"model.layers.{i}.self_attn.q_proj.weight"], n_head)
-        out[f"layers.{i}.attention.wk.weight"] = permute_lazy(model[f"model.layers.{i}.self_attn.k_proj.weight"], n_head)
-        out[f"layers.{i}.attention.wv.weight"] = model[f"model.layers.{i}.self_attn.v_proj.weight"]
-        out[f"layers.{i}.attention.wo.weight"] = model[f"model.layers.{i}.self_attn.o_proj.weight"]
-
-        out[f"layers.{i}.feed_forward.w1.weight"] = model[f"model.layers.{i}.mlp.gate_proj.weight"]
-        out[f"layers.{i}.feed_forward.w2.weight"] = model[f"model.layers.{i}.mlp.down_proj.weight"]
-        out[f"layers.{i}.feed_forward.w3.weight"] = model[f"model.layers.{i}.mlp.up_proj.weight"]
-
-        out[f"layers.{i}.attention_norm.weight"] = model[f"model.layers.{i}.input_layernorm.weight"]
-        out[f"layers.{i}.ffn_norm.weight"] = model[f"model.layers.{i}.post_attention_layernorm.weight"]
-    return out
 
 
 def handle_quantization(model: LazyModel) -> LazyModel:
@@ -941,7 +923,7 @@ class OutputFile:
             params.n_mult,
             params.n_head,
             params.n_layer,
-            params.n_embd // params.n_head,  # rot (obsolete)
+            params.n_rot,  # rot (obsolete)
             params.file_type.value,
         ]
         self.fout.write(struct.pack("i" * len(values), *values))
@@ -992,7 +974,7 @@ class OutputFile:
 
 
 def pick_output_type(model: LazyModel, output_type_str: Optional[str]) -> NEFileType:
-    wq_type = model["layers.0.attention.wq.weight"].data_type
+    wq_type = model["transformer.h.1.attn.q_proj.weight"].data_type
     if output_type_str == "f32" or (output_type_str is None and wq_type in (DT_F32, DT_BF16)):
         return NEFileType.AllF32
     if output_type_str == "f16" or (output_type_str is None and wq_type == DT_F16):
@@ -1012,8 +994,6 @@ def pick_output_type(model: LazyModel, output_type_str: Optional[str]) -> NEFile
 def do_necessary_conversions(model: LazyModel) -> LazyModel:
     model = handle_quantization(model)
 
-    if "lm_head.weight" in model:
-        model = convert_transformers_to_orig(model)
     model = filter_and_sort_tensors(model)
 
     return model
@@ -1060,7 +1040,7 @@ def find_multifile_paths(path: Path) -> List[Path]:
         # foo.0, and there was no file named foo.  Oh well, try to process it
         # as a single file.
         return [path]
-    return ret
+    return list(set(ret))
 
 
 def load_some_model(path: Path) -> ModelPlus:
@@ -1103,9 +1083,9 @@ def load_vocab(path: Path) -> SentencePieceVocab:
     # a directory, it might be the model directory, and tokenizer.model might
     # be in the parent of that.
     if path.is_dir():
-        path2 = path / "tokenizer.model"
+        path2 = path / "vocab.json"
         # Use `.parent` instead of /.. to handle the symlink case better.
-        path3 = path.parent / "tokenizer.model"
+        path3 = path.parent / "vocab.json"
         if path2.exists():
             path = path2
         elif path3.exists():

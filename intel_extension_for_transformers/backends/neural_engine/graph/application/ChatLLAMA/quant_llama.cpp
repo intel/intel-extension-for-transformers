@@ -26,7 +26,7 @@
 #include <tuple>
 
 #include "common.h"
-#include "models/llama/llama_model.h"
+#include "models/model_utils/model_utils.h"
 
 int main(int argc, char** argv) {
   model_init_backend();

@@ -14,12 +14,12 @@
 #ifndef MODEL_H
 #define MODEL_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
 
-#include "model_types.h"
 #include "application/common.h"
+#include "models/model_utils/model_types.h"
 
 #ifdef MODEL_SHARED
 #if defined(_WIN32) && !defined(__MINGW32__)
@@ -46,6 +46,10 @@
 #define MODEL_FILE_MAGIC_UNVERSIONED MODEL_FILE_MAGIC_NE
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
+
+void model_load_internal(const std::string& fname, model_name name, model_context& lctx, int n_ctx, int n_gpu_layers,
+                         ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
+                         model_progress_callback progress_callback, void* progress_callback_user_data);
 
 #ifdef __cplusplus
 extern "C" {
@@ -175,6 +179,9 @@ MODEL_API void model_sample_top_k(struct model_context* ctx, model_token_data_ar
 MODEL_API void model_sample_top_p(struct model_context* ctx, model_token_data_array* candidates, float p,
                                   size_t min_keep);
 
+MODEL_API model_token model_sample_top_k_top_p(struct model_context* ctx, const int n_logits, const float* logits,
+                                               int top_k, double top_p, double temp);
+
 /// @details Tail Free Sampling described in https://www.trentonbricken.com/Tail-Free-Sampling/.
 MODEL_API void model_sample_tail_free(struct model_context* ctx, model_token_data_array* candidates, float z,
                                       size_t min_keep);
@@ -237,8 +244,8 @@ MODEL_API const char* model_print_system_info(void);
 // Internal API to be implemented by model.cpp and used by tests/benchmarks only
 #ifdef MODEL_API_INTERNAL
 
-#include <vector>
 #include <string>
+#include <vector>
 struct ne_tensor;
 
 std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tensor_map(struct model_context* ctx);

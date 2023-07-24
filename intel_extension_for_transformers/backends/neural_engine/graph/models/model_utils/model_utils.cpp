@@ -19,548 +19,33 @@
 #include <cstdio>
 #endif
 
-#include "models/util.h"
-#include "llama_model.h"
+#include <algorithm>
+#include <array>
+#include <atomic>
+#include <cassert>
+#include <cinttypes>
+#include <climits>
+#include <cstring>
+#include <ctime>
+#include <fstream>
+#include <initializer_list>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <numeric>
+#include <queue>
+#include <random>
+#include <sstream>
+#include <thread>
+#include <unordered_map>
 
 #include "core/ne_layers.h"
 #include "application/common.h"
 #include "jblas/jblas/jit_blas_weight_compression.h"
-
-#include <array>
-#include <ctime>
-#include <cinttypes>
-#include <fstream>
-#include <random>
-#include <map>
-#include <unordered_map>
-#include <queue>
-#include <cassert>
-#include <cstring>
-#include <climits>
-#include <memory>
-#include <algorithm>
-#include <initializer_list>
-#include <thread>
-#include <atomic>
-#include <mutex>
-#include <sstream>
-#include <numeric>
-
-template <typename T>
-static T checked_mul(T a, T b) {
-  T ret = a * b;
-  if (a != 0 && ret / a != b) {
-    throw format("overflow multiplying %llu * %llu", (unsigned long long)a, (unsigned long long)b);
-  }
-  return ret;
-}
-
-static size_t checked_div(size_t a, size_t b) {
-  if (b == 0 || a % b != 0) {
-    throw format("error dividing %zu / %zu", a, b);
-  }
-  return a / b;
-}
-
-static std::string model_format_tensor_shape(const std::vector<uint32_t>& ne) {
-  char buf[256];
-  snprintf(buf, sizeof(buf), "%5u", ne.at(0));
-  for (size_t i = 1; i < ne.size(); i++) {
-    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " x %5u", ne.at(i));
-  }
-  return buf;
-}
-
-static size_t model_calc_tensor_size(const std::vector<uint32_t>& ne, enum ne_type type) {
-  size_t size = ne_type_size(type);
-  for (uint32_t dim : ne) {
-    size = checked_mul<size_t>(size, dim);
-  }
-  return size / ne_blck_size(type);
-}
-
-struct model_load_tensor_shard {
-  std::vector<uint32_t> ne;
-  size_t size;
-  enum ne_type type;
-  size_t file_idx;
-  size_t file_off;
-
-  void calc_size() { size = model_calc_tensor_size(ne, type); }
-};
-
-enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS };
-
-struct model_load_tensor {
-  std::vector<model_load_tensor_shard> shards;
-
-  std::string name;
-  enum ne_type type = NE_TYPE_F32;
-  model_split_type split_type = SPLIT_NONE;
-  std::vector<uint32_t> ne;
-  size_t size;
-  struct ne_tensor* ne_tensor = NULL;
-  uint8_t* data;
-
-  model_load_tensor(const std::string& name) : name(name) {}
-
-  void calc_all() {
-    calc_type();
-    calc_split_type();
-    calc_ne();
-    if (type == NE_TYPE_JBLAS) {
-      size = shards[0].size;
-    } else {
-      calc_size();
-    }
-  }
-
-  void calc_type() {
-    const auto& first_shard = shards.at(0);
-    for (const auto& shard : shards) {
-      if (shard.type != first_shard.type) {
-        throw format("inconsistent tensor shard type in '%s'", name.c_str());
-      }
-    }
-    type = first_shard.type;
-  }
-
-  void calc_split_type() {
-    if (shards.at(0).ne.size() == 1 ||  // 1D tensors are just duplicated in every file
-        shards.size() == 1) {           // only one file?
-      split_type = SPLIT_NONE;
-    } else if (name.find("tok_embeddings.") == 0 || name.find(".attention.wo.weight") != std::string::npos ||
-               name.find(".feed_forward.w2.weight") != std::string::npos) {
-      split_type = SPLIT_BY_COLUMNS;
-    } else {
-      split_type = SPLIT_BY_ROWS;
-    }
-  }
-
-  void calc_ne() {
-    const auto& first_shard = shards.at(0);
-    for (const auto& shard : shards) {
-      if (shard.ne != first_shard.ne) {
-        throw format("inconsistent tensor shard shape in '%s': first was %s, other was %s", name.c_str(),
-                     model_format_tensor_shape(first_shard.ne).c_str(), model_format_tensor_shape(shard.ne).c_str());
-      }
-    }
-    ne = first_shard.ne;
-    MODEL_ASSERT(shards.size() <= UINT32_MAX);
-    uint32_t n_shards = (uint32_t)shards.size();
-    switch (split_type) {
-      case SPLIT_NONE:
-        ne = first_shard.ne;
-        break;
-      case SPLIT_BY_COLUMNS:
-        ne = {checked_mul<uint32_t>(first_shard.ne[0], n_shards), first_shard.ne[1]};
-        break;
-      case SPLIT_BY_ROWS:
-        ne = {first_shard.ne[0], checked_mul<uint32_t>(first_shard.ne[1], n_shards)};
-        break;
-    }
-  }
-
-  void calc_size() { size = model_calc_tensor_size(ne, type); }
-};
-
-struct model_load_tensors_map {
-  // tensors is kept in a separate vector to preserve file order
-  std::vector<model_load_tensor> tensors;
-  std::unordered_map<std::string, size_t> name_to_idx;
-};
-
-struct model_file_loader {
-  model_file file;
-  model_file_version file_version;
-  model_hparams hparams;
-  model_vocab vocab;
-
-  model_file_loader(const char* fname, size_t file_idx, model_load_tensors_map& tensors_map) : file(fname, "rb") {
-    fprintf(stderr, "model.cpp: loading model from %s\n", fname);
-    read_magic();
-    read_hparams();
-    read_vocab();
-    read_tensor_metadata(file_idx, tensors_map);
-  }
-  void read_magic() {
-    uint32_t magic = file.read_u32();
-
-    if (magic == MODEL_FILE_MAGIC_NE) {
-      file_version = MODEL_FILE_VERSION_NE;
-      return;
-    }
-
-    uint32_t version = file.read_u32();
-
-    switch (magic) {
-      case MODEL_FILE_MAGIC_GGMF:
-        switch (version) {
-          case 1:
-            file_version = MODEL_FILE_VERSION_GGMF_V1;
-            return;
-        }
-        break;
-      case MODEL_FILE_MAGIC_GGJT:
-        switch (version) {
-          case 1:
-            file_version = MODEL_FILE_VERSION_GGJT_V1;
-            return;
-          case 2:
-            file_version = MODEL_FILE_VERSION_GGJT_V2;
-            return;
-          case 3:
-            file_version = MODEL_FILE_VERSION_GGJT_V3;
-            return;
-        }
-    }
-
-    throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
-  }
-  void read_hparams() {
-    hparams.n_vocab = file.read_u32();
-    hparams.n_embd = file.read_u32();
-    hparams.n_mult = file.read_u32();
-    hparams.n_head = file.read_u32();
-    hparams.n_layer = file.read_u32();
-    hparams.n_rot = file.read_u32();
-    hparams.ftype = (enum ne_ftype)file.read_u32();
-  }
-  void read_vocab() {
-    vocab.id_to_token.resize(hparams.n_vocab);
-
-    for (uint32_t i = 0; i < hparams.n_vocab; i++) {
-      uint32_t len = file.read_u32();
-      std::string word = file.read_string(len);
-
-      float score = 0.0f;
-      if (file_version >= MODEL_FILE_VERSION_GGMF_V1) {
-        file.read_raw(&score, sizeof(score));
-      }
-
-      vocab.token_to_id[word] = i;
-
-      auto& tok_score = vocab.id_to_token[i];
-      tok_score.tok = std::move(word);
-      tok_score.score = score;
-    }
-  }
-  void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
-    while (file.tell() < file.size) {
-      model_load_tensor_shard shard;
-      uint32_t n_dims = file.read_u32();
-      uint32_t name_len = file.read_u32();
-      shard.type = (enum ne_type)file.read_u32();
-      shard.ne.resize(n_dims);
-      file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
-      std::string name = file.read_string(name_len);
-      if (n_dims < 1 || n_dims > 2) {
-        throw format("model.cpp: tensor '%s' should not be %u-dimensional", name.c_str(), n_dims);
-      }
-      switch (shard.type) {
-        case NE_TYPE_F32:
-        case NE_TYPE_F16:
-        case NE_TYPE_Q4_0:
-        case NE_TYPE_Q4_1:
-        case NE_TYPE_Q5_0:
-        case NE_TYPE_Q5_1:
-        case NE_TYPE_Q8_0:
-        case NE_TYPE_JBLAS:
-          break;
-        default: {
-          throw format("unrecognized tensor type %u\n", shard.type);
-        }
-      }
-
-      if (file_version >= MODEL_FILE_VERSION_GGJT_V1) {
-        // skip to the next multiple of 32 bytes
-        file.seek(-static_cast<ptrdiff_t>(file.tell()) & 31, SEEK_CUR);
-      }
-      shard.file_idx = file_idx;
-      shard.file_off = file.tell();
-      if (shard.type == NE_TYPE_JBLAS) {
-        size_t size = 0;
-        file.read_raw(&size, sizeof(size_t));
-        shard.size = size;
-        file.seek(shard.size - sizeof(size_t), SEEK_CUR);
-      } else {
-        shard.calc_size();
-        file.seek(shard.size, SEEK_CUR);
-      }
-
-      auto it = tensors_map.name_to_idx.find(name);
-      size_t idx;
-      if (it != tensors_map.name_to_idx.end()) {
-        idx = it->second;
-      } else {
-        tensors_map.tensors.emplace_back(name);
-        idx = tensors_map.tensors.size() - 1;
-        tensors_map.name_to_idx.emplace(name, idx);
-      }
-      tensors_map.tensors.at(idx).shards.push_back(shard);
-    }
-  }
-};
-
-struct model_file_saver {
-  model_file file;
-  model_file_loader* any_file_loader;
-  model_file_saver(const char* fname, model_file_loader* any_file_loader, enum ne_ftype new_ftype)
-      : file(fname, "wb"), any_file_loader(any_file_loader) {
-    fprintf(stderr, "model.cpp: saving model to %s\n", fname);
-    write_magic();
-    write_hparams(new_ftype);
-    write_vocab();
-  }
-  void write_magic() {
-    file.write_u32(MODEL_FILE_MAGIC);    // magic
-    file.write_u32(MODEL_FILE_VERSION);  // version
-  }
-  void write_hparams(enum ne_ftype new_ftype) {
-    const model_hparams& hparams = any_file_loader->hparams;
-    file.write_u32(hparams.n_vocab);
-    file.write_u32(hparams.n_embd);
-    file.write_u32(hparams.n_mult);
-    file.write_u32(hparams.n_head);
-    file.write_u32(hparams.n_layer);
-    file.write_u32(hparams.n_rot);
-    file.write_u32(new_ftype);
-  }
-  void write_vocab() {
-    if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
-      fprintf(stderr, "model.cpp: WARNING: input is an old file that doesn't have scores; will add dummy scores\n");
-    }
-    uint32_t n_vocab = any_file_loader->hparams.n_vocab;
-    for (uint32_t i = 0; i < n_vocab; i++) {
-      const auto& token_score = any_file_loader->vocab.id_to_token.at(i);
-      file.write_u32((uint32_t)token_score.tok.size());
-      file.write_raw(token_score.tok.data(), token_score.tok.size());
-      file.write_raw(&token_score.score, sizeof(token_score.score));
-    }
-  }
-  void write_tensor(model_load_tensor& tensor, enum ne_type new_type, const void* new_data, size_t new_size) {
-    switch (new_type) {
-      case NE_TYPE_F32:
-      case NE_TYPE_F16:
-      case NE_TYPE_Q4_0:
-      case NE_TYPE_Q4_1:
-      case NE_TYPE_Q5_0:
-      case NE_TYPE_Q5_1:
-      case NE_TYPE_Q8_0:
-      case NE_TYPE_JBLAS:
-        break;
-      default:
-        MODEL_ASSERT(false);
-    }
-    file.write_u32((uint32_t)tensor.ne.size());
-    file.write_u32((uint32_t)tensor.name.size());
-    file.write_u32(new_type);
-    file.write_raw(tensor.ne.data(), sizeof(tensor.ne[0]) * tensor.ne.size());
-    file.write_raw(tensor.name.data(), tensor.name.size());
-    file.seek(-static_cast<ptrdiff_t>(file.tell()) & 31, SEEK_CUR);
-    if (new_type != NE_TYPE_JBLAS) MODEL_ASSERT(new_size == model_calc_tensor_size(tensor.ne, new_type));
-    file.write_raw(new_data, new_size);
-  }
-};
-
-struct model_model_loader {
-  std::vector<std::unique_ptr<model_file_loader>> file_loaders;
-  model_load_tensors_map tensors_map;
-  bool use_mmap;
-  size_t num_ne_tensors_created = 0;
-  struct ne_context* ne_ctx = NULL;
-  std::unique_ptr<model_mmap> mapping;
-
-  model_model_loader(const std::string& fname_base, bool use_mmap, bool vocab_only) {
-    auto* first_file = new model_file_loader(fname_base.c_str(), 0, tensors_map);
-    file_loaders.emplace_back(first_file);
-    uint32_t n_parts = vocab_only ? 1 : guess_n_parts();
-    for (uint32_t i = 1; i < n_parts; i++) {
-      std::string fname = fname_base + "." + std::to_string(i);
-      auto* ith_file = new model_file_loader(fname.c_str(), i, tensors_map);
-      file_loaders.emplace_back(ith_file);
-      if (ith_file->hparams != first_file->hparams) {
-        throw format("model.cpp: hparams inconsistent between files");
-      }
-    }
-    if (!model_mmap::SUPPORTED) {
-      use_mmap = false;
-    }
-    if (use_mmap && alignment_prevents_mmap()) {
-      fprintf(stderr,
-              "model.cpp: can't use mmap because tensors are not aligned; convert to new format to avoid this\n");
-      use_mmap = false;
-    }
-    this->use_mmap = use_mmap;
-    for (model_load_tensor& lt : tensors_map.tensors) {
-      lt.calc_all();
-    }
-  }
-
-  bool alignment_prevents_mmap() {
-    for (const model_load_tensor& lt : tensors_map.tensors) {
-      for (const model_load_tensor_shard& shard : lt.shards) {
-        if (shard.file_off & 3) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  uint32_t guess_n_parts() const {
-    auto it = tensors_map.name_to_idx.find("tok_embeddings.weight");
-    if (it == tensors_map.name_to_idx.end()) {
-      throw std::string("missing tok_embeddings.weight");
-    }
-    const model_load_tensor& lt = tensors_map.tensors.at(it->second);
-    return file_loaders.at(0)->hparams.n_embd / lt.shards.at(0).ne.at(0);
-  }
-
-  void calc_sizes(size_t* ctx_size_p, size_t* mmapped_size_p) const {
-    *ctx_size_p = *mmapped_size_p = 0;
-    for (const model_load_tensor& lt : tensors_map.tensors) {
-      *ctx_size_p += sizeof(struct ne_tensor) + NE_OBJECT_SIZE;
-      *(use_mmap ? mmapped_size_p : ctx_size_p) += lt.size;
-    }
-  }
-
-  struct ne_tensor* get_tensor(const std::string& name, const std::vector<uint32_t>& ne, ne_backend backend) {
-    auto it = tensors_map.name_to_idx.find(name);
-    if (it == tensors_map.name_to_idx.end()) {
-      throw format("model.cpp: tensor '%s' is missing from model", name.c_str());
-    }
-    model_load_tensor& lt = tensors_map.tensors.at(it->second);
-    if (lt.ne != ne) {
-      throw format("model.cpp: tensor '%s' has wrong shape; expected %s, got %s", name.c_str(),
-                   model_format_tensor_shape(ne).c_str(), model_format_tensor_shape(lt.ne).c_str());
-    }
-
-    return get_tensor_for(lt, backend);
-  }
-
-  struct ne_tensor* get_tensor_for(model_load_tensor& lt, ne_backend backend) {
-    struct ne_tensor* tensor;
-    if (lt.ne.size() == 2) {
-      if (lt.type == NE_TYPE_JBLAS) {
-        tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1), lt.size);
-      } else {
-        tensor = ne_new_tensor_2d(ne_ctx, lt.type, lt.ne.at(0), lt.ne.at(1), NE_SIZE_CALC);
-      }
-    } else {
-      MODEL_ASSERT(lt.ne.size() == 1);
-      tensor = ne_new_tensor_1d(ne_ctx, lt.type, lt.ne.at(0), NE_SIZE_CALC);
-    }
-    ne_set_name(tensor, lt.name.c_str());
-    MODEL_ASSERT(lt.ne_tensor == NULL);  // if this fails, we called get_tensor twice on the same tensor
-    tensor->backend = backend;
-    lt.ne_tensor = tensor;
-    num_ne_tensors_created++;
-    return tensor;
-  }
-
-  void done_getting_tensors() const {
-    if (num_ne_tensors_created != tensors_map.tensors.size()) {
-      throw std::string("model.cpp: file contained more tensors than expected");
-    }
-  }
-
-  void load_all_data(model_progress_callback progress_callback, void* progress_callback_user_data,
-                     model_mlock* lmlock) {
-    size_t data_size = 0;
-    size_t prefetch_size = 0;
-    for (const model_load_tensor& lt : tensors_map.tensors) {
-      data_size += lt.size;
-      if (lt.ne_tensor->backend == NE_BACKEND_CPU) {
-        prefetch_size += lt.size;
-      }
-    }
-
-    if (use_mmap) {
-      mapping.reset(new model_mmap(&file_loaders.at(0)->file, prefetch_size));
-      if (!lmlock) {
-        // Don't call the callback since the actual loading will be lazy
-        // and we can't measure it.
-        progress_callback = NULL;
-      }
-      if (lmlock) {
-        lmlock->init(mapping->addr);
-      }
-    }
-
-    size_t done_size = 0;
-    for (model_load_tensor& lt : tensors_map.tensors) {
-      if (lt.ne_tensor->backend != NE_BACKEND_CPU) {
-        continue;
-      }
-      if (progress_callback) {
-        progress_callback((float)done_size / data_size, progress_callback_user_data);
-      }
-      MODEL_ASSERT(lt.ne_tensor);  // unused tensors should have been caught by load_data already
-      lt.data = (uint8_t*)lt.ne_tensor->data;
-      load_data_for(lt);
-      lt.ne_tensor->data = lt.data;
-      done_size += lt.size;
-      if (use_mmap && lmlock) {
-        lmlock->grow_to(done_size);
-      }
-    }
-  }
-
-  void load_data_for(model_load_tensor& lt) {
-    if (use_mmap) {
-      MODEL_ASSERT(lt.shards.size() == 1);
-      lt.data = (uint8_t*)mapping->addr + lt.shards.at(0).file_off;
-    } else if (lt.split_type == SPLIT_NONE) {
-      model_file& file = file_loaders.at(lt.shards.at(0).file_idx)->file;
-      file.seek(lt.shards.at(0).file_off, SEEK_SET);
-      file.read_raw(lt.data, lt.size);
-    } else if (lt.split_type == SPLIT_BY_ROWS) {
-      size_t offset = 0;
-      for (model_load_tensor_shard& shard : lt.shards) {
-        model_file& file = file_loaders.at(shard.file_idx)->file;
-        file.seek(shard.file_off, SEEK_SET);
-        file.read_raw(lt.data + offset, shard.size);
-        offset += shard.size;
-      }
-      MODEL_ASSERT(offset == lt.size);
-    } else if (lt.split_type == SPLIT_BY_COLUMNS) {
-      // Let's load the data into temporary buffers to ensure the OS performs large loads.
-      std::vector<model_buffer> tmp_bufs(lt.shards.size());
-      for (size_t i = 0; i < lt.shards.size(); i++) {
-        model_load_tensor_shard& shard = lt.shards.at(i);
-        model_file& file = file_loaders.at(shard.file_idx)->file;
-        file.seek(shard.file_off, SEEK_SET);
-        tmp_bufs.at(i).resize(shard.size);
-        file.read_raw(tmp_bufs.at(i).addr, shard.size);
-      }
-      // Then reshape.
-      size_t num_rows = lt.ne.at(1);
-      size_t per_shard_row_size = lt.shards.at(0).size / num_rows;
-      size_t out_offset = 0;
-      for (size_t row = 0; row < num_rows; row++) {
-        for (model_buffer& tmp_buf : tmp_bufs) {
-          memcpy(lt.data + out_offset, tmp_buf.addr + row * per_shard_row_size, per_shard_row_size);
-          out_offset += per_shard_row_size;
-        }
-      }
-      MODEL_ASSERT(out_offset == lt.size);
-    }
-    if (0) {
-      print_checksum(lt);
-    }
-  }
-
-  static void print_checksum(model_load_tensor& lt) {
-    uint32_t sum = 0;
-    for (size_t i = 0; i < lt.size; i++) {
-      uint8_t byte = lt.data[i];
-      sum = byte + (sum << 6) + (sum << 16) - sum;  // sdbm hash
-    }
-    fprintf(stderr, "%s checksum: %#08x (%s, size %zu)\n", lt.name.c_str(), sum,
-            model_format_tensor_shape(lt.ne).c_str(), lt.size);
-  }
-};
+#include "models/model_utils/model_files.h"
+#include "models/model_utils/model_utils.h"
+#include "models/model_utils/util.h"
+#include "models/models.h"
 
 //
 // kv cache
@@ -597,6 +82,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
 
 struct model_context_params model_context_default_params() {
   struct model_context_params result = {
+      /*name                         =*/MODEL_LLAMA,
       /*.n_ctx                       =*/512,
       /*.gpu_layers                  =*/0,
       /*.seed                        =*/-1,
@@ -634,259 +120,12 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static const char* model_file_version_name(model_file_version version) {
-  switch (version) {
-    case MODEL_FILE_VERSION_NE:
-      return "'ne' (old version with low tokenizer quality and no mmap support)";
-    case MODEL_FILE_VERSION_GGMF_V1:
-      return "ggmf v1 (old version with no mmap support)";
-    case MODEL_FILE_VERSION_GGJT_V1:
-      return "ggjt v1 (pre #1405)";
-    case MODEL_FILE_VERSION_GGJT_V2:
-      return "ggjt v2 (pre #1508)";
-    case MODEL_FILE_VERSION_GGJT_V3:
-      return "ggjt v3 (latest)";
-  }
-
-  return "unknown";
-}
-
-static const char* ne_ftype_name(enum ne_ftype ftype) {
-  switch (ftype) {
-    case NE_FTYPE_ALL_F32:
-      return "all F32";
-    case NE_FTYPE_MOSTLY_F16:
-      return "mostly F16";
-    case NE_FTYPE_MOSTLY_Q4_0:
-      return "mostly Q4_0";
-    case NE_FTYPE_MOSTLY_Q4_1:
-      return "mostly Q4_1";
-    case NE_FTYPE_MOSTLY_Q4_1_SOME_F16:
-      return "mostly Q4_1, some F16";
-    case NE_FTYPE_MOSTLY_Q5_0:
-      return "mostly Q5_0";
-    case NE_FTYPE_MOSTLY_Q5_1:
-      return "mostly Q5_1";
-    case NE_FTYPE_MOSTLY_Q8_0:
-      return "mostly Q8_0";
-    default:
-      return "unknown, may not work";
-  }
-}
-
-static const char* model_model_type_name(e_model type) {
-  switch (type) {
-    case MODEL_7B:
-      return "7B";
-    case MODEL_13B:
-      return "13B";
-    case MODEL_30B:
-      return "30B";
-    case MODEL_65B:
-      return "65B";
-    default:
-      MODEL_ASSERT(false);
-  }
-}
-
-static void model_model_load_internal(const std::string& fname, model_context& lctx, int n_ctx, int n_gpu_layers,
-                                      ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
-                                      model_progress_callback progress_callback, void* progress_callback_user_data) {
-  lctx.t_start_us = ne_time_us();
-
-  std::unique_ptr<model_model_loader> ml(new model_model_loader(fname, use_mmap, vocab_only));
-
-  lctx.vocab = std::move(ml->file_loaders.at(0)->vocab);
-  auto& model = lctx.model;
-  model.hparams = ml->file_loaders.at(0)->hparams;
-  model_file_version file_version = ml->file_loaders.at(0)->file_version;
-  auto& hparams = model.hparams;
-  uint32_t n_ff = ((2 * (4 * hparams.n_embd) / 3 + hparams.n_mult - 1) / hparams.n_mult) * hparams.n_mult;
-
-  {
-    switch (hparams.n_layer) {
-      case 32:
-        model.type = e_model::MODEL_7B;
-        break;
-      case 40:
-        model.type = e_model::MODEL_13B;
-        break;
-      case 60:
-        model.type = e_model::MODEL_30B;
-        break;
-      case 80:
-        model.type = e_model::MODEL_65B;
-        break;
-    }
-
-    hparams.n_ctx = n_ctx;
-  }
-
-  {
-    fprintf(stderr, "%s: format     = %s\n", __func__, model_file_version_name(file_version));
-    fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
-    fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);
-    fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);
-    fprintf(stderr, "%s: n_mult     = %u\n", __func__, hparams.n_mult);
-    fprintf(stderr, "%s: n_head     = %u\n", __func__, hparams.n_head);
-    fprintf(stderr, "%s: n_layer    = %u\n", __func__, hparams.n_layer);
-    fprintf(stderr, "%s: n_rot      = %u\n", __func__, hparams.n_rot);
-    fprintf(stderr, "%s: ftype      = %u (%s)\n", __func__, hparams.ftype, ne_ftype_name(hparams.ftype));
-    fprintf(stderr, "%s: n_ff       = %u\n", __func__, n_ff);
-    fprintf(stderr, "%s: n_parts    = %zu\n", __func__, ml->file_loaders.size());
-    fprintf(stderr, "%s: model size = %s\n", __func__, model_model_type_name(model.type));
-  }
-
-  if (file_version < MODEL_FILE_VERSION_GGJT_V2) {
-    if (hparams.ftype != NE_FTYPE_ALL_F32 && hparams.ftype != NE_FTYPE_MOSTLY_F16 &&
-        hparams.ftype != NE_FTYPE_MOSTLY_Q8_0) {
-      throw format("this format is no longer supported (see https://github.com/ggerganov/model.cpp/pull/1405)");
-    }
-  }
-
-  if (file_version < MODEL_FILE_VERSION_GGJT_V3) {
-    if (hparams.ftype == NE_FTYPE_MOSTLY_Q4_0 || hparams.ftype == NE_FTYPE_MOSTLY_Q4_1 ||
-        hparams.ftype == NE_FTYPE_MOSTLY_Q8_0) {
-      throw format("this format is no longer supported (see https://github.com/ggerganov/model.cpp/pull/1508)");
-    }
-  }
-
-  if (vocab_only) {
-    return;
-  }
-
-  auto& ctx = model.ctx;
-
-  size_t ctx_size;
-  size_t mmapped_size;
-  ml->calc_sizes(&ctx_size, &mmapped_size);
-  fprintf(stderr, "%s: ne ctx size = %7.2f MB\n", __func__, ctx_size / 1024.0 / 1024.0);
-
-  // create the ne context
-  {
-    lctx.model.buf.resize(ctx_size);
-    if (use_mlock) {
-      lctx.model.mlock_buf.init(lctx.model.buf.addr);
-      lctx.model.mlock_buf.grow_to(lctx.model.buf.size);
-    }
-
-    struct ne_init_params params = {
-        /*.mem_size   =*/lctx.model.buf.size,
-        /*.mem_buffer =*/lctx.model.buf.addr,
-        /*.no_alloc   =*/ml->use_mmap,
-    };
-
-    model.ctx = ne_init(params);
-    if (!model.ctx) {
-      throw format("ne_init() failed");
-    }
-  }
-
-#ifdef NE_USE_CUBLAS
-#define MODEL_BACKEND_OFFLOAD NE_BACKEND_CUDA
-#else
-#define MODEL_BACKEND_OFFLOAD NE_BACKEND_CPU
-#endif
-
-  // prepare memory for the weights
-  size_t vram_total = 0;
-  {
-    const uint32_t n_embd = hparams.n_embd;
-    const uint32_t n_layer = hparams.n_layer;
-    const uint32_t n_vocab = hparams.n_vocab;
-
-    ml->ne_ctx = ctx;
-
-    model.tok_embeddings = ml->get_tensor("tok_embeddings.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
-    model.norm = ml->get_tensor("norm.weight", {n_embd}, NE_BACKEND_CPU);
-
-    // "output" tensor
-    {
-      ne_backend backend_output;
-      if (n_gpu_layers > int(n_layer)) {  // NOLINT
-        backend_output = MODEL_BACKEND_OFFLOAD;
-      } else {
-        backend_output = NE_BACKEND_CPU;
-      }
-
-      model.output = ml->get_tensor("output.weight", {n_embd, n_vocab}, backend_output);
-    }
-
-    const int i_gpu_start = n_layer - n_gpu_layers;
-
-    model.layers.resize(n_layer);
-    for (uint32_t i = 0; i < n_layer; ++i) {
-      const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
-
-      auto& layer = model.layers[i];
-
-      std::string layers_i = "layers." + std::to_string(i);
-
-      layer.attention_norm = ml->get_tensor(layers_i + ".attention_norm.weight", {n_embd}, backend);
-
-      layer.wq = ml->get_tensor(layers_i + ".attention.wq.weight", {n_embd, n_embd}, backend);
-      layer.wk = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, n_embd}, backend);
-      layer.wv = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, n_embd}, backend);
-      layer.wo = ml->get_tensor(layers_i + ".attention.wo.weight", {n_embd, n_embd}, backend);
-
-      layer.ffn_norm = ml->get_tensor(layers_i + ".ffn_norm.weight", {n_embd}, backend);
-
-      layer.w1 = ml->get_tensor(layers_i + ".feed_forward.w1.weight", {n_embd, n_ff}, backend);
-      layer.w2 = ml->get_tensor(layers_i + ".feed_forward.w2.weight", {n_ff, n_embd}, backend);
-      layer.w3 = ml->get_tensor(layers_i + ".feed_forward.w3.weight", {n_embd, n_ff}, backend);
-
-      if (backend == NE_BACKEND_CUDA) {
-        vram_total += ne_nbytes(layer.attention_norm) + ne_nbytes(layer.wq) + ne_nbytes(layer.wk) +
-                      ne_nbytes(layer.wv) + ne_nbytes(layer.wo) + ne_nbytes(layer.attention_norm) +
-                      ne_nbytes(layer.w1) + ne_nbytes(layer.w2) + ne_nbytes(layer.w3);
-      }
-    }
-  }
-
-  ml->done_getting_tensors();
-
-  // print memory requirements
-  {
-    const size_t scale = memory_type == NE_TYPE_F32 ? 2 : 1;
-
-    // this is the total memory required to run the inference
-    const size_t mem_required = ctx_size + mmapped_size - vram_total +  // weights in VRAM not in memory
-                                MEM_REQ_SCRATCH0().at(model.type) + MEM_REQ_SCRATCH1().at(model.type) +
-                                MEM_REQ_EVAL().at(model.type);
-
-    // this is the memory required by one model_state
-    const size_t mem_required_state = scale * MEM_REQ_KV_SELF().at(model.type);
-
-    fprintf(stderr, "%s: mem required  = %7.2f MB (+ %7.2f MB per state)\n", __func__, mem_required / 1024.0 / 1024.0,
-            mem_required_state / 1024.0 / 1024.0);
-
-    (void)n_gpu_layers;
-  }
-
-  // populate `tensors_by_name`
-  for (model_load_tensor& lt : ml->tensors_map.tensors) {
-    model.tensors_by_name.emplace_back(lt.name, lt.ne_tensor);
-  }
-
-  ml->load_all_data(progress_callback, progress_callback_user_data, use_mlock ? &lctx.model.mlock_mmap : NULL);
-
-  if (progress_callback) {
-    progress_callback(1.0f, progress_callback_user_data);
-  }
-
-  model.mapping = std::move(ml->mapping);
-
-  // loading time will be recalculate after the first eval, so
-  // we take page faults deferred by mmap() into consideration
-  lctx.t_load_us = ne_time_us() - lctx.t_start_us;
-}
-
-static bool model_model_load(const std::string& fname, model_context& lctx, int n_ctx, int n_gpu_layers,
-                             ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
-                             model_progress_callback progress_callback, void* progress_callback_user_data) {
+static bool model_load(const std::string& fname, model_name name, model_context& lctx, int n_ctx, int n_gpu_layers,
+                       ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
+                       model_progress_callback progress_callback, void* progress_callback_user_data) {
   try {
-    model_model_load_internal(fname, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
-                              progress_callback, progress_callback_user_data);
+    model_load_internal(fname, name, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
+                        progress_callback, progress_callback_user_data);
     return true;
   } catch (const std::string& err) {
     fprintf(stderr, "error loading model: %s\n", err.c_str());
@@ -1256,6 +495,73 @@ void model_sample_temperature(struct model_context* ctx, model_token_data_array*
   if (ctx) {
     ctx->t_sample_us += ne_time_us() - t_start_sample_us;
   }
+}
+
+model_token model_sample_top_k_top_p(struct model_context* ctx, const int n_logits, const float* logits, int top_k,
+                                     double top_p, double temp) {
+  const int64_t t_start_sample_us = ne_time_us();
+  std::vector<std::pair<double, model_token>> logits_id;
+  logits_id.reserve(n_logits);
+
+  {
+    const double scale = 1.0 / temp;
+    for (int i = 0; i < n_logits; ++i) {
+      logits_id.push_back(std::make_pair(logits[i] * scale, i));
+    }
+  }
+
+  // find the top K tokens
+  std::partial_sort(logits_id.begin(), logits_id.begin() + top_k, logits_id.end(),
+                    [](const std::pair<double, model_token>& a, const std::pair<double, model_token>& b) {
+                      return a.first > b.first;
+                    });
+
+  logits_id.resize(top_k);
+
+  double maxl = -INFINITY;
+  for (const auto& kv : logits_id) {
+    maxl = std::max(maxl, kv.first);
+  }
+
+  // compute probs for the top K tokens
+  std::vector<double> probs;
+  probs.reserve(logits_id.size());
+
+  double sum = 0.0;
+  for (const auto& kv : logits_id) {
+    double p = exp(kv.first - maxl);
+    probs.push_back(p);
+    sum += p;
+  }
+
+  // normalize the probs
+  for (auto& p : probs) {
+    p /= sum;
+  }
+
+  if (top_p < 1.0f) {
+    double cumsum = 0.0f;
+    for (int i = 0; i < top_k; i++) {
+      cumsum += probs[i];
+      if (cumsum >= top_p) {
+        top_k = i + 1;
+        probs.resize(top_k);
+        logits_id.resize(top_k);
+        break;
+      }
+    }
+
+    cumsum = 1.0 / cumsum;
+    for (int i = 0; i < (int)probs.size(); i++) {
+      probs[i] *= cumsum;
+    }
+  }
+
+  std::discrete_distribution<> dist(probs.begin(), probs.end());
+  if (ctx) {
+    ctx->t_sample_us += ne_time_us() - t_start_sample_us;
+  }
+  return logits_id[dist(ctx->rng)].second;
 }
 
 void model_sample_repetition_penalty(struct model_context* ctx, model_token_data_array* candidates,
@@ -1679,10 +985,10 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->logits_all = params.logits_all;
 
   ne_type memory_type = params.f16_kv ? NE_TYPE_F16 : NE_TYPE_F32;
+  model_name name = params.name;
 
-  if (!model_model_load(path_model, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
-                        params.use_mlock, params.vocab_only, params.progress_callback,
-                        params.progress_callback_user_data)) {
+  if (!model_load(path_model, name, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
+                  params.use_mlock, params.vocab_only, params.progress_callback, params.progress_callback_user_data)) {
     fprintf(stderr, "%s: failed to load model\n", __func__);
     model_free(ctx);
     return nullptr;
@@ -1714,10 +1020,10 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
       ctx->embedding.resize(hparams.n_embd);
     }
 
-    ctx->buf_compute.resize(MEM_REQ_EVAL().at(ctx->model.type));
+    ctx->buf_compute.resize(ctx->model.scratchs.eval);
 
-    ctx->buf_scratch[0].resize(MEM_REQ_SCRATCH0().at(ctx->model.type));
-    ctx->buf_scratch[1].resize(MEM_REQ_SCRATCH1().at(ctx->model.type));
+    ctx->buf_scratch[0].resize(ctx->model.scratchs.scratch0);
+    ctx->buf_scratch[1].resize(ctx->model.scratchs.scratch1);
   }
 
   return ctx;

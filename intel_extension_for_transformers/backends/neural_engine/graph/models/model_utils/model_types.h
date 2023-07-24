@@ -14,45 +14,37 @@
 #ifndef MODEL_TYPES_H
 #define MODEL_TYPES_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <array>
-#include <ctime>
-#include <cinttypes>
-#include <fstream>
-#include <random>
-#include <map>
-#include <unordered_map>
-#include <queue>
-#include <cassert>
-#include <cstring>
-#include <climits>
-#include <memory>
+
 #include <algorithm>
-#include <initializer_list>
-#include <thread>
+#include <array>
 #include <atomic>
+#include <cassert>
+#include <cinttypes>
+#include <climits>
+#include <cstring>
+#include <ctime>
+#include <fstream>
+#include <initializer_list>
+#include <map>
+#include <memory>
 #include <mutex>
-#include <sstream>
 #include <numeric>
+#include <queue>
+#include <random>
+#include <sstream>
+#include <thread>
+#include <unordered_map>
 
-#include "models/util.h"
 #include "core/ne_layers.h"
+#include "models/model_utils/util.h"
 
-#ifdef MODEL_SHARED
-#if defined(_WIN32) && !defined(__MINGW32__)
-#ifdef MODEL_BUILD
-#define MODEL_API __declspec(dllexport)
-#else
-#define MODEL_API __declspec(dllimport)
-#endif
-#else
-#define MODEL_API __attribute__((visibility("default")))
-#endif
-#else
-#define MODEL_API
-#endif
+#define MODEL_MAX_NORM 2
+#define MODEL_MAX_ATTN 4
+#define MODEL_MAX_FFN 4
+#define MODEL_MAX_OTHERS 5
 
 #define MODEL_USE_SCRATCH
 #define MODEL_MAX_SCRATCH_BUFFERS 16
@@ -72,65 +64,16 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-// available model models
-enum e_model {
-  MODEL_UNKNOWN,
-  MODEL_7B,
-  MODEL_13B,
-  MODEL_30B,
-  MODEL_65B,
-};
-
-enum name_model { MODEL_LLAMA };
+enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ };
 
 static const size_t MB = 1024 * 1024;
 
-// computed for n_ctx == 2048
-// TODO: dynamically determine these sizes
-//       needs modifications in ne
-
-static const std::map<e_model, size_t>& MEM_REQ_SCRATCH0() {
-  static std::map<e_model, size_t> k_sizes = {
-      {MODEL_7B, 512ull * MB},
-      {MODEL_13B, 512ull * MB},
-      {MODEL_30B, 512ull * MB},
-      {MODEL_65B, 1024ull * MB},
-  };
-  return k_sizes;
-}
-
-static const std::map<e_model, size_t>& MEM_REQ_SCRATCH1() {
-  static std::map<e_model, size_t> k_sizes = {
-      {MODEL_7B, 512ull * MB},
-      {MODEL_13B, 512ull * MB},
-      {MODEL_30B, 512ull * MB},
-      {MODEL_65B, 1024ull * MB},
-  };
-  return k_sizes;
-}
-
-// 2*n_embd*n_ctx*n_layer*sizeof(float16)
-static const std::map<e_model, size_t>& MEM_REQ_KV_SELF() {
-  static std::map<e_model, size_t> k_sizes = {
-      {MODEL_7B, 1026ull * MB},
-      {MODEL_13B, 1608ull * MB},
-      {MODEL_30B, 3124ull * MB},
-      {MODEL_65B, 5120ull * MB},
-  };
-  return k_sizes;
-}
-
-// this is mostly needed for temporary mul_mat buffers to dequantize the data
-// not actually needed if BLAS is disabled
-static const std::map<e_model, size_t>& MEM_REQ_EVAL() {
-  static std::map<e_model, size_t> k_sizes = {
-      {MODEL_7B, 768ull * MB},
-      {MODEL_13B, 1024ull * MB},
-      {MODEL_30B, 1280ull * MB},
-      {MODEL_65B, 1536ull * MB},
-  };
-  return k_sizes;
-}
+struct model_scratch {
+  size_t scratch0;
+  size_t scratch1;
+  size_t kv_self;
+  size_t eval;
+};
 
 enum model_file_version {
   MODEL_FILE_VERSION_NE,
@@ -164,21 +107,13 @@ struct model_hparams {
 
 struct model_layer {
   // normalization
-  struct ne_tensor* attention_norm;
+  struct ne_tensor* norm[MODEL_MAX_NORM];
 
   // attention
-  struct ne_tensor* wq;
-  struct ne_tensor* wk;
-  struct ne_tensor* wv;
-  struct ne_tensor* wo;
-
-  // normalization
-  struct ne_tensor* ffn_norm;
+  struct ne_tensor* attn[MODEL_MAX_ATTN];
 
   // ff
-  struct ne_tensor* w1;
-  struct ne_tensor* w2;
-  struct ne_tensor* w3;
+  struct ne_tensor* ffn[MODEL_MAX_FFN];
 };
 
 struct model_kv_cache {
@@ -198,16 +133,13 @@ struct model_kv_cache {
   }
 };
 
-struct model_model {
-  e_model type = MODEL_UNKNOWN;
+struct model_struct {
+  model_name name;
 
   model_hparams hparams;
+  model_scratch scratchs;
 
-  struct ne_tensor* tok_embeddings;
-
-  struct ne_tensor* norm;
-  struct ne_tensor* output;
-
+  struct ne_tensor* others[MODEL_MAX_OTHERS];
   std::vector<model_layer> layers;
 
   // context
@@ -230,7 +162,7 @@ struct model_model {
   // for quantize-stats only
   std::vector<std::pair<std::string, struct ne_tensor*>> tensors_by_name;
 
-  ~model_model() {
+  ~model_struct() {
     if (ctx) {
       ne_free(ctx);
     }
@@ -266,8 +198,9 @@ struct model_context {
   int32_t n_eval = 0;    // number of eval calls
   int32_t n_p_eval = 0;  // number of tokens in eval calls for the prompt (with batch size > 1)
 
-  model_model model;
+  model_struct model;
   model_vocab vocab;
+  std::vector<std::vector<std::string>> tensors_name;
 
   size_t mem_per_token = 0;
 
@@ -343,16 +276,16 @@ typedef struct model_token_data_array {
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
 struct model_context_params {
+  model_name name;   // name of models (GPT-J, LLAMA)
   int n_ctx;         // text context
   int n_gpu_layers;  // number of layers to store in VRAM
   int seed;          // RNG seed, -1 for random
-
-  bool f16_kv;      // use fp16 for KV cache
-  bool logits_all;  // the model_eval() call computes all logits, not just the last one
-  bool vocab_only;  // only load the vocabulary, no weights
-  bool use_mmap;    // use mmap if possible
-  bool use_mlock;   // force system to keep model in RAM
-  bool embedding;   // embedding mode only
+  bool f16_kv;       // use fp16 for KV cache
+  bool logits_all;   // the model_eval() call computes all logits, not just the last one
+  bool vocab_only;   // only load the vocabulary, no weights
+  bool use_mmap;     // use mmap if possible
+  bool use_mlock;    // force system to keep model in RAM
+  bool embedding;    // embedding mode only
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;
@@ -367,8 +300,8 @@ struct model_context_params {
 // Internal API to be implemented by model.cpp and used by tests/benchmarks only
 #ifdef MODEL_API_INTERNAL
 
-#include <vector>
 #include <string>
+#include <vector>
 struct ne_tensor;
 
 std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tensor_map(struct model_context* ctx);

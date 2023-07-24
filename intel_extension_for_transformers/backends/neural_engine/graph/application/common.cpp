@@ -225,6 +225,15 @@ std::string gpt_random_prompt(std::mt19937& rng) {
   return "The";
 }
 
+std::vector<int> gpt_random_ids(std::mt19937& rng) {
+  const int l = rng() % 10 + 1;
+  std::vector<int> res(l, 0);
+  for (int i = 0; i < l; ++i) {
+    res.push_back(rng() % 1000);
+  }
+  return res;
+}
+
 std::string trim(const std::string& s) {
   std::regex e("^\\s+|\\s+$");
   return std::regex_replace(s, e, "");
@@ -484,7 +493,6 @@ bool gpt_vocab_init(const std::string& fname, gpt_vocab& vocab) {
 gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits, int top_k, double top_p, double temp,
                                      std::mt19937& rng) {
   int n_logits = vocab.id_to_token.size();
-
   std::vector<std::pair<double, gpt_vocab::id>> logits_id;
   logits_id.reserve(n_logits);
 
@@ -758,7 +766,6 @@ ne_type quant_params_to_type(const quant_params& params) {
   return NE_TYPE_F32;
 }
 
-
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params params, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
@@ -797,7 +804,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params param
       }
     }
   } else if (params.bits == 8) {
-    //TODO add 8bit quantization
+    // TODO add 8bit quantization
   }
   assert(packedw != 0);
   auto size = packedw->getSerializedSize();

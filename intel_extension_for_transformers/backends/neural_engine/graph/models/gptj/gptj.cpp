@@ -11,8 +11,6 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#include "models/llama/llama.h"
-
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,11 +32,8 @@
 #include "core/ne.h"
 #include "core/ne_layers.h"
 #include "models/model_utils/model_config.h"
-#include "models/model_utils/model_files.h"
-#include "models/model_utils/model_types.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
-#include "models/models.h"
 
 // evaluate the transformer
 //
@@ -47,13 +42,13 @@
 //   - n_past:    the context size so far
 //   - n_threads: number of threads to use
 //
-static bool llama_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                      const int n_past, const int n_threads) {
-  // enforce that the first token is BOS
-  if (n_past == 0 && tokens[0] != model_token_bos()) {
-    fprintf(stderr, "%s: first token must be BOS\n", __func__);
-    return false;
-  }
+static bool gptj_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
+                                     const int n_past, const int n_threads) {
+  // // enforce that the first token is BOS
+  // if (n_past == 0 && tokens[0] != model_token_bos()) {
+  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
+  //   return false;
+  // }
 
   const int64_t t_start_us = ne_time_us();
 
@@ -89,26 +84,26 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   ne_cgraph gf = {};
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
-  struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
+  struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
   memcpy(embd->data, tokens, N * ne_element_size(embd));
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
   for (int il = 0; il < n_layer; ++il) {
-    struct ne_tensor* inpSA = inpL;
-
     struct ne_tensor* cur;
 
     lctx.use_buf(ctx0, 0);
 
     // norm
-    {
-      cur = ne_rms_norm(ctx0, inpL);
+    cur = ne_norm(ctx0, inpL);
 
-      // cur = cur*attention_norm(broadcasted)
-      cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
-    }
+    // cur = ln_1_g*cur + ln_1_b
+    cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur),
+                 ne_repeat(ctx0, model.layers[il].norm[1], cur));
+
+    struct ne_tensor* inpSA = cur;
+
     ne_tensor *Qcur, *Kcur, *Vcur;
     if (model.layers[il].attn[0]->type == NE_TYPE_JBLAS) {  // fused execution of QKV
       struct ne_tensor* QKVcur =
@@ -140,108 +135,94 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     ne_set_name(Kcur, "Kcur");
     ne_set_name(Vcur, "Vcur");
     // self-attention
+    // store key and value to memory
     {
-      // store key and value to memory
-      {
-        struct ne_tensor* k =
-            ne_view_1d(ctx0, kv_self.k, N * n_embd, (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
-        struct ne_tensor* v =
-            ne_view_2d(ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
-                       (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
+      struct ne_tensor* k =
+          ne_view_1d(ctx0, kv_self.k, N * n_embd, (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
+      struct ne_tensor* v =
+          ne_view_2d(ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
+                     (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
 
-        // important: storing RoPE-ed version of K in the KV cache!
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
-      }
-
-      struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
-      ne_set_name(Q, "Q");
-
-      struct ne_tensor* K = ne_permute(ctx0,
-                                       ne_reshape_3d(ctx0,
-                                                     ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_embd,
-                                                                il * n_ctx * ne_element_size(kv_self.k) * n_embd),
-                                                     n_embd / n_head, n_head, n_past + N),
-                                       0, 2, 1, 3);
-      ne_set_name(K, "K");
-
-      // K * Q
-      struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
-      ne_set_name(KQ, "KQ");
-
-      // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scale = ne_new_f32(ctx0, 1.0f / sqrtf(float(n_embd) / n_head));
-      ne_set_name(KQ_scale, "1/sqrt(n_embd/n_head)");
-
-      // KQ_scaled shape [n_past + N, N, n_head, 1]
-      struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, KQ_scale);
-      ne_set_name(KQ_scaled, "KQ_scaled");
-
-      // KQ_masked = mask_past(KQ_scaled)
-      struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
-      ne_set_name(KQ_masked, "KQ_masked");
-
-      // KQ = soft_max(KQ_masked)
-      struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
-      ne_set_name(KQ_soft_max, "KQ_soft_max");
-
-      // split cached V into n_head heads
-      struct ne_tensor* V = ne_view_3d(
-          ctx0, kv_self.v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
-          n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, il * n_ctx * ne_element_size(kv_self.v) * n_embd);
-      ne_set_name(V, "V");
-
-      struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
-      ne_set_name(KQV, "KQV");
-
-      // KQV_merged = KQV.permute(0, 2, 1, 3)
-      struct ne_tensor* KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
-      ne_set_name(KQV_merged, "KQV_merged");
-
-      // cur = KQV_merged.contiguous().view(n_embd, N)
-      cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
-      ne_set_name(cur, "KQV_merged_contiguous");
-
-      // projection (no bias)
-      cur = ne_mul_mat(ctx0, model.layers[il].attn[3], cur);
+      // important: storing RoPE-ed version of K in the KV cache!
+      ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
+      ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
     }
+
+    struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
+    ne_set_name(Q, "Q");
+
+    struct ne_tensor* K = ne_permute(
+        ctx0,
+        ne_reshape_3d(
+            ctx0, ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_embd, il * n_ctx * ne_element_size(kv_self.k) * n_embd),
+            n_embd / n_head, n_head, n_past + N),
+        0, 2, 1, 3);
+    ne_set_name(K, "K");
+
+    // K * Q
+    struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
+    ne_set_name(KQ, "KQ");
+
+    // KQ_scaled = KQ / sqrt(n_embd/n_head)
+    struct ne_tensor* KQ_scale = ne_new_f32(ctx0, 1.0f / sqrtf(float(n_embd) / n_head));
+    ne_set_name(KQ_scale, "1/sqrt(n_embd/n_head)");
+
+    // KQ_scaled shape [n_past + N, N, n_head, 1]
+    struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, KQ_scale);
+    ne_set_name(KQ_scaled, "KQ_scaled");
+
+    // KQ_masked = mask_past(KQ_scaled)
+    struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
+    ne_set_name(KQ_masked, "KQ_masked");
+
+    // KQ = soft_max(KQ_masked)
+    struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
+    ne_set_name(KQ_soft_max, "KQ_soft_max");
+
+    // split cached V into n_head heads
+    struct ne_tensor* V = ne_view_3d(
+        ctx0, kv_self.v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
+        n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, il * n_ctx * ne_element_size(kv_self.v) * n_embd);
+    ne_set_name(V, "V");
+
+    struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
+    ne_set_name(KQV, "KQV");
+
+    // KQV_merged = KQV.permute(0, 2, 1, 3)
+    struct ne_tensor* KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
+    ne_set_name(KQV_merged, "KQV_merged");
+
+    // cur = KQV_merged.contiguous().view(n_embd, N)
+    struct ne_tensor* KQV_merged_contiguous =
+        ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
+    ne_set_name(KQV_merged_contiguous, "KQV_merged_contiguous");
+
+    // projection (no bias)
+    struct ne_tensor* KQV_out = ne_mul_mat(ctx0, model.layers[il].attn[3], KQV_merged_contiguous);
+    ne_set_name(KQV_out, "KQV_out");
 
     lctx.use_buf(ctx0, 1);
-
-    struct ne_tensor* inpFF = ne_add(ctx0, cur, inpSA);
+    struct ne_tensor* inpFF = KQV_out;
 
     // feed-forward network
-    {
-      // norm
-      {
-        cur = ne_rms_norm(ctx0, inpFF);
+    struct ne_tensor* FFN_in = ne_mul_mat(ctx0, model.layers[il].ffn[0], inpSA);
+    ne_set_name(FFN_in, "FFN_in");
 
-        // cur = cur*ffn_norm(broadcasted)
-        cur = ne_mul(ctx0, cur, model.layers[il].norm[1]);
-      }
+    cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[1], FFN_in), FFN_in);
 
-      if (model.layers[il].ffn[0]->type == NE_TYPE_JBLAS) {
-        cur = ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], cur);
-      } else {
-        struct ne_tensor* tmp = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
+    // GELU activation
+    cur = ne_gelu(ctx0, cur);
 
-        cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], cur);
+    struct ne_tensor* FFN_out = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
+    ne_set_name(FFN_out, "FFN_out");
 
-        // SILU activation
-        cur = ne_silu(ctx0, cur);
-
-        cur = ne_mul(ctx0, cur, tmp);
-
-        cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
-      }
-    }
+    cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], FFN_out), FFN_out);
 
     cur = ne_add(ctx0, cur, inpFF);
 
     // input for next layer
-    inpL = cur;
+    inpL = ne_add(ctx0, cur, inpL);
   }
-
   lctx.use_buf(ctx0, 0);
 
   // used at the end to optionally extract the embeddings
@@ -249,16 +230,16 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 
   // norm
   {
-    inpL = ne_rms_norm(ctx0, inpL);
+    inpL = ne_norm(ctx0, inpL);
 
     // inpL = inpL*norm(broadcasted)
-    inpL = ne_mul(ctx0, inpL, model.others[1]);
-
-    embeddings = inpL;
+    inpL = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL),
+                  ne_repeat(ctx0, model.others[2], inpL));
   }
 
   // lm_head
-  inpL = ne_mul_mat(ctx0, model.others[2], inpL);
+  inpL = ne_mul_mat(ctx0, model.others[3], inpL);
+  inpL = ne_add(ctx0, ne_repeat(ctx0, model.others[4], inpL), inpL);
 
   lctx.use_buf(ctx0, -1);
 
@@ -322,7 +303,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 }
 
 int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!llama_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+  if (!gptj_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

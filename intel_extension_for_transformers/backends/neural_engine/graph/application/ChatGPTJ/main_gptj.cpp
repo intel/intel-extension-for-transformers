@@ -421,71 +421,69 @@ bool gptj_eval(const gptj_model& model, const int n_threads, const int n_past,
     struct ne_tensor* inpSA = cur;
 
     // self-attention
+    struct ne_tensor* Qcur = ne_rope_inplace(
+        ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].c_attn_q_proj_w, cur), n_embd / n_head, n_head, N),
+        n_past, n_rot, 0);
+    struct ne_tensor* Kcur = ne_rope_inplace(
+        ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].c_attn_k_proj_w, cur), n_embd / n_head, n_head, N),
+        n_past, n_rot, 0);
+
+    // store key and value to memory
     {
-      struct ne_tensor* Qcur = ne_rope_inplace(
-          ctx0,
-          ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].c_attn_q_proj_w, cur), n_embd / n_head, n_head, N),
-          n_past, n_rot, 0);
-      struct ne_tensor* Kcur = ne_rope_inplace(
-          ctx0,
-          ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].c_attn_k_proj_w, cur), n_embd / n_head, n_head, N),
-          n_past, n_rot, 0);
+      struct ne_tensor* Vcur = ne_transpose(ctx0, ne_mul_mat(ctx0, model.layers[il].c_attn_v_proj_w, cur));
 
-      // store key and value to memory
-      {
-        struct ne_tensor* Vcur = ne_transpose(ctx0, ne_mul_mat(ctx0, model.layers[il].c_attn_v_proj_w, cur));
+      struct ne_tensor* k = ne_view_1d(ctx0, model.memory_k, N * n_embd,
+                                       (ne_element_size(model.memory_k) * n_embd) * (il * n_ctx + n_past));
+      struct ne_tensor* v = ne_view_2d(
+          ctx0, model.memory_v, N, n_embd, (n_ctx)*ne_element_size(model.memory_v),
+          (il * n_ctx) * ne_element_size(model.memory_v) * n_embd + n_past * ne_element_size(model.memory_v));
 
-        struct ne_tensor* k = ne_view_1d(ctx0, model.memory_k, N * n_embd,
-                                         (ne_element_size(model.memory_k) * n_embd) * (il * n_ctx + n_past));
-        struct ne_tensor* v = ne_view_2d(
-            ctx0, model.memory_v, N, n_embd, (n_ctx)*ne_element_size(model.memory_v),
-            (il * n_ctx) * ne_element_size(model.memory_v) * n_embd + n_past * ne_element_size(model.memory_v));
-
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
-      }
-
-      // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0, 2, 1, 3)
-      struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
-
-      // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1, 3)
-      struct ne_tensor* K = ne_permute(ctx0,
-                                       ne_reshape_3d(ctx0,
-                                                     ne_view_1d(ctx0, model.memory_k, (n_past + N) * n_embd,
-                                                                il * n_ctx * ne_element_size(model.memory_k) * n_embd),
-                                                     n_embd / n_head, n_head, n_past + N),
-                                       0, 2, 1, 3);
-
-      // K * Q
-      struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
-
-      // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
-
-      // KQ_masked = mask_past(KQ_scaled)
-      struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
-
-      // KQ = soft_max(KQ_masked)
-      struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
-
-      // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
-      struct ne_tensor* V =
-          ne_view_3d(ctx0, model.memory_v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(model.memory_v),
-                     n_ctx * ne_element_size(model.memory_v) * n_embd / n_head,
-                     il * n_ctx * ne_element_size(model.memory_v) * n_embd);
-
-      // KQV = transpose(V) * KQ_soft_max
-      struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
-
-      // KQV_merged = KQV.permute(0, 2, 1, 3)
-      struct ne_tensor* KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
-
-      // cur = KQV_merged.contiguous().view(n_embd, N)
-      cur = ne_cpy(ctx0, KQV_merged, d_ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N));
-
-      // projection (no bias)
-      cur = ne_mul_mat(ctx0, model.layers[il].c_attn_proj_w, cur);
+      ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
+      ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
     }
+
+    // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0, 2, 1, 3)
+    struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
+
+    // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1, 3)
+    struct ne_tensor* K = ne_permute(ctx0,
+                                     ne_reshape_3d(ctx0,
+                                                   ne_view_1d(ctx0, model.memory_k, (n_past + N) * n_embd,
+                                                              il * n_ctx * ne_element_size(model.memory_k) * n_embd),
+                                                   n_embd / n_head, n_head, n_past + N),
+                                     0, 2, 1, 3);
+
+    // K * Q
+    struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
+    ne_set_name(KQ, "KQ");
+
+    // KQ_scaled = KQ / sqrt(n_embd/n_head)
+    struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
+
+    // KQ_masked = mask_past(KQ_scaled)
+    struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
+
+    // KQ = soft_max(KQ_masked)
+    struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
+
+    // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
+    struct ne_tensor* V =
+        ne_view_3d(ctx0, model.memory_v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(model.memory_v),
+                   n_ctx * ne_element_size(model.memory_v) * n_embd / n_head,
+                   il * n_ctx * ne_element_size(model.memory_v) * n_embd);
+
+    // KQV = transpose(V) * KQ_soft_max
+    struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
+    ne_set_name(KQV, "KQV");
+
+    // KQV_merged = KQV.permute(0, 2, 1, 3)
+    struct ne_tensor* KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
+
+    // cur = KQV_merged.contiguous().view(n_embd, N)
+    cur = ne_cpy(ctx0, KQV_merged, d_ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N));
+
+    // projection (no bias)
+    cur = ne_mul_mat(ctx0, model.layers[il].c_attn_proj_w, cur);
 
     struct ne_tensor* inpFF = cur;
 
@@ -494,7 +492,6 @@ bool gptj_eval(const gptj_model& model, const int n_threads, const int n_past,
     {
       // note here we pass inpSA instead of cur
       cur = ne_mul_mat(ctx0, model.layers[il].c_mlp_fc_w, inpSA);
-
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].c_mlp_fc_b, cur), cur);
 
       // GELU activation
@@ -503,7 +500,6 @@ bool gptj_eval(const gptj_model& model, const int n_threads, const int n_past,
       // projection
       // cur = proj_w*cur + proj_b
       cur = ne_mul_mat(ctx0, model.layers[il].c_mlp_proj_w, cur);
-
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].c_mlp_proj_b, cur), cur);
     }
 
@@ -613,6 +609,9 @@ int main(int argc, char** argv) {
   size_t mem_per_token = 0;
   gptj_eval(model, params.n_threads, 0, {0, 1, 2, 3}, logits, mem_per_token);
 
+  bool first_token = true;
+  std::vector<int64_t> eval_times;
+
   for (int i = embd.size(); i < embd_inp.size() + params.n_predict; i++) {
     // predict
     if (embd.size() > 0) {
@@ -622,10 +621,16 @@ int main(int argc, char** argv) {
         printf("Failed to predict\n");
         return 1;
       }
-
-      t_predict_us += ne_time_us() - t_start_us;
+      // make first-token as warmup token
+      int64_t time_interval = ne_time_us() - t_start_us;
+      if (first_token) {
+        first_token = false;
+        eval_times.push_back(time_interval);
+      } else {
+        t_predict_us += time_interval;
+        eval_times.push_back(time_interval);
+      }
     }
-
     n_past += embd.size();
     embd.clear();
 
@@ -678,11 +683,15 @@ int main(int argc, char** argv) {
 
     printf("\n\n");
     printf("%s: mem per token = %8zu bytes\n", __func__, mem_per_token);
-    printf("%s:     load time = %8.2f ms\n", __func__, t_load_us / 1000.0f);
-    printf("%s:   sample time = %8.2f ms\n", __func__, t_sample_us / 1000.0f);
-    printf("%s:  predict time = %8.2f ms / %.2f ms per token\n", __func__, t_predict_us / 1000.0f,
-           t_predict_us / 1000.0f / n_past);
-    printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
+    printf("%s: load time     = %8.2f ms\n", __func__, t_load_us / 1000.0f);
+    printf("%s: sample time   = %8.2f ms\n", __func__, t_sample_us / 1000.0f);
+    printf("%s: predict time  = %8.2f ms / %d, %.2f ms per token\n", __func__, t_predict_us / 1000.0f,
+           params.n_predict - 1, t_predict_us / 1000.0f / (params.n_predict - 1));
+    printf("%s: total time    = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
+    printf("========== eval time log of each prediction ==========\n");
+    for (int i = 0; i < eval_times.size(); ++i) {
+      printf("prediction %3d, time: %.2fms\n", i, eval_times[i] / 1000.0f);
+    }
   }
 
   ne_free(model.ctx);
