@@ -17,7 +17,7 @@ function init_params {
   extra_cmd=""
   batch_size=8
   approach="PostTrainingStatic"
-  alpha=0.6
+  alpha=0.7
   for var in "$@"
   do
     case $var in
@@ -55,7 +55,7 @@ function init_params {
 function run_tuning {
 
     script="run_seq2seq_generation.py"
-    if [ "${topology}" = "flan-t5" ]; then
+    if [ "${topology}" = "flan-t5-large" ]; then
         model_type="t5"
         model_name_or_path="google/flan-t5-large"
         if [ "${backend}" = "ipex" ]; then
