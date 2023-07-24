@@ -23,7 +23,7 @@ class QuantizedLinearBits(nn.Linear):
         input_features,
         output_features,
         bias=True,
-        compute_dtype="int8",
+        compute_dtype="fp32",
         compress_statistics=True,
         quant_bits=8,
         quant_type='int8',
@@ -49,19 +49,25 @@ class QuantizedLinearBits(nn.Linear):
 
         m = x.size()[0]
         out = torch.zeros(m, self.out_features, dtype=torch.float)
-        torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear(
-            x, self.weight.data, out, m, self.out_features, self.in_features, self.in_features, self.out_features)
+        if self.bias is not None:
+            torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_with_bias(
+                x, self.weight.data, self.bias.data, out, m, self.out_features, self.in_features, self.in_features, self.out_features)
+        else:
+            torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_without_bias(
+                x, self.weight.data, out, m, self.out_features, self.in_features, self.in_features, self.out_features)
 
         return out
     
-    def set_weights(self, data):
+    def set_weights_bias(self, weight_data, bias=None):
         weight = torch.ops.weight_only_jblasop.jblas_quantize(
-            data, True, self.quant_bits, self.scheme, self.blocksize, self.compute_dtype)
+            weight_data, True, self.quant_bits, self.scheme, self.blocksize, self.compute_dtype)
         quant_type = self.quant_type
         self.weight = ParamsForBits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_type=quant_type
         )
+        if bias is not None:
+            self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
 
 class QuantizedLinearINT4(QuantizedLinearBits):

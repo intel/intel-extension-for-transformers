@@ -12,5 +12,6 @@ Q-Bits
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
 cd itrex/intel_extension_for_transformers/backend/q_bits
-pip install --extra-index-url https://download.pytorch.org/whl/cpu -v .
+pip install -r requirements.txt
+pip install -v .
 ```

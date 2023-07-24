@@ -85,7 +85,7 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                model._modules[name].set_weights(module.weight.data)
+                model._modules[name].set_weights_bias(module.weight.data, None if module.bias is None else module.bias.data)
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
                 module,
@@ -101,14 +101,14 @@ def _replace_linear(
 
 def convert_to_quantized_model(model, config):
     conf = PostTrainingQuantConfig(
-        approach='weight_only',
+        approach="weight_only",
         op_type_dict={
-            '.*':{
+            ".*":{
                 "weight": {
-                    'bits': config.quant_bits,
-                    'group_size': config.group_size,  # -1 (per-channel)
-                    'scheme': config.scheme, 
-                    'algorithm': 'RTN', 
+                    "bits": config.quant_bits,
+                    "group_size": config.group_size,  # -1 (per-channel)
+                    "scheme": config.scheme,
+                    "algorithm": "RTN", 
                 },
             },
         },
