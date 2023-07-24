@@ -20,11 +20,12 @@ static void jblas_symqdq_weight(torch::Tensor& Fp32Wei, bool transpose,
 
 static void jblas_quantweight_f32_linear(const torch::Tensor& activation,
                                          const torch::Tensor& weight,
+                                         const torch::Tensor& bias,
                                          torch::Tensor& output, int64_t m,
                                          int64_t n, int64_t k, int64_t lda,
-                                         int64_t ldo) {
-  quantweight_f32_linear_launcher(activation, weight, output, m, n, k, lda,
-                                  ldo);
+                                         int64_t ldo, bool need_bias) {
+  quantweight_f32_linear_launcher(activation, weight, bias, output, m, n, k,
+                                  lda, ldo, need_bias);
 }
 
 TORCH_LIBRARY(weight_only_jblasop, m) {
