@@ -25,8 +25,9 @@
 # If you need to use proxy, please use the following command
 #   docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile -t chatbot_finetune:latest
 
+## SPR environment
 ARG UBUNTU_VER=22.04
-FROM ubuntu:${UBUNTU_VER} as chatbot
+FROM ubuntu:${UBUNTU_VER} as cpu
 
 ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
@@ -35,6 +36,7 @@ ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 ENV LANG C.UTF-8
 
 # Install system dependencies
+SHELL ["/bin/bash", "--login", "-c"]
 RUN apt-get update \
     && apt-get install -y build-essential \
     && apt-get install -y wget numactl git \
@@ -59,11 +61,12 @@ RUN conda init bash && \
     conda create -yn chatbot-finetuning python=3.9 && \
     echo "conda activate chatbot-finetuning" >> ~/.bashrc && \
     source ~/.bashrc && \
-    python -m pip install oneccl_bind_pt==1.13 -f https://developer.intel.com/ipex-whl-stable-cpu && \
+    wget https://intel-extension-for-pytorch.s3.amazonaws.com/torch_ccl/cpu/oneccl_bind_pt-1.13.0%2Bcpu-cp39-cp39-linux_x86_64.whl && \
     pip install datasets torch accelerate SentencePiece git+https://github.com/huggingface/peft.git evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops
 
 # Build ITREX
-RUN cd /itrex && pip install -v .
+RUN cd /itrex && pip install -v . && \
+    cd workflows/chatbot/fine_tuning && pip install -r requirements.txt
 
 # Copy the model files to the Docker image
 # Please update the local model path here with the actual path
@@ -71,3 +74,48 @@ COPY flan-t5-xl /flan/
 
 COPY alpaca_data.json /dataset/
 WORKDIR /itrex/workflows/chatbot
+
+
+# HABANA environment
+FROM vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
+
+ENV LANG=en_US.UTF-8
+ENV PYTHONPATH=/root:/usr/lib/habanalabs/
+
+# Install optimum-habana
+RUN git clone https://github.com/huggingface/optimum-habana.git && \
+    cd ./optimum-habana/examples/text-generation/ && \
+    pip install -r requirements.txt && \
+    apt-get update && \
+    apt-get install git-lfs && \
+    git-lfs install
+
+RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
+    pip install peft && \
+    pip install einops && \
+    pip install datasets && \
+    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
+
+# Download ITREX code
+ARG ITREX_VER=main
+ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+
+RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
+    cd /itrex/workflows/chatbot/fine_tuning/ && \
+    pip install -r requirements.txt
+    
+# Build ITREX
+RUN cd /itrex && pip install -v . && \
+    pip install transformers==4.28.1
+
+# Copy the model files to the Docker image
+# Please update the local model path here with the actual path
+COPY flan-t5-xl /flan/
+
+COPY alpaca_data.json /dataset/
+
+# Copy peft gaudi branch to the docker image
+COPY nlp-toolkit-peft-gaudi  /nlp-toolkit/
+WORKDIR /nlp-toolkit/workflows/chatbot/fine_tuning
+
+# WORKDIR /itrex/workflows/chatbot/fine_tuning

@@ -137,27 +137,26 @@ For example, to finetune FLAN-T5 through Distributed Data Parallel training, bas
 > Also please note that to use CPU for training in each node with multi-node settings, argument `--no_cuda` is mandatory, and `--ddp_backend ccl` is required if to use ccl as the distributed backend. In multi-node setting, following command needs to be launched in each node, and all the commands should be the same except for *`<NODE_RANK>`*, which should be integer from 0 to *`<NUM_NODES>`*`-1` assigned to each node.
 
 ``` bash
-python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_node=<NUM_PROCESSES_PER_NODE> --nnodes=<NUM_NODES> --node_rank=<NODE_RANK> \
-    finetune_seq2seq.py \
-        --model_name_or_path "google/flan-t5-xl" \
-        --bf16 True \
-        --train_file "stanford_alpaca/alpaca_data.json" \
-        --per_device_train_batch_size 2 \
-        --per_device_eval_batch_size 2 \
-        --gradient_accumulation_steps 1 \
-        --do_train \
-        --learning_rate 1.0e-5 \
-        --warmup_ratio 0.03 \
-        --weight_decay 0.0 \
-        --num_train_epochs 5 \
-        --logging_steps 10 \
-        --save_steps 2000 \
-        --save_total_limit 2 \
-        --overwrite_output_dir \
-        --output_dir ./flan-t5-xl_peft_finetuned_model \
-        --peft lora \
-        --no_cuda \
-        --ddp_backend ccl \
+mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_seq2seq.py \
+    --model_name_or_path "google/flan-t5-xl" \
+    --bf16 True \
+    --train_file "stanford_alpaca/alpaca_data.json" \
+    --per_device_train_batch_size 2 \
+    --per_device_eval_batch_size 2 \
+    --gradient_accumulation_steps 1 \
+    --do_train \
+    --learning_rate 1.0e-5 \
+    --warmup_ratio 0.03 \
+    --weight_decay 0.0 \
+    --num_train_epochs 5 \
+    --logging_steps 10 \
+    --save_steps 2000 \
+    --save_total_limit 2 \
+    --overwrite_output_dir \
+    --output_dir ./flan-t5-xl_peft_finetuned_model \
+    --peft lora \
+    --no_cuda \
+    --ddp_backend ccl \
 ```
 If you have enabled passwordless SSH in cpu clusters, you could also use mpirun in master node to start the DDP finetune. Take llama alpaca finetune for example. follow the [hugginface guide](https://huggingface.co/docs/transformers/perf_train_cpu_many) to install Intel® oneCCL Bindings for PyTorch, IPEX
 

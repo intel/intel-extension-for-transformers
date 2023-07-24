@@ -21,7 +21,7 @@ docker run -it -v ${host_dir}:${mount_dir} -v /dev/shm/models--google--flan-t5-x
 
 If you have already cached the original model and the lora model, you may replace the `-v` parameter to map the cached models on your host machine to the location inside your Docker container.
 
-Note: ${host_dir} is your local directory, ${mount_dir} is the docker's directory. If you need to use proxy, add `-e http_proxy=${http_proxy} -e https_proxy=${https_proxy}`
+Note: `${host_dir}` is your local directory, `${mount_dir}` is the docker's directory. If you need to use proxy, add `-e http_proxy=${http_proxy} -e https_proxy=${https_proxy}`
 
 
 ### Setup Habana Gaudi Environment
