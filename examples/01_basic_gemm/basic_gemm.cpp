@@ -16,6 +16,9 @@
 #include "tests/utils/utils.hpp"
 #include "xetla.hpp"
 
+enum class kslicing_impl_t { none = 0, global = 1, local = 2 };
+
+template <kslicing_impl_t kslicing_type = kslicing_impl_t::none>
 void basic_gemm_run(uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
@@ -32,7 +35,9 @@ void basic_gemm_run(uint32_t iter) {
 
     using data_type_a = bf16;
     using data_type_b = bf16;
-    using data_type_c = bf16;
+    using data_type_c
+            = std::conditional_t<kslicing_type == kslicing_impl_t::global,
+                    float, bf16>;
     using data_type_acc = float;
 
     //Turn on the profiling property to facilitate subsequent profiling
@@ -66,10 +71,14 @@ void basic_gemm_run(uint32_t iter) {
 
     //Define the shape of workgroup and subgroup
     //It's tunable parameters based on different input shape and hardware for better performance
-    constexpr uint32_t wg_tile_m = 256;
-    constexpr uint32_t wg_tile_n = 256;
-    constexpr uint32_t sg_tile_m = 32;
-    constexpr uint32_t sg_tile_n = 64;
+    constexpr uint32_t wg_tile_m
+            = (kslicing_type != kslicing_impl_t::local) ? 256 : 64;
+    constexpr uint32_t wg_tile_n
+            = (kslicing_type != kslicing_impl_t::local) ? 256 : 128;
+    constexpr uint32_t sg_tile_m
+            = (kslicing_type != kslicing_impl_t::local) ? 32 : 16;
+    constexpr uint32_t sg_tile_n
+            = (kslicing_type != kslicing_impl_t::local) ? 64 : 32;
 
     //There are implicit requirement for sg_tile_k range
     constexpr uint32_t sg_tile_k = 32;
@@ -98,15 +107,37 @@ void basic_gemm_run(uint32_t iter) {
             gpu_arch::Xe> // GPU arch
             ::brgemm;
 
+    using update_method
+            = std::conditional_t<kslicing_type == kslicing_impl_t::global,
+                    result_reduce_sum, result_overwrite>;
     using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_default<result_overwrite,
-                    gpu_arch::Xe>,
+            xetla::group::epilogue_policy_default<update_method, gpu_arch::Xe>,
             tile_shape,
             mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
-    using gemm_op_t = xetla::kernel::gemm_t<
+    // specify the range k_w/k_s by setting the corresponding ratio
+    // splitk using global memory
+    constexpr int splitk_global_ratio
+            = (kslicing_type == kslicing_impl_t::global) ? 2 : 1;
+    // splitk using local memory
+    constexpr int splitk_local_ratio
+            = (kslicing_type == kslicing_impl_t::local) ? 2 : 1;
+
+    using dispatch_policy = std::conditional_t<kslicing_type
+                    == kslicing_impl_t::none,
             gpu::xetla::kernel::dispatch_policy_default<gpu_arch::Xe>,
-            brgemm_config, epilogue_t>;
+            gpu::xetla::kernel::dispatch_policy_kslicing<splitk_global_ratio,
+                    splitk_local_ratio, gpu_arch::Xe>>;
+
+    using gemm_op_t
+            = xetla::kernel::gemm_t<dispatch_policy, brgemm_config, epilogue_t>;
+
+    if constexpr (kslicing_type != kslicing_impl_t::none) {
+        std::cout << "basic_gemm with "
+                  << (kslicing_type == kslicing_impl_t::global ? "global"
+                                                               : "local")
+                  << " cooperation" << std::endl;
+    }
 
     // set up gemm arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A,
@@ -124,6 +155,9 @@ void basic_gemm_run(uint32_t iter) {
     profiling_helper prof("basic_gemm", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
+        if constexpr (kslicing_type == kslicing_impl_t::global) {
+            queue.memset(C, 0, size_c * sizeof(data_type_c));
+        }
         auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
@@ -156,6 +190,35 @@ void basic_gemm_run(uint32_t iter) {
 }
 
 int main() {
-    basic_gemm_run(10);
+    // An example code for calculating matrix multiplication using
+    // GEMM API:
+    //   C = A x B
+    // The resulted matrix C is partitioned by the group range
+    // in to multiple blocks. The block matrix
+    //  C<i_w, j_w>
+    // is computed by the workgroup with id: (0, i_w, j_w).
+    // (i_w, j_w) is an element in range specified by group range.
+    // Each thread with index (0, i_s, j_s) inside the same workgroup
+    // is responsible for a sub block of matrix multiplication, which is
+    //   C<i_w, j_w>[i_s*sg_m:(i_s+1):sg_m,j_s*sg_n:(j_s+1)*sg_n]
+
+    // Alternatively, some threads can cooperate on the same sub block
+    // matrix given the same (i_s, j_s), i.e. the index space is extended
+    // from (0, i_s, j_s) to (k_s, i_s, j_s).
+
+    // Another method to achieve the same effect is to extend the index space
+    // in group range, i.e. from (0, i_w, j_w) to (k_w, i_w, j_w)
+
+    // More detailed description referring to the cooperation (kslicing) could
+    // be found in the example 06_splitk_brgemm with custom implementation
+
+    // basic gemm
+    basic_gemm_run<kslicing_impl_t::none>(10);
+
+    // basic gemm with workgroup cooperation
+    // basic_gemm_run<kslicing_impl_t::global>(10);
+
+    // basic gemm with thread cooperation
+    // basic_gemm_run<kslicing_impl_t::local>(10);
     return (0);
 }
