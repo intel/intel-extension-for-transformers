@@ -4,7 +4,7 @@ datasets >= 2.0
 protobuf
 sentencepiece != 0.1.92
 torch >= 1.10.0
-transformers==4.30.0
+transformers==4.30.2
 intel_extension_for_pytorch
 neural-compressor
 git+https://github.com/huggingface/optimum.git
