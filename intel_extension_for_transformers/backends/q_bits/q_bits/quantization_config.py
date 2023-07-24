@@ -18,7 +18,7 @@ class QBitsConfig:
         **kwargs,
     ):
         self.quant_bits = quant_bits
-        self.llm_int8_skip_modules = llm_int8_skip_modules
+        self.llm_int8_skip_modules = llm_int8_skip_modules if llm_int8_skip_modules else []
         self.quant_type = quant_type
         self.use_double_quant = use_double_quant
         self.scheme = scheme

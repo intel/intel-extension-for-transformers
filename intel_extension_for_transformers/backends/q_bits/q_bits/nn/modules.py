@@ -1,10 +1,24 @@
-
 import torch
 from torch import nn
+from peft.tuners.lora import LoraLayer
+from q_bits.autograd import matmul_4bit
 
 
-class ParamsForBits(torch.nn.Parameter):
+class Params8Bits(torch.nn.Parameter):
     def __new__(cls, data=None, requires_grad=True, quant_state=None, blocksize=32, compress_statistics=True, quant_type='int8'):
+        if data is None:
+            data = torch.empty(0)
+
+        self = torch.Tensor._make_subclass(cls, data, requires_grad)
+        self.blocksize = blocksize
+        self.compress_statistics = compress_statistics
+        self.quant_type = quant_type
+        self.quant_state = quant_state
+        self.data = data
+        return self
+
+class Params4Bits(torch.nn.Parameter):
+    def __new__(cls, data=None, requires_grad=True, quant_state=None, blocksize=32, compress_statistics=True, quant_type='nf4'):
         if data is None:
             data = torch.empty(0)
 
@@ -62,7 +76,7 @@ class QuantizedLinearBits(nn.Linear):
         weight = torch.ops.weight_only_jblasop.jblas_quantize(
             weight_data, True, self.quant_bits, self.scheme, self.blocksize, self.compute_dtype)
         quant_type = self.quant_type
-        self.weight = ParamsForBits(
+        self.weight = Params8Bits(
             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
             compress_statistics=self.compress_statistics, quant_type=quant_type
         )
@@ -70,7 +84,7 @@ class QuantizedLinearBits(nn.Linear):
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
 
-class QuantizedLinearINT4(QuantizedLinearBits):
+class QuantizedLinearINT4(QuantizedLinearBits, LoraLayer):
     def __init__(
         self,
         input_features,
@@ -78,12 +92,60 @@ class QuantizedLinearINT4(QuantizedLinearBits):
         bias=True,
         compute_dtype="fp32",
         compress_statistics=True,
+        quant_type="int4",
         blocksize=32,
         scheme="sym",
         device=None,
+        use_lora=True,
+        r=8,
+        lora_alpha=16,
+        lora_dropout=0.01,
     ):
-        super().__init__(input_features, output_features, bias, compute_dtype, compress_statistics,
-                         4, "int4", blocksize, scheme, device)
+        QuantizedLinearBits.__init__(self, input_features, output_features, bias, compute_dtype, compress_statistics,
+                                     4, quant_type, blocksize, scheme, device)
+        self.use_lora = use_lora
+        if self.use_lora:
+            LoraLayer.__init__(self, input_features, output_features)
+            self._r = r
+            self._lora_alpha = lora_alpha
+            self._lora_dropout = lora_dropout
+
+    def forward(self, x: torch.Tensor):
+        if self.bias is not None and self.bias.dtype != x.dtype:
+            self.bias.data = self.bias.data.to(x.dtype)
+
+        # if getattr(self.weight, 'quant_state', None) is None:
+        #     print('FP4 quantization state not initialized. Please call .quantize_weights().')
+        inp_dtype = x.dtype
+        if self.compute_dtype is not None:
+            x = x.to(self.compute_dtype)
+
+        bias = None if self.bias is None else self.bias.to(self.compute_dtype)
+        out = matmul_4bit(x, self.weight, bias=bias, quant_state=self.weight.quant_state)
+        x = x.to(self.lora_A[self.active_adapter].weight.dtype)
+
+        if self.use_lora:
+            out += (
+                self.lora_B[self.active_adapter](
+                    self.lora_A[self.active_adapter](self.lora_dropout[self.active_adapter](x))
+                )
+                * self.scaling[self.active_adapter]
+            )
+
+        return out
+
+    def set_weights_bias(self, weight_data, bias=None):
+        self.weight = Params4Bits(
+            weight_data, requires_grad=False, compress_statistics=self.compress_statistics, quant_type=self.quant_type
+        )
+        torch.ops.weight_only_jblasop.jblas_symqdq_weight(self.weight, False, 4, 32) # TODO: change to 4bit quantize instead of qdq
+        self.weight.requires_grad = False
+        if bias is not None:
+            self.bias = torch.nn.Parameter(bias, requires_grad=False)
+
+        if self.use_lora:
+            self.active_adapter = 'default'
+            LoraLayer.update_layer(self, self.active_adapter, self._r, self._lora_alpha, self._lora_dropout, True)
 
 class QuantizedLinearINT8(QuantizedLinearBits):
     def __init__(

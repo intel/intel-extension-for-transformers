@@ -2,6 +2,7 @@ import numpy as np
 import torch
 import unittest
 from q_bits import convert_to_quantized_model, QBitsConfig
+from q_bits.utils import replace_linear
 
 
 class M(torch.nn.Module):
@@ -30,6 +31,42 @@ class TestWeightOnly(unittest.TestCase):
             print(output)
             print(output_quant)
             assert torch.allclose(output, output_quant, rtol=0.01)
+
+    def test_int4_training(self):
+        class LinearPredictor(torch.nn.Module):
+            def __init__(self, *args, **kwargs) -> None:
+                super().__init__(*args, **kwargs)
+                self.inlinear = torch.nn.Linear(1, 64, bias=True)
+                self.middlelinear = torch.nn.Linear(64, 128, bias=True)
+                self.outlinear = torch.nn.Linear(128, 1, bias=True)
+                self.classifier = torch.nn.Sigmoid()
+
+            def forward(self, x):
+                x = self.inlinear(x)
+                x = self.middlelinear(x)
+                x = self.outlinear(x)
+                x = self.classifier(x)
+                return x
+
+        model = LinearPredictor()
+        replace_linear(model, None, None, QBitsConfig(4, quant_type='int4'))
+        lossfn = torch.nn.MSELoss()
+        optimizer = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=1e-3)
+        batch_size = 16
+        for i in range(200):
+            x = torch.randn((batch_size,1))
+            out = model(x)
+            loss = lossfn(out, (x>=0).float())
+            loss.backward()
+            optimizer.step()
+            if (i+1) % 50 == 0:
+                print(f"Step:{i+1}, Loss:{loss.item()}")
+
+        x = torch.randn((batch_size, 1)) / 2
+        out = model(x)
+        accuracy = ((out>=0.5).float() == (x>=0).float()).sum() / batch_size * 100
+        print("Accuracy:{:.2f}%".format(accuracy))
+        self.assertTrue(accuracy > 90)
 
 
 if __name__ == "__main__":

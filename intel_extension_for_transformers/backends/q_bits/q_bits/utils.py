@@ -16,7 +16,7 @@ def _quantization_method(config):
     """
     if config.quant_bits == 8:
         return "int8"
-    elif config.quant_bits and config.quant_type == "int4":
+    elif config.quant_bits == 4 and config.quant_type == "int4":
         return "int4"
     else:
         return None
@@ -76,7 +76,9 @@ def _replace_linear(
                             in_features,
                             out_features,
                             module.bias is not None,
+                            compute_dtype=quantization_config.compute_dtype,
                             compress_statistics=False,
+                            quant_type=quantization_config.quant_type,
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme
                         )
