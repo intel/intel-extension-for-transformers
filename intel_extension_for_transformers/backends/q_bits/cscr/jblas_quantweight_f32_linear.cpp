@@ -15,16 +15,12 @@ using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
 
 void quantweight_f32_linear_launcher(const torch::Tensor& activation,
                                      const torch::Tensor& weight,
-                                     const torch::Tensor& bias,
-                                     torch::Tensor& output, int64_t m,
-                                     int64_t n, int64_t k, int64_t lda,
-                                     int64_t ldo, bool need_bias) {
-  float* bias_ptr = output.data_ptr<float>();
+                                     float* bias_ptr, torch::Tensor& output,
+                                     int64_t m, int64_t n, int64_t k,
+                                     int64_t lda, int64_t ldo, bool need_bias) {
   float alpha = 1.f, beta = 0.f;
-  if (need_bias) {
-    beta = 1.f;
-    bias_ptr = bias.data_ptr<float>();
-  }
+  if (need_bias) beta = 1.f;
+
   auto wtmp = jblas::prologue::weight_comp::gemm::CompressedPackedWeight::
       deserialBuffer(weight.data_ptr<int8_t>(), 0);
   if (wtmp->mType == static_cast<int>(CompType::S4_Bf16) ||
