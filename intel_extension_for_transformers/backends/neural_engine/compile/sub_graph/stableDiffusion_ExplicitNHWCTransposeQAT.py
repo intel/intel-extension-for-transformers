@@ -84,7 +84,8 @@ class ExplicitNHWCTransposeForConvQAT(Pattern):
         }
 
         pattern_dict = pattern_mapping_config['ExplicitNHWCTransposeForConvQAT'][0]
-        model, new_node_names, ret_old_nodes = util.pattern_mapping("ExplicitNHWCTransposeForConvQAT", pattern_dict, model)
+        model, new_node_names, ret_old_nodes = \
+            util.pattern_mapping("ExplicitNHWCTransposeForConvQAT", pattern_dict, model)
         if len(new_node_names) != 0:
             logger.info('ExplicitNHWCTransposeForConvQAT mathched...')
             logger.debug('ExplicitNHWCTransposeForConvQAT = {}'.format(new_node_names))

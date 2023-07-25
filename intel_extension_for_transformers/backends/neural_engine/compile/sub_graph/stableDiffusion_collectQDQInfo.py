@@ -136,7 +136,8 @@ class StableDiffusion_CollectQuantInfo(Pattern):
                                     for idx, it in enumerate(pre_quant_node.output_tensors):
                                         if it.name == quant_node.input_tensors[0].name:
                                             pre_quant_node.output_tensors[idx].dest_op.append(dst_node.name)
-                                            dst_node.input_tensors[0] = copy.deepcopy(pre_quant_node.output_tensors[idx])
+                                            dst_node.input_tensors[0] = \
+                                                copy.deepcopy(pre_quant_node.output_tensors[idx])
 
                 rm_node_list.extend(pattern_nodes_name[:-1])
             model.remove_nodes(rm_node_list)

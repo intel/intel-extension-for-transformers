@@ -54,7 +54,8 @@ class StableDiffusion_InsertQuantNode(Pattern):
                         insert_offset = insert_offset - 2 if "append_op" not in node.attr and \
                                                         insert_offset == 1 else insert_offset
 
-                        if (EXECUTOR_TYPE[node.op_type] in ['InnerProduct']) and 'reshape' in node.attr and "append_op" not in node.attr:
+                        if (EXECUTOR_TYPE[node.op_type] in ['InnerProduct']) \
+                            and 'reshape' in node.attr and "append_op" not in node.attr:
                             insert_offset = insert_offset + 1
                             if input_name in quant_info and idx < 3:
                                 quant_min = Tensor(

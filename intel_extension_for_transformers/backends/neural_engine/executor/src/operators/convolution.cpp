@@ -244,7 +244,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
     auto src1_scales_m = memory(src1_scale_md, eng_, reinterpret_cast<void*>(weight_scales_.data()));
     memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS] = src1_scales_m;
 
-    if (dst_min_) {
+    if (dst_min_ && (dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
       attr_.set_scales_mask(DNNL_ARG_DST, /* mask */ 0);
       auto dst_scales_md = memory::desc({dst_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
       auto dst_scales_m = memory(dst_scales_md, eng_, reinterpret_cast<void*>(dst_scales_.data()));
