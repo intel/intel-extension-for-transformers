@@ -15,21 +15,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The QunatizeFusion Pattern."""
+"""The QuantizeFusion Pattern."""
 
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
 from ..ops import Tensor
 from .subgraph_matcher import EXECUTOR_TYPE
-import copy
 
 
-@pattern_registry(pattern_type='QunatizeFusion')
-class QunatizeFusion(Pattern):
-    """The QunatizeFusion pattern.
+@pattern_registry(pattern_type='QuantizeFusion')
+class QuantizeFusion(Pattern):
+    """The QuantizeFusion pattern.
 
-    Fuse the original sub-graph into the custom acceleration 'QunatizeFusion' graph.
+    Fuse the original sub-graph into the custom acceleration 'QuantizeFusion' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
     def __call__(self, model):
@@ -50,13 +49,7 @@ class QunatizeFusion(Pattern):
             if pre_node.input_tensors[0].name in quant_info and len(pre_node.input_tensors) >= 6 \
                or (pre_node.op_type == "Softmax") \
                or (EXECUTOR_TYPE.get(pre_node.op_type, pre_node.op_type) in \
-                   ["InnerProduct", "Matmul", "Convolution"] and (not quant_info or is_from_quant)):
-                # GroupNorm does not support u8 data as the input.
-                for dest_op in pre_node.output_tensors[0].dest_op:
-                    dest_node = model.get_node_by_name(dest_op)
-                    if dest_node.op_type == 'GroupNorm':
-                        return (None, False)
-
+                   ["InnerProduct", "Matmul"] and (not quant_info or is_from_quant)): 
                 return (pre_node, True)
             elif pre_node.op_type == "Reshape":
                 return search_quant_fusion(pre_node)
@@ -69,7 +62,6 @@ class QunatizeFusion(Pattern):
                 return model
 
         remove_node_name = []
-        quant_node = None
         # fuse quant nodes to previous innerproduct or matmul output dtype to enhance perf
         for node in model.nodes:
             if node.op_type == "Quantize":
@@ -108,21 +100,13 @@ class QunatizeFusion(Pattern):
                     elif dtype == 'bf16':
                         quant_node.attr['output_dtype'] = dtype
 
-                    quant_node_dest_op = []
-                    for n in model.nodes[0:]:
-                        if n.name == node.name:
-                            continue
-                        else:
-                            for idx, input_tensor in enumerate(n.input_tensors):
-                                if node.output_tensors[0].name == input_tensor.name:
-                                    tensor_keeped = copy.deepcopy(node.input_tensors[0])
-                                    tensor_keeped.source_op = [quant_node.name]
-                                    tensor_keeped.dest_op = [n.name]
-                                    n.input_tensors[idx] = tensor_keeped
-                                    quant_node_dest_op.append(n.name)
-                                    continue
-                    if quant_node_dest_op:
-                        quant_node.output_tensors[0].dest_op = quant_node_dest_op
+                    for dst_node_name in node.output_tensors[0].dest_op:
+                        dst_node = model.get_node_by_name(dst_node_name)
+                        for idx, input_tensor in enumerate(dst_node.input_tensors):
+                            if node.output_tensors[0].name == input_tensor.name:
+                                model.change_node_input_tensors(dst_node_name, idx,
+                                                                node.input_tensors[0], 'modify')
+
                     remove_node_name.append(node.name)
 
 

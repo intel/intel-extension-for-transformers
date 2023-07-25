@@ -131,6 +131,7 @@ pattern_default_setting = {
     'StableDiffusion_CollectQuantInfo': False,
     'CollectQuantInfo': True,
     'InsertQuantNode': True,
+    'StableDiffusion_QuantizeFusion': False,
     
     #GPT-J
     'TorchEmbedding': True,

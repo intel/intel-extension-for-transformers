@@ -316,7 +316,7 @@ if __name__ == "__main__":
         "--fake_quant_model_qinit_name",
         type=str,
         default="fake_quant_model_qinit.pt",
-        help="Nmae of the fake_quant_model_qinit",
+        help="Name of the fake_quant_model_qinit",
     )
 
     args = parser.parse_args()
