@@ -13,7 +13,7 @@ find_package(MKL REQUIRED)
 set(DEBUG "off" CACHE STRING "set debug version")
 message(STATUS "debug is set to " ${DEBUG})
 if (${DEBUG} STREQUAL "on")
-    add_compile_options(-debug=minimal -Rno-debug-disables-optimization)
+    add_compile_options(-debug=minimal -Rno-debug-disables-optimization -DDEBUG)
 endif ()
 
 add_compile_options(-fsycl)

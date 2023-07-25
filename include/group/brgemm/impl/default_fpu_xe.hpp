@@ -23,55 +23,6 @@
 #include "group/brgemm/compute_policy.hpp"
 
 namespace gpu::xetla::group {
-namespace detail {
-
-template <typename dtype_a, typename dtype_b, typename dtype_mma_a,
-        typename dtype_mma_b, typename dtype_mma_acc>
-struct check_dtype_default_fpu_xe {
-    static_assert(std::is_same<remove_const_t<dtype_a>,
-                          remove_const_t<dtype_mma_a>>::value,
-            "in current fpu path, dtype_mma_a should be the same as dtype_a");
-    static_assert(std::is_same<remove_const_t<dtype_b>,
-                          remove_const_t<dtype_mma_b>>::value,
-            "in current fpu path, dtype_mma_a should be the same as dtype_a");
-
-    static_assert(std::is_same<remove_const_t<dtype_mma_a>, float>::value,
-            "current only support sgemm");
-    static_assert(std::is_same<remove_const_t<dtype_mma_b>, float>::value,
-            "current only support sgemm");
-    static_assert(std::is_same<remove_const_t<dtype_mma_acc>, float>::value,
-            "current only support sgemm");
-};
-
-template <mem_layout mem_layout_a, mem_layout mem_layout_b,
-        mem_space mem_space_a, mem_space mem_space_b>
-struct check_memory_default_fpu_xe {
-    static constexpr bool is_col_major_a
-            = mem_layout_a == mem_layout::col_major;
-    static constexpr bool is_col_major_b
-            = mem_layout_b == mem_layout::col_major;
-    static constexpr bool is_local_a = mem_space_a == mem_space::local;
-    static constexpr bool is_local_b = mem_space_b == mem_space::local;
-    static_assert(
-            !is_local_a, "current don't support matA load from local memory");
-    static_assert(
-            !is_local_b, "current don't support matB load from local memory");
-};
-
-template <typename arch_attr, typename dtype_mma, int tile_size_x_a,
-        int tile_size_y_a, int block_size_x_a, int block_size_y_a,
-        int tile_size_x_b, int tile_size_y_b, int block_size_x_b,
-        int block_size_y_b>
-struct check_tile_size_default_fpu_xe {
-    using register_attr = typename arch_attr::register_attr;
-    static constexpr uint32_t reg_in_bytes = register_attr::reg_in_bytes;
-    static constexpr uint32_t simd_len = reg_in_bytes / sizeof(dtype_mma);
-
-    static_assert((block_size_x_b % simd_len == 0),
-            "block_size_x_b should be a multiple of simd_len");
-};
-
-} // namespace detail
 
 /// @addtogroup xetla_brgemm
 /// @{
@@ -112,8 +63,9 @@ private:
     using dtype_mma_a = typename compute_policy::dtype_mma_a;
     using dtype_mma_b = typename compute_policy::dtype_mma_b;
 
-    using check_dtype = detail::check_dtype_default_fpu_xe<dtype_a, dtype_b,
-            dtype_mma_a, dtype_mma_b, dtype_mma_acc>;
+    using check_dtype
+            = limitation::brgemm::default_fpu::check_dtype_default_fpu_xe<
+                    dtype_a, dtype_b, dtype_mma_a, dtype_mma_b, dtype_mma_acc>;
 
     /******** set memory attribute **********/
     static constexpr mem_layout mem_layout_a = mem_desc_a_t::layout;
@@ -133,8 +85,9 @@ private:
             ? tdesc_update_dir::x_dir
             : tdesc_update_dir::y_dir;
 
-    using check_memory = detail::check_memory_default_fpu_xe<mem_layout_a,
-            mem_layout_b, mem_space_a, mem_space_b>;
+    using check_memory
+            = limitation::brgemm::default_fpu::check_memory_default_fpu_xe<
+                    mem_layout_a, mem_layout_b, mem_space_a, mem_space_b>;
 
     static constexpr uint32_t stages = compute_policy::stages;
     static constexpr uint32_t sync_freq = compute_policy::sync_freq;
@@ -167,10 +120,11 @@ private:
             : compute_policy::block_size_y_b;
 
     using arch_attr = arch_attr_t<arch_tag>;
-    using check_tile_size = detail::check_tile_size_default_fpu_xe<arch_attr,
-            dtype_mma_acc, tile_size_x_a, tile_size_y_a, block_size_x_a,
-            block_size_y_a, tile_size_x_b, tile_size_y_b, block_size_x_b,
-            block_size_y_b>;
+    using check_tile_size
+            = limitation::brgemm::default_fpu::check_tile_size_default_fpu_xe<
+                    arch_attr, dtype_mma_acc, tile_size_x_a, tile_size_y_a,
+                    block_size_x_a, block_size_y_a, tile_size_x_b,
+                    tile_size_y_b, block_size_x_b, block_size_y_b>;
 
     /******** set tile  **********/
     // transpose in reg for src suppression

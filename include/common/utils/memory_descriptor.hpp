@@ -116,9 +116,10 @@ struct mem_base_t<dtype_, mem_space::local> {
     using dtype = dtype_;
     uint32_t base;
     inline mem_base_t() = default;
-    inline mem_base_t(uint32_t base_) : base(base_) {}
-    inline mem_base_t(const mem_base_t<dtype, mem_space::local> &mem_base)
-        : base(mem_base.base) {}
+    inline mem_base_t(uint32_t base_) { init(base_); }
+    inline mem_base_t(const mem_base_t<dtype, mem_space::local> &mem_base) {
+        init(mem_base.base);
+    }
     inline mem_base_t<dtype, mem_space::local> &operator=(
             const mem_base_t<dtype, mem_space::local> &mem_base) {
         // Be aware of the risks:
@@ -126,11 +127,18 @@ struct mem_base_t<dtype_, mem_space::local> {
         // if (this == &mem_base){
         //     return *this;
         // }
-        this->base = mem_base.base;
+        init(mem_base.base);
         return *this;
     }
-    inline void init(uint32_t base_) { base = base_; }
-    inline void update(int offset) { base = base + offset * sizeof(dtype); }
+    inline void init(uint32_t base_) {
+#ifdef DEBUG
+        limitation::slm::check_alignment("mem_base_t", base_);
+#endif
+        base = base_;
+    }
+    inline void update(int offset) {
+        init(base + offset * sizeof(dtype));
+    }
 };
 
 template <typename dtype_, mem_layout layout_, mem_space space_, int dim_ = 2>

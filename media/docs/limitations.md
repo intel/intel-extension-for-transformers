@@ -15,8 +15,8 @@ GEMM kernel provides a function `can_implement` to filter the limitations, call 
 - Local Memory Access
     - Base-address of the matrix must be 4B aligned.
     - The matrix layout in local memory must be row-major.
-    - Loading Matrix A and B works only when the  `mma_engine` is `mma_engine::fpu`.
-    - GEMM size must be divisible by the sub-group tile size on both row and column dimension.
+    - Loading Matrix A and B works only when the  `mma_engine` is `mma_engine::xmx`.
+    - Work-group tile size must be divisible by the sub-group tile size on both row and column dimension.
 
 ## Copyright
 Copyright (c) 2022-2023 Intel Corporation Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
