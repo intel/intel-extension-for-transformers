@@ -53,7 +53,14 @@ def _export_bf16_onnx_model(fp32_model_path, bf16_model_path):
     onnx.save(model, bf16_model_path)
 
 
-def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype: str):
+def prepare_model(
+    model_name: str,
+    output_path: Path,
+    opset: int,
+    expected_dtype: str,
+    fake_quant_model_qinit_path: str,
+    fake_quant_model_qinit_name: str
+):
     device = 'cpu'
     dtype = torch.float32
     output_path = Path(output_path)
@@ -101,7 +108,7 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
 
     # UNET
     if expected_dtype == 'qat_int8':
-        prepare_qat_model(model_name)
+        prepare_qat_model(model_name, output_path, fake_quant_model_qinit_path, fake_quant_model_qinit_name)
 
     unet_in_channels = pipeline.unet.config.in_channels
     unet_sample_size = pipeline.unet.config.sample_size
@@ -215,19 +222,25 @@ def prepare_model(model_name: str, output_path: Path, opset: int, expected_dtype
     del pipeline.vae
 
 
-def prepare_qat_model(model_name: str):
+def prepare_qat_model(
+    model_name: str,
+    output_path: Path,
+    fake_quant_model_qinit_path: str = "./",
+    fake_quant_model_qinit_name: str = "fake_quant_model_qinit.pt"
+):
     device = 'cpu'
+    output_path = Path(output_path)
     pipeline = StableDiffusionPipeline.from_pretrained(model_name).to(device)
     unet = pipeline.unet
 
     from quantization_modules import find_and_replace, convert2quantized_model
     find_and_replace(unet)
-    unet.load_state_dict(torch.load(os.path.join('./', "fake_quant_model_qinit.pt")))
+    unet.load_state_dict(torch.load(os.path.join(fake_quant_model_qinit_path, fake_quant_model_qinit_name)))
     unet = convert2quantized_model(unet)
     unet.eval()
     setattr(pipeline, "unet", unet)
 
-    onnx_model_path = 'model/unet_qat_int8/model.onnx'
+    onnx_model_path = output_path / "unet_qat_int8" / "model.onnx"
     os.makedirs(os.path.dirname(onnx_model_path), exist_ok=True)
     if os.path.exists(os.path.dirname(onnx_model_path)):
         def model_wrapper(model_fn):
@@ -248,7 +261,6 @@ def prepare_qat_model(model_name: str):
                 torch.randn(2, 4, 64, 64).to(device=device,dtype=torch.float32),
                 torch.randn(2).to(device=device, dtype=torch.float32),
                 torch.randn(2, 77, 768).to(device=device, dtype=torch.float32),
-                #False,
             ),
             f=onnx_model_path,
             input_names=["sample", "timestep", "encoder_hidden_states"],# "return_dict"],
@@ -294,6 +306,18 @@ if __name__ == "__main__":
     )
     parser.add_argument("--bf16", action="store_true", help="Export the models in `bfloat16` mode")
     parser.add_argument("--qat_int8", action="store_true", help="Export the models in `bfloat16` mode")
+    parser.add_argument(
+        "--fake_quant_model_qinit_path",
+        type=str,
+        default="./",
+        help="Path to the fake_quant_model_qinit",
+    )
+    parser.add_argument(
+        "--fake_quant_model_qinit_name",
+        type=str,
+        default="fake_quant_model_qinit.pt",
+        help="Nmae of the fake_quant_model_qinit",
+    )
 
     args = parser.parse_args()
 
@@ -303,4 +327,11 @@ if __name__ == "__main__":
     elif args.qat_int8:
         expected_dtype = 'qat_int8'
 
-    prepare_model(args.input_model, args.output_path, args.opset, expected_dtype)
+    prepare_model(
+        args.input_model,
+        args.output_path,
+        args.opset,
+        expected_dtype,
+        args.fake_quant_model_qinit_path,
+        args.fake_quant_model_qinit_name
+    )
