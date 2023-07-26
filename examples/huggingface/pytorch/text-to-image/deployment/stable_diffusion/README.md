@@ -110,7 +110,7 @@ bash export_model.sh --input_model=model --precision=fp32 --cast_type=dynamic_in
 Export mixed BF16 & QAT quantized Int8 IRs.
 ```bash
 # running the follow comand to get mixed BF16 & QAT quantized Int8 IRs.
-bash export_model.sh --input_model=model --precision=bf16 --cast_type=qat_int8
+bash export_model.sh --input_model=model --precision=qat_int8
 ```
 
 ## 2. Performance
