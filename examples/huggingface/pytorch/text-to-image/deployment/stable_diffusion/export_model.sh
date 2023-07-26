@@ -47,12 +47,12 @@ python export_ir.py --onnx_model=${input_model}/vae_decoder_${precision}/model.o
 exit
 fi
 
-if [[ ${cast_type} == 'qat_int8' ]]; then
-  echo "[INFO] cast_type is qat int8"
+if [[ ${precision} == 'qat_int8' ]]; then
+cast_type=qat_int8
+echo "[INFO] cast_type is qat int8"
 # 1. text encoder
-echo "[INFO] Text encoder ir will be $precision ..."
 echo "[INFO] Start to export text encoder ir..."
-python export_ir.py --onnx_model=${input_model}/text_encoder_${precision}/model.onnx --pattern_config=text_encoder --output_path=./${cast_type}_ir/text_encoder/ --dtype=${precision}
+python export_ir.py --onnx_model=${input_model}/text_encoder_bf16/model.onnx --pattern_config=text_encoder --output_path=./${cast_type}_ir/text_encoder/ --dtype=bf16
 
 # 2. unet
 echo "[INFO] Start to export unet ir..."
@@ -60,7 +60,7 @@ python export_ir.py --onnx_model=${input_model}/unet_${cast_type}/model.onnx --p
 
 # 3. vae_decoder
 echo "[INFO] start to export vae_decoder ir..."
-python export_ir.py --onnx_model=${input_model}/vae_decoder_${precision}/model.onnx --pattern_config=vae_decoder --output_path=./${cast_type}_ir/vae_decoder/ --dtype=${precision}
+python export_ir.py --onnx_model=${input_model}/vae_decoder_bf16/model.onnx --pattern_config=vae_decoder --output_path=./${cast_type}_ir/vae_decoder/ --dtype=bf16
 exit
 fi
 
