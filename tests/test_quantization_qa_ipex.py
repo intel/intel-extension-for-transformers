@@ -54,7 +54,7 @@ class TestExamples(unittest.TestCase):
             --overwrite_output_dir
             --framework ipex
             --benchmark_only
-            --cores_per_instance 16
+            --cores_per_instance 8
             --num_of_instance 1
             """.split()
 

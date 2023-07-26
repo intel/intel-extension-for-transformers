@@ -1,0 +1,30 @@
+name: coverity draft
+
+on:
+  # User can select events based on push, pull request or schedulers.
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  #schedule:
+  #  - cron: '30 5 * * 1'
+
+jobs:
+  #coverity_job:
+  #  uses: intel-innersource/frameworks.ai.infrastructure.code-scan-tools/.github/workflows/Scanner_Coverity.yml@one-ci-cd
+  #  with:   
+  #    repos: ${{ github.event.repository.name }} 
+  #    refs: ${{ github.ref_name }}
+  #    projectType: gcc # Note: Default is gcc but java and python can also be provided as input.
+  #    url: 'https://github.com/VincyZhang/intel-extension-for-transformers' # Note: Change it as per your project
+  #    stream: 'stream-name' # Note: Change the name of stream as per your coverity project.
+  #    runner_label: 'self-hosted'
+  coverity_job:
+    uses: "./.github/workflows/Scanner_Coverity.yml"
+    with:   
+      repos: ${{ github.event.repository.name }} 
+      refs: ${{ github.ref_name }}
+      projectType: gcc # Note: Default is gcc but java and python can also be provided as input.
+      url: 'https://github.com/VincyZhang/intel-extension-for-transformers' # Note: Change it as per your project
+      stream: 'stream-name' # Note: Change the name of stream as per your coverity project.
+      runner_label: 'self-hosted'

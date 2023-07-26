@@ -1,0 +1,134 @@
+name: LLM Model Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+       - '.github/workflows/llm-test.yml'
+       - '.github/workflows/script/models/run_llm.sh'
+       - "intel_extension_for_transformers/backends"
+       - "!intel_extension_for_transformers/backends/neural_engine/kernels"
+       - "!intel_extension_for_transformers/backends/neural_engine/test"
+       - "!intel_extension_for_transformers/backends/neural_engine/third_party"
+       - "!intel_extension_for_transformers/backends/neural_engine/docs"
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  OUT_SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script/models
+  SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script
+  WORKING_DIR: ${{ github.workspace }}
+  #REF_ID: 5307542685
+
+
+jobs:
+  LLM-Workflow:
+    runs-on: spr
+    strategy:
+      matrix:
+        include:
+          - modelName: "gpt-j-6b"
+            framework: "engine"
+            mode: "latency"
+            precision: "bf16,int8"
+    steps:
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Env build
+        run: |
+          bash ${{ github.workspace }}/.github/workflows/script/prepare_env_with_conda.sh "llm-test" "3.8"
+
+      - name: Binary build
+        run: |
+          cd ${{ github.workspace }}
+          conda activate llm-test || source activate llm-test 
+          pip install build --upgrade
+          python -m build -s -w
+          pip install dist/intel_extension_for_transformers*.whl
+          pip list
+
+      - name: BF16 Benchmark
+        run: |
+          cd ${{ github.workspace }}/.github/workflows/script/models
+          bash run_llm.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --conda_env_name=llm-test --precision=bf16
+
+      #- name: INT8 Benchmark
+      #  run: |
+      #    cd ${{ github.workspace }}/.github/workflows/script/models
+      #    bash run_llm.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --conda_env_name=llm-test --precision=int8
+      
+  
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: llm
+          path: ${{ github.workspace }}/*.log
+          if-no-files-found: ignore # 'warn' or 'ignore' are also available, defaults to `warn`
+          retention-days: 60 # 1 <= retention-days <= 90
+
+  Genreate-Report:
+    runs-on: ubuntu-latest
+    needs: [LLM-Workflow]
+    steps:
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Download Summary Log
+        uses: actions/download-artifact@v3
+        with:
+          path: ${{ env.OUT_SCRIPT_PATH }}/generated/log
+
+      - name: Download Reference Artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: llm-test.yml
+          name: FinalReport
+          run_id: ${{ vars.LLM_REF_ID }}
+          path: ${{ env.OUT_SCRIPT_PATH }}
+          name_is_regexp: true
+          repo: ${{ github.repository }}
+          check_artifacts: false
+          search_artifacts: false
+          skip_unpack: false
+          if_no_artifact_found: warn
+
+      - name: Display structure of downloaded files
+        run: cd ${{ env.OUT_SCRIPT_PATH }} && ls -R
+
+      - name: Generate report
+        run: |
+          echo "------ Generating final report.html ------"
+          cd ${{ env.OUT_SCRIPT_PATH }}
+          /usr/bin/bash generate_report.sh --workflow=deploy
+        env:
+          RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
+          BUILD_NUMBER: ${{ github.run_id }}
+          JOB_STATUS: succeed
+          MR_source_branch: ${{ github.head_ref }}
+          ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
+
+      - name: Publish Report
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: FinalReport
+          path: ${{ env.OUT_SCRIPT_PATH }}/generated
+
+      - name: Specify performance regression
+        run: |
+          if [ $(is_perf_reg) == 'true' ]; then
+            echo "[Performance Regression] Some model performance regression occurred, please check artifacts and reports."
+            exit 1
+          fi
+  

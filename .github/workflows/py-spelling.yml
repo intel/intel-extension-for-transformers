@@ -1,0 +1,32 @@
+name: Spell Check
+
+on:
+  pull_request:
+    branches: [main]
+
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+
+
+      - name: Code scan check
+        run: |
+          bash ${{ github.workspace }}/.github/workflows/script/formatScan/pyspelling.sh --WORKING_PATH=${{ github.workspace }}
+
+
+      - name: Publish pipeline artifact
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: pyspelling
+          path: ${{ github.workspace }}/.github/workflows/script/formatScan/pyspelling.*

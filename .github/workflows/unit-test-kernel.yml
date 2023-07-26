@@ -1,0 +1,89 @@
+name: Kernel Unit Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - intel_extension_for_transformers/backends/neural_engine/kernels
+      - .github/workflows/unit-test-kernel.yml
+      - .github/workflows/script/unitTest
+      - '!intel_extension_for_transformers/backends/neural_engine/kernels/docs'
+      - '!intel_extension_for_transformers/backends/neural_engine/kernels/README.md'
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKER_CONFIG_NAME: "commonDockerConfig"
+  REPO_NAME: "intel-extension-for-transformers"
+  REPO_TAG: "py38"
+  DOCKER_FILE_NAME: "devel"
+  CONTAINER_NAME: "utTest"
+
+jobs:
+  unit-test:
+    runs-on: [self-hosted, linux, X64, itrex-node]
+    steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Docker Build
+        run: |
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+
+      - name: Docker Run
+        run: |
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} --shm-size="2g" \
+          -v ${{ github.workspace }}:/intel-extension-for-transformers \
+          -v /tf_dataset2:/tf_dataset2 \
+          ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
+
+      - name: Env build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
+
+      - name: Binary build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
+          && bash install_binary.sh"
+
+      - name: Run UT
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
+          && bash run_unit_test_kernel.sh"
+
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: Kernel Unit Test
+          path: ${{ github.workspace }}/log_dir/unit_test*.*
+
+      - name: Docker clean up
+        if: ${{ always() }}
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} bash -c "rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+
+      - name: Clean docker container
+        if: ${{ always() }}
+        run: |
+          docker stop $(docker ps -aq)
+          docker rm -vf ${{ env.CONTAINER_NAME }} || true
+          echo y | docker system prune
