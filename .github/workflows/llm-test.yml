@@ -2,7 +2,7 @@ name: LLM Model Test
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop, test_only]
     paths:
        - '.github/workflows/llm-test.yml'
        - '.github/workflows/script/models/run_llm.sh'

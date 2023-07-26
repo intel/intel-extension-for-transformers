@@ -2,7 +2,7 @@ name: Spell Check
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop, test_only]
 
   workflow_dispatch:
 

@@ -2,7 +2,7 @@ name: Format Scan
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop, test_only]
     paths:
       - intel_extension_for_transformers
       - setup.py

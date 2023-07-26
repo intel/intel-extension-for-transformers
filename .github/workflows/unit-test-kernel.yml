@@ -2,7 +2,7 @@ name: Kernel Unit Test
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop, test_only]
     paths:
       - intel_extension_for_transformers/backends/neural_engine/kernels
       - .github/workflows/unit-test-kernel.yml

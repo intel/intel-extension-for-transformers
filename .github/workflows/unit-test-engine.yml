@@ -2,7 +2,7 @@ name: Engine Unit Test
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop, test_only]
     paths:
       - ".github/workflows/unit-test-engine.yml"
       - ".github/workflows/script/unitTest"
