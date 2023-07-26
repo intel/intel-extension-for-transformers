@@ -22,7 +22,7 @@ PATHS ${torch_path}
 NO_DEFAULT_PATH)
 
 
-add_subdirectory(../../neural_engine/graph/jblas jblas.out)
+add_subdirectory(../../intel_extension_for_transformers/backends/neural_engine/graph/jblas jblas.out)
 
 file(GLOB custom_jblasop_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 # Define our library target
