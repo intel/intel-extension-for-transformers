@@ -677,6 +677,8 @@ def main():
             )
 
         model = get_peft_model(model, peft_config)
+        if model_dtype == torch.bfloat16:
+            model = model.to(model_dtype)
         model.print_trainable_parameters()
 
         if not finetune_args.habana:

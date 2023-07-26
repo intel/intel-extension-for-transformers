@@ -173,13 +173,7 @@ class StopOnTokens(StoppingCriteria):
 
 def max_input_len(model, outlen=0):
     # need to adjust due to perf and real usage
-    if hasattr(model.config, "max_seq_len"):
-        return max((model.config.max_seq_len >> 2) - outlen, 0)
-    if hasattr(model.config, "max_position_embeddings"):
-        return max((model.config.max_position_embeddings >> 2) - outlen, 0)
-
-    return 0
-
+    return 128
 
 def create_prompts(examples):
     prompts = []
@@ -338,6 +332,7 @@ def load_model(
         from peft import PeftModel
 
         model = PeftModel.from_pretrained(model, peft_path)
+        model = model.to(torch.bfloat16)
 
     if device == "hpu":
         model = model.eval().to("hpu")
@@ -447,7 +442,7 @@ def predict_stream(**params):
         )
         input_token_len = input_tokens.input_ids.shape[-1]
         stop_token_ids = [model.generation_config.eos_token_id]
-        stop_token_ids.append(tokenizer(".", return_tensors="pt").input_ids)
+        stop_token_ids = stop_token_ids + list(torch.flatten(tokenizer(".", return_tensors="pt").input_ids))
         generation_config = GenerationConfig(
             temperature=temperature,
             top_p=top_p,
@@ -492,7 +487,7 @@ def predict_stream(**params):
         )
         input_token_len = input_tokens.input_ids.shape[-1]
         stop_token_ids = [model.generation_config.eos_token_id]
-        stop_token_ids.append(tokenizer(".", return_tensors="pt").input_ids)
+        stop_token_ids = stop_token_ids + list(torch.flatten(tokenizer(".", return_tensors="pt").input_ids))
         generate_kwargs = {
             "stopping_criteria": StoppingCriteriaList(
                 [
@@ -626,7 +621,7 @@ def predict(**params):
         )
         input_token_len = input_tokens.input_ids.shape[-1]
         stop_token_ids = [model.generation_config.eos_token_id]
-        stop_token_ids.append(tokenizer(".", return_tensors="pt").input_ids)
+        stop_token_ids = stop_token_ids + list(torch.flatten(tokenizer(".", return_tensors="pt").input_ids))
         generation_config = GenerationConfig(
             temperature=temperature,
             top_p=top_p,
@@ -665,7 +660,7 @@ def predict(**params):
         )
         input_token_len = input_tokens.input_ids.shape[-1]
         stop_token_ids = [model.generation_config.eos_token_id]
-        stop_token_ids.append(tokenizer(".", return_tensors="pt").input_ids)
+        stop_token_ids = stop_token_ids + list(torch.flatten(tokenizer(".", return_tensors="pt").input_ids))
         generate_kwargs = {
             "stopping_criteria": StoppingCriteriaList(
                 [
@@ -715,7 +710,7 @@ def predict(**params):
                 output_scores=True,
                 max_new_tokens=max_new_tokens,
                 lazy_mode=True,
-                hpu_graphs=use_hpu_graphs,
+                use_hpu_graphs=use_hpu_graphs,
                 ignore_eos = False,
             )
     output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
@@ -834,16 +829,17 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             cpu_jit=args.jit,
             use_cache=args.use_kv_cache,
+            peft_path=args.peft_model_path
         )
 
     if args.habana and rank in [-1, 0]:
         logger.info(f"Args: {args}")
         logger.info(f"device: {args.device}, n_hpu: {world_size}, bf16")
-
     # warmup, the first time inference take longer because of graph compilation
     if args.local_rank in [-1, 0]:
         start_time = time.time()
         print("Warmup, Response: ")
+
     for new_text in predict_stream(
         model_name=base_model_path,
         device="hpu" if args.habana else "cpu",
