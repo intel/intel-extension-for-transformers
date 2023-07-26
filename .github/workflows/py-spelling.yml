@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   format-scan:
-    runs-on: ubuntu-latest
+    runs-on: itrex-node
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
