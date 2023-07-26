@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 #include "../common.hpp"
 #include "../operator.hpp"
@@ -65,6 +66,9 @@ class ReorderOperator : public Operator {
 
   Tensor* src_min_ = nullptr;
   Tensor* src_max_ = nullptr;
+  vector<float> src_scales_;
+
+  std::unordered_map<int, memory> reorder_args;
   // for dispatcher
   vector<int64_t> src_shape_origin_;
 };

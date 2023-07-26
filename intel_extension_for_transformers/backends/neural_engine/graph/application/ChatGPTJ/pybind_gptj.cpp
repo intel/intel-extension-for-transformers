@@ -596,7 +596,7 @@ void* init_gptj(int seed, int n_predict, int top_k, float top_p, float temp, flo
 }
 
 int32_t* eval_gptj_ids(void* all, int32_t* embd_inp_ptr, int ind_size, int n_predict, int top_k, float top_p,
-                                   float temp, int n_batch) {
+                       float temp, int n_batch) {
   gptj_all* all_in_one = (gptj_all*)all;
   gpt_vocab* vocab_ptr = (all_in_one->vocab);
   gptj_model* model_ptr = (all_in_one->model);
@@ -729,9 +729,12 @@ int main() {
   auto gptj_in_all = init_gptj(1234, 32, 0, 1.0, 0.8, 1.02, false, 2048, "../ne-q4_0.bin");
   auto res = eval_gptj_char(gptj_in_all, "she opened the door and saw", 32, 0, 1.0, 0.8, 1);
   std::cout << res << std::endl;
-  auto res1 = eval_gptj_char(gptj_in_all, "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun", 32, 0, 1.0, 0.8, 1);
+  auto res1 = eval_gptj_char(gptj_in_all,
+                             "Once upon a time, there existed a little girl, who liked to have adventures. She wanted "
+                             "to go to places and meet new people, and have fun",
+                             32, 0, 1.0, 0.8, 1);
   std::cout << res1 << std::endl;
-  std::vector<int32_t> embd_inp = {7091,4721,262,3420,290,2497};
+  std::vector<int32_t> embd_inp = {7091, 4721, 262, 3420, 290, 2497};
   auto res_ids = eval_gptj_ids(gptj_in_all, embd_inp.data(), embd_inp.size(), 32, 0, 1.0, 0.8, 1);
   exit_gptj(gptj_in_all);
   delete[] res;

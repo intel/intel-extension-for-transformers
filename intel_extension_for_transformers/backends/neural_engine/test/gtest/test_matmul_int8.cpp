@@ -142,10 +142,9 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
   auto src_mem = memory(src_md, engine, src->mutable_data());
   auto weights_mem = memory(weights_md, engine, weight->mutable_data());
   auto dst_mem = memory(dst_md, engine, dst_tensor->mutable_data());
-  auto matmul_d = matmul::desc(src_md, weights_md, dst_md);
   dnnl::primitive_attr attr;
   attr.set_post_ops(po);
-  auto matmul_pd = matmul::primitive_desc(matmul_d, attr, engine);
+  auto matmul_pd = matmul::primitive_desc(engine, src_md, weights_md, dst_md, attr);
   auto matmul_prim = matmul(matmul_pd);
   std::unordered_map<int, memory> matmul_args;
   matmul_args.insert({DNNL_ARG_SRC, src_mem});
@@ -250,8 +249,6 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
   auto weight_tensors = quantize2int8_tensor_obj({weight_s8_config, weight_min_config, weight_scale_config},
                                                  reinterpret_cast<const float*>(weight_fp32->data()), false,
                                                  is_dynamic);  // matmul only support per_tensor
-  // weight_fp32->print();
-  // for (auto tensor : weight_tensors) tensor->print();
   auto post_fp32_config = std::make_shared<TensorConfig>("post", dst_shape, "fp32");
   Tensor* post_fp32 = make_fp32_tensor_obj(post_fp32_config);
   // get true fp32 result and calculate min/max
@@ -303,7 +300,6 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
 
   OpArgs op_args = {inputs, outputs, op_config, is_dynamic};
   if (output_type == "fp32") {
-    // dst_fp32->print();
     return {op_args, dst_fp32};
   } else {
     Tensor* true_data = new Tensor(*dst_config);
@@ -315,7 +311,6 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
     executor::Quantize(true_data->size(), output_type, dst_fp32->data(),
                        reinterpret_cast<const float*>(dst_min->data()), scales, true_data->mutable_data());
 #endif
-    // true_data->print();
     return {op_args, true_data};
   }
 }
@@ -340,12 +335,13 @@ static auto CasesInt8 = []() {
   src0_shape = {4, 2};
   src1_shape = {2, 3};
   cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, false, "s8", "fp32"), FAIL_ON_WIN});
-  // cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, false, "u8", "u8"), FAIL_ON_WIN});
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, false, "u8", "u8"), FAIL_ON_WIN});
 
   src0_shape = {5, 7};
   src1_shape = {7, 3};
   cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "s8", "fp32"), FAIL_ON_WIN});
   cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "u8"), FAIL_ON_WIN});
+
   return ::testing::ValuesIn(cases);
 };
 

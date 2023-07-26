@@ -15,7 +15,8 @@ args:
   max_test_samples: null
   preprocessing_num_workers: 8
   overwrite_cache: true
-  finetune_output: finetune_predictions_report.yaml
+  finetune_output: "finetune_predictions_report.yaml"
+  save_detailed_performance_metrics: true
 
 training_args:
   num_train_epochs: 1
@@ -23,4 +24,4 @@ training_args:
   do_predict: true
   per_device_train_batch_size: 512
   per_device_eval_batch_size: 512
-  output:dir: "./output_dir"
+  output_dir: "./output_dir"

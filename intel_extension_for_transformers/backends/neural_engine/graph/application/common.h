@@ -28,6 +28,11 @@
 #include "core/data_types.h"
 #include "core/ne_layers.h"
 
+#if !defined(_WIN32)
+#include <stdio.h>
+#include <termios.h>
+#endif
+
 #define COMMON_SAMPLE_RATE 16000
 
 //
@@ -65,6 +70,8 @@ bool isValidFilename(const std::string& filename);
 void gpt_print_usage(int argc, char** argv, const common_params& params);
 
 std::string gpt_random_prompt(std::mt19937& rng);
+
+std::vector<int> gpt_random_ids(std::mt19937& rng);
 
 //
 // Vocab utils
@@ -132,38 +139,54 @@ gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float*
                                             int top_k, double top_p, double temp, int repeat_last_n,
                                             float repeat_penalty, std::mt19937& rng);
 
-struct MyHash {
-  std::size_t operator()(const std::tuple<int, std::string, int, std::string, std::string>& k) const {
-    return std::hash<int>()(std::get<0>(k))
-           ^ (std::hash<std::string>()(std::get<1>(k)))
-           ^ std::hash<int>()(std::get<2>(k))
-           ^ (std::hash<std::string>()(std::get<3>(k)))
-           ^ (std::hash<std::string>()(std::get<4>(k)));
-  }
-};
-
-static std::unordered_map<std::tuple<int, std::string, int, std::string, std::string>, enum ne_ftype, MyHash>
-NE_FTYPE_MAP = {
-  // bits, alg, block size, scale dtype, gemm_isa -> ne_ftype
-  {{4,  "sym",   QK4_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q4_0},
-  {{4, "asym",   QK4_1,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q4_1},
-  {{5,  "sym",   QK5_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q5_0},
-  {{5, "asym",   QK5_1,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q5_1},
-  {{8,  "sym",   QK8_0,  "fp32",  "none"}, NE_FTYPE_MOSTLY_Q8_0},
-};
-
 struct quant_params {
   std::string model_file = "";
   std::string out_file = "";
+  std::string config = "";
+  int nthread = 1;
 
   int32_t bits = 4;
   std::string alg = "sym";
   int32_t block_size = 32;
   std::string scale_dtype = "fp32";
-  std::string gemm_isa = "none";
+  std::string compute_type = "ggml";
 };
+
+ne_ftype quant_params_to_ftype(const quant_params& params);
 
 bool quant_params_parse(int argc, char** argv, quant_params& params);
 
-bool ne_common_quantize_0(std::ifstream& finp, std::ofstream& fout, const ne_ftype ftype,
+size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params params, int n, int k);
+
+bool ne_common_quantize_0(std::ifstream& finp, std::ofstream& fout, const quant_params params,
                           const std::vector<std::string>& to_quant, const std::vector<std::string>& to_skip);
+
+#define ANSI_COLOR_RED "\x1b[31m"
+#define ANSI_COLOR_GREEN "\x1b[32m"
+#define ANSI_COLOR_YELLOW "\x1b[33m"
+#define ANSI_COLOR_BLUE "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN "\x1b[36m"
+#define ANSI_COLOR_RESET "\x1b[0m"
+#define ANSI_BOLD "\x1b[1m"
+
+enum console_color_t { CONSOLE_COLOR_DEFAULT = 0, CONSOLE_COLOR_PROMPT, CONSOLE_COLOR_USER_INPUT };
+
+struct console_state {
+  bool multiline_input = false;
+  bool use_color = false;
+  console_color_t color = CONSOLE_COLOR_DEFAULT;
+
+  FILE* out = stdout;
+#if defined(_WIN32)
+  void* hConsole;
+#else
+  FILE* tty = nullptr;
+  termios prev_state;
+#endif
+};
+
+void console_init(console_state& con_st);
+void console_cleanup(console_state& con_st);
+void console_set_color(console_state& con_st, console_color_t color);
+bool console_readline(console_state& con_st, std::string& line);

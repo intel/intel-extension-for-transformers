@@ -58,7 +58,8 @@ class InsertQuantNode(Pattern):
                 node = model.nodes[node_idx]
                 if node.op_type in EXECUTOR_TYPE and \
                 (EXECUTOR_TYPE[node.op_type] == "InnerProduct" or \
-                    EXECUTOR_TYPE[node.op_type] == "Matmul"):
+                    EXECUTOR_TYPE[node.op_type] == "Matmul" or \
+                        EXECUTOR_TYPE[node.op_type] == "Convolution"):
                     input_size = len(node.input_tensors)
                     if "reshape_dims" in node.attr:
                         input_size -= 1
@@ -308,22 +309,15 @@ class InsertQuantNode(Pattern):
                                                             node.input_tensors[offset + 4].data,
                                                             dtype)
                 weight_scale, weight_zero_point = get_scale_zp(node.input_tensors[offset + 5].data,
-                                                            node.input_tensors[offset + 6].data,
-                                                            's8')
-                if dtype == "u8":
-                    if "src1_perm" in node.attr and node.attr["src1_perm"] == '1,0':
-                        bias_zero_point = input_scale * input_data_min * \
-                            np.sum(weight_s8.astype(float), axis=0)
-                    else:
-                        bias_zero_point = input_scale * input_data_min * \
-                            np.sum(weight_s8.astype(float), axis=-1)
-                    bias_s32 = bias_fp32 * input_scale * weight_scale
-                    bias_s32 = np.round(bias_s32 + bias_zero_point).astype(np.int32)
-                    node.input_tensors[2].data = bias_s32
-                    node.input_tensors[2].dtype = 's32'
-                else:
-                    bias_s32 = np.round(bias_fp32 * input_scale * weight_scale).astype(np.int32)
-                    node.input_tensors[2].data = bias_s32
-                    node.input_tensors[2].dtype = 's32'
+                                                               node.input_tensors[offset + 6].data,
+                                                               's8')
+                input_scale = 1.0 / input_scale
+                weight_scale = 1.0 / weight_scale
+                weight_axis = -1
+                if "src1_perm" in node.attr and node.attr["src1_perm"] == '1,0':
+                    weight_axis = 0
+                bias_zero_point = input_scale * input_zero_point * weight_scale * \
+                                  np.sum(weight_s8.astype(np.float32), axis=weight_axis)
+                node.input_tensors[2].data = bias_fp32 - bias_zero_point
 
         return model

@@ -59,12 +59,12 @@ class Conv(Operator):
                 if attribute.name == 'strides':
                     self._attr['strides'] = list2str(attribute.ints)
         elif framework == "torch":
-            assert node.inputsSize() == 12
-            self._attr['strides'] = list2str(parseTorchListConstruct(node.inputsAt(3)))
-            self._attr['pads'] = list2str(parseTorchListConstruct(node.inputsAt(4)))
-            self._attr['dilations'] = list2str(parseTorchListConstruct(node.inputsAt(5)))
+            # import pdb; pdb.set_trace()
+            self._attr['strides'] = list2str(node.inputsAt(3).toIValue())
+            self._attr['pads'] = list2str(node.inputsAt(4).toIValue() + node.inputsAt(4).toIValue())
+            self._attr['dilations'] = list2str(node.inputsAt(5).toIValue())
             self._attr['transposed'] = node.inputsAt(6).toIValue()
-            self._attr['output_padding'] = list2str(parseTorchListConstruct(node.inputsAt(7)))
+            self._attr['output_padding'] = node.inputsAt(6).toIValue()
             self._attr['group'] = node.inputsAt(8).toIValue()
             self._attr['benchmark'] = node.inputsAt(9).toIValue()
             self._attr['deterministic'] = node.inputsAt(10).toIValue()

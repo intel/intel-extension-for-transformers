@@ -67,13 +67,12 @@ void LogSoftmaxOperator::Reshape(const vector<Tensor*>& input, const vector<Tens
   if (axis_ == -1) {
     axis_ = src_shape_origin.size() - 1;
   }
-  dnnl::logsoftmax_forward::desc logsoftmax_d(prop_kind::forward_inference, src_md, axis_);
-
-  // 2.3 Prepare primitive descriptors (cached)
-  dnnl::logsoftmax_forward::primitive_desc logsoftmax_pd(logsoftmax_d, eng_);
+  // Create primitive descriptor.
+  auto logsoftmax_pd = dnnl::softmax_forward::primitive_desc(eng_, dnnl::prop_kind::forward_inference,
+                                                            dnnl::algorithm::softmax_log, src_md, dst_md, axis_);
 
   // 2.4 Prepare primitive objects (cached)
-  logsoftmax_p_ = dnnl::logsoftmax_forward(logsoftmax_pd);
+  logsoftmax_p_ = dnnl::softmax_forward(logsoftmax_pd);
 
   // 2.5 Prepare memory objects (cached)
   src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
@@ -87,8 +86,8 @@ void LogSoftmaxOperator::Forward(const vector<Tensor*>& input, const vector<Tens
 
   // 1. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  src_m_.set_data_handle(const_cast<void*>(src_data), s);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  src_m_.set_data_handle(const_cast<void*>(src_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   // 2. Reorder the data when the primitive memory and user memory are different
   // 3. Insert memory args

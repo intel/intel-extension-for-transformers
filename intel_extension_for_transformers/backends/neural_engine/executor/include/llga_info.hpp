@@ -42,9 +42,7 @@ using std::to_string;
 
 class LLGAINFO {
  public:
-  LLGAINFO() : g_(dnnl::graph::engine::kind::cpu),
-                strm_ {eng_},
-                eng_ {dnnl::graph::engine::kind::cpu, 0} {}
+  LLGAINFO() : g_(dnnl::engine::kind::cpu) { }
 
   inline void AddLogicalTensor(const string& tensor_name, const logical_tensor& dst_desc) {
     name2lts_.insert({tensor_name, dst_desc});
@@ -79,9 +77,10 @@ class LLGAINFO {
     opid2index_[llga_op_idx++] = op_conf_index;
   }
 
-  inline vector<dnnl::graph::partition> GetPartitions() { return g_.get_partitions(); }
-  inline dnnl::graph::engine& GetEngine() { return eng_; }
-  inline dnnl::graph::stream& GetStream() { return strm_; }
+  inline vector<dnnl::graph::partition> GetPartitions() {
+    g_.finalize();
+    return g_.get_partitions();
+  }
   inline size_t GetOPIndex() { return static_cast<size_t>(llga_op_idx); }
   inline size_t GetLTIndex() { return static_cast<size_t>(logical_tensor_idx); }
   inline const string& GetTensorName(int id) { return id2names_[id]; }
@@ -203,10 +202,20 @@ class LLGAINFO {
     return type_map[datatype];
   }
 
+  static dnnl::engine& GetEngine() {
+    static dnnl::graph::allocator alloc {};
+    static dnnl::engine eng
+            = dnnl::graph::make_engine_with_allocator(dnnl::engine::kind::cpu, 0, alloc);
+    return eng;
+  }
+
+  static dnnl::stream& GetStream() {
+    static dnnl::stream strm(GetEngine());
+    return strm;
+  }
+
  private:
   dnnl::graph::graph g_;
-  dnnl::graph::engine eng_;
-  dnnl::graph::stream strm_;
 
   int logical_tensor_idx = 0;
   int llga_op_idx = 0;

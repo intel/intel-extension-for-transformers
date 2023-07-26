@@ -46,7 +46,7 @@ class LogSoftmaxOperator : public Operator {
   int axis_;
   string output_dtype_ = "fp32";
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
-  dnnl::logsoftmax_forward logsoftmax_p_;
+  dnnl::softmax_forward logsoftmax_p_;
   memory src_m_;
   memory dst_m_;
   unordered_map<int, memory> memory_args_;

@@ -247,9 +247,9 @@ void ConcatOperator::Forward(const vector<Tensor*>& input,
     dnnl::stream s(eng_);
     for (int n = 0; n < num_src; ++n) {
       const auto& src_data = input[n]->data();
-      src_m_[n].set_data_handle(const_cast<void*>(src_data), s);
+      src_m_[n].set_data_handle(const_cast<void*>(src_data));
     }
-    dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+    dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
     // 2. Reorder the data when the primitive memory and user memory are
     // different

@@ -92,9 +92,8 @@ void BinaryOpOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor
   auto dst_md = memory::desc(output[0]->shape(), type2mem[output[0]->dtype()], GetStrides(out_shape));
 
   dnnl::primitive_attr binary_attr;
-  dnnl::binary::desc binary_d(algo_, src_0_md, src_1_md, dst_md);
-  auto binary_pd = dnnl::binary::primitive_desc(binary_d, binary_attr, eng_);
-
+  auto binary_pd = dnnl::binary::primitive_desc(eng_, algo_,
+                                                src_0_md, src_1_md, dst_md, binary_attr);
   // Create src memory objects.
   src_0_mem_ = memory(src_0_md, eng_, DNNL_MEMORY_NONE);
   src_1_mem_ = memory(src_1_md, eng_, DNNL_MEMORY_NONE);
@@ -145,8 +144,8 @@ void BinaryOpOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
     src1_data = src1_fp32;
   }
 
-  src_0_mem_.set_data_handle(src0_data, stream_);
-  src_1_mem_.set_data_handle(src1_data, stream_);
+  src_0_mem_.set_data_handle(src0_data);
+  src_1_mem_.set_data_handle(src1_data);
 
   if (input[0] != nullptr && input[0]->left_life() == 1 && input[0]->size() >= output[0]->size() &&
       input[0]->dtype() != "s32" && output[0]->dtype() == input[0]->dtype() &&
@@ -164,7 +163,7 @@ void BinaryOpOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
     inputs.push_back(input[0]);
     inputs.push_back(input[1]);
   }
-  dst_mem_.set_data_handle(reinterpret_cast<void*>(output[0]->mutable_data()), stream_);
+  dst_mem_.set_data_handle(reinterpret_cast<void*>(output[0]->mutable_data()));
 
   std::unordered_map<int, memory> binary_args;
   binary_args.insert({DNNL_ARG_SRC_0, src_0_mem_});

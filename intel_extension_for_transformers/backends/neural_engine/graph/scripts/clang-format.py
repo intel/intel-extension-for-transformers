@@ -56,7 +56,7 @@ def parse_args(argv=None):
 
 if __name__=='__main__':
     if len(sys.argv)==1:
-        args=parse_args(['','--dirs','core','jblas','models','vectors','application'])
+        args=parse_args(['','--dirs','core','models','vectors','application'])
     else:
         args=parse_args()
     clang_format_dir(args)

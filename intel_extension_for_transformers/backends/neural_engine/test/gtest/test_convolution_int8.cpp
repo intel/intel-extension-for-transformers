@@ -190,10 +190,9 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
 
   vector<int64_t> padding_dims_l(pads.begin(), pads.begin() + pads.size() / 2);
   vector<int64_t> padding_dims_r(pads.begin() + pads.size() / 2, pads.end());
-  auto convolution_d =
-      convolution_forward::desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto, src_md,
-                                weight_md, bias_md, dst_md, strides, padding_dims_l, padding_dims_r);
-  auto convolution_pd = convolution_forward::primitive_desc(convolution_d, engine);
+  auto convolution_pd =
+      convolution_forward::primitive_desc(engine, dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto,
+                                          src_md, weight_md, bias_md, dst_md, strides, padding_dims_l, padding_dims_r);
   auto convolution_prim = convolution_forward(convolution_pd);
   std::unordered_map<int, memory> convolution_args;
   convolution_args.insert({DNNL_ARG_SRC, src_mem});

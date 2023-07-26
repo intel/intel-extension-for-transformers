@@ -64,7 +64,8 @@ class LayerNormOperator : public Operator {
   memory src_m_;
   memory dst_m_;
   unordered_map<int, memory> memory_args_;
-  memory scale_shift_m;
+  memory scale_mem_;
+  memory shift_mem_;
 
   bool transpose_mode_ = false;
   bool quantize_fuse_ = false;

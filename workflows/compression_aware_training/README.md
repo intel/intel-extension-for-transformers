@@ -90,19 +90,19 @@ See [config/README.md](./config/README.md) for options.
 
 Run both traditional Distillation followed by Quantization Aware Training
 ```bash
-python src/run.py config/distillation_with_qat.yaml
+python src/run.py --config_file config/distillation_with_qat.yaml
 ```
 Run traditional Distillation only
 ```bash
-python src/run.py config/distillation.yaml
+python src/run.py --config_file config/distillation.yaml
 ```
 Run Quantization Aware Training only
 ```bash
-python src/run.py config/qat.yaml
+python src/run.py --config_file config/qat.yaml
 ```
 Run Sparsity Aware Training only
 ```bash
-python src/run.py config/sat.yaml
+python src/run.py --config_file config/sat.yaml
 ```
 
 #### 3. Running Distributed Data Parallel (MultiNode) in Bash or Terminal
@@ -121,10 +121,10 @@ which should be integer from 0 to *`<NUM_NODES>`*`-1` assigned to each node.
 ```
 Example template for running on 2 Nodes CPU with 1 process per node
 ```bash
-python -m torch.distributed.launch --master_addr=10.10.10.1 --nproc_per_node=1 --nnodes=2 --node_rank=0  src/run.py config/distillation_multinode.yaml --no_cuda
+python -m torch.distributed.launch --master_addr=10.10.10.1 --nproc_per_node=1 --nnodes=2 --node_rank=0  src/run.py --config_file config/distillation_multinode.yaml --no_cuda
 ```
 ```bash
-python -m torch.distributed.launch --master_addr=10.19.17.1 --nproc_per_node=1 --nnodes=2 --node_rank=1  src/run.py config/distillation_multinode.yaml --no_cuda
+python -m torch.distributed.launch --master_addr=10.19.17.1 --nproc_per_node=1 --nnodes=2 --node_rank=1  src/run.py --config_file config/distillation_multinode.yaml --no_cuda
 ```
 
 ## Run Using Docker

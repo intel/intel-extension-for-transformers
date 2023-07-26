@@ -24,10 +24,11 @@ args:
   max_test_samples: null
   preprocessing_num_workers: 8
   overwrite_cache: true
-  inference_output: inference_predictions_report.yaml
+  inference_output: "inference_predictions_report.yaml"
   multi_instance: false
+  save_detailed_performance_metrics: true
 
 training_args:
   do_predict: true
   per_device_eval_batch_size: 100
-  output:dir: "/.output"
+  output_dir: "./output_dir"

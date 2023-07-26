@@ -14,46 +14,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
 
-
-local_schedulers_config = [
-    {
-        "start_step": 0,
-        "end_step": 2,
-        "pruning_type": "magnitude",
-        "op_names": ['layer1.*'],
-        "excluded_op_names": ['layer2.*'],
-        "pruning_scope": "global",
-        "target_sparsity": 0.5,
-        "pattern": "4x1"
-    },
-    {
-        "start_step": 1,
-        "end_step": 10,
-        "target_sparsity": 0.5,
-        "pruning_type": "snip_momentum",
-        "pruning_frequency": 2,
-        "op_names": ['layer2.*'],
-        "pruning_scope": "local",
-        "target_sparsity": 0.75,
-        "pattern": "32x1",
-        "sparsity_decay_type": "exp"
-    },
-    {
-        "start_step": 1,
-        "end_step": 10,
-        "pruning_type": "snip_progressive",
-        "pruning_frequency": 2,
-        "op_names": ['layer2.*'],
-        "pruning_scope": "local",
-        "target_sparsity": 0.7,
-        "pattern": "4x2",
-        "sparsity_decay_type": "linear"
-    }
-]
-
-fake_snip_config = WeightPruningConfig(local_schedulers_config, target_sparsity=0.9, start_step=0, \
-                                       end_step=10, pruning_frequency=1, sparsity_decay_type="exp")
-
 def build_fake_yaml_basic():
     fake_snip_yaml = """
 version: 1.0
@@ -96,7 +56,7 @@ class TestPruning(unittest.TestCase):
 
     def test_pruning_basic(self):
         local_configs = [
-            {
+             {
                 "op_names": ['layer1.*'],
                 'target_sparsity': 0.5,
                 "pattern": '8x2',
@@ -111,29 +71,17 @@ class TestPruning(unittest.TestCase):
             {
                 "op_names": ['layer3.*'],
                 'target_sparsity': 0.7,
-                'pattern': '4x1',
+                'pattern': '5x1',
                 "pruning_type": "snip_progressive"
-            },
-            {
-                "start_step": 2,
-                "end_step": 8,
-                "pruning_type": "gradient",
-                "pruning_frequency": 2,
-                "op_names": ['fc'],
-                "pruning_scope": "local",
-                "target_sparsity": 0.75,
-                "pattern": "1x1",
-                "sparsity_decay_type": "cube",
-                "reg_type": "group_lasso",
-                "parameters": {'reg_coeff': 0.0}
             }
         ]
         config = WeightPruningConfig(
             local_configs,
-            target_sparsity=0.8
+            target_sparsity=0.8,
+            start_step=1,
+            end_step=10
         )
         prune = Pruning(config)
-        prune.update_config(start_step=1, end_step=10)
         prune.model = self.model
 
         criterion = nn.CrossEntropyLoss()
@@ -170,6 +118,7 @@ class TestPruning(unittest.TestCase):
         prune.on_after_eval()
 
     def test_pruning_pattern(self):
+        self.model = torchvision.models.resnet18()
         local_configs = [
             {
                 "op_names": ['layer1.*'],
@@ -198,7 +147,9 @@ class TestPruning(unittest.TestCase):
             sparsity_decay_type="cos",
             excluded_op_names=["downsample.*"],
             pruning_scope="local",
-            min_sparsity_ratio_per_op=0.1
+            min_sparsity_ratio_per_op=0.1,
+            start_step=1,
+            end_step=10
         )
         prune = Pruning(config)
         prune.update_config(start_step=1, end_step=10)

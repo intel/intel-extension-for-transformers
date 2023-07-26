@@ -30,8 +30,9 @@
 #include <utility>
 
 #include "common.h"
-#include "models/llama/llama_config.h"
-#include "llama_model.h"
+#include "models/model_utils/model_types.h"
+#include "models/model_utils/model_config.h"
+#include "models/model_utils/model_utils.h"
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <signal.h>
@@ -65,7 +66,7 @@ void sigint_handler(int signo) {
 
 int main(int argc, char** argv) {
   gpt_params params;
-
+  params.name = MODEL_LLAMA;
   if (gpt_params_parse(argc, argv, params) == false) {
     return 1;
   }

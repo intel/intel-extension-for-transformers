@@ -55,7 +55,7 @@ DT_F16 = UnquantizedDataType('F16')
 DT_F32 = UnquantizedDataType('F32')
 DT_I32 = UnquantizedDataType('I32')
 DT_BF16 = UnquantizedDataType('BF16')
-
+DT_BOOL = UnquantizedDataType('BOOL')
 
 @dataclass(frozen=True)
 class QuantizedDataType:
@@ -74,6 +74,7 @@ DATA_TYPE_TO_FTYPE: Dict[DataType, int] = {
     DT_F16: 1,
     DT_Q4_0: 2,
     DT_Q4_1: 3,
+    DT_BOOL: 4
 }
 
 FTYPE_TO_DATA_TYPE: Dict[int, DataType] = \
@@ -84,6 +85,7 @@ DATA_TYPE_TO_NUMPY: Dict[DataType, 'np.dtype[Any]'] = {
     DT_F16: np.dtype(np.float16),
     DT_F32: np.dtype(np.float32),
     DT_I32: np.dtype(np.int32),
+    DT_BOOL: np.dtype(np.bool_)
 }
 
 NUMPY_TYPE_TO_DATA_TYPE: Dict['np.dtype[Any]', DataType] = \
@@ -729,6 +731,7 @@ class LazyUnpickler(pickle.Unpickler):
         ('torch', 'HalfStorage'): LazyStorageKind(DT_F16),
         ('torch', 'FloatStorage'): LazyStorageKind(DT_F32),
         ('torch', 'IntStorage'): LazyStorageKind(DT_I32),
+        ('torch', 'BoolStorage'): LazyStorageKind(DT_BOOL),
         ('torch', 'Tensor'): LazyTensor,
     }
 
@@ -755,6 +758,7 @@ SAFETENSORS_DATA_TYPES: Dict[str, DataType] = {
     'F16': DT_F16,
     'F32': DT_F32,
     'I32': DT_I32,
+    'BOOL': DT_BOOL
 }
 
 

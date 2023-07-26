@@ -71,11 +71,10 @@ void GeluOperator::ReshapeWithOnednn(const vector<Tensor*>& input, const vector<
   } else {
     LOG(ERROR) << "Gelu algorithm is: " << algorithm_ << ", not supported. Only gelu_erf or gelu_tanh is supported.";
   }
-  auto gelu_d = dnnl::eltwise_forward::desc(prop_kind::forward_inference, gelu_algorithm, src_md, 0.f, 0.f);
 
   // 2.2 Prepare primitive descriptors
-  dnnl::eltwise_forward::primitive_desc gelu_pd(gelu_d, eng_);
-
+  auto gelu_pd = dnnl::eltwise_forward::primitive_desc(eng_, dnnl::prop_kind::forward_inference,
+                                                      gelu_algorithm, src_md, dst_md, 0.f, 0.f);
   // 2.3 Prepare primitive objects (cached)
   gelu_p_ = dnnl::eltwise_forward(gelu_pd);
 }
@@ -91,8 +90,8 @@ void GeluOperator::ForwardWithOnednn(const vector<Tensor*>& input, const vector<
 
   // 2. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  src_m_.set_data_handle(const_cast<void*>(src_data), s);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  src_m_.set_data_handle(const_cast<void*>(src_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   // 3. Insert memory args
   unordered_map<int, memory> memory_args;

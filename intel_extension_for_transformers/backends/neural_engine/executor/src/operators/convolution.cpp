@@ -207,36 +207,54 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
   if (dispatch_from_ == "InnerProduct" && input[0]->dtype() != "fp32") return;
   if (dispatch_from_ == "InnerProduct" && (input[1]->location().empty() || input[1]->shape().empty())) return;
   MapTensors(input, output);
-  is_dynamic_ = output.size() > 1 || (src_min_ != nullptr && src_min_->raw_data() == nullptr && !src_min_->is_shared());
+  is_dynamic_ = src_min_ != nullptr && src_min_->raw_data() == nullptr && !src_min_->is_shared();
   if (has_bias_) {
     DLOG(INFO) << name_ << "Convolution has bias";
   }
   if (is_dynamic_) DLOG(INFO) << name_ << "Convolution is DYNAMIC!!!";
   dst_->set_dtype(output_dtype_);
 
-  dnnl::primitive_attr attr;
-  vector<float> src_scales;
-  vector<float> weight_scales;
-  vector<float> dst_scales;
-  vector<float> rescales;
-  if (!is_dynamic_) {
-    if (output_scale_ != 1.f) {
-      attr.set_output_scales(0, {output_scale_});
-    } else if (weight_min_ != nullptr) {
-      const int ic_dim = weight_min_->size() > 1 ? 0 | (1 << 1) : 0;
-      src_scales = GetScales(src_min_->data(), src_max_->data(), src_min_->size(), src_->dtype());
-      weight_scales = GetScales(weight_min_->data(), weight_max_->data(), weight_min_->size(), weight_->dtype());
-      if (dst_min_ != nullptr) {
-        // std::cout << "dst_->dtype() = " << dst_->dtype() << std::endl;
-        // std::cout << "dst_min_->data() = " << dst_min_->data() << std::endl;
-        // std::cout << "dst_max_->data() = " << dst_max_->data() << std::endl;
-        // std::cout << "dst_min_->size() = " << dst_min_->size() << std::endl;
-        dst_scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+  if (!is_dynamic_ && weight_min_ != nullptr) {
+    src_scales_ = GetScales(src_min_->data(), src_max_->data(), src_min_->size(), src_->dtype());
+    weight_scales_ = GetScales(weight_min_->data(), weight_max_->data(), weight_min_->size(), weight_->dtype());
+    if (dst_min_ && (dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
+      dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      rescales_ = GetRescales(src_scales_, weight_scales_, dst_scales_, dst_->dtype(), append_eltwise_);
+      dst_zps_ = GetZeroPoints(dst_min_->data(), dst_scales_, dst_->dtype());
+    }
+
+    src_zps_ = GetZeroPoints(src_min_->data(), src_scales_, src_->dtype());
+    for (int i = 0; i < src_scales_.size(); i++) src_scales_[i] = 1.0 / src_scales_[i] * output_scale_;
+    for (int i = 0; i < weight_scales_.size(); i++) weight_scales_[i] = 1.0 / weight_scales_[i];
+    for (int i = 0; i < dst_scales_.size(); i++) dst_scales_[i] = 1.0 / dst_scales_[i];
+    attr_.set_scales_mask(DNNL_ARG_SRC, /* mask */ 0);
+    auto src_scale_md = memory::desc({src_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+    auto src_scales_m = memory(src_scale_md, eng_, reinterpret_cast<void*>(src_scales_.data()));
+    memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC] = src_scales_m;
+
+    if (src_->dtype() == "u8") {
+      attr_.set_zero_points_mask(DNNL_ARG_SRC, /* mask */ 0);
+      auto src_zps_md = memory::desc({src_zps_.size()}, memory::data_type::s32, memory::format_tag::x);
+      auto src_zps_m_ = memory(src_zps_md, eng_, reinterpret_cast<void*>(src_zps_.data()));
+      memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = src_zps_m_;
+    }
+
+    attr_.set_scales_mask(DNNL_ARG_WEIGHTS, /* mask */ weight_scales_.size() > 1 ? 1 : 0);
+    auto src1_scale_md = memory::desc({weight_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+    auto src1_scales_m = memory(src1_scale_md, eng_, reinterpret_cast<void*>(weight_scales_.data()));
+    memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS] = src1_scales_m;
+
+    if (dst_min_) {
+      attr_.set_scales_mask(DNNL_ARG_DST, /* mask */ 0);
+      auto dst_scales_md = memory::desc({dst_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+      auto dst_scales_m = memory(dst_scales_md, eng_, reinterpret_cast<void*>(dst_scales_.data()));
+      memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_DST] = dst_scales_m;
+      if (dst_->dtype() == "u8") {
+        attr_.set_zero_points_mask(DNNL_ARG_DST, /* mask */ 0);
+        auto dst_zps_md = memory::desc({dst_zps_.size()}, memory::data_type::s32, memory::format_tag::x);
+        auto dst_zps_m_ = memory(dst_zps_md, eng_, reinterpret_cast<void*>(dst_zps_.data()));
+        memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_DST] = dst_zps_m_;
       }
-      //dst_scales = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
-      //dst_scales.push_back(1.0);
-      rescales = GetRescales(src_scales, weight_scales, dst_scales, dst_->dtype(), append_eltwise_);
-      attr.set_output_scales(ic_dim, rescales);
     }
   }
 
@@ -250,42 +268,41 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
     float op_scale = 1.0;
     float op_alpha = 0.0;
     float op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_gelu_erf, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_gelu_erf, op_alpha, op_beta);
   }
   if (gelu_tanh_ && !gelu_split_) {
     float op_scale = 1.0;
     float op_alpha = 0.0;
     float op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_gelu_tanh, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_gelu_tanh, op_alpha, op_beta);
   }
   if (tanh_) {
     auto op_scale = 1.0;
     auto op_alpha = 0.0;
     auto op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_tanh, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_tanh, op_alpha, op_beta);
   }
   if (sigmoid_) {
     auto op_scale = 1.0;
     auto op_alpha = 0.0;
     auto op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_logistic, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_logistic, op_alpha, op_beta);
   }
   if (relu_) {
     auto op_scale = 1.0;
     auto op_alpha = 0.0;
     auto op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_relu, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_relu, op_alpha, op_beta);
   }
   // this is to sub zero point in fp32 to make the output u8
-  if (!is_dynamic_ && append_eltwise_ && dst_->dtype() == "u8") {
-    float zero_point = -1 * static_cast<const float*>(dst_min_->data())[0];
-    po.append_eltwise(dst_scales[0], algorithm::eltwise_linear, 1., zero_point);
+  if (!is_dynamic_ && src_min_ == nullptr && output_scale_ != 1.f) {
+    append_eltwise_ = true;
+    po.append_eltwise(algorithm::eltwise_linear, output_scale_, 0);
   }
-  if (append_eltwise_ || append_sum_) attr.set_post_ops(po);
+  if (append_eltwise_ || append_sum_) attr_.set_post_ops(po);
 
   // set conv attr to scratchpad_mode
-  attr.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-  attr_ = attr;
+  attr_.set_scratchpad_mode(dnnl::scratchpad_mode::user);
 
   // cache weight here, save weight and bias memory descriptor
   vector<int64_t> weight_shape_origin = weight_->shape();
@@ -341,6 +358,7 @@ void ConvolutionOperator::Prepare(const vector<Tensor*>& input, const vector<Ten
     bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], bias_stride);
     any_bias_md_ = memory::desc(bias_shape, type2mem[bias_->dtype()], memory::format_tag::any);
     bias_m_ = memory(bias_md_, eng_, bias_->mutable_data());
+    memory_args_[DNNL_ARG_BIAS] = bias_m_;
   }
 }
 
@@ -384,26 +402,18 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
   if (dispatch_from_.empty()) src_->set_shape(src_shape);
   if (is_dynamic_ && (output_scale_ != 1.f || src_min_ != nullptr || weight_min_ != nullptr)) {
     if (src_min_ != nullptr && weight_max_ != nullptr) {
-      int mask = weight_min_->size() > 1 ? 2 : 0;
-      attr_.set_output_scales(mask, {DNNL_RUNTIME_F32_VAL});
-      vector<int64_t> scale_shape;
-      // scale_shape.push_back(1);
-      scale_shape.push_back(weight_min_->size());
-      memory::desc scale_md_ = memory::desc(scale_shape, memory::data_type::f32, GetStrides(scale_shape));
-      scale_f32_mem_ = memory(scale_md_, eng_, DNNL_MEMORY_NONE);
-      // if (!(dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
-      //   dnnl::post_ops po;
-      //   po.append_binary(algorithm::binary_mul, scale_md_);
-      //   attr_.set_post_ops(po);
-      // }
+      int mask = src_min_->size() > 1 ? 2 : 0;
+      attr_.set_scales_mask(DNNL_ARG_SRC, mask);
       // need zero point when src0 is u8
       if (src_->dtype() == "u8") {
-        mask = src_min_->size() > 1 ? 2 : 0;
-        zp_src0_mem_ = memory(
-            {{static_cast<dnnl_dim_t>(src_min_->size())}, memory::data_type::s32, GetStrides(scale_shape)}, eng_,
-            DNNL_MEMORY_NONE);
-        attr_.set_zero_points(DNNL_ARG_SRC, mask, {DNNL_RUNTIME_S32_VAL});
+        zp_src0_mem_ = memory({{src_min_->size()}, memory::data_type::s32, {1}}, eng_, DNNL_MEMORY_NONE);
+        attr_.set_zero_points_mask(DNNL_ARG_SRC, mask);
       }
+      scale_src_mem_ = memory({{src_max_->size()}, memory::data_type::f32, {1}}, eng_, DNNL_MEMORY_NONE);
+      mask = weight_max_->size() > 1 ? 1 : 0;
+      attr_.set_scales_mask(DNNL_ARG_WEIGHTS, mask);
+      memory::desc scale_md_ = memory::desc({weight_max_->size()}, memory::data_type::f32, {1});
+      scale_weight_mem_ = memory(scale_md_, eng_, DNNL_MEMORY_NONE);
     }
   }
   // 1.2 malloc tensor for output
@@ -502,41 +512,22 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
 
   if (dispatch_from_ == "InnerProduct") dst_->set_shape(dst_shape_after_dispatch);
 
-  // 2.2 Prepare op descriptors
-  dnnl::convolution_forward::desc convolution_d =
-      has_bias_
-          ? dnnl::convolution_forward::desc(prop_kind::forward_inference, algorithm::convolution_auto, src_md,
-                                            weight_md_, bias_md_, dst_md, strides_, padding_dims_l, padding_dims_r)
-          : dnnl::convolution_forward::desc(prop_kind::forward_inference, algorithm::convolution_auto, src_md,
-                                            weight_md_, dst_md, strides_, padding_dims_l, padding_dims_r);
-  if (format_any_) {
-    convolution_d = has_bias_ ? dnnl::convolution_forward::desc(
-                                    prop_kind::forward_inference, algorithm::convolution_auto, any_src_md,
-                                    any_weight_md_, any_bias_md_, any_dst_md, strides_, padding_dims_l, padding_dims_r)
-                              : dnnl::convolution_forward::desc(prop_kind::forward_inference,
-                                                                algorithm::convolution_auto, any_src_md, any_weight_md_,
-                                                                any_dst_md, strides_, padding_dims_l, padding_dims_r);
-  }
-
   if (gelu_erf_ && gelu_split_) {
     memory::desc gelu_md = memory::desc(dst_shape_origin, type2mem[dst_->dtype()], dst_stride);
-    auto gelu_d =
-        dnnl::eltwise_forward::desc(prop_kind::forward_inference, algorithm::eltwise_gelu_erf, gelu_md, 0.f, 0.f);
-    gelu_pd_ = dnnl::eltwise_forward::primitive_desc(gelu_d, gelu_eng_);
+    auto gelu_pd_ = dnnl::eltwise_forward::primitive_desc(eng_, dnnl::prop_kind::forward_inference,
+                                                          algorithm::eltwise_gelu_erf, dst_md, gelu_md, 0.f, 0.f);
     gelu_p_ = dnnl::eltwise_forward(gelu_pd_);
     gelu_m_ = memory(gelu_md, gelu_eng_, DNNL_MEMORY_NONE);
   }
   if (gelu_tanh_ && gelu_split_) {
     memory::desc gelu_md = memory::desc(dst_shape_origin, type2mem[dst_->dtype()], dst_stride);
-    auto gelu_d =
-        dnnl::eltwise_forward::desc(prop_kind::forward_inference, algorithm::eltwise_gelu_tanh, gelu_md, 0.f, 0.f);
-    gelu_pd_ = dnnl::eltwise_forward::primitive_desc(gelu_d, gelu_eng_);
+    auto gelu_pd_ = dnnl::eltwise_forward::primitive_desc(eng_, dnnl::prop_kind::forward_inference,
+                                                          algorithm::eltwise_gelu_tanh, dst_md, gelu_md, 0.f, 0.f);
     gelu_p_ = dnnl::eltwise_forward(gelu_pd_);
     gelu_m_ = memory(gelu_md, gelu_eng_, DNNL_MEMORY_NONE);
   }
   if (binary_add_) {
     // The binary primitive requires all source and destination tensors to have the same number of dimensions.
-    dnnl::primitive_attr attr;
     dnnl::post_ops po;
     vector<int64_t> post_shape = post_->shape();
     vector<int64_t> post_stride = GetStrides(post_shape);
@@ -548,12 +539,31 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
     }
     memory::desc binary_md = memory::desc(post_shape, type2mem[post_->dtype()], post_stride);
     po.append_binary(algorithm::binary_add, binary_md);
-    attr.set_post_ops(po);
+    attr_.set_post_ops(po);
     binary_m_ = memory(binary_md, eng_, DNNL_MEMORY_NONE);
-    attr_ = attr;
   }
 
-  convolution_pd_ = dnnl::convolution_forward::primitive_desc(convolution_d, attr_, eng_);
+  // Create primitive descriptor.
+  if (format_any_) {
+    if (has_bias_)
+      convolution_pd_ = dnnl::convolution_forward::primitive_desc(
+          eng_, prop_kind::forward_inference, algorithm::convolution_auto, any_src_md, any_weight_md_, any_bias_md_,
+          any_dst_md, strides_, padding_dims_l, padding_dims_r, attr_);
+    else
+      convolution_pd_ = dnnl::convolution_forward::primitive_desc(
+          eng_, prop_kind::forward_inference, algorithm::convolution_auto, any_src_md, any_weight_md_, any_dst_md,
+          strides_, padding_dims_l, padding_dims_r, attr_);
+  } else {
+    if (has_bias_)
+      convolution_pd_ = dnnl::convolution_forward::primitive_desc(
+          eng_, prop_kind::forward_inference, algorithm::convolution_auto, src_md, weight_md_, bias_md_, dst_md,
+          strides_, padding_dims_l, padding_dims_r, attr_);
+    else
+      convolution_pd_ = dnnl::convolution_forward::primitive_desc(
+          eng_, prop_kind::forward_inference, algorithm::convolution_auto, src_md, weight_md_, dst_md, strides_,
+          padding_dims_l, padding_dims_r, attr_);
+  }
+
   memory::desc scratchpad_md = convolution_pd_.scratchpad_desc();
   if (scratchpad_) {
     aligned_free(scratchpad_);
@@ -564,7 +574,6 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
       reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
   memory scratchpad_m = memory(scratchpad_md, eng_, scratchpad_);
   memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
-
   // 2.4 Prepare memory objects (cached)
   src_m_ = memory(src_md, eng_, DNNL_MEMORY_NONE);
   dst_m_ = memory(dst_md, eng_, DNNL_MEMORY_NONE);
@@ -575,7 +584,7 @@ void ConvolutionOperator::Reshape(const vector<Tensor*>& input, const vector<Ten
       dnnl::reorder(weight_m_, any_weight_m).execute(eng_stream_, weight_m_, any_weight_m);
     }
     memory_args_[DNNL_ARG_WEIGHTS] = any_weight_m;
-    if (!is_dynamic_ && has_bias_) {
+    if (has_bias_) {
       memory any_bias_m = bias_m_;
       if (convolution_pd_.bias_desc() != bias_m_.get_desc()) {
         any_bias_m = memory(convolution_pd_.bias_desc(), eng_);
@@ -649,8 +658,8 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
   const auto& src_data = src_->data();
 
   // 1. Prepare memory objects with data_ptr
-  src_m_.set_data_handle(const_cast<void*>(src_data), eng_stream_);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), eng_stream_);
+  src_m_.set_data_handle(const_cast<void*>(src_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
   memory any_src_m = src_m_;
   memory any_bias_m = bias_m_;
   memory any_dst_m = dst_m_;
@@ -663,10 +672,9 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
     any_dst_m = memory(convolution_pd_.dst_desc(), eng_);
   }
   // the runtime calculation of dynamic quantization
-  vector<int32_t> src0_zero_points;
-  vector<float> rescales;
-  vector<float> dynamic_bias;
-  if (is_dynamic_) DynamicForward(&src0_zero_points, &rescales, &dynamic_bias, &any_bias_m);
+  vector<int32_t> src_zero_points;
+  vector<float> src_scales;
+  if (is_dynamic_) DynamicForward(&src_zero_points, &src_scales);
 
   // 3. Insert memory args
   memory_args_[DNNL_ARG_SRC_0] = any_src_m;
@@ -674,8 +682,8 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
   // has post_op: binary_add
   if (post_ != nullptr && binary_add_) {
     void* post_ptr = post_->mutable_data();
-    binary_m_.set_data_handle(post_ptr, eng_stream_);
-    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0 + is_dynamic_) | DNNL_ARG_SRC_1] = binary_m_;
+    binary_m_.set_data_handle(post_ptr);
+    memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = binary_m_;
   }
   // 4. Execute the primitive
   convolution_p_.execute(eng_stream_, memory_args_);
@@ -685,8 +693,8 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
   }
   // gelu seperate
   if ((gelu_split_ && gelu_tanh_) || (gelu_split_ && gelu_erf_)) {
-    dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), gelu_eng_stream_);
-    gelu_m_.set_data_handle(reinterpret_cast<void*>(dst_data), gelu_eng_stream_);
+    dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
+    gelu_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
     gelu_memory_args_[DNNL_ARG_SRC] = dst_m_;
     gelu_memory_args_[DNNL_ARG_DST] = gelu_m_;
     gelu_p_.execute(gelu_eng_stream_, gelu_memory_args_);
@@ -727,50 +735,22 @@ void ConvolutionOperator::Forward(const vector<Tensor*>& input, const vector<Ten
   }
 }
 
-void ConvolutionOperator::DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
-                                         vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr) {
-  auto& rescales = *rescales_ptr;
-  int channel_size = weight_min_->size();  // channel_size=1 represent per_tensor
-  rescales.resize(channel_size);
+void ConvolutionOperator::DynamicForward(vector<int32_t>* src_zero_points_ptr, vector<float>* src_scales_ptr) {
+  auto& src_scales = *src_scales_ptr;
   const float* src0_scales = reinterpret_cast<const float*>(src_max_->data());
-  const float* src1_scales = reinterpret_cast<const float*>(weight_max_->data());
-  // std::cout << name_ << "\tsrc0:\t" << src0_scales[0] << std::endl;
-  // std::cout << name_ << "\tsrc1:\t" << src1_scales[0] << std::endl;
-  if (channel_size == 1) {
-    rescales[0] = output_scale_ * src1_scales[0] * src0_scales[0];
-  } else {
-#pragma omp parallel for
-    for (int i = 0; i < channel_size; i++) rescales[i] = output_scale_ * src1_scales[i] * src0_scales[0];
-  }
-  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales.data()), eng_stream_);
-  memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
-  // The bias loaded from file is not scaled. So need rescaled runtime.
-  if (has_bias_) {
-    auto& dynamic_bias = *dynamic_bias_ptr;
-    auto& any_bias_m = *any_bias_m_ptr;
-    dynamic_bias.resize(bias_->size());
-    float* bias_data = reinterpret_cast<float*>(bias_->mutable_data());
-    if (channel_size == 1) {
-#pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[0];
-    } else {
-#pragma omp parallel for
-      for (int i = 0; i < bias_->size(); i++) dynamic_bias[i] = bias_data[i] / rescales[i];
-    }
-    bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
-    if (convolution_pd_.bias_desc() != bias_m_.get_desc()) {
-      any_bias_m = memory(convolution_pd_.bias_desc(), eng_);
-      dnnl::reorder(bias_m_, any_bias_m).execute(eng_stream_, bias_m_, any_bias_m);
-    }
-    memory_args_[DNNL_ARG_BIAS] = any_bias_m;
-  }
+  float* src1_scales = reinterpret_cast<float*>(weight_max_->mutable_data());
+  src_scales.push_back(src0_scales[0] * output_scale_);
+  scale_src_mem_.set_data_handle(reinterpret_cast<void*>(src_scales.data()));
+  memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC] = scale_src_mem_;
+  scale_weight_mem_.set_data_handle(reinterpret_cast<void*>(src1_scales));
+  memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS] = scale_weight_mem_;
 
   if (src_->dtype() == "u8") {
-    auto& src0_zero_points = *src0_zero_points_ptr;
+    auto& src_zero_points = *src_zero_points_ptr;
     float tmp = 1.0f / *src0_scales;
-    src0_zero_points =
+    src_zero_points =
         GetZeroPoints(reinterpret_cast<const float*>(src_min_->data()), &tmp, src_->dtype(), src_min_->size());
-    zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src0_zero_points.data()), eng_stream_);
+    zp_src0_mem_.set_data_handle(reinterpret_cast<void*>(src_zero_points.data()));
     memory_args_[DNNL_ARG_ATTR_ZERO_POINTS | DNNL_ARG_SRC] = zp_src0_mem_;
   }
 }

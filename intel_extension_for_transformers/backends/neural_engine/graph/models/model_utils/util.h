@@ -17,20 +17,19 @@
 #ifndef MODEL_UTIL_H
 #define MODEL_UTIL_H
 
-#include <cstdio>
-#include <cstdint>
 #include <cerrno>
-#include <cstring>
-#include <cstdarg>
-#include <cstdlib>
 #include <climits>
-
-#include <string>
-#include <vector>
-#include <stdexcept>
-#include <unordered_set>
-#include <thread>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <unordered_set>
+#include <vector>
 
 #ifdef __has_include
 #if __has_include(<unistd.h>)
@@ -49,9 +48,9 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <windows.h>
 #include <io.h>
 #include <stdio.h>  // for _fseeki64
+#include <windows.h>
 #endif
 
 #define MODEL_ASSERT(x)                                                     \
@@ -421,51 +420,7 @@ struct model_buffer {
   model_buffer& operator=(model_buffer&&) = delete;
 };
 
-#ifdef NE_USE_CUBLAS
-#include "ne-cuda.h"
-struct model_ctx_buffer {
-  uint8_t* addr = NULL;
-  bool is_cuda;
-  size_t size = 0;
-
-  model_ctx_buffer() = default;
-
-  void resize(size_t size) {
-    free();
-
-    addr = (uint8_t*)ne_cuda_host_malloc(size);
-    if (addr) {
-      is_cuda = true;
-    } else {
-      // fall back to pageable memory
-      addr = new uint8_t[size];
-      is_cuda = false;
-    }
-    this->size = size;
-  }
-
-  void free() {
-    if (addr) {
-      if (is_cuda) {
-        ne_cuda_host_free(addr);
-      } else {
-        delete[] addr;
-      }
-    }
-    addr = NULL;
-  }
-
-  ~model_ctx_buffer() { free(); }
-
-  // disable copy and move
-  model_ctx_buffer(const model_ctx_buffer&) = delete;
-  model_ctx_buffer(model_ctx_buffer&&) = delete;
-  model_ctx_buffer& operator=(const model_ctx_buffer&) = delete;
-  model_ctx_buffer& operator=(model_ctx_buffer&&) = delete;
-};
-#else
 typedef model_buffer model_ctx_buffer;
-#endif
 
 int32_t get_num_physical_cores();
 
