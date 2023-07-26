@@ -83,6 +83,14 @@ function run_benchmark {
             model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
             extra_cmd=$extra_cmd" --ipex"
         fi
+    elif [ "${topology}" = "gpt_j_weight_only" ]; then
+        script="run_clm_no_trainer.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        lm_eval_tasks="lambada_openai"
+    elif [ "${topology}" = "gpt_j_weight_only_awq" ]; then
+        script="run_clm_no_trainer.py"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        lm_eval_tasks="lambada_openai"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
@@ -92,13 +100,20 @@ function run_benchmark {
     elif [ "${topology}" = "falcon_7b_instruct" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="tiiuae/falcon-7b-instruct"
+    elif [ "${topology}" = "opt_125m_weight_only" ]; then
+        script="run_clm_no_trainer.py"
+        model_name_or_path="facebook/opt-125m"
+        lm_eval_tasks="lambada_openai"
+    elif [ "${topology}" = "opt_125m_weight_only_awq" ]; then
+        script="run_clm_no_trainer.py"
+        model_name_or_path="facebook/opt-125m"
+        lm_eval_tasks="lambada_openai"
     elif [ "${topology}" = "opt_1.3b" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="facebook/opt-1.3b"
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi
-
     elif [ "${topology}" = "opt_2.7b" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="facebook/opt-2.7b"

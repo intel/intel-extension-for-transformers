@@ -39,6 +39,17 @@ python run_clm_no_trainer.py \
     --ipex \
 ```
 
+```bash
+# "--approach weight_only" is used to enable weight only quantization.
+# Default algorithm is RTN. Use with "--awq" to enable AWQ algorithm.
+python run_clm_no_trainer.py \
+    --model EleutherAI/gpt-j-6B \
+    --quantize \
+    --approach weight_only \
+    --output_dir "saved_results" \
+```
+**Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN/AWQ[1] algorithms. You can try it with `--approach weight_only`. `--awq` will trigger AWQ algorithm.
+
 #### Accuracy with lm_eval
 ```bash
 # FP32 Accuracy
@@ -102,7 +113,7 @@ python run_clm_no_trainer.py \
 ```bash
 python run_clm_no_trainer.py \
     --model decapoda-research/llama-7b-hf \
-    --accuracy_only \
+    --accuracy \
     --batch_size 112 \
     --tasks  "lambada_openai" "lambada_standard" \
     --int8 \
@@ -130,7 +141,7 @@ python run_clm_no_trainer.py \
 ```bash
 python run_clm_no_trainer.py \
     --model mosaicml/mpt-7b-chat \
-    --accuracy_only \
+    --accuracy \
     --batch_size 112 \
     --tasks  "lambada_openai" \
     --int8 \
@@ -156,7 +167,7 @@ python run_clm_no_trainer.py \
 ```bash
 python run_clm_no_trainer.py \
     --model tiiuae/falcon-7b-instruct \
-    --accuracy_only \
+    --accuracy \
     --batch_size 112 \
     --tasks  "lambada_openai" \
     --int8 \
@@ -164,9 +175,11 @@ python run_clm_no_trainer.py \
     --output_dir "saved_results"  # load int8 model
 # to validate FP32 model, please remove "--int8" and "--output_dir".
 ```
-
+----
 
 To do quantization based transformers language-modeling example [`run_clm.py`](https://github.com/huggingface/transformers/blob/main/examples/pytorch/language-modeling/run_clm.py), please use the following command.
+
+**Causal Language Modeling (CLM)**
 ```bash
 python run_clm.py \
     --model_name_or_path EleutherAI/gpt-neo-125M \
@@ -210,4 +223,4 @@ python run_mlm.py \
     --overwrite_output_dir
 ```
 
- 
+[1]. Lin, Ji, et al. "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration." arXiv preprint arXiv:2306.00978 (2023).
