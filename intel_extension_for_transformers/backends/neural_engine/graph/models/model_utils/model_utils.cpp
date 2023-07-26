@@ -225,7 +225,8 @@ struct model_tokenizer {
 
     for (int i = 0; i != -1; i = symbols_[i].next) {
       auto& symbol = symbols_[i];
-      auto token = vocab_.token_to_id.find(std::string(symbol.text, symbol.n));
+      auto symbol_text = std::string(symbol.text, symbol.n);
+      auto token = vocab_.token_to_id.find(symbol_text);
 
       if (token == vocab_.token_to_id.end()) {
         // output any symbols that did not form tokens as bytes.
@@ -758,197 +759,190 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
 //
 // quantization
 //
+quant_params_internal quant_params_to_internal(const quant_params& params) {
+  return quant_params_internal{parse_bits(params.bits), parse_alg(params.alg), params.block_size,
+                               parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_type)};
+}
 
-static void model_model_quantize_internal(const std::string& fname_inp, const std::string& fname_out,
-                                          const quant_params& params, enum ne_ftype ftype, int nthread) {
-  ne_type quantized_type;
-  switch (ftype) {
-    case NE_FTYPE_MOSTLY_Q4_0:
-      quantized_type = NE_TYPE_Q4_0;
-      break;
-    case NE_FTYPE_MOSTLY_Q4_1:
-      quantized_type = NE_TYPE_Q4_1;
-      break;
-    case NE_FTYPE_MOSTLY_Q5_0:
-      quantized_type = NE_TYPE_Q5_0;
-      break;
-    case NE_FTYPE_MOSTLY_Q5_1:
-      quantized_type = NE_TYPE_Q5_1;
-      break;
-    case NE_FTYPE_MOSTLY_Q8_0:
-      quantized_type = NE_TYPE_Q8_0;
-      break;
-    case NE_FTYPE_MOSTLY_Q_JBLAS:
-      quantized_type = NE_TYPE_JBLAS;
-      break;
-    default:
-      throw format("invalid output file type %d\n", ftype);
-  };
+size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
+  using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
+  auto cd = jblas::utils::parallel::CpuDevice::getInstance();
+  jblas::prologue::PackedWeight* packedw = NULL;
+  auto type = CompType::S4_F32;
+  if (params.bits == quant_bits::q4) {
+    if (params.scale_dtype == quant_sdtype::bf16) {
+      type = CompType::S4_Bf16;
+    } else {
+      type = CompType::S4_F32;
+    }
+  } else if (params.bits == quant_bits::q8) {
+    type = CompType::S8_F32;
+  } else {
+    return 0;
+  }
+  cd->setThreads(nthread);
+  if (params.bits == quant_bits::q4) {
+    if (params.compute_type == quant_comp::int8) {
+      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
+      static GemmKernel kernel;
+      if (cd->AVX512F()) {
+        packedw =
+            kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n, k, f32ptr, k, params.block_size, type);
+      } else {
+        packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n, k, f32ptr, k, params.block_size, type);
+      }
+    } else if (params.compute_type == quant_comp::fp32) {
+      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
+      static GemmKernel kernel;
+      if (cd->AVX512F()) {
+        packedw =
+            kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n, k, f32ptr, k, params.block_size, type);
+      } else {
+        packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n, k, f32ptr, k, params.block_size, type);
+      }
+    }
+  } else if (params.bits == quant_bits::q8) {
+    // TODO add 8bit quantization
+  }
+  assert(packedw != 0);
+  auto size = packedw->getSerializedSize();
+  packedw->serializeToBuffer(dstpr);
+  delete packedw;
+  return size;
+}
 
+size_t ggml_quantize(const float* f32ptr, void* dstpr, const ne_type new_type, int nthread, size_t nelements) {
+  std::vector<int64_t> hist_cur(1 << 4, 0);
+  std::vector<std::thread> workers;
+  std::mutex mutex;
+  int chunk_size = 32 * 512;
+  const int nchunk = (nelements + chunk_size - 1) / chunk_size;
+  const int nthread_use = nthread > 1 ? std::max(1, std::min(nthread, nchunk)) : 1;
+  size_t new_size = 0;
+  if (nthread_use < 2) {
+    new_size = ne_quantize_chunk(new_type, f32ptr, dstpr, 0, nelements, hist_cur.data());
+  } else {
+    size_t counter = 0;
+    new_size = 0;
+    auto compute = [&mutex, &counter, &hist_cur, &new_size, new_type, f32ptr, dstpr, nelements, chunk_size]() {
+      std::vector<int64_t> local_hist;
+      size_t local_size = 0;
+      while (true) {
+        std::unique_lock<std::mutex> lock(mutex);
+        size_t first = counter;
+        counter += chunk_size;
+        if (first >= nelements) {
+          if (!local_hist.empty()) {
+            for (int j = 0; j < int(local_hist.size()); ++j) {
+              hist_cur[j] += local_hist[j];
+            }
+            new_size += local_size;
+          }
+          break;
+        }
+        lock.unlock();
+        size_t last = std::min(nelements, first + chunk_size);
+        if (local_hist.empty()) {
+          local_hist.resize(hist_cur.size(), 0);
+        }
+        local_size += ne_quantize_chunk(new_type, f32ptr, dstpr, first, last - first, local_hist.data());
+      }
+    };
+    if ((int)workers.size() < nthread_use - 1) {
+      workers.resize(nthread_use - 1);
+    }
+    for (int it = 0; it < nthread_use - 1; ++it) {
+      workers[it] = std::thread(compute);
+    }
+    compute();
+    for (int it = 0; it < nthread_use - 1; ++it) {
+      workers[it].join();
+    }
+  }
+  return new_size;
+}
+
+void ne_common_quantize(const int nthread, const quant_params_internal& params, model_load_tensor& tensor,
+                        model_file_saver& saver, size_t& size_org, size_t& size_new) {
+  size_t nelements = tensor.ne.at(0) * tensor.ne.at(1);
+  enum ne_type new_type = quant_params_to_type(params);
+  model_buffer work;
+  work.resize(nelements * 4);  // upper bound on size
+  void* new_data = work.addr;
+  size_t new_size = 0;
+  float* f32_data = NULL;
+  model_buffer f32_conv_buf;
+  if (tensor.type == NE_TYPE_F32) {
+    f32_data = (float*)tensor.data;
+  } else if (tensor.type == NE_TYPE_F16) {
+    f32_conv_buf.resize(nelements * sizeof(float));
+    f32_data = (float*)f32_conv_buf.addr;
+    const auto* f16_data = (const ne_fp16_t*)tensor.data;
+    for (size_t i = 0; i < nelements; i++) {
+      f32_data[i] = ne_fp16_to_fp32(f16_data[i]);
+    }
+  } else {
+    throw format("type %s unsupported for integer quantization", ne_type_name(tensor.type));
+  }
+  printf("quantizing .. ");
+  fflush(stdout);
+  if (new_type == NE_TYPE_JBLAS) {
+    int k_ = tensor.ne.at(0);
+    int n_ = tensor.ne.at(1);
+    new_size = jblas_quantize((float*)tensor.data, work.addr, params, nthread, n_, k_);
+    printf("JBLAS ");
+  } else if (new_type >= NE_TYPE_Q4_0 && new_type < NE_TYPE_JBLAS) {
+    new_size = ggml_quantize((float*)tensor.data, work.addr, new_type, nthread, nelements);
+    printf("GGML ");
+  }
+  printf("size = %8.2f MB -> %8.2f MB\n", tensor.size / 1024.0 / 1024.0, new_size / 1024.0 / 1024.0);
+
+__WRITE_FILE:
+  size_org += tensor.size;
+  size_new += new_size;
+  saver.write_tensor(tensor, new_type, new_data, new_size);
+  printf("\n");
+}
+
+static void model_quantize_internal(const quant_params& params, quant_layer_base* quant_layer) {
+  auto ftype = quant_params_to_ftype(params);
+  quant_layer->set_global_config(params.nthread, quant_params_to_internal(params));
+  int nthread = params.nthread;
   if (nthread <= 0) {
     nthread = std::thread::hardware_concurrency();
   }
-
-  std::unique_ptr<model_model_loader> model_loader(new model_model_loader(fname_inp, /*use_mmap*/ false,
+  std::unique_ptr<model_model_loader> model_loader(new model_model_loader(params.model_file, /*use_mmap*/ false,
                                                                           /*vocab_only*/ false));
-  model_file_saver file_saver(fname_out.c_str(), model_loader->file_loaders.at(0).get(), ftype);
-
+  model_file_saver file_saver(params.out_file.c_str(), model_loader->file_loaders.at(0).get(), ftype);
   size_t total_size_org = 0;
   size_t total_size_new = 0;
-  std::vector<int64_t> hist_all(1 << 4, 0);
-
-  std::vector<std::thread> workers;
-  std::mutex mutex;
-
   size_t idx = 0;
   for (model_load_tensor& tensor : model_loader->tensors_map.tensors) {
     model_buffer read_data;
     read_data.resize(tensor.size);
     tensor.data = read_data.addr;
     model_loader->load_data_for(tensor);
-
     printf("[%4zu/%4zu] %36s - %16s, type = %6s, ", ++idx, model_loader->tensors_map.tensors.size(),
            tensor.name.c_str(), model_format_tensor_shape(tensor.ne).c_str(), ne_type_name(tensor.type));
-
-    // This used to be a regex, but <regex> has an extreme cost to compile times.
-    bool quantize = tensor.name.rfind("weight") == tensor.name.size() - 6;  // ends with 'weight'?
-    bool embedd = false;
-    // skip embedding for quantization or use q4_0 instead.
-    if (tensor.name.find("embedding") != std::string::npos) {
-      embedd = true;
+    std::vector<int64_t> tmpne(tensor.ne.size());
+    for (size_t i = 0; i < tmpne.size(); i++) {
+      tmpne[i] = static_cast<int64_t>(tensor.ne[i]);
     }
-    // quantize only 2D tensors
-    quantize &= (tensor.ne.size() == 2);
-
-    // uncomment this to keep the output layer in FP16
-    // if (tensor.name == "output.weight") {
-    //    quantize = false;
-    //}
-
-    enum ne_type new_type;
-    void* new_data;
-    size_t new_size;
-    model_buffer work;
-
-    if (!quantize) {
-      new_type = tensor.type;
-      new_data = tensor.data;
-      new_size = tensor.size;
-      printf("size = %8.3f MB\n", tensor.size / 1024.0 / 1024.0);
+    auto lconfig = quant_layer->get_layer_config(tensor.name, tmpne, tensor.type);
+    bool quantize = lconfig.valid();
+    printf("%s,", lconfig.getstr().c_str());
+    if (quantize) {
+      ne_common_quantize(nthread, lconfig, tensor, file_saver, total_size_org, total_size_new);
     } else {
-      new_type = quantized_type;
-      float* f32_data;
-      size_t nelements = tensor.ne.at(0) * tensor.ne.at(1);
-      model_buffer f32_conv_buf;
-      if (tensor.type == NE_TYPE_F32) {
-        f32_data = (float*)tensor.data;
-      } else if (tensor.type == NE_TYPE_F16) {
-        f32_conv_buf.resize(nelements * sizeof(float));
-        f32_data = (float*)f32_conv_buf.addr;
-        const auto* f16_data = (const ne_fp16_t*)tensor.data;
-        for (size_t i = 0; i < nelements; i++) {
-          f32_data[i] = ne_fp16_to_fp32(f16_data[i]);
-        }
-      } else {
-        throw format("type %s unsupported for integer quantization", ne_type_name(tensor.type));
-      }
-
-      printf("quantizing .. ");
-      fflush(stdout);
-      if (quantized_type == NE_TYPE_JBLAS) {
-        if (!embedd) {  // emedding of Q4 is not supported now
-          int k_ = tensor.ne.at(0);
-          int n_ = tensor.ne.at(1);
-          work.resize(nelements * 4);  // upper bound on size
-          new_size = jblas_quantize((float*)tensor.data, work.addr, params, n_, k_);
-          new_type = quantized_type;
-          new_data = work.addr;
-          printf("JBLAS size = %8.2f MB -> %8.2f MB\n", tensor.size / 1024.0 / 1024.0, new_size / 1024.0 / 1024.0);
-          goto __WRITE_BACK;
-        } else {
-          new_type = NE_TYPE_Q4_0;
-        }
-      }
-
-      work.resize(nelements * 4);  // upper bound on size
-      new_data = work.addr;
-      std::vector<int64_t> hist_cur(1 << 4, 0);
-
-      int chunk_size = 32 * 512;
-      const int nchunk = (nelements + chunk_size - 1) / chunk_size;
-      const int nthread_use = nthread > 1 ? std::max(1, std::min(nthread, nchunk)) : 1;
-      if (nthread_use < 2) {
-        new_size = ne_quantize_chunk(new_type, f32_data, new_data, 0, nelements, hist_cur.data());
-      } else {
-        size_t counter = 0;
-        new_size = 0;
-        auto compute = [&mutex, &counter, &hist_cur, &new_size, new_type, f32_data, new_data, nelements, chunk_size]() {
-          std::vector<int64_t> local_hist;
-          size_t local_size = 0;
-          while (true) {
-            std::unique_lock<std::mutex> lock(mutex);
-            size_t first = counter;
-            counter += chunk_size;
-            if (first >= nelements) {
-              if (!local_hist.empty()) {
-                for (int j = 0; j < int(local_hist.size()); ++j) {
-                  hist_cur[j] += local_hist[j];
-                }
-                new_size += local_size;
-              }
-              break;
-            }
-            lock.unlock();
-            size_t last = std::min(nelements, first + chunk_size);
-            if (local_hist.empty()) {
-              local_hist.resize(hist_cur.size(), 0);
-            }
-            local_size += ne_quantize_chunk(new_type, f32_data, new_data, first, last - first, local_hist.data());
-          }
-        };
-        if ((int)workers.size() < nthread_use - 1) {
-          workers.resize(nthread_use - 1);
-        }
-        for (int it = 0; it < nthread_use - 1; ++it) {
-          workers[it] = std::thread(compute);
-        }
-        compute();
-        for (int it = 0; it < nthread_use - 1; ++it) {
-          workers[it].join();
-        }
-      }
-
-      printf("size = %8.2f MB -> %8.2f MB | hist: ", tensor.size / 1024.0 / 1024.0, new_size / 1024.0 / 1024.0);
-      for (size_t i = 0; i < hist_cur.size(); i++) {
-        hist_all[i] += hist_cur[i];
-      }
-
-      for (size_t i = 0; i < hist_cur.size(); i++) {
-        printf("%5.3f ", hist_cur[i] / float(nelements));
-      }
+      printf("size = %8.3f MB\n", tensor.size / 1024.0 / 1024.0);
+      total_size_org += tensor.size;
+      total_size_new += tensor.size;
+      file_saver.write_tensor(tensor, tensor.type, tensor.data, tensor.size);
       printf("\n");
     }
-  __WRITE_BACK:
-    total_size_org += tensor.size;
-    total_size_new += new_size;
-    file_saver.write_tensor(tensor, new_type, new_data, new_size);
   }
-
   printf("%s: model size  = %8.2f MB\n", __func__, total_size_org / 1024.0 / 1024.0);
   printf("%s: quant size  = %8.2f MB\n", __func__, total_size_new / 1024.0 / 1024.0);
-
-  {
-    int64_t sum_all = 0;
-    for (size_t i = 0; i < hist_all.size(); i++) {
-      sum_all += hist_all[i];
-    }
-
-    printf("%s: hist: ", __func__);
-    for (size_t i = 0; i < hist_all.size(); i++) {
-      printf("%5.3f ", hist_all[i] / float(sum_all));
-    }
-    printf("\n");
-  }
 }
 
 //
@@ -1031,10 +1025,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-int model_model_quantize(const char* fname_inp, const char* fname_out, const quant_params& params, enum ne_ftype ftype,
-                         int nthread) {
+int model_quantize(const quant_params& params, quant_layer_base* quant_layer) {
   try {
-    model_model_quantize_internal(fname_inp, fname_out, params, ftype, nthread);
+    model_quantize_internal(params, quant_layer);
     return 0;
   } catch (const std::string& err) {
     fprintf(stderr, "%s: failed to quantize: %s\n", __func__, err.c_str());

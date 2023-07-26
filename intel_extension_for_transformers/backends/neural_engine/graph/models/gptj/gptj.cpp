@@ -66,7 +66,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   const int n_ctx = hparams.n_ctx;
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
-  const int n_rot = hparams.n_embd / hparams.n_head;
+  const int n_rot = hparams.n_rot;
 
   auto& mem_per_token = lctx.mem_per_token;
   auto& buf_compute = lctx.buf_compute;

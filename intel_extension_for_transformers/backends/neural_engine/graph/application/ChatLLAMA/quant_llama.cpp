@@ -28,6 +28,24 @@
 #include "common.h"
 #include "models/model_utils/model_utils.h"
 
+class llama_quant_layer : public quant_layer_base {
+ public:
+  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
+                                                 ne_type type) override {
+    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
+    if (layername.find("embedding") != std::string::npos) {
+      // special layer process, can be loaded by config file
+      return quant_params_internal();  // return q4_0 to cover the usage of getrow
+    }
+    quantize &= (ne.size() == 2);
+    if (quantize) {
+      return mGCfg;  // use global quant config
+    } else {
+      return quant_params_internal{quant_bits::count};  // non-quant
+    }
+  }
+};
+
 int main(int argc, char** argv) {
   model_init_backend();
   quant_params q_params;
@@ -43,19 +61,19 @@ int main(int argc, char** argv) {
   const int64_t t_main_start_us = model_time_us();
 
   int64_t t_quantize_us = 0;
-
+  auto quant_layer = new llama_quant_layer();
   // load the model
   {
     const int64_t t_start_us = model_time_us();
 
-    if (model_model_quantize(fname_inp.c_str(), fname_out.c_str(), q_params, ftype, nthread)) {
+    if (model_quantize(q_params, quant_layer)) {
       fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, fname_inp.c_str());
       return 1;
     }
 
     t_quantize_us = model_time_us() - t_start_us;
   }
-
+  delete quant_layer;
   // report timing
   {
     const int64_t t_main_end_us = model_time_us();

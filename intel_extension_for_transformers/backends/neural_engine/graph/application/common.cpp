@@ -765,7 +765,6 @@ ne_type quant_params_to_type(const quant_params& params) {
   }
   return NE_TYPE_F32;
 }
-
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params params, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();

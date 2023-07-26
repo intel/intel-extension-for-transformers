@@ -14,7 +14,7 @@
 
 set(TARGET main_gptj)
 add_executable_w_warning(${TARGET} main_gptj.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers common ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} PUBLIC ne_layers common gptj ${CMAKE_THREAD_LIBS_INIT})
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
 if(TARGET BUILD_INFO)
   add_dependencies(${TARGET} BUILD_INFO)
@@ -22,7 +22,7 @@ endif()
 
 set(TARGET quant_gptj)
 add_executable_w_warning(${TARGET} quant_gptj.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers common ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} PUBLIC ne_layers common gptj ${CMAKE_THREAD_LIBS_INIT})
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
 if(TARGET BUILD_INFO)
   add_dependencies(${TARGET} BUILD_INFO)
@@ -30,7 +30,7 @@ endif()
 
 set(TARGET GptjPyBind)
 add_library_w_warning(${TARGET} SHARED pybind_gptj.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers common ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} PUBLIC ne_layers common gptj ${CMAKE_THREAD_LIBS_INIT})
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
 set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

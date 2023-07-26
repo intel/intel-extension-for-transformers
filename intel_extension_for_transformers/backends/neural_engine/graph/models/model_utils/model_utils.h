@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include "application/common.h"
+#include "models/model_utils/quant_config.h"
 #include "models/model_utils/model_types.h"
 
 #ifdef MODEL_SHARED
@@ -77,9 +78,9 @@ MODEL_API void model_free(struct model_context* ctx);
 
 // TODO: not great API - very likely to change
 // Returns 0 on success
-// nthread - how many threads to use. If <=0, will use std::thread::hardware_concurrency(), else the number given
-MODEL_API int model_model_quantize(const char* fname_inp, const char* fname_out, const quant_params& param,
-                                   ne_ftype ftype, int nthread);
+// param - from args
+// quant_layer - depends on each model's config
+MODEL_API int model_quantize(const quant_params& param, quant_layer_base* quant_layer);
 
 // Apply a LoRA adapter to a loaded model
 // path_base_model is the path to a higher quality model to use as a base for

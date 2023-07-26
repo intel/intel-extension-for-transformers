@@ -82,29 +82,37 @@ def main(args_in: Optional[List[str]] = None) -> None:
     list_vars = model.state_dict()
     fout = open(fname_out, "wb")
     
-    fout.write(struct.pack("i", 0x67676d6c)) # magic: ggml in hex
-    fout.write(struct.pack("i", hparams["vocab_size"]))
-    fout.write(struct.pack("i", hparams["n_positions"]))
-    fout.write(struct.pack("i", hparams["n_embd"]))
-    fout.write(struct.pack("i", hparams["n_head"]))
-    fout.write(struct.pack("i", hparams["n_layer"]))
-    fout.write(struct.pack("i", hparams["rotary_dim"]))
-    fout.write(struct.pack("i", ftype))
-    
+    fout.write(b"ggjt"[::-1])#0x67676d6c)) # magic: ggml in hex
+    values = [
+        1,  # file version
+        hparams["vocab_size"],
+        hparams["n_embd"],
+        hparams["n_embd"] // hparams["n_head"],
+        hparams["n_head"],
+        hparams["n_layer"],
+        hparams["rotary_dim"],
+        ftype
+    ]
+    fout.write(struct.pack("i" * len(values), *values))   
+ 
     byte_encoder = bytes_to_unicode()
     byte_decoder = {v:k for k, v in byte_encoder.items()}
     
-    fout.write(struct.pack("i", len(encoder) + len(encoder_added)))
-    
-    for key in encoder:
+    if(len(encoder) == hparams["vocab_size"]):
+        encoder_added = {}
+
+    for i, key in enumerate(encoder):
+    # for key in encoder:
         text = bytearray([byte_decoder[c] for c in key])
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
+        fout.write(struct.pack("f",0.0 - i))
     
     for key in encoder_added:
         text = bytearray([byte_decoder[c] for c in key])
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
+        fout.write(struct.pack("f", -10000))
     
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
@@ -135,10 +143,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
                 ftype_cur = 0
     
         str = name.encode('utf-8')
+        shape = data.shape
         fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
-        for i in range(n_dims):
-            fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+        fout.write(struct.pack("i" * n_dims, *shape[::-1]))
         fout.write(str);
+        fout.seek((fout.tell() + 31) & -32)
     
         # data
         data.tofile(fout)
