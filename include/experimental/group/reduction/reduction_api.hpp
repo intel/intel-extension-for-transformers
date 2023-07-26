@@ -23,9 +23,6 @@
 
 namespace gpu::xetla::group {
 
-/// @addtogroup xetla_reduction
-/// @{
-
 /// @brief This is the group row reduction(reduce_sum) + cooperative write out. Use slm to exchange the data.
 /// For wg_size_y threads, at the beginning, everyone will keep one row of data; Then, they compose a wg_size_y * row_size 2D block in SLM;
 /// After that, each thread will load a small wg_size_y * block_size block, do the local reduction and write to global memory
@@ -52,7 +49,5 @@ struct group_row_reduce_store_t {};
 template <typename T, uint32_t SZ, uint32_t N, reduce_op Op, uint32_t N_SG,
         bool is_all_reduce = true, gpu_arch arch_ = gpu_arch::Xe>
 struct group_reduce_t {};
-
-/// @} xetla_reduction
 
 } // namespace gpu::xetla::group

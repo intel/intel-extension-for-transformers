@@ -216,7 +216,7 @@ enum class reduce_op : uint8_t {
 #define SW_BARRIER() __ESIMD_NS::fence<__ESIMD_NS::fence_mask::sw_barrier>()
 
 __XETLA_API void xetla_wait(uint16_t val) {
-    //__ESIMD_ENS::wait(__ESIMD_NS::simd<uint16_t, 1>(val));
+    __ESIMD_ENS::wait(__ESIMD_NS::simd<uint16_t, 1>(val));
 }
 
 enum class lsc_action { prefetch, load, store, atomic };

@@ -138,10 +138,9 @@ process_1d_tail(tile_t &tile, payload_t &payload, uint32_t offset) {
                         offset);
         uint32_t address_offset = offset * sizeof(typename tile_t::dtype);
         if constexpr (flag == process_flag::load) {
-            uint32_t base_addr = payload.base_addr;
             reg_sub.xetla_format<mem_dtype>() = xetla_load_local<mem_dtype,
                     base_len, data_size::default_size>(
-                    base_addr + payload.base_offset + address_offset);
+                    payload.address + address_offset);
         } else {
             xetla_store_local<mem_dtype, base_len>(
                     payload.address + address_offset,

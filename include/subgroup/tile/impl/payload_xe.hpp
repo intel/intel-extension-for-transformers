@@ -446,9 +446,9 @@ public:
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
     __XETLA_API void update_tdesc(int offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
-            address = address + offset * sizeof(dtype);
+            address += offset * sizeof(dtype);
         } else {
-            address = address + offset * pitch_in_bytes;
+            address += offset * pitch_in_bytes;
         }
     }
 };
@@ -489,26 +489,22 @@ public:
     static constexpr uint32_t scale_factor = sizeof(mem_dtype) / sizeof(dtype);
 
     uint32_t address;
-    uint32_t base_addr;
-    uint32_t base_offset;
     uint32_t pitch_in_bytes;
+
     inline mem_payload_t(
             mem_desc_t<dtype, memory_layout, memory_space> &mem_tdesc) {
         pitch_in_bytes = mem_tdesc.shape.stride * sizeof(dtype);
         uint32_t offset_x = mem_tdesc.coord.x;
         uint32_t offset_y = mem_tdesc.coord.y;
-        base_offset = offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
-        base_addr = mem_tdesc.base.base;
-        address = base_addr + base_offset;
+        address = mem_tdesc.base.base + offset_y * pitch_in_bytes
+                + offset_x * sizeof(dtype);
     }
     inline mem_payload_t(uint32_t base, int surface_width, int surface_height,
             int surface_pitch, int surface_offset_x, int surface_offset_y) {
         uint32_t offset_x = surface_offset_x;
         uint32_t offset_y = surface_offset_y;
         pitch_in_bytes = surface_pitch * sizeof(dtype);
-        base_offset = offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
-        address = base + base_offset;
-        base_addr = base;
+        address = base + offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
     }
 
     __XETLA_API void init(
@@ -516,9 +512,8 @@ public:
         pitch_in_bytes = mem_tdesc.shape.stride * sizeof(dtype);
         uint32_t offset_x = mem_tdesc.coord.x;
         uint32_t offset_y = mem_tdesc.coord.y;
-        base_offset = offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
-        base_addr = mem_tdesc.base.base;
-        address = base_addr + base_offset;
+        address = mem_tdesc.base.base + offset_y * pitch_in_bytes
+                + offset_x * sizeof(dtype);
     }
 
     __XETLA_API void init(uint32_t base, int surface_width, int surface_height,
@@ -526,23 +521,17 @@ public:
         uint32_t offset_x = surface_offset_x;
         uint32_t offset_y = surface_offset_y;
         pitch_in_bytes = surface_pitch * sizeof(dtype);
-        base_offset = offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
-        address = base + base_offset;
-        base_addr = base;
+        address = base + offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
     }
 
     inline mem_payload_t(const this_payload_t &rhs) {
-        this->base_addr = rhs.base_addr;
         this->address = rhs.address;
-        this->base_offset = rhs.base_offset;
         this->pitch_in_bytes = rhs.pitch_in_bytes;
     }
 
     inline mem_payload_t() = default;
     inline this_payload_t &operator=(const this_payload_t &rhs) {
-        this->base_addr = rhs.base_addr;
         this->address = rhs.address;
-        this->base_offset = rhs.base_offset;
         this->pitch_in_bytes = rhs.pitch_in_bytes;
         return *this;
     }
@@ -550,9 +539,9 @@ public:
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
     __XETLA_API void update_tdesc(int offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
-            base_offset += offset * sizeof(dtype);
+            address += offset * sizeof(dtype);
         } else {
-            base_offset += offset * pitch_in_bytes;
+            address += offset * pitch_in_bytes;
         }
     }
 };
@@ -602,7 +591,6 @@ public:
             = block_size_x * sizeof(dtype) / sizeof(mem_dtype);
     static constexpr uint32_t num_channel_y = num_channel / num_channel_x;
     xetla_vector<uint32_t, num_channel> address;
-    xetla_vector<uint32_t, num_channel> base_address;
     uint32_t pitch_in_bytes;
     uint32_t wg_width_in_bytes;
     uint32_t wg_height_in_elems;
@@ -619,10 +607,9 @@ public:
         start_address += offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        base_address = start_address
+        address = start_address
                 + (channel_index % num_channel_x) * sizeof(mem_dtype)
                 + (channel_index / num_channel_x) * pitch_in_bytes;
-        address = base_address;
     }
 
     inline mem_payload_t(uint32_t base, int surface_width, int surface_height,
@@ -636,10 +623,9 @@ public:
         start_address += offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        base_address = start_address
+        address = start_address
                 + (channel_index % num_channel_x) * sizeof(mem_dtype)
                 + (channel_index / num_channel_x) * pitch_in_bytes;
-        address = base_address;
     }
 
     __XETLA_API void init(uint32_t base, int surface_width, int surface_height,
@@ -653,10 +639,9 @@ public:
         start_address += offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        base_address = start_address
+        address = start_address
                 + (channel_index % num_channel_x) * sizeof(mem_dtype)
                 + (channel_index / num_channel_x) * pitch_in_bytes;
-        address = base_address;
     }
 
     __XETLA_API void init(
@@ -671,15 +656,13 @@ public:
         start_address += offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        base_address = start_address
+        address = start_address
                 + (channel_index % num_channel_x) * sizeof(mem_dtype)
                 + (channel_index / num_channel_x) * pitch_in_bytes;
-        address = base_address;
     }
 
     inline mem_payload_t(const this_payload_t &rhs) {
         this->address = rhs.address;
-        this->base_address = rhs.base_address;
         this->pitch_in_bytes = rhs.pitch_in_bytes;
         this->wg_width_in_bytes = rhs.wg_width_in_bytes;
         this->wg_height_in_elems = rhs.wg_height_in_elems;
@@ -688,7 +671,6 @@ public:
     inline mem_payload_t() = default;
     inline this_payload_t &operator=(const this_payload_t &rhs) {
         this->address = rhs.address;
-        this->base_address = rhs.base_address;
         this->pitch_in_bytes = rhs.pitch_in_bytes;
         this->wg_width_in_bytes = rhs.wg_width_in_bytes;
         this->wg_height_in_elems = rhs.wg_height_in_elems;
@@ -698,9 +680,9 @@ public:
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
     __XETLA_API void update_tdesc(int offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
-            address = address + offset * sizeof(dtype);
+            address += offset * sizeof(dtype);
         } else {
-            address = address + offset * pitch_in_bytes;
+            address += offset * pitch_in_bytes;
         }
     }
 };
@@ -762,7 +744,6 @@ public:
     static constexpr uint32_t store_elems = num_channel_y * num_vector_size
             * vnni_scale_factor * block_size_x;
     xetla_vector<uint32_t, num_channel> address;
-    xetla_vector<uint32_t, num_channel> base_address;
     uint32_t pitch_in_bytes;
     uint32_t cyclic_count;
     uint32_t wg_width_in_bytes;
@@ -780,11 +761,9 @@ public:
         start_address += offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        base_address = start_address
+        address = start_address
                 + (channel_index % num_channel_x) * pitch_in_bytes
                 + (channel_index / num_channel_x) * sizeof(store_dtype);
-
-        address = base_address;
     }
 
     inline mem_payload_t(uint32_t base, int surface_width, int surface_height,
@@ -798,12 +777,10 @@ public:
         start_address += offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        base_address = start_address
+        address = start_address
                 + ((channel_index % num_channel_x) * pitch_in_bytes
                         + (channel_index / num_channel_x)
                                 * sizeof(store_dtype));
-
-        address = base_address;
         cyclic_count = 0;
     }
 
@@ -818,12 +795,10 @@ public:
         start_address += offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        base_address = start_address
+        address = start_address
                 + ((channel_index % num_channel_x) * pitch_in_bytes
                         + (channel_index / num_channel_x)
                                 * sizeof(store_dtype));
-
-        address = base_address;
         cyclic_count = 0;
     }
 
@@ -840,16 +815,13 @@ public:
         start_address += offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
-        base_address = start_address
+        address = start_address
                 + (channel_index % num_channel_x) * pitch_in_bytes
                 + (channel_index / num_channel_x) * sizeof(store_dtype);
-
-        address = base_address;
     }
 
     inline mem_payload_t(const this_payload_t &rhs) {
         this->address = rhs.address;
-        this->base_address = rhs.base_address;
         this->pitch_in_bytes = rhs.pitch_in_bytes;
         this->cyclic_count = 0;
         this->wg_width_in_bytes = rhs.wg_width_in_bytes;
@@ -859,7 +831,6 @@ public:
     inline mem_payload_t() = default;
     inline this_payload_t &operator=(const this_payload_t &rhs) {
         this->address = rhs.address;
-        this->base_address = rhs.base_address;
         this->pitch_in_bytes = rhs.pitch_in_bytes;
         this->cyclic_count = 0;
         this->wg_width_in_bytes = rhs.wg_width_in_bytes;
@@ -870,9 +841,9 @@ public:
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
     __XETLA_API void update_tdesc(int offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
-            address = address + offset * sizeof(dtype);
+            address += offset * sizeof(dtype);
         } else {
-            address = address + offset * pitch_in_bytes;
+            address += offset * pitch_in_bytes;
         }
     }
 };

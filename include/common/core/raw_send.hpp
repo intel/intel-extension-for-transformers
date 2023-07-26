@@ -54,7 +54,7 @@ __XETLA_API void xetla_raw_send(xetla_vector_ref<T1, n1> __REF__ msgDst,
         xetla_vector<T2, n2> msgSrc0, uint32_t exDesc, uint32_t msgDesc,
         xetla_mask<N> mask = 1) {
     msgDst.xetla_format<uint_type_t<T1>>()
-            = __ESIMD_ENS::raw_send_load<uint_type_t<T1>, n1>(
+            = __ESIMD_ENS::raw_send<uint_type_t<T1>, n1>(
                     msgDst.xetla_format<uint_type_t<T1>>(), msgSrc0, exDesc,
                     msgDesc, execSize, sfid, numSrc0, numDst, isEOT, isSendc,
                     mask);
@@ -91,7 +91,7 @@ __XETLA_API void xetla_raw_send(xetla_vector_ref<T1, n1> __REF__ msgDst,
         xetla_vector<T2, n2> msgSrc0, xetla_vector<T3, n3> msgSrc1,
         uint32_t exDesc, uint32_t msgDesc, xetla_mask<N> mask = 1) {
     msgDst.xetla_format<uint_type_t<T1>>()
-            = __ESIMD_ENS::raw_sends_load<uint_type_t<T1>, n1>(
+            = __ESIMD_ENS::raw_sends<uint_type_t<T1>, n1>(
                     msgDst.xetla_format<uint_type_t<T1>>(), msgSrc0, msgSrc1,
                     exDesc, msgDesc, execSize, sfid, numSrc0, numSrc1, numDst,
                     isEOT, isSendc, mask);
@@ -116,8 +116,8 @@ template <typename T1, uint32_t n1, uint8_t execSize, uint8_t sfid,
         uint8_t numSrc0, uint8_t isEOT = 0, uint8_t isSendc = 0, int N = 16>
 __XETLA_API void xetla_raw_send(xetla_vector<T1, n1> msgSrc0, uint32_t exDesc,
         uint32_t msgDesc, xetla_mask<N> mask = 1) {
-    __ESIMD_ENS::raw_send_store(msgSrc0, exDesc, msgDesc, execSize, sfid,
-            numSrc0, isEOT, isSendc, mask);
+    __ESIMD_ENS::raw_send(msgSrc0, exDesc, msgDesc, execSize, sfid, numSrc0,
+            isEOT, isSendc, mask);
 }
 
 /// @brief Raw send with two source operands and no return.
@@ -145,7 +145,7 @@ template <typename T1, uint32_t n1, typename T2, uint32_t n2, uint8_t execSize,
 __XETLA_API void xetla_raw_send(xetla_vector<T1, n1> msgSrc0,
         xetla_vector<T2, n2> msgSrc1, uint32_t exDesc, uint32_t msgDesc,
         xetla_mask<N> mask = 1) {
-    __ESIMD_ENS::raw_sends_store<T1, n1, uint_type_t<T2>, n2>(msgSrc0,
+    __ESIMD_ENS::raw_sends<T1, n1, uint_type_t<T2>, n2>(msgSrc0,
             msgSrc1.xetla_format<uint_type_t<T2>>(), exDesc, msgDesc, execSize,
             sfid, numSrc0, numSrc1, isEOT, isSendc, mask);
 }

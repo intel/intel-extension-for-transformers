@@ -19,9 +19,9 @@
 
 #pragma once
 
-#include "op_function.hpp"
-#include "payload_xe.hpp"
 #include "subgroup/tile/api.hpp"
+#include "subgroup/tile/impl/op_function.hpp"
+#include "subgroup/tile/impl/payload_xe.hpp"
 
 namespace gpu::xetla::subgroup {
 
@@ -482,20 +482,18 @@ tile_load(tile_t &tile, payload_t &payload) {
     }
     //process the tail
     if constexpr ((tile_desc::tile_size_y % tile_desc::block_size_y) != 0) {
-        constexpr int i = tile_desc::tile_size_y / tile_desc::block_size_y;
-        constexpr uint32_t offset_y = i * tile_desc::block_size_y;
+        constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
+        constexpr uint32_t offset_y = tile_desc::tile_size_y - remained_size_y;
         constexpr uint32_t processed_elems = offset_y * tile_desc::tile_size_x;
-        constexpr uint32_t remain_block_size_y
-                = tile_desc::tile_size_y % tile_desc::block_size_y;
         constexpr uint32_t remain_block_elems
-                = remain_block_size_y * tile_desc::block_size_x;
+                = remained_size_y * tile_desc::block_size_x;
 #pragma unroll
         for (int j = 0; j < tile_desc::num_block_x; j++) {
             uint32_t offset_x = j * tile_desc::block_size_x;
             auto reg_sub = tile.reg.xetla_select<remain_block_elems, 1>(
                     processed_elems + j * remain_block_elems);
 #pragma unroll
-            for (int sub_block_y = 0; sub_block_y < remain_block_size_y;
+            for (int sub_block_y = 0; sub_block_y < remained_size_y;
                     sub_block_y += num_channel_y) {
                 uint32_t address_offset = offset_x * sizeof(dtype)
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
@@ -532,9 +530,6 @@ tile_load(tile_t &tile, payload_t &payload) {
     using load_dtype = typename payload_t::mem_dtype;
     constexpr uint32_t scale_factor = payload_t::scale_factor;
     constexpr uint32_t load_len = tile_desc::tile_size_x / scale_factor;
-    uint32_t base_addr = payload.base_addr;
-    uint32_t pitch_in_bytes = payload.pitch_in_bytes;
-    uint32_t base_offset = payload.base_offset;
     if constexpr (load_len >= 64) {
 #pragma unroll
         for (int j = 0; j < load_len / 64; j++) {
@@ -544,7 +539,7 @@ tile_load(tile_t &tile, payload_t &payload) {
             uint32_t address_offset = offset_x * sizeof(dtype);
             reg_sub.xetla_format<load_dtype>()
                     = xetla_load_local<load_dtype, 64, data_size::default_size>(
-                            base_addr + base_offset + address_offset);
+                            payload.address + address_offset);
         }
     }
     detail::process_1d_tail<load_len % 64, 32, detail::process_flag::load, L1,

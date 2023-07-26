@@ -86,7 +86,7 @@ template <typename dtype_a,
           int alignment_b,
           typename dtype_acc,
           typename tile_shape,
-          int accum_step,
+          int k_stride,
           mma_engine engine,
           gpu_arch arch>
 class brgemm_selector_t {};
@@ -98,7 +98,7 @@ class brgemm_selector_t {};
 - `alignment_a` and `alignment_b` are the memory alignment of matrix A and B, in unit of element count.
 - `dtype_acc` is the accumulate data type of mma compute.
 - `tile_shape` is the problem size of each group and subgroup.
-- `accum_step` is the size of how many elements will be compuated in the inner loop.
+- `k_stride` is the size of how many elements will be compuated in the inner loop.
 - `engine` is the computing engine: xmx, fpu..
 - `arch` is the intel hardware architecture: Xe, Xe2...
 

@@ -457,11 +457,10 @@ __XETLA_API xetla_vector<T, SZ> xetla_add_c(xetla_vector<T, SZ> src0,
         xetla_vector<T, SZ> src1, xetla_vector_ref<T, SZ> __REF__ carry) {
     static_assert((std::is_same<remove_const_t<T>, uint32_t>::value),
             "For addc, only uint32_t is supported");
-    /// for esimd, current we don't have addc, this is the emulation
-    xetla_vector<uint64_t, SZ> acc = xetla_vector<uint64_t, SZ>(src0) + src1;
-    auto uint32_acc = acc.xetla_format<T>();
-    carry = uint32_acc.xetla_select<SZ, 2>(1);
-    return uint32_acc.xetla_select<SZ, 2>(0);
+    xetla_vector<T, SZ> carry_tmp;
+    xetla_vector<T, SZ> out = __ESIMD_ENS::addc(carry_tmp, src0, src1);
+    carry = carry_tmp;
+    return out;
 }
 
 /// Add one unsigned integer vectors with a scalar, return the result and in-place update the carry.
@@ -476,11 +475,10 @@ __XETLA_API xetla_vector<T, SZ> xetla_add_c(xetla_vector<T, SZ> src0, T src1,
         xetla_vector_ref<T, SZ> __REF__ carry) {
     static_assert((std::is_same<remove_const_t<T>, uint32_t>::value),
             "For addc, only uint32_t is supported");
-    /// for esimd, current we don't have addc, this is the emulation
-    xetla_vector<uint64_t, SZ> acc = xetla_vector<uint64_t, SZ>(src0) + src1;
-    auto uint32_acc = acc.xetla_format<T>();
-    carry = uint32_acc.xetla_select<SZ, 2>(1);
-    return uint32_acc.xetla_select<SZ, 2>(0);
+    xetla_vector<T, SZ> carry_tmp;
+    xetla_vector<T, SZ> out = __ESIMD_ENS::addc(carry_tmp, src0, src1);
+    carry = carry_tmp;
+    return out;
 }
 
 /// @brief Multiply src0 with src1, return the hi part and in-place update the lo part.
@@ -495,13 +493,11 @@ __XETLA_API xetla_vector<T, SZ> xetla_add_c(xetla_vector<T, SZ> src0, T src1,
 template <typename T0, typename T1, typename T2, int SZ>
 __XETLA_API xetla_vector<T0, SZ> xetla_imul(xetla_vector_ref<T0, SZ> __REF__ lo,
         xetla_vector<T1, SZ> src0, T2 src1) {
-    static_assert((std::is_same<remove_const_t<T0>, uint32_t>::value),
-            "compiler has issue, emulate the function. Src0 should be "
-            "unit32_t");
-    xetla_vector<uint64_t, SZ> acc = xetla_vector<uint64_t, SZ>(src0) * src1;
-    auto uint32_acc = acc.xetla_format<uint32_t>();
-    lo = uint32_acc.xetla_select<SZ, 2>(0);
-    return uint32_acc.xetla_select<SZ, 2>(1);
+    xetla_vector<T0, SZ> lo_tmp;
+    xetla_vector<T0, SZ> hi_tmp
+            = __ESIMD_ENS::imul<T0, T1, T2, SZ>(lo_tmp, src0, src1);
+    lo = lo_tmp;
+    return hi_tmp;
 }
 
 /// Performs reduction over elements of the input vector.

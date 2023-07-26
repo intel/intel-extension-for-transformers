@@ -23,8 +23,8 @@ using namespace gpu::xetla;
 using namespace gpu::xetla::subgroup;
 
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
-        int theight, int bwidth, int bheight, bool transform = false,
-        bool transpose = false>
+        int theight, int bwidth, int bheight, int doffset = 0,
+        bool transform = false, bool transpose = false>
 struct tile_load_store_local_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
@@ -39,12 +39,16 @@ struct tile_load_store_local_func {
 
         payload_global_t global_ld_payload(a, swidth, sheight, spitch, 0, 0);
         payload_global_t global_st_payload(c, swidth, sheight, spitch, 0, 0);
-        payload_local_t slm_payload((uint32_t)0, twidth, theight, twidth, 0, 0);
+        payload_local_t slm_ld_payload(
+                (uint32_t)0, twidth, theight, twidth, 0, 0);
+        payload_local_t slm_st_payload(
+                (uint32_t)0, twidth, theight, twidth, doffset, 0);
+        slm_ld_payload.update_tdesc(doffset);
         mat_t mat;
         tile_load(mat, global_ld_payload);
-        tile_store(mat, slm_payload);
+        tile_store(mat, slm_st_payload);
         mat.reg = 0;
-        tile_load(mat, slm_payload);
+        tile_load(mat, slm_ld_payload);
         tile_store(mat, global_st_payload);
     }
 };
@@ -99,8 +103,8 @@ struct tile_transpose_store_local_func {
 };
 
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
-        int theight, int bwidth, int bheight, bool transform = false,
-        bool transpose = false>
+        int theight, int bwidth, int bheight, int doffset = 0,
+        bool transform = false, bool transpose = false>
 struct tile_load_store_1d_local_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
@@ -121,6 +125,9 @@ struct tile_load_store_1d_local_func {
         payload_local_ld local_load((uint32_t)0, twidth, theight, twidth, 0, 0);
         payload_global global_load(a, swidth, sheight, spitch, 0, 0);
         payload_global global_store(c, swidth, sheight, spitch, 0, 0);
+
+        local_block.update_tdesc(doffset);
+        local_load.update_tdesc(doffset);
 
         tile_load(mat, global_load);
         tile_store(mat, local_block);

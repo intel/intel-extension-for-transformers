@@ -418,12 +418,10 @@ tile_store(tile_t &tile, payload_t &payload) {
     }
     // process the tail
     if constexpr ((tile_size_y % block_size_y) != 0) {
-        constexpr int i = tile_size_y / block_size_y;
-        constexpr uint32_t offset_y = i * block_size_y;
+        constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
+        constexpr uint32_t offset_y = tile_size_y - remained_size_y;
         constexpr uint32_t processed_elems = offset_y * tile_size_x;
-        constexpr uint32_t remain_block_size_y = tile_size_y % block_size_y;
-        constexpr uint32_t remain_block_elems
-                = remain_block_size_y * block_size_x;
+        constexpr uint32_t remain_block_elems = remained_size_y * block_size_x;
 #pragma unroll
         for (int j = 0; j < num_block_x; j++) {
             uint32_t offset_x = j * block_size_x;
@@ -433,7 +431,7 @@ tile_store(tile_t &tile, payload_t &payload) {
                     = (payload.step_x + offset_x + payload.base_x)
                     < payload.width_in_elems;
 #pragma unroll
-            for (int sub_block_y = 0; sub_block_y < remain_block_size_y;
+            for (int sub_block_y = 0; sub_block_y < remained_size_y;
                     sub_block_y += payload_t::num_channel_y) {
                 xetla_mask<payload_t::num_channel> pred_y
                         = (payload.step_y + offset_y + payload.base_y
@@ -498,20 +496,18 @@ tile_store(tile_t &tile, payload_t &payload) {
     }
     // process the tail
     if constexpr ((tile_desc::tile_size_y % tile_desc::block_size_y) != 0) {
-        constexpr int i = tile_desc::tile_size_y / tile_desc::block_size_y;
-        constexpr uint32_t offset_y = i * tile_desc::block_size_y;
+        constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
+        constexpr uint32_t offset_y = tile_desc::block_size_y - remained_size_y;
         constexpr uint32_t processed_elems = offset_y * tile_desc::tile_size_x;
-        constexpr uint32_t remain_block_size_y
-                = tile_desc::tile_size_y % tile_desc::block_size_y;
         constexpr uint32_t remain_block_elems
-                = remain_block_size_y * tile_desc::block_size_x;
+                = remained_size_y * tile_desc::block_size_x;
 #pragma unroll
         for (int j = 0; j < tile_desc::num_block_x; j++) {
             uint32_t offset_x = j * tile_desc::block_size_x;
             auto reg_sub = tile.reg.xetla_select<remain_block_elems, 1>(
                     processed_elems + j * remain_block_elems);
 #pragma unroll
-            for (int sub_block_y = 0; sub_block_y < remain_block_size_y;
+            for (int sub_block_y = 0; sub_block_y < remained_size_y;
                     sub_block_y += num_channel_y) {
                 uint32_t address_offset = offset_x * sizeof(dtype)
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
@@ -573,21 +569,18 @@ tile_store(tile_t &tile, payload_t &payload) {
     }
     // process the tail
     if constexpr ((tile_desc::tile_size_y % tile_desc::block_size_y) != 0) {
-        constexpr int i = tile_desc::tile_size_y / tile_desc::block_size_y;
-        constexpr uint32_t offset_y = i * tile_desc::block_size_y;
+        constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
+        constexpr uint32_t offset_y = tile_desc::tile_size_y - remained_size_y;
         constexpr uint32_t processed_elems = offset_y * tile_desc::tile_size_x;
-        constexpr uint32_t remain_block_size_y
-                = tile_desc::tile_size_y % tile_desc::block_size_y;
         constexpr uint32_t remain_block_elems
-                = remain_block_size_y * tile_desc::block_size_x;
+                = remained_size_y * tile_desc::block_size_x;
 #pragma unroll
         for (int j = 0; j < tile_desc::num_block_x; j++) {
             uint32_t offset_x = j * tile_desc::block_size_x;
             auto reg_sub = tile.reg.xetla_select<remain_block_elems, 1>(
                     processed_elems + j * remain_block_elems);
 #pragma unroll
-            for (int sub_block_y = 0; sub_block_y < remain_block_size_y;
-                    sub_block_y
+            for (int sub_block_y = 0; sub_block_y < remained_size_y; sub_block_y
                     += num_channel_y * num_vector_size * vnni_scale_factor) {
                 uint32_t address_offset = offset_x * payload.pitch_in_bytes
                         + (sub_block_y + offset_y) * sizeof(dtype);
@@ -649,24 +642,22 @@ tile_store(tile_t &tile, payload_t &payload) {
     }
     // process the tail
     if constexpr ((tile_desc::tile_size_y % tile_desc::block_size_y) != 0) {
-        constexpr int i = tile_desc::tile_size_y / tile_desc::block_size_y;
-        constexpr uint32_t offset_y = i * tile_desc::block_size_y;
+        constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
+        constexpr uint32_t offset_y = tile_desc::tile_size_y - remained_size_y;
         constexpr uint32_t processed_elems = offset_y * tile_desc::tile_size_x;
-        constexpr uint32_t remain_block_size_y
-                = tile_desc::tile_size_y % tile_desc::block_size_y;
         constexpr uint32_t remain_block_elems
-                = remain_block_size_y * tile_desc::block_size_x;
+                = remained_size_y * tile_desc::block_size_x;
 #pragma unroll
         for (int j = 0; j < tile_desc::num_block_x; j++) {
             uint32_t offset_x = j * tile_desc::block_size_x;
             auto reg_sub = tile.reg.xetla_select<remain_block_elems, 1>(
                     processed_elems + j * remain_block_elems);
-            auto reg_sub_2d = reg_sub.xetla_format<dtype, remain_block_size_y,
+            auto reg_sub_2d = reg_sub.xetla_format<dtype, remained_size_y,
                     tile_desc::block_size_x>();
             uint32_t address_offset = offset_x * sizeof(dtype)
                     + offset_y * payload.pitch_in_bytes;
 #pragma unroll
-            for (int row_i = 0; row_i < remain_block_size_y; row_i++) {
+            for (int row_i = 0; row_i < remained_size_y; row_i++) {
                 xetla_store_local<store_dtype, vector_size>(payload.address
                                 + address_offset
                                 + row_i * payload.pitch_in_bytes,
@@ -697,10 +688,8 @@ tile_store(tile_t &tile, payload_t &payload) {
     detail::check_store_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using tile_desc = typename payload_t::tile_desc;
-    constexpr uint32_t bytes_per_row = tile_desc::block_size_x * sizeof(dtype);
     using store_dtype = typename payload_t::mem_dtype;
     constexpr uint32_t scale_factor = payload_t::scale_factor;
-
     constexpr uint32_t store_len = tile_desc::tile_size_x / scale_factor;
     if constexpr (store_len >= 64) {
 #pragma unroll

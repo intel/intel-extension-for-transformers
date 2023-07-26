@@ -22,12 +22,6 @@
 
 namespace gpu::xetla::kernel {
 
-/// @defgroup xetla_softmax xetla Fused Softmax
-/// This is a fused softmax API built on top of xetla BRGemm API.
-
-/// @addtogroup xetla_softmax
-/// @{
-
 #define list_width 16
 #define rand_threshold_const 0x80000000
 #define SIGN_BIT_DW 0x80000000
