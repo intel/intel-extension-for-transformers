@@ -103,13 +103,69 @@ class Gelu {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
     // for (int i = 0; i < M; i++) {
-    //   ne_vec_gelu_f32(N, cptr + i * _param.ldc, cacheptr + i * _param.ldc);
+    //   ne_vec_gelu_f32(N, cptr + i * _param.ldc, cacheptr + i * cachestep);
     // }
     for (int i = 0; i < M; i++) {
       for (int j = 0; j < N; j++) {
         cptr[i * _param.ldc + j] = ne_gelu_f32(cacheptr[i * cachestep + j]);
       }
     }
+    return JblasSuccess;
+  }
+};
+
+template <typename _T>
+class Add {
+ public:
+  struct Param {
+    _T *C,*D;
+    int ldc,ldd;
+  };
+
+  template <JBLAS_ISA ISA_T>
+  JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param) {
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto DOffset = M_offset * _param.ldd + N_offset;
+    auto cptr = _param.C + COffset;
+    auto dptr = _param.D + DOffset;
+    for (int i = 0; i < M; i++) {
+      ne_vec_add_f32(N, cptr + i * _param.ldc,dptr + i * _param.ldd, cacheptr + i * cachestep);
+    }
+    // for (int i = 0; i < M; i++) {
+    //   for (int j = 0; j < N; j++) {
+    //     cptr[i * _param.ldc + j] = dptr[i * _param.ldd + j]+cacheptr[i * cachestep + j];
+    //   }
+    // }
+    return JblasSuccess;
+  }
+};
+
+template <typename _T>
+class Add_Gelu {
+ public:
+  struct Param {
+    _T *C,*D;
+    int ldc,ldd;
+  };
+
+  template <JBLAS_ISA ISA_T>
+  JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param) {
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto DOffset = M_offset * _param.ldd + N_offset;
+    auto cptr = _param.C + COffset;
+    auto dptr = _param.D + DOffset;
+    for (int i = 0; i < M; i++) {
+      ne_vec_add_f32(N, cptr + i * _param.ldc,dptr + i * _param.ldd, cacheptr + i * cachestep);
+      ne_vec_gelu_f32(N, cptr + i * _param.ldc, cptr + i * _param.ldc);
+    }
+    // for (int i = 0; i < M; i++) {
+    //   for (int j = 0; j < N; j++) {
+    //     cptr[i * _param.ldc + j] = dptr[i * _param.ldd + j]+cacheptr[i * cachestep + j];
+    //     cptr[i * _param.ldc + j] = ne_gelu_f32(cptr[i * _param.ldc + j]);
+    //   }
+    // }
     return JblasSuccess;
   }
 };
@@ -306,6 +362,16 @@ using GeluGemmSKernelDynamicS4KBlock =
         jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
         jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
         custom::epilogue::Gelu<float>>;
+using AddGeluGemmSKernelDynamicS4KBlock =
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        JblasAVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        custom::epilogue::Add_Gelu<float>>;
+using AddGemmSKernelDynamicS4KBlock =
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        JblasAVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        custom::epilogue::Add<float>>;
 }  // namespace avx512_vnni
 namespace amx_int8 {
 using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
@@ -436,7 +502,31 @@ void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void*
     int ldtmp1 = fmid;
     int ldo = fout;
     finter.compute(
-        {seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp,  tmp1, ldtmp1, output, ldo});
+        {seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, ldtmp1, output, ldo});
+  }
+  delete w1tmp;
+  delete w2tmp;
+}
+
+void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr, float* tmp1,
+                                           float* output, int seq, int fin, int fmid, int fout) {
+  auto w1tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w1ptr, 0);
+  auto w2tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w2ptr, 0);
+  if (w1tmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
+      w1tmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK) {
+    using GemmKernel = custom::wrapper::kblock::avx512_vnni::AddGemmSKernelDynamicS4KBlock;
+    using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::AddGeluGemmSKernelDynamicS4KBlock;
+    using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
+    static FusedInter finter;
+    int lda = fin;
+    int ldtmp1 = fmid;
+    int ldo = fout;
+    // FusedInter::Arguments::paramA paramA={activation, lda};
+    // FusedInter::Arguments::paramW1 paramW1={w1tmp};
+    // FusedInter::Arguments::paramW2 paramW2={w2tmp};
+    // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
+    finter.compute(
+        {seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1, ldtmp1, output, b2ptr, ldo, ldo});
   }
   delete w1tmp;
   delete w2tmp;

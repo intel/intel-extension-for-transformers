@@ -234,6 +234,8 @@ NE_API struct ne_tensor* ne_mul_qkv(struct ne_context* ctx, struct ne_tensor* qw
 NE_API struct ne_tensor* ne_ffn_silu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2,
                                      struct ne_tensor* w3, struct ne_tensor* src);
 
+NE_API struct ne_tensor* ne_ffn_add_gelu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2, struct ne_tensor* b1, struct ne_tensor* b2, struct ne_tensor* src);
+
 NE_API struct ne_tensor* ne_ffn_gelu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2, struct ne_tensor* src);
 
 //
