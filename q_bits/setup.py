@@ -19,7 +19,7 @@ except Exception as error:
     assert False,  "Error: Could not open '%s' due %s\n" % (filepath, error)
 
 # define install requirements
-install_requires_list = ["neural_compressor", "torch", "accelerate"]
+install_requires_list = ["neural_compressor", "torch", "accelerate", "peft"]
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 

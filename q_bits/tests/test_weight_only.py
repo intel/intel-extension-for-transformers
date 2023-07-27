@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import torch
 import unittest
@@ -34,13 +35,16 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_int4(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
-        torch.ops.weight_only_jblasop.jblas_symqdq_weight(raw_wei, True, 4, 32)
         for bias in [True, False]:
             model = M(with_bias=bias)
+            fake_quant_wei = copy.deepcopy(raw_wei)
+            torch.ops.weight_only_jblasop.jblas_symqdq_weight(fake_quant_wei, True, 4, 32)
             with torch.no_grad():
-                model.linear.weight = torch.nn.Parameter(raw_wei)
+                model.linear.weight = torch.nn.Parameter(fake_quant_wei)
             activation = torch.rand(1,32, dtype=torch.float)
             output = model(activation)
+            with torch.no_grad():
+                model.linear.weight = torch.nn.Parameter(raw_wei)
 
             config = QBitsConfig(quant_bits=4, quant_type="int4", group_size=32)
             convert_to_quantized_model(model, config)

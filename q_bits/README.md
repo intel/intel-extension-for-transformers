@@ -11,7 +11,7 @@ Q-Bits
 ### Install from Source code
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
-cd itrex/intel_extension_for_transformers/backend/q_bits
+cd itrex/q_bits
 pip install -r requirements.txt
 pip install -v .
 ```
