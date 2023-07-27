@@ -32,7 +32,8 @@ void jblas_weights4block_f32_forward(float* activation, void* weiptr, float* out
   if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK ||
       wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
       wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK) {
-    if (_cd->AMX_INT8()) {
+    auto wbtmp = dynamic_cast<prologue::weight_comp::PackedWeightKBlock*>(wtmp);
+    if (_cd->AMX_INT8() && wbtmp->mBlockSize % 128 == 0) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::amx_int8::GemmSKernelDynamicS4KBlock;
       static GemmKernel kernel;
       ret = kernel.compute({_m, _n, _k, activation, lda, wtmp, output, ldo});
