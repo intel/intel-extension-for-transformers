@@ -212,6 +212,24 @@ using QKVGemmSKernelDynamicS4KBlock = jblas::wrapper::transformer::QKVGemmInterf
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
 }  // namespace avx512_vnni
+namespace amx_int8 {
+static JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
+using QKVGemmSKernelDynamicS4KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
+        jblas::prologue::gemm::ActivationF32S8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        jblas::epilogue::gemm::AccumulatorWriteBack<float, float>>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+}  // namespace amx_int8
+namespace avx512_f {
+static JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
+using QKVGemm = jblas::wrapper::transformer::QKVGemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F,
+        jblas::prologue::gemm::ActivationBase,  // activation fp32->bf16
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AccumulatorWriteBack<float, float>>,
+    jblas::utils::parallel::Parallel2DGemm>;
+}  // namespace avx512_f
 namespace amx_bf16 {
 static JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
 using QKVGemm = jblas::wrapper::transformer::QKVGemmInterfacePackWeight<
