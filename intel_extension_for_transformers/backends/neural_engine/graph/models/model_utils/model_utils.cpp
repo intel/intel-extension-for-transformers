@@ -55,7 +55,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
 
-  const int64_t n_mem =4* n_layer * n_ctx; // beam size for mlperf
+  const int64_t n_mem = n_layer * n_ctx;
   const int64_t n_elements = n_embd * n_mem;
 
   cache.buf.resize(2u * n_elements * ne_type_size(wtype) + 2u * MB);
@@ -92,6 +92,9 @@ struct model_context_params model_context_default_params() {
       /*.use_mmap                    =*/true,
       /*.use_mlock                   =*/false,
       /*.embedding                   =*/false,
+      /*.batch_size                  =*/1,
+      /*.beam_search                 =*/false,
+      /*.beam_size                   =*/1,
       /*.progress_callback           =*/nullptr,
       /*.progress_callback_user_data =*/nullptr,
   };
@@ -986,6 +989,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
   ctx->rng = std::mt19937(params.seed);
   ctx->logits_all = params.logits_all;
+  ctx->batch_size = params.batch_size;
 
   ne_type memory_type = params.f16_kv ? NE_TYPE_F16 : NE_TYPE_F32;
   model_name name = params.name;
@@ -999,7 +1003,12 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
   // reserve memory for context buffers
   if (!params.vocab_only) {
-    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->model.hparams.n_ctx)) {
+    int kv_ctx = ctx->model.hparams.n_ctx * ctx->batch_size;
+    if (params.beam_search) {
+      ctx->beam_size = params.beam_size;
+      kv_ctx *= params.beam_size;
+    }
+    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, kv_ctx)) {
       fprintf(stderr, "%s: kv_cache_init() failed for self-attention cache\n", __func__);
       model_free(ctx);
       return nullptr;

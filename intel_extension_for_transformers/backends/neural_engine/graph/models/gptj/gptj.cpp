@@ -390,6 +390,9 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   lparams.use_mlock = params.use_mlock;
   lparams.logits_all = params.perplexity;
   lparams.embedding = params.embedding;
+  lparams.batch_size = params.batch_size;
+  lparams.beam_search = params.beam_search;
+  lparams.beam_size = params.beam_size;
 
   model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
 

@@ -201,7 +201,7 @@ struct model_context {
   model_struct model;
   model_vocab vocab;
   int batch_size = 1;
-  int beam_size = 1;
+  int beam_size = 0;
   std::vector<std::vector<std::string>> tensors_name;
 
   size_t mem_per_token = 0;
@@ -288,6 +288,9 @@ struct model_context_params {
   bool use_mmap;     // use mmap if possible
   bool use_mlock;    // force system to keep model in RAM
   bool embedding;    // embedding mode only
+  int batch_size;    // batch_size of prompt
+  bool beam_search;  // beam search or not
+  int beam_size;     // number of beams for beam search
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;
