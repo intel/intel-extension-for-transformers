@@ -17,7 +17,11 @@
 #include "jblas/jit_blas_transformer.h"
 
 using namespace jblas;
-
+void jblas_init() { GetCPUDevice();
+  if (_cd->AMX_BF16()||_cd->AMX_INT8()) {
+    utils::request_perm_xtile_data();
+  }
+}
 void jblas_weights4block_f32_forward(float* activation, void* weiptr, float* output, int _m, int _n, int _k, int lda,
                                      int ldo) {
   GetCPUDevice();

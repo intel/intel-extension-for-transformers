@@ -30,6 +30,8 @@ void jblas_timer(bool _init);
 
 int jblas_set_threads(int _nth);
 
+void jblas_init();
+
 #ifdef __cplusplus
 }
 #endif

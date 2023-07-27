@@ -730,7 +730,8 @@ struct ne_context* ne_init(struct ne_init_params params) {
   if (is_first_call) {
     // initialize time system (required on Windows)
     ne_time_init();
-
+    // initialize jblas's amx instruction.
+    jblas_init();
     // initialize GELU, SILU and EXP F32 tables
     {
       const uint64_t t_start = ne_time_us();
