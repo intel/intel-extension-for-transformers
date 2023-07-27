@@ -9709,7 +9709,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
 
       switch (node->op) {
         case NE_OP_CPY: {
-          node->n_tasks = node->ne[0] == 1 ? n_threads : 1;
+          node->n_tasks = n_threads;  // node->ne[0] == 1 ? n_threads : 1;
 
           size_t cur = 0;
           if (ne_is_quantized(node->type)) {
@@ -9729,7 +9729,11 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         } break;
         case NE_OP_ADD:
         case NE_OP_ADD1: {
-          node->n_tasks = 1;
+          if (node->src0->ne[1] > 4) {
+            node->n_tasks = n_threads;
+          } else {
+            node->n_tasks = 1;
+          }
 
           size_t cur = 0;
 
@@ -9758,15 +9762,19 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_SUM:
         case NE_OP_SUM_ROWS:
         case NE_OP_MEAN:
-        case NE_OP_REPEAT:
         case NE_OP_ABS:
+        case NE_OP_REPEAT:
         case NE_OP_SGN:
         case NE_OP_NEG:
         case NE_OP_STEP:
         case NE_OP_MUL:
         case NE_OP_RMS_NORM:
         case NE_OP_RELU: {
-          node->n_tasks = 1;
+          if (node->src0->ne[1] > 4) {
+            node->n_tasks = n_threads;
+          } else {
+            node->n_tasks = 1;
+          }
         } break;
         case NE_OP_GELU:
         case NE_OP_SILU:
@@ -9828,7 +9836,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_DIAG_MASK_INF:
         case NE_OP_SOFT_MAX:
         case NE_OP_ROPE:
-          node->n_tasks = 1;
+          node->n_tasks = n_threads;
           break;
         case NE_OP_ROPE_BACK: {
           node->n_tasks = n_threads;

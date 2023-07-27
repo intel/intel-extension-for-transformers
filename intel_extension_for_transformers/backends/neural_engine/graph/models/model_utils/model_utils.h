@@ -345,8 +345,8 @@ MODEL_API void renormalize_beam_probabilities(std::vector<beam>& beams);
 MODEL_API const beam& top_beam(std::vector<beam> const& beams);
 
 MODEL_API std::vector<model_token> beam_search(const int& beam_size, const int& n_predict, model_context* lctx,
-                                                      const model_token* tokens_inp, const int& n_tokens,
-                                                      const int& n_threads);
+                                               const model_token* tokens_inp, const int& n_tokens,
+                                               const int& n_threads);
 
 // Internal API to be implemented by model.cpp and used by tests/benchmarks only
 #ifdef MODEL_API_INTERNAL

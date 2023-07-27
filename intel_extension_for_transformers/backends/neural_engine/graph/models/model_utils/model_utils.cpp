@@ -806,7 +806,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     } else if (params.compute_type == quant_comp::bf16) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4KBlock;
       static GemmKernel kernel;
-      if (cd->AVX512F()) {//epilogue and prologue not necessary to use AMX_BF16
+      if (cd->AVX512F()) {  // epilogue and prologue not necessary to use AMX_BF16
         packedw =
             kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n, k, f32ptr, k, params.block_size, type);
       } else {
@@ -1919,7 +1919,7 @@ const beam& top_beam(std::vector<beam> const& beams) {
 // TODO batch_size = 4 only
 // TODO better way to return?
 std::vector<model_token> beam_search(const int& beam_size, const int& n_predict, model_context* lctx,
-                               const model_token* tokens_inp, const int& n_tokens, const int& n_threads) {
+                                     const model_token* tokens_inp, const int& n_tokens, const int& n_threads) {
   if (n_tokens > model_n_ctx(lctx) - 4) {
     fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens, model_n_ctx(lctx) - 4);
     return std::vector<model_token>();
