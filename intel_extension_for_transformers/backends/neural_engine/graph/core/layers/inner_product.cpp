@@ -17,8 +17,9 @@
 #include "jblas/jit_blas_transformer.h"
 
 using namespace jblas;
-void jblas_init() { GetCPUDevice();
-  if (_cd->AMX_BF16()||_cd->AMX_INT8()) {
+void jblas_init() {
+  GetCPUDevice();
+  if (_cd->AMX_BF16() || _cd->AMX_INT8()) {
     utils::request_perm_xtile_data();
   }
 }
@@ -202,6 +203,7 @@ using SiluGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLaunche
 
 void jblas_weightcomp_QKV_f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output, int _m,
                                       int _n, int _k, int lda, int ldo) {
+  GetCPUDevice();
   auto wqtmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(wqptr, 0);
   auto wktmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(wkptr, 0);
   auto wvtmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(wvptr, 0);
@@ -220,7 +222,25 @@ void jblas_weightcomp_QKV_f32_forward(float* activation, void* wqptr, void* wkpt
         {output + _m * _n, ldo},
         {output + 2 * _m * _n, ldo},
     };
-    auto ret = kernel.compute2({_m, _n, _k, 3, activation, lda, wparams, oparams, NULL});
+    if (_cd->AVX512_VNNI()) {
+      auto ret = kernel.compute2({_m, _n, _k, 3, activation, lda, wparams, oparams, NULL});
+    }
+  } else if (wqtmp->mCoreType == jblas::gemm::GemmCoreType::AMX_BF16_16x64) {
+    using GemmKernel = jblas::wrapper::transformer_default::weight_comp::amx_bf16::QKVGemm;
+    static GemmKernel kernel;
+    GemmKernel::WeightType::Param wparams[3]{
+        wqtmp,
+        wktmp,
+        wvtmp,
+    };
+    GemmKernel::CParam oparams[3]{
+        {output, ldo},
+        {output + _m * _n, ldo},
+        {output + 2 * _m * _n, ldo},
+    };
+    if (_cd->AMX_BF16()) {
+      auto ret = kernel.compute({_m, _n, _k, 3, activation, lda, wparams, oparams, NULL});
+    }
   }
   delete wqtmp;
   delete wktmp;
