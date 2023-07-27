@@ -156,16 +156,16 @@ class Add_Gelu {
     auto DOffset = M_offset * _param.ldd + N_offset;
     auto cptr = _param.C + COffset;
     auto dptr = _param.D + DOffset;
-    // for (int i = 0; i < M; i++) {
-    //   ne_vec_add_f32(N, cptr + i * _param.ldc,dptr + i * _param.ldd, cacheptr + i * cachestep);
-    //   ne_vec_gelu_f32(N, cptr + i * _param.ldc, cptr + i * _param.ldc);
-    // }
     for (int i = 0; i < M; i++) {
+      ne_vec_add_f32(N, cptr + i * _param.ldc, dptr + i * _param.ldd, cacheptr + i * cachestep);
+      ne_vec_gelu_f32(N, cptr + i * _param.ldc, cptr + i * _param.ldc);
+    }
+    /*for (int i = 0; i < M; i++) {
       for (int j = 0; j < N; j++) {
         cptr[i * _param.ldc + j] = dptr[i * _param.ldd + j] + cacheptr[i * cachestep + j];
         cptr[i * _param.ldc + j] = ne_gelu_f32(cptr[i * _param.ldc + j]);
       }
-    }
+    }*/
     return JblasSuccess;
   }
 };
