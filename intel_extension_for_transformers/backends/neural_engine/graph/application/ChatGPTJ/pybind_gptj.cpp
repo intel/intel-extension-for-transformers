@@ -50,7 +50,8 @@ bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval,
 
 extern "C" {
 void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, float temp, float repeat_penalty,
-                bool perplexity, int n_ctx, const char* model_file) {
+                bool perplexity, int n_ctx, const char* model_file, bool beam_search = false, int beam_size = 4,
+                int batch_size = 1) {
   gpt_params params;
   params.n_threads = N_threads;
   params.seed = seed;
@@ -65,6 +66,9 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   params.temp = temp;
   params.repeat_penalty = repeat_penalty;
   params.perplexity = perplexity;
+  params.batch_size = batch_size;
+  params.beam_search = beam_search;
+  params.beam_size = beam_size;
   model_init_backend();
   model_context* ctx;
   g_ctx = &ctx;
@@ -82,48 +86,54 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
   int n_past = 0;
 
   auto hparams = lctx->model.hparams;
-  std::vector<model_token> embd_inp(embd_inp_ptr, embd_inp_ptr + ind_size);
+
   n_predict = std::min(n_predict, (int)hparams.n_ctx - (int)ind_size);
   std::vector<model_token> res;
-  std::vector<model_token> embd;
+  bool do_beam_search = (lctx->beam_size > 0);
 
-  for (int i = embd.size(); i < embd_inp.size() + n_predict; i++) {
-    // predict
-    if (embd.size() > 0) {
-      if (!gptj_model_eval_ids(lctx, embd.data(), embd.size(), n_past, N_threads)) {
-        printf("Failed to predict\n");
-        return {};
-      }
-    }
-
-    auto logits = model_get_logits(lctx);
-    n_past += embd.size();
-    embd.clear();
-
-    if (i >= embd_inp.size()) {
-      const int n_vocab = hparams.n_vocab;
-      gpt_vocab::id id = 0;
-      id = model_sample_top_k_top_p(lctx, n_vocab, logits, top_k, top_p, temp);
-      // add it to the context
-      embd.push_back(id);
-      res.push_back(id);
-    } else {
-      // if here, it means we are still processing the input prompt
-      for (int k = i; k < embd_inp.size(); k++) {
-        embd.push_back(embd_inp[k]);
-        if (embd.size() > n_batch) {
-          break;
+  if (do_beam_search) {
+    res = beam_search(lctx->beam_size, n_predict, lctx, embd_inp_ptr, ind_size, N_threads);
+  } else {
+    std::vector<model_token> embd_inp(embd_inp_ptr, embd_inp_ptr + ind_size);
+    std::vector<model_token> embd;
+    for (int i = embd.size(); i < embd_inp.size() + n_predict; i++) {
+      // predict
+      if (embd.size() > 0) {
+        if (!gptj_model_eval_ids(lctx, embd.data(), embd.size(), n_past, N_threads)) {
+          printf("Failed to predict\n");
+          return {};
         }
       }
-      i += embd.size() - 1;
-    }
 
-    // end of text token
-    if (embd.back() == 50256) {
-      break;
+      auto logits = model_get_logits(lctx);
+      n_past += embd.size();
+      embd.clear();
+
+      if (i >= embd_inp.size()) {
+        const int n_vocab = hparams.n_vocab;
+        gpt_vocab::id id = 0;
+        id = model_sample_top_k_top_p(lctx, n_vocab, logits, top_k, top_p, temp);
+        // add it to the context
+        embd.push_back(id);
+        res.push_back(id);
+      } else {
+        // if here, it means we are still processing the input prompt
+        for (int k = i; k < embd_inp.size(); k++) {
+          embd.push_back(embd_inp[k]);
+          if (embd.size() > n_batch) {
+            break;
+          }
+        }
+        i += embd.size() - 1;
+      }
+
+      // end of text token
+      if (embd.back() == 50256) {
+        break;
+      }
     }
   }
-  int32_t* res_ptr = new int32_t[res.size()+1];
+  int32_t* res_ptr = new int32_t[res.size() + 1];
   res_ptr[0] = res.size();
   std::copy(res.begin(), res.end(), &res_ptr[1]);
   return res_ptr;
@@ -134,48 +144,59 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
   int n_past = 0;
 
   auto hparams = lctx->model.hparams;
-  std::vector<float> logits;
   std::vector<model_token> embd_inp = ::model_tokenize(lctx, std::string(prom), false);
   n_predict = std::min(n_predict, (int)hparams.n_ctx - (int)embd_inp.size());
   std::string res;
   std::vector<model_token> embd;
 
-  for (int i = embd.size(); i < embd_inp.size() + n_predict; i++) {
-    // predict
-    if (embd.size() > 0) {
-      if (!gptj_model_eval_ids(lctx, embd.data(), embd.size(), n_past, N_threads)) {
-        printf("Failed to predict\n");
-        return {};
-      }
-    }
-
-    auto logits = model_get_logits(lctx);
-    n_past += embd.size();
-    embd.clear();
-
-    if (i >= embd_inp.size()) {
-      const int n_vocab = hparams.n_vocab;
-      model_token id = 0;
-      id = model_sample_top_k_top_p(lctx, n_vocab, logits, top_k, top_p, temp);
-      // add it to the context
-      embd.push_back(id);
-    } else {
-      // if here, it means we are still processing the input prompt
-      for (int k = i; k < embd_inp.size(); k++) {
-        embd.push_back(embd_inp[k]);
-        if (embd.size() > n_batch) {
-          break;
-        }
-      }
-      i += embd.size() - 1;
+  bool do_beam_search = (lctx->beam_size > 0);
+  if (do_beam_search) {
+    embd = beam_search(lctx->beam_size, n_predict, lctx, embd_inp.data(), embd_inp.size(), N_threads);
+    for (auto id : embd_inp) {
+      res += model_token_to_str(lctx, id);
     }
     for (auto id : embd) {
       res += model_token_to_str(lctx, id);
     }
+  } else {
+    std::vector<float> logits;
+    for (int i = embd.size(); i < embd_inp.size() + n_predict; i++) {
+      // predict
+      if (embd.size() > 0) {
+        if (!gptj_model_eval_ids(lctx, embd.data(), embd.size(), n_past, N_threads)) {
+          printf("Failed to predict\n");
+          return {};
+        }
+      }
 
-    // end of text token
-    if (embd.back() == 50256) {
-      break;
+      auto logits = model_get_logits(lctx);
+      n_past += embd.size();
+      embd.clear();
+
+      if (i >= embd_inp.size()) {
+        const int n_vocab = hparams.n_vocab;
+        model_token id = 0;
+        id = model_sample_top_k_top_p(lctx, n_vocab, logits, top_k, top_p, temp);
+        // add it to the context
+        embd.push_back(id);
+      } else {
+        // if here, it means we are still processing the input prompt
+        for (int k = i; k < embd_inp.size(); k++) {
+          embd.push_back(embd_inp[k]);
+          if (embd.size() > n_batch) {
+            break;
+          }
+        }
+        i += embd.size() - 1;
+      }
+      for (auto id : embd) {
+        res += model_token_to_str(lctx, id);
+      }
+
+      // end of text token
+      if (embd.back() == 50256) {
+        break;
+      }
     }
   }
 
@@ -191,19 +212,23 @@ void exit_gptj(void* ctx) {
 }
 
 int main() {
-  auto gptj_in_all = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/hengyume/model/gptj-f32.bin");
-  auto res = eval_gptj_char(gptj_in_all, "she opened the door and saw", 32, 40, 1.0, 0.8, 32);
-  std::cout << res << std::endl;
-  auto res1 = eval_gptj_char(gptj_in_all,
-                             "Once upon a time, there existed a little girl, who liked to have adventures. She wanted "
-                             "to go to places and meet new people, and have fun",
-                             32, 40, 1.0, 0.8, 32);
-  std::cout << res1 << std::endl;
-  std::vector<int32_t> embd_inp = {7091, 4721, 262, 3420, 290, 2497};
-  auto res_ids = eval_gptj_ids(gptj_in_all, embd_inp.data(), embd_inp.size(), 32, 40, 1.0, 0.8, 32);
-  exit_gptj(gptj_in_all);
-  delete[] res;
-  delete[] res1;
-  delete[] res_ids;
+  auto gptj_in_all_tk = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/hengyume/model/gptj-f32.bin");
+  auto gptj_in_all_bs = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/zhentao/gptj-ne-q4_j.bin", true, 4, 1);
+  std::vector<void*> ctxs = {gptj_in_all_tk, gptj_in_all_bs};
+  for (auto gptj_in_all : ctxs) {
+    auto res = eval_gptj_char(gptj_in_all, "she opened the door and saw", 32, 40, 1.0, 0.8, 32);
+    std::cout << res << std::endl;
+    auto res1 = eval_gptj_char(gptj_in_all,
+                              "Once upon a time, there existed a little girl, who liked to have adventures. She wanted "
+                              "to go to places and meet new people, and have fun",
+                              32, 40, 1.0, 0.8, 32);
+    std::cout << res1 << std::endl;
+    std::vector<int32_t> embd_inp = {7091, 4721, 262, 3420, 290, 2497};
+    auto res_ids = eval_gptj_ids(gptj_in_all, embd_inp.data(), embd_inp.size(), 32, 40, 1.0, 0.8, 32);
+    exit_gptj(gptj_in_all);
+    delete[] res;
+    delete[] res1;
+    delete[] res_ids;
+  }
   return 0;
 }
