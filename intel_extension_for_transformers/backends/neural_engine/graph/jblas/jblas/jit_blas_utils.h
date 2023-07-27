@@ -48,6 +48,7 @@ struct bf16 {
     float f32;
     uint16_t bf16[2];
   };
+  bf16(float vf32 = 0.f) { fromfloat(vf32); }
   float tofloat() {
     bf16f32 tmp = {0.f};
     tmp.bf16[1] = x;
@@ -550,6 +551,7 @@ struct Parallel2DGemm : Parallel2D {
   }
   void update_kstep() {
     auto rawk = (mL2Size / mNStep - mMStep * CSize) / BSize;
+    rawk = std::min(rawk, size_t(mKPadded));
     mKStep = padto_le(rawk, _GemmCore_T::KTILE);
   }
 

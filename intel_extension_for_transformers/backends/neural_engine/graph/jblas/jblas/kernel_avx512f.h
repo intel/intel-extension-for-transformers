@@ -35,6 +35,12 @@ static inline __m512i unpack_4bits(__m256i v4bits, __m512i vmask) {
   return zmm1;
 }
 
+static inline void convert_s4_s8_32(int8_t* dstptr, int8_t* srcptr, __m512i vmask) {
+  auto ymm = _mm256_maskz_loadu_epi64(0x3, (const __m256i*)(srcptr));
+  auto zmm = unpack_4bits(ymm, vmask);
+  _mm512_mask_storeu_epi64(dstptr, 0xf, zmm);
+}
+
 static inline void convert_s4_s8_48(int8_t* dstptr, int8_t* srcptr, __m512i vmask) {
   auto ymm = _mm256_maskz_loadu_epi64(0x7, (const __m256i*)(srcptr));
   auto zmm = unpack_4bits(ymm, vmask);
@@ -46,9 +52,18 @@ static inline void convert_s4_s8_64(int8_t* dstptr, int8_t* srcptr, __m512i vmas
   auto zmm = unpack_4bits(ymm, vmask);
   _mm512_storeu_si512(dstptr, zmm);
 }
-
 template <int N>
-static inline void dequant_s8_N(float* dstptr, int8_t* srcptr, __m512* vscales) {
+static inline void convert_s4_s8(int8_t* dstptr, int8_t* srcptr, __m512i vmask) {
+  static_assert(N % 8 == 0);
+  static_assert(N <= 64);
+  int constexpr LoadMask = (1 << (N / 8)) - 1;
+  auto ymm = _mm256_maskz_loadu_epi32(LoadMask, (const __m256i*)(srcptr));
+  auto zmm = unpack_4bits(ymm, vmask);
+  _mm512_mask_storeu_epi64(dstptr, LoadMask, zmm);
+}
+
+template <int N, typename _DST_T>
+static inline void dequant_s8_N(_DST_T* dstptr, int8_t* srcptr, __m512* vscales) {
   static_assert(N % 16 == 0);
   int constexpr VLoop = N / 16;
   for (int iv = 0; iv < VLoop; iv += 1) {
@@ -56,7 +71,14 @@ static inline void dequant_s8_N(float* dstptr, int8_t* srcptr, __m512* vscales) 
     auto zmm = _mm512_cvtepi8_epi32(src_s8);
     auto fzmm = _mm512_cvtepi32_ps(zmm);
     fzmm = _mm512_mul_ps(fzmm, vscales[iv]);
-    _mm512_storeu_ps(dstptr + iv * 16, fzmm);
+    if (std::is_same<_DST_T, float>::value) {
+      _mm512_storeu_ps(dstptr + iv * 16, fzmm);
+    } else if (std::is_same<_DST_T, utils::bf16>::value) {
+      auto bf16_v = _mm512_cvtepi32_epi16(_mm512_bsrli_epi128(_mm512_castps_si512(fzmm), 2));
+      _mm256_storeu_epi16(dstptr + iv * 16, bf16_v);
+    } else {
+      assert(false);
+    }
   }
 }
 
@@ -125,8 +147,36 @@ inline __m512 vec_loadscalex16(utils::bf16* ptr) {
 }
 
 template <typename _ST>
-static inline JBLAS_CODE decompress_kblock_s4_f32(utils::int4x2* srcptr, float* dstptr, int row, int col, int ld_src,
-                                                  int ld_dst, _ST* scales, int k_offset, int kblock, int NPad) {
+static inline __m128 vec_loadscalex4(_ST* ptr) {
+  return _mm_loadu_ps(ptr);
+}
+
+template <>
+inline __m128 vec_loadscalex4(utils::bf16* ptr) {
+  auto vbf16 = _mm_loadu_si64((__m128i*)ptr);
+  auto vf32 = _mm_cvtepu16_epi32(vbf16);
+  return _mm_castsi128_ps(_mm_slli_epi32(vf32, 16));
+}
+
+static inline void vec_broadcast_epi32_1_2(__m512i* dst2regs, __m512i* src1regs) {
+  dst2regs[0] = _mm512_unpacklo_epi32(src1regs[0], src1regs[0]);
+  dst2regs[1] = _mm512_unpackhi_epi32(src1regs[0], src1regs[0]);
+}
+
+static inline void vec_broadcast_ps_1_2(__m512* dst2regs, __m512* src1regs, __m512i idxreg) {
+  auto tmpreg = _mm512_permutexvar_epi64(idxreg, _mm512_castps_si512(src1regs[0]));
+  dst2regs[0] = _mm512_castsi512_ps(_mm512_unpacklo_epi32(tmpreg, tmpreg));
+  dst2regs[1] = _mm512_castsi512_ps(_mm512_unpackhi_epi32(tmpreg, tmpreg));
+}
+
+static inline void vec_broadcast_epi32_2_4(__m512i* dst4regs, __m512i* src2regs) {
+  vec_broadcast_epi32_1_2(dst4regs, src2regs);
+  vec_broadcast_epi32_1_2(dst4regs + 2, src2regs + 1);
+}
+
+template <typename _ST>
+static inline JBLAS_CODE decompress_kblock_s4_fp32(utils::int4x2* srcptr, float* dstptr, int row, int col, int ld_src,
+                                                   int ld_dst, _ST* scales, int k_offset, int kblock, int NPad) {
   uint32_t mask = 0xf0f0f0f0;
   auto zmm_mask = _mm512_set1_epi32(*(int*)&mask);
   if (col == 48) {
@@ -190,11 +240,81 @@ static inline JBLAS_CODE decompress_kblock_s4_f32(utils::int4x2* srcptr, float* 
   return JblasNotSupport;
 }
 
+template <typename _ST>
+static inline JBLAS_CODE decompress_kblock_s4_bf16(utils::int4x2* srcptr, utils::bf16* dstptr, int row, int col,
+                                                   int ld_src, int ld_dst, _ST* scales, int k_offset, int kblock,
+                                                   int NPad) {
+  uint32_t mask = 0xf0f0f0f0;
+  auto zmm_mask = _mm512_set1_epi32(*(int*)&mask);
+  auto broadcast_idx = _mm512_setr_epi64(0, 4, 1, 5, 2, 6, 3, 7);
+  if (col % 64 == 0) {
+    for (int icol = 0; icol < col; icol += 64) {
+      __m512 vscales[4];
+      int8_t tmpbuf[64];
+      int row0 = kblock - k_offset % kblock;
+      row0 = row0 == kblock ? 0 : row0;
+      row0 = row0 > row ? row : row0;
+      int row1 = row - row0;
+      int irow = 0;
+      if (row0) {
+        for (int iv = 0; iv < 2; iv++) {
+          auto tmpscale = vec_loadscalex16(scales + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2);
+          vec_broadcast_ps_1_2(vscales + iv * 2, &tmpscale, broadcast_idx);
+        }
+
+        for (; irow < row0; irow++) {
+          convert_s4_s8<64>(tmpbuf, (int8_t*)(srcptr + irow * ld_src + icol / 2), zmm_mask);
+          dequant_s8_N<64>(dstptr + irow * ld_dst + icol, tmpbuf, vscales);
+        }
+      }
+
+      int row1_blk = utils::padto_le(row1, kblock) + row0;
+      for (; irow < row1_blk; irow += kblock) {
+        for (int iv = 0; iv < 2; iv++) {
+          auto tmpscale = vec_loadscalex16(scales + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2);
+          vec_broadcast_ps_1_2(vscales + iv * 2, &tmpscale, broadcast_idx);
+        }
+
+        for (int irr = 0; irr < kblock; irr += 1) {
+          convert_s4_s8<64>(tmpbuf, (int8_t*)(srcptr + (irow + irr) * ld_src + icol / 2), zmm_mask);
+          dequant_s8_N<64>(dstptr + (irow + irr) * ld_dst + icol, tmpbuf, vscales);
+        }
+      }
+      if (irow < row) {
+        for (int iv = 0; iv < 2; iv++) {
+          auto tmpscale = vec_loadscalex16(scales + (k_offset + irow) / kblock * NPad + iv * 16 + icol / 2);
+          vec_broadcast_ps_1_2(vscales + iv * 2, &tmpscale, broadcast_idx);
+        }
+      }
+      for (; irow < row; irow++) {
+        convert_s4_s8<64>(tmpbuf, (int8_t*)(srcptr + irow * ld_src + icol / 2), zmm_mask);
+        dequant_s8_N<64>(dstptr + irow * ld_dst + icol, tmpbuf, vscales);
+      }
+    }
+
+    return JblasSuccess;
+  }
+  return JblasNotSupport;
+}
+
+template <typename _ST, typename _DST_T>
+static inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src,
+                                                 int ld_dst, _ST* scales, int k_offset, int kblock, int NPad) {
+  if (std::is_same<_DST_T, float>::value) {
+    return decompress_kblock_s4_fp32<_ST>(srcptr, (float*)dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock,
+                                          NPad);
+  } else if (std::is_same<_DST_T, utils::bf16>::value) {
+    return decompress_kblock_s4_bf16<_ST>(srcptr, (utils::bf16*)dstptr, row, col, ld_src, ld_dst, scales, k_offset,
+                                          kblock, NPad);
+  }
+  return JblasNotSupport;
+}
+
 static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src,
                                           int ld_dst) {
   uint32_t mask = 0xf0f0f0f0;
   auto zmm_mask = _mm512_set1_epi32(*(int*)&mask);
-  if (col == ld_src * 2) {
+  if (col == ld_src) {
     size_t elesize = (size_t)row * col;
     size_t ele256 = utils::padto_le(elesize, 256);
     size_t ele64 = utils::padto_le(elesize, 64);
@@ -299,6 +419,42 @@ static inline JBLAS_CODE quantize_f32_u8_colblock(int row, int col, const float*
         vdsrc = _mm512_add_epi32(vdsrc, vdzp);
         vdsrc = _mm512_min_epi32(vdsrc, vff);
         vdsrc = _mm512_max_epi32(vdsrc, v0);
+        auto vbsrc = _mm512_cvtepi32_epi8(vdsrc);
+        _mm_storeu_si128((__m128i*)&dstptr[(j + ij) + i * ld_dst], vbsrc);
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE quantize_f32_s8_colblock(int row, int col, const float* srcptr, int ld_src, int8_t* dstptr,
+                                                  int ld_dst, float* scales, int ld_scale, int blocksize) {
+  int constexpr VLen = 16;
+  if (blocksize % VLen != 0) {
+    return JblasNotSupport;
+  }
+  auto vpos = _mm512_set1_epi32(127);
+  auto vneg = _mm512_set1_epi32(-128);
+  int i = 0;
+  for (int i = 0; i < row; i += 1) {
+    for (size_t j = 0; j < col; j += blocksize) {
+      __m512 vscale;
+      __m512 vmaxval = _mm512_set1_ps(std::numeric_limits<float>::min());
+      for (size_t ij = 0; ij < blocksize; ij += VLen) {
+        auto vsrc = _mm512_loadu_ps(&srcptr[(j + ij) + i * ld_src]);
+        vsrc = _mm512_abs_ps(vsrc);
+        vmaxval = _mm512_max_ps(vmaxval, vsrc);
+      }
+      auto maxval = _mm512_reduce_max_ps(vmaxval);
+      float scale = maxval / 127;
+      scales[j / blocksize + i * ld_scale] = scale;
+      auto vrscale = _mm512_set1_ps(1.f / scale);
+      for (size_t ij = 0; ij < blocksize; ij += VLen) {
+        auto vsrc = _mm512_loadu_ps(&srcptr[(j + ij) + i * ld_src]);
+        vsrc = _mm512_mul_ps(vsrc, vrscale);
+        auto vdsrc = _mm512_cvtps_epi32(vsrc);
+        vdsrc = _mm512_min_epi32(vdsrc, vpos);
+        vdsrc = _mm512_max_epi32(vdsrc, vneg);
         auto vbsrc = _mm512_cvtepi32_epi8(vdsrc);
         _mm_storeu_si128((__m128i*)&dstptr[(j + ij) + i * ld_dst], vbsrc);
       }
@@ -437,6 +593,32 @@ static inline JBLAS_CODE broadcast_u8(int num, const uint8_t& srcval, uint8_t* d
   }
   for (; i < num; i++) {
     dstptr[i] = srcval;
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(void* raw_srcptr, void* raw_dstptr, int row, int col,
+                                                     int srcstride, int dststride) {
+  char* srcptr = (char*)raw_srcptr;
+  char* dstptr = (char*)raw_dstptr;
+  constexpr int simd_proc_elt = 16;
+  auto col_body_loop = col / simd_proc_elt;
+  auto col_tail = col % simd_proc_elt;
+  auto tail_mask = _cvtu32_mask16(0xffff >> (16 - col_tail));
+  for (int i = 0; i < row; i++) {
+    auto src = srcptr + i * srcstride;
+    auto dst = dstptr + i * dststride;
+    int j = 0;
+    for (; j < col_body_loop; j++) {
+      auto pack_bf16_value =
+          _mm512_cvtepi32_epi16(_mm512_bsrli_epi128(_mm512_loadu_si512(src + sizeof(float) * simd_proc_elt * j), 2));
+      _mm256_storeu_si256((__m256i*)(dst + (j * simd_proc_elt) * sizeof(jblas::utils::bf16)), pack_bf16_value);
+    }
+    if (col_tail > 0) {
+      auto pack_bf16_tail =
+          _mm512_cvtepi32_epi16(_mm512_bsrli_epi128(_mm512_loadu_si512(src + sizeof(float) * simd_proc_elt * j), 2));
+      _mm256_mask_storeu_epi16(dst + (j * simd_proc_elt) * sizeof(jblas::utils::bf16), tail_mask, pack_bf16_tail);
+    }
   }
   return JblasSuccess;
 }

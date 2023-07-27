@@ -565,8 +565,8 @@ class WeightS4_KBlock {
                                     colsize, ldb * sizeof(B[0]), rowsize * sizeof(tmp[0]));
         assert(ret == JblasSuccess);
         ret = kernel::wrapper::CompressS8S4<_GemmCore_T::NTILE>::template forward<ISA_T>(
-            tmp.data(), dstptr + rowidx * _GemmCore_T::NTILE / 2 + colidx * KPad / 2, rowsize, colsize,
-            rowsize * sizeof(tmp[0]), KPad * sizeof(dstptr[0]) / 2);
+            tmp.data(), dstptr + rowidx * _GemmCore_T::NTILE / 2 + colidx * KPad / 2, rowsize, colsize, rowsize,
+            KPad);  // ld_dst here not stride
         assert(ret == JblasSuccess);
       }
     }
@@ -590,12 +590,6 @@ class WeightS4_KBlock {
     return compressWeight<ISA_T>(N, K, quanW.data(), N, scales.data(), blocksize, type);
   }
 
-  template <JBLAS_ISA ISA_T, typename _T>
-  inline JBLAS_CODE getWeight(_T** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                              const PackedWeight* ptr) {
-    return JblasNotSupport;
-  }
-
   template <JBLAS_ISA ISA_T>
   inline JBLAS_CODE getWeight(float** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
                               const PackedWeight* ptr) {
@@ -607,7 +601,7 @@ class WeightS4_KBlock {
         auto KPad = wptr->mKPad;
         auto bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
         for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-          kernel::wrapper::DecompressKBlockS4F32::forward<ISA_T, float>(
+          kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, float>(
               bptr + i * KPad / 2, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
               _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
               _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
@@ -623,7 +617,47 @@ class WeightS4_KBlock {
         auto KPad = wptr->mKPad;
         auto bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
         for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-          kernel::wrapper::DecompressKBlockS4F32::forward<ISA_T, utils::bf16>(
+          kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, utils::bf16>(
+              bptr + i * KPad / 2, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
+        }
+        *dststep = k_size;
+        return JblasSuccess;
+      }
+    }
+    return JblasInvalidParam;
+  }
+
+  template <JBLAS_ISA ISA_T>
+  inline JBLAS_CODE getWeight(utils::bf16** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
+                              const PackedWeight* ptr) {
+    static_assert(_GemmCore_T::PACK_ROW == 2);  // bf16 PackRow==1
+    {
+      auto wptr = dynamic_cast<const PackedWeightS4F32*>(ptr);
+      if (wptr) {
+        auto NPad = wptr->mNPad;
+        auto KPad = wptr->mKPad;
+        auto bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
+        for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
+          kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, float>(
+              bptr + i * KPad / 2, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
+              _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset / _GemmCore_T::PACK_ROW,
+              wptr->mBlockSize / _GemmCore_T::PACK_ROW, NPad);
+        }
+        *dststep = k_size;
+        return JblasSuccess;
+      }
+    }
+    {
+      auto wptr = dynamic_cast<const PackedWeightS4Bf16*>(ptr);
+      if (wptr) {
+        auto NPad = wptr->mNPad;
+        auto KPad = wptr->mKPad;
+        auto bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
+        for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
+          kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, utils::bf16>(
               bptr + i * KPad / 2, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
               _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
               _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
@@ -662,7 +696,7 @@ class WeightS4_KBlock {
     for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
       kernel::wrapper::DecompressKBlockS4S8::forward<ISA_T>(
           bptr + i * KPad / 2, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
-          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW / 2,
+          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
           _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW);
     }
     *dststep = k_size;
@@ -814,13 +848,12 @@ class GemmLauncherKBlockPackWeight {
   }
 };
 
-template <JBLAS_ISA _RT_ISA_T, template <class _T> class _PrologueA_T, template <class _T> class _PrologueB_T,
-          class _Epilogue_T>
+template <JBLAS_ISA _RT_ISA_T, class _GemmCore_T, template <class _T> class _PrologueA_T,
+          template <class _T> class _PrologueB_T, class _Epilogue_T>
 class GemmSLauncherKBlockPackWeight {
  public:
   static JBLAS_ISA constexpr RT_ISA = _RT_ISA_T;
-  using GemmCore = jblas::gemm::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK<float, float>;
-  using GemmCoreBf16 = jblas::gemm::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK<float, utils::bf16>;
+  using GemmCore = _GemmCore_T;
   using PrologueA = _PrologueA_T<GemmCore>;
   using PrologueB = _PrologueB_T<GemmCore>;
   using AType = typename GemmCore::AType;
@@ -845,7 +878,6 @@ class GemmSLauncherKBlockPackWeight {
     const size_t StackSize;
   };
   GemmCore mGemmCore;
-  GemmCoreBf16 mGemmCoreBf16;
   PrologueA mProA;
   PrologueB mProB;
   _Epilogue_T mEpilogue;
@@ -918,9 +950,9 @@ class GemmSLauncherKBlockPackWeight {
                             wscale_step, m_remain, n_padded, k_padded, blkptr->mBlockSize, acache_step * sizeof(AType),
                             bcache_stride, _config.NStep * sizeof(CType), iterk);
         } else if (blkptr->mType == int(prologue::weight_comp::gemm::WeightCompType::S4_Bf16)) {
-          mGemmCoreBf16.forward(aptr_cache, bptr_cache, cptr_cache, azp_ptr, ascale_ptr, ascale_step, wscale_bf16ptr,
-                                wscale_step, m_remain, n_padded, k_padded, blkptr->mBlockSize,
-                                acache_step * sizeof(AType), bcache_stride, _config.NStep * sizeof(CType), iterk);
+          mGemmCore.forward(aptr_cache, bptr_cache, cptr_cache, azp_ptr, ascale_ptr, ascale_step, wscale_bf16ptr,
+                            wscale_step, m_remain, n_padded, k_padded, blkptr->mBlockSize, acache_step * sizeof(AType),
+                            bcache_stride, _config.NStep * sizeof(CType), iterk);
         }
       }
     }
@@ -952,8 +984,8 @@ class GemmInterfaceKBlockPackWeight {
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
-    auto quanA =
-        mLauncher.mProA.template quantize<_Launcher_T::RT_ISA>(_param.paramA, _param.M, _param.K, bptr->mBlockSize);
+    auto paraA = mLauncher.mProA.createParallel(_param.M, _param.K, bptr->mBlockSize);
+    auto quanA = mLauncher.mProA.createObj(_param.M, _param.K, bptr->mBlockSize);
     auto cb = utils::CpuBase();
     if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
       static bool dbgprint = false;
@@ -966,6 +998,8 @@ class GemmInterfaceKBlockPackWeight {
 #pragma omp parallel
     {
       int tidx = omp_get_thread_num();
+      mLauncher.mProA.template quantizeT<_Launcher_T::RT_ISA>(_param.paramA, tidx, quanA, paraA);
+#pragma omp barrier
       int colidx, rowidx, rowsize, colsize;
       _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
@@ -1002,7 +1036,7 @@ JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
 using GemmKernelDynamicQuantS4KBlockSimple = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AccumulateWriteBack<float>>,
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AccumulatorWriteBack<float, float>>,
     jblas::utils::parallel::Parallel2DGemmKBlock>;
 using GemmKernelDynamicQuantS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmLauncherKBlockPackWeight<
@@ -1012,11 +1046,31 @@ using GemmKernelDynamicQuantS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfac
 
 using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        DefaultISA, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AccumulateWriteBack<float>>,
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+        jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        jblas::epilogue::gemm::AccumulatorWriteBack<float, float>>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
 }  // namespace avx512_vnni
+namespace amx_bf16 {
+JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
+using GemmKernelS4KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
+        jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
+        jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        jblas::epilogue::gemm::AccumulatorWriteBack<float, float>>,  // output fp32->fp32
+    DefaultParallel>;
+}  // namespace amx_bf16
+namespace amx_int8 {
+JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
+using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
+        jblas::prologue::gemm::ActivationF32S8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        jblas::epilogue::gemm::AccumulatorWriteBack<float, float>>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+}  // namespace amx_int8
 }  // namespace weight_comp
 }  // namespace gemm_default
 }  // namespace wrapper

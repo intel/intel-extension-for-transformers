@@ -65,7 +65,7 @@ class GemmLauncherPackWeight {
     auto StackTmp = alloca(_config.StackSize);
     auto tmpB = (BType*)(StackTmp);
     auto tmpA = (AType*)(tmpB + _config.NStep * _config.KStep);
-    auto tmpC = (CType*)(tmpA + GemmCore::MTILE * GemmCore::KTILE);
+    auto tmpC = (CType*)(tmpA + GemmCore::MTILE * _config.KStep);
     for (int itern = 0; itern < colremain; itern += _config.NStep) {
       int n_remain = utils::remainsize(itern, colremain, _config.NStep);
       for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
@@ -93,7 +93,7 @@ class GemmLauncherPackWeight {
         auto cptr_cache = tmpC + i * _config.NStep;
         int ccache_stride = _config.NStep * sizeof(CType);
 
-        AType* aptr_cache = nullptr;
+        AType* aptr_cache = tmpA;
         int acache_step = 0;
         if (k_paddedle) {
           mProA.template getActivation<_RT_ISA_T>(&aptr_cache, &acache_step, _param.paramA, m_remain, k_paddedle,
@@ -103,11 +103,10 @@ class GemmLauncherPackWeight {
         }
         int k_tail = k_remain - k_paddedle;
         if (k_tail) {
-          aptr_cache = tmpA;
           mProA.template getActivation<_RT_ISA_T>(&aptr_cache, &acache_step, _param.paramA, m_remain, k_tail,
                                                   (blk_m + i + _config.rowidx), iterk + k_paddedle);
           mGemmCore.forward(aptr_cache, bptr_cache + k_paddedle * GemmCore::NTILE, cptr_cache, m_remain, n_padded,
-                            k_padded, acache_step * sizeof(AType), bcache_stride, ccache_stride, iterk + k_paddedle);
+                            GemmCore::KTILE, acache_step * sizeof(AType), bcache_stride, ccache_stride, iterk + k_paddedle);
         }
       }
     }
@@ -169,19 +168,67 @@ using DefaultParallel = jblas::utils::parallel::Parallel2DGemm<T>;
 namespace avx512f {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F, jblas::prologue::gemm::ActivationBase,
-        jblas::prologue::gemm::WeightPack, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
+        DefaultISA,                                            //
+        jblas::gemm::GemmCore_Row_NN_8x48_AVX512F,             //
+        jblas::prologue::gemm::ActivationBase,                 //
+        jblas::prologue::gemm::WeightPack,                     //
+        jblas::epilogue::gemm::AlphaBetaProcessFp32>,
     DefaultParallel>;
 }  // namespace avx512f
 namespace avx512_vnni {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationBase,
-        jblas::prologue::gemm::WeightPack, jblas::epilogue::gemm::AlphaBetaProcessS32U8>,
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
+        DefaultISA,                                            //
+        jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI,         //
+        jblas::prologue::gemm::ActivationBase,                 //
+        jblas::prologue::gemm::WeightPack,                     //
+        jblas::epilogue::gemm::AlphaBetaProcessS32U8>,
     DefaultParallel>;
 }  // namespace avx512_vnni
+
+namespace amx_bf16 {
+JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
+using GemmKernelPackedWeightNN = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
+        DefaultISA,                                            //
+        jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,           //
+        jblas::prologue::gemm::ActivationBase,                 //
+        jblas::prologue::gemm::WeightPack,                     //
+        jblas::epilogue::gemm::AccumulatorWriteBack<float, jblas::utils::bf16>>,
+    DefaultParallel>;
+using GemmKernelPackedWeightNN_48 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
+        DefaultISA,                                            //
+        jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16,           //
+        jblas::prologue::gemm::ActivationBase,                 //
+        jblas::prologue::gemm::WeightPack,                     //
+        jblas::epilogue::gemm::AccumulatorWriteBack<float, jblas::utils::bf16>>,
+    DefaultParallel>;
+}  // namespace amx_bf16
+
+namespace amx_int8 {
+JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
+
+using GemmKernel48 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
+        DefaultISA,                                            //
+        jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8,           //
+        jblas::prologue::gemm::ActivationBase,                 //
+        jblas::prologue::gemm::WeightPack,                     //
+        jblas::epilogue::gemm::AlphaBetaProcessS32U8>,
+    DefaultParallel>;
+
+using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
+        DefaultISA,                                            //
+        jblas::gemm::GemmCore_Row_NN_16x64_AMX_INT8,           //
+        jblas::prologue::gemm::ActivationBase,                 //
+        jblas::prologue::gemm::WeightPack,                     //
+        jblas::epilogue::gemm::AlphaBetaProcessS32U8>,
+    DefaultParallel>;
+}  // namespace amx_int8
 }  // namespace gemm_default
 }  // namespace wrapper
 
