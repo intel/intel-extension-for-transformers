@@ -158,9 +158,6 @@ Use this [link](https://docs.habana.ai/en/latest/AWS_EC2_DL1_and_PyTorch_Quick_S
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd ./intel-extension-for-transformers/
-apt-get update
-apt-get install git-lfs
-git-lfs install
 ```
 
 Copy the [generate.py](./generate.py) script to Gaudi instance and place it in the current directory.
@@ -168,6 +165,9 @@ Run the Docker container with Habana runtime and necessary environment variables
 
 ```bash
 docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host -v $(pwd):/intel-extension-for-transformers vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest
+apt-get update
+apt-get install git-lfs
+git-lfs install
 cd /intel-extension-for-transformers/workflows/chatbot/inference/
 git clone https://huggingface.co/mosaicml/mpt-7b-chat
 pip install datasets
