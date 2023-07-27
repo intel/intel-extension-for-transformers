@@ -88,8 +88,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N * batch_size);
   ne_set_name(embd, "embd");
   for (int i = 0; i < batch_size; ++i) {
-    memcpy(static_cast<model_token*>(embd->data) + i * N * ne_element_size(embd),
-           tokens + i * N * ne_element_size(embd), N * ne_element_size(embd));
+    memcpy(static_cast<model_token*>(embd->data) + i * N, tokens + i * N, N * ne_element_size(embd));
   }
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
@@ -112,17 +111,19 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     if (model.layers[il].attn[0]->type == NE_TYPE_JBLAS) {  // fused execution of QKV
       struct ne_tensor* QKVcur =
           ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
-      Qcur = ne_rope_inplace(
-          ctx0,
-          ne_reshape_4d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 0 * N * n_embd * ne_element_size(QKVcur)),
-                        n_embd / n_head, n_head, N, batch_size),
-          n_past, n_rot, 0);
-      Kcur = ne_rope_inplace(
-          ctx0,
-          ne_reshape_4d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 1 * N * n_embd * ne_element_size(QKVcur)),
-                        n_embd / n_head, n_head, N, batch_size),
-          n_past, n_rot, 0);
-      Vcur = ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur));
+      Qcur = ne_rope_inplace(ctx0,
+                             ne_reshape_4d(ctx0,
+                                           ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size,
+                                                      0 * N * n_embd * batch_size * ne_element_size(QKVcur)),
+                                           n_embd / n_head, n_head, N, batch_size),
+                             n_past, n_rot, 0);
+      Kcur = ne_rope_inplace(ctx0,
+                             ne_reshape_4d(ctx0,
+                                           ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size,
+                                                      1 * N * n_embd * batch_size * ne_element_size(QKVcur)),
+                                           n_embd / n_head, n_head, N, batch_size),
+                             n_past, n_rot, 0);
+      Vcur = ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size, 2 * N * n_embd * batch_size * ne_element_size(QKVcur));
 
     } else {
       Qcur = ne_rope_inplace(

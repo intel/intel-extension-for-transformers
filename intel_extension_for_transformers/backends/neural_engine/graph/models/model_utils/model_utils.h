@@ -244,7 +244,7 @@ MODEL_API const char* model_print_system_info(void);
 
 /*  beam search utils  */
 struct beam {
-  const model_context* ctx;
+  const model_context* ctx = nullptr;
   std::vector<model_token> token_ids;
   // Cumulative beam probability (renormalized with each token)
   float p;
@@ -256,7 +256,7 @@ struct beam {
   void print() {
     printf("p: %0.6f, eos: %d, tokens: ", p, eos());
     for (const auto& id : token_ids) {
-      printf("%s", (ctx->vocab.id_to_token.at(id).tok).c_str());
+      printf("%s", model_token_to_str(ctx, id));
     }
     printf("\n");
   }

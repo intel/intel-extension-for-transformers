@@ -1761,7 +1761,7 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
   // DEBUG
 #if 0
   printf("====================== \n");
-  for (auto kk : embd_inp[k]) {
+  for (auto kk : embd_inp) {
     printf("%s \n", (lctx->vocab.id_to_token.at(kk).tok).c_str());
   }
 #endif
@@ -1876,7 +1876,6 @@ std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& 
   for (int i = 0; i < beam_size; ++i) {
     MODEL_ASSERT(cur_beams[i].infer_bs_id == i);
     if (next_beams[i].eos()) {
-      MODEL_ASSERT(i = next_beams[i].infer_bs_id);
       cpy_eos_bs_ids.push_back(next_beams[i].infer_bs_id);
       nb_eos_ids.push_back(i);
     } else {
@@ -1895,6 +1894,23 @@ std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& 
   }
   // beams should be ordered by batch id
   std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
+#if 0 // DEBUG
+  printf("cpy_final_bs_ids: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", cpy_final_bs_ids[i]);
+  }
+  printf("\n");
+  printf("nb_shuffle_ids: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", nb_shuffle_ids);
+  }
+  printf("\n");
+  printf("next_beams after: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", next_beams[i].infer_bs_id);
+  }
+  printf("\n");
+#endif
   return kv_reorder_indices;
 }
 
@@ -1949,7 +1965,6 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
       // TODO add -b param for long prompt (memory issue)
       model_eval(lctx, embd.data(), n_tokens, n_past, n_threads);
       n_past += n_tokens;
-      // TODO batch_size = 1
       for (int i = 1; i < lctx->model.layers.size(); ++i) {
         int n_ctx = lctx->model.hparams.n_ctx;
         int n_embd = lctx->model.hparams.n_embd;
@@ -1973,9 +1988,11 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
 
       logits_info li(lctx);
       std::vector<std::vector<model_token_data>> next_tokens = li.top_k(beam_size);
+      MODEL_ASSERT(next_tokens.size() == 1);
       beams.clear();
       for (int i = 0; i < beam_size; ++i) {
         beam b;
+        b.ctx = lctx;
         b.token_ids.push_back(next_tokens[0][i].id);
         b.p = li.probability_from_logit(0, next_tokens[0][i].logit);
         b.infer_bs_id = i;
@@ -2018,12 +2035,12 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
       renormalize_beam_probabilities(beams);
     }
 
-#if 0  // DEBUG: print current beams for this iteration
+#if 0 // DEBUG: print current beams for this iteration
     printf("\n\nCurrent beams:\n");
     for (size_t j = 0; j < beams.size(); ++j) {
       printf("beams[%d]: ", j);
-      fflush(stdout);
       beams[j].print();
+      fflush(stdout);
     }
 #else
     // Show progress
