@@ -405,7 +405,8 @@ void jblas_weightcomp_QKV_f32_forward(float* activation, void* wqptr, void* wkpt
   if (wqtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK ||
       wqtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
       wqtmp->mCoreType == jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK) {
-    if (_cd->AMX_INT8()) {
+    auto wbtmp = dynamic_cast<prologue::weight_comp::PackedWeightKBlock*>(wqtmp);
+    if (_cd->AMX_INT8() && wbtmp->mBlockSize % 128 == 0) {
       using GemmKernel = jblas::wrapper::transformer_default::weight_comp::amx_int8::QKVGemmSKernelDynamicS4KBlock;
       static GemmKernel kernel;
       GemmKernel::WeightType::Param wparams[3]{
@@ -523,7 +524,8 @@ void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, v
   auto w2tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w2ptr, 0);
   if (w1tmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
       w1tmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK) {
-    if (_cd->AMX_INT8()) {
+    auto wbtmp = dynamic_cast<prologue::weight_comp::PackedWeightKBlock*>(w1tmp);
+    if (_cd->AMX_INT8() && wbtmp->mBlockSize % 128 == 0) {
       using GemmKernel = custom::wrapper::kblock::amx_int8::AddGemmSKernelDynamicS4KBlock;
       using GeluGemmKernel = custom::wrapper::kblock::amx_int8::AddGeluGemmSKernelDynamicS4KBlock;
       using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
