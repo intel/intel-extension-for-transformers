@@ -55,7 +55,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
 
-  const int64_t n_mem = n_layer * n_ctx;
+  const int64_t n_mem =4* n_layer * n_ctx; // beam size for mlperf
   const int64_t n_elements = n_embd * n_mem;
 
   cache.buf.resize(2u * n_elements * ne_type_size(wtype) + 2u * MB);
