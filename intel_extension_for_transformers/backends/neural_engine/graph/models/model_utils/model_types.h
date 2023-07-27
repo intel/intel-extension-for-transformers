@@ -200,11 +200,12 @@ struct model_context {
 
   model_struct model;
   model_vocab vocab;
+  int batch_size = 1;
   std::vector<std::vector<std::string>> tensors_name;
 
   size_t mem_per_token = 0;
 
-  // decode output (2-dimensional array: [n_tokens][n_vocab])
+  // decode output (3-dimensional array: [batch_size] [n_tokens] [n_vocab])
   std::vector<float> logits;
   bool logits_all = false;
 
@@ -259,7 +260,7 @@ struct model_context {
   }
 };
 
-typedef int model_token;
+typedef model_vocab::id model_token;
 
 typedef struct model_token_data {
   model_token id;  // token id

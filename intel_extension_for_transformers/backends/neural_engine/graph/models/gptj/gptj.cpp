@@ -35,6 +35,8 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
+#define GPT_J_TOKEN_EOS 50256
+
 // evaluate the transformer
 //
 //   - lctx:      model context
@@ -52,6 +54,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
 
   const int64_t t_start_us = ne_time_us();
 
+  const int batch_size = lctx.batch_size;
   const int N = n_tokens;
 
   const auto& model = lctx.model;
@@ -372,4 +375,410 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   }
 
   return lctx;
+}
+
+/*  beam search utils  */
+// TODO move it to utils folder
+struct beam {
+  const model_context* ctx;
+  std::vector<model_token> token_ids;
+  // Cumulative beam probability (renormalized with each token)
+  float p;
+  // record inference batch indice
+  int infer_bs_id;
+  // end-of-sentence
+  const bool eos() const { return !token_ids.empty() && token_ids.back() == GPT_J_TOKEN_EOS; }
+  void print() {
+    printf("p: %0.6f, eos: %d, tokens: ", p, eos());
+    for (const auto& id : token_ids) {
+      printf("%s", (ctx->vocab.id_to_token.at(id).tok).c_str());
+    }
+    printf("\n");
+  }
+};
+
+// A struct for calculating logits-related info.
+struct logits_info {
+  // (batch, seq_len * vocab_size)
+  const float* const logits;
+  const int batch_size;
+  const int32_t n_vocab;
+  // last seq_len indice
+  // only handle last seq_len indice
+  const size_t offset;
+  const size_t bs_stride;
+  // max logit (batch,)
+  std::vector<float> max_ls;
+  // 1 / exp sum (batch,)
+  std::vector<float> normalizers;
+  struct sum_exp {
+    float max_l;
+    float operator()(float sum, float l) const { return sum + std::exp(l - max_l); }
+  };
+
+  logits_info(struct model_context* lctx)
+      : logits(model_get_logits(lctx)),
+        batch_size(lctx->batch_size),
+        n_vocab(lctx->model.hparams.n_vocab),
+        offset(lctx->logits.size() / lctx->batch_size - n_vocab),
+        bs_stride(lctx->logits.size() / lctx->batch_size) {
+    max_ls.resize(lctx->batch_size);
+    normalizers.resize(lctx->batch_size);
+    NE_ASSERT(lctx->logits.size() % lctx->batch_size == 0);
+    // batch
+    for (int i = 0; i < batch_size; ++i) {
+      max_ls[i] = *std::max_element(logits + i * bs_stride + offset, logits + i * bs_stride + offset + n_vocab);
+      normalizers[i] =
+          1.0f / std::accumulate(logits + i * bs_stride + offset, logits + i * bs_stride + offset + n_vocab, 0.0f, sum_exp{max_ls[i]});
+    }
+  }
+
+  model_token_data get_token_data(const int& batch_idx, const int32_t& token_idx) const {
+    return {token_idx, *(logits + batch_idx * bs_stride + offset + token_idx), 0.0f};
+  }
+
+  // Return top k token_data by logit. (batch, top_k)
+  std::vector<std::vector<model_token_data>> top_k(const int& k) {
+    std::vector<std::vector<model_token_data>> min_heap(batch_size);  // min-heap by logit
+    int tk = std::min(k, n_vocab);
+    // min_heap.reserve(batch_size * tk);
+    for (int idx = 0; idx < batch_size; ++idx) {
+      for (int32_t token_idx = 0; token_idx < tk; ++token_idx) {
+        min_heap[idx].push_back(get_token_data(idx, token_idx));
+      }
+    }
+    auto comp = [](const model_token_data& a, const model_token_data& b) { return a.logit > b.logit; };
+    for (int idx = 0; idx < batch_size; ++idx) {
+      std::make_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+      for (int32_t token_idx = tk; token_idx < n_vocab; ++token_idx) {
+        if (min_heap[idx].front().logit < get_token_data(idx, token_idx).logit) {
+          std::pop_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+          min_heap[idx].back().id = token_idx;
+          min_heap[idx].back().logit = get_token_data(idx, token_idx).logit;
+          std::push_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+        }
+      }
+    }
+    return min_heap;
+  }
+
+  float probability_from_logit(const int& batch_idx, const float& logit) {
+    return normalizers[batch_idx] * std::exp(logit - max_ls[batch_idx]);
+  }
+};
+
+void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const std::vector<beam>& cur_beams,
+                                          const int& beam_size, model_context* lctx, const int& n_threads,
+                                          const int& n_past) {
+  auto const comp = [](const beam& a, const beam& b) { return a.p > b.p; };
+  std::vector<model_token> embd_inp;
+  std::vector<int> infer_beam_ids(beam_size);
+  int record = 0;
+  int batch_size = 0;
+  for (int i = 0; i < beam_size; ++i) {
+    // is done or not
+    if (!cur_beams[i].eos()) {
+      // (batch, 1)
+      // ordered by infer_bs_id
+      embd_inp.push_back(cur_beams[i].token_ids.back());
+      infer_beam_ids[i] = record++;
+      batch_size++;
+    }
+  }
+  // DEBUG
+#if 0
+  printf("====================== \n");
+  for (auto kk : embd_inp[k]) {
+    printf("%s \n", (lctx->vocab.id_to_token.at(kk).tok).c_str());
+  }
+#endif
+  lctx->batch_size = batch_size;
+  int n_tokens = 1;
+  lctx->logits.resize(batch_size * n_tokens * lctx->model.hparams.n_vocab);
+  model_eval(lctx, embd_inp.data(), n_tokens, n_past, n_threads);
+  // DEBUG
+#if 0
+  size_t bs_stride = n_tokens * lctx->model.hparams.n_vocab;
+  for (int k = 0; k < batch_size; ++k) {
+    printf("====================== \n");
+    for (int kk = 0; kk < 10; ++kk) {
+      printf("%4.5f \n", model_get_logits(lctx) + k * bs_stride + kk);
+    }
+  }
+#endif
+  logits_info li(lctx);
+  // top_k num = beam_size
+  std::vector<std::vector<model_token_data>> next_tokens = li.top_k(beam_size);
+  // DEBUG
+#if 0
+  for (int k = 0; k < next_tokens.size(); ++k) {
+    printf("====================== \n");
+    for (auto kk : next_tokens[k]) {
+      printf("%s, l: %3.6f, p: %0.6f \n", (lctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.logit,
+             li.probability_from_logit(k, kk.logit));
+    }
+  }
+#endif
+  NE_ASSERT(next_tokens.size() == batch_size);
+  for (int i = 0; i < beam_size; ++i) {
+    beam b = cur_beams[i];
+    if (b.eos()) {
+      // b is at end-of-sentence, so just copy it to next_beams if its probability is high enough.
+      if (next_beams.size() < beam_size) {
+        next_beams.push_back(b);
+        if (next_beams.size() == beam_size) {
+          std::make_heap(next_beams.begin(), next_beams.end(), comp);
+        }
+      } else if (next_beams.front().p < b.p) {
+        std::pop_heap(next_beams.begin(), next_beams.end(), comp);
+        next_beams.back() = b;
+        std::push_heap(next_beams.begin(), next_beams.end(), comp);
+      }
+    } else {
+      int j = 0;
+      if (next_beams.size() < beam_size) {
+        for (; next_beams.size() < beam_size; ++j) {
+          beam next_beam = b;
+          next_beam.token_ids.push_back(next_tokens[infer_beam_ids[i]][j].id);
+          next_beam.p *= li.probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
+          next_beams.push_back(std::move(next_beam));
+        }
+        std::make_heap(next_beams.begin(), next_beams.end(), comp);
+      }
+      for (; j < beam_size; ++j) {
+        float const next_p =
+            b.p * li.probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
+        if (next_beams.front().p < next_p) {
+          std::pop_heap(next_beams.begin(), next_beams.end(), comp);
+          next_beams.back() = b;
+          next_beams.back().token_ids.push_back(next_tokens[infer_beam_ids[i]][j].id);
+          next_beams.back().p = next_p;
+          std::push_heap(next_beams.begin(), next_beams.end(), comp);
+        }
+      }
+    }
+  }
+  std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
+}
+
+// get kv cache reorder indices,
+// k: dst_beam batch idx, v: src_beam batch idx
+// for copy predicted past token kv cache
+// for example:
+//     - c
+// a -|    ---------->|
+//     - d            |       - ac
+//                    | ---> |      (beam_size = 2)
+//     - f            |       - ad
+// b -|    ---------->|
+//     - g
+// kv_cache_reorder_indices = {0:0, 1:0}
+// if kv_cache_reorder_indices = {0:0, 1:1}, then do not need reorder (cpy)
+std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& next_beams,
+                                                             const std::vector<beam>& cur_beams, const int& beam_size) {
+  NE_ASSERT(next_beams.size() == beam_size);
+  NE_ASSERT(cur_beams.size() == beam_size);
+  // DEBUG
+#if 0
+  printf("cur_beams: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", cur_beams[i].infer_bs_id);
+  }
+  printf("\n");
+  printf("next_beams: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", next_beams[i].infer_bs_id);
+  }
+  printf("\n");
+#endif
+  std::unordered_map<int, int> kv_reorder_indices;
+  kv_reorder_indices.reserve(beam_size);
+  // shuffle beams which are early stopped (eos)
+  // keep them behind beams which have non-eos
+  // next_beams infer_bs_id: [0, 1(eos), 2(eos), 3] - > [0, 3, 1(eos), 2(eos)]
+  std::vector<int> cpy_eos_bs_ids;
+  std::vector<int> cpy_final_bs_ids;
+  std::vector<int> nb_eos_ids;
+  std::vector<int> nb_shuffle_ids;
+  cpy_final_bs_ids.reserve(beam_size);
+  for (int i = 0; i < beam_size; ++i) {
+    NE_ASSERT(cur_beams[i].infer_bs_id == i);
+    if (next_beams[i].eos()) {
+      NE_ASSERT(i = next_beams[i].infer_bs_id);
+      cpy_eos_bs_ids.push_back(next_beams[i].infer_bs_id);
+      nb_eos_ids.push_back(i);
+    } else {
+      cpy_final_bs_ids.push_back(next_beams[i].infer_bs_id);
+      nb_shuffle_ids.push_back(i);
+    }
+  }
+  cpy_final_bs_ids.insert(cpy_final_bs_ids.end(), cpy_eos_bs_ids.begin(), cpy_eos_bs_ids.end());
+  nb_shuffle_ids.insert(nb_shuffle_ids.end(), nb_eos_ids.begin(), nb_eos_ids.end());
+
+  // update indices and batch ids
+  for (int i = 0; i < beam_size; ++i) {
+    kv_reorder_indices[i] = cpy_final_bs_ids[i];
+    // update infer_bs_id before next beam generation
+    next_beams[nb_shuffle_ids[i]].infer_bs_id = i;
+  }
+  // beams should be ordered by batch id
+  std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
+  return kv_reorder_indices;
+}
+
+// As beams grow, the cumulative probabilities decrease.
+// Renormalize them to avoid floating point underflow.
+void renormalize_beam_probabilities(std::vector<beam>& beams) {
+  auto const sum_p = [](float sum, beam& b) { return sum + b.p; };
+  float const inv_sum = 1.0f / std::accumulate(beams.begin(), beams.end(), 0.0f, sum_p);
+  std::for_each(beams.begin(), beams.end(), [inv_sum](beam& b) { b.p *= inv_sum; });
+}
+
+// Return beam with highest probability.
+const beam& top_beam(std::vector<beam> const& beams) {
+  auto const by_p = [](beam const& a, beam const& b) { return a.p < b.p; };
+  return *std::max_element(beams.begin(), beams.end(), by_p);
+}
+
+// This is deterministic, but can be made probabilistic in
+// fill_next_beams_by_top_probabilities() by randomly selecting from all next_beams.
+// Not thread-safe.
+// TODO make the first step outside?
+// TODO batch_size = 4 only
+// TODO better way to return?
+const model_token* beam_search(const int& beam_size, const int& n_predict, model_context* lctx,
+                               const model_token* tokens_inp, const int& n_tokens, const int& n_threads) {
+  std::vector<model_token> beam_search_response(n_tokens);
+  memcpy(beam_search_response.data(), tokens_inp, n_tokens * sizeof(model_token));
+  printf("%s: beam search in progress ", __func__);
+  const int64_t t_start_search_us = ne_time_us();
+
+  // const int32_t n_vocab = lctx->model.hparams.n_vocab;
+  size_t n_past = 0;
+  std::vector<model_token> embd(n_tokens * beam_size);
+  // TODO add params.n_batch?
+  for (int i = 0; i < beam_size; ++i) {
+    embd.insert(embd.begin(), beam_search_response.begin(), beam_search_response.end());
+  }
+  lctx->batch_size = beam_size;
+  if (lctx->logits_all) {
+    lctx->logits.resize(beam_size * n_tokens * lctx->model.hparams.n_vocab);
+  } else {
+    lctx->logits.resize(beam_size * 1 * lctx->model.hparams.n_vocab);
+  }
+  std::vector<beam> beams;
+  beams.reserve(beam_size);
+  beams.push_back({lctx, {}, 1.0});
+  // Init next_beams with unique next token_id each.
+  std::vector<beam> next_beams;
+  next_beams.reserve(beam_size);
+  // Loop while there are any beams that have not yet reached end-of-sentence.
+  // If the top beam is at end-of-sentence, then finish since all other
+  // beam probabilities can only decrease.
+  auto const eos = [](const beam& b) { return b.eos(); };
+  for (int i = 0; i < n_predict && !eos(top_beam(beams)) && !std::all_of(beams.begin(), beams.end(), eos); ++i) {
+    // first step
+    if (n_past == 0) {
+      // TODO add -b param for long prompt (memory issue)
+      model_eval(lctx, embd.data(), n_tokens, n_past, n_threads);
+      n_past += n_tokens;
+      // TODO batch_size = 1
+      // for (int i = 0; i < lctx->model.layers.size(); ++i) {
+      //   int n_ctx = lctx->model.hparams.n_ctx;
+      //   int n_embd = lctx->model.hparams.n_embd;
+      //   // cpy batch 1 to all batch
+      //   for (int j = 1; j < beam_size; ++j) {
+      //     memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
+      //                (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * beam_size +
+      //                 j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd),
+      //            static_cast<char*>(lctx->model.kv_self.k->data) +
+      //                i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * beam_size,
+      //            ne_element_size(lctx->model.kv_self.k) * n_embd * (n_past));
+      //     memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+      //                (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * beam_size +
+      //                 j * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd),
+      //            static_cast<char*>(lctx->model.kv_self.v->data) +
+      //                i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * beam_size,
+      //            ne_element_size(lctx->model.kv_self.v) * n_embd * (n_past));
+      //   }
+      // }
+
+      logits_info li(lctx);
+      std::vector<std::vector<model_token_data>> next_tokens = li.top_k(beam_size);
+      // NE_ASSERT(next_tokens.size() == 2);
+      beams.clear();
+      for (int i = 0; i < beam_size; ++i) {
+        beam b;
+        b.token_ids.push_back(next_tokens[0][i].id);
+        b.p = li.probability_from_logit(0, next_tokens[0][i].logit);
+        b.infer_bs_id = i;
+        beams.push_back(b);
+      }
+      renormalize_beam_probabilities(beams);
+    } else {
+      fill_next_beams_by_top_probabilities(next_beams, beams, beam_size, lctx, n_threads, n_past);
+      std::unordered_map<int, int> kv_reorder_indices = update_kv_cache_reorder_indices(next_beams, beams, beam_size);
+      n_past += 1;
+      for (int i = 0; i < lctx->model.layers.size(); ++i) {
+        int n_ctx = lctx->model.hparams.n_ctx;
+        int n_embd = lctx->model.hparams.n_embd;
+        for (auto it : kv_reorder_indices) {
+          if (it.first != it.second) {
+            int input_token_offset = n_tokens * ne_element_size(lctx->model.kv_self.v) * n_embd;
+            memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
+                       (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * beam_size +
+                        it.first * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd) +
+                       input_token_offset,
+                   static_cast<char*>(lctx->model.kv_self.k->data) +
+                       i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * beam_size +
+                       it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset,
+                   ne_element_size(lctx->model.kv_self.k) * n_embd * (n_past - n_tokens));
+            memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+                       (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * beam_size +
+                        it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd) +
+                       input_token_offset,
+                   static_cast<char*>(lctx->model.kv_self.v->data) +
+                       i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * beam_size +
+                       it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset,
+                   ne_element_size(lctx->model.kv_self.v) * n_embd * (n_past - n_tokens));
+          }
+        }
+      }
+
+      beams.swap(next_beams);
+      next_beams.clear();
+      renormalize_beam_probabilities(beams);
+    }
+
+#if 0  // DEBUG: print current beams for this iteration
+    printf("\n\nCurrent beams:\n");
+    for (size_t j = 0; j < beams.size(); ++j) {
+      printf("beams[%d]: ", j);
+      fflush(stdout);
+      beams[j].print();
+    }
+#else
+    // Show progress
+    if (i % 10 == 0) {
+      printf(".");
+      fflush(stdout);
+    }
+#endif
+  }
+
+  const beam& top_b = top_beam(beams);
+  printf(" done \n");
+
+#if 0  // DEBUG: print final beam result
+    printf("\n\nFinal beam:\n");
+    top_b.print();
+#endif
+
+  for (const auto& id : top_b.token_ids) {
+    beam_search_response.push_back(id);
+  }
+
+  int64_t t_search_us = ne_time_us() - t_start_search_us;
+  printf("%s: beam_search time   = %8.2f ms\n", __func__, t_search_us / 1000.0f);
+  return beam_search_response.data();
 }
