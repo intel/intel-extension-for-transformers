@@ -355,6 +355,11 @@ class CpuDevice {
     static CpuDevice instance;
     return &instance;
   }
+
+  void print() {
+    printf("AVX:%d AVX2:%d AVX512F:%d AVX_VNNI:%d AVX512_VNNI:%d AMX_INT8:%d AMX_BF16:%d\n", mHasAVX, mHasAVX2,
+           mHasAVX512F, mHasAVX_VNNI, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16);
+  }
 #undef ADD_FLAG
 
  protected:
