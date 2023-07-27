@@ -30,6 +30,7 @@ void jblas_weights4block_f32_forward(float* activation, void* weiptr, float* out
   auto ret = JblasRuntimeError;
   auto wtmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(weiptr, 0);
   if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK ||
+      wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
       wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK) {
     if (_cd->AMX_INT8()) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::amx_int8::GemmSKernelDynamicS4KBlock;
@@ -217,6 +218,7 @@ void jblas_weightcomp_QKV_f32_forward(float* activation, void* wqptr, void* wkpt
   auto wvtmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(wvptr, 0);
   float alpha = 1.f, beta = 0.f;
   if (wqtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK ||
+      wqtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
       wqtmp->mCoreType == jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK) {
     if (_cd->AMX_INT8()) {
       using GemmKernel = jblas::wrapper::transformer_default::weight_comp::amx_int8::QKVGemmSKernelDynamicS4KBlock;
