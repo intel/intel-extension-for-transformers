@@ -800,6 +800,15 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
       } else {
         packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n, k, f32ptr, k, params.block_size, type);
       }
+    } else if (params.compute_type == quant_comp::bf16) {
+      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4KBlock;
+      static GemmKernel kernel;
+      if (cd->AVX512F()) {//epilogue and prologue not necessary to use AMX_BF16
+        packedw =
+            kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n, k, f32ptr, k, params.block_size, type);
+      } else {
+        packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n, k, f32ptr, k, params.block_size, type);
+      }
     }
   } else if (params.bits == quant_bits::q8) {
     // TODO add 8bit quantization

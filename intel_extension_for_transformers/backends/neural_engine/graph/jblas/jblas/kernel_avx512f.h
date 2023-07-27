@@ -75,7 +75,7 @@ static inline void dequant_s8_N(_DST_T* dstptr, int8_t* srcptr, __m512* vscales)
       _mm512_storeu_ps(dstptr + iv * 16, fzmm);
     } else if (std::is_same<_DST_T, utils::bf16>::value) {
       auto bf16_v = _mm512_cvtepi32_epi16(_mm512_bsrli_epi128(_mm512_castps_si512(fzmm), 2));
-      _mm256_storeu_epi16(dstptr + iv * 16, bf16_v);
+      _mm256_storeu_si256((__m256i*)(dstptr + iv * 16), bf16_v);
     } else {
       assert(false);
     }
@@ -144,18 +144,6 @@ inline __m512 vec_loadscalex16(utils::bf16* ptr) {
   auto vbf16 = _mm256_loadu_si256((__m256i*)ptr);
   auto vf32 = _mm512_cvtepu16_epi32(vbf16);
   return _mm512_castsi512_ps(_mm512_slli_epi32(vf32, 16));
-}
-
-template <typename _ST>
-static inline __m128 vec_loadscalex4(_ST* ptr) {
-  return _mm_loadu_ps(ptr);
-}
-
-template <>
-inline __m128 vec_loadscalex4(utils::bf16* ptr) {
-  auto vbf16 = _mm_loadu_si64((__m128i*)ptr);
-  auto vf32 = _mm_cvtepu16_epi32(vbf16);
-  return _mm_castsi128_ps(_mm_slli_epi32(vf32, 16));
 }
 
 static inline void vec_broadcast_epi32_1_2(__m512i* dst2regs, __m512i* src1regs) {
