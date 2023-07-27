@@ -87,9 +87,12 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   ne_cgraph gf = {};
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
-  struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
+  struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N * batch_size);
   ne_set_name(embd, "embd");
-  memcpy(embd->data, tokens, N * ne_element_size(embd));
+  for (int i = 0; i < batch_size; ++i) {
+    memcpy(static_cast<model_token*>(embd->data) + i * N * ne_element_size(embd),
+           tokens + i * N * ne_element_size(embd), N * ne_element_size(embd));
+  }
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
@@ -113,53 +116,74 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
           ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
       Qcur = ne_rope_inplace(
           ctx0,
-          ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 0 * N * n_embd * ne_element_size(QKVcur)),
-                        n_embd / n_head, n_head, N),
+          ne_reshape_4d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 0 * N * n_embd * ne_element_size(QKVcur)),
+                        n_embd / n_head, n_head, N, batch_size),
           n_past, n_rot, 0);
       Kcur = ne_rope_inplace(
           ctx0,
-          ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 1 * N * n_embd * ne_element_size(QKVcur)),
-                        n_embd / n_head, n_head, N),
+          ne_reshape_4d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 1 * N * n_embd * ne_element_size(QKVcur)),
+                        n_embd / n_head, n_head, N, batch_size),
           n_past, n_rot, 0);
-      Vcur = ne_transpose(
-          ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
-                              n_embd, N));
+      Vcur = ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur));
 
     } else {
       Qcur = ne_rope_inplace(
-          ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), n_embd / n_head, n_head, N),
+          ctx0,
+          ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), n_embd / n_head, n_head, N, batch_size),
           n_past, n_rot, 0);
       Kcur = ne_rope_inplace(
-          ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N),
+          ctx0,
+          ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N, batch_size),
           n_past, n_rot, 0);
-      Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd, N));
+      Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
     }
     ne_set_name(Qcur, "Qcur");
     ne_set_name(Kcur, "Kcur");
     ne_set_name(Vcur, "Vcur");
     // self-attention
     // store key and value to memory
+    // important: storing RoPE-ed version of K in the KV cache!
     {
-      struct ne_tensor* k =
-          ne_view_1d(ctx0, kv_self.k, N * n_embd, (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
-      struct ne_tensor* v =
-          ne_view_2d(ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
-                     (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
+      std::vector<ne_tensor*> Kcur_bs(batch_size);
+      std::vector<ne_tensor*> Vcur_bs(batch_size);
+      std::vector<ne_tensor*> k_bs(batch_size);
+      std::vector<ne_tensor*> v_bs(batch_size);
+      for (int i = 0; i < batch_size; ++i) {
+        // batch K
+        Kcur_bs[i] = ne_view_4d(ctx0, Kcur, n_embd / n_head, n_head, N, 1, ne_element_size(Kcur) * n_embd / n_head,
+                                ne_element_size(Kcur) * n_embd, ne_element_size(Kcur) * n_embd * N,
+                                i * ne_element_size(Kcur) * n_embd * N);
+        k_bs[i] = ne_view_1d(ctx0, kv_self.k, n_embd * N * 1,
+                             (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx * batch_size + n_past) +
+                                 i * n_ctx * n_embd * ne_element_size(kv_self.k));
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
 
-      // important: storing RoPE-ed version of K in the KV cache!
-      ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
-      ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
+        // batch V
+        Vcur_bs[i] = ne_permute(ctx0,
+                                ne_reshape_4d(ctx0,
+                                              ne_view_2d(ctx0, Vcur, n_embd, N, ne_element_size(Vcur) * n_embd,
+                                                         i * ne_element_size(Vcur) * n_embd * N),
+                                              n_embd / n_head, n_head, N, 1),
+                                1, 2, 0, 3);
+        v_bs[i] = ne_view_4d(ctx0, kv_self.v, N, n_embd / n_head, n_head, 1, n_ctx * ne_element_size(kv_self.v),
+                             n_ctx * ne_element_size(kv_self.v) * n_embd / n_head,
+                             n_ctx * ne_element_size(kv_self.v) * n_embd,
+                             ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * batch_size +
+                              i * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
+      }
     }
 
     struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
     ne_set_name(Q, "Q");
 
-    struct ne_tensor* K = ne_permute(
-        ctx0,
-        ne_reshape_3d(
-            ctx0, ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_embd, il * n_ctx * ne_element_size(kv_self.k) * n_embd),
-            n_embd / n_head, n_head, n_past + N),
-        0, 2, 1, 3);
+    struct ne_tensor* K =
+        ne_permute(ctx0,
+                   ne_view_4d(ctx0, kv_self.k, n_embd / n_head, n_head, (n_past + N), batch_size,
+                              ne_element_size(kv_self.k) * n_embd / n_head, ne_element_size(kv_self.k) * n_embd,
+                              ne_element_size(kv_self.k) * n_embd * n_ctx,
+                              il * n_ctx * ne_element_size(kv_self.k) * n_embd * batch_size),
+                   0, 2, 1, 3);
     ne_set_name(K, "K");
 
     // K * Q
@@ -183,9 +207,10 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     ne_set_name(KQ_soft_max, "KQ_soft_max");
 
     // split cached V into n_head heads
-    struct ne_tensor* V = ne_view_3d(
-        ctx0, kv_self.v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
-        n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, il * n_ctx * ne_element_size(kv_self.v) * n_embd);
+    struct ne_tensor* V = ne_view_4d(
+        ctx0, kv_self.v, (n_past + N), n_embd / n_head, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
+        n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, n_ctx * ne_element_size(kv_self.v) * n_embd,
+        il * n_ctx * ne_element_size(kv_self.v) * n_embd * batch_size);
     ne_set_name(V, "V");
 
     struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
@@ -197,7 +222,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
 
     // cur = KQV_merged.contiguous().view(n_embd, N)
     struct ne_tensor* KQV_merged_contiguous =
-        ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
+        ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N * batch_size, NE_SIZE_CALC));
     ne_set_name(KQV_merged_contiguous, "KQV_merged_contiguous");
 
     // projection (no bias)
@@ -280,13 +305,21 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   {
     auto& logits_out = lctx.logits;
 
+    size_t bs_stride = n_vocab * N;
     if (lctx.logits_all) {
-      logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+      logits_out.resize(n_vocab * N * batch_size);
+
+      for (int i = 0; i < batch_size; ++i) {
+        memcpy(logits_out.data() + i * bs_stride, (float*)ne_get_data(inpL) + (i * bs_stride),
+               sizeof(float) * n_vocab * N);
+      }
     } else {
       // return result for just the last token
-      logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      logits_out.resize(n_vocab * batch_size);
+      for (int i = 0; i < batch_size; ++i) {
+        memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)),
+               sizeof(float) * n_vocab);
+      }
     }
   }
 
@@ -424,12 +457,12 @@ struct logits_info {
         bs_stride(lctx->logits.size() / lctx->batch_size) {
     max_ls.resize(lctx->batch_size);
     normalizers.resize(lctx->batch_size);
-    NE_ASSERT(lctx->logits.size() % lctx->batch_size == 0);
+    MODEL_ASSERT(lctx->logits.size() % lctx->batch_size == 0);
     // batch
     for (int i = 0; i < batch_size; ++i) {
       max_ls[i] = *std::max_element(logits + i * bs_stride + offset, logits + i * bs_stride + offset + n_vocab);
-      normalizers[i] =
-          1.0f / std::accumulate(logits + i * bs_stride + offset, logits + i * bs_stride + offset + n_vocab, 0.0f, sum_exp{max_ls[i]});
+      normalizers[i] = 1.0f / std::accumulate(logits + i * bs_stride + offset,
+                                              logits + i * bs_stride + offset + n_vocab, 0.0f, sum_exp{max_ls[i]});
     }
   }
 
@@ -494,7 +527,6 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
 #endif
   lctx->batch_size = batch_size;
   int n_tokens = 1;
-  lctx->logits.resize(batch_size * n_tokens * lctx->model.hparams.n_vocab);
   model_eval(lctx, embd_inp.data(), n_tokens, n_past, n_threads);
   // DEBUG
 #if 0
@@ -519,7 +551,7 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
     }
   }
 #endif
-  NE_ASSERT(next_tokens.size() == batch_size);
+  MODEL_ASSERT(next_tokens.size() == batch_size);
   for (int i = 0; i < beam_size; ++i) {
     beam b = cur_beams[i];
     if (b.eos()) {
@@ -576,8 +608,8 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
 // if kv_cache_reorder_indices = {0:0, 1:1}, then do not need reorder (cpy)
 std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& next_beams,
                                                              const std::vector<beam>& cur_beams, const int& beam_size) {
-  NE_ASSERT(next_beams.size() == beam_size);
-  NE_ASSERT(cur_beams.size() == beam_size);
+  MODEL_ASSERT(next_beams.size() == beam_size);
+  MODEL_ASSERT(cur_beams.size() == beam_size);
   // DEBUG
 #if 0
   printf("cur_beams: ");
@@ -602,9 +634,9 @@ std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& 
   std::vector<int> nb_shuffle_ids;
   cpy_final_bs_ids.reserve(beam_size);
   for (int i = 0; i < beam_size; ++i) {
-    NE_ASSERT(cur_beams[i].infer_bs_id == i);
+    MODEL_ASSERT(cur_beams[i].infer_bs_id == i);
     if (next_beams[i].eos()) {
-      NE_ASSERT(i = next_beams[i].infer_bs_id);
+      MODEL_ASSERT(i = next_beams[i].infer_bs_id);
       cpy_eos_bs_ids.push_back(next_beams[i].infer_bs_id);
       nb_eos_ids.push_back(i);
     } else {
@@ -648,7 +680,7 @@ const beam& top_beam(std::vector<beam> const& beams) {
 // TODO better way to return?
 const model_token* beam_search(const int& beam_size, const int& n_predict, model_context* lctx,
                                const model_token* tokens_inp, const int& n_tokens, const int& n_threads) {
-  std::vector<model_token> beam_search_response(n_tokens);
+  static std::vector<model_token> beam_search_response(n_tokens);
   memcpy(beam_search_response.data(), tokens_inp, n_tokens * sizeof(model_token));
   printf("%s: beam search in progress ", __func__);
   const int64_t t_start_search_us = ne_time_us();
@@ -661,11 +693,6 @@ const model_token* beam_search(const int& beam_size, const int& n_predict, model
     embd.insert(embd.begin(), beam_search_response.begin(), beam_search_response.end());
   }
   lctx->batch_size = beam_size;
-  if (lctx->logits_all) {
-    lctx->logits.resize(beam_size * n_tokens * lctx->model.hparams.n_vocab);
-  } else {
-    lctx->logits.resize(beam_size * 1 * lctx->model.hparams.n_vocab);
-  }
   std::vector<beam> beams;
   beams.reserve(beam_size);
   beams.push_back({lctx, {}, 1.0});
@@ -705,7 +732,7 @@ const model_token* beam_search(const int& beam_size, const int& n_predict, model
 
       logits_info li(lctx);
       std::vector<std::vector<model_token_data>> next_tokens = li.top_k(beam_size);
-      // NE_ASSERT(next_tokens.size() == 2);
+      // MODEL_ASSERT(next_tokens.size() == 2);
       beams.clear();
       for (int i = 0; i < beam_size; ++i) {
         beam b;
