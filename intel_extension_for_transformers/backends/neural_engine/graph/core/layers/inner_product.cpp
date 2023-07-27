@@ -355,23 +355,18 @@ using SiluGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLaunche
     JblasAVX512_VNNI, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
     jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
     custom::epilogue::Silu<float>>;
-using GeluGemmSKernelDynamicS4KBlock =
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        JblasAVX512_VNNI,
-        jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
-        jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-        custom::epilogue::Gelu<float>>;
-using AddGeluGemmSKernelDynamicS4KBlock =
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        JblasAVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-        custom::epilogue::Add_Gelu<float>>;
-using AddGemmSKernelDynamicS4KBlock =
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        JblasAVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-        custom::epilogue::Add<float>>;
+using GeluGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+    JblasAVX512_VNNI, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+    custom::epilogue::Gelu<float>>;
+using AddGeluGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+    JblasAVX512_VNNI, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+    custom::epilogue::Add_Gelu<float>>;
+using AddGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+    JblasAVX512_VNNI, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+    custom::epilogue::Add<float>>;
 }  // namespace avx512_vnni
 namespace amx_int8 {
 using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
@@ -382,6 +377,18 @@ using SiluGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLaunche
     JblasAMX_INT8, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
     jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
     custom::epilogue::Silu<float>>;
+using GeluGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+    JblasAMX_INT8, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
+    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+    custom::epilogue::Gelu<float>>;
+using AddGeluGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+    JblasAMX_INT8, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
+    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+    custom::epilogue::Add_Gelu<float>>;
+using AddGemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+    JblasAMX_INT8, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
+    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+    custom::epilogue::Add<float>>;
 }  // namespace amx_int8
 }  // namespace kblock
 }  // namespace wrapper
