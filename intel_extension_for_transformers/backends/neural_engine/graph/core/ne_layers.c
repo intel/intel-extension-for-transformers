@@ -435,6 +435,8 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
 
     "MUL_QKV",
     "FFN_SILU",
+    "FFN_GeLU",
+    "FFN_ADD_GeLU",
     "FLASH_ATTN",
     "FLASH_FF",
 
@@ -498,6 +500,8 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
 
     "QKV(x)",
     "ffn_silu(x)",
+    "ffn_gelu(x)",
+    "ffn_gelu_with_bias(x)",
     "flash_attn(x)",
     "flash_ff(x)",
 
