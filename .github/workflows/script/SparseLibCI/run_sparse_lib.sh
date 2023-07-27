@@ -1,7 +1,6 @@
 #!/bin/bash
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.coveragerc"
 
-socket_id=1
 output_log_dir="/intel-extension-for-transformers/benchmark_log"
 mkdir ${output_log_dir}
 mkdir ${output_log_dir}/cur
@@ -23,7 +22,7 @@ mkdir build && cd build
 CC=gcc CXX=g++ cmake .. -DNE_WITH_SPARSELIB=ON -DNE_WITH_TESTS=ON -DNE_WITH_SPARSELIB_BENCHMARK=ON -DPYTHON_EXECUTABLE=$(which python)
 make -j
 cd bin
-bash /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/build/bin/ci/run_ci.sh $cur_dir $socket_id
+bash /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/build/bin/ci/run_ci.sh $cur_dir
 
 for caselog in $(find $cur_dir/*); do
     case_name=$(echo $caselog | sed -e 's/\.log$//')
@@ -40,7 +39,7 @@ make -j
 cd bin
 
 mkdir -p ${output_log_dir}/ref
-bash /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/refer/bin/ci/run_ci.sh $ref_dir $socket_id
+bash /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/refer/bin/ci/run_ci.sh $ref_dir
 
 for caselog in $(find $ref_dir/*); do
     case_name=$(echo $caselog | sed -e 's/\.log$//')
