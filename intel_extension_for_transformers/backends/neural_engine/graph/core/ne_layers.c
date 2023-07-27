@@ -9836,7 +9836,11 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_DIAG_MASK_INF:
         case NE_OP_SOFT_MAX:
         case NE_OP_ROPE:
-          node->n_tasks = n_threads;
+          if (node->src0->ne[1] > 4) {
+            node->n_tasks = n_threads;
+          } else {
+            node->n_tasks = 1;
+          }
           break;
         case NE_OP_ROPE_BACK: {
           node->n_tasks = n_threads;
