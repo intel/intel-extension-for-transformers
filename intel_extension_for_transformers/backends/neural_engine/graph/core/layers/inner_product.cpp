@@ -118,8 +118,8 @@ template <typename _T>
 class Add {
  public:
   struct Param {
-    _T *C,*D;
-    int ldc,ldd;
+    _T *C, *D;
+    int ldc, ldd;
   };
 
   template <JBLAS_ISA ISA_T>
@@ -134,7 +134,7 @@ class Add {
     // }
     for (int i = 0; i < M; i++) {
       for (int j = 0; j < N; j++) {
-        cptr[i * _param.ldc + j] = dptr[i * _param.ldd + j]+cacheptr[i * cachestep + j];
+        cptr[i * _param.ldc + j] = dptr[i * _param.ldd + j] + cacheptr[i * cachestep + j];
       }
     }
     return JblasSuccess;
@@ -145,8 +145,8 @@ template <typename _T>
 class Add_Gelu {
  public:
   struct Param {
-    _T *C,*D;
-    int ldc,ldd;
+    _T *C, *D;
+    int ldc, ldd;
   };
 
   template <JBLAS_ISA ISA_T>
@@ -162,7 +162,7 @@ class Add_Gelu {
     // }
     for (int i = 0; i < M; i++) {
       for (int j = 0; j < N; j++) {
-        cptr[i * _param.ldc + j] = dptr[i * _param.ldd + j]+cacheptr[i * cachestep + j];
+        cptr[i * _param.ldc + j] = dptr[i * _param.ldd + j] + cacheptr[i * cachestep + j];
         cptr[i * _param.ldc + j] = ne_gelu_f32(cptr[i * _param.ldc + j]);
       }
     }
@@ -488,8 +488,8 @@ void jblas_weightcomp_FFN_SiLu_f32_forward(float* activation, void* w1ptr, void*
   delete w3tmp;
 }
 
-void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1,
-                                           float* output, int seq, int fin, int fmid, int fout) {
+void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1, float* output,
+                                           int seq, int fin, int fmid, int fout) {
   auto w1tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w1ptr, 0);
   auto w2tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w2ptr, 0);
   if (w1tmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
@@ -501,15 +501,14 @@ void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void*
     int lda = fin;
     int ldtmp1 = fmid;
     int ldo = fout;
-    finter.compute(
-        {seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, ldtmp1, output, ldo});
+    finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, ldtmp1, output, ldo});
   }
   delete w1tmp;
   delete w2tmp;
 }
 
-void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr, float* tmp1,
-                                           float* output, int seq, int fin, int fmid, int fout) {
+void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr,
+                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout) {
   auto w1tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w1ptr, 0);
   auto w2tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w2ptr, 0);
   if (w1tmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||

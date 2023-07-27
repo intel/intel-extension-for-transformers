@@ -41,7 +41,7 @@ inline static void ne_vec_set_f16(const int n, ne_fp16_t* x, const int32_t v) {
 }
 
 inline static void ne_vec_srl_i32(const int n, int32_t* z, const int32_t* x, int32_t v) {
-  for (int i = 0; i < n; ++i) z[i] = x[i] >>v;
+  for (int i = 0; i < n; ++i) z[i] = x[i] >> v;
 }
 
 inline static void ne_vec_and_i32(const int n, int32_t* z, const int32_t* x, const int32_t* y) {
@@ -180,28 +180,28 @@ inline static void ne_vec_gelu_f16(const int n, ne_fp16_t* y, const ne_fp16_t* x
 }
 
 inline static void ne_vec_tanh_f32(const int n, float* y, const float* x) {
-  for(int i=0;i<n;i++) y[i]=tanhf(x[i]);
+  for (int i = 0; i < n; i++) y[i] = tanhf(x[i]);
 }
 
 inline static void ne_vec_gelu_f32(const int n, float* y, const float* x) {
 #ifdef NE_GELU_USE_VEC
   // compute G(x) = sqrt_root_two_over_pi * x * (1 + fitting_const * x * x)
-  float* aux0=(float*)malloc(n*sizeof(float));
-  ne_vec_sqr_f32(n,aux0,x);
-  float* aux1=(float*)malloc(n*sizeof(float));
-  ne_vec_set_f32(n,aux1,1.0f);
-  ne_vec_mad_f32(n,aux1,aux0,GELU_COEF_A);
-  ne_vec_mul_f32(n,aux0,x,aux1);
-  ne_vec_set_f32(n,aux1,SQRT_2_OVER_PI);
-  ne_vec_mul_f32(n,aux1,aux0,aux1);
+  float* aux0 = (float*)malloc(n * sizeof(float));
+  ne_vec_sqr_f32(n, aux0, x);
+  float* aux1 = (float*)malloc(n * sizeof(float));
+  ne_vec_set_f32(n, aux1, 1.0f);
+  ne_vec_mad_f32(n, aux1, aux0, GELU_COEF_A);
+  ne_vec_mul_f32(n, aux0, x, aux1);
+  ne_vec_set_f32(n, aux1, SQRT_2_OVER_PI);
+  ne_vec_mul_f32(n, aux1, aux0, aux1);
 
   // compute tanh(G(x))
-  ne_vec_tanh_f32(n,aux0,aux1);
+  ne_vec_tanh_f32(n, aux0, aux1);
   // Gelu(x)= 0.5f * x * (1.0f + tanh(G(x)))
-  ne_vec_acc1_f32(n,aux0,1.0f);
-  ne_vec_mul_f32(n,y,x,aux0);
-  ne_vec_set_f32(n,aux0,0.5f);
-  ne_vec_mul_f32(n,y,y,aux0);
+  ne_vec_acc1_f32(n, aux0, 1.0f);
+  ne_vec_mul_f32(n, y, x, aux0);
+  ne_vec_set_f32(n, aux0, 0.5f);
+  ne_vec_mul_f32(n, y, y, aux0);
 
   free(aux0);
   free(aux1);

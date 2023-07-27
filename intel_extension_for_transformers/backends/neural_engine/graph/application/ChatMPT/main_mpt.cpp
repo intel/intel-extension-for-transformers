@@ -519,9 +519,9 @@ bool mpt_eval(const mpt_model& model, const int n_threads, const int n_past, con
     }
 
     // n = self.mlp(m)
-    if(model.layers[il].ffn_up_proj->type==NE_TYPE_JBLAS){
-        cur = ne_ffn_gelu(ctx0,model.layers[il].ffn_up_proj,model.layers[il].ffn_down_proj,cur);
-    }else{
+    if (model.layers[il].ffn_up_proj->type == NE_TYPE_JBLAS) {
+      cur = ne_ffn_gelu(ctx0, model.layers[il].ffn_up_proj, model.layers[il].ffn_down_proj, cur);
+    } else {
       cur = ne_mul_mat(ctx0, model.layers[il].ffn_up_proj, cur);
 
       // GELU activation
