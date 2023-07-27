@@ -77,9 +77,13 @@ function install_itrex_base() {
     cd /intel-extension-for-transformers
     git config --global --add safe.directory "*"
     git fetch
-    git checkout master
-
-    bash /intel-extension-for-transformers/.github/workflows/script/install_binary.sh
+    git checkout develop
+    $BOLD_YELLOW && echo "---------------- git submodule update --init --recursive -------------" && $RESET
+    git config --global --add safe.directory "*"
+    git submodule update --init --recursive
+    $BOLD_YELLOW && echo "---------------- pip install binary -------------" && $RESET
+    pip install .
+    #bash /intel-extension-for-transformers/.github/workflows/script/install_binary.sh
 }
 
 function main() {

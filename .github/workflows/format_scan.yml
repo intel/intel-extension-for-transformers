@@ -38,6 +38,14 @@ jobs:
           ]
       fail-fast: false
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
 
@@ -47,6 +55,10 @@ jobs:
 
       - name: Docker Run
         run: |
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            docker stop $(docker ps -aq)
+            docker rm -vf ${{ env.CONTAINER_NAME }} || true
+          fi
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} --shm-size="2g" \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}

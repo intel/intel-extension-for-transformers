@@ -51,10 +51,15 @@ function install_itrex_base() {
     cd /intel-extension-for-transformers
     git config --global --add safe.directory "*"
     git fetch
-    git checkout master
+    git checkout develop
 
-    bash /intel-extension-for-transformers/.github/workflows/script/install_binary.sh
-    pip install --no-cache-dir protobuf==3.20.0
+    #bash /intel-extension-for-transformers/.github/workflows/script/install_binary.sh
+    #pip install --no-cache-dir protobuf==3.20.0
+    $BOLD_YELLOW && echo "---------------- git submodule update --init --recursive -------------" && $RESET
+    git config --global --add safe.directory "*"
+    git submodule update --init --recursive
+    $BOLD_YELLOW && echo "---------------- pip install binary -------------" && $RESET
+    pip install .
 }
 
 function main() {

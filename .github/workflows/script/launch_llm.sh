@@ -17,6 +17,10 @@ function main() {
     log_prefix="$4"
     script="${working_dir}/run_llm.py"
     precision="$5"
+    if [[ ${precision} == "fp8" ]]; then
+        export NE_WEIGHT_FP8_4E3M=1
+        script="${script} --weight_type=fp8_4e3m"
+    fi
     # init params
     if [[ "${model}" == "gpt-j-6b" ]] || [[ "${model}" == "gpt-j-6b-pruned" ]]; then
         model_name="EleutherAI/gpt-j-6B"
@@ -96,7 +100,7 @@ function collect_perf_logs_llm {
     mode_name="latency"
     precision=$2
     link="${log_prefix}/$1"
-    printf "${framework},${mode_name},${model_name},${precision},${batch_size}," | tee -a ${WORKING_DIR}/llm_summary.log
+    printf "${framework},${mode_name},${model},${precision},${batch_size}," | tee -a ${WORKING_DIR}/llm_summary.log
     printf "${input_tokens},${max_new_tokens},${beam_search},${used_memory}," | tee -a ${WORKING_DIR}/llm_summary.log
     printf "${cores_per_instance},${latency[0]},${throughput[0]},${link} ," | tee -a ${WORKING_DIR}/llm_summary.log
     printf "${latency[1]},${first_latency},${avg_latency},${p90_latency},$(hostname)\n" | tee -a ${WORKING_DIR}/llm_summary.log

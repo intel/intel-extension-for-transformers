@@ -78,7 +78,7 @@ function prepare() {
         conda install gperftools jemalloc==5.2.1 -c conda-forge -y
         pip install transformers==4.27.4
     fi
-    if [[ $precision == "bf16" ]]; then
+    if [[ $precision == "bf16" ]] || [[ $precision == "fp8" ]]; then
         prepare_cmd="python optimize_llm.py --pt_file=pt_bf16 --dtype=bf16 --model=/tf_dataset2/models/pytorch/gpt-j-6B --output_model=${working_dir}/bf16_ir"
     elif [[ $precision == "int8" ]]; then
         prepare_cmd="python optimize_llm.py --pt_file=/tf_dataset2/models/nlp_toolkit/gpt-j/best_model_bk.pt --dtype=int8 --model=/tf_dataset2/models/pytorch/gpt-j-6B --output_model=${working_dir}/int8_ir"

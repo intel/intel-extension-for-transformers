@@ -34,7 +34,7 @@ jobs:
           - modelName: "gpt-j-6b"
             framework: "engine"
             mode: "latency"
-            precision: "bf16,int8"
+            precision: "bf16,int8,fp8"
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
@@ -59,10 +59,15 @@ jobs:
           cd ${{ github.workspace }}/.github/workflows/script/models
           bash run_llm.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --conda_env_name=llm-test --precision=bf16
 
-      #- name: INT8 Benchmark
-      #  run: |
-      #    cd ${{ github.workspace }}/.github/workflows/script/models
-      #    bash run_llm.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --conda_env_name=llm-test --precision=int8
+      - name: INT8 Benchmark
+        run: |
+          cd ${{ github.workspace }}/.github/workflows/script/models
+          bash run_llm.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --conda_env_name=llm-test --precision=int8
+      
+      - name: FP8 Benchmark
+        run: |
+          cd ${{ github.workspace }}/.github/workflows/script/models
+          bash run_llm.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --conda_env_name=llm-test --precision=fp8
       
   
       - name: Publish pipeline artifact
