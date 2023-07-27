@@ -89,7 +89,7 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
 
   n_predict = std::min(n_predict, (int)hparams.n_ctx - (int)ind_size);
   std::vector<model_token> res;
-  bool do_beam_search = (lctx->beam_size > 0);
+  bool do_beam_search = beam_search;
 
   if (do_beam_search) {
     res = beam_search(lctx->beam_size, n_predict, lctx, embd_inp_ptr, ind_size, N_threads);
@@ -149,7 +149,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
   std::string res;
   std::vector<model_token> embd;
 
-  bool do_beam_search = (lctx->beam_size > 0);
+  bool do_beam_search = lctx->beam_search;
   if (do_beam_search) {
     embd = beam_search(lctx->beam_size, n_predict, lctx, embd_inp.data(), embd_inp.size(), N_threads);
     for (auto id : embd_inp) {
@@ -212,9 +212,9 @@ void exit_gptj(void* ctx) {
 }
 
 int main() {
-  auto gptj_in_all_tk = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/hengyume/model/gptj-f32.bin");
-  auto gptj_in_all_bs = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/zhentao/gptj-ne-q4_j.bin", true, 4, 1);
-  std::vector<void*> ctxs = {gptj_in_all_tk, gptj_in_all_bs};
+  // auto gptj_in_all_tk = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/zhentao/q4_j_new.bin");
+  auto gptj_in_all_bs = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/zhentao/q4_j_new.bin", true, 4, 1);
+  std::vector<void*> ctxs = {gptj_in_all_bs};
   for (auto gptj_in_all : ctxs) {
     auto res = eval_gptj_char(gptj_in_all, "she opened the door and saw", 32, 40, 1.0, 0.8, 32);
     std::cout << res << std::endl;

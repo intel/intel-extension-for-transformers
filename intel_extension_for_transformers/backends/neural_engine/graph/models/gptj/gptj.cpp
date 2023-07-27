@@ -141,6 +141,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     // self-attention
     // store key and value to memory
     // important: storing RoPE-ed version of K in the KV cache!
+    int kv_n_ctx_block = lctx.kv_n_ctx_block;
     {
       std::vector<ne_tensor*> Kcur_bs(batch_size);
       std::vector<ne_tensor*> Vcur_bs(batch_size);
@@ -152,7 +153,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                 ne_element_size(Kcur) * n_embd, ne_element_size(Kcur) * n_embd * N,
                                 i * ne_element_size(Kcur) * n_embd * N);
         k_bs[i] = ne_view_1d(ctx0, kv_self.k, n_embd * N * 1,
-                             (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx * batch_size + n_past) +
+                             (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx * kv_n_ctx_block + n_past) +
                                  i * n_ctx * n_embd * ne_element_size(kv_self.k));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
 
@@ -166,7 +167,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
         v_bs[i] = ne_view_4d(ctx0, kv_self.v, N, n_embd / n_head, n_head, 1, n_ctx * ne_element_size(kv_self.v),
                              n_ctx * ne_element_size(kv_self.v) * n_embd / n_head,
                              n_ctx * ne_element_size(kv_self.v) * n_embd,
-                             ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * batch_size +
+                             ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block +
                               i * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
       }
@@ -180,7 +181,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                    ne_view_4d(ctx0, kv_self.k, n_embd / n_head, n_head, (n_past + N), batch_size,
                               ne_element_size(kv_self.k) * n_embd / n_head, ne_element_size(kv_self.k) * n_embd,
                               ne_element_size(kv_self.k) * n_embd * n_ctx,
-                              il * n_ctx * ne_element_size(kv_self.k) * n_embd * batch_size),
+                              il * n_ctx * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block),
                    0, 2, 1, 3);
     ne_set_name(K, "K");
 
@@ -208,7 +209,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     struct ne_tensor* V = ne_view_4d(
         ctx0, kv_self.v, (n_past + N), n_embd / n_head, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
         n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, n_ctx * ne_element_size(kv_self.v) * n_embd,
-        il * n_ctx * ne_element_size(kv_self.v) * n_embd * batch_size);
+        il * n_ctx * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block);
     ne_set_name(V, "V");
 
     struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
