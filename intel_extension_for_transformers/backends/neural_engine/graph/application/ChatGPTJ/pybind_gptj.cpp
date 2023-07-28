@@ -214,7 +214,7 @@ void exit_gptj(void* ctx) {
 int main() {
   // auto gptj_in_all_tk = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/zhentao/q4_j_new.bin");
   auto gptj_in_all_bs =
-      init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/zhentao/q4_j_new.bin", true, 4, 1);
+      init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/sdp/dongbo/general-gptj-6b-q4_j_b128.bin", true, 4, 1);
   std::vector<void*> ctxs = {gptj_in_all_bs};
   for (auto gptj_in_all : ctxs) {
     auto res = eval_gptj_char(gptj_in_all, "she opened the door and saw", 32, 40, 1.0, 0.8, 32);
@@ -225,12 +225,12 @@ int main() {
                        "to go to places and meet new people, and have fun",
                        32, 40, 1.0, 0.8, 32);
     std::cout << res1 << std::endl;
-    std::vector<int32_t> embd_inp = {7091, 4721, 262, 3420, 290, 2497};
-    auto res_ids = eval_gptj_ids(gptj_in_all, embd_inp.data(), embd_inp.size(), 32, 40, 1.0, 0.8, 32);
+    // std::vector<int32_t> embd_inp = {7091, 4721, 262, 3420, 290, 2497};
+    // auto res_ids = eval_gptj_ids(gptj_in_all, embd_inp.data(), embd_inp.size(), 32, 40, 1.0, 0.8, 32);
     exit_gptj(gptj_in_all);
     delete[] res;
     delete[] res1;
-    delete[] res_ids;
+    // delete[] res_ids;
   }
   return 0;
 }

@@ -27,6 +27,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
 
 #include "core/data_types.h"
 #include "core/ne.h"
@@ -108,7 +109,10 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     struct ne_tensor* inpSA = cur;
 
     ne_tensor *Qcur, *Kcur, *Vcur;
+        int kv_n_ctx_block = lctx.kv_n_ctx_block;
+
     if (model.layers[il].attn[0]->type == NE_TYPE_JBLAS) {  // fused execution of QKV
+    // if (false) {
       struct ne_tensor* QKVcur =
           ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
       Qcur = ne_rope_inplace(ctx0,
@@ -120,10 +124,10 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       Kcur = ne_rope_inplace(ctx0,
                              ne_reshape_4d(ctx0,
                                            ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size,
-                                                      1 * N * n_embd * batch_size * ne_element_size(QKVcur)),
+                                                      1 * N * n_embd * kv_n_ctx_block * ne_element_size(QKVcur)),
                                            n_embd / n_head, n_head, N, batch_size),
                              n_past, n_rot, 0);
-      Vcur = ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size, 2 * N * n_embd * batch_size * ne_element_size(QKVcur));
+      Vcur = ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size, 2 * N * n_embd * kv_n_ctx_block * ne_element_size(QKVcur));
 
     } else {
       Qcur = ne_rope_inplace(
@@ -142,7 +146,6 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     // self-attention
     // store key and value to memory
     // important: storing RoPE-ed version of K in the KV cache!
-    int kv_n_ctx_block = lctx.kv_n_ctx_block;
     {
       std::vector<ne_tensor*> Kcur_bs(batch_size);
       std::vector<ne_tensor*> Vcur_bs(batch_size);

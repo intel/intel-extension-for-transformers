@@ -38,6 +38,8 @@
 #include <sstream>
 #include <thread>
 #include <unordered_map>
+#include <iostream>
+
 
 #include "core/ne_layers.h"
 #include "application/common.h"
@@ -1767,6 +1769,14 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
 #endif
   lctx->batch_size = batch_size;
   int n_tokens = 1;
+
+	// int* pos = embd_inp.data();
+ 
+	// prints the vector
+	// std::cout << "The vector elements are: ";
+	// for (int i = 0; i < embd_inp.size(); ++i)
+	// 	std::cout << *pos++ << " ";
+
   model_eval(lctx, embd_inp.data(), n_tokens, n_past, n_threads);
   // DEBUG
 #if 0
@@ -1947,8 +1957,13 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
   // const int32_t n_vocab = lctx->model.hparams.n_vocab;
   size_t n_past = 0;
   // TODO add params.n_batch?
-  std::vector<model_token> embd(tokens_inp, tokens_inp + n_tokens);
-  lctx->batch_size = 1;
+  std::vector<model_token> embd1(tokens_inp, tokens_inp + n_tokens);
+  std::vector<model_token> embd;
+  for (int i = 0 ; i< beam_size; ++i) {
+    embd.insert(embd.end(), embd1.begin(), embd1.end());
+  }
+
+  lctx->batch_size = beam_size;
   std::vector<beam> beams;
   beams.reserve(beam_size);
   beams.push_back({lctx, {}, 1.0});
@@ -1965,30 +1980,30 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
       // TODO add -b param for long prompt (memory issue)
       model_eval(lctx, embd.data(), n_tokens, n_past, n_threads);
       n_past += n_tokens;
-      for (int i = 1; i < lctx->model.layers.size(); ++i) {
-        int n_ctx = lctx->model.hparams.n_ctx;
-        int n_embd = lctx->model.hparams.n_embd;
-        // cpy batch 1 to all batch
-        int kv_n_ctx_block = lctx->kv_n_ctx_block;
-        for (int j = 1; j < beam_size; ++j) {
-          memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
-                     (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                      j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd),
-                 static_cast<char*>(lctx->model.kv_self.k->data) +
-                     i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
-                 ne_element_size(lctx->model.kv_self.k) * n_embd * (n_past));
-          memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-                     (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                      j * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd),
-                 static_cast<char*>(lctx->model.kv_self.v->data) +
-                     i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block,
-                 ne_element_size(lctx->model.kv_self.v) * n_embd * (n_past));
-        }
-      }
+      // for (int i = 1; i < lctx->model.layers.size(); ++i) {
+      //   int n_ctx = lctx->model.hparams.n_ctx;
+      //   int n_embd = lctx->model.hparams.n_embd;
+      //   // cpy batch 1 to all batch
+      //   int kv_n_ctx_block = lctx->kv_n_ctx_block;
+      //   for (int j = 1; j < beam_size; ++j) {
+      //     memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
+      //                (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+      //                 j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd),
+      //            static_cast<char*>(lctx->model.kv_self.k->data) +
+      //                i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
+      //            ne_element_size(lctx->model.kv_self.k) * n_embd * (n_past));
+      //     memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+      //                (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+      //                 j * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd),
+      //            static_cast<char*>(lctx->model.kv_self.v->data) +
+      //                i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block,
+      //            ne_element_size(lctx->model.kv_self.v) * n_embd * (n_past));
+      //   }
+      // }
 
       logits_info li(lctx);
       std::vector<std::vector<model_token_data>> next_tokens = li.top_k(beam_size);
-      MODEL_ASSERT(next_tokens.size() == 1);
+      // MODEL_ASSERT(next_tokens.size() == 1);
       beams.clear();
       for (int i = 0; i < beam_size; ++i) {
         beam b;
