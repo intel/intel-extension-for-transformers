@@ -357,6 +357,10 @@ def main():
         )
     else:
         raise ValueError("Please provide value for model_name_or_path or config_name.")
+    
+    # set use_fast_tokenizer to False for Llama series models
+    if "llama" in model.config.model_type:
+        model_args.use_fast_tokenizer = False
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
