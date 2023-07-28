@@ -36,6 +36,8 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
+#define MHA_V_ORIGIN_LAYOUT 0
+
 // evaluate the transformer
 //
 //   - lctx:      model context
@@ -161,6 +163,16 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                  i * n_ctx * n_embd * ne_element_size(kv_self.k));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
 
+#if MHA_V_ORIGIN_LAYOUT
+        // batch V
+        Vcur_bs[i] = ne_view_4d(ctx0, Vcur, n_embd / n_head, n_head, N, 1, ne_element_size(Vcur) * n_embd / n_head,
+                                ne_element_size(Vcur) * n_embd, ne_element_size(Vcur) * n_embd * N,
+                                i * ne_element_size(Vcur) * n_embd * N);
+        v_bs[i] = ne_view_1d(ctx0, kv_self.v, n_embd * N * 1,
+                             (ne_element_size(kv_self.v) * n_embd) * (il * n_ctx * kv_n_ctx_block + n_past) +
+                                 i * n_ctx * n_embd * ne_element_size(kv_self.v));
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
+#else
         // batch V
         Vcur_bs[i] = ne_permute(ctx0,
                                 ne_reshape_4d(ctx0,
@@ -174,6 +186,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                              ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block +
                               i * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
+#endif
       }
     }
 
@@ -208,13 +221,22 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     // KQ = soft_max(KQ_masked)
     struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
     ne_set_name(KQ_soft_max, "KQ_soft_max");
-
+#if MHA_V_ORIGIN_LAYOUT
+    // split cached V into n_head heads
+    struct ne_tensor* V = ne_view_4d(ctx0, kv_self.v, n_embd / n_head, n_head, (n_past + N), batch_size,
+                                     n_embd / n_head * ne_element_size(kv_self.v), ne_element_size(kv_self.v) * n_embd,
+                                     n_ctx * ne_element_size(kv_self.v) * n_embd,
+                                     il * n_ctx * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block);
+    V = ne_permute(ctx0, V, 1, 2, 0, 3);
+    ne_set_name(V, "V");
+#else
     // split cached V into n_head heads
     struct ne_tensor* V = ne_view_4d(
         ctx0, kv_self.v, (n_past + N), n_embd / n_head, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
         n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, n_ctx * ne_element_size(kv_self.v) * n_embd,
         il * n_ctx * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block);
     ne_set_name(V, "V");
+#endif
 
     struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
     ne_set_name(KQV, "KQV");
