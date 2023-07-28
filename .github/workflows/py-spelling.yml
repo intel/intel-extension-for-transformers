@@ -10,18 +10,46 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
-
+env:
+    DOCKER_CONFIG_NAME: "commonDockerConfig"
+    REPO_NAME: "code-scan"
+    REPO_TAG: "1.0"
+    DOCKER_FILE_NAME: "codeScan"
+    CONTAINER_NAME: "codeScan"
 jobs:
   format-scan:
     runs-on: itrex-node
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
 
+      - name: Docker Build
+        run: |
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+
+      - name: Docker Run
+        run: |
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            docker stop $(docker ps -aq)
+            docker rm -vf ${{ env.CONTAINER_NAME }} || true
+          fi
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} --shm-size="2g" \
+          -v ${{ github.workspace }}:/intel-extension-for-transformers \
+          ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
+          echo '${{ toJSON(github) }}'
 
       - name: Code scan check
         run: |
-          bash ${{ github.workspace }}/.github/workflows/script/formatScan/pyspelling.sh --WORKING_PATH=${{ github.workspace }}
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "bash /intel-extension-for-transformers/.github/workflows/script/formatScan/pyspelling.sh"
 
 
       - name: Publish pipeline artifact

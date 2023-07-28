@@ -45,6 +45,10 @@ jobs:
 
       - name: Docker Run
         run: |
+          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            podman stop ${{ env.CONTAINER_NAME }}
+            podman rm -vf ${{ env.CONTAINER_NAME }} || true
+          fi
           podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} --shm-size="2g" \
             -v ${{ github.workspace }}:/intel-extension-for-transformers \
             -e report_title="SparseLib Test" \

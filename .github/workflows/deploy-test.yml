@@ -104,20 +104,20 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-          && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=fp32"
+          && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=fp32 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
 
       - name: INT8 Benchmark
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-          && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=int8"
+          && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=int8 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
 
       #- name: Dynamic INT8 Benchmark
       #  if: matrix.framework == 'engine'
       #  run: |
       #    docker exec ${{ env.CONTAINER_NAME }} \
       #    bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-      #    && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=dynamic_int8"
+      #    && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=dynamic_int8 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
 
       - name: Collect Log
         run: |
