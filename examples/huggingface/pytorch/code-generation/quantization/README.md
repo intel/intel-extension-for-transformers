@@ -49,7 +49,7 @@ We use the local gpt_bigcode defination script `modeling_gpt_bigcode.py` in `run
 
 ## 1. Quantization
 ``` bash
-accelerate launch run_generation.py \
+python run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --quantize \
@@ -65,7 +65,7 @@ accelerate launch run_generation.py \
 ## 2. Performance
 ```bash
 # --int8 is used for int8 model
-accelerate launch run_generation.py \
+python run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --int8 \
@@ -75,16 +75,9 @@ accelerate launch run_generation.py \
 ```
 
 ## 3. Accuracy
-Please install [bigcode-evaluation-harness](https://github.com/bigcode-project/bigcode-evaluation-harness) before measuring accuracy.
-```bash
-git clone https://github.com/bigcode-project/bigcode-evaluation-harness.git
-cd bigcode-evaluation-harness
-pip install -e .
-```
-And then, run the accuracy command.
 ```bash
 # --int8 is used for int8 model
-accelerate launch run_generation.py \
+python run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --int8 \    
@@ -96,3 +89,5 @@ accelerate launch run_generation.py \
     --temperature 0.2 \
     --do_sample
 ```
+>Note:
+please follow the [guide](https://huggingface.co/docs/accelerate/usage_guides/ipex) to set up the configuration if `accelerate launch` is used.

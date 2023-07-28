@@ -64,7 +64,7 @@ function run_tuning {
     fi
 
     if [ ${script} = "run_generation.py" ];then
-        accelerate launch ./${script} \
+        python ./${script} \
             --model ${model_name_or_path} \
             --output_dir ${tuned_checkpoint} \
             --dataset ${DATASET_NAME} \
