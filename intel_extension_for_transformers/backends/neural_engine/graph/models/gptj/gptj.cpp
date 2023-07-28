@@ -267,9 +267,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                  FFN_in->ne[3]};
       struct ne_tensor* FFN_out =
           ne_new_tensor(ctx0, NE_TYPE_F32, MIN(model.layers[il].ffn[2]->n_dims, FFN_in->n_dims), out_ne, NE_SIZE_CALC);
-      cur = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2],
-                            ne_repeat(ctx0, model.layers[il].ffn[1], FFN_in),
-                            ne_repeat(ctx0, model.layers[il].ffn[3], FFN_out), inpSA);
+      cur = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2], model.layers[il].ffn[1],
+                            model.layers[il].ffn[3], inpSA);
     } else {
       struct ne_tensor* FFN_in = ne_mul_mat(ctx0, model.layers[il].ffn[0], inpSA);
       ne_set_name(FFN_in, "FFN_in");

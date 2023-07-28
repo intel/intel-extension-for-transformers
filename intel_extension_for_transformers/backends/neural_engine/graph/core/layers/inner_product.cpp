@@ -517,7 +517,8 @@ void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void*
 }
 
 void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr,
-                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout) {
+                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout,
+                                               bool boardcast_bias) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
   auto w1tmp = prologue::weight_comp::gemm::CompressedPackedWeight::deserialBuffer(w1ptr, 0);
@@ -537,8 +538,8 @@ void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, v
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      ret = finter.compute(
-          {seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1, ldtmp1, output, b2ptr, ldo, ldo});
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
+                            boardcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, boardcast_bias ? 0 : ldo});
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::AddGemmSKernelDynamicS4KBlock;
       using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::AddGeluGemmSKernelDynamicS4KBlock;
@@ -551,8 +552,8 @@ void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, v
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      ret = finter.compute(
-          {seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1, ldtmp1, output, b2ptr, ldo, ldo});
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
+                            boardcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, boardcast_bias ? 0 : ldo});
     }
   }
   assert(ret = JblasSuccess);

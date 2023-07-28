@@ -30,7 +30,8 @@ void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void*
                                            int seq, int fin, int fmid, int fout);
 
 void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr,
-                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout);
+                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout,
+                                               bool boardcast_bias);
 
 void jblas_timer(bool _init);
 
