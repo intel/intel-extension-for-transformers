@@ -51,9 +51,9 @@ bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval,
 extern "C" {
 void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, float temp, float repeat_penalty,
                 bool perplexity, int n_ctx, const char* model_file, bool beam_search = false, int beam_size = 4,
-                int batch_size = 1) {
+                int batch_size = 1, int n_threads = 56) {
   gpt_params params;
-  params.n_threads = N_threads;
+  params.n_threads = n_threads;
   params.seed = seed;
   params.name = MODEL_GPTJ;
   params.n_ctx = n_ctx;
@@ -69,6 +69,8 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   params.batch_size = batch_size;
   params.beam_search = beam_search;
   params.beam_size = beam_size;
+  // params.use_mmap = false;
+  // params.use_mlock= true;
   model_init_backend();
   model_context* ctx;
   g_ctx = &ctx;
@@ -81,7 +83,7 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
 }
 
 int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_predict, int top_k, float top_p,
-                       float temp, int n_batch) {
+                       float temp, int n_batch, int n_threads) {
   model_context* lctx = (model_context*)ctx;
   int n_past = 0;
 
@@ -99,7 +101,7 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
     for (int i = embd.size(); i < embd_inp.size() + n_predict; i++) {
       // predict
       if (embd.size() > 0) {
-        if (!gptj_model_eval_ids(lctx, embd.data(), embd.size(), n_past, N_threads)) {
+        if (!gptj_model_eval_ids(lctx, embd.data(), embd.size(), n_past, n_threads)) {
           printf("Failed to predict\n");
           return {};
         }
@@ -212,25 +214,25 @@ void exit_gptj(void* ctx) {
 }
 
 int main() {
-  // auto gptj_in_all_tk = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/zhentao/q4_j_new.bin");
-  auto gptj_in_all_bs =
-      init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/sdp/dongbo/general-gptj-6b-q4_j_b128.bin", true, 4, 1);
-  std::vector<void*> ctxs = {gptj_in_all_bs};
-  for (auto gptj_in_all : ctxs) {
-    auto res = eval_gptj_char(gptj_in_all, "she opened the door and saw", 32, 40, 1.0, 0.8, 32);
-    std::cout << res << std::endl;
-    auto res1 =
-        eval_gptj_char(gptj_in_all,
-                       "Once upon a time, there existed a little girl, who liked to have adventures. She wanted "
-                       "to go to places and meet new people, and have fun",
-                       32, 40, 1.0, 0.8, 32);
-    std::cout << res1 << std::endl;
-    // std::vector<int32_t> embd_inp = {7091, 4721, 262, 3420, 290, 2497};
-    // auto res_ids = eval_gptj_ids(gptj_in_all, embd_inp.data(), embd_inp.size(), 32, 40, 1.0, 0.8, 32);
-    exit_gptj(gptj_in_all);
-    delete[] res;
-    delete[] res1;
-    // delete[] res_ids;
-  }
+//   // auto gptj_in_all_tk = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/zhentao/q4_j_new.bin");
+//   auto gptj_in_all_bs =
+//       init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, "/home/sdp/dongbo/general-gptj-6b-q4_j_b128.bin", true, 4, 1);
+//   std::vector<void*> ctxs = {gptj_in_all_bs};
+//   for (auto gptj_in_all : ctxs) {
+//     auto res = eval_gptj_char(gptj_in_all, "she opened the door and saw", 32, 40, 1.0, 0.8, 32);
+//     std::cout << res << std::endl;
+//     auto res1 =
+//         eval_gptj_char(gptj_in_all,
+//                        "Once upon a time, there existed a little girl, who liked to have adventures. She wanted "
+//                        "to go to places and meet new people, and have fun",
+//                        32, 40, 1.0, 0.8, 32);
+//     std::cout << res1 << std::endl;
+//     // std::vector<int32_t> embd_inp = {7091, 4721, 262, 3420, 290, 2497};
+//     // auto res_ids = eval_gptj_ids(gptj_in_all, embd_inp.data(), embd_inp.size(), 32, 40, 1.0, 0.8, 32);
+//     exit_gptj(gptj_in_all);
+//     delete[] res;
+//     delete[] res1;
+//     // delete[] res_ids;
+//   }
   return 0;
 }
