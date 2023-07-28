@@ -1951,7 +1951,7 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
     return std::vector<model_token>();
   }
   std::vector<model_token> beam_search_response;
-  printf("%s: beam search in progress ", __func__);
+  // printf("%s: beam search in progress ", __func__);
   const int64_t t_start_search_us = ne_time_us();
 
   // const int32_t n_vocab = lctx->model.hparams.n_vocab;
@@ -2057,12 +2057,12 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
       beams[j].print();
       fflush(stdout);
     }
-#else
-    // Show progress
-    if (i % 10 == 0) {
-      printf(".");
-      fflush(stdout);
-    }
+// #else
+//     // Show progress
+//     if (i % 10 == 0) {
+//       printf(".");
+//       fflush(stdout);
+//     }
 #endif
   }
 
