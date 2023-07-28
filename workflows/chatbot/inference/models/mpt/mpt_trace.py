@@ -12,7 +12,7 @@ def jit_trace_mpt_7b(model):
     pkv = []
     for i in range(32):
         pkv.append([])
-        pkv[-1].append(torch.zeros([4, 32, 128, 32], dtype=torch.bfloat16))
+        pkv[-1].append(torch.zeros([4, 32, 32, 128], dtype=torch.bfloat16))
         pkv[-1].append(torch.zeros([4, 32, 32, 128], dtype=torch.bfloat16))
         pkv[-1] = tuple(pkv[-1])
     inputs["past_key_values"] = pkv
@@ -49,7 +49,7 @@ class MPTTSModelForCausalLM(TSModelForCausalLM):
                 num_attention_heads = self.normalized_config.num_attention_heads
                 hidden_size = self.normalized_config.hidden_size
                 d_k = hidden_size // num_attention_heads
-                new_key_shape = [input_ids.shape[0], num_attention_heads, d_k, 0]
+                new_key_shape = [input_ids.shape[0], num_attention_heads, 0, d_k]
                 new_value_shape = [input_ids.shape[0], num_attention_heads, 0, d_k]
                 empty_key_tensor = torch.empty(size=new_key_shape)
                 empty_value_tensor = torch.empty(size=new_value_shape)
