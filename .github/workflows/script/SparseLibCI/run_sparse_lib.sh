@@ -32,7 +32,7 @@ done
 
 cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine
 mkdir refer && cd refer
-git checkout -b refer origin/develop
+git checkout -b refer origin/main
 git pull
 CC=gcc CXX=g++ cmake .. -DNE_WITH_SPARSELIB=ON -DNE_WITH_TESTS=ON -DNE_WITH_SPARSELIB_BENCHMARK=ON -DPYTHON_EXECUTABLE=$(which python)
 make -j

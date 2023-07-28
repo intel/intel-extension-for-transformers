@@ -2,7 +2,7 @@ name: CPP Graph Test
 
 on:
   pull_request:
-    branches: [main, develop, test_only]
+    branches: [main]
     paths:
        - '.github/workflows/cpp-graph-test.yml'
        - '.github/workflows/script/models/cpp_graph_inference.sh'

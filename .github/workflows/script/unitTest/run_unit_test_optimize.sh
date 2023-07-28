@@ -51,7 +51,7 @@ function install_itrex_base() {
     cd /intel-extension-for-transformers
     git config --global --add safe.directory "*"
     git fetch
-    git checkout -b refer origin/develop
+    git checkout -b refer origin/main
     git pull
 
     #bash /intel-extension-for-transformers/.github/workflows/script/install_binary.sh

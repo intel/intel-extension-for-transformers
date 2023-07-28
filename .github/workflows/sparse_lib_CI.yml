@@ -2,7 +2,7 @@ name: SparseLib
 
 on:
   pull_request:
-    branches: [main, develop, test_only]
+    branches: [main]
     paths:
       - 'intel_extension_for_transformers/backends/neural_engine/kernels'
       - 'intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark'

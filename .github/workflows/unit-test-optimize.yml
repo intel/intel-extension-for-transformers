@@ -2,7 +2,7 @@ name: Optimize Unit Test
 
 on:
   pull_request:
-    branches: [main, develop, test_only]
+    branches: [main]
     paths:
       - intel_extension_for_transformers/evaluation
       - intel_extension_for_transformers/optimization

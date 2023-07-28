@@ -2,7 +2,7 @@ name: Spell Check
 
 on:
   pull_request:
-    branches: [main, develop, test_only]
+    branches: [main]
 
   workflow_dispatch:
 
@@ -18,7 +18,7 @@ env:
     CONTAINER_NAME: "codeScan"
 jobs:
   format-scan:
-    runs-on: itrex-node
+    runs-on: ubuntu-latest
     steps:
       - name: Docker Clean Up
         run: |

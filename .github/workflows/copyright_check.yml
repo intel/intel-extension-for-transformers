@@ -2,7 +2,7 @@ name: Copyright Check
 
 on:
   pull_request:
-    branches: [main, develop, test_only]
+    branches: [main]
     paths:
       - intel_extension_for_transformers
       - setup.py
@@ -19,7 +19,7 @@ env:
 
 jobs:
   format-scan:
-    runs-on: itrex-node
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         job_name: ["copyright"]
