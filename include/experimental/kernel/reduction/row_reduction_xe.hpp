@@ -195,7 +195,8 @@ struct xetla_row_reduction_t<dtype_in_, dtype_out_, dtype_acc_, reduction_attr_,
                 subgroup::elemwise_cvt<matAcc_t, global_ld_t>(
                         matAcc, mat_global_ld);
                 fused_op(matAcc);
-                subgroup::tile_row_reduce(mat_buffer, matAcc);
+                mat_buffer.reg += subgroup::tile_reduce<reduce_op::sum,
+                        dtype_acc, dtype_acc, 0>(matAcc);
                 mat_global_ld_payload
                         .template update_tdesc<tdesc_update_dir::y_dir>(
                                 (next_job[0] - job_id) * tile_size_y);
@@ -210,7 +211,8 @@ struct xetla_row_reduction_t<dtype_in_, dtype_out_, dtype_acc_, reduction_attr_,
                 subgroup::elemwise_cvt<matAcc_t, global_ld_t>(
                         matAcc, mat_global_ld);
                 fused_op(matAcc);
-                subgroup::tile_row_reduce(mat_buffer, matAcc);
+                mat_buffer.reg += subgroup::tile_reduce<reduce_op::sum,
+                        dtype_acc, dtype_acc, 0>(matAcc);
                 fused_op.update_tdesc(0, wg_size_y * tile_size_y);
                 mat_global_ld_payload
                         .template update_tdesc<tdesc_update_dir::y_dir>(

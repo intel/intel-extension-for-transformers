@@ -25,25 +25,25 @@ namespace gpu::xetla::subgroup {
 
 // dim=0 : reduce along y dir;
 // dim=1 : reduce along x dir;
-template <reduce_op reduce_kind, typename mat_t, typename dtype_acc, int dim>
+template <reduce_op reduce_kind, typename dtype_out, typename dtype_acc,
+        int dim, typename mat_t>
 __XETLA_API typename std::enable_if_t<(dim == 1),
-        xetla_vector<typename mat_t::dtype, mat_t::tile_desc::tile_size_y>>
+        xetla_vector<dtype_out, mat_t::tile_size_y>>
 tile_reduce(mat_t &src) {
-    static constexpr uint32_t tile_size_y = mat_t::tile_desc::tile_size_y;
-    static constexpr uint32_t tile_size_x = mat_t::tile_desc::tile_size_x;
-    static constexpr uint32_t tile_elems = mat_t::tile_desc::tile_elems;
-    static constexpr uint32_t block_size_y = mat_t::tile_desc::block_size_y;
-    static constexpr uint32_t block_size_x = mat_t::tile_desc::block_size_x;
-    static constexpr uint32_t block_elems = mat_t::tile_desc::block_elems;
-    static constexpr int32_t num_block_y = mat_t::tile_desc::num_block_y;
-    static constexpr int32_t num_block_x = mat_t::tile_desc::num_block_x;
+    static constexpr uint32_t tile_size_y = mat_t::tile_size_y;
+    static constexpr uint32_t tile_size_x = mat_t::tile_size_x;
+    static constexpr uint32_t tile_elems = mat_t::tile_elems;
+    static constexpr uint32_t block_size_y = mat_t::block_size_y;
+    static constexpr uint32_t block_size_x = mat_t::block_size_x;
+    static constexpr uint32_t block_elems = mat_t::block_elems;
+    static constexpr int32_t num_block_y = mat_t::num_block_y;
+    static constexpr int32_t num_block_x = mat_t::num_block_x;
     using dtype = typename mat_t::dtype;
     /// The idea is
     /// 1) allocate a temp buffer;
-    /// 2) accumulate the entire tile into temp buffer;
+    /// 2) reduce the entire tile into temp buffer;
     /// 3) reduce within temp buffer
     xetla_vector<dtype_acc, tile_size_y * block_size_x> acc;
-    auto acc_2d = acc.xetla_format<dtype_acc, tile_size_y, block_size_x>();
 #pragma unroll
     for (int i = 0; i < tile_size_y / block_size_y; i++) {
         //j=0, initial the buffer
@@ -102,7 +102,146 @@ tile_reduce(mat_t &src) {
     xetla_vector<dtype_acc, tile_size_y> out = recur_col_reduce<reduce_kind,
             dtype_acc, block_size_x, tile_size_y>(acc);
 
-    return xetla_cvt<dtype, dtype_acc, tile_size_y>(out);
+    return xetla_cvt<dtype_out, dtype_acc, tile_size_y>(out);
+}
+
+template <reduce_op reduce_kind, typename dtype_out, typename dtype_acc,
+        int dim, typename mat_t>
+__XETLA_API typename std::enable_if_t<(dim == 0),
+        xetla_vector<dtype_out, mat_t::tile_size_x>>
+tile_reduce(mat_t &src) {
+    static constexpr uint32_t tile_size_y = mat_t::tile_size_y;
+    static constexpr uint32_t tile_size_x = mat_t::tile_size_x;
+    static constexpr uint32_t tile_elems = mat_t::tile_elems;
+    static constexpr uint32_t block_size_y = mat_t::block_size_y;
+    static constexpr uint32_t block_size_x = mat_t::block_size_x;
+    static constexpr uint32_t block_elems = mat_t::block_elems;
+    static constexpr int32_t num_block_y = mat_t::num_block_y;
+    static constexpr int32_t num_block_x = mat_t::num_block_x;
+    using dtype = typename mat_t::dtype;
+    static constexpr uint32_t num_acc = 8;
+    static constexpr uint32_t first_block_size_y
+            = (tile_size_y / block_size_y == 0) ? (tile_size_y % block_size_y)
+                                                : block_size_y;
+    static constexpr uint32_t acc_size_y
+            = (num_acc > first_block_size_y) ? first_block_size_y : num_acc;
+    /// The idea is
+    /// 1) allocate a temp buffer;
+    /// 2) reduce the entire tile into temp buffer;
+    /// 3) reduce within temp buffer
+    /// This will introduce additional instructions to initialize the temp
+    /// buffer, but will have more parallelism
+    static constexpr uint32_t first_block_elems
+            = first_block_size_y * block_size_x;
+    static constexpr uint32_t acc_block_elems = acc_size_y * block_size_x;
+    xetla_vector<dtype_acc, acc_size_y * tile_size_x> acc;
+#pragma unroll
+    for (int j = 0; j < num_block_x; j++) {
+        auto src_reg = (src.reg).xetla_select<first_block_elems, 1>(
+                j * first_block_elems);
+        auto src_reg_acc
+                = xetla_cvt<dtype_acc, dtype, first_block_elems>(src_reg);
+        acc.xetla_select<acc_block_elems, 1>(j * acc_block_elems)
+                = src_reg_acc.xetla_select<acc_block_elems, 1>(0);
+    }
+
+#pragma unroll
+    for (int i = 0; i < tile_size_y / block_size_y; i++) {
+#pragma unroll
+        for (int j = 0; j < num_block_x; j++) {
+            auto src_reg = (src.reg).xetla_select<block_elems, 1>(
+                    (i * num_block_x + j) * block_elems);
+            auto src_reg_acc
+                    = xetla_cvt<dtype_acc, dtype, block_elems>(src_reg);
+            auto dst_reg_acc
+                    = acc.xetla_select<acc_block_elems, 1>(j * acc_block_elems);
+#pragma unroll
+            for (int row_i = 0; row_i < block_size_y / acc_size_y; row_i++) {
+                if (i == 0 && row_i == 0) continue;
+                dst_reg_acc = reduce_helper<reduce_kind, dtype_acc,
+                        acc_block_elems>(dst_reg_acc,
+                        src_reg_acc.xetla_select<acc_block_elems, 1>(
+                                row_i * acc_block_elems));
+            }
+            // process the tail
+            if constexpr ((block_size_y % acc_size_y) != 0) {
+                constexpr uint32_t acc_tail_start_y
+                        = block_size_y / acc_size_y * acc_size_y;
+                constexpr uint32_t acc_tail_size_y = block_size_y % acc_size_y;
+                constexpr uint32_t acc_tail_block_elems
+                        = acc_tail_size_y * block_size_x;
+                auto dst_reg_acc_tail
+                        = dst_reg_acc.xetla_select<acc_tail_block_elems>(0);
+                dst_reg_acc_tail = reduce_helper<reduce_kind, dtype_acc,
+                        acc_tail_block_elems>(dst_reg_acc_tail,
+                        src_reg_acc.xetla_select<acc_tail_block_elems, 1>(
+                                acc_tail_start_y * block_size_x));
+            }
+        }
+    }
+
+    // process the tail
+    if constexpr ((tile_size_y % block_size_y) != 0) {
+        constexpr uint32_t tail_start_y
+                = tile_size_y / block_size_y * block_size_y;
+        constexpr uint32_t tail_size_y = tile_size_y % block_size_y;
+        constexpr uint32_t tail_block_elems = tail_size_y * block_size_x;
+#pragma unroll
+        for (int j = 0; j < num_block_x; j++) {
+            auto src_reg = (src.reg).xetla_select<tail_block_elems, 1>(
+                    tail_start_y * tile_size_x + j * tail_block_elems);
+            auto src_reg_acc
+                    = xetla_cvt<dtype_acc, dtype, tail_block_elems>(src_reg);
+            auto dst_reg_acc
+                    = acc.xetla_select<acc_block_elems, 1>(j * acc_block_elems);
+#pragma unroll
+            for (int row_i = 0; row_i < tail_size_y / acc_size_y; row_i++) {
+                if ((tile_size_y / block_size_y == 0) && row_i == 0) continue;
+                dst_reg_acc = reduce_helper<reduce_kind, dtype_acc,
+                        acc_block_elems>(dst_reg_acc,
+                        src_reg_acc.xetla_select<acc_block_elems, 1>(
+                                row_i * acc_block_elems));
+            }
+            // process the tail
+            if constexpr ((tail_size_y % acc_size_y) != 0) {
+                constexpr uint32_t acc_tail_start_y
+                        = tail_size_y / acc_size_y * acc_size_y;
+                constexpr uint32_t acc_tail_size_y = tail_size_y % acc_size_y;
+                constexpr uint32_t acc_tail_block_elems
+                        = acc_tail_size_y * block_size_x;
+                auto dst_reg_acc_tail
+                        = dst_reg_acc.xetla_select<acc_tail_block_elems>(0);
+                dst_reg_acc_tail = reduce_helper<reduce_kind, dtype_acc,
+                        acc_tail_block_elems>(dst_reg_acc_tail,
+                        src_reg_acc.xetla_select<acc_tail_block_elems, 1>(
+                                acc_tail_start_y * block_size_x));
+            }
+        }
+    }
+
+    xetla_vector<dtype_acc, tile_size_x> out;
+#pragma unroll
+    for (int i = 0; i < acc_size_y; i++) {
+#pragma unroll
+        for (int j = 0; j < num_block_x; j++) {
+            auto reg_acc
+                    = acc.xetla_select<acc_block_elems, 1>(j * acc_block_elems);
+            auto reg_acc_2d = reg_acc.xetla_format<dtype_acc, acc_size_y,
+                    block_size_x>();
+            if (i == 0) {
+                out.xetla_select<block_size_x, 1>(j * block_size_x)
+                        = reg_acc_2d.row(i);
+            } else {
+                out.xetla_select<block_size_x, 1>(j * block_size_x)
+                        = reduce_helper<reduce_kind, dtype_acc, block_size_x>(
+                                out.xetla_select<block_size_x, 1>(
+                                        j * block_size_x),
+                                reg_acc_2d.row(i));
+            }
+        }
+    }
+
+    return xetla_cvt<dtype_out, dtype_acc, tile_size_x>(out);
 }
 
 /// @brief Reduce 2d src tile to the 1d tile, and output to 1d dst.
@@ -115,22 +254,26 @@ tile_reduce(mat_t &src) {
 /// @param dst Is the reference of the destination tile object.
 /// @param src Is the reference of the destination tile object.
 /// @return No return, in-place update in the destination tile.
+/// @note This is only for reduce add, and will be deprecated in future. Please use tile_reduce instead.
 template <typename T_dst, typename T_src, bool accumulate = true,
         typename dtype_acc = float, uint32_t num_acc = 4>
-__XETLA_API typename std::enable_if_t<(T_dst::tile_desc::register_layout
-                                              == reg_layout::tiled)
-        && (T_src::tile_desc::register_layout == reg_layout::tiled)
-        && (T_dst::tile_desc::tile_size_x == T_src::tile_desc::tile_size_x)
-        && (T_dst::tile_desc::tile_size_y == 1)>
-tile_row_reduce(T_dst &dst, T_src &src) {
-    static constexpr uint32_t tile_size_y = T_src::tile_desc::tile_size_y;
-    static constexpr uint32_t tile_size_x = T_src::tile_desc::tile_size_x;
-    static constexpr uint32_t tile_elems = T_src::tile_desc::tile_elems;
-    static constexpr uint32_t block_size_y = T_src::tile_desc::block_size_y;
-    static constexpr uint32_t block_size_x = T_src::tile_desc::block_size_x;
-    static constexpr uint32_t block_elems = T_src::tile_desc::block_elems;
-    static constexpr int32_t num_block_y = T_src::tile_desc::num_block_y;
-    static constexpr int32_t num_block_x = T_src::tile_desc::num_block_x;
+XETLA_MARKER(
+        "This is only for reduce add, and will be deprecated in future. "
+        "Please use tile_reduce instead.")
+__XETLA_API
+        typename std::enable_if_t<(T_dst::register_layout == reg_layout::tiled)
+                && (T_src::register_layout == reg_layout::tiled)
+                && (T_dst::tile_size_x == T_src::tile_size_x)
+                && (T_dst::tile_size_y == 1)> tile_row_reduce(T_dst &dst,
+                T_src &src) {
+    static constexpr uint32_t tile_size_y = T_src::tile_size_y;
+    static constexpr uint32_t tile_size_x = T_src::tile_size_x;
+    static constexpr uint32_t tile_elems = T_src::tile_elems;
+    static constexpr uint32_t block_size_y = T_src::block_size_y;
+    static constexpr uint32_t block_size_x = T_src::block_size_x;
+    static constexpr uint32_t block_elems = T_src::block_elems;
+    static constexpr int32_t num_block_y = T_src::num_block_y;
+    static constexpr int32_t num_block_x = T_src::num_block_x;
     using dtype_dst = typename T_dst::dtype;
     using dtype_src = typename T_src::dtype;
     /// Here we rely on compiler to generate mixed mode for bf16

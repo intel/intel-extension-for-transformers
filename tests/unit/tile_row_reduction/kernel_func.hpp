@@ -47,7 +47,7 @@ struct tile_row_reduction_func {
         matC.init(0);
         subgroup::tile_load<cache_hint::cached, cache_hint::cached>(
                 matA, matA_payload);
-        subgroup::tile_row_reduce(matC, matA);
+        matC.reg = subgroup::tile_reduce<reduce_op::sum, dtype, dtype, 0>(matA);
         tile_store(matC, matC_payload);
     }
 };

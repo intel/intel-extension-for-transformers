@@ -100,8 +100,8 @@ struct group_row_reduce_store_t<dtype_acc, dtype_out, row_size, wg_size_x,
             global_st_payload_t global_st_payload(ptr, st_width, st_height,
                     st_pitch, start_n_base + local_tile_size_x * sg_idy,
                     start_m_base);
-            subgroup::tile_row_reduce<global_st_t, local_ld_t, false>(
-                    global_st, local_ld);
+            global_st.reg = subgroup::tile_reduce<reduce_op::sum, dtype_out,
+                    dtype_acc, 0>(local_ld);
             subgroup::tile_store<cache_hint::uncached>(
                     global_st, global_st_payload);
         }
