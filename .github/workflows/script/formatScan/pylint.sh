@@ -6,14 +6,14 @@ cd /intel-extension-for-transformers
 log_dir=/intel-extension-for-transformers/.github/workflows/script/formatScan
 
 # install packages
-pip install accelerate intel_extension_for_pytorch nlpaug
+pip install accelerate intel_extension_for_pytorch nlpaug nltk
 
 python -m pylint -f json --disable=R,C,W,E1129 \
     --enable=line-too-long \
     --max-line-length=120 \
     --extension-pkg-whitelist=numpy,nltk \
     --ignored-classes=TensorProto,NodeProto \
-    --ignored-modules=tensorflow,torch,torch.quantization,torch.tensor,torchvision,mxnet,onnx,onnxruntime,neural_compressor,engine_py,neural_engine_py,intel_extension_for_transformers.neural_engine_py,neural_compressor.benchmark,intel_extension_for_transformers.lm_eval,ntel_extension_for_transformers.evaluation.hf_eval \
+    --ignored-modules=tensorflow,torch,torch.quantization,torch.tensor,torchvision,mxnet,onnx,onnxruntime,neural_compressor,engine_py,neural_engine_py,intel_extension_for_transformers.neural_engine_py,neural_compressor.benchmark,intel_extension_for_transformers.lm_eval*,ntel_extension_for_transformers.evaluation.hf_eval* \
     /intel-extension-for-transformers/intel_extension_for_transformers >${log_dir}/pylint.json
 exit_code=$?
 

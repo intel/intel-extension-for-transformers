@@ -77,7 +77,8 @@ function install_itrex_base() {
     cd /intel-extension-for-transformers
     git config --global --add safe.directory "*"
     git fetch
-    git checkout main
+    git checkout -b refer origin/develop
+    git pull
     $BOLD_YELLOW && echo "---------------- git submodule update --init --recursive -------------" && $RESET
     git config --global --add safe.directory "*"
     git submodule update --init --recursive

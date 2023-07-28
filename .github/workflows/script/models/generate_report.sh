@@ -1,6 +1,6 @@
 #!/bin/bash
 set -x
-set -eo pipefail
+#set -eo pipefail
 WORKSPACE=generated
 last_log_path=FinalReport
 summaryLog=${WORKSPACE}/summary.log

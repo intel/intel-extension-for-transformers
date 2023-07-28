@@ -46,6 +46,11 @@ jobs:
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
           echo '${{ toJSON(github) }}'
 
+      - name: Env build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
+          
       - name: Code scan check
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
