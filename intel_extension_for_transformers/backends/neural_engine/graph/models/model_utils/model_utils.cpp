@@ -1946,7 +1946,7 @@ const beam& top_beam(std::vector<beam> const& beams) {
 // TODO better way to return?
 std::vector<model_token> beam_search(const int& beam_size, const int& n_predict, model_context* lctx,
                                      const model_token* tokens_inp, const int& n_tokens, const int& n_threads) {
-  if (n_tokens > model_n_ctx(lctx) - 4) {
+  if (n_tokens > model_n_ctx(lctx)) {
     fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens, model_n_ctx(lctx) - 4);
     return std::vector<model_token>();
   }
