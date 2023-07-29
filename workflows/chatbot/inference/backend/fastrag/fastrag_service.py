@@ -26,6 +26,7 @@ from transformers import AutoModelForCausalLM, AutoConfig, AutoTokenizer, Stoppi
 from logger import build_logger
 from haystack.nodes import MarkdownConverter, TextConverter
 from utils import detect_language
+from database.mysqldb import MysqlDb
 from starlette.responses import RedirectResponse
 
 logger = build_logger("fastrag_service", f"fastrag_service.log")
@@ -211,6 +212,17 @@ class QueryRequest(RequestBaseModel):
     debug: Optional[bool] = False
 
 
+class FeedbackRequest(RequestBaseModel):
+    """
+    Request class for feedback api
+    'feedback_id' is set to be auto_increment, no need to pass as argument
+    """
+    # feedback_id: Optional[int] = None
+    question: str
+    answer: str
+    feedback: Optional[int] = 0
+
+
 class QueryResponse(BaseModel):
     query: str
     answers: Optional[List] = []
@@ -387,6 +399,27 @@ def query(request: QueryRequest):
         customized_pipeline.add_node(component=prompt, name="Prompter", inputs=["Shaper"])
         result = _process_request(customized_pipeline, request)
     return result
+
+
+@router.post("/v1/chat/feedback")
+def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
+    logger.info(f'fastrag feedback received.')
+    # create mysql db instance
+    mysql_db = MysqlDb()
+    question, answer, feedback = request.question, request.answer, request.feedback
+    feedback_str = 'dislike' if int(feedback) else 'like'
+    logger.info(f'feedback question: [{question}], answer: [{answer}], feedback: [{feedback_str}]')
+    # define sql statement
+    sql = f"INSERT INTO feedback VALUES(null, '{question}', '{answer}', {feedback})"
+    try:
+        # execute sql statement and close db connection automatically
+        mysql_db.insert(sql, None)
+    except:
+        # catch exceptions while inserting into db
+        raise Exception("Exception occurred when inserting data into MySQL, please check the db session and your syntax.")
+    else:
+        logger.info('feedback inserted.')
+        return "Succeed"
 
 @router.post("/v1/retrieval/llmcache")
 async def get_cache(request: QueryRequest):
