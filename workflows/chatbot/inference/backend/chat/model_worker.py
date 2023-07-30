@@ -14,13 +14,16 @@ import uuid
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
 import requests
-from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, GenerationConfig, StoppingCriteria, StoppingCriteriaList
 import torch
 import uvicorn
 
 from constants import WORKER_HEART_BEAT_INTERVAL
 from inference import load_model, generate_stream
 from utils import (build_logger, server_error_msg, pretty_print_semaphore)
+
+from asr import AudioSpeechRecognition
+from tts import TextToSpeech
 
 GB = 1 << 30
 
@@ -154,6 +157,88 @@ async def api_generate_stream(request: Request):
     background_tasks.add_task(release_model_semaphore)
     return StreamingResponse(generator, background=background_tasks, media_type="text/event-stream")
 
+class StopOnTokens(StoppingCriteria):
+    def __init__(self, min_length: int, start_length: int, stop_token_id: list[int]):
+        self.min_length = min_length
+        self.start_length = start_length
+        self.stop_token_id = stop_token_id
+
+    def __call__(
+        self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
+    ) -> bool:
+        if scores is not None:
+            if len(scores) > self.min_length:
+                for stop_id in self.stop_token_id:
+                    if input_ids[0][self.start_length - 1 + len(scores)] == stop_id:
+                        return True
+        elif input_ids.shape[-1] - self.start_length > self.min_length:
+            for stop_id in self.stop_token_id:
+                if input_ids[0][input_ids.shape[-1] - 1] == stop_id:
+                    return True
+        return False
+
+@app.post("/talkingbot", response_class=PlainTextResponse)
+async def talkingbot(request: Request):
+    params = await request.json()
+    saved_path = params["file_name"]
+    voice = params["voice"]
+    # audio -> text
+    logger.info("1: audio --> text")
+    text = asr.audio2text(saved_path)
+    logger.info(text)
+    prompt = """Have a conversation with a human. You must generate suitable response in short to the user input.\n### Input:\n{}\n### Response:""".format(text)
+    # text -> answer
+    logger.info("2: text --> answer")
+    worker.tokenizer.pad_token = worker.tokenizer.eos_token
+    stop_token_ids = [worker.model.model.generation_config.eos_token_id]
+    stop_token_ids.append(worker.tokenizer(".", return_tensors="pt").input_ids)
+    input_tokens = worker.tokenizer.batch_encode_plus([prompt], return_tensors="pt", padding=True)
+    input_token_len = input_tokens.input_ids.shape[-1]
+
+    stop = StopOnTokens(min_length=44, start_length=input_token_len, stop_token_id=stop_token_ids)
+    generation_config = GenerationConfig(
+        eos_token_id=0,
+        pad_token_id=0,
+        use_cache=True,
+        min_new_tokens=1,
+        max_new_tokens=64,
+        temperature=0.9,
+        top_p=0.9,
+        top_k=1,
+        repetition_penalty=1.1,
+        num_beams=1,
+        early_stopping=True,
+        ## use default decode mode
+    )
+    generation_kwargs = dict(
+                    generation_config=generation_config, return_dict_in_generate=True
+                )
+    generation_kwargs["stopping_criteria"] = StoppingCriteriaList([stop])
+    with torch.no_grad():
+        with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16, cache_enabled=True):
+            ## worker.model ==> ipexwrapper
+            output = worker.model.model.generate(**input_tokens, **generation_kwargs)
+    generated_texts = worker.tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+    logger.info("raw generated texts", generated_texts)
+    if "### Response:" in generated_texts:
+        generated_texts = generated_texts.split("### Response:")[1].strip()
+    lines = generated_texts.split('\n')
+    result_lines = []
+    for line in lines:
+        if 'Input:' in line or '```python' in line:
+            break
+        result_lines.append(line)
+    generated_texts = '\n'.join(result_lines)
+    generated_texts = generated_texts.replace('#', '')
+    generated_texts = generated_texts.split('include <')[0]
+    # answer -> audio
+    # answer -> audio
+    logger.info("3: answer --> audio")
+    answer_speech_path = tts.text2speech(generated_texts, voice=voice)
+    logger.info("Done!!!")
+    logger.info(answer_speech_path)
+    return answer_speech_path
+
 
 @app.post("/worker_get_status")
 async def api_get_status(request: Request):
@@ -192,4 +277,6 @@ if __name__ == "__main__":
                          args.load_8bit,
                          args.itrex,
                          args.ipex)
+    asr = AudioSpeechRecognition()
+    tts = TextToSpeech()
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
