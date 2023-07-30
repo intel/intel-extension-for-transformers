@@ -13,8 +13,8 @@ from typing import List, Union
 import threading
 import re
 
-from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Request, File, UploadFile, Form
+from fastapi.responses import StreamingResponse, FileResponse
 import numpy as np
 import requests
 import uvicorn
@@ -410,6 +410,27 @@ async def handle_chat(request: Request):
     response.headers["Connection"] = "keep-alive"
 
     return response
+
+@app.post("/v1/chat/talkingbot")
+async def handle_talkingbot(file: UploadFile = File(...), voice: str = Form(...)):
+    start = time.time()
+    file_name = file.filename
+    logger.info(f'Received file: {file_name}, and use voice: {voice}')
+    with open("tmp_audio_bytes", 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    audio = AudioSegment.from_file("tmp_audio_bytes")
+    # bytes to mp3
+    audio.export(f"{file_name}", format="mp3")
+    worker_name = controller.get_worker_address("mpt-7b-chat")
+
+    try:
+        r = requests.post(worker_name + "/talkingbot", json={"file_name": file_name, "voice": voice}, timeout=20)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Talkingbot fails: {worker_name}, {e}")
+        return None
+    logger.info(f"E2E time: {time.time() - start}")
+    return FileResponse(r.content, media_type="video/mp4")
 
 
 if __name__ == "__main__":
