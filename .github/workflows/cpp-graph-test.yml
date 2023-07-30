@@ -66,7 +66,7 @@ jobs:
           retention-days: 60 # 1 <= retention-days <= 90
 
   Genreate-Report:
-    runs-on: itrex-node
+    runs-on: ubuntu-latest
     needs: [CPP-Graph-Workflow]
     steps:
       - name: Checkout out Repo

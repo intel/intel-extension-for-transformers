@@ -121,7 +121,7 @@ function main() {
                         fi
                     fi
                     ctx=$(($output + $input + 4))
-                    sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
+                    #sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
                     logs_file="${model}-${precision}-${cores_per_instance}-${batch_size}-${input}-${output}.log"
                     ## prepare model.bin
                     if [[ ${precision} == "q4_j_vnni_b128" ]]; then

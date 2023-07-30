@@ -7,7 +7,7 @@ log_dir=/intel-extension-for-transformers/.github/workflows/script/formatScan
 
 # install packages
 pip install accelerate intel_extension_for_pytorch nlpaug nltk
-
+pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
 python -m pylint -f json --disable=R,C,W,E1129 \
     --enable=line-too-long \
     --max-line-length=120 \

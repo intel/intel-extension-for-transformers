@@ -145,7 +145,7 @@ jobs:
           docker exec ${{ env.CONTAINER_NAME }} bash -c "rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
 
   Genreate-Report:
-    runs-on: itrex-node
+    runs-on: ubuntu-latest
     needs: [Deploy-Workflow]
     steps:
       - name: Checkout out Repo

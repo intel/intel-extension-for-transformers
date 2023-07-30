@@ -49,7 +49,7 @@ function main() {
         for batch_size in ${batch_size_list[@]}; do
             for input in ${input_list[@]}; do
                 [[ "${input}" == "32" ]] && output=32 || output=128
-                sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
+                #sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
                 logs_file="${model}-${precision}-${cores_per_instance}-${batch_size}-${input}-${output}.log"
                 ir_path="${working_dir}/${precision}_ir"
                 python ${WORKING_DIR}/.github/workflows/script/py_task_injection.py --task=get_ITREX_cpu_memory_info --file_name=${script}

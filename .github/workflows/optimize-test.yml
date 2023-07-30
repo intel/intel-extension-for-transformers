@@ -145,7 +145,7 @@ jobs:
 
     
   Genreate-Report:
-    runs-on: itrex-node
+    runs-on: ubuntu-latest
     needs: [Optimize-Workflow]
     steps:
       - name: Checkout out Repo
