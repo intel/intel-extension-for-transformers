@@ -8,6 +8,7 @@ on:
        - '.github/workflows/script/models/run_llm.sh'
        - "intel_extension_for_transformers/backends"
        - "!intel_extension_for_transformers/backends/neural_engine/kernels"
+       - "!intel_extension_for_transformers/backends/neural_engine/graph"
        - "!intel_extension_for_transformers/backends/neural_engine/test"
        - "!intel_extension_for_transformers/backends/neural_engine/third_party"
        - "!intel_extension_for_transformers/backends/neural_engine/docs"

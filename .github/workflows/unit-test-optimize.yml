@@ -51,7 +51,7 @@ jobs:
             docker stop $(docker ps -aq)
             docker rm -vf ${{ env.CONTAINER_NAME }} || true
           fi
-          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} --shm-size="2g" \
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           -v /tf_dataset2:/tf_dataset2 \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}

@@ -49,7 +49,7 @@ jobs:
             podman stop ${{ env.CONTAINER_NAME }}
             podman rm -vf ${{ env.CONTAINER_NAME }} || true
           fi
-          podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} --shm-size="2g" \
+          podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
             -v ${{ github.workspace }}:/intel-extension-for-transformers \
             -e report_title="SparseLib Test" \
             -e BUILD_NUMBER="${{ github.run_number }}" \

@@ -17,10 +17,6 @@ function main() {
     log_prefix="$4"
     script="${working_dir}/run_llm.py"
     precision="$5"
-    if [[ ${precision} == "fp8" ]]; then
-        export NE_WEIGHT_FP8_4E3M=1
-        script="${script} --weight_type=fp8_4e3m"
-    fi
     # init params
     if [[ "${model}" == "gpt-j-6b" ]] || [[ "${model}" == "gpt-j-6b-pruned" ]]; then
         model_name="EleutherAI/gpt-j-6B"
@@ -53,7 +49,13 @@ function main() {
                 logs_file="${model}-${precision}-${cores_per_instance}-${batch_size}-${input}-${output}.log"
                 ir_path="${working_dir}/${precision}_ir"
                 python ${WORKING_DIR}/.github/workflows/script/py_task_injection.py --task=get_ITREX_cpu_memory_info --file_name=${script}
-                numactl -m 1 -C 56-111 python ${script} --input-tokens $input --max-new-tokens $output --batch-size $batch_size --model_path ${ir_path} --model ${model_name} 2>&1 | tee ${WORKING_DIR}/${logs_file} || true
+                if [[ ${precision} == "fp8" ]]; then
+                    export NE_WEIGHT_FP8_4E3M=1
+                    ir_path="${working_dir}/bf16_ir"
+                    numactl -m 1 -C 56-111 python ${script} --weight_type=fp8_4e3m --input-tokens $input --max-new-tokens $output --batch-size $batch_size --model_path ${ir_path} --model ${model_name} 2>&1 | tee ${WORKING_DIR}/${logs_file} || true
+                else
+                    numactl -m 1 -C 56-111 python ${script} --input-tokens $input --max-new-tokens $output --batch-size $batch_size --model_path ${ir_path} --model ${model_name} 2>&1 | tee ${WORKING_DIR}/${logs_file} || true
+                fi  
                 collect_perf_logs_llm ${logs_file} ${precision}
             done
         done
