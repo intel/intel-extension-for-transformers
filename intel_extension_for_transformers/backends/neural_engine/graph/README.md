@@ -43,6 +43,10 @@ python scripts/convert_falcon.py ${input_model_name_or_path} --outtype f32 --out
 
 ./build/bin/quant_falcon --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
 
+# convert the pytorch starcoder model to llama.cpp format
+python scripts/convert_starcoder.py --model={input_model_name_or_path} --outfile={output_path}/ne-fp32.bin --outtype=fp32
+
+./build/bin/quant_starcoder --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
 ```
 
 ### Run Models
@@ -52,7 +56,8 @@ Running LLAMA model, for details please refer to [LLaMA model documentation](./a
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 ./build/bin/main_llama -m ~/llama.cpp/models/ne-model-q4_j.bin --seed 12 -c 512 -b 1024 -n 256 --keep 48 -t 56 --repeat-penalty 1.0 --color -p "She opened the door and see"
 ```
 
-Running GPT-NEOX/ MPT / FALCON / GPT-J model, please use `main_gptneox` / `main_mpt` / `main_falcon` / `main_gptj`.
+Running GPT-NEOX / MPT / FALCON / / GPT-J / STARCODER model, please use `main_gptneox` / `main_mpt` / `main_falcon` / `main_starcoder` (Please type **prompt about codes** when use `STARCODER`. For example, `-p "def fibonnaci("`).
+
 
 ```bash
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 ./build/bin/main_gptneox -m ${output_path}/ne-q8.bin --seed 12 -c 512 -b 1024 -n 256 -t 56 --repeat-penalty 1.0 -p "She opened the door and see"
@@ -67,4 +72,4 @@ python gptj_binding.py
 ```
 
 ### Supported model
-Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj)
+Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b), [STARCODER](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).
