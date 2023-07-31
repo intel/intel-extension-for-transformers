@@ -1,0 +1,102 @@
+name: Optimize Unit Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - intel_extension_for_transformers/evaluation
+      - intel_extension_for_transformers/optimization
+      - intel_extension_for_transformers/preprocessing
+      - .github/workflows/unit-test-optimize.yml
+      - .github/workflows/script/unitTest
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKER_CONFIG_NAME: "commonDockerConfig"
+  REPO_NAME: "intel-extension-for-transformers"
+  REPO_TAG: "py38"
+  DOCKER_FILE_NAME: "devel"
+  CONTAINER_NAME: "utTest"
+  EXTRA_CONTAINER_NAME: "modelTest"
+
+jobs:
+  unit-test:
+    runs-on: [self-hosted, Linux, X64, itrex-node]
+    steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Docker Build
+        run: |
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+
+      - name: Docker Run
+        run: |
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            docker stop $(docker ps -aq)
+            docker rm -vf ${{ env.CONTAINER_NAME }} || true
+          fi
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          -v ${{ github.workspace }}:/intel-extension-for-transformers \
+          -v /tf_dataset2:/tf_dataset2 \
+          ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
+
+      - name: Env build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
+
+      - name: Binary build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
+          && bash install_binary.sh \
+          && pip install intel_extension_for_pytorch wget tensorflow sentencepiece \
+          && pip install --upgrade accelerate"
+
+      - name: Run UT
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
+          && bash run_unit_test_optimize.sh"
+
+      - name: Calculte coverage
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest/coverage \
+                && bash calc_coverage.sh"
+
+      - name: Collect log
+        if: ${{ !cancelled() }}
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers && \
+                   mv /log_dir . "
+
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: Optimize Unit Test
+          path: ${{ github.workspace }}/log_dir
