@@ -169,6 +169,8 @@ NE_API struct ne_tensor* ne_sub(struct ne_context* ctx, struct ne_tensor* a, str
 
 NE_API struct ne_tensor* ne_mul(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
+NE_API struct ne_tensor* ne_mul_inplace(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
+
 NE_API struct ne_tensor* ne_div(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
 NE_API struct ne_tensor* ne_sqr(struct ne_context* ctx, struct ne_tensor* a);
@@ -205,7 +207,11 @@ NE_API struct ne_tensor* ne_relu(struct ne_context* ctx, struct ne_tensor* a);
 // TODO: double-check this computation is correct
 NE_API struct ne_tensor* ne_gelu(struct ne_context* ctx, struct ne_tensor* a);
 
+NE_API struct ne_tensor* ne_gelu_inplace(struct ne_context* ctx, struct ne_tensor* a);
+
 NE_API struct ne_tensor* ne_silu(struct ne_context* ctx, struct ne_tensor* a);
+
+NE_API struct ne_tensor* ne_silu_inplace(struct ne_context* ctx, struct ne_tensor* a);
 
 // a - x
 // b - dy
@@ -215,7 +221,11 @@ NE_API struct ne_tensor* ne_silu_back(struct ne_context* ctx, struct ne_tensor* 
 // TODO: eps is hardcoded to 1e-5 for now
 NE_API struct ne_tensor* ne_norm(struct ne_context* ctx, struct ne_tensor* a);
 
+NE_API struct ne_tensor* ne_norm_inplace(struct ne_context* ctx, struct ne_tensor* a);
+
 NE_API struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a);
+
+NE_API struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a);
 
 // a - x
 // b - dy
