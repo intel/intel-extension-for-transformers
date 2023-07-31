@@ -23,6 +23,7 @@ env:
   REPO_TAG: "py38"
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "utTest"
+  EXTRA_CONTAINER_NAME: "modelTest"
 
 jobs:
   unit-test:
@@ -35,6 +36,11 @@ jobs:
               docker start $(docker ps -aq)
               echo "remove left files through container ..."
               docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
 
       - name: Checkout out Repo
@@ -80,15 +86,3 @@ jobs:
         with:
           name: Kernel Unit Test
           path: ${{ github.workspace }}/log_dir/unit_test*.*
-
-      - name: Docker clean up
-        if: ${{ always() }}
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} bash -c "rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
-
-      - name: Clean docker container
-        if: ${{ always() }}
-        run: |
-          docker stop $(docker ps -aq)
-          docker rm -vf ${{ env.CONTAINER_NAME }} || true
-          echo y | docker system prune

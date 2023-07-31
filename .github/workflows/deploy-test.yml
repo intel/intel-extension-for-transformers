@@ -28,6 +28,7 @@ env:
   REPO_TAG: "py38"
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "modelTest"
+  EXTRA_CONTAINER_NAME: "utTest"
 
 jobs:
   Deploy-Workflow:
@@ -52,6 +53,13 @@ jobs:
               echo "remove left files through container ..."
               docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+
       - name: Checkout out Repo
         uses: actions/checkout@v3
         with:
@@ -131,11 +139,6 @@ jobs:
           path: ${{ github.workspace }}/${{ matrix.framework }}_${{ matrix.modelName }}
           if-no-files-found: ignore # 'warn' or 'ignore' are also available, defaults to `warn`
           retention-days: 60 # 1 <= retention-days <= 90
-
-      - name: Docker clean up
-        if: ${{ always() }}
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} bash -c "rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
 
   Genreate-Report:
     runs-on: ubuntu-latest

@@ -87,15 +87,3 @@ jobs:
           name: SparseLib Test
           path: ${{ github.workspace }}/benchmark_log
           retention-days: 60
-
-      - name: Docker clean up
-        if: ${{ always() }}
-        run: |
-          podman exec ${{ env.CONTAINER_NAME }} bash -c "rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
-
-      - name: Clean docker container
-        if: ${{ always() }}
-        run: |
-          podman stop ${{ env.CONTAINER_NAME }}
-          podman rm -vf ${{ env.CONTAINER_NAME }} || true
-          echo y | podman system prune

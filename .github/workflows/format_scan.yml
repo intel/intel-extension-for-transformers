@@ -46,6 +46,7 @@ jobs:
               echo "remove left files through container ..."
               docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
+          
       - name: Checkout out Repo
         uses: actions/checkout@v3
 
