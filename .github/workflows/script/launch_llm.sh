@@ -7,8 +7,6 @@ batch_size_list=(1 4)
 input_list=(32 512)
 output_list=(32 128)
 beam_list=(1 4)
-# input_list=(32 512)
-# output_list=(32 128 512)
 
 function main() {
     conda_env="$1"
@@ -25,13 +23,8 @@ function main() {
     fi
 
     # init conda
-    . $(dirname ${CONDA_EXE})/../etc/profile.d/conda.sh
-    conda activate $conda_env
-    # setup conda env for LLM
-
-    # get cpu info
-    # sockets=$(lscpu |grep 'Socket(s):' |sed 's/.*://;s/ //g')
-    # cores_per_instance=$(lscpu |grep 'Core(s) per socket:' |sed 's/.*://;s/ //g')
+    #. $(dirname ${CONDA_EXE})/../etc/profile.d/conda.sh
+    conda activate $conda_env || source activate $conda_env
 
     # env
     export KMP_BLOCKTIME=1

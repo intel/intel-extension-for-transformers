@@ -13,7 +13,6 @@ file_name="./coverage_compare"
 sed -i "s|\/usr.*${module_name}\/||g" $coverage_pr_log
 sed -i "s|\/usr.*${module_name}\/||g" $coverage_base_log
 diff $coverage_pr_log $coverage_base_log >diff_file
-# [[ $? == 0 ]] && exit 0
 grep -Po "[<,>,\d].*" diff_file | awk '{print $1 "\t" $2 "\t" $3 "\t"  $4 "\t"  $5 "\t" $6 "\t" $7}' | sed "/Name/d" | sed "/TOTAL/d" | sed "/---/d" >$file_name
 [[ ! -s $file_name ]] && exit 0
 [[ -f $output_file ]] && rm -f $output_file

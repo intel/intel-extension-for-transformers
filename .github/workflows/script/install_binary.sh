@@ -7,7 +7,6 @@ git config --global --add safe.directory "*"
 git submodule update --init --recursive
 
 $BOLD_YELLOW && echo "---------------- run python setup.py sdist bdist_wheel -------------" && $RESET
-# python setup.py sdist bdist_wheel
 pip install build --upgrade
 python3 -m build -s -w
 

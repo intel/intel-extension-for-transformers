@@ -97,8 +97,6 @@ class TestSCBuffer(unittest.TestCase):
         out2 = copy.deepcopy(list(graph_test.inference(inputs).values())[0])
 
         self.assertTrue(np.allclose(data_true, out1, atol=1e-4))
-        print(out2)
-        print(data_true)
         #self.assertTrue(np.allclose(data_true, out2, atol=1e-4))
         self.assertTrue(os.path.exists("activation_dag.yaml"))
 

@@ -59,7 +59,6 @@ function prepare() {
     cp /lib64/libcrypto.so.1.1 ${HOME}/miniconda3/envs/${conda_env_name}/lib/libcrypto.so.1.1
     cp /lib64/libcrypto.so.1.1 ${HOME}/miniconda3/lib/libcrypto.so.1.1
     if [ -f "requirements.txt" ]; then
-        # sed -i '/neural-compressor/d' requirements.txt
         sed -i '/^transformers/d' requirements.txt
         n=0
         until [ "$n" -ge 5 ]

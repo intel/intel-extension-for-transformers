@@ -2,15 +2,11 @@
 #!/bin/bash
 set -x
 
-#cores_list=(32 48 56)
 cores_list=(48)
 batch_size_list=(1)
-#input_list=(10 32 1024 2016)
 input_list=(32 1024)
 output=32
 beam_list=(1)
-# input_list=(32 512)
-# output_list=(32 128 512)
 
 function main() {
     conda_env="$1"
@@ -66,12 +62,6 @@ function main() {
     if [["${compiler_version}" != "12.1.0"]]; then
       conda install --update-deps -c conda-forge gxx==${compiler_version} gcc==${compiler_version} gxx_linux-64==${compiler_version} libstdcxx-ng sysroot_linux-64 -y
     fi  
- 
-    # setup conda env for LLM
-
-    # get cpu info
-    # sockets=$(lscpu |grep 'Socket(s):' |sed 's/.*://;s/ //g')
-    # cores_per_instance=$(lscpu |grep 'Core(s) per socket:' |sed 's/.*://;s/ //g')
 
     # compile binary
     cd ${working_dir}
@@ -121,7 +111,6 @@ function main() {
                         fi
                     fi
                     ctx=$(($output + $input + 4))
-                    #sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
                     logs_file="${model}-${precision}-${cores_per_instance}-${batch_size}-${input}-${output}.log"
                     ## prepare model.bin
                     if [[ ${precision} == "q4_j_vnni_b128" ]]; then

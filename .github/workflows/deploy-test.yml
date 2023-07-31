@@ -28,7 +28,6 @@ env:
   REPO_TAG: "py38"
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "modelTest"
-  #REF_ID: 5506194692
 
 jobs:
   Deploy-Workflow:
@@ -112,13 +111,6 @@ jobs:
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
           && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=int8 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
-
-      #- name: Dynamic INT8 Benchmark
-      #  if: matrix.framework == 'engine'
-      #  run: |
-      #    docker exec ${{ env.CONTAINER_NAME }} \
-      #    bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-      #    && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=dynamic_int8 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
 
       - name: Collect Log
         run: |

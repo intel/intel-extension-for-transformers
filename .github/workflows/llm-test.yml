@@ -23,7 +23,6 @@ env:
   OUT_SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script/models
   SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script
   WORKING_DIR: ${{ github.workspace }}
-  #REF_ID: 5307542685
 
 
 jobs:

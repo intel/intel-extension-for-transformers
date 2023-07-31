@@ -26,7 +26,6 @@ env:
   REPO_TAG: "py38"
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "modelTest"
-  #REF_ID: 5538537655
 
 
 jobs:

@@ -84,7 +84,6 @@ function install_itrex_base() {
     git submodule update --init --recursive
     $BOLD_YELLOW && echo "---------------- pip install binary -------------" && $RESET
     pip install .
-    #bash /intel-extension-for-transformers/.github/workflows/script/install_binary.sh
 }
 
 function main() {

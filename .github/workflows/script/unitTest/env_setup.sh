@@ -20,7 +20,6 @@ done
 # Install test requirements
 cd /intel-extension-for-transformers/tests
 if [ -f "requirements.txt" ]; then
-    #sed -i '/tensorflow==/d;/torch==/d;/pytorch-ignite$/d;/mxnet==/d;/mxnet-mkl==/d;/torchvision==/d;/onnx$/d;/onnx==/d;/onnxruntime$/d;/onnxruntime==/d' requirements.txt
     python -m pip install --default-timeout=100 -r requirements.txt
     pip list
 else
