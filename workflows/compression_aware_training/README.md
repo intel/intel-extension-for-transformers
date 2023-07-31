@@ -150,7 +150,7 @@ Build or Pull the provided docker image.
 ```bash
 cd $WORKSPACE/intel-nlp-toolkit 
 git submodule update --init --recursive
-cd ${WORKSPACE}/docker
+cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training/docker
 docker compose build
 ```
 OR
@@ -171,9 +171,9 @@ flowchart RL
 ```
 
 ```bash
-cd docker
-export CONFIG=<config_file_name_without_.yaml>
-docker compose run dev
+cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training/docker
+# choose a config file from "ls ../config"
+CONFIG=<config_file_name_without_.yaml> docker compose run dev
 ```
 
 | Environment Variable Name | Default Value | Description |
