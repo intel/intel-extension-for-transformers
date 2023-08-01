@@ -257,9 +257,9 @@ bool starcoder_model_load(const std::string& fname, starcoder_model& model, gpt_
     model.ln_f_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
     // do not quant vocab related weights
-    model.wte = ne_new_tensor_2d(ctx, NE_TYPE_F32, n_embd, n_vocab, NE_SIZE_CALC);
+    model.wte = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
     model.wpe = ne_new_tensor_2d(ctx, NE_TYPE_F32, n_embd, n_ctx, NE_SIZE_CALC);
-    model.lm_head = ne_new_tensor_2d(ctx, NE_TYPE_F32, n_embd, n_vocab, NE_SIZE_CALC);
+    model.lm_head = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
 
     // map by name
     model.tensors["model/ln_f/g"] = model.ln_f_g;

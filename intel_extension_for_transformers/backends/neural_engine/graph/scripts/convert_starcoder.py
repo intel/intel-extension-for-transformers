@@ -66,7 +66,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     use_f16 = False
     if args.outtype == "f16":
         use_f16 = True
-    os.makedirs(os.path.dirname(fname_out), exist_ok=True)
 
     print("Loading model: ", dir_model)
     tokenizer = AutoTokenizer.from_pretrained(dir_model)
@@ -86,7 +85,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     encoder.update(tokenizer.get_added_vocab())
     print(hparams)
 
-    os.makedirs(os.path.dirname(fname_out), exist_ok=True)
     print("Saving ne model to: ", fname_out)
     fout = open(fname_out, "wb")
 
