@@ -112,6 +112,12 @@ function run_tuning {
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         approach="weight_only"
         extra_cmd=$extra_cmd" --approach weight_only"
+    elif [ "${topology}" = "chatglm_weight_only" ]; then
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="THUDM/chatglm-6b"
+        approach="weight_only"
+        extra_cmd=$extra_cmd" --approach weight_only"
     elif [ "${topology}" = "gpt_j_weight_only_awq" ]; then
         script="run_clm_no_trainer.py"
         DATASET_NAME="NeelNanda/pile-10k"

@@ -48,6 +48,9 @@ parser.add_argument("--calib_iters", default=512, type=int,
 parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
                     "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
                     help="tasks list for accuracy validation")
+parser.add_argument("--weight_only_bits", type=int, default=8)
+parser.add_argument("--weight_only_group", type=int, default=-1)
+parser.add_argument("--weight_only_scheme", default="sym")
 
 args = parser.parse_args()
 if args.ipex:
@@ -160,6 +163,15 @@ elif re.search("falcon-7b-instruct", args.model.lower()):
             )
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     user_model.config.use_cache = True
+elif re.search("chatglm", args.model.lower()):
+    from transformers import AutoModel, AutoTokenizer
+    user_model = AutoModel.from_pretrained(
+            args.model,
+            torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            trust_remote_code=args.trust_remote_code,
+            revision=args.revision,
+            )
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 else:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
@@ -198,9 +210,9 @@ if args.quantize:
         op_type_dict = {
             '.*':{ 	# re.match
                 "weight": {
-                    'bits': 4, # 1-8 bits 
-                    'group_size': 128,  # -1 (per-channel)
-                    'scheme': 'asym', # sym/asym
+                    'bits': args.weight_only_bits, # 1-8 bits 
+                    'group_size': args.weight_only_group,  # -1 (per-channel)
+                    'scheme': args.weight_only_scheme, # sym/asym
                     'algorithm': algo, # RTN/AWQ
                 },
             },
