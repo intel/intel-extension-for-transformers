@@ -314,6 +314,20 @@ class BaseTrainer():
             # pylint: disable=E1101
             self.quantizer.calib_dataloader = self.get_train_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
+            # transformer issue #1
+            # for transformers 4.31.0: accelerate dataloader
+            # *** ValueError: batch_size attribute should not be set 
+            # after DataLoaderShard is initialized
+            if self.quantizer.calib_dataloader.batch_size is None:
+                def _build_inc_dataloader(dataloader):
+                    class INCDataLoader:
+                        __iter__ = dataloader.__iter__
+                        def __init__(self) -> None:
+                            self.dataloader = dataloader
+                            self.batch_size = dataloader.total_batch_size
+                    return INCDataLoader()
+                self.quantizer.calib_dataloader = \
+                        _build_inc_dataloader(self.quantizer.calib_dataloader)
         if self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             self.quantizer.q_func = \
                 self.builtin_train_func if self._train_func is None else self._train_func
