@@ -277,6 +277,23 @@ class FinetuneArguments:
         default=False,
         metadata={"help": "if False, masks out inputs in loss"},
     )
+    lora_all_linear: bool = field(
+        default=False,
+        metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
+    )
+
+
+def find_all_linear_names(model):
+    cls = torch.nn.Linear
+    lora_module_names = set()
+    for name, module in model.named_modules():
+        if isinstance(module, cls):
+            names = name.split('.')
+            lora_module_names.add(names[0] if len(names) == 1 else names[-1])
+
+    if 'lm_head' in lora_module_names: # needed for 16-bit
+        lora_module_names.remove('lm_head')
+    return list(lora_module_names)
 
 
 def main():
@@ -357,10 +374,6 @@ def main():
         )
     else:
         raise ValueError("Please provide value for model_name_or_path or config_name.")
-    
-    # set use_fast_tokenizer to False for Llama series models
-    if "llama" in model.config.model_type:
-        model_args.use_fast_tokenizer = False
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -538,6 +551,7 @@ def main():
             load_from_cache_file=not data_args.overwrite_cache,
         )
 
+
     if data_args.dataset_concatenation:
 
         def concatenate_data(dataset, max_seq_length):
@@ -586,11 +600,16 @@ def main():
     if training_args.do_train:
         # PEFT settings
         if finetune_args.peft == "lora":
+            if finetune_args.lora_all_linear:
+                target_modules = find_all_linear_names(model)
+            else:
+                target_modules = finetune_args.lora_target_modules
+
             peft_config = LoraConfig(
                 r=finetune_args.lora_rank,
                 lora_alpha=finetune_args.lora_alpha,
                 lora_dropout=finetune_args.lora_dropout,
-                target_modules=finetune_args.lora_target_modules,
+                target_modules=target_modules,
                 bias="none",
                 task_type=TaskType.CAUSAL_LM,
             )
