@@ -3,6 +3,6 @@ neural-compressor
 numpy
 packaging
 protobuf --no-binary=protobuf
-transformers
+transformers==4.30.2
 evaluate
 optimum-intel
