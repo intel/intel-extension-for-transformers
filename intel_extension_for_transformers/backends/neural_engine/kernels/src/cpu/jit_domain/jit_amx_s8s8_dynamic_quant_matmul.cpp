@@ -20,14 +20,28 @@ namespace jd {
 
 #define GET_OFF(field) offsetof(ssd::dynamic_quant_matmul_data_t, field)
 
+enum GEMM_ISA { amx, vnni };
+
+#define N_DIM_IP(label_name, ip_func)      \
+  xor_(reg_n_loop, reg_n_loop);            \
+  if (param_.align_n_loop > 0) {           \
+    L(label_prefix + label_name);          \
+    ip_func(param_.align_build_block_num); \
+    inc(reg_n_loop);                       \
+    cmp(reg_n_loop, param_.align_n_loop);  \
+    jl(label_prefix + label_name);         \
+  }                                        \
+  if (param_.tail_n_loop != 0) ip_func(param_.tail_n_loop);
+
 void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
+  float const_val[] = {1.f / 127.f, bit_cast<float>(0x80808080)};
   Xbyak::Label data_label;
   inLocalLabel();
   {
-    const int stack_scale_offset = 4 + 2 * sizeof(tileconfig_t);
+    const int stack_scale_offset = sizeof(const_val) + 2 * sizeof(tileconfig_t);
     auto trans_block_col = param_.k / param_.tile_k;
     const auto does_calc = param_.align_m_loop > 0 || param_.tail_m != 0;
-    regs_pool rp(this, 1, {does_calc ? 11 : 6, does_calc ? 32 : 0, 0});
+    regs_pool rp(this, 1, {does_calc ? 12 : 6, does_calc ? 32 : 0, 0}, BYTES_ZMM, regs_pool::IgnoreWaste);
     const auto reg_m_loop = rp.reg<Reg64>();
     const auto reg_n_loop = rp.reg<Reg64>();
     const auto reg_strideA = rp.reg<Reg64>();
@@ -42,7 +56,7 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
       kmovd(scaleC_mask, reg_tmp);
     };
 
-    auto ip_16x16 = [&](int block_num) {
+    auto amx_ip_16x16 = [&](int block_num) {
       const auto reg_tmp = rp.reg<Reg64>();
       // build block
       {
@@ -103,6 +117,78 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
             }
             vmovups(ptr[reg_tmp_buf + reg_tmp + (idx * 16 + row_loop * param_.pad_n) * sizeof(float)], zmms[2]);
           }
+        }
+      }
+    };
+
+    auto vnni_ip_1xN = [&](int N) {
+      auto neg_128_zmm = rp.reg<Zmm>();
+      vbroadcastss(neg_128_zmm, ptr[rip + data_label + 4]);
+      auto zmms = rp.regs<Zmm>(2 * N + 1);
+      const int trans_block_col = param_.k / param_.tile_k;
+      Reg64 vnni_m_loop(rp.get_idx_by_name("vnni_m_loop"));
+      // vnni_gemm
+      {
+        const auto reg_matA_addr = rp.reg<Reg64>();
+        const auto reg_matB_addr = rp.reg<Reg64>();
+        const auto reg_wei_offset = rp.reg<Reg64>();
+        const auto reg_activation_offset = rp.reg<Reg64>();
+        const auto reg_tmp = rp.reg<Reg64>();
+        mov(reg_matA_addr, ptr[rp.p[0] + GET_OFF(activation)]);
+        mov(reg_matB_addr, ptr[rp.p[0] + GET_OFF(reordered_weight)]);
+        for (int i = 0; i < 2 * N; i++) vxorps(zmms[1 + i], zmms[1 + i], zmms[1 + i]);
+        imul(reg_tmp, reg_m_loop, 16 * param_.k);
+        imul(reg_activation_offset, vnni_m_loop, param_.k);
+        add(reg_activation_offset, reg_tmp);
+        for (int k_loop = 0; k_loop < param_.k; k_loop += param_.tile_k) {
+          imul(reg_wei_offset, reg_n_loop, param_.align_build_block_num * 16 * param_.tile_k * trans_block_col);
+          auto wei_base_offset = k_loop / param_.tile_k * 64;
+          for (int tile_k_loop = 0; tile_k_loop < param_.tile_k; tile_k_loop += 4) {
+            auto activation_offset = k_loop + tile_k_loop;
+            vbroadcastss(zmms[0], dword[reg_matA_addr + reg_activation_offset + activation_offset]);
+            vpaddb(zmms[0], zmms[0], neg_128_zmm);
+            for (int n_loop = 0; n_loop < N; n_loop++) {
+              auto fin_wei_offset = wei_base_offset + (tile_k_loop + n_loop * param_.tile_k) * 16 * trans_block_col;
+              vpdpbusds(zmms[1 + n_loop], zmms[0], ptr[reg_matB_addr + reg_wei_offset + fin_wei_offset]);
+              vpdpbusds(zmms[1 + N + n_loop], neg_128_zmm, ptr[reg_matB_addr + reg_wei_offset + fin_wei_offset]);
+            }
+          }
+        }
+      }
+      // store to tmpbuf
+      {
+        const auto reg_scale_w = rp.reg<Reg64>();
+        const auto reg_scale_a = rp.reg<Reg64>();
+        const auto reg_tmp = rp.reg<Reg64>();
+        const auto reg_tmp2 = rp.reg<Reg64>();
+        const auto reg_bias = rp.reg<Reg64>();
+        const auto reg_tmp_buf = rp.reg<Reg64>();
+        mov(reg_scale_w, ptr[rp.p[0] + GET_OFF(scale_w)]);
+        mov(reg_scale_a, ptr[rp.p[0] + GET_OFF(scale_a)]);
+        mov(reg_bias, ptr[rp.p[0] + GET_OFF(bias)]);
+        mov(reg_tmp_buf, ptr[rp.p[0] + GET_OFF(tmp_buf)]);
+        for (int store_loop = 0; store_loop < N; store_loop++) {
+          vpsubd(zmms[1 + store_loop], zmms[1 + store_loop], zmms[1 + N + store_loop]);
+          vcvtdq2ps(zmms[1 + store_loop], zmms[1 + store_loop]);
+          imul(reg_tmp, reg_m_loop, 16);
+          add(reg_tmp, vnni_m_loop);
+          vmulps(zmms[1 + store_loop], zmms[1 + store_loop], zword_b[reg_scale_a + sizeof(float) * reg_tmp]);
+          auto zmm_scale_w = rp.reg<Zmm>();
+          imul(reg_tmp, reg_n_loop, param_.align_build_block_num * 16);
+          vmovups(zmm_scale_w, ptr[reg_scale_w + sizeof(float) * reg_tmp + store_loop * 16 * sizeof(float)]);
+          if (param_.add_bias) {
+            vfmadd213ps(zmms[1 + store_loop], zmm_scale_w,
+                        ptr[reg_bias + sizeof(float) * reg_tmp + store_loop * 16 * sizeof(float)]);
+          } else {
+            vmulps(zmms[1 + store_loop], zmms[1 + store_loop], zmm_scale_w);
+          }
+          if (param_.postop_attrs.size() != 0) {
+            eltwise_injector_.escape_rp_all_type(&rp);
+            eltwise_injector_.vector_compute(zmms[1 + store_loop], param_.postop_attrs);
+          }
+          imul(reg_tmp2, vnni_m_loop, param_.n);
+          add(reg_tmp2, reg_tmp);
+          vmovups(ptr[reg_tmp_buf + sizeof(float) * reg_tmp2 + store_loop * 16 * sizeof(float)], zmms[1 + store_loop]);
         }
       }
     };
@@ -189,15 +275,19 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
     };
 
     auto build_MxN_tile = [&](int M, std::string label_prefix = ".") {
-      xor_(reg_n_loop, reg_n_loop);
-      if (param_.align_n_loop > 0) {
-        L(label_prefix + "align_n_loop");
-        ip_16x16(param_.align_build_block_num);
-        inc(reg_n_loop);
-        cmp(reg_n_loop, param_.align_n_loop);
-        jl(label_prefix + "align_n_loop");
+      auto gemm_isa = GEMM_ISA::amx;  // vnni show no perf benefit in SD, but we also want to keep the vnni-jit-path
+                                      // cause it may useful in the future.
+      if (gemm_isa == amx) {
+        N_DIM_IP("amx_n_loop", amx_ip_16x16);
+      } else {
+        auto vnni_m_loop = rp.reg<Reg64>("vnni_m_loop");
+        xor_(vnni_m_loop, vnni_m_loop);
+        L(label_prefix + "vnni_m_loop");
+        N_DIM_IP("vnni_n_loop", vnni_ip_1xN)
+        inc(vnni_m_loop);
+        cmp(vnni_m_loop, M);
+        jl(label_prefix + "vnni_m_loop");
       }
-      if (param_.tail_n_loop != 0) ip_16x16(param_.tail_n_loop);
 
       calculate_scale(M, label_prefix);
 
@@ -219,7 +309,7 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
     mov(reg_strideB, trans_block_col * 64);
     mov(reg_strideC, param_.pad_n * sizeof(int));  // strideC has same value as strideB.
     if (param_.align_m_loop > 0) {
-      ldtilecfg(ptr[rip + data_label + 4]);
+      ldtilecfg(ptr[rip + data_label + static_cast<int>(sizeof(const_val))]);
       L("align_m_loop");
       build_MxN_tile(16);
       inc(reg_m_loop);
@@ -227,14 +317,13 @@ void jit_amx_s8s8_dynamic_quant_matmul_t::generate() {
       jl("align_m_loop");
     }
     if (param_.tail_m != 0) {
-      const int offset = 4 + sizeof(tileconfig_t);
+      const int offset = sizeof(const_val) + sizeof(tileconfig_t);
       ldtilecfg(ptr[rip + data_label + offset]);
       build_MxN_tile(param_.tail_m, ".tail_");
     }
   }
   outLocalLabel();
   L(data_label);
-  float const_val[] = {1.f / 127.f};
   float scale_holdplace[16] = {0};
   db(reinterpret_cast<uint8_t*>(const_val), sizeof(const_val));
   db(reinterpret_cast<uint8_t*>(&param_.m_align_cfg), sizeof(tileconfig_t));

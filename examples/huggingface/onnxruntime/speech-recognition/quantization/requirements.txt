@@ -1,0 +1,11 @@
+datasets
+torch
+transformers==4.30.2
+jiwer
+optimum
+onnx
+onnxruntime
+evaluate
+neural-compressor
+librosa
+soundfile

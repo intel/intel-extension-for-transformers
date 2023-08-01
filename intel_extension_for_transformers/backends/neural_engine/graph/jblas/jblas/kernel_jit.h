@@ -1,6 +1,34 @@
+//  Copyright (c) 2023 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 #pragma once
-#include "jit_blas_utils.h"
+#include <functional>
+#include <unordered_map>
+
 #include "jit_base.hpp"
+#include "jit_blas_utils.h"
+struct decompress_block_s4_f32_codegen_param {
+  int row;
+  int col;
+  int kblock;
+  int ld_src;
+  int ld_dst;
+  bool operator==(const decompress_block_s4_f32_codegen_param& other) const {
+    return row == other.row && col == other.col && kblock == other.kblock && ld_src == other.ld_src &&
+           ld_dst == other.ld_dst;
+  }
+};
+
 namespace jblas {
 namespace kernel {
 namespace jit {
@@ -13,9 +41,9 @@ class DequanS8F32 {
       void *srcptr, *dstptr;
       int row, col;
       int srcstride, dststride;
-      float *scales;
+      float* scales;
     };
-    typedef long long (*func_t)(params *);
+    typedef long long (*func_t)(params*);
     static int constexpr VBytes = 64;
     static int constexpr RegScale = 0;
     static int constexpr RegTmp = RegScale + 4;
@@ -137,17 +165,42 @@ class DequanS8F32 {
     Xbyak::Reg64 reg_tmp1;
     Xbyak::Reg64 reg_ret;
   };
-  static void forward_avx512f(int8_t *srcptr, float *dstptr, int row, int col,
-                              int ld_src, int ld_dst, float *scales) {
+  static void forward_avx512f(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst, float* scales) {
     static MicroKernelAVX512F mAVX512F;
-    auto param = MicroKernelAVX512F::params{srcptr,
-                                            dstptr,
-                                            row,
-                                            col,
-                                            int(ld_src * sizeof(int8_t)),
-                                            int(ld_dst * sizeof(float)),
-                                            scales};
+    auto param = MicroKernelAVX512F::params{
+        srcptr, dstptr, row, col, int(ld_src * sizeof(int8_t)), int(ld_dst * sizeof(float)), scales};
     mAVX512F.mKernel(&param);
+  }
+};
+
+class DequanKBlockS8F32 {
+ public:
+  template <typename _ST>
+  static inline JBLAS_CODE forward_avx512f(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+                                           _ST* scales, int k_offset, int kblock, int NPad) {
+    int row0 = kblock - k_offset % kblock;
+    row0 = row0 == kblock ? 0 : row0;
+    row0 = row0 > row ? row : row0;
+    int row1 = row - row0;
+    int row1_blk = utils::padto_le(row1, kblock);
+    int row2 = row - row1_blk - row0;
+    auto sptr = scales + k_offset / kblock * NPad;
+    if (row0 > 0) {
+      DequanS8F32::forward_avx512f(srcptr, dstptr, row0, col, ld_src, ld_dst, sptr);
+      srcptr += row0 * ld_src;
+      dstptr += row0 * ld_dst;
+      sptr += NPad;
+    }
+    for (int i = 0; i < row1_blk; i += kblock) {
+      DequanS8F32::forward_avx512f(srcptr, dstptr, kblock, col, ld_src, ld_dst, sptr);
+      srcptr += kblock * ld_src;
+      dstptr += kblock * ld_dst;
+      sptr += NPad;
+    }
+    if (row2 > 0) {
+      DequanS8F32::forward_avx512f(srcptr, dstptr, row2, col, ld_src, ld_dst, sptr);
+    }
+    return JblasNotSupport;
   }
 };
 
@@ -158,7 +211,7 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
     int row, col;
     int srcstride, dststride;
   };
-  typedef long long (*func_t)(params *);
+  typedef long long (*func_t)(params*);
 
  public:
   static int constexpr VBytes = 64;
@@ -167,20 +220,20 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
     int SF_TmpSize = 64;
     int SF_TmpPos = 16 * 10;
     Xbyak::util::StackFrame st(this, 1, 13, 16 * 10 + SF_TmpSize);
-    const Xbyak::Reg64 &parambase = st.p[0];
-    const Xbyak::Reg64 &reg_srcptr = st.t[0];
-    const Xbyak::Reg64 &reg_dstptr = st.t[1];
-    const Xbyak::Reg64 &reg_srcstride = st.t[2];
-    const Xbyak::Reg64 &reg_dststride = st.t[3];
-    const Xbyak::Reg64 &reg_rowsize = st.t[4];
-    const Xbyak::Reg64 &reg_colsize = st.t[5];
-    const Xbyak::Reg64 &reg_iterrow = st.t[6];
-    const Xbyak::Reg64 &reg_itercol = st.t[7];
-    const Xbyak::Reg64 &reg_tmp = st.t[8];
-    const Xbyak::Reg64 &reg_tmpsrc = st.t[9];
-    const Xbyak::Reg64 &reg_tmpdst = st.t[10];
-    const Xbyak::Reg64 &reg_tmp1 = st.t[12];
-    const Xbyak::Reg64 &reg_ret = rax;
+    const Xbyak::Reg64& parambase = st.p[0];
+    const Xbyak::Reg64& reg_srcptr = st.t[0];
+    const Xbyak::Reg64& reg_dstptr = st.t[1];
+    const Xbyak::Reg64& reg_srcstride = st.t[2];
+    const Xbyak::Reg64& reg_dststride = st.t[3];
+    const Xbyak::Reg64& reg_rowsize = st.t[4];
+    const Xbyak::Reg64& reg_colsize = st.t[5];
+    const Xbyak::Reg64& reg_iterrow = st.t[6];
+    const Xbyak::Reg64& reg_itercol = st.t[7];
+    const Xbyak::Reg64& reg_tmp = st.t[8];
+    const Xbyak::Reg64& reg_tmpsrc = st.t[9];
+    const Xbyak::Reg64& reg_tmpdst = st.t[10];
+    const Xbyak::Reg64& reg_tmp1 = st.t[12];
+    const Xbyak::Reg64& reg_ret = rax;
 
     vreg_push(rsp);
 
@@ -234,8 +287,7 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
     mKernel = this->getCode<func_t>();
   }
 
-  static JBLAS_CODE forward(void *srcptr, void *dstptr, int row, int col,
-                      int srcstride, int dststride) {
+  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
     static JitMemcpy2DAvx512f instance;
     auto param = params{srcptr, dstptr, row, col, srcstride, dststride};
     instance.mKernel(&param);
@@ -246,6 +298,182 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
   func_t mKernel = nullptr;
 };
 
+class DequanKBlockS4F32 {
+ public:
+  static inline void decompress_load_scale(Xbyak::CodeGenerator* jit, int zmm_scale_num,
+                                           const std::vector<Xbyak::Zmm>& scale_zmms, const Xbyak::Reg64& reg_scale) {
+    for (int i = 0; i < zmm_scale_num; i++) jit->vmovups(scale_zmms[i], jit->zword[reg_scale + i * 16 * sizeof(float)]);
+  }
+
+  static inline Xbyak::Zmm unpack_4bit(Xbyak::CodeGenerator* jit, Xbyak::Ymm v4bits, Xbyak::Zmm zmm, Xbyak::Zmm zmm1,
+                                       Xbyak::Zmm vmask, Xbyak::Opmask unpack_mask) {
+    Xbyak::Ymm ymm1(zmm1.getIdx());
+    jit->vpslld(ymm1, v4bits, 4);
+    jit->vpmovsxbw(zmm, v4bits);
+    jit->vpmovsxbw(zmm1, ymm1);
+    jit->vpsllw(zmm, zmm, 8);
+    jit->vmovdqu8(zmm1 | unpack_mask, zmm);
+    jit->vpandd(zmm1, vmask, zmm1);
+    return zmm1;
+  }
+
+  struct convert_s4_s8_param {
+    Xbyak::CodeGenerator* jit;
+    Xbyak::RegExp src_addr;
+    Xbyak::RegExp dst_addr;
+    Xbyak::Zmm vmask;  // TODO: contain one tmp_zmm.
+    Xbyak::Opmask load_mask;
+    Xbyak::Opmask store_mask;
+    Xbyak::Opmask unpack_mask;
+    int free_zmm_idx;
+  };
+
+  template <int N>
+  static inline void convert_s4_s8(convert_s4_s8_param p) {
+    Xbyak::Ymm ymm(p.free_zmm_idx);
+    if (N == 48) {
+      p.jit->vmovdqu64(Xbyak::Ymm(p.free_zmm_idx) | p.load_mask, p.jit->yword[p.src_addr]);
+      auto zmm = unpack_4bit(p.jit, ymm, Xbyak::Zmm(p.free_zmm_idx + 1), Xbyak::Zmm(p.free_zmm_idx + 2), p.vmask,
+                             p.unpack_mask);
+      p.jit->vmovdqu64(p.jit->ptr[p.dst_addr] | p.store_mask, zmm);
+    }
+    if (N == 64) {
+      p.jit->vmovdqu(ymm, p.jit->yword[p.src_addr]);
+      auto zmm = unpack_4bit(p.jit, ymm, Xbyak::Zmm(p.free_zmm_idx + 1), Xbyak::Zmm(p.free_zmm_idx + 2), p.vmask,
+                             p.unpack_mask);
+      p.jit->vmovdqu32(p.jit->ptr[p.dst_addr], zmm);
+    }
+  }
+
+  template <int N>
+  static inline void dequant_s8_N(Xbyak::CodeGenerator* jit, Xbyak::RegExp dst_addr, Xbyak::RegExp src_addr,
+                                  const std::vector<Xbyak::Zmm>& zmms, int zmm_begin_idx,
+                                  const std::vector<Xbyak::Zmm>& scales) {
+    int constexpr VLoop = N / 16;
+    for (int iv = 0; iv < VLoop; iv += 1) {
+      jit->movdqu(Xbyak::Xmm(zmms[zmm_begin_idx + iv].getIdx()), jit->xword[src_addr + iv * 16]);
+      jit->vpmovsxbd(zmms[iv], Xbyak::Xmm(zmms[zmm_begin_idx + iv].getIdx()));
+      jit->vcvtdq2ps(zmms[iv], zmms[iv]);
+      jit->vmulps(zmms[iv], zmms[iv], scales[iv]);
+      jit->vmovups(jit->zword[dst_addr + iv * 16 * sizeof(float)], zmms[iv]);
+    }
+  }
+
+  class decompress_block_s4_f32 : protected Xbyak::CodeGenerator {
+    struct params {
+      float* scale_addr;
+      void* s4;
+      void* s8;
+      float* f32;
+    };
+    typedef void (*ker_t)(params* p);
+
+   public:
+    decompress_block_s4_f32(decompress_block_s4_f32_codegen_param p) : Xbyak::CodeGenerator(128 * 1024) {
+      assert(p.col == 48);
+      int zmm_scale_num = p.col / 16;
+      Xbyak::Zmm zmm_mask(31);
+      int data_zmm_num = 16;
+      int data_idx = 0;
+      int scale_idx = 16;
+      std::vector<Xbyak::Zmm> scale_zmms(zmm_scale_num);
+      std::vector<Xbyak::Zmm> data_zmms(data_zmm_num);
+      std::transform(scale_zmms.begin(), scale_zmms.end(), scale_zmms.begin(),
+                     [&](Xbyak::Zmm zmm) { return Xbyak::Zmm(scale_idx++); });
+      std::transform(data_zmms.begin(), data_zmms.end(), data_zmms.begin(),
+                     [&](Xbyak::Zmm zmm) { return Xbyak::Zmm(data_idx++); });
+      inLocalLabel();
+      Xbyak::Label const_v;
+      {
+        Xbyak::util::StackFrame sf(this, 1, 13, 64);
+        auto& reg_param = sf.p[0];
+        auto& reg_scale = sf.t[1];
+        auto& reg_s4 = sf.t[2];
+        auto& reg_s8 = sf.t[3];
+        auto& reg_f32 = sf.t[4];
+        auto& reg_tmp = sf.t[5];
+        auto& reg_kblock_loop = sf.t[6];
+        Xbyak::Opmask load_mask(2);
+        Xbyak::Opmask store_mask(3);
+        Xbyak::Opmask unpack_mask(4);
+        vbroadcastss(zmm_mask, dword[rip + const_v]);
+        mov(reg_tmp, 0xaaaaaaaaaaaaaaaa);
+        kmovq(unpack_mask, reg_tmp);
+        if (p.col == 48) {
+          mov(reg_tmp.cvt32(), 0x7);
+          kmovd(load_mask, reg_tmp.cvt32());
+          mov(reg_tmp.cvt32(), 0x3f);
+          kmovd(store_mask, reg_tmp.cvt32());
+
+          mov(reg_scale, ptr[reg_param + OFFSET(scale_addr)]);
+          mov(reg_s4, ptr[reg_param + OFFSET(s4)]);
+          mov(reg_s8, ptr[reg_param + OFFSET(s8)]);
+          mov(reg_f32, ptr[reg_param + OFFSET(f32)]);
+          decompress_load_scale(this, zmm_scale_num, scale_zmms, reg_scale);
+          auto max_row_unroll = data_zmm_num / zmm_scale_num;
+          if (p.row != p.kblock) {
+            int i = 0;
+            for (int i = 0; i < p.row; i++) {
+              convert_s4_s8_param cvt_p = {this,
+                                           reg_s4 + i * p.ld_src,
+                                           reg_s8 + i * 64,  // avoid leap the cache-line.
+                                           zmm_mask,
+                                           load_mask,
+                                           store_mask,
+                                           unpack_mask,
+                                           data_zmms[0].getIdx()};
+              convert_s4_s8<48>(cvt_p);
+            }
+            auto max_unroll_num = p.row / max_row_unroll;
+            auto tail_row_unroll = p.row % max_row_unroll;
+            for (; i < max_unroll_num; i++)
+              for (int j = 0; j < max_row_unroll; j++)
+                dequant_s8_N<48>(this, reg_f32 + (i * max_row_unroll + j) * p.ld_dst * sizeof(float),
+                                 reg_s8 + (i * max_row_unroll + j) * 64, data_zmms, j * zmm_scale_num, scale_zmms);
+            for (int k = 0; k < tail_row_unroll; k++)
+              dequant_s8_N<48>(this, reg_f32 + (i * max_row_unroll + k) * p.ld_dst * sizeof(float),
+                               reg_s8 + (i * max_row_unroll + k) * 64, data_zmms, k * zmm_scale_num, scale_zmms);
+          } else {
+            auto fin_row_unroll = max_row_unroll;
+            while (p.col * fin_row_unroll % 64 != 0) fin_row_unroll -= 1;
+            int Loop64 = p.col * fin_row_unroll / 64;
+            xor_(reg_kblock_loop, reg_kblock_loop);
+            L(".kblock_loop");
+            imul(reg_tmp, reg_kblock_loop, p.ld_src);
+            for (int j = 0; j < Loop64; j++) {
+              convert_s4_s8_param cvt_p = {
+                  this,        reg_s4 + reg_tmp + 32 * j, reg_s8 + j * 64, zmm_mask, load_mask, store_mask,
+                  unpack_mask, data_zmms[0].getIdx()};
+              convert_s4_s8<64>(cvt_p);
+            }
+            imul(reg_tmp, reg_kblock_loop, p.ld_dst * sizeof(float));
+            for (int k = 0; k < fin_row_unroll; k++)
+              dequant_s8_N<48>(this, reg_f32 + reg_tmp + k * p.ld_dst * sizeof(float), reg_s8 + k * 48, data_zmms,
+                               k * zmm_scale_num, scale_zmms);
+            add(reg_kblock_loop, fin_row_unroll);
+            cmp(reg_kblock_loop, p.kblock);
+            jl(".kblock_loop");
+          }
+        }
+      }
+      outLocalLabel();
+      L(const_v);
+      uint32_t const_value[] = {0xf0f0f0f0};
+      db(reinterpret_cast<uint8_t*>(const_value), sizeof(const_value));
+      this->ready();
+      ker_ = this->getCode<ker_t>();
+    }
+
+    void fwd(float* scale, void* s4, void* tmp_buf, float* f32) {
+      params p{scale, s4, tmp_buf, f32};
+      ker_(&p);
+    }
+
+   private:
+    ker_t ker_;
+    int dump_idx = 0;
+  };
+};
 }  // namespace jit
 }  // namespace kernel
 }  // namespace jblas

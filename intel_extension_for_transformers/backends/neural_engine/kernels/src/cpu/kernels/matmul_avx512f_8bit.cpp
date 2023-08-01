@@ -183,7 +183,7 @@ bool matmul_avx512f_8bit_k_t::execute(const std::vector<const void*>& rt_data) c
   return true;
 }
 
-bool matmul_avx512f_8bit_k_t::execute(const exec_context_t& context) {
+bool matmul_avx512f_8bit_k_t::execute(const exec_context_t& context) const {
   bfloat16_t* matA = nullptr;
   bfloat16_t* matC = nullptr;
   bfloat16_t* matD = nullptr;

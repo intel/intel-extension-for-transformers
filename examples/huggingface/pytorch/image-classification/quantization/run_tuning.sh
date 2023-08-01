@@ -46,6 +46,7 @@ function run_tuning {
     if [ "${topology}" = "vit-base-patch16-224_static" ]; then
         model_name_or_path="/tf_dataset2/models/nlp_toolkit/vit-base"
         approach="PostTrainingStatic"
+        inc_config_file="vit_config.yaml"
     fi
 
     python -u ./run_image_classification.py \
@@ -61,6 +62,7 @@ function run_tuning {
         --tune \
         --overwrite_output_dir \
         --quantization_approach ${approach} \
+        --inc_config_file ${inc_config_file} \
         ${extra_cmd}
 }
 

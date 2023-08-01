@@ -1,0 +1,17 @@
+CUDA_VISIBLE_DEVICES=0 python3 run_glue_EE.py \
+--model_name_or_path bert-base-uncased \
+--task_name mnli \
+--per_device_train_batch_size 32 \
+--per_device_eval_batch_size 1 \
+--do_train \
+--do_calibration \
+--do_eval \
+--max_seq_length 256 \
+--max_train_samples 6000 \
+--output_dir output_EE \
+--learning_rate 5e-5 \
+--exit_layers 0_3_5_11  \
+--exit_thresholds 11 \
+--num_train_epochs 2 \
+--SWEET \
+--overwrite_output_dir

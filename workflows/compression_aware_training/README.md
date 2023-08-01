@@ -24,6 +24,18 @@ The workflow provides a generic way to do model Compression Aware Training suppo
 
 ## Get Started
 
+### Clone this Repository
+
+Start by defining an environment variable that will store the workspace path, this can be an existing directory or one to be created in further steps. This ENVVAR will be used for all the commands executed using absolute paths.
+
+```
+export WORKSPACE=</workdir/path>
+
+git clone https://github.com/intel/intel-extension-for-transformers.git $WORKSPACE/intel-nlp-toolkit
+cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training
+
+```
+
 ### Download Miniconda and install it.
 Note: If you have already installed conda on your system, just skip this step.
 ```bash
@@ -78,19 +90,19 @@ See [config/README.md](./config/README.md) for options.
 
 Run both traditional Distillation followed by Quantization Aware Training
 ```bash
-python src/run.py config/distillation_with_qat.yaml
+python src/run.py --config_file config/distillation_with_qat.yaml
 ```
 Run traditional Distillation only
 ```bash
-python src/run.py config/distillation.yaml
+python src/run.py --config_file config/distillation.yaml
 ```
 Run Quantization Aware Training only
 ```bash
-python src/run.py config/qat.yaml
+python src/run.py --config_file config/qat.yaml
 ```
 Run Sparsity Aware Training only
 ```bash
-python src/run.py config/sat.yaml
+python src/run.py --config_file config/sat.yaml
 ```
 
 #### 3. Running Distributed Data Parallel (MultiNode) in Bash or Terminal
@@ -109,10 +121,10 @@ which should be integer from 0 to *`<NUM_NODES>`*`-1` assigned to each node.
 ```
 Example template for running on 2 Nodes CPU with 1 process per node
 ```bash
-python -m torch.distributed.launch --master_addr=10.10.10.1 --nproc_per_node=1 --nnodes=2 --node_rank=0  src/run.py config/distillation.yaml
+python -m torch.distributed.launch --master_addr=10.10.10.1 --nproc_per_node=1 --nnodes=2 --node_rank=0  src/run.py --config_file config/distillation_multinode.yaml --no_cuda
 ```
 ```bash
-python -m torch.distributed.launch --master_addr=10.19.17.1 --nproc_per_node=1 --nnodes=2 --node_rank=1  src/run.py config/distillation.yaml
+python -m torch.distributed.launch --master_addr=10.19.17.1 --nproc_per_node=1 --nnodes=2 --node_rank=1  src/run.py --config_file config/distillation_multinode.yaml --no_cuda
 ```
 
 ## Run Using Docker
@@ -136,13 +148,14 @@ docker compose version
 Build or Pull the provided docker image.
 
 ```bash
+cd $WORKSPACE/intel-nlp-toolkit 
 git submodule update --init --recursive
-cd docker
+cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training/docker
 docker compose build
 ```
 OR
 ```bash
-docker pull intel/ai-workflows:beta-compression-aware
+docker pull intel/ai-workflows:pa-compression-aware
 ```
 
 ### 3. Run with Docker Compose
@@ -158,9 +171,9 @@ flowchart RL
 ```
 
 ```bash
-cd docker
-export CONFIG=<config_file_name_without_.yaml>
-docker compose run dev
+cd $WORKSPACE/intel-nlp-toolkit/workflows/compression_aware_training/docker
+# choose a config file from "ls ../config"
+CONFIG=<config_file_name_without_.yaml> docker compose run dev
 ```
 
 | Environment Variable Name | Default Value | Description |
@@ -261,8 +274,9 @@ Evaluation and Training performance parameters are presented as Output in Quanti
   
 ## Summary and Next Steps
 
-You can try other tasks, models and datasets from huggingface repository per your liking by changing the config file.
-  
+* You can try other tasks, models and datasets from huggingface repository per your liking by changing the config file.
+* If you want to enable distributed training on k8s for your use case, please follow steps to apply that configuration mentioned here [Intel® Extension for Tranfomrer Domain toolkit](../../docker/README.md#kubernetes) which provides insights into k8s operators and yml file creation.
+
 ## Learn More
 
 You can see more examples of the workflow [here](../../examples/huggingface/) or a use case [here](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7193019/)

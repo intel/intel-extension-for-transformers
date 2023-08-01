@@ -2,5 +2,5 @@ datasets >= 1.17
 sentencepiece != 0.1.92
 protobuf
 intel-tensorflow
-transformers<=4.29.1
+transformers==4.30.2
 evaluate

@@ -13,6 +13,9 @@ conda install mkl mkl-include -y
 conda install gperftools jemalloc==5.2.1 -c conda-forge -y
 pip install -r requirements.txt
 
+# if you want to run gpt-j model, please install transformers==4.27.4
+pip install transformers==4.27.4
+
 # if you want to run llama model, please install transformers in following version:
 pip install git+https://github.com/huggingface/transformers.git@97a3d16a6941294d7d76d24f36f26617d224278e
 ```

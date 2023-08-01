@@ -28,7 +28,7 @@ Data Augmentation is a tool to help with augmenting NLP datasets for machine lea
 ### Install Dependency
 ```bash
 pip install nlpaug
-pip install transformers<=4.29.1
+pip install transformers
 ```
 
 ### Install Intel Extension for Transformers

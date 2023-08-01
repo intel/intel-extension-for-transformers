@@ -347,8 +347,7 @@ void InnerProductOperator::Prepare(const vector<Tensor*>& input, const vector<Te
     }
   }
 #endif
-  is_dynamic_ =
-      (output.size() > 1) || (src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared());
+  is_dynamic_ = src0_min_ != nullptr && src0_min_->raw_data() == nullptr && !src0_min_->is_shared();
   if (is_dynamic_) {
     DLOG(INFO) << this->name() << " is DYNAMIC!!!";
     if (kernel_type_ != Dense) DLOG(ERROR) << "Transpose IP not support dynamic quantization yet!\n";
@@ -846,6 +845,14 @@ void InnerProductOperator::PrepareSparseLib(const vector<Tensor*>& input, const 
       ic_dim = src1_min_->size() > 1 ? 0 | (1 << 1) : 0;
       vector<float> src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
       vector<float> src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
+      // modify bias_fp32 to bias_s32
+      auto bias_fp32 = reinterpret_cast<const float*>(bias_->data());
+      bias_s32_.resize(bias_->size());
+      for (int i = 0; i < bias_->size(); i++) {
+        bias_s32_[i] =
+            bias_fp32[i] * src0_scales[src0_scales.size() > 1 ? i : 0] * src1_scales[src1_scales.size() > 1 ? i : 0];
+      }
+
       if (dst_min_ != nullptr) {
         dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
       }
@@ -1009,8 +1016,8 @@ void InnerProductOperator::ForwardSparseLib(const vector<Tensor*>& input, const 
       LOG(WARNING) << "post tensor will be used by multi node...";
     }
   }
-  std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_->data() : nullptr, dst_data,
-                                           rescales_.data()};
+  std::vector<const void*> runtime_data = {src0_->data(), src1_->data(), has_bias_ ? bias_s32_.data() : nullptr,
+                                           dst_data, rescales_.data()};
   spmm_kern_.execute(runtime_data);
 }
 #endif
@@ -1124,16 +1131,35 @@ void InnerProductOperator::ResetOpStatus(const vector<Tensor*>& input, const vec
 }
 
 void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vector<Tensor*>& output) {
-  if (!is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
-    int ic_dim = 0;
+  if (!is_dynamic_ && (src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
-      ic_dim = src1_min_->size() > 1 ? 0 | (1 << 1) : 0;
-      vector<float> src0_scales = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
-      vector<float> src1_scales = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
-      if (dst_min_ != nullptr) {
-        dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      src0_scales_ = GetScales(src0_min_->data(), src0_max_->data(), src0_min_->size(), src0_->dtype());
+      src1_scales_ = GetScales(src1_min_->data(), src1_max_->data(), src1_min_->size(), src1_->dtype());
+      src0_zps_ = GetZeroPoints(src0_min_->data(), src0_scales_, src0_->dtype());
+      if (dst_min_) dst_scales_ = GetScales(dst_min_->data(), dst_max_->data(), dst_min_->size(), dst_->dtype());
+      rescales_ = GetRescales(src0_scales_, src1_scales_, dst_scales_, dst_->dtype(), append_eltwise_);
+      if (dst_min_ != nullptr && (dst_->dtype() == "u8" || dst_->dtype() == "s8")) {
+        attr_.set_scales_mask(DNNL_ARG_DST, /* mask */ 0);
+        dst_zps_ = GetZeroPoints(dst_min_->data(), dst_scales_, dst_->dtype());
+
+        for (int i = 0; i < dst_scales_.size(); i++) dst_scales_[i] = 1.0 / dst_scales_[i];
+        auto dst_scale_md = memory::desc({dst_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+        auto dst_scales_m_ = memory(dst_scale_md, eng_, reinterpret_cast<void*>(dst_scales_.data()));
+        memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_DST] = dst_scales_m_;
       }
-      rescales_ = GetRescales(src0_scales, src1_scales, dst_scales_, dst_->dtype(), append_eltwise_);
+
+      for (int i = 0; i < src0_scales_.size(); i++) src0_scales_[i] = 1.0 / src0_scales_[i] * output_scale_;
+      for (int i = 0; i < src1_scales_.size(); i++) src1_scales_[i] = 1.0 / src1_scales_[i];
+
+      attr_.set_scales_mask(DNNL_ARG_SRC, /* mask */ 0);
+      auto src_scale_md = memory::desc({src0_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+      auto src_scales_m = memory(src_scale_md, eng_, reinterpret_cast<void*>(src0_scales_.data()));
+      memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_SRC] = src_scales_m;
+
+      attr_.set_scales_mask(DNNL_ARG_WEIGHTS, /* mask */ src1_scales_.size() > 1 ? 1 : 0);
+      auto src1_scale_md = memory::desc({src1_scales_.size()}, memory::data_type::f32, memory::format_tag::x);
+      auto src1_scales_m = memory(src1_scale_md, eng_, reinterpret_cast<void*>(src1_scales_.data()));
+      memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS] = src1_scales_m;
     } else {
       rescales_ = vector<float>(1, 1.f);
     }
@@ -1142,7 +1168,6 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
         rescales_[i] *= output_scale_;
       }
     }
-    attr_.set_output_scales(ic_dim, rescales_);
   }
   // cache weight here, save weight and bias memory descriptor
   src1_shape_origin_ = src1_->shape();
@@ -1170,6 +1195,7 @@ void InnerProductOperator::PrepareDense(const vector<Tensor*>& input, const vect
       any_bias_md_ = memory::desc(bias_shape, dnnl::memory::data_type::f32, memory::format_tag::any);
       bias_m_ = memory(bias_md_, eng_);
     }
+    memory_args_[DNNL_ARG_BIAS] = bias_m_;
   }
   // set src activation, dense weight, dst activation and append_sum post
   // activationtensor format
@@ -1189,12 +1215,15 @@ void InnerProductOperator::CalculateCompensation(const vector<int64_t>& src1_sha
   int block_stride = (src1_length > 2) ? src1_stride[src1_length - 3] : 0;
   int offset_stride = src1_stride[src1_length - 2];
   int step_stride = src1_stride[src1_length - 1];
+  const float* src1_scales = reinterpret_cast<const float*>(src1_max_->data());
+  int scale_size = src1_max_->shape()[0];
 #pragma omp parallel for
   for (int i = 0; i < zp_size; i++) {
     compensation_[i] = 0;
     int outer = (i / zero_point_stride[src1_length - 2]) * block_stride +
                 (i % zero_point_stride[src1_length - 2]) * offset_stride;
     for (int j = 0; j < src1_shape[src1_length - 1]; j++) compensation_[i] += weight_data[outer + j * step_stride];
+    compensation_[i] *= src1_scales[scale_size == 1 ? 0 : i];
   }
 }
 
@@ -1221,8 +1250,8 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
 
   if (is_dynamic_ && (output_scale_ != 1.f || src0_min_ != nullptr || src1_min_ != nullptr)) {
     if (src0_min_ != nullptr && src1_max_ != nullptr) {
-      int ic_dim = src1_min_->size() > 1 ? 2 : 0;
-      attr_.set_output_scales(ic_dim, {DNNL_RUNTIME_F32_VAL});
+      int ic_dim = src1_min_->size() > 1 ? 1 : 0;
+      attr_.set_scales_mask(DNNL_ARG_WEIGHTS, ic_dim);
       vector<int64_t> scale_shape;
       scale_shape.push_back(src1_min_->size());
       scale_f32_mem_ = memory({scale_shape, memory::data_type::f32, GetStrides(scale_shape)}, eng_, DNNL_MEMORY_NONE);
@@ -1246,42 +1275,43 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     float op_scale = 1.0;
     float op_alpha = 0.0;
     float op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_gelu_erf, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_gelu_erf, op_alpha, op_beta);
   }
   if (gelu_tanh_ && !gelu_split_) {
     float op_scale = 1.0;
     float op_alpha = 0.0;
     float op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_gelu_tanh, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_gelu_tanh, op_alpha, op_beta);
   }
   if (tanh_) {
     auto op_scale = 1.0;
     auto op_alpha = 0.0;
     auto op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_tanh, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_tanh, op_alpha, op_beta);
   }
   if (sigmoid_) {
     auto op_scale = 1.0;
     auto op_alpha = 0.0;
     auto op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_logistic, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_logistic, op_alpha, op_beta);
   }
   if (relu_) {
     auto op_scale = 1.0;
     auto op_alpha = 0.0;
     auto op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_relu, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_relu, op_alpha, op_beta);
   }
   if (swish_) {
     auto op_scale = 1.0;
     auto op_alpha = 1.0;
     auto op_beta = 0.0;
-    po.append_eltwise(op_scale, algorithm::eltwise_swish, op_alpha, op_beta);
+    po.append_eltwise(algorithm::eltwise_swish, op_alpha, op_beta);
   }
   // this is to sub zero point in fp32 to make the output u8
-  if (!is_dynamic_ && append_eltwise_ && dst_->dtype() == "u8") {
-    float zero_point = -1 * static_cast<const float*>(dst_min_->data())[0];
-    po.append_eltwise(dst_scales_[0], algorithm::eltwise_linear, 1., zero_point);
+  if (!is_dynamic_ && dst_->dtype() == "u8") {
+    append_eltwise_ = true;
+    float zero_point = dst_zps_[0] * dst_scales_[0];
+    po.append_eltwise(algorithm::eltwise_linear, 1., zero_point);
   }
 
   // Part1: Derive operator's user proper shape and strides
@@ -1333,42 +1363,17 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
   // 1.5 Set dst shape and strides
   dst_->set_shape(dst_shape);
 
-  // 2.2 Prepare op descriptors
-  dnnl::inner_product_forward::desc inner_product_d =
-      has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")
-          ? dnnl::inner_product_forward::desc(prop_kind::forward_inference, src0_md, src1_md_, bias_md_, dst_md)
-          : dnnl::inner_product_forward::desc(prop_kind::forward_inference, src0_md, src1_md_, dst_md);
-
-  if (format_any_) {
-    if (!weight_reorded_) {
-      inner_product_d =
-          has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")
-              ? dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md, any_src1_md_, any_bias_md_,
-                                                  any_dst_md)
-              : dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md, any_src1_md_, any_dst_md);
-    } else {
-      inner_product_d =
-          has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")
-              ? dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md,
-                                                  any_src1_m_last_.get_desc(), any_bias_m_last_.get_desc(), any_dst_md)
-              : dnnl::inner_product_forward::desc(prop_kind::forward_inference, any_src0_md,
-                                                  any_src1_m_last_.get_desc(), any_dst_md);
-    }
-  }
-
   if (gelu_erf_ && gelu_split_) {
     memory::desc gelu_md = memory::desc(dst_shape_origin, type2mem[dst_->dtype()], dst_stride);
-    auto gelu_d =
-        dnnl::eltwise_forward::desc(prop_kind::forward_inference, algorithm::eltwise_gelu_erf, gelu_md, 0.f, 0.f);
-    gelu_pd_ = dnnl::eltwise_forward::primitive_desc(gelu_d, gelu_eng_);
+    auto gelu_pd_ = dnnl::eltwise_forward::primitive_desc(eng_, dnnl::prop_kind::forward_inference,
+                                                          algorithm::eltwise_gelu_erf, dst_md, gelu_md, 0.f, 0.f);
     gelu_p_ = dnnl::eltwise_forward(gelu_pd_);
     gelu_m_ = memory(gelu_md, gelu_eng_, DNNL_MEMORY_NONE);
   }
   if (gelu_tanh_ && gelu_split_) {
     memory::desc gelu_md = memory::desc(dst_shape_origin, type2mem[dst_->dtype()], dst_stride);
-    auto gelu_d =
-        dnnl::eltwise_forward::desc(prop_kind::forward_inference, algorithm::eltwise_gelu_tanh, gelu_md, 0.f, 0.f);
-    gelu_pd_ = dnnl::eltwise_forward::primitive_desc(gelu_d, gelu_eng_);
+    auto gelu_pd_ = dnnl::eltwise_forward::primitive_desc(eng_, dnnl::prop_kind::forward_inference,
+                                                          algorithm::eltwise_gelu_tanh, dst_md, gelu_md, 0.f, 0.f);
     gelu_p_ = dnnl::eltwise_forward(gelu_pd_);
     gelu_m_ = memory(gelu_md, gelu_eng_, DNNL_MEMORY_NONE);
   }
@@ -1379,10 +1384,34 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     po.append_binary(algorithm::binary_add, binary_md);
     binary_m_ = memory(binary_md, eng_, DNNL_MEMORY_NONE);
   }
+  if (src0_min_ == nullptr && output_scale_ != 1.f) {
+    append_eltwise_ = true;
+    po.append_eltwise(algorithm::eltwise_linear, output_scale_, 0);
+  }
   if (append_eltwise_ || append_sum_ || binary_add_ || is_dynamic_) attr_.set_post_ops(po);
 
   attr_.set_scratchpad_mode(dnnl::scratchpad_mode::user);
-  inner_product_pd_ = dnnl::inner_product_forward::primitive_desc(inner_product_d, attr_, eng_);
+
+  // Create inner product primitive descriptor.
+  if (format_any_) {
+    if (has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")) {
+      inner_product_pd_ = dnnl::inner_product_forward::primitive_desc(
+          eng_, prop_kind::forward_inference, any_src0_md,
+          !weight_reorded_ ? any_src1_md_ : any_src1_m_last_.get_desc(), any_bias_md_, any_dst_md, attr_);
+    } else {
+      inner_product_pd_ = dnnl::inner_product_forward::primitive_desc(
+          eng_, prop_kind::forward_inference, any_src0_md,
+          !weight_reorded_ ? any_src1_md_ : any_src1_m_last_.get_desc(), any_dst_md, attr_);
+    }
+  } else {
+    if (has_bias_ || (is_dynamic_ && src0_->dtype() == "u8")) {
+      inner_product_pd_ = dnnl::inner_product_forward::primitive_desc(eng_, prop_kind::forward_inference, src0_md,
+                                                                      src1_md_, bias_md_, dst_md, attr_);
+    } else {
+      inner_product_pd_ = dnnl::inner_product_forward::primitive_desc(eng_, prop_kind::forward_inference, src0_md,
+                                                                      src1_md_, dst_md, attr_);
+    }
+  }
 
   memory::desc scratchpad_md = inner_product_pd_.scratchpad_desc();
 
@@ -1391,8 +1420,8 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
     scratchpad_ = nullptr;
   }
 
-  scratchpad_ = reinterpret_cast<void*>(
-    aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
+  scratchpad_ =
+      reinterpret_cast<void*>(aligned_alloc(ALIGNMENT, (scratchpad_md.get_size() / ALIGNMENT + 1) * ALIGNMENT));
 
   memory scratchpad_m = memory(scratchpad_md, eng_, scratchpad_);
   memory_args_[DNNL_ARG_SCRATCHPAD] = scratchpad_m;
@@ -1413,12 +1442,11 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
         cached_w_ptr = weight_shm_ptr;
       } else {
         cached_w_ptr = reinterpret_cast<void*>(
-          aligned_alloc(ALIGNMENT, (any_src1_m.get_desc().get_size() / ALIGNMENT + 1) * ALIGNMENT));
+            aligned_alloc(ALIGNMENT, (any_src1_m.get_desc().get_size() / ALIGNMENT + 1) * ALIGNMENT));
         any_src1_m.set_data_handle(cached_w_ptr);
       }
       dnnl::reorder(any_src1_m_last_, any_src1_m).execute(eng_stream_, any_src1_m_last_, any_src1_m);
-      if (src1_->is_shared() && this->get_execution_mode() == ExecutionMode::INFERENCE &&
-          src1_->life() <= 1) {
+      if (src1_->is_shared() && this->get_execution_mode() == ExecutionMode::INFERENCE && src1_->life() <= 1) {
         MemoryAllocator::ManagedShm().destroy_ptr(src1_->mutable_data());
         src1_->set_shm_handle(MemoryAllocator::ManagedShm().get_handle_from_address(cached_w_ptr));
       } else {
@@ -1442,19 +1470,18 @@ void InnerProductOperator::ReshapeDense(const vector<Tensor*>& input, const vect
               MemoryAllocator::ManagedShm().find_or_construct<char>(bias_->name().c_str())[bias_size](0);
           any_bias_m.set_data_handle(bias_shm_ptr);
           cached_b_ptr = bias_shm_ptr;
-         } else {
+        } else {
           cached_b_ptr = reinterpret_cast<void*>(
-            aligned_alloc(ALIGNMENT, (bias_m_.get_desc().get_size() / ALIGNMENT + 1) * ALIGNMENT));
+              aligned_alloc(ALIGNMENT, (bias_m_.get_desc().get_size() / ALIGNMENT + 1) * ALIGNMENT));
           any_bias_m.set_data_handle(cached_b_ptr);
         }
         dnnl::reorder(any_bias_m_last_, any_bias_m).execute(eng_stream_, any_bias_m_last_, any_bias_m);
-        if (bias_->is_shared() && this->get_execution_mode() == ExecutionMode::INFERENCE &&
-            bias_->life() <= 1) {
+        if (bias_->is_shared() && this->get_execution_mode() == ExecutionMode::INFERENCE && bias_->life() <= 1) {
           MemoryAllocator::ManagedShm().destroy_ptr(bias_->mutable_data());
           bias_->set_shm_handle(MemoryAllocator::ManagedShm().get_handle_from_address(cached_b_ptr));
         } else {
           if (this->get_execution_mode() == ExecutionMode::INFERENCE && bias_->life() <= 1) {
-              aligned_free(bias_->mutable_data());
+            aligned_free(bias_->mutable_data());
             bias_->set_data(cached_b_ptr);
           }
           any_bias_m_last_ = memory(inner_product_pd_.bias_desc(), eng_, cached_b_ptr);
@@ -1557,8 +1584,8 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   }
 
   // 1. Prepare memory objects with data_ptr
-  src0_m_.set_data_handle(const_cast<void*>(src0_data), eng_stream_);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), eng_stream_);
+  src0_m_.set_data_handle(const_cast<void*>(src0_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   memory any_src0_m = src0_m_;
   memory any_dst_m = dst_m_;
@@ -1583,10 +1610,9 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   // has post_op: binary_add
   if (post_ != nullptr && binary_add_) {
     void* post_ptr = post_->mutable_data();
-    binary_m_.set_data_handle(post_ptr, eng_stream_);
+    binary_m_.set_data_handle(post_ptr);
     memory_args_[DNNL_ARG_ATTR_MULTIPLE_POST_OP(0) | DNNL_ARG_SRC_1] = binary_m_;
   }
-
   // 4. Execute the primitive
   inner_product_p_.execute(eng_stream_, memory_args_);
   // 5. Reorder the data of dst memory (When it is format_any)
@@ -1595,8 +1621,8 @@ void InnerProductOperator::ForwardDense(const vector<Tensor*>& input, const vect
   }
   // gelu seperate
   if ((gelu_split_ && gelu_tanh_) || (gelu_split_ && gelu_erf_)) {
-    dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), gelu_eng_stream_);
-    gelu_m_.set_data_handle(reinterpret_cast<void*>(dst_data), gelu_eng_stream_);
+    dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
+    gelu_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
     gelu_memory_args_[DNNL_ARG_SRC] = dst_m_;
     gelu_memory_args_[DNNL_ARG_DST] = gelu_m_;
     gelu_p_.execute(gelu_eng_stream_, gelu_memory_args_);
@@ -1613,12 +1639,13 @@ void InnerProductOperator::RuntimeMinmax() {
   memory reduce_max(dst_md, eng_);
   reduce_min.set_data_handle(dst_min_->mutable_data());
   reduce_max.set_data_handle(dst_max_->mutable_data());
-  dnnl::reduction::desc reduce_min_d(algorithm::reduction_min, dst_m_.get_desc(), dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_min_pd(reduce_min_d, eng_);
-  dnnl::reduction(reduce_min_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_min}});
-  dnnl::reduction::desc reduce_max_d(algorithm::reduction_max, dst_m_.get_desc(), dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_max_pd(reduce_max_d, eng_);
-  dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
+  // auto reduce_min_pd = dnnl::reduction::primitive_desc(
+  //       eng_, dnnl::algorithm::reduction_min, src_md, dst_md, 0.f, 0.f);
+  // dnnl::reduction(reduce_min_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_min}});
+
+  // auto reduce_max_pd = dnnl::reduction::primitive_desc(
+  //     eng_, dnnl::algorithm::reduction_max, src_md, dst_md, 0.f, 0.f);
+  // dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
 }
 
 void InnerProductOperator::RuntimeMemoryArgs(vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr) {
@@ -1634,22 +1661,23 @@ void InnerProductOperator::RuntimeMemoryArgs(vector<float>* dynamic_bias_ptr, me
 #pragma omp parallel for
     for (int i = 0; i < channel_size; i++) rescales_[i] = output_scale_ * src0_scales[0] * src1_scales[i];
   }
-  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales_.data()), eng_stream_);
-  memory_args_[DNNL_ARG_ATTR_OUTPUT_SCALES] = scale_f32_mem_;
+  scale_f32_mem_.set_data_handle(reinterpret_cast<void*>(rescales_.data()));
+  memory_args_[DNNL_ARG_ATTR_SCALES | DNNL_ARG_WEIGHTS] = scale_f32_mem_;
   // The bias loaded from file is not scaled. So need rescaled runtime.
   // the compensation is src0_scale*sr0_min*ones_like(src0)*src1. compensation
   // will be add as bias
   if (has_bias_ || src0_->dtype() == "u8") {
-    dynamic_bias.resize(src1_->shape()[0]);
     float* bias_data = has_bias_ ? reinterpret_cast<float*>(bias_->mutable_data()) : nullptr;
-    float com_scale = (*(reinterpret_cast<float*>(src0_min_->mutable_data()))) / output_scale_ / src0_scales[0];
+    if (src0_->dtype() == "u8") {
+      float src0_min = *(reinterpret_cast<float*>(src0_min_->mutable_data()));
+      dynamic_bias.resize(src1_->shape()[0]);
 #pragma omp parallel for
-    for (int i = 0; i < src1_->shape()[0]; i++) {
-      dynamic_bias[i] = 0;
-      if (has_bias_) dynamic_bias[i] += bias_data[i] / rescales_[channel_size == 1 ? 0 : i];
-      if (src0_->dtype() == "u8") dynamic_bias[i] += compensation_[i] * com_scale;
+      for (int i = 0; i < src1_->shape()[0]; i++)
+        dynamic_bias[i] = (has_bias_ ? bias_data[i] : 0) + compensation_[i] * src0_min;
+      bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()));
+    } else {
+      bias_m_.set_data_handle(bias_data);
     }
-    bias_m_.set_data_handle(reinterpret_cast<void*>(dynamic_bias.data()), eng_stream_);
     if (inner_product_pd_.bias_desc() != bias_m_.get_desc()) {
       any_bias_m = memory(inner_product_pd_.bias_desc(), eng_);
       dnnl::reorder(bias_m_, any_bias_m).execute(eng_stream_, bias_m_, any_bias_m);

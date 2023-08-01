@@ -74,8 +74,8 @@ logger = logging.getLogger(__name__)
 
 
 class ItrexOpt(object):
-    def __init__(self, args):
-        if int(os.environ.get("LOCAL_RANK", -1)) != -1 and "--no_cuda" in args:
+    def __init__(self, config_file, no_cuda):
+        if int(os.environ.get("LOCAL_RANK", -1)) != -1 and no_cuda:
             from intel_extension_for_transformers.optimization.utils.utility import (
                 distributed_init,
             )
@@ -91,43 +91,21 @@ class ItrexOpt(object):
             )
         )
         
-        if "--local-rank=0" not in args:
-            if len(args) == 2 and args[1].endswith(".yaml"):
-                model_args, data_args, training_args, optim_args = parser.parse_yaml_file(
-                    yaml_file=os.path.abspath(args[1])
-                )
-            elif len(args) == 2 and args[1].endswith(".json"):
-                model_args, data_args, training_args, optim_args = parser.parse_json_file(
-                    json_file=os.path.abspath(args[1])
-                )
-            else:
-                (
-                    model_args,
-                    data_args,
-                    training_args,
-                    optim_args,
-                ) = parser.parse_args_into_dataclasses()
+        if config_file.endswith(".yaml"):
+            model_args, data_args, training_args, optim_args = parser.parse_yaml_file(
+                yaml_file=os.path.abspath(config_file)
+            )
+        elif config_file.endswith(".json"):
+            model_args, data_args, training_args, optim_args = parser.parse_json_file(
+                json_file=os.path.abspath(config_file)
+            )
         else:
-            filename = None
-            for arg in args:
-                if arg.endswith(".yaml") or arg.endswith(".json"):
-                    filename = arg
-                    break
-            if filename is None:
-                (
-                    model_args,
-                    data_args,
-                    training_args,
-                    optim_args,
-                ) = parser.parse_args_into_dataclasses()
-            elif filename.endswith(".yaml"):
-                model_args, data_args, training_args, optim_args = parser.parse_yaml_file(
-                    yaml_file=os.path.abspath(filename)
-                )
-            else:
-                model_args, data_args, training_args, optim_args = parser.parse_json_file(
-                    json_file=os.path.abspath(filename)
-                )
+            (
+                model_args,
+                data_args,
+                training_args,
+                optim_args,
+            ) = parser.parse_args_into_dataclasses()
 
 
         self.model_args = model_args

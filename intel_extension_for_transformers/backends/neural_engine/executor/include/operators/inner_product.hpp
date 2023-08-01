@@ -112,7 +112,12 @@ class InnerProductOperator : public Operator {
   bool per_token_ = false;
   float output_scale_ = 1.f;
   void* scratchpad_ = nullptr;
+  float fp8_scale_ = 1.f;
+  vector<float> src0_scales_;
+  vector<int> src0_zps_;
+  vector<float> src1_scales_;
   vector<float> dst_scales_;
+  vector<int> dst_zps_;
   vector<float> rescales_;
   string output_dtype_ = "fp32";
   vector<int64_t> src0_shape_origin_;
@@ -120,7 +125,7 @@ class InnerProductOperator : public Operator {
   vector<int64_t> src0_perm_;
   vector<int64_t> src1_perm_;
   vector<int64_t> dst_perm_;
-  vector<int64_t> compensation_;
+  vector<float> compensation_;
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
   vector<int64_t> squeeze_dims_;
@@ -137,6 +142,8 @@ class InnerProductOperator : public Operator {
   std::vector<const void*> rt_data_;
   std::shared_ptr<jd::kernel_t> matmul_kernel_;
   const jd::engine_t* cpu_engine_;
+  jd::transpose_matmul matmul_kern_;
+  vector<int> bias_s32_;
 #endif
   jd::dynamic_quant_matmul dynamic_quant_matmul_ker_;
   jd::dynamic_quant dynamic_quant_ker_;
@@ -165,6 +172,8 @@ class InnerProductOperator : public Operator {
   memory binary_m_;
   memory any_src1_m_last_;
   memory any_bias_m_last_;
+
+  memory dst_scales_m_;
 
   Tensor* src0_ = nullptr;
   Tensor* src1_ = nullptr;

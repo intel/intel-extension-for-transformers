@@ -34,8 +34,10 @@ Intel's extension for Transformers API (Itrex API) also named ( Intel's Transfor
 ## Get Started
 ### Clone this Repository
 ```
-git clone current repository
-cd into the current repository directory
+export WORKSPACE=</workdir/path>
+
+git clone https://github.com/intel/intel-extension-for-transformers.git $WORKSPACE/intel-nlp-toolkit
+cd $WORKSPACE/intel-nlp-toolkit/workflows/hf_finetuning_and_inference_nlp
 ```
 
 ### Create a New Python  (Conda or Venv) Environment With Env Name: "hfftinf_wf"
@@ -103,8 +105,9 @@ docker compose version
 Build or Pull the provided docker image.
 
 ```bash
+cd $WORKSPACE/intel-nlp-toolkit 
 git submodule update --init --recursive
-cd docker
+cd $WORKSPACE/intel-nlp-toolkit/workflows/hf_finetuning_and_inference_nlp/docker
 docker compose build
 ```
 OR

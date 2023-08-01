@@ -1,4 +1,31 @@
 {
+  "starcoder_3b": {
+    "working_dir": "huggingface/pytorch/code-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "starcoder_3b",
+        "task": "",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "starcoder_3b",
+        "task": "",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "accuracy",
+        "batch_size": "8",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
   "gpt_neo_clm_static": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune":{
@@ -154,6 +181,33 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "benchmark",
+        "batch_size": "1",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "mpt_7b_chat_gen_ipex": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "mpt_7b_chat",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "mpt_7b_chat",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "accuracy",
         "batch_size": "1",
         "iters": "100",
         "int8": "false",
@@ -1286,7 +1340,7 @@
     }
   },
   "sd_pokemon_diffusers_static": {
-    "working_dir": "huggingface/pytorch/text-to-image/quantization/",
+    "working_dir": "huggingface/pytorch/text-to-image/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1307,7 +1361,7 @@
     }
   },
   "sd_pokemon_diffusers_dynamic": {
-    "working_dir": "huggingface/pytorch/text-to-image/quantization/",
+    "working_dir": "huggingface/pytorch/text-to-image/quantization/ptq",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
@@ -1411,6 +1465,50 @@
       }
     }
   },
+  "gpt_j_6b_clm_weight_only": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gpt_j_weight_only",
+        "task": "clm",
+        "approach": "weight_only",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gpt_j_weight_only",
+        "task": "clm",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "config": "saved_results"
+      }
+    }
+  },
+  "gpt_j_6b_clm_weight_only_awq": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gpt_j_weight_only_awq",
+        "task": "clm",
+        "approach": "weight_only",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gpt_j_weight_only_awq",
+        "task": "clm",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "config": "saved_results"
+      }
+    }
+  },
   "gpt_j_6b_clm_ipex": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
@@ -1486,6 +1584,72 @@
         "batch_size": "112",
         "iters": "100",
         "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "opt_125m_clm_weight_only": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "opt_125m_weight_only",
+        "task": "clm",
+        "approach": "weight_only",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "opt_125m_weight_only",
+        "task": "clm",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "config": "saved_results"
+      }
+    }
+  },
+  "opt_125m_clm_weight_only_awq": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "opt_125m_weight_only_awq",
+        "task": "clm",
+        "approach": "weight_only",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "opt_125m_weight_only_awq",
+        "task": "clm",
+        "mode": "accuracy",
+        "batch_size": "112",
+        "config": "saved_results"
+      }
+    }
+  },
+  "chatglm_clm_weight_only": {
+    "working_dir": "huggingface/pytorch/language-modeling/quantization",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "chatglm_weight_only",
+        "task": "clm",
+        "approach": "weight_only",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "chatglm_weight_only",
+        "task": "clm",
+        "mode": "accuracy",
+        "batch_size": "112",
         "config": "saved_results"
       }
     }
@@ -1714,6 +1878,60 @@
       "cmd": "bash run_benchmark.sh",
       "params": {
         "topology": "opt_6.7b",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "1",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "flan-t5-large_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text2text-generation",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "google/flan-t5-large",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "google/flan-t5-large",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "mode": "benchmark",
+        "batch_size": "1",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "t5-base_gen_ipex_static": {
+    "working_dir": "huggingface/pytorch/text2text-generation",
+    "tune": {
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "fabiochiu/t5-base-tag-generation",
+        "task": "generation",
+        "approach": "static",
+        "backend": "ipex",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "fabiochiu/t5-base-tag-generation",
         "task": "generation",
         "approach": "static",
         "backend": "ipex",

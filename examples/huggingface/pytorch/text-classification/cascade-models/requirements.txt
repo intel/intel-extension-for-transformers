@@ -1,0 +1,6 @@
+torch
+numpy
+transformers==4.30.2
+datasets
+evaluate
+argparse-range

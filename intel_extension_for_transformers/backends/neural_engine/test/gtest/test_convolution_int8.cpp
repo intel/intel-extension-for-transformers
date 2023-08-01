@@ -118,10 +118,6 @@ bool CheckResult(const TestParams& t) {
     convolution.Forward(p.input, p.output);
   }
   if (!t.expect_to_fail) {
-    // p.output[0]->set_shape({3, 32, 16});
-    // p.output[0]->print();
-    // q[0]->set_shape({3, 32, 16});
-    // q[0]->print();
     bool is_equal = true;
     if (q[0]->dtype() == "fp32") {
       is_equal &=
@@ -194,10 +190,9 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
 
   vector<int64_t> padding_dims_l(pads.begin(), pads.begin() + pads.size() / 2);
   vector<int64_t> padding_dims_r(pads.begin() + pads.size() / 2, pads.end());
-  auto convolution_d =
-      convolution_forward::desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto, src_md,
-                                weight_md, bias_md, dst_md, strides, padding_dims_l, padding_dims_r);
-  auto convolution_pd = convolution_forward::primitive_desc(convolution_d, engine);
+  auto convolution_pd =
+      convolution_forward::primitive_desc(engine, dnnl::prop_kind::forward_inference, dnnl::algorithm::convolution_auto,
+                                          src_md, weight_md, bias_md, dst_md, strides, padding_dims_l, padding_dims_r);
   auto convolution_prim = convolution_forward(convolution_pd);
   std::unordered_map<int, memory> convolution_args;
   convolution_args.insert({DNNL_ARG_SRC, src_mem});
@@ -404,9 +399,11 @@ static auto CasesInt8 = []() {
     cases.push_back(
         {GenerateInt8Case({src_shape, weight_shape, bias_shape}, true, group, pads, strides, "s8", output_dtype),
          false});
+#ifndef _WIN32  // TODO(Yucheng): Check if this case work for onednn 3.x on WIN
     cases.push_back(
         {GenerateInt8Case({src_shape, weight_shape, bias_shape}, true, group, pads, strides, "u8", output_dtype),
          false});
+#endif
   }
 
   return ::testing::ValuesIn(cases);

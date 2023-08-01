@@ -312,10 +312,9 @@ void SoftmaxOperator::Reshape_dnnl(const vector<Tensor*>& input, const vector<Te
   if (axis_ == -1) {
     axis_ = src_shape_origin.size() - 1;
   }
-  dnnl::softmax_forward::desc softmax_d(prop_kind::forward_inference, src_md, axis_);
-
-  // 2.3 Prepare primitive descriptors (cached)
-  dnnl::softmax_forward::primitive_desc softmax_pd(softmax_d, eng_);
+    // Create primitive descriptor.
+  auto softmax_pd = dnnl::softmax_forward::primitive_desc(eng_, prop_kind::forward_inference,
+                                                        algorithm::softmax_accurate, src_md, dst_md, axis_);
 
   // 2.4 Prepare primitive objects (cached)
   softmax_p_ = dnnl::softmax_forward(softmax_pd);
@@ -402,8 +401,8 @@ void SoftmaxOperator::Forward_dnnl(const vector<Tensor*>& input, const vector<Te
 
   // 1. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  src_m_.set_data_handle(const_cast<void*>(src_data), s);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  src_m_.set_data_handle(const_cast<void*>(src_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   // 2. Reorder the data when the primitive memory and user memory are different
   // 3. Insert memory args
@@ -483,12 +482,12 @@ void SoftmaxOperator::RuntimeMinmax(dnnl::stream& s) {
   memory reduce_max(dst_md, eng_);
   reduce_min.set_data_handle(dst_min_->mutable_data());
   reduce_max.set_data_handle(dst_max_->mutable_data());
-  dnnl::reduction::desc reduce_min_d(algorithm::reduction_min, dst_m_.get_desc(), dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_min_pd(reduce_min_d, eng_);
-  dnnl::reduction(reduce_min_pd).execute(s, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_min}});
-  dnnl::reduction::desc reduce_max_d(algorithm::reduction_max, dst_m_.get_desc(), dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_max_pd(reduce_max_d, eng_);
-  dnnl::reduction(reduce_max_pd).execute(s, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
+  // auto reduce_min_pd = dnnl::reduction::primitive_desc(
+  //       eng_, dnnl::algorithm::reduction_min, src_md, dst_md, 0.f, 0.f);
+  // dnnl::reduction(reduce_min_pd).execute(s, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_min}});
+  // auto reduce_max_pd = dnnl::reduction::primitive_desc(
+  //     eng_, dnnl::algorithm::reduction_max, src_md, dst_md, 0.f, 0.f);
+  // dnnl::reduction(reduce_max_pd).execute(s, {{DNNL_ARG_SRC, dst_m_}, {DNNL_ARG_DST, reduce_max}});
 }
 
 void SoftmaxOperator::AdaptAttrs(const vector<Tensor*>& input, const vector<Tensor*>& output, const string& stage) {

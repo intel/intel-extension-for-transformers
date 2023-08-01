@@ -74,18 +74,16 @@ bool CheckResult(const TestParams& t) {
     else
       return false;
   }
-  if (!t.expect_to_fail) {
-    bool is_equal = false;
-    if (q->dtype() == "fp32") {
-      is_equal = executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 0.09);
-    } else if (q->dtype() == "s8") {
-      is_equal = executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 3);
-    } else if (q->dtype() == "u8") {
-      is_equal = executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 3);
-    }
-    return is_equal;
+  if (t.expect_to_fail) return true;
+  bool is_equal = false;
+  if (q->dtype() == "fp32") {
+    is_equal = executor::CompareData<float>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 0.09);
+  } else if (q->dtype() == "s8") {
+    is_equal = executor::CompareData<int8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 3);
+  } else if (q->dtype() == "u8") {
+    is_equal = executor::CompareData<uint8_t>(p.output[0]->data(), p.output[0]->size(), q->data(), q->size(), 3);
   }
-  return false;
+  return is_equal;
 }
 
 class InnerProductInt8Test : public testing::TestWithParam<TestParams> {
@@ -101,29 +99,19 @@ TEST_P(InnerProductInt8Test, TestPostfix) {
   EXPECT_TRUE(CheckResult(t));
 }
 
-Tensor* make_int32_bias_obj(const shared_ptr<TensorConfig>& bias_tensor_config, const float* origin_data,
-                            Tensor* weight_fp32, Tensor* weight_scale, Tensor* src_min, Tensor* src_scale,
-                            Tensor* dst_min, string src_dtype, string dst_dtype) {
-  Tensor* bias_tensor = new Tensor(*bias_tensor_config);
-  bias_tensor->add_tensor_life(1);
-  int32_t* bias_data = reinterpret_cast<int32_t*>(bias_tensor->mutable_data());
-  const float* weight_scales = reinterpret_cast<const float*>(weight_scale->data());
-  const float* src_scales = reinterpret_cast<const float*>(src_scale->data());
+void adjust_bias(float* bias_data, Tensor* weight_fp32, Tensor* src_min, string src_dtype) {
   const float src_zp = *reinterpret_cast<const float*>(src_min->data());
   const float* weight_data = reinterpret_cast<const float*>(weight_fp32->data());
-  const float dst_zp = dst_dtype == "u8" ? *reinterpret_cast<const float*>(dst_min->data()) : 0;
+  if (src_dtype == "u8") {
 #pragma omp parallel for
-  for (int y = 0; y < weight_fp32->shape()[1]; y++) {
-    float compensation = 0;
-    if (src_dtype == "u8") {
+    for (int y = 0; y < weight_fp32->shape()[1]; y++) {
+      float compensation = 0;
       for (int x = 0; x < weight_fp32->shape()[0]; x++) {
         compensation += weight_data[x * weight_fp32->shape()[1] + y];
       }
+      bias_data[y] = bias_data[y] + compensation * src_zp;
     }
-    bias_data[y] = (origin_data[y] + compensation * src_zp - dst_zp) / src_scales[0] /
-                   weight_scales[weight_scale->size() > 1 ? y : 0];
   }
-  return bias_tensor;
 }
 
 Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<Tensor*> inputs, string append_op = "") {
@@ -152,12 +140,11 @@ Tensor* get_fp32_dst(const shared_ptr<TensorConfig>& dst_tensor_config, vector<T
     po.append_sum(1.0);
     memcpy(dst_tensor->mutable_data(), post->mutable_data(), dst_tensor->size() * sizeof(float));
   }
-  if (append_op == "gelu_tanh") po.append_eltwise(1.0f, dnnl::algorithm::eltwise_gelu_tanh, 0.0f, 0.0f);
-  if (append_op == "swish") po.append_eltwise(1.0f, dnnl::algorithm::eltwise_swish, 1.0f, 0.0f);
+  if (append_op == "gelu_tanh") po.append_eltwise(dnnl::algorithm::eltwise_gelu_tanh, 0.0f, 0.0f);
+  if (append_op == "swish") po.append_eltwise(dnnl::algorithm::eltwise_swish, 1.0f, 0.0f);
   attr.set_post_ops(po);
   auto dst_mem = memory(dst_md, engine, dst_tensor->mutable_data());
-  auto matmul_d = matmul::desc(src_md, weights_md, bias_md, dst_md);
-  auto matmul_pd = matmul::primitive_desc(matmul_d, attr, engine);
+  auto matmul_pd = matmul::primitive_desc(engine, src_md, weights_md, bias_md, dst_md, attr);
   auto matmul_prim = matmul(matmul_pd);
   std::unordered_map<int, memory> matmul_args;
   matmul_args.insert({DNNL_ARG_SRC, src_mem});
@@ -303,23 +290,18 @@ std::pair<OpArgs, Tensor*> GenerateInt8Case(const std::vector<std::vector<int64_
   auto dst_tensors = quantize2int8_tensor_obj({dst_int8_config, dst_min_config, dst_max_config, dst_scale_config},
                                               reinterpret_cast<const float*>(dst_fp32->data()),
                                               quant_type == "per_token" ? "per_token" : "per_tensor");
-  auto bias_int32_config = std::make_shared<TensorConfig>("bias", bias_shape, "s32");
-  Tensor* bias_int32 =
-      make_int32_bias_obj(bias_int32_config, reinterpret_cast<const float*>(bias_fp32->data()), weight_fp32,
-                          weight_tensors[3], src_tensors[1], src_tensors[3], dst_tensors[1], input_type, output_type);
-  vector<shared_ptr<TensorConfig>> inputs_configs = {src_u8_config,    weight_s8_config, bias_int32_config,
+  vector<shared_ptr<TensorConfig>> inputs_configs = {src_u8_config,    weight_s8_config, bias_fp32_config,
                                                      src_min_config,   src_max_config,   weight_min_config,
                                                      weight_max_config};
   vector<shared_ptr<TensorConfig>> output_configs = {output_type == "fp32" ? dst_fp32_config : dst_int8_config};
-  vector<Tensor*> inputs = {src_tensors[0], weight_tensors[0], bias_int32,       src_tensors[1],
-                            src_tensors[2], weight_tensors[1], weight_tensors[2]};
-  if (is_dynamic == true) {
-    inputs_configs[2] = bias_fp32_config;
-    inputs_configs[4] = src_scale_config;
-    inputs_configs[6] = weight_scale_config;
-    inputs[2] = bias_fp32;
-    inputs[4] = src_tensors[3];
-    inputs[6] = weight_tensors[3];
+  vector<Tensor*> inputs = {src_tensors[0], weight_tensors[0], bias_fp32,        src_tensors[1],
+                            src_tensors[3], weight_tensors[1], weight_tensors[3]};
+  if (!is_dynamic) {
+    adjust_bias(reinterpret_cast<float*>(bias_fp32->mutable_data()), weight_fp32, src_tensors[1], input_type);
+    inputs_configs[4] = src_max_config;
+    inputs_configs[6] = weight_max_config;
+    inputs[4] = src_tensors[2];
+    inputs[6] = weight_tensors[2];
   }
   Tensor* dst = new Tensor();
   dst->add_tensor_life(1);
@@ -367,6 +349,17 @@ static auto CasesInt8 = []() {
   // Config
   std::vector<int64_t> src0_shape;
   std::vector<int64_t> src1_shape;
+
+  src0_shape = {16, 32};
+  src1_shape = {32, 16};
+#ifdef _WIN32
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "fp32", "per_channel"), true});
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "s8", "fp32", "per_token"), true});
+#else
+  cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, false, "u8", "fp32", "per_channel"), false});
+  // cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "s8", "fp32", "per_token"), false});
+  // cases.push_back({GenerateInt8Case({src0_shape, src1_shape}, true, "u8", "s8", "per_channel"), false});
+#endif
 
   src0_shape = {2, 320};
   src1_shape = {320, 1280};

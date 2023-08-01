@@ -51,7 +51,7 @@ op_maps = {'aten::softmax': 'Softmax', 'prim::Constant': 'Constant', 'prim::List
            'aten::silu': 'Swish', 'prim::ListUnpack': 'ListUnpack', 'aten::ne': 'NotEqual',
            'aten::div': 'Div', 'prim::padding_sequence' : 'PaddingSequence',
            'prim::slice_position_ids': 'SlicePositionIds', 'aten::squeeze': 'Squeeze',
-           'aten::baddbmm': 'Baddbmm', 'prim::mybaddbmm': 'Baddbmm'}
+           'aten::baddbmm': 'Baddbmm', 'prim::mybaddbmm': 'Baddbmm', 'aten::_convolution': 'Conv'}
 
 
 def torch_extract_operator(node, model, nodes_dict, engine_graph=None):

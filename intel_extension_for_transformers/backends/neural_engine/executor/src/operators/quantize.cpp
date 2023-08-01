@@ -158,24 +158,24 @@ void QuantizeOperator::Forward(const vector<Tensor*>& input, const vector<Tensor
   return;
 }
 
-void QuantizeOperator::RuntimeMinmax() {
-  // use onednn reduction calculate min/max
-  memory::desc src_md(src_->shape(), memory::data_type::f32, GetStrides(src_->shape()));
-  memory src_m(src_md, eng_);
-  src_m.set_data_handle(src_->mutable_data());
-  vector<int64_t> reduce_shape(dst_->shape().size(), 1);
-  vector<int64_t> reduce_stride = GetStrides(reduce_shape);
-  memory::desc dst_md(reduce_shape, memory::data_type::f32, reduce_stride);
-  memory reduce_min(dst_md, eng_);
-  memory reduce_max(dst_md, eng_);
-  reduce_min.set_data_handle(dst_min_->mutable_data());
-  reduce_max.set_data_handle(dst_max_->mutable_data());
-  dnnl::reduction::desc reduce_min_d(algorithm::reduction_min, src_md, dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_min_pd(reduce_min_d, eng_);
-  dnnl::reduction(reduce_min_pd).execute(eng_stream_, {{DNNL_ARG_SRC, src_m}, {DNNL_ARG_DST, reduce_min}});
-  dnnl::reduction::desc reduce_max_d(algorithm::reduction_max, src_md, dst_md, 0.f, 0.f);
-  dnnl::reduction::primitive_desc reduce_max_pd(reduce_max_d, eng_);
-  dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, src_m}, {DNNL_ARG_DST, reduce_max}});
-}
+// void QuantizeOperator::RuntimeMinmax() {
+//   // use onednn reduction calculate min/max
+//   memory::desc src_md(src_->shape(), memory::data_type::f32, GetStrides(src_->shape()));
+//   memory src_m(src_md, eng_);
+//   src_m.set_data_handle(src_->mutable_data());
+//   vector<int64_t> reduce_shape(dst_->shape().size(), 1);
+//   vector<int64_t> reduce_stride = GetStrides(reduce_shape);
+//   memory::desc dst_md(reduce_shape, memory::data_type::f32, reduce_stride);
+//   memory reduce_min(dst_md, eng_);
+//   memory reduce_max(dst_md, eng_);
+//   reduce_min.set_data_handle(dst_min_->mutable_data());
+//   reduce_max.set_data_handle(dst_max_->mutable_data());
+//   auto reduce_min_pd = dnnl::reduction::primitive_desc(
+//       eng_, dnnl::algorithm::reduction_min, src_md, dst_md, 0.f, 0.f);
+//   dnnl::reduction(reduce_min_pd).execute(eng_stream_, {{DNNL_ARG_SRC, src_m}, {DNNL_ARG_DST, reduce_min}});
+//   auto reduce_max_pd = dnnl::reduction::primitive_desc(
+//       eng_, dnnl::algorithm::reduction_max, src_md, dst_md, 0.f, 0.f);
+//   dnnl::reduction(reduce_max_pd).execute(eng_stream_, {{DNNL_ARG_SRC, src_m}, {DNNL_ARG_DST, reduce_max}});
+// }
 REGISTER_OPERATOR_CLASS(Quantize);
 }  // namespace executor

@@ -94,12 +94,12 @@ python run_qa.py \
 ## Step 5: Apply Length Config for Quantization
 ```
 python run_qa.py \
---model_name_or_path output/quantized-dynamic-minilmv \
+--model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1" \  # used for load int8 model.
 --dataset_name squad \
 --do_eval \
 --accuracy_only \
 --int8 \
---output_dir output/quantized-dynamic-minilmv \
+--output_dir output/quantized-dynamic-minilmv \  # used for load int8 model
 --overwrite_cache \
 --per_device_eval_batch_size 32 \
 --length_config "(315, 251, 242, 159, 142, 33)"

@@ -70,16 +70,7 @@ void BinaryAddOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
     broadcast_ = tag;
   }
 
-  dnnl::binary::desc binary_d;
   auto& dst_tensor_ptr = output[0];
-
-  if (broadcast_) {
-    binary_d = PrepareBroadcastBinaryDesc(src0_shape_origin, src1_shape_origin, input, output);
-    dst_tensor_ptr->set_shape(GetBroadcastBinaryDstShape(src0_shape_origin, src1_shape_origin));
-  } else {
-    binary_d = PrepareStrideBinaryDesc(src0_shape_origin, src1_shape_origin, input, output);
-    dst_tensor_ptr->set_shape(GetStrideBinaryDstShape(src0_shape_origin, src1_shape_origin));
-  }
 
   // 2: Prepare primitive descriptors (cached)
   dnnl::primitive_attr attr;
@@ -89,7 +80,14 @@ void BinaryAddOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
     po.append_sum(beta);
     attr.set_post_ops(po);
   }
-  binary_pd_ = dnnl::binary::primitive_desc(binary_d, attr, eng_);
+
+  if (broadcast_) {
+    binary_pd_ = PrepareBroadcastBinaryDesc(src0_shape_origin, src1_shape_origin, input, output, attr, eng_);
+    dst_tensor_ptr->set_shape(GetBroadcastBinaryDstShape(src0_shape_origin, src1_shape_origin));
+  } else {
+    binary_pd_ = PrepareStrideBinaryDesc(src0_shape_origin, src1_shape_origin, input, output, attr, eng_);
+    dst_tensor_ptr->set_shape(GetStrideBinaryDstShape(src0_shape_origin, src1_shape_origin));
+  }
 
   // 3: Prepare primitive objects (cached)
   binary_p_ = dnnl::binary(binary_pd_);
@@ -168,9 +166,9 @@ void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
 
   // 1. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  user_src0_m_.set_data_handle(inf_src0_data, s);
-  user_src1_m_.set_data_handle(inf_src1_data, s);
-  user_dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  user_src0_m_.set_data_handle(inf_src0_data);
+  user_src1_m_.set_data_handle(inf_src1_data);
+  user_dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   memory any_src0_m = user_src0_m_;
   memory any_src1_m = user_src1_m_;
@@ -197,10 +195,12 @@ void BinaryAddOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
   this->unref_tensors(inputs);
 }
 
-dnnl::binary::desc BinaryAddOperator::PrepareBroadcastBinaryDesc(const memory::dims& src0_shape_origin,
+dnnl::binary::primitive_desc BinaryAddOperator::PrepareBroadcastBinaryDesc(const memory::dims& src0_shape_origin,
                                                                  const memory::dims& src1_shape_origin,
                                                                  const vector<Tensor*>& input,
-                                                                 const vector<Tensor*>& output) {
+                                                                 const vector<Tensor*>& output,
+                                                                 const dnnl::primitive_attr& attr,
+                                                                 const dnnl::engine& eng) {
   memory::dims jit_pass_src0_shape = src0_shape_origin, jit_pass_src1_shape = src1_shape_origin;
   memory::format_tag dt_tag;
   memory::data_type src0_dt = type2mem[input[0]->dtype()];
@@ -225,8 +225,11 @@ dnnl::binary::desc BinaryAddOperator::PrepareBroadcastBinaryDesc(const memory::d
   user_src1_m_ = memory(user_src1_md, eng_, DNNL_MEMORY_NONE);
   user_dst_m_ = memory(user_dst_md, eng_, DNNL_MEMORY_NONE);
 
-  dnnl::binary::desc binary_d(algo_, user_src0_md, user_src1_md, user_dst_md);
-  return binary_d;
+  // Create primitive descriptor.
+  auto binary_pd = dnnl::binary::primitive_desc(eng, algo_,
+          user_src0_md, user_src1_md, user_dst_md, attr);
+
+  return binary_pd;
 }
 
 // necessary assert checks have be done in PrepareBroadcastBinaryDesc
@@ -238,10 +241,12 @@ memory::dims BinaryAddOperator::GetBroadcastBinaryDstShape(const memory::dims& s
   return src0_shape_origin;
 }
 
-dnnl::binary::desc BinaryAddOperator::PrepareStrideBinaryDesc(const memory::dims& src0_shape_origin,
+dnnl::binary::primitive_desc BinaryAddOperator::PrepareStrideBinaryDesc(const memory::dims& src0_shape_origin,
                                                               const memory::dims& src1_shape_origin,
                                                               const vector<Tensor*>& input,
-                                                              const vector<Tensor*>& output) {
+                                                              const vector<Tensor*>& output,
+                                                              const dnnl::primitive_attr& attr,
+                                                              const dnnl::engine& eng) {
   // 1 Get tensor's adjusted shapes
   auto dst_shape = GetStrideBinaryDstShape(src0_shape_origin, src1_shape_origin);
 
@@ -256,17 +261,18 @@ dnnl::binary::desc BinaryAddOperator::PrepareStrideBinaryDesc(const memory::dims
   memory::desc user_dst_md(dst_shape, type2mem[output[0]->dtype()], dst_stride);
 
   // 4 Prepare format_any memory descriptors
-  memory::desc any_dst_md(user_dst_md.dims(), user_dst_md.data_type(), memory::format_tag::any);
+  memory::desc any_dst_md(user_dst_md.get_dims(), user_dst_md.get_data_type(), memory::format_tag::any);
 
   // 5. Prepare memory objects (cached)
   user_src0_m_ = memory(user_src0_md, eng_, DNNL_MEMORY_NONE);
   user_src1_m_ = memory(user_src1_md, eng_, DNNL_MEMORY_NONE);
   user_dst_m_ = memory(user_dst_md, eng_, DNNL_MEMORY_NONE);
 
-  // 6. Prepare op descriptors
-  dnnl::binary::desc binary_d(algorithm::binary_add, user_src0_md, user_src1_md, any_dst_md);
+  // Create primitive descriptor.
+  auto binary_pd = dnnl::binary::primitive_desc(eng, algo_,
+          user_src0_md, user_src1_md, user_dst_md, attr);
 
-  return binary_d;
+  return binary_pd;
 }
 
 memory::dims BinaryAddOperator::GetStrideBinaryDstShape(const memory::dims& src0_shape_origin,

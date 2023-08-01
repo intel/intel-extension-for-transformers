@@ -169,6 +169,47 @@ class INCDataloader():
 
     def __len__(self):
         return self.length
+    
+class Net(torch.nn.Module):
+    def __init__(self, ori_model):
+        super(Net, self).__init__()
+        self.model = ori_model
+    def forward(self, input_ids, pastkv, mask):
+        return self.model(input_ids=input_ids, attention_mask=mask, past_key_values=pastkv, return_dict=False)
+        
+def trace_model(model, tokenizer):
+    from optimum.utils import NormalizedConfigManager
+    normalized_config = NormalizedConfigManager.get_normalized_config_class(model.config.model_type)(model.config)
+    num_layers = normalized_config.num_layers
+    num_attention_heads = normalized_config.num_attention_heads
+    hidden_size = normalized_config.hidden_size
+    d_k = hidden_size // num_attention_heads
+    model_type = model.config.model_type
+    model = model.cpu()
+    model.eval()
+    prompt = "Once upon a time, there existed a little girl, who liked to have adventures." + \
+    " She wanted to go to places and meet new people, and have fun."
+    init_input_ids = tokenizer(prompt, return_tensors="pt").input_ids[0]
+    traced_model = None
+    if 'llama' in model_type:
+        input_ids = init_input_ids.clone()
+        attention_mask = torch.ones(len(input_ids)+1)
+        attention_mask[0] = 0
+        input_ids = input_ids[0:1].unsqueeze(0)
+        attention_mask = attention_mask.unsqueeze(0)
+        past_key_value = tuple([(torch.zeros([1,32,34,128]), torch.zeros([1,32,34,128])) for i in range(32)])
+        if 'llama_13b' in model_type:
+            past_key_value = tuple([(torch.zeros([1,40,34,128]), torch.zeros([1,40,34,128])) for i in range(40)])
+        net = model
+        traced_model = torch.jit.trace(net, (input_ids, attention_mask, past_key_value))
+    else:
+        input_ids = init_input_ids.clone().unsqueeze(0)
+        attention_mask = torch.ones(len(input_ids)).unsqueeze(0)
+        past_key_value = tuple([(torch.zeros([1,num_attention_heads,0,d_k]),
+                                    torch.zeros([1,num_attention_heads,0,d_k])) for i in range(num_layers)])
+        net = Net(model)
+        traced_model = torch.jit.trace(net, (input_ids, past_key_value, attention_mask))
+    return traced_model
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Finetune a transformers model on a causal language modeling task")
@@ -376,6 +417,10 @@ def parse_args():
         "--max_length",
         type=int, default=2048,
         help="Maximum data length the model can receive."
+    )
+    parser.add_argument(
+        "--auto_config", action="store_true",
+        help="Whether to automatically generate pruning configs."
     )
     args = parser.parse_args()
 
@@ -753,12 +798,12 @@ def main():
         pruning_start = num_iterations * args.num_train_epochs + 1
         pruning_end = pruning_start
         
-    if not args.auto_slim:
+    if not args.auto_config:
         pruning_configs=[
             {
                 "pruning_type": "retrain_free",
                 "pruning_scope": "global",
-                "op_names": ["wo"], #for t5
+                "op_names": ['.fc', '.mlp'],
                 "excluded_op_names": [".attn"],
                 "sparsity_decay_type": "exp",
                 "pattern": "channelx1",
@@ -767,21 +812,21 @@ def main():
             }
         ]
     else:
-        # auto slim config
+        # auto config
         pruning_configs=[]
-        auto_slim_configs = parse_auto_slim_config(
+        auto_configs = parse_auto_slim_config(
             model,
             ffn2_sparsity = args.target_sparsity,
             mha_sparsity = 0,
             pruning_scope = "global",
             pruning_type = "retrain_free",
         )
-        pruning_configs += auto_slim_configs
+        pruning_configs += auto_configs
         
     configs = WeightPruningConfig(
         pruning_configs,
         target_sparsity=args.target_sparsity,
-        # pattern=args.pruning_pattern,
+        pattern=args.pruning_pattern,
         pruning_frequency=frequency,
         start_step=pruning_start,
         end_step=pruning_end,
@@ -831,7 +876,7 @@ def main():
                     accelerator.save_state(output_dir)
             if completed_steps >= args.max_pruning_steps:
                 break
-    pruner.callbacks.on_train_end()
+    pruner.on_train_end()
     
     model.eval()
     if args.evaluation_dataset_name != None:
@@ -844,6 +889,7 @@ def main():
         dataset_eval = raw_datasets["validation"]
     dataset_eval = dataset_eval.shuffle(seed=42)
     evaluator = Evaluator(dataset_eval, tokenizer, model.device, batch_size=args.per_device_eval_batch_size)
+    
     def eval_func(model):
         acc, avg_latency = evaluator.evaluate(model)
         return acc, avg_latency
@@ -873,26 +919,18 @@ def main():
         logger.info(f"***** Running Evaluation after ffn auto_slim*****")
         accuracy, avg_latency = eval_func(model)
         logger.info(f"accuracy:{accuracy}  avg_latency:{avg_latency}")
+        
+        if args.output_dir is not None:
+            accelerator.wait_for_everyone()
+            traced_model = trace_model(model, tokenizer)
+            logger.info(f"Save silmed jit model")
+            torch.jit.save(traced_model, args.output_dir+"/slimed_jit_model.pt")
+            
     
     if args.with_tracking:
         accelerator.end_training()
 
-    if args.output_dir is not None and args.auto_slim:
-        accelerator.wait_for_everyone()
-        # unwrapped_model = accelerator.unwrap_model(model)
-        # unwrapped_model.save_pretrained(
-        #     args.output_dir+"/slimed", is_main_process=accelerator.is_main_process, save_function=accelerator.save
-        # )
-        model.to('cpu')
-        torch.save(model, args.output_dir+"/slimed_model.pt")
-        if accelerator.is_main_process:
-            tokenizer.save_pretrained(args.output_dir)
-            if args.push_to_hub:
-                repo.push_to_hub(commit_message="End of auto slim", auto_lfs_prune=True)
-
-            # with open(os.path.join(args.output_dir, "all_results.json"), "w") as f:
-            #     json.dump({"perplexity": perplexity}, f)
-
 
 if __name__ == "__main__":
     main()
+

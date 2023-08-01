@@ -239,7 +239,7 @@ void Model::Init(const ModelConfig& conf) {
     tp_max_threads = tp_max_threads > total_available_threads ? total_available_threads : tp_max_threads;
     tp.begin(tp_max_threads);
     DLOG(INFO) << "Thread pool is initialized with " << tp_max_threads << " threads. ("
-               << "Total avaiable threads: " << total_available_threads << ")";
+               << "Total available threads: " << total_available_threads << ")";
   }
 
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
@@ -612,8 +612,8 @@ shared_ptr<TensorConfig> findTensorConfig(const vector<shared_ptr<OperatorConfig
 shared_ptr<Operator> Model::CreateLLGAKernel(const vector<shared_ptr<OperatorConfig>>& op_configs,
                                              const dnnl::graph::partition& partition) {
   vector<shared_ptr<TensorConfig>> partition_inputs, partition_outputs;
-  auto lt_inputs = partition.get_in_ports();
-  auto lt_outputs = partition.get_out_ports();
+  auto lt_inputs = partition.get_input_ports();
+  auto lt_outputs = partition.get_output_ports();
   for (auto lt : lt_inputs) {
     size_t id = lt.get_id();
     auto tensor_name = llga_info_.GetTensorName(id);

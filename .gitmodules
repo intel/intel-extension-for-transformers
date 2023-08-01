@@ -87,10 +87,9 @@
 	branch = boost-1.80.0
 	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/winapi
 	url = https://github.com/boostorg/winapi.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/oneDNNGraph"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/oneDNNGraph
-	url = https://github.com/oneapi-src/oneDNN.git
-	branch = dev-graph
 [submodule "intel_extension_for_transformers/backends/neural_engine/third_party/cereal"]
 	path = intel_extension_for_transformers/backends/neural_engine/third_party/cereal
 	url = https://github.com/USCiLab/cereal
+[submodule "oneDNN"]
+	path = intel_extension_for_transformers/backends/neural_engine/third_party/oneDNN
+	url = https://github.com/oneapi-src/oneDNN.git

@@ -75,10 +75,8 @@ void ReduceSumOperator::Reshape(const vector<Tensor*>& input, const vector<Tenso
 
   // Part2: Derive operator's format_any memory::desc and memory.
   // 2.2 Prepare op descriptors. last float p, float eps should be ignored in mean algorithm
-  dnnl::reduction::desc reduce_sum_d(algorithm::reduction_sum, src_md, dst_md, 0.f, 0.f);
-
-  // 2.3 Prepare primitive descriptors (cached)
-  dnnl::reduction::primitive_desc reduce_sum_pd(reduce_sum_d, eng_);
+  auto reduce_sum_pd = dnnl::reduction::primitive_desc(
+        eng_, dnnl::algorithm::reduction_sum, src_md, dst_md, 0.f, 0.f);
 
   // 2.4 Prepare primitive objects (cached)
   reduce_sum_p_ = dnnl::reduction(reduce_sum_pd);
@@ -95,8 +93,8 @@ void ReduceSumOperator::Forward(const vector<Tensor*>& input, const vector<Tenso
 
   // 1. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  src_m_.set_data_handle(const_cast<void*>(src_data), s);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  src_m_.set_data_handle(const_cast<void*>(src_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   // 2. Reorder the data when the primitive memory and user memory are different
   // 3. Insert memory args

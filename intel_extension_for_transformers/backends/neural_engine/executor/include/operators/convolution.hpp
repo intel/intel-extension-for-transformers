@@ -37,8 +37,7 @@ using dnnl::prop_kind;
 class ConvolutionOperator : public Operator {
  public:
   explicit ConvolutionOperator(const shared_ptr<OperatorConfig>& conf);
-  virtual ~ConvolutionOperator() {
-  }
+  virtual ~ConvolutionOperator() {}
 
   void Prepare(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
   void Reshape(const vector<Tensor*>& input, const vector<Tensor*>& output) override;
@@ -48,8 +47,7 @@ class ConvolutionOperator : public Operator {
  private:
   void MapTensors(const vector<Tensor*>& input, const vector<Tensor*>& output);
   void DstReshapeFusion(const vector<Tensor*>& input, const vector<Tensor*>& output);
-  void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* rescales_ptr,
-                      vector<float>* dynamic_bias_ptr, memory* any_bias_m_ptr);
+  void DynamicForward(vector<int32_t>* src0_zero_points_ptr, vector<float>* src_scales_ptr);
 
   bool weight_cached_;
   bool has_bias_;
@@ -76,6 +74,13 @@ class ConvolutionOperator : public Operator {
   vector<int64_t> reshape_;
   vector<int64_t> reshape_dims_;
 
+  vector<float> src_scales_;
+  vector<int> src_zps_;
+  vector<float> weight_scales_;
+  vector<float> dst_scales_;
+  vector<int> dst_zps_;
+  vector<float> rescales_;
+
   dnnl::primitive_attr attr_;
   dnnl::engine eng_ = engine(engine::kind::cpu, 0);
   dnnl::stream eng_stream_ = dnnl::stream(eng_);
@@ -99,7 +104,7 @@ class ConvolutionOperator : public Operator {
   memory dst_m_;
   memory gelu_m_;
   memory binary_m_;
-  memory scale_f32_mem_, zp_src0_mem_;
+  memory scale_src_mem_, scale_weight_mem_, zp_src0_mem_;
 
   Tensor* src_ = nullptr;
   Tensor* weight_ = nullptr;

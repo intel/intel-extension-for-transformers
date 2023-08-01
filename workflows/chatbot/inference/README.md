@@ -36,9 +36,47 @@ python generate.py \
         --base_model_path "mosaicml/mpt-7b-chat" \
         --peft_model_path "./mpt_peft_finetuned_model" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
+        --use_kv_cache \
         --trust_remote_code \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
+
+If you want to accelerate the generation, you can use the key/value cache for decoding by adding the flag `--use_kv_cache`, and use jit trace by `pip install optimum-intel` and adding the flag `--jit`.
+
+```bash
+python generate.py \
+        --base_model_path "mosaicml/mpt-7b-chat" \
+        --trust_remote_code \
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten." \
+        --use_kv_cache \
+        --jit
+```
+
+The [generate.py](./generate.py) script accepts different arguments to set the inference behavior of the model.
+
+```bash
+python generate.py  \
+          --temperature 0.2 \
+          --top_p 0.8 \
+          --top_k 45 \
+          --num_beams 1 \
+          --repetition_penalty 1.2 \
+          --max_new_tokens 512 \
+          --base_model_path "mosaicml/mpt-7b-chat" \
+          --tokenizer_name "EleutherAI/gpt-neox-20b" \
+          --use_kv_cache \
+          --trust_remote_code \
+          --instructions "Tell me about Intel Xeon."
+```
+
+Here are the explanations of each parameter:
+`--temperature`: Controls the diversity of generated text. Lower values result in more deterministic outputs. The default value is 0.1.
+`--top_p`: During text generation, only consider tokens with cumulative probability up to this value. This parameter helps to avoid extremely low probability tokens. The default value is 0.75.
+`--top_k`: The number of highest probability vocabulary tokens to consider for each step of text generation. The default value is 40.
+`--num_beams`: The number of beams to use for beam search decoding. This parameter helps to generate multiple possible completions. The default value is 1.
+`--repetition_penalty`: This value controls the penalty for repeating tokens in the generated text. Higher values encourage the model to produce more diverse outputs. The default value is 1.1.
+`--max_new_tokens`: The maximum number of tokens allowed in the generated output. This parameter helps to limit the length of the generated text. The default value is 128.
+
 
 For Llama, use the below command line to chat with it.
 If you encounter a failure with the Llama fast tokenizer while using the latest transformers, add the option "--use_slow_tokenizer".
@@ -53,6 +91,18 @@ python generate.py \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
+```bash
+python generate.py \
+        --temperature 0.2 \
+        --top_p 0.8 \
+        --top_k 45 \
+        --num_beams 1 \
+        --repetition_penalty 1.2 \
+        --base_model_path "decapoda-research/llama-7b-hf" \
+        --use_slow_tokenizer \
+        --instructions "Tell me about China."
+```
+
 ## Deployment on Xeon SPR
 
 Apart from direct inference using the [generate.py](./generate.py) script, you can also run a backend and use the RESTful API for inference. We have enabled IPEX BF16 to speed up the inference.
@@ -64,7 +114,25 @@ Please refer to the [README](./backend/chat/README.md) for instructions on runni
 You can use the following command to trigger inference:
 
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"model": "mpt-7b-chat", "prompt": "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human questions.\nHuman: What are the potential benefits and risks of cryptocurrency investments?\nAssistant:", "stop":"<|endoftext|>"}' http://localhost:80/worker_generate_stream
+curl -X POST -H "Content-Type: application/json" -d '{"model": "mpt-7b-chat", "prompt": "What are the potential benefits and risks of cryptocurrency investments?"}' http://localhost:80/worker_generate_stream
+```
+
+Please make sure to update the URL 'http://localhost:80/worker_generate_stream' with your server's IP address and port.
+
+If you prefer to use the Python API to access the service, you can use the code snippet below:
+
+```python
+import requests
+
+url = 'http://localhost:80/worker_generate_stream'
+headers = {'Content-Type': 'application/json'}
+data = {
+    'model': 'mpt-7b-chat',
+    'prompt': 'What are the potential benefits and risks of cryptocurrency investments?'
+}
+
+response = requests.post(url, headers=headers, json=data)
+print(response.json())
 ```
 
 You can also use [chatcli](../demo/chatcli/) to access the service.
@@ -88,22 +156,23 @@ Use this [link](https://docs.habana.ai/en/latest/AWS_EC2_DL1_and_PyTorch_Quick_S
 ### Setup Habana Environment
 
 ```bash
-git clone https://github.com/huggingface/optimum-habana.git
-cd ./optimum-habana/examples/text-generation/
-apt-get update
-apt-get install git-lfs
-git-lfs install
-git clone https://huggingface.co/mosaicml/mpt-7b-chat
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd ./intel-extension-for-transformers/
 ```
 
-Copy the [generation_habana.py](./generation_habana.py) script to Gaudi instance and place it in the current directory.
+Copy the [generate.py](./generate.py) script to Gaudi instance and place it in the current directory.
 Run the Docker container with Habana runtime and necessary environment variables:
 
 ```bash
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host -v $(pwd):/optimum-habana vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest
-cd /optimum-habana/examples/text-generation/
-pip install -r requirements.txt
+docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host -v $(pwd):/intel-extension-for-transformers vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest
+apt-get update
+apt-get install git-lfs
+git-lfs install
+cd /intel-extension-for-transformers/workflows/chatbot/inference/
+git clone https://huggingface.co/mosaicml/mpt-7b-chat
+pip install datasets
 pip install optimum
+pip install git+https://github.com/huggingface/optimum-habana.git
 pip install peft
 pip install einops
 pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
@@ -111,19 +180,37 @@ pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
 
 ### Run the inference
 
-We provide the [generation_habana.py](./generation_habana.py) script for performing direct inference on Habana Gaudi instance. We have enabled BF16 to speed up the inference. Please use the following command for inference.
+You can use the [generate.py](./generate.py) script for performing direct inference on Habana Gaudi instance. We have enabled BF16 to speed up the inference. Please use the following command for inference.
 
 ```bash
-python generation_habana.py --base_model_path "./mpt-7b-chat" --use_kv_cache --bf16 --use_slow_tokenizer --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
+python generate.py --base_model_path "./mpt-7b-chat" \
+             --habana \
+             --tokenizer_name "EleutherAI/gpt-neox-20b" \
+             --use_hpu_graphs \
+             --use_kv_cache \
+             --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
-And you can use `deepspeed` to speedup the inference.
+And you can use `deepspeed` to speedup the inference. currently, TP is not supported for mpt
 
 ```bash
-python ../gaudi_spawn.py --use_deepspeed --world_size 8 generation_habana.py \
+python ../habana/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
         --base_model_path "./mpt-7b-chat" \
+        --habana \
+        --tokenizer_name "EleutherAI/gpt-neox-20b" \
+        --use_hpu_graphs \
         --use_kv_cache \
-        --bf16 \
-        --use_slow_tokenizer \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
+
+Habana supports HPU graph mode for inference speedup, which is available for bloom, gpt2, opt, gptj, gpt_neox. However, mpt and llama model have not supported this mode yet. You can use the parameter `use_hpu_graphs` to speed up the inference.
+
+```bash
+python generate.py --base_model_path "EleutherAI/gpt-j-6b" \
+             --habana \
+             --use_kv_cache \
+             --use_hpu_graphs \
+             --tokenizer_name "EleutherAI/gpt-j-6b" \
+             --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
+```
+

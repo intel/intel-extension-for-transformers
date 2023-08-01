@@ -43,7 +43,7 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
 install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
-opt_install_requires_list = ['neural_compressor', 'transformers<=4.29.1']
+opt_install_requires_list = ['neural_compressor', 'transformers']
 project_name = "intel_extension_for_transformers"
 
 if BACKENDS_ONLY:

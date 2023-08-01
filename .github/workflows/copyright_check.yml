@@ -1,0 +1,61 @@
+name: Copyright Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - intel_extension_for_transformers/**
+      - setup.py
+      - .github/workflows/format_scan.yml
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CODE_SCAN_LOG_PATH: "${{ github.workspace }}/log"
+
+jobs:
+  format-scan:
+    runs-on: itrex-node-spell
+    strategy:
+      matrix:
+        job_name: ["copyright"]
+      fail-fast: false
+    steps:
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+
+      - name: CopyRight check
+        run: |
+          source ${{ github.workspace }}/.github/workflows/script/change_color.sh
+          set -e
+          mkdir -p ${{ env.CODE_SCAN_LOG_PATH }}
+          supported_extensions=(py, sh, yaml)
+          git fetch
+          git --no-pager diff --name-only remotes/origin/${{ github.base_ref }} ${{ github.workspace }}/intel_extension_for_transformers> ${{ env.CODE_SCAN_LOG_PATH }}/diff.log
+          files=$(cat ${{ env.CODE_SCAN_LOG_PATH }}/diff.log | awk '!a[$0]++')
+          $LIGHT_PURPLE && echo " ----------------- checking ... --------------------------" && $RESET
+          for file in ${files}
+          do
+              if [[ "${supported_extensions[@]}" =~ "${file##*.}" ]]; then
+                  if [ $(grep -E -c "Copyright \\(c\\) ([0-9]{4})(-[0-9]{4})? Intel Corporation" ${file}) = 0 ]; then
+                      echo ${file} >> ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log
+                      $BOLD_YELLOW && echo " -----------------  Current log file output start --------------------------"
+                      cat ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log
+                      $BOLD_YELLOW && echo " -----------------  Current log file output end --------------------------" && $RESET
+                      $BOLD_RED && echo "CopyRight has something wrong! Please click on the artifact button to download and view the error log!" && $RESET; exit 1
+                  fi
+              else
+                  $LIGHT_PURPLE && echo "Skipping ${file}"  && $RESET
+              fi
+          done
+
+      - name: Publish pipeline artifact
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.job_name }}
+          path: ${{ env.CODE_SCAN_LOG_PATH }}.*

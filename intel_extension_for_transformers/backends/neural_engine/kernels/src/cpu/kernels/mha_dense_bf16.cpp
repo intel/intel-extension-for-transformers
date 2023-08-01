@@ -17,6 +17,8 @@
 #include <algorithm>
 #include <unordered_map>
 
+#include "mha_dense_ctx.hpp"
+
 #define KERNEL_INIT_CHECK(f)                                              \
   if (!(f)) {                                                             \
     SPARSE_LOG(ERROR) << "MHA dense bf16 kernel requires `" << #f << "`"; \
@@ -144,36 +146,50 @@ bool mha_dense_bf16_k_t::init() {
   return true;
 }
 
-bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool mha_dense_bf16_k_t::execute(const exec_context_t& ctx) const {
+  void *src_data[io_src::SIZE], *dst_data[io_dst::SIZE], *workspace;
+  dim_t shape_data[io_shape::SIZE];
+  for (auto i = 0; i < io_src::SIZE; ++i) ctx.input(i)->get_handle(&src_data[i]);
+  for (auto i = 0; i < io_dst::SIZE; ++i) ctx.output(i)->get_handle(&dst_data[i]);
+  for (auto i = 0; i < io_shape::SIZE; ++i) shape_data[i] = ctx.get_dynamic_shape()[i];
+  ctx.workspace()->get_handle(&workspace);
+
+  const auto sl_m = shape_data[io_shape::M] ? shape_data[io_shape::M] : sl_m_;
+  const auto sl_n = shape_data[io_shape::N] ? shape_data[io_shape::N] : sl_n_;  // TODO(Yi): sl_n affects kern_qksoftmax
+  assert(shape_data[io_shape::BATCH_SIZE] <= 0);                                // dynamic BATCH_SIZE not supported
+  assert(shape_data[io_shape::HEAD_SIZE] <= 0);                                 // dynamic HEAD_SIZE not supported
+  assert(shape_data[io_shape::HEAD_NUM] <= 0);                                  // dynamic HEAD_NUM not supported
+  const auto sl_n_pad = pad_to(sl_n, PAD_SIZE);
+
   int constexpr m_tile = 32;
-  SPARSE_DLOG_IF(FATAL, has_badd && !rt_data[io::BINARY_ADD]) << "Binary-add operand expected but not passed!";
-  SPARSE_DLOG_IF(FATAL, has_pmask && !rt_data[io::MASK]) << "Padding mask expected but not passed!";
+  SPARSE_DLOG_IF(FATAL, has_badd && !src_data[io_src::BINARY_ADD]) << "Binary-add operand expected but not passed!";
+  SPARSE_DLOG_IF(FATAL, has_pmask && !src_data[io_src::MASK]) << "Padding mask expected but not passed!";
 
-  const auto src_q = reinterpret_cast<const bfloat16_t*>(rt_data[io::SRC_Q]);
-  const auto src_k = reinterpret_cast<const bfloat16_t*>(rt_data[io::SRC_K]);
-  const auto src_v = reinterpret_cast<const bfloat16_t*>(rt_data[io::SRC_V]);
-  const auto pmask = reinterpret_cast<const int32_t*>(rt_data[io::MASK]);
-  const auto badd = has_badd ? reinterpret_cast<const float*>(rt_data[io::BINARY_ADD]) : nullptr;
-  const auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rt_data[io::DST]));
+  const auto src_q = reinterpret_cast<const bfloat16_t*>(src_data[io_src::SRC_Q]);
+  const auto src_k = reinterpret_cast<const bfloat16_t*>(src_data[io_src::SRC_K]);
+  const auto src_v = reinterpret_cast<const bfloat16_t*>(src_data[io_src::SRC_V]);
+  const auto pmask = reinterpret_cast<const int32_t*>(src_data[io_src::MASK]);
+  const auto badd = has_badd ? reinterpret_cast<const float*>(src_data[io_src::BINARY_ADD]) : nullptr;
+  const auto dst = reinterpret_cast<bfloat16_t*>(const_cast<void*>(dst_data[io_dst::DST]));
 
-  const auto reo_k = reinterpret_cast<bfloat16_t*>(const_cast<void*>(rt_data[io::WORKSPACE]));
+  const auto reo_k = reinterpret_cast<bfloat16_t*>(workspace);
   const auto reo_v = reinterpret_cast<bfloat16_t*>(reo_k + reo_k_size_);
   const auto tmp_thread = reinterpret_cast<char*>(reo_v + reo_v_size_);
   const auto tmp_mask = reinterpret_cast<float*>(tmp_thread + omp_get_max_threads() * thread_total_bytes_);
 
-  const auto att_scale = reinterpret_cast<const float*>(rt_data[io::ATT_SCALE])[0];
+  const auto att_scale = reinterpret_cast<const float*>(src_data[io_src::ATT_SCALE])[0];
 
 // Reorder K & V on workspace
 #pragma omp parallel for collapse(2)
   for (int ibat = 0; ibat < bs_ * head_num_; ibat++) {
-    for (int i_n = 0; i_n < sl_n_; i_n += PAD_SIZE) {
+    for (int i_n = 0; i_n < sl_n; i_n += PAD_SIZE) {
       const int ibs = ibat / head_num_;  // batch_size idx
       const int ihn = ibat % head_num_;  // head_num idx
-      const int curr_pmask = has_pmask ? pmask[ibs] : sl_n_;
+      const int curr_pmask = has_pmask ? pmask[ibs] : sl_n;
       const int curr_pmask_pad = pad_to(curr_pmask, PAD_SIZE);
       if (i_n >= curr_pmask) continue;
-      const auto bat_offset = ibs * sl_n_ * ld_src_ + ihn * head_size_;
-      const auto bat_reo_offset = (ibs * head_num_ + ihn) * sl_n_pad_ * head_size_pad_;
+      const auto bat_offset = ibs * sl_n * ld_src_ + ihn * head_size_;
+      const auto bat_reo_offset = (ibs * head_num_ + ihn) * sl_n_pad * head_size_pad_;
       const int curr_nsize_ = std::min(PAD_SIZE, curr_pmask - i_n);
       {  // Reorder K
         const auto curr_src_k = src_k + bat_offset + i_n * ld_src_;
@@ -204,16 +220,16 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
       }
 
       // TODO(Yi): implement real pmask to eliminate badd copying
-      if (i_n == 0 && ihn == 0 && (has_pmask || sl_n_pad_ != sl_n_)) {
-        for (int ii = 0; ii < sl_m_; ++ii) {
-          const auto curr_tmp_mask = tmp_mask + (ibs * sl_m_ + ii) * sl_n_pad_;
+      if (i_n == 0 && ihn == 0 && (has_pmask || sl_n_pad != sl_n)) {
+        for (int ii = 0; ii < sl_m; ++ii) {
+          const auto curr_tmp_mask = tmp_mask + (ibs * sl_m + ii) * sl_n_pad;
           if (has_badd) {
-            const auto curr_badd = badd + ii * sl_n_;
+            const auto curr_badd = badd + ii * sl_n;
             memcpy(curr_tmp_mask, curr_badd, curr_pmask * sizeof(float));
           } else {
             memset(curr_tmp_mask, 0, curr_pmask * sizeof(float));
           }
-          std::fill(curr_tmp_mask + curr_pmask, curr_tmp_mask + sl_n_pad_, -INFINITY);
+          std::fill(curr_tmp_mask + curr_pmask, curr_tmp_mask + sl_n_pad, -INFINITY);
         }
       }
     }
@@ -222,7 +238,7 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
 // QxK & softmax & AxV
 #pragma omp parallel for collapse(2)
   for (int ibat = 0; ibat < bs_ * head_num_; ibat++) {
-    for (int i_m = 0; i_m < sl_m_; i_m += m_tile) {
+    for (int i_m = 0; i_m < sl_m; i_m += m_tile) {
       const int thread_num = omp_get_thread_num();
       const auto curr_reo_q = reinterpret_cast<bfloat16_t*>(tmp_thread + thread_num * thread_total_bytes_);
       const auto curr_softmax = reinterpret_cast<bfloat16_t*>(curr_reo_q + thread_reo_q_size_);
@@ -233,15 +249,15 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
       ker_amx_cfg_(&amx_full_tile_cfg_);
       const auto ibs = ibat / head_num_;  // batch_size idx
       const auto ihn = ibat % head_num_;  // head_num idx
-      const int curr_pmask = has_pmask ? pmask[ibs] : sl_n_;
+      const int curr_pmask = has_pmask ? pmask[ibs] : sl_n;
       const int curr_pmask_pad = pad_to(curr_pmask, PAD_SIZE);
-      auto ioffset = ibs * sl_m_ * ld_src_ + ihn * head_size_;  // offset for Q & DST
+      auto ioffset = ibs * sl_m * ld_src_ + ihn * head_size_;  // offset for Q & DST
 
       auto curr_q = src_q + ioffset + i_m * ld_src_;
       const jit_padding_copy2d::rt_data_t rtdata_reoder_q{
           /*.srcptr = */ curr_q,
           /*.dstptr = */ curr_reo_q,
-          /*.row = */ std::min(m_tile, sl_m_ - i_m),
+          /*.row = */ std::min(m_tile, static_cast<int>(sl_m - i_m)),
           /*.col = */ head_size_ * static_cast<int>(sizeof(bfloat16_t)),
           /*.rowpad = */ m_tile,
           /*.colpad = */ head_size_pad_ * static_cast<int>(sizeof(bfloat16_t)),
@@ -250,10 +266,10 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
       };
       kern_tr_q(&rtdata_reoder_q);
 
-      auto curr_k = reo_k + ibat * sl_n_pad_ * head_size_pad_;
-      const auto&& curr_badd = badd + i_m * sl_n_;
-      const auto&& curr_tmp_mask = tmp_mask + (ibs * sl_m_ + i_m) * sl_n_pad_;
-      const auto qksoftmax_badd = (has_pmask || sl_n_pad_ != sl_n_) ? curr_tmp_mask : curr_badd;
+      auto curr_k = reo_k + ibat * sl_n_pad * head_size_pad_;
+      const auto&& curr_badd = badd + i_m * sl_n;
+      const auto&& curr_tmp_mask = tmp_mask + (ibs * sl_m + i_m) * sl_n_pad;
+      const auto qksoftmax_badd = (has_pmask || sl_n_pad != sl_n) ? curr_tmp_mask : curr_badd;
       const jit_mha_bf16_row_amx_32x32_softmax::rt_data_t rtdata_qksoftmax{
           /*.matA = */ curr_reo_q,
           /*.matB = */ curr_k,
@@ -263,15 +279,15 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
           /*.n = */ curr_pmask_pad,
           /*.k = */ head_size_pad_,
           /*.astep = */ head_size_pad_ * static_cast<int>(sizeof(bfloat16_t)),
-          /*.dstep = */ sl_n_pad_ * static_cast<int>(sizeof(float)),
+          /*.dstep = */ static_cast<int>(sl_n_pad * sizeof(float)),
           /*.scaleAB = */ att_scale,
       };  // cstep is n * size(bf16)
       kern_qksoftmax(&rtdata_qksoftmax);
 
-      const auto is_tail_m = i_m + m_tile > sl_m_;
+      const auto is_tail_m = i_m + m_tile > sl_m;
       const auto curr_dst = dst + ioffset + i_m * ld_dst_;
       const auto mmav_dst = (!is_tail_m) ? curr_dst : curr_tmp_dst;
-      auto curr_v = reo_v + ibat * sl_n_pad_ * head_size_pad_;
+      auto curr_v = reo_v + ibat * sl_n_pad * head_size_pad_;
       const jit_mha_bf16_row_amx_32x32::rt_data_t rtdata_mmav{
           /*.matA = */ curr_softmax,
           /*.matB = */ curr_v,
@@ -285,7 +301,7 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
       };
       kern_mmav(&rtdata_mmav);
       if (is_tail_m) {
-        for (int i = 0; i < sl_m_ - i_m; ++i)
+        for (int i = 0; i < sl_m - i_m; ++i)
           memcpy(curr_dst + i * ld_dst_, mmav_dst + i * head_size_pad_, head_size_ * sizeof(bfloat16_t));
       }
     }
@@ -293,4 +309,7 @@ bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const 
   return true;
 }
 
+bool mha_dense_bf16_k_t::execute(const std::vector<const void*>& rt_data) const {
+  return execute(*get_mha_dense_ctx(rt_data));
+}
 }  // namespace jd

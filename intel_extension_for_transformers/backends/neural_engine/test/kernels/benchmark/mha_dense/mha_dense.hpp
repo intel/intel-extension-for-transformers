@@ -27,14 +27,29 @@ class mha_dense_bench : public kernel_bench {
 
  protected:
   using io = jd::exposed_enum::mha_dense::io;
+  using io_src = jd::exposed_enum::mha_dense_src::src;
+  using io_dst = jd::exposed_enum::mha_dense_dst::dst;
+  using io_shape = jd::exposed_enum::mha_dense_shape::shape;
 
  public:
   mha_dense_bench() {}
   virtual ~mha_dense_bench() {
     if (smb == nullptr) {  // for a finally derived class
-      for (auto op_args : {args.first, args.second})
-        for (auto rt_data : op_args.rt_data)
-          if (rt_data != nullptr) aligned_allocator_t<uint8_t, 64>::deallocate(const_cast<void*>(rt_data));
+      const auto using_bench_data = bench_data.op_desc.engine_kind() != jd::engine_kind::undef;
+      if (using_bench_data) {
+        for (auto& ctx : {bench_data.ctx_kern, bench_data.ctx_ref})
+          for (auto& mems : {ctx.inputs(), ctx.outputs()})
+            for (auto& mem : mems) {
+              void* h;
+              mem->get_handle(&h);
+              if (h != nullptr) aligned_allocator_t<uint8_t, 64>::deallocate(h);
+              delete mem;
+            }
+      } else {
+        for (auto op_args : {args.first, args.second})
+          for (auto rt_data : op_args.rt_data)
+            if (rt_data != nullptr) aligned_allocator_t<uint8_t, 64>::deallocate(const_cast<void*>(rt_data));
+      }
     }
   }
   bench_res_t set_config(int argc, char** argv) override;
@@ -49,8 +64,10 @@ class mha_dense_bench : public kernel_bench {
   void gen_case() override { smb->gen_case(); }
   void set_kernel_proxy() override {
     args = smb->args;
+    bench_data = smb->bench_data;
     ts_descs = smb->ts_descs;
-    jd::mha_dense_desc mha_dense_desc(args.first.op_desc);
+    const auto using_bench_data = bench_data.op_desc.engine_kind() != jd::engine_kind::undef;
+    jd::mha_dense_desc mha_dense_desc(using_bench_data ? bench_data.op_desc : args.first.op_desc);
     kp = std::make_shared<jd::mha_dense>(mha_dense_desc);
   };
 };

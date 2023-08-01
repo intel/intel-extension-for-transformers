@@ -1,3 +1,16 @@
+//  Copyright (c) 2023 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 // Defines CLOCK_MONOTONIC on Linux
 #define _GNU_SOURCE
 
@@ -29,7 +42,7 @@
 // layers
 
 #include "layers/vec_dot.h"
-#include "inner_product/inner_product.h"
+#include "layers/inner_product.h"
 #include "vectors/cpu/quantize.h"
 #include "data_types.h"
 #include "layers/Ops.h"
@@ -85,10 +98,15 @@ static int sched_yield(void) {
 typedef void* thread_ret_t;
 #endif
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 static_assert(sizeof(block_q4_0) == sizeof(ne_fp16_t) + QK4_0 / 2, "wrong q4_0 block size/padding");
 static_assert(sizeof(block_q4_1) == 2 * sizeof(ne_fp16_t) + QK4_1 / 2, "wrong q4_1 block size/padding");
 static_assert(sizeof(block_q5_0) == sizeof(ne_fp16_t) + sizeof(uint32_t) + QK5_0 / 2, "wrong q5_0 block size/padding");
-static_assert(sizeof(block_q5_1) == 2 * sizeof(ne_fp16_t) + sizeof(uint32_t) + QK5_1 / 2, "wrong q5_1 block size/padding");
+static_assert(sizeof(block_q5_1) == 2 * sizeof(ne_fp16_t) + sizeof(uint32_t) + QK5_1 / 2,
+              "wrong q5_1 block size/padding");
 static_assert(sizeof(block_q8_0) == sizeof(ne_fp16_t) + QK8_0, "wrong q8_0 block size/padding");
 static_assert(sizeof(block_q8_1) == 2 * sizeof(float) + QK8_1, "wrong q8_1 block size/padding");
 
@@ -359,7 +377,7 @@ static_assert(NE_TYPE_COUNT == 14, "NE_TYPE_NAME is outdated");
 static bool NE_IS_QUANTIZED[NE_TYPE_COUNT] = {
     [NE_TYPE_F32] = false, [NE_TYPE_F16] = false, [NE_TYPE_Q4_0] = true, [NE_TYPE_Q4_1] = true,
     [NE_TYPE_Q5_0] = true, [NE_TYPE_Q5_1] = true, [NE_TYPE_Q8_0] = true, [NE_TYPE_Q8_1] = true,
-    [NE_TYPE_I8] = false,  [NE_TYPE_I16] = false, [NE_TYPE_I32] = false,
+    [NE_TYPE_I8] = false,  [NE_TYPE_I16] = false, [NE_TYPE_I32] = false, [NE_TYPE_JBLAS] = true,
 };
 static_assert(NE_TYPE_COUNT == 14, "NE_IS_QUANTIZED is outdated");
 
@@ -415,6 +433,8 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "CONV_1D_1S",
     "CONV_1D_2S",
 
+    "MUL_QKV",
+    "FFN_SILU",
     "FLASH_ATTN",
     "FLASH_FF",
 
@@ -422,7 +442,7 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "MAP_BINARY",
 };
 
-static_assert(NE_OP_COUNT == 51, "NE_OP_COUNT != 51");
+static_assert(NE_OP_COUNT == 53, "NE_OP_COUNT != 53");
 
 static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "none",
@@ -476,14 +496,14 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "conv_1d_1s(x)",
     "conv_1d_2s(x)",
 
+    "QKV(x)",
+    "ffn_silu(x)",
     "flash_attn(x)",
     "flash_ff(x)",
 
     "f(x)",
     "f(x,y)",
 };
-
-static_assert(NE_OP_COUNT == 51, "NE_OP_COUNT != 51");
 
 static_assert(sizeof(struct ne_object) % NE_MEM_ALIGN == 0, "ne_object size must be a multiple of NE_MEM_ALIGN");
 static_assert(sizeof(struct ne_tensor) % NE_MEM_ALIGN == 0, "ne_tensor size must be a multiple of NE_MEM_ALIGN");
@@ -604,7 +624,8 @@ static inline bool ne_is_matrix(const struct ne_tensor* tensor) {
 static inline bool ne_can_mul_mat(const struct ne_tensor* t0, const struct ne_tensor* t1) {
   static_assert(NE_MAX_DIMS == 4, "NE_MAX_DIMS is not 4 - update this function");
 
-  return (t0->ne[0] == t1->ne[0]) && (t0->ne[2] == t1->ne[2]) && (t0->ne[3] == t1->ne[3]);
+  // verify t0 is broadcastable
+  return (t0->ne[0] == t1->ne[0]) && (t1->ne[2] % t0->ne[2] == 0) && (t1->ne[3] % t0->ne[3] == 0);
 }
 
 bool ne_is_quantized(enum ne_type type) { return NE_IS_QUANTIZED[type]; }
@@ -866,7 +887,7 @@ void ne_scratch_load(struct ne_context* ctx) { ctx->scratch = ctx->scratch_save;
 ////////////////////////////////////////////////////////////////////////////////
 
 struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, int n_dims, const int64_t* ne,
-                                     void* data) {
+                                     void* data, size_t size) {
   // always insert objects at the end of the context's memory pool
   struct ne_object* obj_cur = ctx->objects_end;
 
@@ -877,12 +898,15 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
   size_t size_needed = 0;
 
   if (data == NULL && !ctx->no_alloc) {
-    size_needed += NE_TYPE_SIZE[type] * (ne[0] / NE_BLCK_SIZE[type]);
-    for (int i = 1; i < n_dims; i++) {
-      size_needed *= ne[i];
+    if (type == NE_TYPE_JBLAS) {
+      size_needed = size;
+    } else {
+      size_needed += NE_TYPE_SIZE[type] * (ne[0] / NE_BLCK_SIZE[type]);
+      for (int i = 1; i < n_dims; i++) {
+        size_needed *= ne[i];
+      }
+      size_needed = ((size_needed + NE_MEM_ALIGN - 1) / NE_MEM_ALIGN) * NE_MEM_ALIGN;
     }
-    // align to NE_MEM_ALIGN
-    size_needed = ((size_needed + NE_MEM_ALIGN - 1) / NE_MEM_ALIGN) * NE_MEM_ALIGN;
   }
 
   char* const mem_buffer = ctx->mem_buffer;
@@ -925,8 +949,6 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
         .next = NULL,
     };
 
-    // printf("scratch offs = %zu, size_needed = %zu\n", ctx->scratch.offs, size_needed);
-
     ctx->scratch.offs += size_needed;
   }
 
@@ -939,11 +961,7 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
 
   ctx->objects_end = obj_new;
 
-  // printf("%s: inserted new object at %zu, size = %zu\n", __func__, cur_end, obj_new->size);
-
   struct ne_tensor* const result = (struct ne_tensor*)(mem_buffer + obj_new->offs);
-
-  ne_assert_aligned(result);
 
   *result = (struct ne_tensor){
       /*.type         =*/type,
@@ -962,18 +980,16 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
       /*.perf_cycles  =*/0,
       /*.perf_time_us =*/0,
       /*.data         =*/(data == NULL && !ctx->no_alloc) ? (void*)(result + 1) : data,
+      /*.size         =*/size_needed,
       /*.name         =*/{0},
       /*.pad          =*/{0},
   };
-
-  // TODO: this should not be needed as long as we don't rely on aligned SIMD loads
-  // ne_assert_aligned(result->data);
 
   for (int i = 0; i < n_dims; i++) {
     result->ne[i] = ne[i];
   }
   result->nb[0] = NE_TYPE_SIZE[type];
-  if (type != NE_TYPE_Q4_JBLAS) {
+  if (type != NE_TYPE_JBLAS) {
     result->nb[1] = result->nb[0] * (result->ne[0] / NE_BLCK_SIZE[type]);
   }
 
@@ -986,34 +1002,35 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
   return result;
 }
 
-struct ne_tensor* ne_new_tensor(struct ne_context* ctx, enum ne_type type, int n_dims, const int64_t* ne) {
-  return ne_new_tensor_impl(ctx, type, n_dims, ne, NULL);
+struct ne_tensor* ne_new_tensor(struct ne_context* ctx, enum ne_type type, int n_dims, const int64_t* ne, size_t size) {
+  return ne_new_tensor_impl(ctx, type, n_dims, ne, NULL, size);
 }
 
-struct ne_tensor* ne_new_tensor_1d(struct ne_context* ctx, enum ne_type type, int64_t ne0) {
-  return ne_new_tensor(ctx, type, 1, &ne0);
+struct ne_tensor* ne_new_tensor_1d(struct ne_context* ctx, enum ne_type type, int64_t ne0, size_t size) {
+  return ne_new_tensor(ctx, type, 1, &ne0, size);
 }
 
-struct ne_tensor* ne_new_tensor_2d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1) {
+struct ne_tensor* ne_new_tensor_2d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1, size_t size) {
   const int64_t ne[2] = {ne0, ne1};
-  return ne_new_tensor(ctx, type, 2, ne);
+  return ne_new_tensor(ctx, type, 2, ne, size);
 }
 
-struct ne_tensor* ne_new_tensor_3d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1, int64_t ne2) {
+struct ne_tensor* ne_new_tensor_3d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1, int64_t ne2,
+                                   size_t size) {
   const int64_t ne[3] = {ne0, ne1, ne2};
-  return ne_new_tensor(ctx, type, 3, ne);
+  return ne_new_tensor(ctx, type, 3, ne, size);
 }
 
 struct ne_tensor* ne_new_tensor_4d(struct ne_context* ctx, enum ne_type type, int64_t ne0, int64_t ne1, int64_t ne2,
-                                   int64_t ne3) {
+                                   int64_t ne3, size_t size) {
   const int64_t ne[4] = {ne0, ne1, ne2, ne3};
-  return ne_new_tensor(ctx, type, 4, ne);
+  return ne_new_tensor(ctx, type, 4, ne, size);
 }
 
 struct ne_tensor* ne_new_i32(struct ne_context* ctx, int32_t value) {
   ne_scratch_save(ctx);
 
-  struct ne_tensor* result = ne_new_tensor_1d(ctx, NE_TYPE_I32, 1);
+  struct ne_tensor* result = ne_new_tensor_1d(ctx, NE_TYPE_I32, 1, NE_SIZE_CALC);
 
   ne_scratch_load(ctx);
 
@@ -1025,7 +1042,7 @@ struct ne_tensor* ne_new_i32(struct ne_context* ctx, int32_t value) {
 struct ne_tensor* ne_new_f32(struct ne_context* ctx, float value) {
   ne_scratch_save(ctx);
 
-  struct ne_tensor* result = ne_new_tensor_1d(ctx, NE_TYPE_F32, 1);
+  struct ne_tensor* result = ne_new_tensor_1d(ctx, NE_TYPE_F32, 1, NE_SIZE_CALC);
 
   ne_scratch_load(ctx);
 
@@ -1035,7 +1052,7 @@ struct ne_tensor* ne_new_f32(struct ne_context* ctx, float value) {
 }
 
 struct ne_tensor* ne_dup_tensor(struct ne_context* ctx, const struct ne_tensor* src) {
-  return ne_new_tensor_impl(ctx, src->type, src->n_dims, src->ne, NULL);
+  return ne_new_tensor_impl(ctx, src->type, src->n_dims, src->ne, NULL, src->size);
 }
 
 struct ne_tensor* ne_set_zero(struct ne_tensor* tensor) {
@@ -1266,7 +1283,7 @@ void ne_set_name(struct ne_tensor* tensor, const char* name) {
 }
 
 struct ne_tensor* ne_view_tensor(struct ne_context* ctx, const struct ne_tensor* src) {
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, src->type, src->n_dims, src->ne, src->data);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, src->type, src->n_dims, src->ne, src->data, src->size);
 
   result->nb[0] = src->nb[0];
   result->nb[1] = src->nb[1];
@@ -1379,7 +1396,7 @@ struct ne_tensor* ne_acc_impl(struct ne_context* ctx, struct ne_tensor* a, struc
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* c = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5);
+  struct ne_tensor* c = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5, NE_SIZE_CALC);
 
   ((int32_t*)c->data)[0] = nb1;
   ((int32_t*)c->data)[1] = nb2;
@@ -1585,7 +1602,7 @@ struct ne_tensor* ne_sum(struct ne_context* ctx, struct ne_tensor* a) {
     is_node = true;
   }
 
-  struct ne_tensor* result = ne_new_tensor_1d(ctx, a->type, 1);
+  struct ne_tensor* result = ne_new_tensor_1d(ctx, a->type, 1, NE_SIZE_CALC);
 
   result->op = NE_OP_SUM;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -1609,7 +1626,7 @@ struct ne_tensor* ne_sum_rows(struct ne_context* ctx, struct ne_tensor* a) {
     ne[i] = a->ne[i];
   }
 
-  struct ne_tensor* result = ne_new_tensor(ctx, a->type, a->n_dims, ne);
+  struct ne_tensor* result = ne_new_tensor(ctx, a->type, a->n_dims, ne, a->size);
 
   result->op = NE_OP_SUM_ROWS;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -1630,7 +1647,7 @@ struct ne_tensor* ne_mean(struct ne_context* ctx, struct ne_tensor* a) {
   }
 
   int64_t ne[NE_MAX_DIMS] = {1, a->ne[1], a->ne[2], a->ne[3]};
-  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, a->n_dims, ne);
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, a->n_dims, ne, NE_SIZE_CALC);
 
   result->op = NE_OP_MEAN;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -1655,7 +1672,7 @@ struct ne_tensor* ne_repeat(struct ne_context* ctx, struct ne_tensor* a, struct 
     return a;
   }
 
-  struct ne_tensor* result = ne_new_tensor(ctx, a->type, b->n_dims, b->ne);
+  struct ne_tensor* result = ne_new_tensor(ctx, a->type, b->n_dims, b->ne, NE_SIZE_CALC);
 
   result->op = NE_OP_REPEAT;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -1923,14 +1940,74 @@ struct ne_tensor* ne_mul_mat(struct ne_context* ctx, struct ne_tensor* a, struct
     is_node = true;
   }
 
-  const int64_t ne[4] = {a->ne[1], b->ne[1], a->ne[2], b->ne[3]};
-  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, MIN(a->n_dims, b->n_dims), ne);
+  const int64_t ne[4] = { a->ne[1], b->ne[1], b->ne[2], b->ne[3] };
+  struct ne_tensor * result = ne_new_tensor(ctx, NE_TYPE_F32, MAX(a->n_dims, b->n_dims), ne, NE_SIZE_CALC);
 
   result->op = NE_OP_MUL_MAT;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
   result->src1 = b;
 
+  return result;
+}
+
+// ne_mul_qkv
+
+struct ne_tensor* ne_mul_qkv(struct ne_context* ctx, struct ne_tensor* qw, struct ne_tensor* kw, struct ne_tensor* vw,
+                             struct ne_tensor* src) {
+  NE_ASSERT(ne_can_mul_mat(src, qw));
+  NE_ASSERT(ne_can_mul_mat(src, kw));
+  NE_ASSERT(ne_can_mul_mat(src, vw));
+  NE_ASSERT(ne_are_same_shape(qw, kw));
+  NE_ASSERT(ne_are_same_shape(qw, vw));
+  NE_ASSERT(!ne_is_transposed(src));
+
+  bool is_node = false;
+
+  if (src->grad || qw->grad || vw->grad || kw->grad) {
+    is_node = true;
+  }
+
+  const int64_t ne[4] = {qw->ne[1], src->ne[1], src->ne[2] * 3, src->ne[3]};
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, MIN(src->n_dims, qw->n_dims), ne, NE_SIZE_CALC);
+
+  result->op = NE_OP_MUL_QKV;
+  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->src0 = src;
+  result->src1 = qw;
+  result->opt[0] = kw;
+  result->opt[1] = vw;
+
+  return result;
+}
+
+// src -w1-> tmp -> silu -> tmp
+//     -w3-> tmp1               -mul->tmp -w2-> dst
+struct ne_tensor* ne_ffn_silu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2, struct ne_tensor* w3,
+                              struct ne_tensor* src) {
+  NE_ASSERT(ne_are_same_shape(w1, w3));
+  NE_ASSERT(w2->ne[0] == w1->ne[1]);
+
+  bool is_node = false;
+
+  if (src->grad || w1->grad || w2->grad || w3->grad) {
+    is_node = true;
+  }
+
+  const int64_t ne[4] = {w2->ne[1], src->ne[1], src->ne[2], src->ne[3]};
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, ne, NE_SIZE_CALC);
+  const int64_t tne[4] = {w1->ne[1], src->ne[1], src->ne[2], src->ne[3]};
+  struct ne_tensor* tmp = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, tne, NE_SIZE_CALC);
+  struct ne_tensor* tmp1 = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, tne, NE_SIZE_CALC);
+
+  result->op = NE_OP_MUL_FFN_SILU;
+  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->src0 = src;
+  result->src1 = w1;
+  result->opt[0] = w2;
+  result->opt[1] = w3;
+  result->opt[2] = tmp;
+  result->opt[3] = tmp1;
   return result;
 }
 
@@ -1981,7 +2058,7 @@ struct ne_tensor* ne_set_impl(struct ne_context* ctx, struct ne_tensor* a, struc
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* c = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5);
+  struct ne_tensor* c = ne_new_tensor_1d(ctx, NE_TYPE_I32, 5, NE_SIZE_CALC);
 
   ((int32_t*)c->data)[0] = nb1;
   ((int32_t*)c->data)[1] = nb2;
@@ -2099,7 +2176,7 @@ struct ne_tensor* ne_reshape(struct ne_context* ctx, struct ne_tensor* a, struct
     // NE_ASSERT(false);
   }
 
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, b->n_dims, b->ne, a->data);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, b->n_dims, b->ne, a->data, NE_SIZE_CALC);
 
   result->op = NE_OP_RESHAPE;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2120,7 +2197,7 @@ struct ne_tensor* ne_reshape_1d(struct ne_context* ctx, struct ne_tensor* a, int
   }
 
   const int64_t ne[1] = {ne0};
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 1, ne, a->data);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 1, ne, a->data, NE_SIZE_CALC);
 
   result->op = NE_OP_RESHAPE;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2141,7 +2218,7 @@ struct ne_tensor* ne_reshape_2d(struct ne_context* ctx, struct ne_tensor* a, int
   }
 
   const int64_t ne[2] = {ne0, ne1};
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 2, ne, a->data);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 2, ne, a->data, NE_SIZE_CALC);
 
   result->op = NE_OP_RESHAPE;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2162,7 +2239,7 @@ struct ne_tensor* ne_reshape_3d(struct ne_context* ctx, struct ne_tensor* a, int
   }
 
   const int64_t ne[3] = {ne0, ne1, ne2};
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 3, ne, a->data);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 3, ne, a->data, NE_SIZE_CALC);
 
   result->op = NE_OP_RESHAPE;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2184,7 +2261,7 @@ struct ne_tensor* ne_reshape_4d(struct ne_context* ctx, struct ne_tensor* a, int
   }
 
   const int64_t ne[4] = {ne0, ne1, ne2, ne3};
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 4, ne, a->data);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 4, ne, a->data, NE_SIZE_CALC);
 
   result->op = NE_OP_RESHAPE;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2203,7 +2280,7 @@ struct ne_tensor* ne_view_1d(struct ne_context* ctx, struct ne_tensor* a, int64_
     is_node = true;
   }
 
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 1, &ne0, (char*)a->data + offset);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 1, &ne0, (char*)a->data + offset, NE_SIZE_CALC);
 
   result->op = NE_OP_VIEW;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2229,7 +2306,7 @@ struct ne_tensor* ne_view_2d(struct ne_context* ctx, struct ne_tensor* a, int64_
 
   const int64_t ne[NE_MAX_DIMS] = {ne0, ne1, 1, 1};
 
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 2, ne, (char*)a->data + offset);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 2, ne, (char*)a->data + offset, NE_SIZE_CALC);
 
   result->nb[1] = nb1;
   result->nb[2] = result->nb[1] * ne1;
@@ -2259,7 +2336,7 @@ struct ne_tensor* ne_view_3d(struct ne_context* ctx, struct ne_tensor* a, int64_
 
   const int64_t ne[NE_MAX_DIMS] = {ne0, ne1, ne2, 1};
 
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 3, ne, (char*)a->data + offset);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 3, ne, (char*)a->data + offset, NE_SIZE_CALC);
 
   result->nb[1] = nb1;
   result->nb[2] = nb2;
@@ -2289,7 +2366,7 @@ struct ne_tensor* ne_view_4d(struct ne_context* ctx, struct ne_tensor* a, int64_
 
   const int64_t ne[NE_MAX_DIMS] = {ne0, ne1, ne2, ne3};
 
-  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 4, ne, (char*)a->data + offset);
+  struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 4, ne, (char*)a->data + offset, NE_SIZE_CALC);
 
   result->nb[1] = nb1;
   result->nb[2] = nb2;
@@ -2406,7 +2483,7 @@ struct ne_tensor* ne_get_rows(struct ne_context* ctx, struct ne_tensor* a, struc
 
   // TODO: implement non F32 return
   // struct ne_tensor * result = ne_new_tensor_2d(ctx, a->type, a->ne[0], b->ne[0]);
-  struct ne_tensor* result = ne_new_tensor_2d(ctx, NE_TYPE_F32, a->ne[0], b->ne[0]);
+  struct ne_tensor* result = ne_new_tensor_2d(ctx, NE_TYPE_F32, a->ne[0], b->ne[0], NE_SIZE_CALC);
 
   result->op = NE_OP_GET_ROWS;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2431,7 +2508,7 @@ struct ne_tensor* ne_get_rows_back(struct ne_context* ctx, struct ne_tensor* a, 
 
   // TODO: implement non F32 return
   // struct ne_tensor * result = ne_new_tensor_2d(ctx, a->type, a->ne[0], b->ne[0]);
-  struct ne_tensor* result = ne_new_tensor_2d(ctx, NE_TYPE_F32, c->ne[0], c->ne[1]);
+  struct ne_tensor* result = ne_new_tensor_2d(ctx, NE_TYPE_F32, c->ne[0], c->ne[1], NE_SIZE_CALC);
 
   result->op = NE_OP_GET_ROWS_BACK;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2453,7 +2530,7 @@ struct ne_tensor* ne_diag(struct ne_context* ctx, struct ne_tensor* a) {
   }
 
   const int64_t ne[4] = {a->ne[0], a->ne[0], a->ne[2], a->ne[3]};
-  struct ne_tensor* result = ne_new_tensor(ctx, a->type, MAX(a->n_dims, 2), ne);
+  struct ne_tensor* result = ne_new_tensor(ctx, a->type, MAX(a->n_dims, 2), ne, NE_SIZE_CALC);
 
   result->op = NE_OP_DIAG;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2476,7 +2553,7 @@ struct ne_tensor* ne_diag_mask_inf_impl(struct ne_context* ctx, struct ne_tensor
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = inplace ? 1 : 0;
@@ -2512,7 +2589,7 @@ struct ne_tensor* ne_diag_mask_zero_impl(struct ne_context* ctx, struct ne_tenso
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2, NE_SIZE_CALC);
   ne_set_name(b, "n_past, inplace");
 
   ((int32_t*)b->data)[0] = n_past;
@@ -2576,7 +2653,7 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_dims;
@@ -2615,7 +2692,7 @@ struct ne_tensor* ne_rope_back(struct ne_context* ctx, struct ne_tensor* a, int 
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3, NE_SIZE_CALC);
   ne_set_name(b, "n_past, n_dims, mode");
 
   ((int32_t*)b->data)[0] = n_past;
@@ -2649,7 +2726,7 @@ struct ne_tensor* ne_alibi(struct ne_context* ctx, struct ne_tensor* a, int n_pa
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 2);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3, NE_SIZE_CALC);
 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_head;
@@ -2681,7 +2758,7 @@ struct ne_tensor* ne_clamp(struct ne_context* ctx, struct ne_tensor* a, float mi
 
   ne_scratch_save(ctx);
 
-  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3);
+  struct ne_tensor* b = ne_new_tensor_1d(ctx, NE_TYPE_I32, 3, NE_SIZE_CALC);
 
   ((float*)b->data)[0] = min;
   ((float*)b->data)[1] = max;
@@ -2715,7 +2792,7 @@ struct ne_tensor* ne_conv_1d_1s(struct ne_context* ctx, struct ne_tensor* a, str
       1,
       1,
   };
-  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 2, ne);
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 2, ne, NE_SIZE_CALC);
 
   result->op = NE_OP_CONV_1D_1S;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2744,7 +2821,7 @@ struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, str
       1,
       1,
   };
-  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 2, ne);
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 2, ne, NE_SIZE_CALC);
 
   result->op = NE_OP_CONV_1D_2S;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2769,7 +2846,7 @@ struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, str
   }
 
   // struct ne_tensor * result = ne_dup_tensor(ctx, q);
-  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 4, q->ne);
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 4, q->ne, NE_SIZE_CALC);
 
   result->op = NE_OP_FLASH_ATTN;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2796,7 +2873,7 @@ struct ne_tensor* ne_flash_ff(struct ne_context* ctx, struct ne_tensor* a, struc
   }
 
   // struct ne_tensor * result = ne_dup_tensor(ctx, a);
-  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 4, a->ne);
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 4, a->ne, NE_SIZE_CALC);
 
   result->op = NE_OP_FLASH_FF;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
@@ -2819,7 +2896,7 @@ struct ne_tensor* ne_map_unary_impl_f32(struct ne_context* ctx, struct ne_tensor
     is_node = true;
   }
 
-  struct ne_tensor* addr_tensor = ne_new_tensor_1d(ctx, NE_TYPE_I32, sizeof(void*) / sizeof(int32_t));
+  struct ne_tensor* addr_tensor = ne_new_tensor_1d(ctx, NE_TYPE_I32, sizeof(void*) / sizeof(int32_t), NE_SIZE_CALC);
   *((void (**)(void))addr_tensor->data) = (void (*)(void))fun;
   struct ne_tensor* result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
 
@@ -2851,7 +2928,7 @@ struct ne_tensor* ne_map_binary_impl_f32(struct ne_context* ctx, struct ne_tenso
     is_node = true;
   }
 
-  struct ne_tensor* addr_tensor = ne_new_tensor_1d(ctx, NE_TYPE_I32, sizeof(void*) / sizeof(int32_t));
+  struct ne_tensor* addr_tensor = ne_new_tensor_1d(ctx, NE_TYPE_I32, sizeof(void*) / sizeof(int32_t), NE_SIZE_CALC);
   *((void (**)(void))addr_tensor->data) = (void (*)(void))fun;
   struct ne_tensor* result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
 
@@ -3108,6 +3185,7 @@ static void ne_compute_forward_dup_f16(const struct ne_compute_params* params, c
             const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
             char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
 
+            NE_ASSERT(dst_ptr != NULL);
             memcpy(dst_ptr, src0_ptr, sizeof(ne_fp16_t));
 
             if (++i10 == ne00) {
@@ -3387,6 +3465,7 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
             const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
             char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
 
+            NE_ASSERT(dst_ptr != NULL);
             memcpy(dst_ptr, src0_ptr, sizeof(float));
 
             if (++i10 == ne0) {
@@ -5450,7 +5529,7 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
   const int64_t ne03 = src0->ne[3];
 
   const int64_t ne11 = src1->ne[1];
-#ifndef NDEBUG
+
   const int64_t ne12 = src1->ne[2];
   const int64_t ne13 = src1->ne[3];
 
@@ -5460,17 +5539,17 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
   const int64_t ne3 = dst->ne[3];
 
   const int nb00 = src0->nb[0];
-#endif
+
   const int nb01 = src0->nb[1];
   const int nb02 = src0->nb[2];
   const int nb03 = src0->nb[3];
 
-#ifndef NDEBUG
+
   const int nb10 = src1->nb[0];
-#endif
-  const int nb11 = src1->nb[1];
-  const int nb12 = src1->nb[2];
-  const int nb13 = src1->nb[3];
+
+  const int nb11 = src1->nb[1]; UNUSED(nb11);
+  const int nb12 = src1->nb[2]; UNUSED(nb12);
+  const int nb13 = src1->nb[3]; UNUSED(nb13);
 
   const int nb0 = dst->nb[0];
   const int nb1 = dst->nb[1];
@@ -5480,25 +5559,20 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
   const int ith = params->ith;
   const int nth = params->nth;
 
-  assert(ne02 == ne12);
-  assert(ne03 == ne13);
-  assert(ne2 == ne12);
-  assert(ne3 == ne13);
+  NE_ASSERT(ne0 == ne01);
+  NE_ASSERT(ne1 == ne11);
+  NE_ASSERT(ne2 == ne12);
+  NE_ASSERT(ne3 == ne13);
 
   // we don't support permuted src0 or src1
-  assert(nb00 == sizeof(float));
-  assert(nb10 == sizeof(float));
+  NE_ASSERT(nb00 == sizeof(float));
+  NE_ASSERT(nb10 == sizeof(float));
 
   // dst cannot be transposed or permuted
-  assert(nb0 == sizeof(float));
-  assert(nb0 <= nb1);
-  assert(nb1 <= nb2);
-  assert(nb2 <= nb3);
-
-  assert(ne0 == ne01);
-  assert(ne1 == ne11);
-  assert(ne2 == ne02);
-  assert(ne3 == ne03);
+  NE_ASSERT(nb0 == sizeof(float));
+  NE_ASSERT(nb0 <= nb1);
+  NE_ASSERT(nb1 <= nb2);
+  NE_ASSERT(nb2 <= nb3);
 
   // nb01 >= nb00 - src0 is not transposed
   //   compute by src0 rows
@@ -5511,39 +5585,35 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
     return;
   }
 
-  // parallelize by src0 rows using ne_vec_dot_f32
+   // parallelize by src0 rows
+    const int64_t dr = (ne01 + nth - 1) / nth;
 
-  // total rows in src0
-  const int nr = ne01 * ne02 * ne03;
+    const int64_t ir10 = dr * ith;
+    const int64_t ir11 = MIN(ir10 + dr, ne01);
 
-  // rows per thread
-  const int dr = (nr + nth - 1) / nth;
+    // src1 rows
+    const int64_t nr1 = ne11 * ne12 * ne13;
 
-  // row range for this thread
-  const int ir0 = dr * ith;
-  const int ir1 = MIN(ir0 + dr, nr);
+    for (int64_t ir1 = 0; ir1 < nr1; ++ir1) {
+      const int64_t i13 = (ir1 / (ne12 * ne11));
+      const int64_t i12 = (ir1 - i13 * ne12 * ne11) / ne11;
+      const int64_t i11 = (ir1 - i13 * ne12 * ne11 - i12 * ne11);
 
-  for (int ir = ir0; ir < ir1; ++ir) {
-    // src0 indices
-    const int i03 = ir / (ne02 * ne01);
-    const int i02 = (ir - i03 * ne02 * ne01) / ne01;
-    const int i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
+      const int64_t ir0 = (ir1 / ne11) % (ne02 * ne03);
+      const int64_t i03 = (ir0 / (ne02));
+      const int64_t i02 = (ir0 - i03 * ne02);
 
-    for (int64_t ic = 0; ic < ne11; ++ic) {
-      // src1 indices
-      const int i13 = i03;
-      const int i12 = i02;
-      const int i11 = ic;
+      const int64_t i1 = i11;
+      const int64_t i2 = i12;
+      const int64_t i3 = i13;
 
-      // dst indices
-      const int i0 = i01;
-      const int i1 = i11;
-      const int i2 = i02;
-      const int i3 = i03;
+      char* src0_row = (char*) src0->data + (0 + i02 * nb02 + i03 * nb03);
+      char* src1_col = (char*) src1->data + (i11 * nb11 + i12 * nb12 + i13 * nb13);
 
-      ne_vec_dot_f32(ne00, (float*)((char*)dst->data + (i0 * nb0 + i1 * nb1 + i2 * nb2 + i3 * nb3)),
-                     (float*)((char*)src0->data + (i01 * nb01 + i02 * nb02 + i03 * nb03)),
-                     (float*)((char*)src1->data + (i11 * nb11 + i12 * nb12 + i13 * nb13)));
+      float* dst_col = (float*) ((char*) dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
+
+      for (int64_t ir = ir10; ir < ir11; ++ir) {
+        ne_vec_dot_f32(ne00, &dst_col[ir], (float*) (src0_row + ir * nb01), (float*) src1_col);
     }
   }
 
@@ -5601,8 +5671,8 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   const int ith = params->ith;
   const int nth = params->nth;
 
-  NE_ASSERT(ne02 == ne12);
-  NE_ASSERT(ne03 == ne13);
+  NE_ASSERT(ne0 == ne01);
+  NE_ASSERT(ne1 == ne11);
   NE_ASSERT(ne2 == ne12);
   NE_ASSERT(ne3 == ne13);
 
@@ -5614,11 +5684,6 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   NE_ASSERT(nb0 <= nb1);
   NE_ASSERT(nb1 <= nb2);
   NE_ASSERT(nb2 <= nb3);
-
-  NE_ASSERT(ne0 == ne01);
-  NE_ASSERT(ne1 == ne11);
-  NE_ASSERT(ne2 == ne02);
-  NE_ASSERT(ne3 == ne03);
 
   // nb01 >= nb00 - src0 is not transposed
   //   compute by src0 rows
@@ -5651,40 +5716,38 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   // TODO: do not support transposed src1
   assert(nb10 / 2 == sizeof(ne_fp16_t));
 
-  // parallelize by src0 rows using ne_vec_dot_f16
+   // parallelize by src0 rows
+    const int64_t dr = (ne01 + nth - 1) / nth;
 
-  // total rows in src0
-  const int nr = ne01 * ne02 * ne03;
+    const int64_t ir10 = dr * ith;
+    const int64_t ir11 = MIN(ir10 + dr, ne01);
 
-  // rows per thread
-  const int dr = (nr + nth - 1) / nth;
+    // src1 rows
+    const int64_t nr1 = ne11 * ne12 * ne13;
 
-  // row range for this thread
-  const int ir0 = dr * ith;
-  const int ir1 = MIN(ir0 + dr, nr);
+    void* wdata = params->wdata;
+    const size_t row_size = ne10 * NE_TYPE_SIZE[NE_TYPE_F16];
 
-  ne_fp16_t* wdata = params->wdata;
+    for (int64_t ir1 = 0; ir1 < nr1; ++ir1) {
+      const int64_t i13 = (ir1 / (ne12 * ne11));
+      const int64_t i12 = (ir1 - i13 * ne12 * ne11) / ne11;
+      const int64_t i11 = (ir1 - i13 * ne12 * ne11 - i12 * ne11);
 
-  for (int ir = ir0; ir < ir1; ++ir) {
-    // src0 indices
-    const int i03 = ir / (ne02 * ne01);
-    const int i02 = (ir - i03 * ne02 * ne01) / ne01;
-    const int i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
+      const int64_t ir0 = (ir1 / ne11) % (ne02 * ne03);
+      const int64_t i03 = (ir0 / (ne02));
+      const int64_t i02 = (ir0 - i03 * ne02);
 
-    const int i13 = i03;
-    const int i12 = i02;
+      const int64_t i1 = i11;
+      const int64_t i2 = i12;
+      const int64_t i3 = i13;
 
-    const int i0 = i01;
-    const int i2 = i02;
-    const int i3 = i03;
+      char* src0_row = (char*) src0->data + (0 + i02 * nb02 + i03 * nb03);
+      char* src1_col = (char*) wdata + (i11 + i12 * ne11 + i13 * ne12 * ne11) * row_size;
 
-    ne_fp16_t* src0_row = (ne_fp16_t*)((char*)src0->data + (i01 * nb01 + i02 * nb02 + i03 * nb03));
-    ne_fp16_t* src1_col = wdata + (0 + i12 * ne11 + i13 * ne12 * ne11) * ne00;
+      float* dst_col = (float*) ((char*) dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
 
-    float* dst_col = (float*)((char*)dst->data + (i0 * nb0 + 0 * nb1 + i2 * nb2 + i3 * nb3));
-
-    for (int64_t ic = 0; ic < ne11; ++ic) {
-      ne_vec_dot_f16(ne00, &dst_col[ic * ne0], src0_row, src1_col + ic * ne00);
+      for (int64_t ir = ir10; ir < ir11; ++ir) {
+        ne_vec_dot_f16(ne00, &dst_col[ir], (ne_fp16_t*) (src0_row + ir * nb01), (ne_fp16_t*) src1_col);
     }
   }
 
@@ -5740,15 +5803,15 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
   const int ith = params->ith;
   const int nth = params->nth;
 
-  NE_ASSERT(ne02 == ne12);
-  NE_ASSERT(ne03 == ne13);
-  NE_ASSERT(ne2 == ne12);
-  NE_ASSERT(ne3 == ne13);
-
   const enum ne_type type = src0->type;
   quantize_row_q_t const quantize_row_q_dot = quantize_fns[type].quantize_row_q_dot;
   vec_dot_q_t const vec_dot_q = quantize_fns[type].vec_dot_q;
   enum ne_type const vec_dot_type = quantize_fns[type].vec_dot_type;
+
+  NE_ASSERT(ne0 == ne01);
+  NE_ASSERT(ne1 == ne11);
+  NE_ASSERT(ne2 == ne12);
+  NE_ASSERT(ne3 == ne13);
 
   // we don't support permuted src0 or src1
   NE_ASSERT(nb00 == (int)NE_TYPE_SIZE[type]);
@@ -5759,11 +5822,6 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
   NE_ASSERT(nb0 <= nb1);
   NE_ASSERT(nb1 <= nb2);
   NE_ASSERT(nb2 <= nb3);
-
-  NE_ASSERT(ne0 == ne01);
-  NE_ASSERT(ne1 == ne11);
-  NE_ASSERT(ne2 == ne02);
-  NE_ASSERT(ne3 == ne03);
 
   // nb01 >= nb00 - src0 is not transposed
   //   compute by src0 rows
@@ -5788,43 +5846,38 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
     return;
   }
 
-  // parallelize by src0 rows using ne_vec_dot_q
+  // parallelize by src0 rows
+  const int64_t dr = (ne01 + nth - 1) / nth;
 
-  // total rows in src0
-  const int nr = ne01 * ne02 * ne03;
+  const int64_t ir10 = dr * ith;
+  const int64_t ir11 = MIN(ir10 + dr, ne01);
 
-  // rows per thread
-  const int dr = (nr + nth - 1) / nth;
+  // src1 rows
+  const int64_t nr1 = ne11 * ne12 * ne13;
 
-  // row range for this thread
-  const int ir0 = dr * ith;
-  const int ir1 = MIN(ir0 + dr, nr);
+  const void * wdata = params->wdata;
+  const size_t row_size = ne10 * NE_TYPE_SIZE[vec_dot_type] / NE_BLCK_SIZE[vec_dot_type];
 
-  void* wdata = params->wdata;
-  const size_t row_size = ne00 * NE_TYPE_SIZE[vec_dot_type] / NE_BLCK_SIZE[vec_dot_type];
+  for (int64_t ir1 = 0; ir1 < nr1; ++ir1) {
+    const int64_t i13 = (ir1 / (ne12 * ne11));
+    const int64_t i12 = (ir1 - i13 * ne12 * ne11) / ne11;
+    const int64_t i11 = (ir1 - i13 * ne12 * ne11 - i12 * ne11);
 
-  for (int ir = ir0; ir < ir1; ++ir) {
-    // src0 indices
-    const int i03 = ir / (ne02 * ne01);
-    const int i02 = (ir - i03 * ne02 * ne01) / ne01;
-    const int i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
+    const int64_t ir0 = (ir1 / ne11) % (ne02 * ne03);
+    const int64_t i03 = (ir0 / (ne02));
+    const int64_t i02 = (ir0 - i03 * ne02);
 
-    const int i13 = i03;
-    const int i12 = i02;
+    const int64_t i1 = i11;
+    const int64_t i2 = i12;
+    const int64_t i3 = i13;
 
-    const int i0 = i01;
-    const int i2 = i02;
-    const int i3 = i03;
+    const char* src0_row = (const char*) src0->data + (0 + i02 * nb02 + i03 * nb03);
+    const char* src1_col = (const char*) wdata + (i11 + i12 * ne11 + i13 * ne12 * ne11) * row_size;
 
-    void* src0_row = (void*)((char*)src0->data + (i01 * nb01 + i02 * nb02 + i03 * nb03));
-    char* src1_col = ((char*)wdata + ((0 + i12 * ne11 + i13 * ne12 * ne11) * row_size));
+    float* dst_col = (float*) ((char*) dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
 
-    float* dst_col = (float*)((char*)dst->data + (i0 * nb0 + 0 * nb1 + i2 * nb2 + i3 * nb3));
-
-    assert(ne00 % 32 == 0);
-
-    for (int64_t ic = 0; ic < ne11; ++ic) {
-      vec_dot_q(ne00, &dst_col[ic * ne0], src0_row, (void*)(src1_col + ic * row_size));
+    for (int64_t ir = ir10; ir < ir11; ++ir) {
+      vec_dot_q(ne00, &dst_col[ir], src0_row + ir * nb01, src1_col);
     }
   }
 
@@ -5929,7 +5982,7 @@ static void ne_compute_forward_mul_mat(const struct ne_compute_params* params, c
     case NE_TYPE_Q8_1: {
       ne_compute_forward_mul_mat_q_f32(params, src0, src1, dst);
     } break;
-    case NE_TYPE_Q4_JBLAS: {
+    case NE_TYPE_JBLAS: {
       ne_compute_forward_mul_mat_q_f32_jblas(params, src0, src1, dst);
     } break;
     case NE_TYPE_F16: {
@@ -5942,6 +5995,40 @@ static void ne_compute_forward_mul_mat(const struct ne_compute_params* params, c
       NE_ASSERT(false);
     } break;
   }
+}
+
+static void ne_compute_forward_mul_qkv(const struct ne_compute_params* params, const struct ne_tensor* src,
+                                       const struct ne_tensor* qw, const struct ne_tensor* kw, struct ne_tensor* vw,
+                                       struct ne_tensor* dst) {
+  if (params->type == NE_TASK_INIT) {
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+  const int n = dst->ne[0];
+  const int m = dst->ne[1];
+  const int k = src->ne[0];
+  jblas_weightcomp_QKV_f32_forward((float*)src->data, qw->data, kw->data, vw->data, (float*)dst->data, m, n, k, k, n);
+}
+
+static void ne_compute_forward_ffn_silu(const struct ne_compute_params* params, const struct ne_tensor* src,
+                                        const struct ne_tensor* w1, const struct ne_tensor* w2, struct ne_tensor* w3,
+                                        const struct ne_tensor* tmp, struct ne_tensor* tmp1, struct ne_tensor* dst) {
+  if (params->type == NE_TASK_INIT) {
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+  const int fin = src->ne[0];
+  const int fout = dst->ne[0];
+  const int fmid = w1->ne[1];
+  const int seq = dst->ne[1];
+  jblas_weightcomp_FFN_SiLu_f32_forward((float*)src->data, w1->data, w2->data, w3->data, (float*)tmp->data,
+                                        (float*)tmp1->data, (float*)dst->data, seq, fin, fmid, fout);
 }
 
 // ne_compute_forward_scale
@@ -8542,6 +8629,13 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
     case NE_OP_MUL_MAT: {
       ne_compute_forward_mul_mat(params, tensor->src0, tensor->src1, tensor);
     } break;
+    case NE_OP_MUL_QKV: {
+      ne_compute_forward_mul_qkv(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor);
+    } break;
+    case NE_OP_MUL_FFN_SILU: {
+      ne_compute_forward_ffn_silu(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor->opt[2],
+                                  tensor->opt[3], tensor);
+    } break;
     case NE_OP_SCALE: {
       ne_compute_forward_scale(params, tensor->src0, tensor->src1, tensor);
     } break;
@@ -8759,7 +8853,7 @@ static void ne_compute_backward(struct ne_context* ctx, struct ne_tensor* tensor
         int64_t ne[4] = {nc0, ncr, nr0, nrr};
 
         struct ne_tensor* F00 = tensor->grad;
-        struct ne_tensor* F01 = ne_reshape(ctx, F00, ne_new_tensor(ctx, tensor->grad->type, 4, ne));
+        struct ne_tensor* F01 = ne_reshape(ctx, F00, ne_new_tensor(ctx, tensor->grad->type, 4, ne, NE_SIZE_CALC));
         struct ne_tensor* F02 = ne_permute(ctx, F01, 0, 2, 1, 3);
         struct ne_tensor* F03 = ne_cont(ctx, F02);
         struct ne_tensor* F04 = ne_reshape_2d(ctx, F03, nc0 * nr0, ncr * nrr);
@@ -9382,12 +9476,9 @@ static thread_ret_t ne_graph_compute_thread(void* data) {
 
   return 0;
 }
-#define OMP_THREAD
-#ifdef OMP_THREAD
-#include <omp.h>
-#endif
+
 void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
-  const int n_threads = cgraph->n_threads;
+  int n_threads = cgraph->n_threads;
 
   struct ne_compute_state_shared state_shared = {
       /*.spin      =*/NE_LOCK_INITIALIZER,
@@ -9397,7 +9488,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
       /*.stop      =*/false,
   };
   struct ne_compute_state* workers = n_threads > 1 ? alloca(sizeof(struct ne_compute_state) * (n_threads - 1)) : NULL;
-#ifndef OMP_THREAD
+#ifndef _OPENMP
   // create thread pool
   if (n_threads > 1) {
     ne_lock_init(&state_shared.spin);
@@ -9425,9 +9516,9 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
     }
   }
 #else
+  n_threads = jblas_set_threads(n_threads);  // prevent from using two sockets
   omp_set_num_threads(n_threads);
 #endif
-
   // initialize tasks + work buffer
   {
     size_t work_size = 0;
@@ -9437,7 +9528,15 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
       struct ne_tensor* node = cgraph->nodes[i];
 
       switch (node->op) {
-        case NE_OP_CPY:
+        case NE_OP_CPY: {
+          node->n_tasks = node->ne[0] == 1 ? n_threads : 1;
+
+          size_t cur = 0;
+          if (ne_is_quantized(node->type)) {
+            cur = NE_TYPE_SIZE[NE_TYPE_F32] * node->ne[0] * n_threads;
+          }
+          work_size = MAX(work_size, cur);
+        } break;
         case NE_OP_DUP: {
           node->n_tasks = n_threads;
 
@@ -9450,7 +9549,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         } break;
         case NE_OP_ADD:
         case NE_OP_ADD1: {
-          node->n_tasks = n_threads;
+          node->n_tasks = 1;
 
           size_t cur = 0;
 
@@ -9484,15 +9583,15 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_SGN:
         case NE_OP_NEG:
         case NE_OP_STEP:
+        case NE_OP_MUL:
+        case NE_OP_RMS_NORM:
         case NE_OP_RELU: {
           node->n_tasks = 1;
         } break;
-        case NE_OP_MUL:
         case NE_OP_GELU:
         case NE_OP_SILU:
         case NE_OP_SILU_BACK:
         case NE_OP_NORM:
-        case NE_OP_RMS_NORM:
         case NE_OP_RMS_NORM_BACK: {
           node->n_tasks = n_threads;
         } break;
@@ -9507,8 +9606,10 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
           // printf("nr0 = %8d, nr1 = %8d, nr0*nr1 = %8d, n_tasks = %d\n", nr0, nr1, nr0*nr1, node->n_tasks);
 
           size_t cur = 0;
-
-          if (node->src0->type == NE_TYPE_F16 && node->src1->type == NE_TYPE_F32) {
+          if (node->src0->type == NE_TYPE_JBLAS) {
+            cur = 0;
+            node->n_tasks = 1;
+          } else if (node->src0->type == NE_TYPE_F16 && node->src1->type == NE_TYPE_F32) {
             cur = NE_TYPE_SIZE[NE_TYPE_F16] * ne_nelements(node->src1);
           } else if (node->src0->type == NE_TYPE_F32 && node->src1->type == NE_TYPE_F32) {
             cur = 0;
@@ -9517,17 +9618,18 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
               const enum ne_type type_q = quantize_fns[node->src0->type].vec_dot_type;
               cur = NE_TYPE_SIZE[type_q] * ne_nelements(node->src1) / NE_BLCK_SIZE[type_q];
             }
-          } else if (node->src0->type == NE_TYPE_Q4_JBLAS) {
-            cur = 0;
-            node->n_tasks = 1;
           } else {
             NE_ASSERT(false);
           }
 
           work_size = MAX(work_size, cur);
         } break;
+        case NE_OP_MUL_FFN_SILU:
+        case NE_OP_MUL_QKV: {
+          node->n_tasks = 1;
+        } break;
         case NE_OP_SCALE: {
-          node->n_tasks = n_threads;
+          node->n_tasks = 1;
         } break;
         case NE_OP_SET:
         case NE_OP_CONT:
@@ -9544,6 +9646,8 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_DIAG_MASK_INF:
         case NE_OP_SOFT_MAX:
         case NE_OP_ROPE:
+          node->n_tasks = 1;
+          break;
         case NE_OP_ROPE_BACK: {
           node->n_tasks = n_threads;
         } break;
@@ -9633,7 +9737,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
       cgraph->work_size = work_size + CACHE_LINE_SIZE * (n_threads - 1);
 
       NE_PRINT_DEBUG("%s: allocating work buffer for graph (%zu bytes)\n", __func__, cgraph->work_size);
-      cgraph->work = ne_new_tensor_1d(ctx, NE_TYPE_I8, cgraph->work_size);
+      cgraph->work = ne_new_tensor_1d(ctx, NE_TYPE_I8, cgraph->work_size, NE_SIZE_CALC);
     }
   }
 
@@ -9652,7 +9756,10 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
 
     const int64_t perf_node_start_cycles = ne_perf_cycles();
     const int64_t perf_node_start_time_us = ne_perf_time_us();
-#ifndef OMP_THREAD
+#if NE_DEBUG
+    jblas_timer(true);
+#endif
+#ifndef _OPENMP
     // INIT
     struct ne_compute_params params = {
         /*.type  =*/NE_TASK_INIT,
@@ -9810,6 +9917,10 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
     }
 
 #endif
+#if NE_DEBUG
+    printf("Node %d ", node->op);
+    jblas_timer(false);
+#endif
     // performance stats (node)
     {
       int64_t perf_cycles_cur = ne_perf_cycles() - perf_node_start_cycles;
@@ -9822,7 +9933,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
   }
 
   // join thread pool
-#ifndef OMP_THREAD
+#ifndef _OPENMP
   if (n_threads > 1) {
     atomic_store(&state_shared.stop, true);
     atomic_store(&state_shared.has_work, true);
@@ -9851,6 +9962,31 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
                    (double)cgraph->perf_cycles / (double)ne_cycles_per_ms() / (double)cgraph->perf_runs,
                    (double)perf_time_us_cur / 1000.0, (double)cgraph->perf_time_us / 1000.0 / cgraph->perf_runs);
   }
+}
+
+void ne_graph_profiling(const struct ne_cgraph* cgraph) {
+  int64_t perf_total_per_op_us[NE_OP_COUNT] = {0};
+
+  NE_PRINT("=== GRAPH Profiling ===\n");
+
+  int64_t ip_duration = 0;
+  for (int i = 0; i < cgraph->n_nodes; i++) {
+    struct ne_tensor* node = cgraph->nodes[i];
+    if (node->op == NE_OP_MUL_MAT && node->ne[1] == node->ne[2]) {
+      ip_duration += node->perf_time_us;
+    } else {
+      perf_total_per_op_us[node->op] += node->perf_time_us;
+    }
+  }
+
+  for (int i = 0; i < NE_OP_COUNT; i++) {
+    if (perf_total_per_op_us[i] == 0) {
+      continue;
+    }
+    NE_PRINT("perf_total_per_op_us[%16s] = %7.3f ms\n", NE_OP_LABEL[i], (double)perf_total_per_op_us[i] / 1000.0);
+  }
+  NE_PRINT("perf_total_per_op_us[%16s] = %7.3f ms\n", "INNER PRODUCT", (double)ip_duration / 1000.0);
+  NE_PRINT("========================================\n");
 }
 
 void ne_graph_reset(struct ne_cgraph* cgraph) {
@@ -10123,15 +10259,16 @@ static enum ne_opt_result ne_opt_adam(struct ne_context* ctx, struct ne_opt_para
   const float beta2 = params.adam.beta2;
   const float eps = params.adam.eps;
 
-  float* x = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;   // view of the parameters
-  float* g1 = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;  // gradient
-  float* g2 = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;  // gradient squared
-  float* m = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;   // first moment
-  float* v = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;   // second moment
-  float* mh = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;  // first moment hat
-  float* vh = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;  // second moment hat
+  float* x = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;   // view of the parameters
+  float* g1 = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;  // gradient
+  float* g2 = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;  // gradient squared
+  float* m = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;   // first moment
+  float* v = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;   // second moment
+  float* mh = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;  // first moment hat
+  float* vh = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;  // second moment hat
 
-  float* pf = params.past > 0 ? ne_new_tensor_1d(ctx, NE_TYPE_F32, params.past)->data : NULL;  // past function values
+  float* pf = params.past > 0 ? ne_new_tensor_1d(ctx, NE_TYPE_F32, params.past, NE_SIZE_CALC)->data
+                              : NULL;  // past function values
 
   // initialize
   ne_vec_set_f32(nx, m, 0.0f);
@@ -10401,13 +10538,14 @@ static enum ne_opt_result ne_opt_lbfgs(struct ne_context* ctx, struct ne_opt_par
     }
   }
 
-  float* x = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;   // current parameters
-  float* xp = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;  // previous parameters
-  float* g = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;   // current gradient
-  float* gp = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;  // previous gradient
-  float* d = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;   // search direction
+  float* x = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;   // current parameters
+  float* xp = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;  // previous parameters
+  float* g = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;   // current gradient
+  float* gp = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;  // previous gradient
+  float* d = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;   // search direction
 
-  float* pf = params.past > 0 ? ne_new_tensor_1d(ctx, NE_TYPE_F32, params.past)->data : NULL;  // past function values
+  float* pf = params.past > 0 ? ne_new_tensor_1d(ctx, NE_TYPE_F32, params.past, NE_SIZE_CALC)->data
+                              : NULL;  // past function values
 
   float fx = 0.0f;     // cost function value
   float xnorm = 0.0f;  // ||x||
@@ -10423,8 +10561,8 @@ static enum ne_opt_result ne_opt_lbfgs(struct ne_context* ctx, struct ne_opt_par
   for (int i = 0; i < m; ++i) {
     lm[i].alpha = 0.0f;
     lm[i].ys = 0.0f;
-    lm[i].s = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;
-    lm[i].y = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx)->data;
+    lm[i].s = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;
+    lm[i].y = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;
   }
 
   // evaluate the function value and its gradient

@@ -70,7 +70,7 @@ bool LLGAOPCreator::CreateSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<Operat
                      "softmax" + to_string(llga_info->GetOPIndex()));
   iter = attrs_map.find("axis");
   int64_t axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : -1;
-  softmax_op.set_attr("axis", static_cast<int64_t>(axis_));
+  softmax_op.set_attr(llga_op::attr::axis, static_cast<int64_t>(axis_));
   llga_info->AddLLGAOP(softmax_op, index);
   return true;
 }
@@ -91,7 +91,7 @@ bool LLGAOPCreator::CreateLogSoftmaxOp(LLGAINFO* llga_info, const shared_ptr<Ope
                      "logsoftmax" + to_string(llga_info->GetOPIndex()));
   iter = attrs_map.find("axis");
   int64_t axis_ = (iter != attrs_map.end() && iter->second != "") ? stoi(iter->second) : -1;
-  logsoftmax_op.set_attr("axis", static_cast<int64_t>(axis_));
+  logsoftmax_op.set_attr(llga_op::attr::axis, static_cast<int64_t>(axis_));
   llga_info->AddLLGAOP(logsoftmax_op, index);
   return true;
 }
@@ -106,8 +106,8 @@ int LLGAOPCreator::CreateInnerProductOpFp32(LLGAINFO* llga_info, const vector<lo
   if (has_bias) ip_inputs.push_back(inputs[2]);
   llga_op ip_op(llga_info->GetOPIndex(), llga_op::kind::MatMul, ip_inputs, {dst_desc},
                 "matmul" + to_string(llga_info->GetOPIndex()));
-  ip_op.set_attr<bool>("transpose_a", transpose_a_);
-  ip_op.set_attr<bool>("transpose_b", transpose_b_);
+  ip_op.set_attr<bool>(llga_op::attr::transpose_a, transpose_a_);
+  ip_op.set_attr<bool>(llga_op::attr::transpose_b, transpose_b_);
   llga_info->AddLLGAOP(ip_op, index);
   return dst_desc.get_id();
 }
@@ -177,11 +177,12 @@ int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<lo
                      {inputs[0]},
                      {in_desc},
                      "dequant_in" + to_string(llga_info->GetOPIndex())};
-  dequant_in.set_attr<vector<float>>("scales", {1 / src0_scales[0]});
+  dequant_in.set_attr<vector<float>>(llga_op::attr::scales, {1 / src0_scales[0]});
   // float* min_data = (float*)src0_min_->mutable_data();
-  dequant_in.set_attr<vector<int64_t>>("zps", {static_cast<int64_t>(nearbyint(-(*min_data) * src0_scales[0]))});
-  // dequant_in.set_attr<vector<int64_t>>("zps", {0});
-  dequant_in.set_attr<string>("qtype", "per_tensor");
+  dequant_in.set_attr<vector<int64_t>>(llga_op::attr::zps,
+                                      {static_cast<int64_t>(nearbyint(-(*min_data) * src0_scales[0]))});
+  // dequant_in.set_attr<vector<int64_t>>(llga_op::attr::zps, {0});
+  dequant_in.set_attr<string>(llga_op::attr::qtype, "per_tensor");
   llga_info->AddLLGAOP(dequant_in, index);
 
   // This is an alternative solution for zero points (float type), which is same to our calculation method.
@@ -206,12 +207,12 @@ int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<lo
                     {inputs[1]},
                     {w_desc},
                     "dequant_w" + to_string(llga_info->GetOPIndex())};
-  dequant_w.set_attr<vector<float>>("scales", src1_scales);
-  dequant_w.set_attr<vector<int64_t>>("zps", src1_zps);
+  dequant_w.set_attr<vector<float>>(llga_op::attr::scales, src1_scales);
+  dequant_w.set_attr<vector<int64_t>>(llga_op::attr::zps, src1_zps);
   if (src1_scales.size() == 1) {
-    dequant_w.set_attr<string>("qtype", "per_tensor");
+    dequant_w.set_attr<string>(llga_op::attr::qtype, "per_tensor");
   } else {
-    dequant_w.set_attr<string>("qtype", "per_channel");
+    dequant_w.set_attr<string>(llga_op::attr::qtype, "per_channel");
     // dequant_w.set_attr<int64_t>("axis", 1);  // TODO(lzw): check this
   }
   llga_info->AddLLGAOP(dequant_w, index);
@@ -226,8 +227,8 @@ int LLGAOPCreator::CreateInnerProductOpInt8(LLGAINFO* llga_info, const vector<lo
                 ip_inputs,
                 {ip_out_desc},
                 "matmul" + to_string(llga_info->GetOPIndex())};
-  ip_op.set_attr<bool>("transpose_a", transpose_a_);
-  ip_op.set_attr<bool>("transpose_b", transpose_b_);
+  ip_op.set_attr<bool>(llga_op::attr::transpose_a, transpose_a_);
+  ip_op.set_attr<bool>(llga_op::attr::transpose_b, transpose_b_);
   llga_info->AddLLGAOP(ip_op, index);
 
   return ip_out_desc.get_id();
@@ -366,9 +367,9 @@ bool LLGAOPCreator::CreateInnerProductOp(LLGAINFO* llga_info, const shared_ptr<O
                       {llga_info->GetLogicalTensor(last_lt_id)},
                       {out_desc},
                       "quant_out" + to_string(llga_info->GetOPIndex())};
-    quant_out.set_attr<vector<float>>("scales", {1 / dst_scales[0]});
-    quant_out.set_attr<vector<int64_t>>("zps", dst_zps);
-    quant_out.set_attr<string>("qtype", "per_tensor");
+    quant_out.set_attr<vector<float>>(llga_op::attr::scales, {1 / dst_scales[0]});
+    quant_out.set_attr<vector<int64_t>>(llga_op::attr::zps, dst_zps);
+    quant_out.set_attr<string>(llga_op::attr::qtype, "per_tensor");
     llga_info->AddLLGAOP(quant_out, index);
     last_lt_id = out_desc.get_id();
   }
@@ -394,14 +395,15 @@ bool LLGAOPCreator::CreateQuantizeOp(LLGAINFO* llga_info, const shared_ptr<Opera
   float* min_data = reinterpret_cast<float*>(src0_min_->mutable_data());
   llga_op quantize_op(llga_info->GetOPIndex(), llga_op::kind::Quantize, {inputs[0]}, outputs,
                       "quantize" + to_string(llga_info->GetOPIndex()));
-  quantize_op.set_attr<vector<float>>("scales", {1 / src0_scales[0]});
+  quantize_op.set_attr<vector<float>>(llga_op::attr::scales, {1 / src0_scales[0]});
 
   if (output_dtype == "u8") {
-    quantize_op.set_attr<vector<int64_t>>("zps", {static_cast<int64_t>(nearbyint(-(*min_data) * src0_scales[0]))});
+    quantize_op.set_attr<vector<int64_t>>(llga_op::attr::zps,
+                                          {static_cast<int64_t>(nearbyint(-(*min_data) * src0_scales[0]))});
   } else if (output_dtype == "s8") {
-    quantize_op.set_attr<vector<int64_t>>("zps", {0});
+    quantize_op.set_attr<vector<int64_t>>(llga_op::attr::zps, {0});
   }
-  quantize_op.set_attr<string>("qtype", "per_tensor");
+  quantize_op.set_attr<string>(llga_op::attr::qtype, "per_tensor");
   llga_info->AddLLGAOP(quantize_op, index);
 
   return true;
@@ -447,8 +449,8 @@ bool LLGAOPCreator::CreateLayerNormOp(LLGAINFO* llga_info, const shared_ptr<Oper
 
   llga_op layernorm_op(llga_info->GetOPIndex(), llga_op::kind::LayerNorm, inputs, outputs,
                        "layernorm" + to_string(llga_info->GetOPIndex()));
-  layernorm_op.set_attr<float>("epsilon", epsilon_);
-  layernorm_op.set_attr<bool>("keep_stats", false);
+  layernorm_op.set_attr<float>(llga_op::attr::epsilon, epsilon_);
+  layernorm_op.set_attr<bool>(llga_op::attr::keep_stats, false);
   llga_info->AddLLGAOP(layernorm_op, index);
 
   return true;
@@ -473,8 +475,8 @@ bool LLGAOPCreator::CreateReshapeOp(LLGAINFO* llga_info, const shared_ptr<Operat
   if (mul_.size() > 0) return false;   // not supported by llga
   llga_op reshape_op(llga_info->GetOPIndex(), llga_op::kind::StaticReshape, inputs, outputs,
                      "reshape" + to_string(llga_info->GetOPIndex()));
-  reshape_op.set_attr<vector<int64_t>>("shape", shape_);
-  reshape_op.set_attr<bool>("special_zero", true);
+  reshape_op.set_attr<vector<int64_t>>(llga_op::attr::shape, shape_);
+  reshape_op.set_attr<bool>(llga_op::attr::special_zero, true);
   llga_info->AddLLGAOP(reshape_op, index);
 
   return true;
@@ -511,7 +513,7 @@ bool LLGAOPCreator::CreateMatmulOp(LLGAINFO* llga_info, const shared_ptr<Operato
     // TODO(lzw) transpose op won't fuse with following matmul, and single transpose is not supported by llga.
     llga_op trans_op(llga_info->GetOPIndex(), llga_op::kind::StaticTranspose, {inputs[1]}, {out_desc},
                      "transpose1" + to_string(llga_info->GetOPIndex()));
-    trans_op.set_attr<vector<int64_t>>("order", src1_perm_);
+    trans_op.set_attr<vector<int64_t>>(llga_op::attr::order, src1_perm_);
     llga_info->AddLLGAOP(trans_op, index);
 
     logical_tensor out2_desc{llga_info->GetLTIndex(), data_type::f32, layout_type::any};
@@ -522,7 +524,7 @@ bool LLGAOPCreator::CreateMatmulOp(LLGAINFO* llga_info, const shared_ptr<Operato
 
     llga_op trans2_op(llga_info->GetOPIndex(), llga_op::kind::StaticTranspose, {out2_desc}, outputs,
                       "transpose2" + to_string(llga_info->GetOPIndex()));
-    trans2_op.set_attr<vector<int64_t>>("order", dst_perm_);
+    trans2_op.set_attr<vector<int64_t>>(llga_op::attr::order, dst_perm_);
     llga_info->AddLLGAOP(trans2_op, index);
     std::cout << "out2_desc id: " << out2_desc.get_id() << std::endl;
   } else {
@@ -547,7 +549,7 @@ bool LLGAOPCreator::CreateErfOp(LLGAINFO* llga_info, const shared_ptr<OperatorCo
   }
   vector<logical_tensor> inputs, outputs;
   llga_info->PrepareLTForOperator(op_conf, &inputs, &outputs);
-  llga_op erf_op(llga_info->GetOPIndex(), llga_op::kind::Erf, inputs, outputs,
+  llga_op erf_op(llga_info->GetOPIndex(), llga_op::kind::GELU, inputs, outputs,
                  "erf" + to_string(llga_info->GetOPIndex()));
   llga_info->AddLLGAOP(erf_op, index);
   return true;

@@ -84,7 +84,7 @@ RUN conda init bash && \
     conda create -yn chatbot-demo python=3.9 && \
     echo "conda activate chatbot-demo" >> ~/.bashrc
 
-SHELL ["conda", "run", "-n", "chatbot-demo", "/bin/bash", "--login", "-c"]
+SHELL ["/bin/bash", "--login", "-c", "conda", "run", "-n", "chatbot-demo"]
 
 RUN conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
@@ -98,6 +98,7 @@ RUN conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi 
 
 
 # Add user
+SHELL ["/bin/bash", "--login", "-c"]
 RUN adduser --disabled-password --gecos "" fastrag
 
 # Switch to non-root user

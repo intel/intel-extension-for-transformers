@@ -13,8 +13,8 @@ from typing import List, Union
 import threading
 import re
 
-from fastapi import FastAPI, Request
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Request, File, UploadFile, Form
+from fastapi.responses import StreamingResponse, FileResponse
 import numpy as np
 import requests
 import uvicorn
@@ -23,7 +23,7 @@ from constants import CONTROLLER_HEART_BEAT_EXPIRATION
 from utils import build_logger, server_error_msg
 
 from sse_starlette.sse import EventSourceResponse
-
+from starlette.responses import RedirectResponse
 
 logger = build_logger("controller", "controller.log")
 
@@ -206,6 +206,7 @@ class Controller:
         try:
             response = requests.post(worker_addr + "/worker_generate_stream",
                 json=params, stream=True, timeout=1000)
+            result = ""
             for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
                 if chunk:
                     print("chunk=======", chunk)
@@ -213,8 +214,11 @@ class Controller:
                     a = chunk.decode("utf-8")
                     a = re.sub(r'\\u2019', "'", a)
                     a = re.sub(r'\\\\ufffd', '', a)
+                    result += a
                     yield f"data: {a}\n\n"
                     # yield f"data: \n\n"
+            from ..llmcache.cache import put
+            put(params["prompt"], result)
             yield f"data: [DONE]\n\n"
         except requests.exceptions.RequestException as e:
             logger.info(f"worker timeout: {worker_addr}")
@@ -277,12 +281,10 @@ async def register_worker(request: Request):
 async def refresh_all_workers():
     models = controller.refresh_all_workers()
 
-
 @app.post("/list_models")
 async def list_models():
     models = controller.list_models()
     return {"models": models}
-
 
 @app.post("/get_worker_address")
 async def get_worker_address(request: Request):
@@ -298,7 +300,6 @@ async def receive_heart_beat(request: Request):
         data["worker_name"], data["queue_length"])
     return {"exist": exist}
 
-
 @app.post("/worker_generate_stream")
 async def worker_api_generate_stream(request: Request):
     logger.info('Received request: %s', await request.json())
@@ -307,16 +308,42 @@ async def worker_api_generate_stream(request: Request):
         params = params["msgData"]
     generator = controller.worker_api_generate_stream(params)
     return StreamingResponse(generator, media_type="text/event-stream")
-    #return EventSourceResponse(generator)
-    """
-    async def test_generator():
-        for i in range(256):
-            print(i)
-            yield str(i)
-            # time.sleep(0.5)
-            await asyncio.sleep(1)
-    return EventSourceResponse(test_generator())
-    """
+
+@app.post("/v1/models")
+async def list_models():
+    models = controller.list_models()
+    return {"models": models}
+
+@app.post("/v1/chat/completions")
+async def worker_api_generate_stream(request: Request):
+    logger.info('Received request: %s', await request.json())
+    params = await request.json()
+    if "msgData" in params:
+        params = params["msgData"]
+    generator = controller.worker_api_generate_stream(params)
+    return StreamingResponse(generator, media_type="text/event-stream")
+
+@app.post("/v1/chat/llmcache")
+async def get_cache(request: Request):
+    logger.info('Received request: %s', await request.json())
+    params = await request.json()
+    if "msgData" in params:
+        params = params["msgData"]
+    prompt = params["prompt"]
+    from ..llmcache.cache import get
+    result = get(prompt)
+    print(result)
+    if(result == None):
+        print("cache miss >>>>>>>>>>>>>>>")
+        response = RedirectResponse(url="/v1/chat/completions")
+        return response
+    else:
+        print("cache hit >>>>>>>>>>>>>>>>")
+        def stream_results():
+            yield "data: Response from Cache: {}\n\n".format(result['choices'][0]['text'])
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(stream_results(), media_type="text/event-stream")
 
 STREAM_DELAY = 1  # second
 RETRY_TIMEOUT = 15000  # milisecond
@@ -384,6 +411,27 @@ async def handle_chat(request: Request):
 
     return response
 
+@app.post("/v1/chat/talkingbot")
+async def handle_talkingbot(file: UploadFile = File(...), voice: str = Form(...)):
+    start = time.time()
+    file_name = file.filename
+    logger.info(f'Received file: {file_name}, and use voice: {voice}')
+    with open("tmp_audio_bytes", 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    audio = AudioSegment.from_file("tmp_audio_bytes")
+    # bytes to mp3
+    audio.export(f"{file_name}", format="mp3")
+    worker_name = controller.get_worker_address("mpt-7b-chat")
+
+    try:
+        r = requests.post(worker_name + "/talkingbot", json={"file_name": file_name, "voice": voice}, timeout=20)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Talkingbot fails: {worker_name}, {e}")
+        return None
+    logger.info(f"E2E time: {time.time() - start}")
+    return FileResponse(r.content, media_type="video/mp4")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -391,8 +439,20 @@ if __name__ == "__main__":
     parser.add_argument("--port", type=int, default=80)
     parser.add_argument("--dispatch-method", type=str, choices=[
         "lottery", "shortest_queue"], default="shortest_queue")
+    parser.add_argument(
+        "--cache-chat-config-file", default="cache_config.yml", help="the cache config file"
+    )
+    parser.add_argument(
+        "--cache-embedding-model-dir", default="./instructor-large", help="the cache embedding model directory"
+    )
     args = parser.parse_args()
     logger.info(f"args: {args}")
+
+    from ..llmcache.cache import init_similar_cache_from_config, put
+    if args.cache_chat_config_file:
+        init_similar_cache_from_config(config_dir=args.cache_chat_config_file,
+                                       embedding_model_dir=args.cache_embedding_model_dir)
+        put("test","test")
 
     controller = Controller(args.dispatch_method)
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

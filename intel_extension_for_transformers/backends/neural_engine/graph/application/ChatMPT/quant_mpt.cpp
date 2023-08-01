@@ -1,181 +1,87 @@
+//  Copyright (c) 2023 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
+// Defines sigaction on msys:
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdint.h>
 #include <cstdio>
-#include <fstream>
 #include <map>
 #include <string>
-#include <vector>
+#include <exception>
+#include <utility>
+#include <unordered_map>
+#include <tuple>
 
 #include "common.h"
-#include "ne.h"
+#include "models/model_utils/model_utils.h"
 
-struct mpt_hparams {
-    int32_t d_model      = 0;
-    int32_t max_seq_len  = 0;
-    int32_t n_heads      = 0;
-    int32_t n_layers     = 0;
-    int32_t n_vocab      = 0;
-    float alibi_bias_max = 0;
-    float clip_qkv       = 0;
-    int32_t ftype        = 0;
+class mpt_quant_layer : public quant_layer_base {
+ public:
+  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
+                                                 ne_type type) override {
+    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
+    if (layername == "transformer.wte.weight") {
+      // special layer process, can be loaded by config file
+      return quant_params_internal();  // return q4_0 to cover the usage of getrow
+    }
+    quantize &= (ne.size() == 2);
+    if (quantize) {
+      return mGCfg;  // use global quant config
+    } else {
+      return quant_params_internal{quant_bits::count};  // non-quant
+    }
+  }
 };
 
-// quantize a model
-bool mpt_model_quantize(const std::string & fname_inp,
-                        const std::string & fname_out, ne_ftype ftype) {
+int main(int argc, char** argv) {
+  model_init_backend();
+  quant_params q_params;
+  if (quant_params_parse(argc, argv, q_params) == false) {
+    return 1;
+  }
+  const std::string fname_inp = q_params.model_file;
+  const std::string fname_out = q_params.out_file;
+  ne_ftype ftype = quant_params_to_ftype(q_params);
+  printf("ne_ftype: %d\n", ftype);
+  const int nthread = q_params.nthread;
 
-    printf("%s: loading model from '%s'\n", __func__, fname_inp.c_str());
+  const int64_t t_main_start_us = model_time_us();
 
-    auto finp = std::ifstream(fname_inp, std::ios::binary);
-    if (!finp) {
-        fprintf(stderr, "%s: failed to open '%s' for reading\n", __func__,
-                fname_inp.c_str());
-        return false;
+  int64_t t_quantize_us = 0;
+  auto quant_layer = new mpt_quant_layer();
+  // load the model
+  {
+    const int64_t t_start_us = model_time_us();
+
+    if (model_quantize(q_params, quant_layer)) {
+      fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, fname_inp.c_str());
+      return 1;
     }
 
-    auto fout = std::ofstream(fname_out, std::ios::binary);
-    if (!fout) {
-        fprintf(stderr, "%s: failed to open '%s' for writing\n", __func__,
-                fname_out.c_str());
-        return false;
-    }
+    t_quantize_us = model_time_us() - t_start_us;
+  }
+  delete quant_layer;
+  // report timing
+  {
+    const int64_t t_main_end_us = model_time_us();
 
-    // verify magic
-    {
-        uint32_t magic;
-        finp.read((char *)&magic, sizeof(magic));
-        if (magic != 0x67676d6c) {
-            fprintf(stderr, "%s: invalid model file '%s' (bad magic)\n",
-                    __func__, fname_inp.c_str());
-            return false;
-        }
+    printf("\n");
+    printf("%s: quantize time = %8.2f ms\n", __func__, t_quantize_us / 1000.0);
+    printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0);
+  }
 
-        fout.write((char *)&magic, sizeof(magic));
-    }
-
-    mpt_hparams hparams;
-
-    // load hparams
-    {
-        finp.read((char *) &hparams.d_model,        sizeof(hparams.d_model));
-        finp.read((char *) &hparams.max_seq_len,    sizeof(hparams.max_seq_len));
-        finp.read((char *) &hparams.n_heads,        sizeof(hparams.n_heads));
-        finp.read((char *) &hparams.n_layers,       sizeof(hparams.n_layers));
-        finp.read((char *) &hparams.n_vocab,        sizeof(hparams.n_vocab));
-        finp.read((char *) &hparams.alibi_bias_max, sizeof(hparams.alibi_bias_max));
-        finp.read((char *) &hparams.clip_qkv,       sizeof(hparams.clip_qkv));
-        finp.read((char *) &hparams.ftype,          sizeof(hparams.ftype));
-
-        const int32_t qntvr_src =    hparams.ftype / NE_QNT_VERSION_FACTOR;
-        const int32_t ftype_dst = NE_QNT_VERSION * NE_QNT_VERSION_FACTOR + ftype;
-
-        printf("%s: d_model        = %d\n", __func__, hparams.d_model);
-        printf("%s: max_seq_len    = %d\n", __func__, hparams.max_seq_len);
-        printf("%s: n_heads        = %d\n", __func__, hparams.n_heads);
-        printf("%s: n_layers       = %d\n", __func__, hparams.n_layers);
-        printf("%s: n_vocab        = %d\n", __func__, hparams.n_vocab);
-        printf("%s: alibi_bias_max = %f\n", __func__, hparams.alibi_bias_max);
-        printf("%s: clip_qkv       = %f\n", __func__, hparams.clip_qkv);
-        printf("%s: ftype (src) = %d\n", __func__, hparams.ftype);
-        printf("%s: qntvr (src) = %d\n", __func__, qntvr_src);
-        printf("%s: ftype (dst) = %d\n", __func__, ftype_dst);
-        printf("%s: qntvr (dst) = %d\n", __func__, NE_QNT_VERSION);
-
-        fout.write((char *) &hparams.d_model,        sizeof(hparams.d_model));
-        fout.write((char *) &hparams.max_seq_len,    sizeof(hparams.max_seq_len));
-        fout.write((char *) &hparams.n_heads,        sizeof(hparams.n_heads));
-        fout.write((char *) &hparams.n_layers,       sizeof(hparams.n_layers));
-        fout.write((char *) &hparams.n_vocab,        sizeof(hparams.n_vocab));
-        fout.write((char *) &hparams.alibi_bias_max, sizeof(hparams.alibi_bias_max));
-        fout.write((char *) &hparams.clip_qkv,       sizeof(hparams.clip_qkv));
-        fout.write((char *) &ftype_dst,              sizeof(ftype_dst));
-    }
-
-    // load vocab
-    {
-        const int32_t n_vocab = hparams.n_vocab;
-
-        std::string word;
-        for (int i = 0; i < n_vocab; i++) {
-            uint32_t len;
-            finp.read((char *)&len, sizeof(len));
-            fout.write((char *)&len, sizeof(len));
-
-            word.resize(len);
-            finp.read((char *)word.data(), len);
-            fout.write((char *)word.data(), len);
-        }
-    }
-
-    printf("%s: quantizing tensors\n", __func__);
-
-    // regexes of tensor names to be quantized
-    const std::vector<std::string> to_quant = {
-        ".*weight",
-    };
-
-    if (!ne_common_quantize_0(finp, fout, ftype, to_quant, {})) {
-        fprintf(stderr, "%s: failed to quantize model '%s'\n", __func__,
-                fname_inp.c_str());
-        return false;
-    }
-
-    finp.close();
-    fout.close();
-
-    return true;
-}
-
-// usage:
-//  ./mpt-quantize models/mpt/ggml-model.bin
-//  models/mpt/ggml-model-quant.bin type
-//
-int main(int argc, char ** argv) {
-    if (argc != 4) {
-        fprintf(stderr, "usage: %s model-f32.bin model-quant.bin type\n",
-                argv[0]);
-        ne_print_ftypes(stderr);
-        return 1;
-    }
-
-    // needed to initialize f16 tables
-    {
-        struct ne_init_params params = {0, NULL, false};
-        struct ne_context * ctx = ne_init(params);
-        ne_free(ctx);
-    }
-
-    const std::string fname_inp = argv[1];
-    const std::string fname_out = argv[2];
-
-    const ne_ftype ftype = ne_parse_ftype(argv[3]);
-
-    const int64_t t_main_start_us = ne_time_us();
-
-    int64_t t_quantize_us = 0;
-
-    // load the model
-    {
-        const int64_t t_start_us = ne_time_us();
-
-        if (!mpt_model_quantize(fname_inp, fname_out, ne_ftype(ftype))) {
-            fprintf(stderr, "%s: failed to quantize model from '%s'\n",
-                    __func__, fname_inp.c_str());
-            return 1;
-        }
-
-        t_quantize_us = ne_time_us() - t_start_us;
-    }
-
-    // report timing
-    {
-        const int64_t t_main_end_us = ne_time_us();
-
-        printf("\n");
-        printf("%s: quantize time = %8.2f ms\n", __func__,
-               t_quantize_us / 1000.0f);
-        printf("%s:    total time = %8.2f ms\n", __func__,
-               (t_main_end_us - t_main_start_us) / 1000.0f);
-    }
-
-    return 0;
+  return 0;
 }

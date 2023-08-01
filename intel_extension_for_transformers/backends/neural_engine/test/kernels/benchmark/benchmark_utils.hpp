@@ -19,6 +19,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
 #include "interface.hpp"
 /*
  * @brief Internal Control Variables
@@ -28,7 +29,6 @@ extern bool benchmark_refresh;
 /*
  * @brief Read environment vars and set internal control variables
  */
-void read_benchmark_env();
 namespace bench {
 enum class bench_status : uint8_t {
   success,
@@ -50,16 +50,24 @@ struct op_args_t {
   jd::operator_desc op_desc;
   std::vector<const void*> rt_data;
 };
+
+struct bench_data_t {
+  jd::operator_desc op_desc;
+  mutable jd::exec_context_t ctx_kern;  // mutable to set_workspace
+  mutable jd::exec_context_t ctx_ref;   // mutable to set_workspace
+};
+
 // Kernel developers will implement utility functions by themselves
 class kernel_bench {
  protected:
   std::vector<jd::tensor_desc> ts_descs;
-  std::vector<float> ranges = {10.0, 10.0};  // Usually size = 2, range of tensors' values
+  std::vector<float> ranges = {-10.0, 10.0};  // Usually size = 2, range of tensors' values
   std::pair<op_args_t, op_args_t> args;
+  bench_data_t bench_data;  // preferring bench_data; args are deprecated
   std::shared_ptr<jd::kernel_proxy> kp;
 
  public:
-  kernel_bench() {}
+  kernel_bench() : bench_data{{}, jd::exec_context_t(nullptr), jd::exec_context_t(nullptr)} {}
   virtual ~kernel_bench() {}
   // Use command line input to set config data
   virtual bench_res_t set_config(int argc, char** argv) = 0;
@@ -68,6 +76,14 @@ class kernel_bench {
   // Determine which part of rt_data needs to be refreshed
   // in every iteration before executing kernel
   virtual std::vector<int> get_refresh_data_idx() const = 0;
+  // Determine which part of input of context needs to be refreshed in every iteration before executing kernel
+  virtual std::vector<int> get_refresh_src_data_idx() const { return {}; }
+  // Corresponding index in ts_desc for get_refresh_src_data_idx
+  virtual std::vector<int> get_refresh_src_desc_idx() const { return {}; }
+  // Determine which part of output of context needs to be refreshed in every iteration before executing kernel
+  virtual std::vector<int> get_refresh_dst_data_idx() const { return {}; }
+  // Corresponding index in ts_desc for get_refresh_dst_data_idx
+  virtual std::vector<int> get_refresh_dst_desc_idx() const { return {}; }
   // Calculate reference, only used when testing acc, just like that in gtest file
   virtual void get_true_data() = 0;
   // Test acc, just like that in gtest file
@@ -101,14 +117,6 @@ class bench_op {
    */
   bench_res_t benchmarkOrExecute(bench_mode mode);
   /*
-   * @brief Get execution time of kernel.
-   */
-  double exec_time(std::shared_ptr<jd::kernel_proxy> kp, const std::vector<const void*>& rt_data);
-  /*
-   * @brief Refresh some parts of runtime data for kernel.
-   */
-  void refresh_data(std::vector<void*>* new_data_pointer, const std::vector<int>& idx);
-  /*
    * @brief Calculate FLOP.
    */
   double calc_flop(const jd::kernel_kind, const std::vector<jd::tensor_desc>& ts_descs);
@@ -116,15 +124,6 @@ class bench_op {
    * @brief Get indices of data that needs refreshing which indicate their positions in tensor vector.
    */
   std::vector<int> get_refresh_data_idx(const jd::kernel_kind ker_kind);
-  /*
-   * @brief Allocate new memory for some parts of runtime data for kernel.
-   */
-  bool alloc_new_mem(const std::vector<jd::tensor_desc>& ts_descs, std::vector<const void*>* rt_data_pointer,
-                     std::vector<void*>* new_data_pointer, const std::vector<int>& idx);
-  /*
-   * @brief Free new memory for some parts of runtime data for kernel.
-   */
-  void free_new_mem(std::vector<void*>* new_data_pointer);
 };
 }  // namespace bench
 #endif  // ENGINE_SPARSELIB_BENCH_INCLUDE_BENCHMARK_UTILS_HPP_

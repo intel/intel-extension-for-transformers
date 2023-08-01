@@ -66,10 +66,10 @@ class StaticCompressedBuffer {
     }
   }
   ~StaticCompressedBuffer() {
-    if (activation_buffer_ != nullptr) free(activation_buffer_);
+    if (activation_buffer_ != nullptr) aligned_free(activation_buffer_);
     if (debug_mode_) {
       for (auto&& i : memory_map_) {
-        if (i.second != nullptr) free(i.second);
+        if (i.second != nullptr) aligned_free(i.second);
       }
     }
   }

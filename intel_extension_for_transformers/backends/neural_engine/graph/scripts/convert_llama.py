@@ -1,3 +1,16 @@
+#  Copyright (c) 2023 Intel Corporation
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 import argparse
 import concurrent.futures
 import copy
@@ -42,7 +55,7 @@ DT_F16 = UnquantizedDataType('F16')
 DT_F32 = UnquantizedDataType('F32')
 DT_I32 = UnquantizedDataType('I32')
 DT_BF16 = UnquantizedDataType('BF16')
-
+DT_BOOL = UnquantizedDataType('BOOL')
 
 @dataclass(frozen=True)
 class QuantizedDataType:
@@ -61,6 +74,7 @@ DATA_TYPE_TO_FTYPE: Dict[DataType, int] = {
     DT_F16: 1,
     DT_Q4_0: 2,
     DT_Q4_1: 3,
+    DT_BOOL: 4
 }
 
 FTYPE_TO_DATA_TYPE: Dict[int, DataType] = \
@@ -71,6 +85,7 @@ DATA_TYPE_TO_NUMPY: Dict[DataType, 'np.dtype[Any]'] = {
     DT_F16: np.dtype(np.float16),
     DT_F32: np.dtype(np.float32),
     DT_I32: np.dtype(np.int32),
+    DT_BOOL: np.dtype(np.bool_)
 }
 
 NUMPY_TYPE_TO_DATA_TYPE: Dict['np.dtype[Any]', DataType] = \
@@ -716,6 +731,7 @@ class LazyUnpickler(pickle.Unpickler):
         ('torch', 'HalfStorage'): LazyStorageKind(DT_F16),
         ('torch', 'FloatStorage'): LazyStorageKind(DT_F32),
         ('torch', 'IntStorage'): LazyStorageKind(DT_I32),
+        ('torch', 'BoolStorage'): LazyStorageKind(DT_BOOL),
         ('torch', 'Tensor'): LazyTensor,
     }
 
@@ -742,6 +758,7 @@ SAFETENSORS_DATA_TYPES: Dict[str, DataType] = {
     'F16': DT_F16,
     'F32': DT_F32,
     'I32': DT_I32,
+    'BOOL': DT_BOOL
 }
 
 
@@ -928,6 +945,10 @@ class OutputFile:
             params.file_type.value,
         ]
         self.fout.write(struct.pack("i" * len(values), *values))
+        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("f", 0))
+        self.fout.write(struct.pack("f", 0))
+        self.fout.write(struct.pack("i", 0))
 
     def write_tensor_header(self, name: str, shape: Sequence[int], data_type: DataType) -> None:
         sname = name.encode('utf-8')

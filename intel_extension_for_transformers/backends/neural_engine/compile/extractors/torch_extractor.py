@@ -229,7 +229,6 @@ class TorchExtractor(object):
 
                 elif out_tensor.dtype == torch.quint8:
                     logger.error("Tensor {} of uint8 is not supported.".format(tensor_name))
-                    import sys; sys.exit(1)
 
                 if out_tensor.dtype == torch.float64:
                     fp32_info = torch.finfo(torch.float32)
@@ -239,7 +238,6 @@ class TorchExtractor(object):
                     else:
                         logger.error("Neural Engine does not support float64 dtype tensor {}."\
                                      .format(tensor_name))
-                        import sys; sys.exit(1)
                 if out_tensor.dtype == torch.int64:
                     int32_info = torch.iinfo(torch.int32)
                     if out_tensor.max().item() <= int32_info.max and \
@@ -248,7 +246,6 @@ class TorchExtractor(object):
                     else:
                         logger.error("Neural Engine does not support int64 dtype tensor {}."\
                                      .format(tensor_name))
-                        import sys; sys.exit(1)
                 weight = out_tensor.detach().numpy()
                 weight_tensor = Tensor(name=tensor_name,
                     source_op=[],

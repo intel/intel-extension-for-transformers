@@ -19,16 +19,17 @@ add_library(${TARGET} OBJECT
     common.cpp
     )
 
-if (BUILD_SHARED_LIBS)
-    set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
+set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(${TARGET} PUBLIC .)
 target_compile_features(${TARGET} PUBLIC cxx_std_11)
-target_link_libraries(${TARGET} PUBLIC)
+target_link_libraries(${TARGET} PUBLIC jblas::jblas)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 add_subdirectory(ChatLLAMA)
 add_subdirectory(ChatGPTNEOX)
 add_subdirectory(ChatMPT)
+add_subdirectory(ChatFALCON)
+add_subdirectory(ChatSTARCODER)
+add_subdirectory(ChatGPTJ)

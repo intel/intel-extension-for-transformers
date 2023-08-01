@@ -45,8 +45,6 @@ class SoftmaxGraphOperator : public Operator {
 
  private:
   dnnl::graph::graph g_;
-  dnnl::graph::engine eng_ {dnnl::graph::engine::kind::cpu, 0};
-  dnnl::graph::stream strm_ {eng_};
   vector<logical_tensor> logical_inputs_;
   vector<logical_tensor> logical_outputs_;
   dnnl::graph::partition partition_;

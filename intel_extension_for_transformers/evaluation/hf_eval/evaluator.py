@@ -69,7 +69,7 @@ def summarization_evaluate(
             t1 = time.time()
             print("Inference time: {}".format(round(t1 - t0, 3)))
             print("Seq len: {}".format(input_lens))
-            if tokenizer_name in ["t5-small", "t5-base", "t5-large", "t5-3b", "t5-11b"]:
+            if "t5" in tokenizer_name:
                 pred = out_tokens
                 print("Out len: {}".format(out_tokens.shape[-1]))
             else:

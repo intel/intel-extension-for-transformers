@@ -56,6 +56,7 @@ class sparse_matmul_bench : public kernel_bench {
   void gen_case() override { smb->gen_case(); }
   void set_kernel_proxy() override {
     args = smb->args;
+    bench_data = smb->bench_data;
     ts_descs = smb->ts_descs;
     jd::sparse_matmul_desc spmm_desc(args.first.op_desc);
     kp = std::make_shared<jd::sparse_matmul>(spmm_desc);

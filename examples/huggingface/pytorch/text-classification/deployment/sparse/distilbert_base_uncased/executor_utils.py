@@ -28,6 +28,7 @@ sys.path.append(common_dir)
 from utils_qa import postprocess_qa_predictions
 from executor_dataloader import DataLoader
 from common import (log, DummyDataLoader, compute_performance, Neural_Engine_base)
+import copy
 
 
 class Neural_Engine(Neural_Engine_base):
@@ -49,7 +50,7 @@ class Neural_Engine(Neural_Engine_base):
         end_logits_list = []
         for idx in tqdm(range(len(dataset))):
             inputs = dataset[idx]
-            predictions = self.graph.inference(inputs)
+            predictions = copy.deepcopy(self.graph.inference(inputs))
             predictions = list(predictions.values())[0]
             start_logits_list.append(predictions[..., 0])
             end_logits_list.append(predictions[..., 1])

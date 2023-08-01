@@ -88,7 +88,7 @@ class matmul_avx512f_8bit_k_t : public kernel_t {
   [[deprecated("Please use exec_context_t instead of rt_data")]] bool execute(
       const std::vector<const void*>& rt_data) const override;
 
-  bool execute(const exec_context_t& context) override;
+  bool execute(const exec_context_t& context) const override;
 
   const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
 
@@ -98,10 +98,11 @@ class matmul_avx512f_8bit_k_t : public kernel_t {
  private:
   jit_gemm_avx512f_8bit_t* jit_ker_ = nullptr;
   const std::vector<std::vector<dim_t>> t_shapes_;
-  dim_t M_, K_, N_;  // dim of matrix multiplication
+  mutable dim_t M_;
+  dim_t K_, N_;  // dim of matrix multiplication
   int lda, ldb, ldc, ldd;
-  GemmCacheAdpter<float> mCacheAdapter;
-  Parallel2DGemmV2<float> mParallel;
+  mutable GemmCacheAdpter<float> mCacheAdapter;
+  mutable Parallel2DGemmV2<float> mParallel;
 };
 
 }  // namespace jd

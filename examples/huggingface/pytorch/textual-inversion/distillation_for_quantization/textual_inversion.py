@@ -857,9 +857,6 @@ def main():
             f"Optimized model saved to: {args.output_dir}."
         )
 
-        # change to framework model for further use
-        model = model.model
-
     # Create the pipeline using using the trained modules and save it.
     templates = imagenet_style_templates_small if args.learnable_property == "style" else imagenet_templates_small
     prompt = templates[0].format(args.placeholder_token)

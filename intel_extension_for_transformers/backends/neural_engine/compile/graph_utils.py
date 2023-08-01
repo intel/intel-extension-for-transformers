@@ -763,6 +763,18 @@ def pattern_mapping(pattern_name, mapping_dict, graph):
                     if keep_flag:
                         new_in_match_result.append(name_list)
                 in_match_result = new_in_match_result
+            # MHA 1. matmul maybe fallback to fp32; 2. output dtype may not be u8.
+            if num_match > 0 and pattern_name == "MultiHeadAttention":
+                new_in_match_result = []
+                for name_list in in_match_result:
+                    first_matmul_node = graph.get_node_by_name(name_list[0])
+                    last_matmul_node = graph.get_node_by_name(name_list[-2])
+                    if len(first_matmul_node.input_tensors) > 5 and \
+                        len(last_matmul_node.input_tensors) > 5 and \
+                            'output_dtype' in last_matmul_node.attr.keys() and \
+                                last_matmul_node.attr['output_dtype'] == 'u8':
+                                    new_in_match_result.append(name_list)
+                in_match_result = new_in_match_result
         else:
             # check whether the nodes exit or not
             nodes_exist = True
@@ -1148,24 +1160,11 @@ def get_model_fwk_name(model):
     def _is_neural_engine(model):
         """Check if the model is neural engine."""
         if model and isinstance(model, str) and os.path.isdir(model):
-            file_list = os.listdir(model)
-            is_engine = True
-            if len(file_list) == 2:
-                for file_name in file_list:
-                    file_ext = os.path.splitext(file_name)
-                    front, ext = file_ext
-                    if ext == ".yaml":
-                        is_engine &= True
-                    elif ext == ".bin":
-                        is_engine &= True
-                    else:
-                        is_engine &= False
-                        logger.error("Please Input yaml and bin for neural engine.")
-                        return 'NA'
-            else:
-                return 'NA'
-            if is_engine == True:
+            if os.path.exists(os.path.join(model, 'conf.yaml')) and os.path.exists(os.path.join(model, 'model.bin')):
                 return 'neural engine'
+            else:
+                logger.error("Please Input yaml and bin for neural engine.")
+                return 'NA'
         else:
             return 'NA'
 

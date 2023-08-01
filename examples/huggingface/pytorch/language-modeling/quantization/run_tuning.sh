@@ -104,7 +104,26 @@ function run_tuning {
                 model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
                 approach="PostTrainingStatic"
 		extra_cmd=$extra_cmd" --int8_bf16_mixed"
+        extra_cmd=$extra_cmd" --sq --alpha "${alpha}
         fi
+    elif [ "${topology}" = "gpt_j_weight_only" ]; then
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        approach="weight_only"
+        extra_cmd=$extra_cmd" --approach weight_only"
+    elif [ "${topology}" = "chatglm_weight_only" ]; then
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="THUDM/chatglm-6b"
+        approach="weight_only"
+        extra_cmd=$extra_cmd" --approach weight_only"
+    elif [ "${topology}" = "gpt_j_weight_only_awq" ]; then
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+        approach="weight_only"
+        extra_cmd=$extra_cmd" --approach weight_only --awq"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
 	if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
@@ -113,15 +132,26 @@ function run_tuning {
         DATASET_NAME="NeelNanda/pile-10k"
         model_name_or_path="mosaicml/mpt-7b-chat"
         approach="PostTrainingStatic"
-	extra_cmd=$extra_cmd" --revision c8d4750ac8421303665d6ecc253950c69b56d324"
-	alpha=0.95
+	    alpha=0.95
     elif [ "${topology}" = "falcon_7b_instruct" ]; then
         script="run_clm_no_trainer.py"
         DATASET_NAME="NeelNanda/pile-10k"
         model_name_or_path="tiiuae/falcon-7b-instruct"
         approach="PostTrainingStatic"
-        extra_cmd=$extra_cmd" --revision c7f670a03d987254220f343c6b026ea0c5147185"
         alpha=0.7
+        extra_cmd=$extra_cmd" --sq --alpha "${alpha}
+    elif [ "${topology}" = "opt_125m_weight_only" ]; then
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="facebook/opt-125m"
+        approach="weight_only"
+        extra_cmd=$extra_cmd" --approach weight_only"
+    elif [ "${topology}" = "opt_125m_weight_only_awq" ]; then
+        script="run_clm_no_trainer.py"
+        DATASET_NAME="NeelNanda/pile-10k"
+        model_name_or_path="facebook/opt-125m"
+        approach="weight_only"
+        extra_cmd=$extra_cmd" --approach weight_only --awq"
     elif [ "${topology}" = "opt_1.3b" ]; then
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
@@ -131,7 +161,8 @@ function run_tuning {
         model_name_or_path="facebook/opt-1.3b"
         approach="PostTrainingStatic"
         extra_cmd=$extra_cmd" --int8_bf16_mixed"
-	alpha=0.8
+	    alpha=0.8
+        extra_cmd=$extra_cmd" --sq --alpha "${alpha}
     elif [ "${topology}" = "opt_2.7b" ]; then
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
@@ -141,6 +172,7 @@ function run_tuning {
         model_name_or_path="facebook/opt-2.7b"
         approach="PostTrainingStatic"
         extra_cmd=$extra_cmd" --int8_bf16_mixed"
+        extra_cmd=$extra_cmd" --sq --alpha "${alpha}
     elif [ "${topology}" = "opt_6.7b" ]; then
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
@@ -150,6 +182,7 @@ function run_tuning {
         model_name_or_path="facebook/opt-6.7b"
         approach="PostTrainingStatic"
         extra_cmd=$extra_cmd" --int8_bf16_mixed"
+        extra_cmd=$extra_cmd" --sq --alpha "${alpha}
     elif [ "${topology}" = "llama_7b" ]; then
         if [ "${backend}" = "ipex" ]; then
             alpha=0.8
@@ -160,6 +193,7 @@ function run_tuning {
         DATASET_NAME="NeelNanda/pile-10k"
         model_name_or_path="decapoda-research/llama-7b-hf"
         approach="PostTrainingStatic"
+        extra_cmd=$extra_cmd" --sq --alpha "${alpha}
     elif [ "${topology}" = "bert" ]; then
         if [ "${task}" = "mlm" ]; then
             script="run_mlm.py"
@@ -238,8 +272,6 @@ function run_tuning {
             --output_dir ${tuned_checkpoint} \
             --dataset ${DATASET_NAME} \
             --quantize \
-            --sq \
-            --alpha ${alpha} \
             ${extra_cmd}
     elif [ -z ${DATASET_CONFIG_NAME} ];then
         python -u ./${script} \

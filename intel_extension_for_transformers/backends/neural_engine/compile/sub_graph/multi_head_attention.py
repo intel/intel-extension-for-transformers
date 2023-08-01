@@ -18,6 +18,7 @@
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
 from .. import graph_utils as util
+from ..ops import Tensor
 import numpy as np
 
 
@@ -214,10 +215,6 @@ class MultiHeadAttention(Pattern):
                         attr['reshape'] = ret_old_nodes[i][2].attr['reshape']
                     if 'output_dtype' in ret_old_nodes[i][2].attr.keys():
                         attr['output_dtype'] = ret_old_nodes[i][2].attr['output_dtype']
-                    if util.get_autocast_info()['cast_type'] == "int8":
-                        attr['output_dtype'] = 'int8'
-                    elif util.get_autocast_info()['cast_type'] == "bf16":
-                        attr['output_dtype'] = 'bf16'
                 elif len(ret_old_nodes[i]) == 6:
                     if 'src0_perm' in ret_old_nodes[i][0].attr.keys():
                         attr['Q_perm'] = ret_old_nodes[i][0].attr['src0_perm']
@@ -258,18 +255,46 @@ class MultiHeadAttention(Pattern):
                     if model.get_node_by_name(mask_1.source_op[0]).op_type == "PaddingSequence":
                         new_node.input_tensors[3], new_node.input_tensors[4] = \
                             new_node.input_tensors[4], new_node.input_tensors[3]
-
+        all_fused = True
         for i in range(len(pattern_mapping_config['MultiHeadAttention'])):
             if util.get_autocast_info()['cast_type'] == "bf16" and i in [0,1]:
                 continue
+            search_pattern = pattern_mapping_config['MultiHeadAttention'][i]['patterns']['in']
+            patterns_search_nodes_name = util.search_pattern(search_pattern, model)
             pattern_dict = pattern_mapping_config['MultiHeadAttention'][i]
             model, new_node_names, ret_old_nodes = util.pattern_mapping("MultiHeadAttention",
                                                                         pattern_dict, model)
             if len(new_node_names) != 0:
-                _set_attr(new_node_names, ret_old_nodes, model)
-                for node in model.nodes:
-                    if node.op_type == 'PaddingSequence':
-                        node.op_type = 'SequenceLength'
-                return model
+                if i in [0, 1]:  # entry int8
+                    if len(new_node_names) != len(patterns_search_nodes_name):
+                        all_fused = False
+                    _set_attr(new_node_names, ret_old_nodes, model)
 
+                    for node in model.nodes:
+                        if node.op_type == 'PaddingSequence':
+                            if all_fused:
+                                node.op_type = 'SequenceLength'
+                            else:
+                                dest_op_list = []
+                                for i in range(len(new_node_names)):
+                                    dest_op_list.append(new_node_names[i][0])
+
+                                seq_len_output = Tensor(name="mha_seq_len_mask",
+                                                        source_op=[node.name + "_seq_len"],
+                                                        dest_op=dest_op_list,
+                                                        dtype='fp32')
+
+                                seq_len_op = util.construct_node(
+                                    node_name=node.name + "_seq_len",
+                                    op_type='SequenceLength',
+                                    input_tensors=node.input_tensors,
+                                    output_tensors=[seq_len_output])
+
+                                insert_idx = model.get_node_id(node.name)
+                                model.insert_nodes(insert_idx, [seq_len_op])
+
+                                for i in range(len(new_node_names)):
+                                    mha_node = model.get_node_by_name(new_node_names[i][0])
+                                    mha_node.input_tensors[3] = seq_len_output
+                            return model
         return model

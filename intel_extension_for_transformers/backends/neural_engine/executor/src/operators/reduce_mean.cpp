@@ -69,11 +69,9 @@ void ReduceMeanOperator::Reshape(const vector<Tensor*>& input, const vector<Tens
   dst_tensor_ptr->set_shape(dst_shape);
 
   //// Part2: Derive operator's format_any memory::desc and memory.
-  // 2.2 Prepare op descriptors. last float p, float eps should be ignored in mean algorithm
-  dnnl::reduction::desc reduce_mean_d(algorithm::reduction_mean, src_md, dst_md, 0.f, 0.f);
-
-  // 2.3 Prepare primitive descriptors (cached)
-  dnnl::reduction::primitive_desc reduce_mean_pd(reduce_mean_d, eng_);
+  // 2.2 Prepare primitive descriptors (cached). last float p, float eps should be ignored in mean algorithm
+  auto reduce_mean_pd = dnnl::reduction::primitive_desc(
+        eng_, dnnl::algorithm::reduction_mean, src_md, dst_md, 0.f, 0.f);
 
   // 2.4 Prepare primitive objects (cached)
   reduce_mean_p_ = dnnl::reduction(reduce_mean_pd);
@@ -90,8 +88,8 @@ void ReduceMeanOperator::Forward(const vector<Tensor*>& input, const vector<Tens
 
   // 1. Prepare memory objects with data_ptr
   dnnl::stream s(eng_);
-  src_m_.set_data_handle(const_cast<void*>(src_data), s);
-  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data), s);
+  src_m_.set_data_handle(const_cast<void*>(src_data));
+  dst_m_.set_data_handle(reinterpret_cast<void*>(dst_data));
 
   // 2. Reorder the data when the primitive memory and user memory are different
   // 3. Insert memory args

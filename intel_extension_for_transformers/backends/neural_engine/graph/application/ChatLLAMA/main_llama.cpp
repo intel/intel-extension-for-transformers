@@ -1,3 +1,16 @@
+//  Copyright (c) 2023 Intel Corporation
+//
+//  Licensed under the Apache License, Version 2.0 (the "License");
+//  you may not use this file except in compliance with the License.
+//  You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+//  Unless required by applicable law or agreed to in writing, software
+//  distributed under the License is distributed on an "AS IS" BASIS,
+//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+//  See the License for the specific language governing permissions and
+//  limitations under the License.
 // Defines sigaction on msys:
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -17,8 +30,9 @@
 #include <utility>
 
 #include "common.h"
-#include "models/llama/llama_config.h"
-#include "llama_model.h"
+#include "models/model_utils/model_types.h"
+#include "models/model_utils/model_config.h"
+#include "models/model_utils/model_utils.h"
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <signal.h>
@@ -52,7 +66,7 @@ void sigint_handler(int signo) {
 
 int main(int argc, char** argv) {
   gpt_params params;
-
+  params.name = MODEL_LLAMA;
   if (gpt_params_parse(argc, argv, params) == false) {
     return 1;
   }
