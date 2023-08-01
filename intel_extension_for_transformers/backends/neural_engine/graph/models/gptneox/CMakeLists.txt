@@ -12,18 +12,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-set(TARGET main_gptneox)
-add_executable_w_warning(${TARGET} main_gptneox.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers gptneox common ${CMAKE_THREAD_LIBS_INIT})
-target_compile_features(${TARGET} PRIVATE cxx_std_11)
-if(TARGET BUILD_INFO)
-  add_dependencies(${TARGET} BUILD_INFO)
-endif()
-
-set(TARGET quant_gptneox)
-add_executable_w_warning(${TARGET} quant_gptneox.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers gptneox common ${CMAKE_THREAD_LIBS_INIT})
-target_compile_features(${TARGET} PRIVATE cxx_std_11)
-if(TARGET BUILD_INFO)
-  add_dependencies(${TARGET} BUILD_INFO)
-endif()
+set(TARGET gptneox)
+add_library_w_warning(${TARGET} gptneox.cpp gptneox_utils.cpp ${MODEL_UTILS_SOURCE})
+target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
+set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)
