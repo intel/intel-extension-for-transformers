@@ -670,6 +670,15 @@ enum ne_type ne_ftype_to_ne_type(enum ne_ftype ftype) {
 
 static inline bool ne_is_transposed(const struct ne_tensor* tensor) { return tensor->nb[0] > tensor->nb[1]; }
 
+static inline bool ne_is_contiguous_except_dim_1(const struct ne_tensor * tensor) {
+    static_assert(NE_MAX_DIMS == 4, "NE_MAX_DIMS is not 4 - update this function");
+
+    return
+        tensor->nb[0] == NE_TYPE_SIZE[tensor->type] &&
+        tensor->nb[2] == tensor->nb[1]*tensor->ne[1] &&
+        tensor->nb[3] == tensor->nb[2]*tensor->ne[2];
+}
+
 static inline bool ne_is_contiguous(const struct ne_tensor* tensor) {
   static_assert(NE_MAX_DIMS == 4, "NE_MAX_DIMS is not 4 - update this function");
 
@@ -1321,11 +1330,10 @@ struct ne_tensor* ne_dup_inplace(struct ne_context* ctx, struct ne_tensor* a) { 
 // ne_add
 
 struct ne_tensor* ne_add_impl(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b, bool inplace) {
-  NE_ASSERT(ne_are_same_shape(a, b));
-
   bool is_node = false;
 
   if (!inplace && (a->grad || b->grad)) {
+    NE_ASSERT(ne_are_same_shape(a, b));
     is_node = true;
   }
 
@@ -3577,7 +3585,7 @@ static void ne_compute_forward_dup(const struct ne_compute_params* params, const
 
 static void ne_compute_forward_add_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                        const struct ne_tensor* src1, struct ne_tensor* dst) {
-  NE_ASSERT(ne_are_same_shape(src0, src1) && ne_are_same_shape(src0, dst));
+  // NE_ASSERT(ne_are_same_shape(src0, src1) && ne_are_same_shape(src0, dst));
 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
     return;
@@ -5099,8 +5107,8 @@ static void ne_compute_forward_gelu(const struct ne_compute_params* params, cons
 
 static void ne_compute_forward_silu_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                         struct ne_tensor* dst) {
-  NE_ASSERT(ne_is_contiguous(src0));
-  NE_ASSERT(ne_is_contiguous(dst));
+  NE_ASSERT(ne_is_contiguous_except_dim_1(src0));
+  NE_ASSERT(ne_is_contiguous_except_dim_1(dst));
   NE_ASSERT(ne_are_same_shape(src0, dst));
 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
@@ -6609,7 +6617,8 @@ static void ne_compute_forward_soft_max_f32(const struct ne_compute_params* para
 
 #ifndef NDEBUG
     for (int i = 0; i < nc; ++i) {
-      // printf("p[%d] = %f\n", i, p[i]);
+      printf("sp[%d] = %f\n", i, sp[i]);
+      //printf("dp[%d] = %f\n", i, dp[i]);
       assert(!isnan(sp[i]));
     }
 #endif
