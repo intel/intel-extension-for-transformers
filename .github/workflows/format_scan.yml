@@ -4,9 +4,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers
+      - intel_extension_for_transformers/**
       - setup.py
-      - .github/workflows/format_scan.yml
+      #- .github/workflows/format_scan.yml
       - .github/workflows/script/formatScan
   workflow_dispatch:
 
@@ -21,6 +21,8 @@ env:
   REPO_TAG: "1.0"
   DOCKER_FILE_NAME: "codeScan"
   CONTAINER_NAME: "codeScan"
+  EXTRA_CONTAINER_NAME1: "modelTest"
+  EXTRA_CONTAINER_NAME2: "utTest"
 
 jobs:
   format-scan:
@@ -45,6 +47,16 @@ jobs:
               docker start $(docker ps -aq)
               echo "remove left files through container ..."
               docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME1 }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME1 }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME2 }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME2 }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
           
       - name: Checkout out Repo

@@ -4,8 +4,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/backends/neural_engine/kernels
-      - .github/workflows/unit-test-kernel.yml
+      - 'intel_extension_for_transformers/backends/neural_engine/kernels/**'
+      #- '.github/workflows/unit-test-kernel.yml'
       - .github/workflows/script/unitTest
       - '!intel_extension_for_transformers/backends/neural_engine/kernels/docs'
       - "!intel_extension_for_transformers/backends/neural_engine/graph"

@@ -4,9 +4,9 @@ on:
   pull_request:
     branches: [main]
     paths:
-       - '.github/workflows/cpp-graph-test.yml'
+       #- '.github/workflows/cpp-graph-test.yml'
        - '.github/workflows/script/models/cpp_graph_inference.sh'
-       - 'intel_extension_for_transformers/backends/neural_engine/graph'
+       - 'intel_extension_for_transformers/backends/neural_engine/graph/**'
        - '!intel_extension_for_transformers/backends/neural_engine/graph/README.md'
   workflow_dispatch:
 

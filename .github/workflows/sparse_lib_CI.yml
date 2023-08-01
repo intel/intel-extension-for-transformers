@@ -4,11 +4,11 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'intel_extension_for_transformers/backends/neural_engine/kernels'
-      - 'intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark'
-      - '.github/workflows/sparse_lib_CI.yml'
+      - 'intel_extension_for_transformers/backends/neural_engine/kernels/**'
+      - 'intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/**'
+      #- '.github/workflows/sparse_lib_CI.yml'
       - '.github/workflows/script/SparseLibCI'
-      - '!intel_extension_for_transformers/backends/neural_engine/kernels/docs'
+      - '!intel_extension_for_transformers/backends/neural_engine/kernels/docs/**'
       - '!intel_extension_for_transformers/backends/neural_engine/kernels/README.md'
   workflow_dispatch:
 

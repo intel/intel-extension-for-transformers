@@ -16,9 +16,11 @@ env:
     REPO_TAG: "1.0"
     DOCKER_FILE_NAME: "codeScan"
     CONTAINER_NAME: "codeScan"
+    EXTRA_CONTAINER_NAME1: "modelTest"
+    EXTRA_CONTAINER_NAME2: "utTest"
 jobs:
   format-scan:
-    runs-on: ubuntu-latest
+    runs-on: [ubuntu-latest, ubuntu-20.04, itrex-node]
     steps:
       - name: Docker Clean Up
         run: |
@@ -27,6 +29,16 @@ jobs:
               docker start $(docker ps -aq)
               echo "remove left files through container ..."
               docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME1 }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME1 }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME2 }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME2 }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
