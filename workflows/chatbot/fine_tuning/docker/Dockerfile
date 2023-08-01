@@ -60,20 +60,16 @@ RUN conda init bash && \
     conda config --add channels intel && \
     conda create -yn chatbot-finetuning python=3.9 && \
     echo "conda activate chatbot-finetuning" >> ~/.bashrc && \
-    source ~/.bashrc && \
-    wget https://intel-extension-for-pytorch.s3.amazonaws.com/torch_ccl/cpu/oneccl_bind_pt-1.13.0%2Bcpu-cp39-cp39-linux_x86_64.whl && \
-    pip install datasets torch accelerate SentencePiece git+https://github.com/huggingface/peft.git evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops
+    source ~/.bashrc
 
-# Build ITREX
-RUN cd /itrex && pip install -v . && \
+SHELL ["/bin/bash", "--login", "-c", "conda", "run", "-n", "chatbot-finetuning"]
+RUN wget https://intel-extension-for-pytorch.s3.amazonaws.com/torch_ccl/cpu/oneccl_bind_pt-1.13.0%2Bcpu-cp39-cp39-linux_x86_64.whl && \
+    pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
+    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
+    cd /itrex && pip install -v . && \
     cd workflows/chatbot/fine_tuning && pip install -r requirements.txt
 
-# Copy the model files to the Docker image
-# Please update the local model path here with the actual path
-COPY flan-t5-xl /flan/
-
-COPY alpaca_data.json /dataset/
-WORKDIR /itrex/workflows/chatbot
+WORKDIR /itrex/workflows/chatbot/fine_tuning
 
 
 # HABANA environment
@@ -91,10 +87,10 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     git-lfs install
 
 RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
-    pip install peft && \
     pip install einops && \
     pip install datasets && \
-    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
+    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0 && \
+    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install
 
 # Download ITREX code
 ARG ITREX_VER=main
@@ -108,14 +104,4 @@ RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
 RUN cd /itrex && pip install -v . && \
     pip install transformers==4.28.1
 
-# Copy the model files to the Docker image
-# Please update the local model path here with the actual path
-COPY flan-t5-xl /flan/
-
-COPY alpaca_data.json /dataset/
-
-# Copy peft gaudi branch to the docker image
-COPY nlp-toolkit-peft-gaudi  /nlp-toolkit/
-WORKDIR /nlp-toolkit/workflows/chatbot/fine_tuning
-
-# WORKDIR /itrex/workflows/chatbot/fine_tuning
+WORKDIR /itrex/workflows/chatbot/fine_tuning

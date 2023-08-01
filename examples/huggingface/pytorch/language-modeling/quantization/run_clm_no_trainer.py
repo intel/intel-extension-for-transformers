@@ -2,13 +2,13 @@ import argparse
 import os
 import time
 import json
-import fnmatch
 import re
 import torch
 from datasets import load_dataset
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -28,6 +28,9 @@ parser.add_argument(
     action="store_true",
     help="By default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
+parser.add_argument("--approach", type=str, default='static', 
+                    help="Select from ['dynamic', 'static', 'weight-only']")
+parser.add_argument("--awq", action="store_true")
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto",
                     help="Smooth quant parameter.")
@@ -45,6 +48,9 @@ parser.add_argument("--calib_iters", default=512, type=int,
 parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
                     "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
                     help="tasks list for accuracy validation")
+parser.add_argument("--weight_only_bits", type=int, default=8)
+parser.add_argument("--weight_only_group", type=int, default=-1)
+parser.add_argument("--weight_only_scheme", default="sym")
 
 args = parser.parse_args()
 if args.ipex:
@@ -66,7 +72,12 @@ class Evaluator:
 
     @torch.no_grad()
     def tokenize_function(self, examples):
-        example = self.tokenizer(examples["text"])
+        if args.awq: # require same seq length for concat in AWQ algo.
+            if self.tokenizer.pad_token is None:
+                self.tokenizer.pad_token = self.tokenizer.eos_token
+            example = self.tokenizer(examples["text"], padding="max_length", max_length=self.pad_max)
+        else:
+            example = self.tokenizer(examples["text"])
         return example
 
     @torch.no_grad()
@@ -128,7 +139,7 @@ if re.search("llama", args.model.lower()):
     from transformers import LlamaForCausalLM, LlamaTokenizer
     user_model = LlamaForCausalLM.from_pretrained(
         args.model,
-        torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
         revision=args.revision,
     )
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
@@ -136,7 +147,7 @@ elif re.search("mpt-7b-chat", args.model.lower()):
     from mpt_7b.modeling_mpt import MPTForCausalLM
     user_model = MPTForCausalLM.from_pretrained(
             args.model,
-            torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
             trust_remote_code=args.trust_remote_code,
             revision=args.revision,
             )
@@ -146,16 +157,25 @@ elif re.search("falcon-7b-instruct", args.model.lower()):
     from falcon_7b_instruct.modelling_RW import RWForCausalLM
     user_model = RWForCausalLM.from_pretrained(
             args.model,
-            torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
             trust_remote_code=args.trust_remote_code,
             revision=args.revision,
             )
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     user_model.config.use_cache = True
+elif re.search("chatglm", args.model.lower()):
+    from transformers import AutoModel, AutoTokenizer
+    user_model = AutoModel.from_pretrained(
+            args.model,
+            torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            trust_remote_code=args.trust_remote_code,
+            revision=args.revision,
+            )
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 else:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torchscript=True if args.sq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
         trust_remote_code=args.trust_remote_code,
         revision=args.revision,
     )
@@ -185,17 +205,25 @@ if args.quantize:
             prepared_model(calib_input[0])
 
     from neural_compressor import PostTrainingQuantConfig, quantization
-    if re.search("gpt", user_model.config.model_type):
+    if args.approach == 'weight_only':
+        algo = 'AWQ' if args.awq else 'RTN'
         op_type_dict = {
-            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-        }
-    elif re.search("mpt", user_model.config.model_type):
-        op_type_dict = {
-            "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
-            "<built-in function linear>":{"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+            '.*':{ 	# re.match
+                "weight": {
+                    'bits': args.weight_only_bits, # 1-8 bits 
+                    'group_size': args.weight_only_group,  # -1 (per-channel)
+                    'scheme': args.weight_only_scheme, # sym/asym
+                    'algorithm': algo, # RTN/AWQ
+                },
+            },
         }
     else:
-        op_type_dict = {}
+        if re.search("gpt", user_model.config.model_type):
+            op_type_dict = {
+                "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
+            }
+        else:
+            op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     if args.sq:
         args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
@@ -205,6 +233,7 @@ if args.quantize:
             recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha}}
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
+            approach=args.approach,
             excluded_precisions=excluded_precisions,
             op_type_dict=op_type_dict,
             recipes=recipes,
@@ -212,6 +241,7 @@ if args.quantize:
     else:
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
+            approach=args.approach,
             excluded_precisions=excluded_precisions,
             op_type_dict=op_type_dict,
         )

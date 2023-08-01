@@ -39,7 +39,7 @@ You can use the generate.py script for performing direct inference on Habana Gau
 ### Run the Inference on Xeon SPR
 ```
 python generate.py \
-        --base_model_path "./mpt-7b-chat" \
+        --base_model_path "mosaicml/mpt-7b-chat" \
         --use_kv_cache \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
@@ -50,7 +50,7 @@ Note: You can add the flag `--jit` to use jit trace to accelerate generation.
 ### Run the Inference on Habana Gaudi
 ```
 python generate.py \
-        --base_model_path "./mpt-7b-chat" \
+        --base_model_path "mosaicml/mpt-7b-chat" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
         --use_hpu_graphs \

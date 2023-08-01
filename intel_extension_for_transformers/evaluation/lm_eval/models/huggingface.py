@@ -181,7 +181,7 @@ class HuggingFaceAutoLM(BaseLM):
         if re.search("llama", pretrained.lower()):
             from transformers import LlamaTokenizer    # pylint: disable=E0611
             self.tokenizer = LlamaTokenizer.from_pretrained(
-                    pretrained,
+                    pretrained if tokenizer is None else tokenizer
                     )
         else:
             self.tokenizer = self._create_auto_tokenizer(
@@ -228,7 +228,10 @@ class HuggingFaceAutoLM(BaseLM):
         if self.init_empty_weights:
             from accelerate import init_empty_weights
             with init_empty_weights():
-                model = self.AUTO_MODEL_CLASS.from_config(self._config, trust_remote_code=True)
+                if self._config.model_type =="chatglm":
+                    model = transformers.AutoModel.from_config(self._config, trust_remote_code=True)
+                else:
+                    model = self.AUTO_MODEL_CLASS.from_config(self._config, trust_remote_code=True)
         else:
             model = self.AUTO_MODEL_CLASS.from_pretrained(
                 pretrained,
@@ -253,6 +256,7 @@ class HuggingFaceAutoLM(BaseLM):
         tokenizer = self.AUTO_TOKENIZER_CLASS.from_pretrained(
             pretrained if tokenizer is None else tokenizer,
             revision=revision + ("/" + subfolder if subfolder is not None else ""),
+            trust_remote_code=True
         )
         tokenizer.pad_token = tokenizer.eos_token
         return tokenizer
@@ -458,6 +462,12 @@ class AutoCausalLM(HuggingFaceAutoLM):
     def _model_call(
         self, inputs: TokenSequence, labels: Optional[TokenSequence] = None
     ) -> TokenSequence:
+        if self._config.model_type == "chatglm":
+            input_bs, input_len = inputs.shape
+            bos = torch.tensor([130001, 130004]).repeat(input_bs,1)
+            inputs = torch.cat((inputs, bos),1)
+            if self.model_format != "onnx":
+                self.model.float()
         output = self.model(inputs) if self.model_format != "onnx" else \
                 self.model(inputs, torch.ones(inputs.shape, dtype=torch.int64))
         if isinstance(output, tuple):

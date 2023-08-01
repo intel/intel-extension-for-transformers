@@ -41,6 +41,8 @@ RUN apt-get update \
     && apt-get install -y wget numactl git \
     && apt-get clean \
     && apt-get install git \
+    && apt-get install git-lfs \
+    && git-lfs install \
     && rm -rf /var/lib/apt/lists/*
 
 # Install miniconda
@@ -101,7 +103,6 @@ RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
 
 RUN git clone https://github.com/intel/intel-extension-for-transformers.git \
     && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ \
-    && pip install -r requirements.txt && \
-    git clone https://huggingface.co/mosaicml/mpt-7b-chat
+    && pip install -r requirements.txt
 
 WORKDIR /intel-extension-for-transformers/workflows/chatbot/inference/

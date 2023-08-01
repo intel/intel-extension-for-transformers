@@ -60,7 +60,7 @@ parser.add_argument("--batch_size", default=1, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
-parser.add_argument("--tasks", nargs='+', default="humaneval", type=str, \
+parser.add_argument("--tasks", nargs='+', default="humaneval", \
                     help="tasks list for accuracy validation")
 
 # Harness config

@@ -74,3 +74,11 @@ or
 ```shell
 nohup bash run_itrex.sh &
 ```
+
+# Install dependencies for TalkingBot
+
+```
+pip install speechbrain
+pip install soundfile
+pip install pydub
+```
