@@ -20,8 +20,6 @@ import numpy as np
 import argparse
 
 
-#flags = tf.flags
-#FLAGS = flags.FLAGS
 
 F_version_2_with_negative = False
 F_do_lower_case = True
@@ -75,7 +73,6 @@ class TF_BERTDataSet_v1():
         self.eval_features = eval_features
         self.count = len(self.eval_features)
         self.perf_count = perf_count if perf_count is not None else self.count
-        # print(eval_features[0].segment_ids)
         self.gen_cpp_data()
 
     def gen_cpp_data(self):
@@ -152,7 +149,6 @@ class TF_BERTDataSet_v2():
                 stride=F_doc_stride,
                 return_overflowing_tokens=True,
                 return_offsets_mapping=True,
-                # padding="max_length" if pad_to_max_length else False,
             )
             # Since one example might give us several features if it has a long context, we need a map from a feature to
             # its corresponding example. This key gives us just that.
@@ -204,7 +200,6 @@ class TF_BERTDataSet_v2():
 
         for eval_feature in self.eval_features:
             for idx,feature_name in enumerate(feature_names):
-                # data_list=getattr(eval_feature,feature_name)
                 if feature_name == "input_mask":
                     feature_name = "attention_mask"
                 if feature_name == "segment_ids":

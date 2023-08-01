@@ -104,12 +104,7 @@ def postprocess_qa_predictions(
 
     # Let's loop over all the examples!
     for example_index, example in enumerate(tqdm(examples)):
-        # Those are the indices of the features associated to the current example.
-        # if example["id"] != "5737aafd1c456719005744fe":
-        #    continue
-        # print(example)
         feature_indices = features_per_example[example_index]
-        # print(feature_indices)
 
         min_null_prediction = None
         prelim_predictions = []

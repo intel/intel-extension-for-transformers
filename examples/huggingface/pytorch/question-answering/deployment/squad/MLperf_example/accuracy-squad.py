@@ -318,14 +318,12 @@ def load_loadgen_log(log_path, eval_features, model_name, output_transposed=Fals
         if model_name == "Minilm_l12":
             results.append(RawResult(
                 unique_id=eval_features[qsl_idx].unique_id,
-                #unique_id=qsl_idx,
                 start_logits=start_logits.tolist(),
                 end_logits=end_logits.tolist()
             ))
         elif model_name == "Minilm_l8":
             results.append(RawResult(
                 unique_id=qsl_idx,
-                #unique_id=qsl_idx,
                 start_logits=start_logits.tolist(),
                 end_logits=end_logits.tolist()
                 ))
