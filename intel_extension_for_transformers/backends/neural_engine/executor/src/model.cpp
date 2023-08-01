@@ -239,7 +239,7 @@ void Model::Init(const ModelConfig& conf) {
     tp_max_threads = tp_max_threads > total_available_threads ? total_available_threads : tp_max_threads;
     tp.begin(tp_max_threads);
     DLOG(INFO) << "Thread pool is initialized with " << tp_max_threads << " threads. ("
-               << "Total avaiable threads: " << total_available_threads << ")";
+               << "Total available threads: " << total_available_threads << ")";
   }
 
   engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);  // profiling env
