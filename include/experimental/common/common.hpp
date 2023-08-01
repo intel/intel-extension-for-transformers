@@ -18,3 +18,5 @@
 /// C++ API
 
 #pragma once
+
+#include "experimental/common/base_types.hpp"

@@ -19,8 +19,9 @@
 
 #pragma once
 
-#include "experimental/group/brgemm/brgemm.hpp"
-#include "experimental/group/dropout_mask_gen.hpp"
-#include "experimental/group/fused_op/fused_op.hpp"
-#include "experimental/group/reduction/reduction.hpp"
-#include "experimental/group/softmax/softmax.hpp"
+#include "experimental/common/common.hpp"
+#include "experimental/group/group.hpp"
+#include "experimental/subgroup/subgroup.hpp"
+#include "group/group.hpp"
+#include "kernel/kernel.hpp"
+#include "subgroup/subgroup.hpp"

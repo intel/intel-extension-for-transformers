@@ -320,10 +320,13 @@ __XETLA_API xetla_vector<Ty, N> xetla_tload_global(xetla_tdescriptor tdesc) {
     constexpr uint32_t sfid = 0xF;
     constexpr uint32_t exDesc = 0;
 
-    xetla_vector<Ty, N> ret;
-    xetla_raw_send<Ty, N, uint32_t, 16, execSize, sfid, numSrc0, numDst>(
+    constexpr uint32_t ret_N = (N * sizeof(Ty)) >= 32 ? N : 32 / sizeof(Ty);
+    xetla_vector<Ty, ret_N> ret;
+
+    xetla_raw_send<Ty, ret_N, uint32_t, 16, execSize, sfid, numSrc0, numDst>(
             ret.xetla_format<native_type_t<Ty>>(), tdesc, exDesc, msg_desc);
-    return ret;
+
+    return ret.xetla_select<N, 1>(0);
 }
 
 ///
