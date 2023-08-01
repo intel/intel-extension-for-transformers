@@ -60,7 +60,7 @@ parser.add_argument("--batch_size", default=1, type=int,
                     help="batch size num.")
 parser.add_argument("--save_accuracy_path", default=None,
                     help="Save accuracy results path.")
-parser.add_argument("--tasks", nargs='+', default="humaneval", \
+parser.add_argument("--tasks", default="humaneval", type=str, \
                     help="tasks list for accuracy validation")
 
 # Harness config
@@ -286,10 +286,11 @@ if args.int8 or args.int8_bf16_mixed:
         user_model = TSModelForCausalLM.from_pretrained(
             args.output_dir, file_name="best_model.pt"
         )
+        print("Load torchscript int8 model successfully.")
     else:
         from neural_compressor.utils.pytorch import load
-
         user_model = load(args.output_dir, user_model)
+        print("Load int8 model successfully.")
 
 
 if args.benchmark:
