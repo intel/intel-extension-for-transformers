@@ -33,6 +33,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         shutil.rmtree("./gptj", ignore_errors=True)
         shutil.rmtree("./gptj-past", ignore_errors=True)
         shutil.rmtree("./evaluation_results.json", ignore_errors=True)
+        shutil.rmtree("./llama", ignore_errors=True)
         cmd = 'pip uninstall lm_eval -y'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
@@ -151,6 +152,22 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
+
+    def test_tokenizer_for_llama(self):
+        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        cmd = 'optimum-cli export onnx --model decapoda-research/llama-7b-hf --task text-generation llama/'
+        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
+                                            stderr=subprocess.PIPE, shell=True) # nosec
+        p.communicate()
+
+        results = evaluate(
+            model="hf-causal",
+            model_args='pretrained="./llama",tokenizer="decapoda-research/llama-7b-hf"',
+            tasks=["lambada_openai"],
+            limit=20,
+            model_format="onnx"
+        )
+        self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
 
 if __name__ == "__main__":
     unittest.main()

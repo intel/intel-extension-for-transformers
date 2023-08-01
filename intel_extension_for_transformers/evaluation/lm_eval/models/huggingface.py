@@ -181,7 +181,7 @@ class HuggingFaceAutoLM(BaseLM):
         if re.search("llama", pretrained.lower()):
             from transformers import LlamaTokenizer    # pylint: disable=E0611
             self.tokenizer = LlamaTokenizer.from_pretrained(
-                    pretrained,
+                    pretrained if tokenizer is None else tokenizer
                     )
         else:
             self.tokenizer = self._create_auto_tokenizer(
