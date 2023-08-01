@@ -317,7 +317,7 @@ if args.benchmark:
         with torch.inference_mode(), torch.no_grad():
             for j in range(args.max_new_tokens):
                 tic = time.time()
-                if j==0:
+                if j == 0:
                     new_shape = [input_ids.shape[0], 0, d_k*2]
                     dummy_tensor = torch.empty(size=new_shape)
                     past_key_values = tuple([dummy_tensor] * num_layers)
@@ -328,7 +328,7 @@ if args.benchmark:
                         "past_key_values": past_key_values,
                         "attention_mask": attention_mask}
 
-                out = user_model(**inp)
+                out = user_model(input_ids=input_ids, past_key_values=past_key_values, attention_mask=attention_mask)
                 gen_id = torch.argmax(out[0][:, -1:, :], axis = -1)
                 gen_text = tokenizer.batch_decode(gen_id, skip_special_tokens=True)
                 toc = time.time()
@@ -349,8 +349,8 @@ if args.benchmark:
 
 
     print("\n", "-" * 10, "Summary:", "-" * 10)
-    print("Average the first token inference latency: %.3f sec." % mean(first_token_time))
-    print("Average the second token inference latency: %.3f sec." % mean(second_token_time))
+    print("The first token inference average latency: %.3f sec." % mean(first_token_time))
+    print("The second token inference average latency: %.3f sec." % mean(second_token_time))
     latency = total_time / (num_iter - num_warmup)
     print("Inference latency: %.3f sec." % latency)
     throughput = (num_iter - num_warmup) / total_time
