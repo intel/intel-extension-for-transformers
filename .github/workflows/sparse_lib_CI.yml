@@ -1,0 +1,89 @@
+name: SparseLib
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'intel_extension_for_transformers/backends/neural_engine/kernels/**'
+      - 'intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/**'
+      - '.github/workflows/sparse_lib_CI.yml'
+      - '.github/workflows/script/SparseLibCI'
+      - '!intel_extension_for_transformers/backends/neural_engine/kernels/docs/**'
+      - '!intel_extension_for_transformers/backends/neural_engine/kernels/README.md'
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKER_CONFIG_NAME: "commonDockerConfig"
+  REPO_NAME: "intel-extension-for-transformers"
+  REPO_TAG: "py38"
+  DOCKER_FILE_NAME: "unitTest"
+  CONTAINER_NAME: "utTest"
+
+jobs:
+  sparselib:
+    runs-on: [self-hosted, Linux, X64, spr]
+    steps:
+      - name: Docker Clean Up
+        run: |
+          podman ps -a
+          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              podman start ${{ env.CONTAINER_NAME }}
+              echo "remove left files through container ..."
+              podman exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+
+      - name: Docker Build
+        run: |
+          podman build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+
+      - name: Docker Run
+        run: |
+          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            podman stop ${{ env.CONTAINER_NAME }}
+            podman rm -vf ${{ env.CONTAINER_NAME }} || true
+          fi
+          podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+            -v ${{ github.workspace }}:/intel-extension-for-transformers \
+            -e report_title="SparseLib Test" \
+            -e BUILD_NUMBER="${{ github.run_number }}" \
+            -e BUILD_ID="${{ github.run_id }}" \
+            -e job_params="pre-CI" \
+            -e qtools_branch="${{ github.event.pull_request._links.html.href }}" \
+            -e qtools_commit="${{ github.event.pull_request._links.commits.href }}" \
+            -e summary_dir="/intel-extension-for-transformers" \
+            -e device_list="spr-itrex" \
+            -e overview_log="/intel-extension-for-transformers/benchmark_log/summary_overview.log" \
+            -e github_actions_job_status="${{ steps.SparseLib-Test.outcome }}" \
+            -e ghprbActualCommit="${{ github.event.pull_request.head.sha }}" \
+            -e ghprbHeadLink="${{ github.event.pull_request.head.repo.html_url }}" \
+            -e ghprbPullLink="${{ github.event.pull_request._links.html.href }}" \
+            -e ghprbPullId="${{ github.event.number }}" \
+            -e MR_source_branch="${{ github.head_ref }}" \
+            -e MR_target_branch="${{ github.base_ref }}" \
+            ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
+
+      - name: SparseLib Test
+        id: SparseLib-Test
+        run: |
+          podman exec ${{ env.CONTAINER_NAME }} \
+          bash -c "bash /intel-extension-for-transformers/.github/workflows/script/SparseLibCI/run_sparse_lib.sh"
+
+      - name: Generate Report
+        run: |
+          podman exec ${{ env.CONTAINER_NAME }} \
+          bash -c "bash /generate_sparse_lib.sh"
+
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: SparseLib Test
+          path: ${{ github.workspace }}/benchmark_log
+          retention-days: 60

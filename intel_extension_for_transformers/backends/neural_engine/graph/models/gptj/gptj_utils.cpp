@@ -66,6 +66,7 @@ void GPTJ::init(const char* path_model, model_context& lctx, int n_ctx_, int n_g
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
   auto& hparams = model.hparams;
   n_ff = 4 * hparams.n_embd;
+  hparams.n_ctx = n_ctx;
   fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
   fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);
   fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);

@@ -47,13 +47,11 @@ from transformers import (
 )
 from transformers.trainer_utils import is_main_process
 from typing import Optional, List
-import copy
 import re
 import torch
 import importlib.util
 from transformers.utils.import_utils import is_optimum_available
-
-IGNORE_INDEX = -100
+from data_utils import preprocess_dataset
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -209,6 +207,17 @@ class DataArguments:
             "help": "Whether to concatenate the sentence for more efficient training."
         },
     )
+    special_tokens: Optional[List[str]] = field(
+        default=None,
+        metadata={"help": "The list of special tokens to add in tokenizer."}
+    )
+    max_source_length: Optional[int] = field(
+        default=384,
+        metadata={
+            "help": "The maximum total source sequence length after tokenization. Sequences longer "
+            "than this will be truncated."
+        },
+    )
 
 
 @dataclass
@@ -261,43 +270,13 @@ class FinetuneArguments:
         },
     )
     train_on_inputs: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "if False, masks out inputs in loss"},
     )
     habana: bool = field(
         default=False,
         metadata={"help": "if False, masks out inputs in loss"},
     )
-
-
-PROMPT_DICT = {
-    "prompt_with_input": (
-        "Below is an instruction that describes a task, paired with an input that provides further context. "
-        "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
-    ),
-    "prompt_without_input": (
-        "Below is an instruction that describes a task. "
-        "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{instruction}\n\n### Response:"
-    ),
-}
-
-
-def create_prompts(examples):
-    prompts = {}
-    prompts["source"] = []
-    prompts["target"] = []
-    for example in examples:
-        prompt_template = (
-            PROMPT_DICT["prompt_with_input"]
-            if example["input"] != ""
-            else PROMPT_DICT["prompt_without_input"]
-        )
-        source = prompt_template.format_map(example)
-        prompts["source"].append(source)
-        prompts["target"].append(example["output"])
-    return prompts
 
 
 def main():
@@ -378,6 +357,10 @@ def main():
         )
     else:
         raise ValueError("Please provide value for model_name_or_path or config_name.")
+    
+    # set use_fast_tokenizer to False for Llama series models
+    if "llama" in config.model_type:
+        model_args.use_fast_tokenizer = False
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -415,7 +398,6 @@ def main():
             data_args.dataset_config_name,
             cache_dir=model_args.cache_dir,
             use_auth_token=True if model_args.use_auth_token else None,
-            streaming=data_args.streaming,
         )
 
         if "validation" not in raw_datasets.keys() and training_args.do_eval:
@@ -425,7 +407,6 @@ def main():
                 split=f"train[:{data_args.validation_split_percentage}%]",
                 cache_dir=model_args.cache_dir,
                 use_auth_token=True if model_args.use_auth_token else None,
-                streaming=data_args.streaming,
             )
             raw_datasets["train"] = load_dataset(
                 data_args.dataset_name,
@@ -433,7 +414,6 @@ def main():
                 split=f"train[{data_args.validation_split_percentage}%:]",
                 cache_dir=model_args.cache_dir,
                 use_auth_token=True if model_args.use_auth_token else None,
-                streaming=data_args.streaming,
             )
     else:
         data_files = {}
@@ -477,18 +457,6 @@ def main():
                 **dataset_args,
             )
 
-    # Preprocessing the datasets.
-    for key in raw_datasets:
-        prompts = create_prompts(raw_datasets[key])
-        columns_to_be_removed = list(raw_datasets[key].features.keys())
-        raw_datasets[key] = raw_datasets[key].add_column(
-            "prompt_sources", prompts["source"]
-        )
-        raw_datasets[key] = raw_datasets[key].add_column(
-            "prompt_targets", prompts["target"]
-        )
-        raw_datasets[key] = raw_datasets[key].remove_columns(columns_to_be_removed)
-
     # Load model
     if model_args.model_name_or_path:
         model_dtype = torch.bfloat16 if training_args.bf16 else None
@@ -523,6 +491,18 @@ def main():
             "Must provide model_name_or_path to load a pretrained CausalLM model."
         )
 
+    # add special tokens
+    if data_args.special_tokens:
+        additional_special_tokens = {
+            "additional_special_tokens": data_args.special_tokens}
+        tokenizer.add_special_tokens(additional_special_tokens)
+
+    # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
+    # on a small vocab and want a smaller embedding size, remove this test.
+    embedding_size = model.get_input_embeddings().weight.shape[0]
+    if len(tokenizer) > embedding_size:
+        model.resize_token_embeddings(len(tokenizer))
+
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
         # unwind broken decapoda-research config
         model.generation_config.pad_token_id = 0
@@ -549,46 +529,7 @@ def main():
         tokenizer.pad_token_id = tokenizer.eos_token_id
     tokenizer.padding_side = "left"  # Allow batched inference
 
-    def tokenize(prompt, add_eos_token=True):
-        results = tokenizer(
-            prompt,
-            truncation=True,
-            max_length=data_args.max_seq_length,
-            padding=False,
-            return_tensors=None,
-        )
-        for i in range(len(results["input_ids"])):
-            if (
-                results["input_ids"][i][-1] != tokenizer.eos_token_id
-                and len(results["input_ids"][i]) < data_args.max_seq_length
-                and add_eos_token
-            ):
-                results["input_ids"][i].append(tokenizer.eos_token_id)
-                results["attention_mask"][i].append(1)
-
-        results["labels"] = copy.deepcopy(results["input_ids"])
-        results["input_id_len"] = [len(result) for result in results["input_ids"]]
-        return results
-
-    def preprocess_function(examples):
-        st = [
-            s + t
-            for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])
-        ]
-        examples_tokenized = tokenize(st)
-        input_ids = examples_tokenized["input_ids"]
-        labels = examples_tokenized["labels"]
-        if not finetune_args.train_on_inputs:
-            sources_tokenized = tokenize(
-                examples["prompt_sources"], add_eos_token=False
-            )
-            for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
-                label[:source_len] = [IGNORE_INDEX] * source_len
-        return dict(
-            input_ids=input_ids,
-            labels=labels,
-            attention_mask=examples_tokenized["attention_mask"],
-        )
+    raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
         tokenized_datasets = raw_datasets.map(
@@ -677,6 +618,8 @@ def main():
             )
 
         model = get_peft_model(model, peft_config)
+        if model_dtype == torch.bfloat16:
+            model = model.to(model_dtype)
         model.print_trainable_parameters()
 
         if not finetune_args.habana:

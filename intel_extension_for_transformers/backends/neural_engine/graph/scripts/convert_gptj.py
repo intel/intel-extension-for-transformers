@@ -93,8 +93,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
         hparams["rotary_dim"],
         ftype
     ]
-    fout.write(struct.pack("i" * len(values), *values))   
- 
+    fout.write(struct.pack("i" * len(values), *values))                                                                                                          
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("i", 0))
+
     byte_encoder = bytes_to_unicode()
     byte_decoder = {v:k for k, v in byte_encoder.items()}
     

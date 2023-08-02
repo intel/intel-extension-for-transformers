@@ -84,14 +84,18 @@ def main(args_in: Optional[List[str]] = None) -> None:
     print(hparams)
 
     fout.write(struct.pack("i", 0x67676D6C))
+
+    fout.write(struct.pack("i", hparams["vocab_size"]))
     fout.write(struct.pack("i", hparams["d_model"]))
-    fout.write(struct.pack("i", hparams["max_seq_len"]))
+    fout.write(struct.pack("i", hparams["d_model"]))
     fout.write(struct.pack("i", hparams["n_heads"]))
     fout.write(struct.pack("i", hparams["n_layers"]))
-    fout.write(struct.pack("i", hparams["vocab_size"]))
+    fout.write(struct.pack("i", hparams["n_layers"]))
+    fout.write(struct.pack("i", ftype))
+    fout.write(struct.pack("i", hparams["max_seq_len"]))
     fout.write(struct.pack("f", hparams["attn_config"]["alibi_bias_max"]))
     fout.write(struct.pack("f", hparams["attn_config"]["clip_qkv"] or 0.0))
-    fout.write(struct.pack("i", ftype))
+    fout.write(struct.pack("i", 0))
 
     vocab_size = hparams["vocab_size"]
 

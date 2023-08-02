@@ -3,6 +3,13 @@ NeuralChat Fine-tuning
 
 This example demonstrates how to finetune the pretrained large language model (LLM) with the instruction-following dataset for creating the NeuralChat, a chatbot that can conduct the textual conversation. Giving NeuralChat the textual instruction, it will respond with the textual response. This example have been validated on the 4th Gen Intel® Xeon® Processors, Sapphire Rapids.
 
+## Validated Model List
+|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | summarization tuning 
+|------------------------------------|---|---|---
+|LLaMA series| ✅| ✅| ✅
+|MPT series|✅ |✅ |✅
+|FLAN-T5 series| ✅ | NA | NA
+
 # Prerequisite​
 
 ## 1. Environment​
@@ -26,11 +33,15 @@ It should be noticed that the early version of LLama model's name in Transformer
 The user can obtain the [release model](https://huggingface.co/google/flan-t5-xl) from Huggingface.
 
 ## 3. Prepare Dataset
-The instruction-following dataset is needed for the finetuning. We select two kinds of Datasets to conduct the finetuning process: general domain dataset and domain specific dataset.
+We select 4 kind of datasets to conduct the finetuning process for different tasks.
 
-1. General domain dataset: We use the [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json). In Alpaca, researchers have manually crafted 175 seed tasks to guide `text-davinci-003` in generating 52K instruction data for diverse tasks.
+1. Text Generation (General domain instruction): We use the [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json). In Alpaca, researchers have manually crafted 175 seed tasks to guide `text-davinci-003` in generating 52K instruction data for diverse tasks.
 
-2. Domain-specific dataset: Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`.
+2. Text Generation (Domain-specific instruction): Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`.
+
+3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [OpenAssistant/oasst1](https://huggingface.co/datasets/OpenAssistant/oasst1).
+
+4. Summarization: An English-language dataset [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail) containing just over 300k unique news articles as written by journalists at CNN and the Daily Mail, is used for this task.
 
 # Finetune
 
@@ -38,7 +49,7 @@ We employ the [LoRA approach](https://arxiv.org/pdf/2106.09685.pdf) to finetune 
 
 ## 1. Single Node Fine-tuning in Xeon SPR
 
-For FLAN-T5, use the below command line for finetuning on the Alpaca dataset.
+**For FLAN-T5**, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
 python finetune_seq2seq.py \
@@ -61,7 +72,9 @@ python finetune_seq2seq.py \
         --peft lora
 ```
 
-For LLaMA, use the below command line for finetuning on the Alpaca dataset.
+#### For LLaMA 
+
+- use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
 python finetune_clm.py \
@@ -86,7 +99,61 @@ python finetune_clm.py \
         --no_cuda \
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+- use the below command line for finetuning chatbot on the [Intel/openassistant-preprocessed](https://huggingface.co/datasets/Intel/openassistant-preprocessed).
+
+```bash
+python finetune_clm.py \
+        --model_name_or_path "decapoda-research/llama-7b-hf" \
+        --bf16 True \
+        --dataset_name "Intel/openassistant-preprocessed" \
+        --per_device_train_batch_size 8 \
+        --per_device_eval_batch_size 8 \
+        --gradient_accumulation_steps 1 \
+        --do_train \
+        --learning_rate 1e-4 \
+        --num_train_epochs 3 \
+        --logging_steps 100 \
+        --save_total_limit 2 \
+        --overwrite_output_dir \
+        --log_level info \
+        --save_strategy epoch \
+        --output_dir ./llama_chatbot_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer false \
+        --no_cuda \
+        --special_tokens "<|im_start|>" "<|im_end|>"
+
+# the script also support other models, like mpt.
+```
+
+- use the below command line for summarization scenario on the [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail).
+
+```bash
+python finetune_clm.py \
+        --model_name_or_path "/models/llama-7b-hf" \
+        --bf16 True \
+        --dataset_name "cnn_dailymail" \
+        --dataset_config_name "3.0.0" \
+        --per_device_train_batch_size 8 \
+        --per_device_eval_batch_size 8 \
+        --gradient_accumulation_steps 1 \
+        --do_train \
+        --learning_rate 1e-4 \
+        --num_train_epochs 3 \
+        --logging_steps 100 \
+        --save_total_limit 2 \
+        --overwrite_output_dir \
+        --log_level info \
+        --save_strategy epoch \
+        --output_dir ./llama_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer false \
+        --no_cuda
+
+# the script also support other models, like mpt.
+```
+
+**For [MPT](https://huggingface.co/mosaicml/mpt-7b)**, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
 
 ```bash
 python finetune_clm.py \

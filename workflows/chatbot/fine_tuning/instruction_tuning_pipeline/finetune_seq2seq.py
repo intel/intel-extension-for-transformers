@@ -374,7 +374,6 @@ def main():
                 **dataset_args,
             )
 
-
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,

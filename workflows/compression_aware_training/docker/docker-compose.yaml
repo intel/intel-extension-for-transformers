@@ -7,7 +7,7 @@ services:
         no_proxy: ${no_proxy}
       context: ../
       dockerfile: ./docker/Dockerfile
-    command: python /workspace/src/run.py /workspace/config/${CONFIG}.yaml
+    command: python /workspace/src/run.py --config_file /workspace/config/${CONFIG}.yaml
     environment: 
       - http_proxy=${http_proxy}
       - https_proxy=${https_proxy}

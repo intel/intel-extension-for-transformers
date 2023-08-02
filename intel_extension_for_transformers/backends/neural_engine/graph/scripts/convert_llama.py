@@ -945,6 +945,10 @@ class OutputFile:
             params.file_type.value,
         ]
         self.fout.write(struct.pack("i" * len(values), *values))
+        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("f", 0))
+        self.fout.write(struct.pack("f", 0))
+        self.fout.write(struct.pack("i", 0))
 
     def write_tensor_header(self, name: str, shape: Sequence[int], data_type: DataType) -> None:
         sname = name.encode('utf-8')
