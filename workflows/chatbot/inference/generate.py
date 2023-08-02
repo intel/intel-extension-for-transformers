@@ -15,6 +15,9 @@ from transformers import (
     StoppingCriteriaList,
     StoppingCriteria,
 )
+# Set necessary env variables
+os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
+os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
 from transformers.deepspeed import is_deepspeed_available
 
 if is_deepspeed_available():
@@ -261,9 +264,6 @@ def smart_context_manager(use_deepspeed=False, model_dtype=torch.bfloat16):
 
 
 def import_deepspeed():
-    # Set necessary env variables
-    os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
-    os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
     if not is_deepspeed_available():
         raise ImportError(
             "This script requires deepspeed: `pip install"
@@ -291,13 +291,16 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs):
     return model.module
 
 
+def set_cpu_running_env():
+    os.environ["ONEDNN_MAX_CPU_ISA"]="AVX512_CORE_BF16"
+
 def load_model(
     model_name,
     tokenizer_name,
     device="cpu",
     use_hpu_graphs=False,
     cpu_jit=False,
-    use_cache=False,
+    use_cache=True,
     peft_path=None,
     use_deepspeed=False,
 ):
@@ -324,6 +327,8 @@ def load_model(
             adapt_transformers_to_gaudi,
         )
         adapt_transformers_to_gaudi()
+    else:
+        set_cpu_running_env()
     MODELS[model_name] = {}
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
@@ -494,7 +499,7 @@ def predict_stream(**params):
     bad_words_ids = params["bad_words_ids"] if "bad_words_ids" in params else None
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
-    use_cache = params["use_cache"] if "use_cache" in params else False
+    use_cache = params["use_cache"] if "use_cache" in params else True
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
