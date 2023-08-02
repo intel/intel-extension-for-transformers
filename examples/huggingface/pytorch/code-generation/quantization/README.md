@@ -71,6 +71,7 @@ python run_generation.py \
     --int8 \
     --ipex \
     --benchmark \
+    --prompt_size 32 \
     --batch_size 1
 ```
 
