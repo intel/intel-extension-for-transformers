@@ -204,6 +204,7 @@ qat_unet_pattern_config = {
         'StableDiffusion_CollectQuantInfo': True,
         'CollectQuantInfo': False,
         'InsertQuantNode': False,
+        'QuantizeFusion': False,
         'StableDiffusion_QuantizeFusion': True,
 
         # Channel_last

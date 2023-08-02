@@ -86,6 +86,11 @@ pattern_default_setting = {
 
     'GroupNorm': True,
 
+    # QAT Quantization
+    'CollectQuantInfo': True,
+    'InsertQuantNode': True,
+    'QuantizeFusion': True,
+
     # transpose_mode_int8
     'QKVMerge': False,
 
@@ -129,8 +134,6 @@ pattern_default_setting = {
     # QAT for the stable diffusion
     'StableDiffusion_InsertQuantNode': False,
     'StableDiffusion_CollectQuantInfo': False,
-    'CollectQuantInfo': True,
-    'InsertQuantNode': True,
     'StableDiffusion_QuantizeFusion': False,
     
     #GPT-J
