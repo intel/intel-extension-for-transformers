@@ -223,7 +223,7 @@ if args.quantize:
             },
         }
         if args.weight_only_sym_full_range:
-            recipes.update({"sym_full_range": True})
+            recipes.update({"rtn_args": {"sym_full_range": True}})
     else:
         if re.search("gpt", user_model.config.model_type):
             op_type_dict = {
