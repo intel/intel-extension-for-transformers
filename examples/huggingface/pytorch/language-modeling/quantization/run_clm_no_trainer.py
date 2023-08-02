@@ -36,6 +36,7 @@ parser.add_argument("--alpha", default="auto",
 parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ'], 
                     help="Weight-only parameter.")
 parser.add_argument("--int8", action="store_true")
+parser.add_argument("--weight_only_sym_full_range", action="store_true")
 parser.add_argument("--ipex", action="store_true", help="Use intel extension for pytorch.")
 parser.add_argument("--accuracy", action="store_true")
 parser.add_argument("--batch_size", default=1, type=int,
@@ -208,6 +209,7 @@ if args.quantize:
                 break
             prepared_model(calib_input[0])
 
+    recipes = {}
     from neural_compressor import PostTrainingQuantConfig, quantization
     if args.approach == 'weight_only':
         op_type_dict = {
@@ -220,6 +222,8 @@ if args.quantize:
                 },
             },
         }
+        if args.weight_only_sym_full_range:
+            recipes.update({"sym_full_range": True})
     else:
         if re.search("gpt", user_model.config.model_type):
             op_type_dict = {
@@ -247,6 +251,7 @@ if args.quantize:
             approach=args.approach,
             excluded_precisions=excluded_precisions,
             op_type_dict=op_type_dict,
+            recipes=recipes,
         )
 
     q_model = quantization.fit(
