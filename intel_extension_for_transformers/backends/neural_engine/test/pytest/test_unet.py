@@ -113,6 +113,7 @@ class TestUnet(unittest.TestCase):
         input_2_path = root_dir + 'encoder_hidden_states.pt'
         inputs_2 = torch.load(input_2_path)
 
+        import pdb;pdb.set_trace()
         output = graph.inference([inputs_0, inputs_1, inputs_2])
 
         # onnxruntime
