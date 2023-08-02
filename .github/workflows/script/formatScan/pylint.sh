@@ -4,10 +4,16 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 
 cd /intel-extension-for-transformers
 log_dir=/intel-extension-for-transformers/.github/workflows/script/formatScan
-
+if [ -f "requirements.txt" ]; then
+    python -m pip install --default-timeout=100 -r requirements.txt
+    pip list
+else
+    echo "Not found requirements.txt file."
+fi
 # install packages
 pip install accelerate intel_extension_for_pytorch nlpaug nltk
 pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
+
 python -m pylint -f json --disable=R,C,W,E1129 \
     --enable=line-too-long \
     --max-line-length=120 \
