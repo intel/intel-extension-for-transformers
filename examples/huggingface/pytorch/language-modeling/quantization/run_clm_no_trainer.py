@@ -30,10 +30,11 @@ parser.add_argument(
 )
 parser.add_argument("--approach", type=str, default='static', 
                     help="Select from ['dynamic', 'static', 'weight-only']")
-parser.add_argument("--awq", action="store_true")
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto",
                     help="Smooth quant parameter.")
+parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ'], 
+                    help="Weight-only parameter.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument("--ipex", action="store_true", help="Use intel extension for pytorch.")
 parser.add_argument("--accuracy", action="store_true")
@@ -72,7 +73,7 @@ class Evaluator:
 
     @torch.no_grad()
     def tokenize_function(self, examples):
-        if args.awq: # require same seq length for concat in AWQ algo.
+        if args.weight_only_algo in ['AWQ']:
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             example = self.tokenizer(examples["text"], padding="max_length", max_length=self.pad_max)
@@ -134,12 +135,15 @@ class Evaluator:
         print("Latency: ", latency)
         return acc
 
+torchscript = False
+if args.sq or args.weight_only_algo in ['AWQ']:
+    torchscript = True
 if re.search("llama", args.model.lower()):
     import transformers
     from transformers import LlamaForCausalLM, LlamaTokenizer
     user_model = LlamaForCausalLM.from_pretrained(
         args.model,
-        torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
         revision=args.revision,
     )
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
@@ -147,7 +151,7 @@ elif re.search("mpt-7b-chat", args.model.lower()):
     from mpt_7b.modeling_mpt import MPTForCausalLM
     user_model = MPTForCausalLM.from_pretrained(
             args.model,
-            torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
             trust_remote_code=args.trust_remote_code,
             revision=args.revision,
             )
@@ -157,7 +161,7 @@ elif re.search("falcon-7b-instruct", args.model.lower()):
     from falcon_7b_instruct.modelling_RW import RWForCausalLM
     user_model = RWForCausalLM.from_pretrained(
             args.model,
-            torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
             trust_remote_code=args.trust_remote_code,
             revision=args.revision,
             )
@@ -167,7 +171,7 @@ elif re.search("chatglm", args.model.lower()):
     from transformers import AutoModel, AutoTokenizer
     user_model = AutoModel.from_pretrained(
             args.model,
-            torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+            torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
             trust_remote_code=args.trust_remote_code,
             revision=args.revision,
             )
@@ -175,7 +179,7 @@ elif re.search("chatglm", args.model.lower()):
 else:
     user_model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torchscript=True if args.sq or args.awq else False,  # torchscript will force `return_dict=False` to avoid jit errors
+        torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
         trust_remote_code=args.trust_remote_code,
         revision=args.revision,
     )
@@ -206,14 +210,13 @@ if args.quantize:
 
     from neural_compressor import PostTrainingQuantConfig, quantization
     if args.approach == 'weight_only':
-        algo = 'AWQ' if args.awq else 'RTN'
         op_type_dict = {
             '.*':{ 	# re.match
                 "weight": {
                     'bits': args.weight_only_bits, # 1-8 bits 
                     'group_size': args.weight_only_group,  # -1 (per-channel)
                     'scheme': args.weight_only_scheme, # sym/asym
-                    'algorithm': algo, # RTN/AWQ
+                    'algorithm': args.weight_only_algo, # RTN/AWQ
                 },
             },
         }
