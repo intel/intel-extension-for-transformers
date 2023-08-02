@@ -3581,80 +3581,159 @@ static void ne_compute_forward_dup(const struct ne_compute_params* params, const
   }
 }
 
-// ne_compute_forward_add
+#define NE_TENSOR_BINARY_OP_LOCALS \
+    NE_TENSOR_LOCALS(int64_t, ne0, src0, ne); \
+    NE_TENSOR_LOCALS(size_t,  nb0, src0, nb); \
+    NE_TENSOR_LOCALS(int64_t, ne1, src1, ne); \
+    NE_TENSOR_LOCALS(size_t,  nb1, src1, nb); \
+    NE_TENSOR_LOCALS(int64_t, ne,  dst,  ne); \
+    NE_TENSOR_LOCALS(size_t,  nb,  dst,  nb);
 
+// ne_compute_forward_add
 static void ne_compute_forward_add_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                        const struct ne_tensor* src1, struct ne_tensor* dst) {
-  // NE_ASSERT(ne_are_same_shape(src0, src1) && ne_are_same_shape(src0, dst));
+    NE_ASSERT(ne_can_repeat_rows(src1, src0) && ne_are_same_shape(src0, dst));
 
-  if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
-    return;
-  }
-
-  const int ith = params->ith;
-  const int nth = params->nth;
-
-  const int nr = ne_nrows(src0);
-  const int64_t ne0 = src0->ne[0];
-  const int64_t ne1 = src0->ne[1];
-  const int64_t ne2 = src0->ne[2];
-
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
-
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
-
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
-
-  NE_ASSERT(nb0 == sizeof(float));
-  NE_ASSERT(nb00 == sizeof(float));
-
-  // rows per thread
-  const int dr = (nr + nth - 1) / nth;
-
-  // row range for this thread
-  const int ir0 = dr * ith;
-  const int ir1 = MIN(ir0 + dr, nr);
-
-  if (nb10 == sizeof(float)) {
-    for (int ir = ir0; ir < ir1; ++ir) {
-      // src0, src1 and dst are same shape => same indices
-      const int i3 = ir / (ne2 * ne1);
-      const int i2 = (ir - i3 * ne2 * ne1) / ne1;
-      const int i1 = (ir - i3 * ne2 * ne1 - i2 * ne1);
-
-      ne_vec_add_f32(ne0, (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1),
-                     (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01),
-                     (float*)((char*)src1->data + i3 * nb13 + i2 * nb12 + i1 * nb11));
-      // }
-      // }
+    if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
+        return;
     }
-  } else {
-    // src1 is not contiguous
-    for (int ir = ir0; ir < ir1; ++ir) {
-      // src0, src1 and dst are same shape => same indices
-      const int i3 = ir / (ne2 * ne1);
-      const int i2 = (ir - i3 * ne2 * ne1) / ne1;
-      const int i1 = (ir - i3 * ne2 * ne1 - i2 * ne1);
 
-      float* dst_ptr = (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1);
-      float* src0_ptr = (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01);
-      for (int i0 = 0; i0 < ne0; i0++) {
-        float* src1_ptr = (float*)((char*)src1->data + i3 * nb13 + i2 * nb12 + i1 * nb11 + i0 * nb10);
+    const int ith = params->ith;
+    const int nth = params->nth;
 
-        dst_ptr[i0] = src0_ptr[i0] + *src1_ptr;
-      }
+    const int nr = ne_nrows(src0);
+    
+    NE_TENSOR_BINARY_OP_LOCALS;
+
+    NE_ASSERT( nb0 == sizeof(float));
+    NE_ASSERT(nb00 == sizeof(float));
+
+    // rows per thread
+    const int dr = (nr + nth - 1)/nth;
+
+    // row range for this thread
+    const int ir0 = dr*ith;
+    const int ir1 = MIN(ir0 + dr, nr);
+
+    if (nb10 == sizeof(float)) {
+        for (int ir = ir0; ir < ir1; ++ir) {
+            // src1 is broadcastable across src0 and dst in i1, i2, i3
+            const int64_t i03 = ir/(ne02*ne01);
+            const int64_t i02 = (ir - i03*ne02*ne01)/ne01;
+            const int64_t i01 = (ir - i03*ne02*ne01 - i02*ne01);
+
+            const int64_t i13 = i03 % ne13;
+            const int64_t i12 = i02 % ne12;
+            const int64_t i11 = i01 % ne11;
+
+            float * dst_ptr  = (float *) ((char *) dst->data  + i03*nb3  + i02*nb2  + i01*nb1 );
+            float * src0_ptr = (float *) ((char *) src0->data + i03*nb03 + i02*nb02 + i01*nb01);
+            float * src1_ptr = (float *) ((char *) src1->data + i13*nb13 + i12*nb12 + i11*nb11);
+
+#ifdef NE_USE_ACCELERATE
+            vDSP_vadd(src0_ptr, 1, src1_ptr, 1, dst_ptr, 1, ne00);
+#else
+            ne_vec_add_f32(ne00, dst_ptr, src0_ptr, src1_ptr);
+#endif
+                // }
+            // }
+        }
+    } else {
+        // src1 is not contiguous
+        for (int ir = ir0; ir < ir1; ++ir) {
+            // src1 is broadcastable across src0 and dst in i1, i2, i3
+            const int64_t i03 = ir/(ne02*ne01);
+            const int64_t i02 = (ir - i03*ne02*ne01)/ne01;
+            const int64_t i01 = (ir - i03*ne02*ne01 - i02*ne01);
+
+            const int64_t i13 = i03 % ne13;
+            const int64_t i12 = i02 % ne12;
+            const int64_t i11 = i01 % ne11;
+
+            float * dst_ptr  = (float *) ((char *) dst->data  + i03*nb3  + i02*nb2  + i01*nb1 );
+            float * src0_ptr = (float *) ((char *) src0->data + i03*nb03 + i02*nb02 + i01*nb01);
+
+            for (int i0 = 0; i0 < ne0; i0++) {
+                float * src1_ptr = (float *) ((char *) src1->data + i13*nb13 + i12*nb12 + i11*nb11 + i0*nb10);
+
+                dst_ptr[i0] = src0_ptr[i0] + *src1_ptr;
+            }
+        }
     }
-  }
 }
+
+// static void ne_compute_forward_add_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
+//                                        const struct ne_tensor* src1, struct ne_tensor* dst) {
+//   // NE_ASSERT(ne_are_same_shape(src0, src1) && ne_are_same_shape(src0, dst));
+
+//   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
+//     return;
+//   }
+
+//   const int ith = params->ith;
+//   const int nth = params->nth;
+
+//   const int nr = ne_nrows(src0);
+//   const int64_t ne0 = src0->ne[0];
+//   const int64_t ne1 = src0->ne[1];
+//   const int64_t ne2 = src0->ne[2];
+
+//   const size_t nb00 = src0->nb[0];
+//   const size_t nb01 = src0->nb[1];
+//   const size_t nb02 = src0->nb[2];
+//   const size_t nb03 = src0->nb[3];
+
+//   const size_t nb10 = src1->nb[0];
+//   const size_t nb11 = src1->nb[1];
+//   const size_t nb12 = src1->nb[2];
+//   const size_t nb13 = src1->nb[3];
+
+//   const size_t nb0 = dst->nb[0];
+//   const size_t nb1 = dst->nb[1];
+//   const size_t nb2 = dst->nb[2];
+//   const size_t nb3 = dst->nb[3];
+
+//   NE_ASSERT(nb0 == sizeof(float));
+//   NE_ASSERT(nb00 == sizeof(float));
+
+//   // rows per thread
+//   const int dr = (nr + nth - 1) / nth;
+
+//   // row range for this thread
+//   const int ir0 = dr * ith;
+//   const int ir1 = MIN(ir0 + dr, nr);
+
+//   if (nb10 == sizeof(float)) {
+//     for (int ir = ir0; ir < ir1; ++ir) {
+//       // src0, src1 and dst are same shape => same indices
+//       const int i3 = ir / (ne2 * ne1);
+//       const int i2 = (ir - i3 * ne2 * ne1) / ne1;
+//       const int i1 = (ir - i3 * ne2 * ne1 - i2 * ne1);
+
+//       ne_vec_add_f32(ne0, (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1),
+//                      (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01),
+//                      (float*)((char*)src1->data + i3 * nb13 + i2 * nb12 + i1 * nb11));
+//       // }
+//       // }
+//     }
+//   } else {
+//     // src1 is not contiguous
+//     for (int ir = ir0; ir < ir1; ++ir) {
+//       // src0, src1 and dst are same shape => same indices
+//       const int i3 = ir / (ne2 * ne1);
+//       const int i2 = (ir - i3 * ne2 * ne1) / ne1;
+//       const int i1 = (ir - i3 * ne2 * ne1 - i2 * ne1);
+
+//       float* dst_ptr = (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1);
+//       float* src0_ptr = (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01);
+//       for (int i0 = 0; i0 < ne0; i0++) {
+//         float* src1_ptr = (float*)((char*)src1->data + i3 * nb13 + i2 * nb12 + i1 * nb11 + i0 * nb10);
+
+//         dst_ptr[i0] = src0_ptr[i0] + *src1_ptr;
+//       }
+//     }
+//   }
+// }
 
 static void ne_compute_forward_add_f16_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                            const struct ne_tensor* src1, struct ne_tensor* dst) {
@@ -6617,7 +6696,7 @@ static void ne_compute_forward_soft_max_f32(const struct ne_compute_params* para
 
 #ifndef NDEBUG
     for (int i = 0; i < nc; ++i) {
-      printf("sp[%d] = %f\n", i, sp[i]);
+      //printf("sp[%d] = %f\n", i, sp[i]);
       //printf("dp[%d] = %f\n", i, dp[i]);
       assert(!isnan(sp[i]));
     }
