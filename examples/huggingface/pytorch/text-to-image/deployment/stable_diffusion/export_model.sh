@@ -51,15 +51,15 @@ if [[ ${precision} == 'qat_int8' ]]; then
 cast_type=qat_int8
 echo "[INFO] cast_type is qat int8"
 # 1. text encoder
-echo "[INFO] Start to export text encoder ir..."
+echo "[INFO] Start to export text encoder bf16 ir..."
 python export_ir.py --onnx_model=${input_model}/text_encoder_bf16/model.onnx --pattern_config=text_encoder --output_path=./${cast_type}_ir/text_encoder/ --dtype=bf16
 
 # 2. unet
-echo "[INFO] Start to export unet ir..."
+echo "[INFO] Start to export unet qat int8 ir..."
 python export_ir.py --onnx_model=${input_model}/unet_${cast_type}/model.onnx --pattern_config=unet --output_path=./${cast_type}_ir/unet/ --dtype=${cast_type}
 
 # 3. vae_decoder
-echo "[INFO] start to export vae_decoder ir..."
+echo "[INFO] start to export vae_decoder bf16 ir..."
 python export_ir.py --onnx_model=${input_model}/vae_decoder_bf16/model.onnx --pattern_config=vae_decoder --output_path=./${cast_type}_ir/vae_decoder/ --dtype=bf16
 exit
 fi

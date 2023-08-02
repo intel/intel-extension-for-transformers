@@ -194,7 +194,7 @@ qat_unet_pattern_config = {
         # MHA
         'TorchInsertBF16Node': False,
         'StableDiffusion_MHAReshape': True,
-        'StableDiffusion_MHA': False,
+        'StableDiffusion_MHA': True,
         'ExplicitNHWCTransposeForConv': False,
         'ExplicitNHWCTransposeForConvQAT': True,
         'MultiHeadAttention': False,
@@ -303,7 +303,6 @@ if __name__ == '__main__':
             graph.save(args.output_path)
     elif args.dtype == "qat_int8":
         args.pattern_config = qat_unet_pattern_config
-        args.pattern_config['pattern_switch']['StableDiffusion_MHA'] = True
         with autocast(args.dtype):
             graph = compile(args.onnx_model, args.pattern_config)
             graph.save(args.output_path)
