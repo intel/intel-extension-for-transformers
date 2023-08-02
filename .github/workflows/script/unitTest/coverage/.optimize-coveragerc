@@ -1,0 +1,19 @@
+[run]
+branch = True
+
+[report]
+omit =
+ */**/fake*yaml
+ */**/fake.py
+ */intel_extension_for_transformers/backends/*
+ */intel_extension_for_transformers/optimization/utils/get_throughput.py
+exclude_lines =
+ pragma: no cover
+ raise NotImplementedError
+ raise TypeError
+ if self.device == "gpu":
+ if device == "gpu":
+ except ImportError:
+ except Exception as e:
+ onnx_version < ONNX18_VERSION
+ onnx_version >= ONNX18_VERSION

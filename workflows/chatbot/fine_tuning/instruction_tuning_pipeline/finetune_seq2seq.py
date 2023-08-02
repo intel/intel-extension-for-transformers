@@ -374,10 +374,6 @@ def main():
                 **dataset_args,
             )
 
-    # set use_fast_tokenizer to False for Llama series models
-    if "llama" in model.config.model_type:
-        model_args.use_fast_tokenizer = False
-
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,
