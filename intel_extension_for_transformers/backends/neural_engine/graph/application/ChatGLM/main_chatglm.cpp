@@ -115,7 +115,6 @@ void chat(const Args &args) {
     int64_t start_load_us = ne_time_us();
     chatglm::Pipeline pipeline(args.model_path);
     int64_t end_load_us = ne_time_us();
-    std::cout << "Pipeline Build OK" << std::endl;
     std::string model_name = pipeline.model->type_name();
 
     auto text_streamer = std::make_shared<chatglm::TextStreamer>(std::cout, pipeline.tokenizer.get());
@@ -138,11 +137,7 @@ void chat(const Args &args) {
                   << "AVX512_VBMI = " << ne_cpu_has_avx512_vbmi() << " | "
                   << "AVX512_VNNI = " << ne_cpu_has_avx512_vnni() << " | "
                   << "FMA = " << ne_cpu_has_fma() << " | "
-                  //<< "NEON = " << ne_cpu_has_neon() << " | "
-                  //<< "ARM_FMA = " << ne_cpu_has_arm_fma() << " | "
                   << "F16C = " << ne_cpu_has_f16c() << " | "
-                  //<< "FP16_VA = " << ne_cpu_has_fp16_va() << " | "
-                  //<< "WASM_SIMD = " << ne_cpu_has_wasm_simd() << " | "
                   << "BLAS = " << ne_cpu_has_blas() << " | "
                   << "SSE3 = " << ne_cpu_has_sse3() << " | "
                   << "VSX = " << ne_cpu_has_vsx() << " |\n";
@@ -171,7 +166,7 @@ void chat(const Args &args) {
                   << '\n';
 
         std::cout
-            << "Welcome to ChatGLM.cpp! Ask whatever you want. Type 'clear' to clear context. Type 'stop' to exit.\n"
+            << "Welcome to ChatGLM.cpp on the ITREX! Ask whatever you want. Type 'clear' to clear context. Type 'stop' to exit.\n"
             << "\n";
 
         std::vector<std::string> history;

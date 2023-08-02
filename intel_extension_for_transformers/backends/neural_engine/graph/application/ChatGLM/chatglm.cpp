@@ -161,24 +161,6 @@ static inline ne_tensor *add_zero(ne_context *ctx, ne_tensor *tensor) {
 }
 
 void ModelContext::init_device_context() {
-#ifdef NE_USE_METAL
-    ctx_metal = make_unique_ne_metal_context(1);
-
-    const size_t max_size = ne_get_max_tensor_size(ctx_w.get());
-
-    void *weight_data = weight_buffer.empty() ? ne_get_mem_buffer(ctx_w.get()) : (void *)weight_buffer.data();
-    size_t weight_size = weight_buffer.empty() ? ne_get_mem_size(ctx_w.get()) : weight_buffer.size();
-    CHATGLM_CHECK(ne_metal_add_buffer(ctx_metal.get(), "weights", weight_data, weight_size, max_size));
-
-    CHATGLM_CHECK(ne_metal_add_buffer(ctx_metal.get(), "kv", ne_get_mem_buffer(ctx_kv.get()),
-                                        ne_get_mem_size(ctx_kv.get()), 0));
-
-    void *compute_data = ctx_b ? ne_get_mem_buffer(ctx_b.get()) : compute_buffer.data();
-    size_t compute_size = ctx_b ? ne_get_mem_size(ctx_b.get()) : compute_buffer.size();
-    CHATGLM_CHECK(ne_metal_add_buffer(ctx_metal.get(), "compute", compute_data, compute_size, 0));
-
-    CHATGLM_CHECK(ne_metal_add_buffer(ctx_metal.get(), "scratch", scratch.data, scratch.size, 0));
-#endif
 }
 
 // ===== streamer =====
@@ -376,7 +358,6 @@ ne_tensor *Linear::forward(ModelContext *ctx, ne_tensor *input) const {
     ne_context *gctx = ctx->ctx_b.get();
     ne_tensor *output = ne_mul_mat(gctx, weight, input); // [seqlen, out_features]
     tensor_assign_buffers(output);
-    //std::cout << "has bias " << bias << std::endl;
     if (bias) {
         //output = ne_add(gctx, output, bias);
         output = ne_add_inplace(gctx, output, bias);
@@ -555,7 +536,7 @@ int get_num_physical_cores() {
 }
 
 int get_default_num_threads() {
-#if defined(NE_USE_CUBLAS) || defined(NE_USE_METAL)
+#if defined(NE_USE_CUBLAS)
     return 1;
 #else
     return std::min(get_num_physical_cores(), 16);
@@ -603,16 +584,9 @@ int BaseModelForConditionalGeneration::generate_next_token(const std::vector<int
     lm_logits->backend = NE_BACKEND_CPU;
 
     ne_build_forward_expand(&ctx_.gf, lm_logits);
-#ifdef NE_USE_METAL
-    if (input_ids.size() == 1) {
-        ne_metal_graph_compute(ctx_.ctx_metal.get(), &ctx_.gf);
-    } else {
-        ne_graph_compute(ctx_.ctx_b.get(), &ctx_.gf);
-    }
-#else
     // TODO: upgrade to ne_graph_compute with cplan
     ne_graph_compute(ctx_.ctx_b.get(), &ctx_.gf);
-#endif
+
 
 #ifdef NE_PERF
     ne_graph_print(&ctx_.gf);
@@ -929,7 +903,8 @@ ChatGLMForConditionalGeneration::ChatGLMForConditionalGeneration(const ChatGLMCo
 
     CHATGLM_CHECK(ne_used_mem(ctx_.ctx_w.get()) == ctx_.ctx_w.get()->mem_size) << "corrupted model weights";
     CHATGLM_CHECK(ne_used_mem(ctx_.ctx_kv.get()) == ctx_.ctx_kv.get()->mem_size) << "corrupted kv cache";
-
+    std::cout << "(ctx_.ctx_w.get() = " << ne_used_mem(ctx_.ctx_w.get()) << "   "  << ctx_.ctx_w.get()->mem_size << std::endl;
+    std::cout << "ctx_.ctx_kv.get() = " << ne_used_mem(ctx_.ctx_kv.get()) << "   "  << ctx_.ctx_kv.get()->mem_size  << std::endl;
 
     // build state_dict
     state_dict_.reserve(3 + config.num_hidden_layers * 12);
@@ -1232,7 +1207,7 @@ ne_tensor *ChatGLM2Model::forward(ModelContext *ctx, ne_tensor *input_ids, int n
     ne_context *gctx = ctx->ctx_b.get();
     ne_tensor *hidden_states = word_embeddings.forward(ctx, input_ids);
     for (const auto &layer : layers) {
-        ne_set_scratch(gctx, ctx->scratch);
+        ne_set_scratch(ctx->ctx_b.get(), ctx->scratch);
         hidden_states = layer.forward(ctx, hidden_states, n_past);
     }
     ne_scratch empty_scratch = {0, 0, nullptr};
@@ -1257,8 +1232,8 @@ ChatGLM2ForConditionalGeneration::ChatGLM2ForConditionalGeneration(const ChatGLM
     lm_head = Linear(&ctx_, config.hidden_size, config.vocab_size, false);
 
     
-    // CHATGLM_CHECK(ne_used_mem(ctx_.ctx_w.get()) == ctx_.ctx_w.get()->mem_size) << "corrupted model weights";
-    // CHATGLM_CHECK(ne_used_mem(ctx_.ctx_kv.get()) == ctx_.ctx_kv.get()->mem_size) << "corrupted kv cache";
+    //CHATGLM_CHECK(ne_used_mem(ctx_.ctx_w.get()) == ctx_.ctx_w.get()->mem_size) << "corrupted model weights";
+    //CHATGLM_CHECK(ne_used_mem(ctx_.ctx_kv.get()) == ctx_.ctx_kv.get()->mem_size) << "corrupted kv cache";
     
     // CHATGLM_CHECK(ne_used_mem(ctx_.ctx_w.get()) == ne_get_mem_size(ctx_.ctx_w.get())) << "corrupted model weights";
     // CHATGLM_CHECK(ne_used_mem(ctx_.ctx_kv.get()) == ctx_kv_size) << "corrupted kv cache";
@@ -1339,18 +1314,13 @@ Pipeline::Pipeline(const std::string &path) {
     // load magic
     std::string magic = loader.read_string(2);
     //std::string magic = loader.read_string(4);
-    std::cout << "magic =" << magic << std::endl;
     CHATGLM_CHECK(magic == "ne") << "model file is broken (bad magic)";
 
     // load model type
     ModelType model_type = (ModelType)loader.read_basic<int>();
-    std::cout << "model_type =" << model_type << std::endl;
-
-    std::cout << "XZZ- ------------------!!!!!!!!!!!" << std::endl; 
 
     
     if (model_type == MODEL_TYPE_CHATGLM) {
-        std::cout << "I AM ONE !!!!!!!!!!!11" << std::endl;
         // load version
         int version = loader.read_basic<int>();
         CHATGLM_CHECK(version == 1) << "only support version 1 for now but got " << version;
@@ -1368,7 +1338,6 @@ Pipeline::Pipeline(const std::string &path) {
         model = std::make_unique<ChatGLMForConditionalGeneration>(config);
         model->load(loader);
     } else if (model_type == MODEL_TYPE_CHATGLM2) {
-        std::cout << "I AM TWO !!!!!!!!!!!" << std::endl;
         // load version
         int version = loader.read_basic<int>();
         CHATGLM_CHECK(version == 1) << "only support version 1 for now but got " << version;
@@ -1395,13 +1364,9 @@ Pipeline::Pipeline(const std::string &path) {
 std::string Pipeline::chat(const std::vector<std::string> &history, const GenerationConfig &gen_config,
                            BaseStreamer *streamer) const {
     std::vector<int> input_ids = tokenizer->encode_history(history, gen_config.max_context_length);
-    std::cout << "tokenizer OK !" << std::endl;
     std::vector<int> output_ids = model->generate(input_ids, gen_config, streamer);
-    std::cout << "Model Generate OK!" << std::endl;
-
     std::vector<int> new_output_ids(output_ids.begin() + input_ids.size(), output_ids.end());
     std::string output = tokenizer->decode(new_output_ids);
-    std::cout << "decode OK!" << std::endl;
     return output;
 }
 
