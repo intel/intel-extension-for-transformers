@@ -21,17 +21,13 @@
 
 #include "common/core/common.hpp"
 
-#define DEVICE_CONST const __attribute__((opencl_constant))
-#define DEVICE_PRINTF sycl::ext::oneapi::experimental::printf
-
 namespace gpu::xetla::limitation {
 
 namespace slm {
 static inline void check_alignment(const char *tag, auto offset) {
     if (offset % 4) {
-        DEVICE_CONST char fmt[]
-                = "%s: Base-address of SLM must be 4B aligned but is %d\n";
-        DEVICE_PRINTF(fmt, tag, offset);
+        DEVICE_PRINTF("%s: Base-address of SLM must be 4B aligned but is %d\n",
+                tag, offset);
     }
 }
 

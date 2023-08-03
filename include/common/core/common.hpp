@@ -54,6 +54,14 @@ using remove_const_t = typename std::remove_const<T>::type;
 
 #define XETLA_MARKER(message) [[deprecated(message)]]
 
+#define STR_APPEND(a, b) a b
+#define DEVICE_PRINTF(s, ...) \
+    do { \
+        const __attribute__((opencl_constant)) char f[] \
+                = STR_APPEND("[ Warning ] ", s); \
+        sycl::ext::oneapi::experimental::printf(f, ##__VA_ARGS__); \
+    } while (0)
+
 template <auto val>
 XETLA_MARKER("Help function to print value")
 inline constexpr void XETLA_PRINT() {}
