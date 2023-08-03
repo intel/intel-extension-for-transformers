@@ -206,7 +206,6 @@ int main(int argc, char **argv) {
     Args args = parse_args(argc, argv);
     try {
         chat(args);
-        std::cout << "chat OK" << std::endl;
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
         exit(EXIT_FAILURE);
