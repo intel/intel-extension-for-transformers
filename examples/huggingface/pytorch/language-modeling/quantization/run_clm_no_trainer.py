@@ -34,6 +34,12 @@ parser.add_argument("--awq", action="store_true")
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto",
                     help="Smooth quant parameter.")
+# ============gptq configs===============
+parser.add_argument("--gptq", action="store_true", help="Use GPTQ weight-only quantization algorithm.")
+parser.add_argument("--actorder", action="store_true", help="Whether to apply the activation order GPTQ heuristic.")
+parser.add_argument('--percdamp', type=float, default=.01, help='Percent of the average Hessian diagonal to use for dampening.')
+parser.add_argument('--gptq_max_len', type=int, default=2048, help='calibration set sequence length.')
+# =======================================
 parser.add_argument("--int8", action="store_true")
 parser.add_argument("--ipex", action="store_true", help="Use intel extension for pytorch.")
 parser.add_argument("--accuracy", action="store_true")
@@ -56,6 +62,27 @@ args = parser.parse_args()
 if args.ipex:
     import intel_extension_for_pytorch as ipex
 calib_size = 1
+
+def prepare_gptq_calibration(calib_dataset, model, seed = 0, nsamples = 128, seqlen = 2048):
+    # directly prepare tokenized data for gptq calibration
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
+    import random
+    random.seed(seed)
+    trainloader = []
+    for _ in range(nsamples):
+        while True:
+            i = random.randint(0, len(calib_dataset) - 1)
+            trainenc = tokenizer(calib_dataset[i]['text'], return_tensors='pt')
+            if trainenc.input_ids.shape[1] > seqlen:
+                break
+        i = random.randint(0, trainenc.input_ids.shape[1] - seqlen - 1)
+        j = i + seqlen
+        inp = trainenc.input_ids[:, i:j]
+        tar = inp.clone()
+        tar[:, :-1] = -100
+        trainloader.append((inp, tar))
+    return trainloader
 
 class Evaluator:
     def __init__(self, dataset, tokenizer, batch_size=8, pad_val=1, pad_max=196, is_calib=False):
@@ -134,6 +161,7 @@ class Evaluator:
         print("Latency: ", latency)
         return acc
 
+# Load the model
 if re.search("llama", args.model.lower()):
     import transformers
     from transformers import LlamaForCausalLM, LlamaTokenizer
@@ -181,14 +209,19 @@ else:
     )
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 
+# Set model's seq_len when GPTQ calibration is enabled.
+if args.gptq:
+    user_model.seqlen = args.gptq_max_len
+
 # to channels last
 user_model = user_model.to(memory_format=torch.channels_last)
 user_model.eval()
 
-
+# import pdb;pdb.set_trace()
 if args.quantize:
     # dataset
     calib_dataset = load_dataset(args.dataset, split="train")
+    import pdb;pdb.set_trace()
     calib_dataset = calib_dataset.shuffle(seed=42)
     calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
     calib_dataloader = DataLoader(
@@ -207,6 +240,8 @@ if args.quantize:
     from neural_compressor import PostTrainingQuantConfig, quantization
     if args.approach == 'weight_only':
         algo = 'AWQ' if args.awq else 'RTN'
+        if args.gptq:
+            algo = 'GPTQ'
         op_type_dict = {
             '.*':{ 	# re.match
                 "weight": {
@@ -238,6 +273,22 @@ if args.quantize:
             op_type_dict=op_type_dict,
             recipes=recipes,
         )
+    elif args.gptq:
+        recipes = {'percdamp': args.percdamp, 'actorder':args.actorder}
+        conf = PostTrainingQuantConfig(
+            backend="ipex" if args.ipex else "default",
+            approach=args.approach,
+            excluded_precisions=excluded_precisions,
+            op_type_dict=op_type_dict,
+            op_name_dict={
+                '.*lm_head':{ 	# re.match
+                    "weight": {
+                        'dtype': 'fp32'
+                    },
+                },
+            },
+            recipes=recipes,
+        )
     else:
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
@@ -245,6 +296,11 @@ if args.quantize:
             excluded_precisions=excluded_precisions,
             op_type_dict=op_type_dict,
         )
+
+    # when GPTQ is enabled: use assistive functions to modify calib_dataloader and calib_func
+    if args.gptq:
+        calib_dataloader = prepare_gptq_calibration(calib_dataset, args.model)
+        calib_func = None
 
     q_model = quantization.fit(
         user_model,

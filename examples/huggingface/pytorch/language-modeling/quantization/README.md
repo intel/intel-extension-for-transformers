@@ -48,7 +48,7 @@ python run_clm_no_trainer.py \
     --approach weight_only \
     --output_dir "saved_results" \
 ```
-**Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN/AWQ[1] algorithms. You can try it with `--approach weight_only`. `--awq` will trigger AWQ algorithm.
+**Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN/AWQ[1] algorithms. You can try it with `--approach weight_only`. `--awq` will trigger AWQ algorithm. `--gptq` will trigger GPTQ algorithm.
 
 #### Accuracy with lm_eval
 ```bash
@@ -224,3 +224,4 @@ python run_mlm.py \
 ```
 
 [1]. Lin, Ji, et al. "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration." arXiv preprint arXiv:2306.00978 (2023).
+[2]. Elias, Frantar, et al. "GPTQ: Accurate Post-training Compression for Generative Pretrained Transformers." arXiv preprint arXiv:2210.17323 (2023).
