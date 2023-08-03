@@ -4,7 +4,7 @@ NeuralChat Fine-tuning
 This example demonstrates how to finetune the pretrained large language model (LLM) with the instruction-following dataset for creating the NeuralChat, a chatbot that can conduct the textual conversation. Giving NeuralChat the textual instruction, it will respond with the textual response. This example have been validated on the 4th Gen Intel® Xeon® Processors, Sapphire Rapids.
 
 ## Validated Model List
-|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization Tuning | Code Tuning | 
+|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation | 
 |------------------------------------|---|---|--- | --- |
 |LLaMA series| ✅| ✅✅||✅| ✅
 |LLaMA2 series| ✅| ✅|✅| ✅
