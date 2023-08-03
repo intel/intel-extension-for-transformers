@@ -92,15 +92,19 @@ def main(args_in: Optional[List[str]] = None) -> None:
     hparams["multiple_of"] = 1
     fout.write(struct.pack("i", ne_file_magic)) # magic: ne in hex
     #fout.write(struct.pack("i", ne_file_version))
+
     fout.write(struct.pack("i", hparams["vocab_size"]))
-    fout.write(struct.pack("i", hparams["max_position_embeddings"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
+    fout.write(struct.pack("i", 0)) # dummy data
     fout.write(struct.pack("i", hparams["num_attention_heads"]))
     fout.write(struct.pack("i", hparams["num_hidden_layers"]))
     fout.write(struct.pack("i", int((hparams["hidden_size"] / hparams["num_attention_heads"]
-                                ) * hparams["rotary_pct"]))) # rotary_dim
-    fout.write(struct.pack("i", int(hparams["use_parallel_residual"])))
+                                ) * hparams["rotary_pct"])))
     fout.write(struct.pack("i", ftype))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("f", 0.0))
+    fout.write(struct.pack("f", 0.0))
+    fout.write(struct.pack("i", int(hparams["use_parallel_residual"])))
 
     # Is this correct??
     dot_token = tokenizer.encode(".")[0]

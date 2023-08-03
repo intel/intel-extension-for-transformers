@@ -39,7 +39,8 @@ struct starcoder_hparams {
 };
 
 // quantize a model
-bool starcoder_model_quantize(const std::string& fname_inp, const std::string& fname_out, ne_ftype ftype) {
+bool starcoder_model_quantize(const std::string& fname_inp, const std::string& fname_out, const quant_params& params,
+                              ne_ftype ftype) {
   gpt_vocab vocab;
 
   printf("%s: loading model from '%s'\n", __func__, fname_inp.c_str());
@@ -128,17 +129,16 @@ bool starcoder_model_quantize(const std::string& fname_inp, const std::string& f
   }
 
   // regexes of tensor names to be quantized
-  // only quant gemm
-  // but skip "model/lm_head",
   const std::vector<std::string> to_quant = {
       "model/wte",
+      "model/lm_head",
       "model/h.*/attn/c_attn/w",
       "model/h.*/attn/c_proj/w",
       "model/h.*/mlp/c_fc/w",
       "model/h.*/mlp/c_proj/w",
   };
 
-  if (!ne_common_quantize_0(finp, fout, ftype, to_quant, {})) {
+  if (!ne_common_quantize_0(finp, fout, params, to_quant, {})) {
     fprintf(stderr, "%s: failed to quantize model '%s'\n", __func__, fname_inp.c_str());
     return false;
   }
@@ -162,8 +162,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "invalid file names '%s'\n", fname_inp.c_str());
     return 1;
   }
-  ne_ftype ftype = NE_FTYPE_MAP[
-      std::make_tuple(q_params.bits, q_params.alg, q_params.block_size, q_params.scale_dtype, q_params.gemm_isa)];
+  ne_ftype ftype = quant_params_to_ftype(q_params);
 
   // needed to initialize f16 tables
   {
@@ -180,7 +179,7 @@ int main(int argc, char** argv) {
   {
     const int64_t t_start_us = ne_time_us();
 
-    if (!starcoder_model_quantize(fname_inp, fname_out, ne_ftype(ftype))) {
+    if (!starcoder_model_quantize(fname_inp, fname_out, q_params, ne_ftype(ftype))) {
       fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, fname_inp.c_str());
       return 1;
     }

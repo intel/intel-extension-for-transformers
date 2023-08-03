@@ -1,0 +1,211 @@
+name: Optimize Model Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'intel_extension_for_transformers/optimization/**'
+      - 'intel_extension_for_transformers/evaluation/**'
+      - 'intel_extension_for_transformers/preprocessing/**'
+      - '.github/workflows/optimize-test.yml'
+      - '.github/workflows/script/models/run_optimize.sh'
+
+
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  OUT_SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script/models
+  SCRIPT_PATH: /intel-extension-for-transformers/.github/workflows/script
+  DOCKER_CONFIG_NAME: "commonDockerConfig"
+  REPO_NAME: "intel-extension-for-transformers"
+  REPO_TAG: "py38"
+  DOCKER_FILE_NAME: "devel"
+  CONTAINER_NAME: "modelTest"
+  EXTRA_CONTAINER_NAME: "utTest"
+
+
+jobs:
+  Optimize-Workflow:
+    runs-on: itrex-node
+    strategy:
+      matrix:
+        include:
+          - modelName: "bert_base_mrpc_static"
+            framework: "pytorch"
+            mode: "accuracy,performance"
+          - modelName: "bert_base_mrpc_static"
+            framework: "tensorflow"
+            mode: "accuracy,performance"
+      fail-fast: true
+    steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
+              docker start $(docker ps -aq)
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+    # We need this because GitHub needs to clone the branch to pipeline
+      - name: Docker Build
+        run: |
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+
+      - name: Docker Run
+        run: |
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            docker stop $(docker ps -aq)
+            docker rm -vf ${{ env.CONTAINER_NAME }} || true
+          fi
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          -v ${{ github.workspace }}:/intel-extension-for-transformers \
+          ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
+
+      - name: Env build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
+
+      - name: Binary build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
+          && bash install_binary.sh"
+
+      - name: Download Reference Artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: optimize-test.yml
+          name: ${{ matrix.framework }}-${{ matrix.modelName }}
+          run_id: ${{ vars.OPTIMIZE_REF_ID }}
+          path: ${{ github.workspace }}/${{ matrix.framework }}_${{ matrix.modelName }}_refer_log
+          name_is_regexp: true
+          repo: ${{ github.repository }}
+          check_artifacts: false
+          search_artifacts: false
+          skip_unpack: false
+          if_no_artifact_found: warn
+
+      - name: Display structure of downloaded files
+        run: ls -R
+
+      - name: Tuning
+        run: |
+            docker exec ${{ env.CONTAINER_NAME }} \
+            bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
+            && bash run_optimize.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode='tuning'"
+        
+      - name: INT8 Benchmark
+        run: |
+            docker exec ${{ env.CONTAINER_NAME }} \
+            bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
+            && bash run_optimize.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=int8 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
+        
+      - name: FP32 Benchmark
+        run: |
+            docker exec ${{ env.CONTAINER_NAME }} \
+            bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
+            && bash run_optimize.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=fp32 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
+
+      - name: Collect Log
+        run: |
+            docker exec ${{ env.CONTAINER_NAME }} \
+            bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
+            && python collect_model_log.py --model=${{ matrix.modelName }} \
+             --framework=${{ matrix.framework }} \
+             --logs_dir=/intel-extension-for-transformers/${{matrix.framework}}_${{matrix.modelName}} \
+             --output_dir=/intel-extension-for-transformers/${{matrix.framework}}_${{matrix.modelName}} \
+             --build_id=${{ github.run_id }} \
+             --model_test_type=optimize"
+        
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: ${{ matrix.framework }}-${{ matrix.modelName }}
+          path: ${{ github.workspace }}/${{ matrix.framework }}_${{ matrix.modelName }}
+          if-no-files-found: ignore # 'warn' or 'ignore' are also available, defaults to `warn`
+          retention-days: 60 # 1 <= retention-days <= 90
+    
+  Genreate-Report:
+    runs-on: itrex-node-spell
+    needs: [Optimize-Workflow]
+    steps:
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+
+      - name: Download Summary Log
+        uses: actions/download-artifact@v3
+        with:
+          path: ${{ env.OUT_SCRIPT_PATH }}/log
+        
+      - name: Analysis Summary
+        run: |
+            cd ${{ env.OUT_SCRIPT_PATH }}
+            mkdir generated
+            pip install requests
+            python summary.py --logs_dir ${{ env.OUT_SCRIPT_PATH }}/log --output_dir=generated
+
+      - name: Download Reference Artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: optimize-test.yml
+          name: FinalReport
+          run_id: ${{ vars.OPTIMIZE_REF_ID }}
+          path: ${{ env.OUT_SCRIPT_PATH }}
+          name_is_regexp: true
+          repo: ${{ github.repository }}
+          check_artifacts: false
+          search_artifacts: false
+          skip_unpack: false
+          if_no_artifact_found: warn
+        
+      - name: Display structure of downloaded files
+        run: cd ${{ env.OUT_SCRIPT_PATH }}/log && ls -R
+
+      - name: Generate report
+        run: |
+          echo "------ Generating final report.html ------"
+          cd ${{ env.OUT_SCRIPT_PATH }}
+          /usr/bin/bash generate_report.sh --workflow=optimize
+        env:
+          RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
+          BUILD_NUMBER: ${{ github.run_id }}
+          JOB_STATUS: succeed
+          MR_source_branch: ${{ github.head_ref }}
+          ghprbActualCommit: ${{ github.event.pull_request.head.sha }}
+
+      
+      - name: Publish Report
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: FinalReport
+          path: ${{ env.OUT_SCRIPT_PATH }}/generated
+
+      - name: Specify performance regression
+        if: ${{ !cancelled() }}
+        run: |
+          if [ ${{ env.is_perf_reg }} == 'true' ]; then
+            echo "[Performance Regression] Some model performance regression occurred, please check artifacts and reports."
+            exit 1
+          fi

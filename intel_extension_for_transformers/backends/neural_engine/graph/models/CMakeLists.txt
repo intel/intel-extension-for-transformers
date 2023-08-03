@@ -15,3 +15,5 @@
 file(GLOB MODEL_UTILS_SOURCE "model_utils/*.cpp")
 add_subdirectory(llama)
 add_subdirectory(gptj)
+add_subdirectory(mpt)
+add_subdirectory(gptneox)
