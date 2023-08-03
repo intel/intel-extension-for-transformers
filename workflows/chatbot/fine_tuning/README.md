@@ -9,7 +9,7 @@ This example demonstrates how to finetune the pretrained large language model (L
 |LLaMA series| ✅| ✅|✅| ✅
 |LLaMA2 series| ✅| ✅|✅| ✅
 |MPT series| ✅| ✅|✅| ✅
-|FLAN-T5 series| ✅ | N**WIP**| **WIP** | **WIP**|
+|FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
 
 # Prerequisite​
 
