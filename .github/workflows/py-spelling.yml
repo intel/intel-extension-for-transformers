@@ -26,7 +26,7 @@ jobs:
         run: |
           docker ps -a
           if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
-              docker start $(docker ps -aq)
+              docker start ${{ env.CONTAINER_NAME }}-${{ runner.name }}
               echo "remove left files through container ..."
               docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
@@ -41,7 +41,7 @@ jobs:
       - name: Docker Run
         run: |
           if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
-            docker stop $(docker ps -aq)
+            docker stop ${{ env.CONTAINER_NAME }}-${{ runner.name }}
             docker rm -vf ${{ env.CONTAINER_NAME }}-${{ runner.name }} || true
           fi
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }}-${{ runner.name }} --shm-size="1g" \
