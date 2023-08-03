@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 import re, os, logging
 from threading import Thread
+import contextlib
 from transformers import (
     GenerationConfig,
     AutoModelForCausalLM,
@@ -14,6 +15,13 @@ from transformers import (
     StoppingCriteriaList,
     StoppingCriteria,
 )
+# Set necessary env variables
+os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
+os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
+from transformers.deepspeed import is_deepspeed_available
+
+if is_deepspeed_available():
+    import deepspeed
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -173,12 +181,7 @@ class StopOnTokens(StoppingCriteria):
 
 def max_input_len(model, outlen=0):
     # need to adjust due to perf and real usage
-    if hasattr(model.config, "max_seq_len"):
-        return max((model.config.max_seq_len >> 2) - outlen, 0)
-    if hasattr(model.config, "max_position_embeddings"):
-        return max((model.config.max_position_embeddings >> 2) - outlen, 0)
-
-    return 0
+    return 128
 
 
 def create_prompts(examples):
@@ -204,6 +207,14 @@ def get_optimized_model_name(config):
             return model_type
 
     return None
+
+
+def model_is_optimized(config):
+    """
+    Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a
+    new input token_idx.
+    """
+    return get_optimized_model_name(config) is not None or config.model_type == "mpt"
 
 
 def get_ds_injection_policy(config):
@@ -244,7 +255,44 @@ def get_ds_injection_policy(config):
 
 
 MODELS = {}
+def smart_context_manager(use_deepspeed=False, model_dtype=torch.bfloat16):
+    if use_deepspeed:
+        ctx_manager = deepspeed.OnDevice(dtype=model_dtype, device="cpu")
+    else:
+        ctx_manager = contextlib.nullcontext()
+    return ctx_manager
 
+
+def import_deepspeed():
+    if not is_deepspeed_available():
+        raise ImportError(
+            "This script requires deepspeed: `pip install"
+            " git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
+        )
+    # Initialize process(es) for DeepSpeed
+    deepspeed.init_distributed(dist_backend="hccl")
+    logger.info("DeepSpeed is enabled.")
+
+
+def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs):
+    # Initialize the model
+    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+
+    world_size, rank, local_rank = initialize_distributed_hpu()
+
+    ds_inference_kwargs = {"dtype": torch.bfloat16}
+    ds_inference_kwargs["tensor_parallel"] = {"tp_size": world_size}
+    ds_inference_kwargs["enable_cuda_graph"] = use_hpu_graphs
+    # Make sure all devices/nodes have access to the model checkpoints
+    torch.distributed.barrier()
+
+    ds_inference_kwargs["injection_policy"] = get_ds_injection_policy(model.config)
+    model = deepspeed.init_inference(model, **ds_inference_kwargs)
+    return model.module
+
+
+def set_cpu_running_env():
+    os.environ["ONEDNN_MAX_CPU_ISA"]="AVX512_CORE_BF16"
 
 def load_model(
     model_name,
@@ -252,7 +300,7 @@ def load_model(
     device="cpu",
     use_hpu_graphs=False,
     cpu_jit=False,
-    use_cache=False,
+    use_cache=True,
     peft_path=None,
     use_deepspeed=False,
 ):
@@ -271,34 +319,46 @@ def load_model(
         ValueError: If the model is not supported, ValueError is raised.
     """
     print("Loading model {}".format(model_name))
+    if device == 'hpu':
+        if use_deepspeed:
+            import_deepspeed()
+        # Tweak generation so that it runs faster on Gaudi
+        from optimum.habana.transformers.modeling_utils import (
+            adapt_transformers_to_gaudi,
+        )
+        adapt_transformers_to_gaudi()
+    else:
+        set_cpu_running_env()
     MODELS[model_name] = {}
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         use_fast=False if re.search("llama", model_name, re.IGNORECASE) else True,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
-        model = AutoModelForSeq2SeqLM.from_pretrained(
-            model_name, low_cpu_mem_usage=True
-        )
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = AutoModelForSeq2SeqLM.from_pretrained(
+                model_name, low_cpu_mem_usage=True
+            )
     elif re.search("mpt", model_name, re.IGNORECASE):
         from models.mpt.modeling_mpt import MPTForCausalLM
-
-        model = MPTForCausalLM.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            torch_dtype=torch.bfloat16,
-            low_cpu_mem_usage=True,
-            torchscript=cpu_jit,
-        )
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = MPTForCausalLM.from_pretrained(
+                model_name,
+                trust_remote_code=True,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True,
+                torchscript=cpu_jit,
+            )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("opt", model_name, re.IGNORECASE)
     ):
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
-        )
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
+            )
     else:
         raise ValueError(
             f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT now."
@@ -334,11 +394,6 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-    if peft_path:
-        from peft import PeftModel
-
-        model = PeftModel.from_pretrained(model, peft_path)
-
     if device == "hpu":
         model = model.eval().to("hpu")
 
@@ -346,7 +401,21 @@ def load_model(
             from habana_frameworks.torch.hpu import wrap_in_hpu_graph
 
             model = wrap_in_hpu_graph(model)
+
+        if use_deepspeed:
+            model = init_deepspeed_inference(model=model, model_name_or_path=model_name, use_hpu_graphs=use_hpu_graphs)
+
+        if peft_path:
+            from peft import PeftModel
+            model = PeftModel.from_pretrained(model, peft_path)
+            model = model.to(torch.bfloat16)
     else:
+
+        if peft_path:
+            from peft import PeftModel
+            model = PeftModel.from_pretrained(model, peft_path)
+            model = model.to(torch.bfloat16)
+
         import intel_extension_for_pytorch as intel_ipex
 
         model = intel_ipex.optimize(
@@ -368,7 +437,7 @@ def load_model(
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
 
-    if tokenizer.pad_token is None:
+    if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
 
@@ -430,7 +499,7 @@ def predict_stream(**params):
     bad_words_ids = params["bad_words_ids"] if "bad_words_ids" in params else None
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
-    use_cache = params["use_cache"] if "use_cache" in params else False
+    use_cache = params["use_cache"] if "use_cache" in params else True
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
@@ -446,8 +515,14 @@ def predict_stream(**params):
             [prompt], return_tensors="pt", padding=True
         )
         input_token_len = input_tokens.input_ids.shape[-1]
-        stop_token_ids = [model.generation_config.eos_token_id]
-        stop_token_ids.append(tokenizer(".", return_tensors="pt").input_ids)
+        if isinstance(model.generation_config.eos_token_id, list):
+            stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
+        else:
+            stop_token_ids = [model.generation_config.eos_token_id]
+        end_token_id = torch.flatten(tokenizer("go.", return_tensors="pt").input_ids)[
+            -1
+        ]
+        stop_token_ids.append(end_token_id)
         generation_config = GenerationConfig(
             temperature=temperature,
             top_p=top_p,
@@ -491,8 +566,14 @@ def predict_stream(**params):
             max_length=max_input_len(model, max_new_tokens),
         )
         input_token_len = input_tokens.input_ids.shape[-1]
-        stop_token_ids = [model.generation_config.eos_token_id]
-        stop_token_ids.append(tokenizer(".", return_tensors="pt").input_ids)
+        if isinstance(model.generation_config.eos_token_id, list):
+            stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
+        else:
+            stop_token_ids = [model.generation_config.eos_token_id]
+        end_token_id = torch.flatten(tokenizer("go.", return_tensors="pt").input_ids)[
+            -1
+        ]
+        stop_token_ids.append(end_token_id)
         generate_kwargs = {
             "stopping_criteria": StoppingCriteriaList(
                 [
@@ -504,14 +585,6 @@ def predict_stream(**params):
                 ]
             )
         }
-        is_graph_optimized = False
-        if (
-            re.search("gpt", model_name, re.IGNORECASE)
-            or re.search("bloom", model_name, re.IGNORECASE)
-            or re.search("mpt", model_name, re.IGNORECASE)
-            or re.search("opt", model_name, re.IGNORECASE)
-        ):
-            is_graph_optimized = True
         # Move inputs to target device(s)
         for t in input_tokens:
             if torch.is_tensor(input_tokens[t]):
@@ -526,7 +599,7 @@ def predict_stream(**params):
         generation_config.bad_words_ids = bad_words_ids
         generation_config.force_words_ids = force_words_ids
         generation_config.num_return_sequences = num_return_sequences
-        generation_config.static_shapes = is_graph_optimized
+        generation_config.static_shapes = model_is_optimized(model.config)
         generation_config.top_k = top_k
         # TODO there is an issue when top_p is used in Habana
         # generation_config.top_p = top_p
@@ -545,7 +618,7 @@ def predict_stream(**params):
                     max_new_tokens=max_new_tokens,
                     lazy_mode=True,
                     hpu_graphs=use_hpu_graphs,
-                    ignore_eos = False,
+                    ignore_eos=False,
                 )
 
         generation_thread = Thread(target=generate_output)
@@ -625,8 +698,14 @@ def predict(**params):
             [prompt], return_tensors="pt", padding=True
         )
         input_token_len = input_tokens.input_ids.shape[-1]
-        stop_token_ids = [model.generation_config.eos_token_id]
-        stop_token_ids.append(tokenizer(".", return_tensors="pt").input_ids)
+        if isinstance(model.generation_config.eos_token_id, list):
+            stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
+        else:
+            stop_token_ids = [model.generation_config.eos_token_id]
+        end_token_id = torch.flatten(tokenizer("go.", return_tensors="pt").input_ids)[
+            -1
+        ]
+        stop_token_ids.append(end_token_id)
         generation_config = GenerationConfig(
             temperature=temperature,
             top_p=top_p,
@@ -664,8 +743,14 @@ def predict(**params):
             max_length=max_input_len(model, max_new_tokens),
         )
         input_token_len = input_tokens.input_ids.shape[-1]
-        stop_token_ids = [model.generation_config.eos_token_id]
-        stop_token_ids.append(tokenizer(".", return_tensors="pt").input_ids)
+        if isinstance(model.generation_config.eos_token_id, list):
+            stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
+        else:
+            stop_token_ids = [model.generation_config.eos_token_id]
+        end_token_id = torch.flatten(tokenizer("go.", return_tensors="pt").input_ids)[
+            -1
+        ]
+        stop_token_ids.append(end_token_id)
         generate_kwargs = {
             "stopping_criteria": StoppingCriteriaList(
                 [
@@ -677,14 +762,6 @@ def predict(**params):
                 ]
             )
         }
-        is_graph_optimized = False
-        if (
-            re.search("gpt", model_name, re.IGNORECASE)
-            or re.search("bloom", model_name, re.IGNORECASE)
-            or re.search("mpt", model_name, re.IGNORECASE)
-            or re.search("opt", model_name, re.IGNORECASE)
-        ):
-            is_graph_optimized = True
         # Move inputs to target device(s)
         for t in input_tokens:
             if torch.is_tensor(input_tokens[t]):
@@ -699,7 +776,7 @@ def predict(**params):
         generation_config.bad_words_ids = bad_words_ids
         generation_config.force_words_ids = force_words_ids
         generation_config.num_return_sequences = num_return_sequences
-        generation_config.static_shapes = is_graph_optimized
+        generation_config.static_shapes = model_is_optimized(model.config)
         generation_config.top_k = top_k
         # TODO there is an issue when top_p is used in Habana
         # generation_config.top_p = top_p
@@ -716,7 +793,7 @@ def predict(**params):
                 max_new_tokens=max_new_tokens,
                 lazy_mode=True,
                 hpu_graphs=use_hpu_graphs,
-                ignore_eos = False,
+                ignore_eos=False,
             )
     output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
     if "### Response:" in output:
@@ -758,92 +835,39 @@ def main():
     )
 
     if args.habana:
-        if use_deepspeed:
-            # Set necessary env variables
-            os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
-            os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
-
-        # Device is HPU
-        args.device = "hpu"
-        import habana_frameworks.torch.hpu as torch_hpu
-
-        # Get world size, rank and local rank
-        from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
-
-        world_size, rank, args.local_rank = initialize_distributed_hpu()
-
-        if use_deepspeed:
-            # Check if DeepSpeed is installed
-            from transformers.deepspeed import is_deepspeed_available
-
-            if not is_deepspeed_available():
-                raise ImportError(
-                    "This script requires deepspeed: `pip install"
-                    " git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
-                )
-            import deepspeed
-
-            # Initialize process(es) for DeepSpeed
-            deepspeed.init_distributed(dist_backend="hccl")
-            logger.info("DeepSpeed is enabled.")
-        else:
-            logger.info("Single-device run.")
-
-        # Tweak generation so that it runs faster on Gaudi
-        from optimum.habana.transformers.modeling_utils import (
-            adapt_transformers_to_gaudi,
-        )
-
-        adapt_transformers_to_gaudi()
         # Set seed before initializing model.
         from optimum.habana.utils import set_seed
 
+        set_seed(args.seed)
+    else:
+        from transformers import set_seed
         set_seed(args.seed)
 
     tokenizer_path = (
         args.tokenizer_name if args.tokenizer_name is not None else base_model_path
     )
 
-    if use_deepspeed and args.habana:
-        config = AutoConfig.from_pretrained(base_model_path, trust_remote_code=True)
-        with deepspeed.OnDevice(dtype=torch.bfloat16, device="cpu"):
-            load_model(
-                base_model_path,
-                tokenizer_path,
-                device="hpu",
-                use_hpu_graphs=args.use_hpu_graphs,
-                cpu_jit=args.jit,
-                use_cache=args.use_kv_cache,
-                use_deepspeed=True,
-            )
-        model = MODELS[base_model_path]["model"]
-        # Initialize the model
-        ds_inference_kwargs = {"dtype": torch.bfloat16}
-        ds_inference_kwargs["tensor_parallel"] = {"tp_size": world_size}
-        ds_inference_kwargs["enable_cuda_graph"] = args.use_hpu_graphs
-        # Make sure all devices/nodes have access to the model checkpoints
-        torch.distributed.barrier()
-        ds_inference_kwargs["injection_policy"] = get_ds_injection_policy(config)
-        model = deepspeed.init_inference(model, **ds_inference_kwargs)
-        MODELS[base_model_path]["model"] = model.module
-    else:
-        load_model(
-            base_model_path,
-            tokenizer_path,
-            device="hpu" if args.habana else "cpu",
-            use_hpu_graphs=args.use_hpu_graphs,
-            cpu_jit=args.jit,
-            use_cache=args.use_kv_cache,
-        )
-
+    load_model(
+        base_model_path,
+        tokenizer_path,
+        device="hpu" if args.habana else "cpu",
+        use_hpu_graphs=args.use_hpu_graphs,
+        cpu_jit=args.jit,
+        use_cache=args.use_kv_cache,
+        peft_path=args.peft_model_path,
+        use_deepspeed=True if use_deepspeed and args.habana else False,
+    )
+    if args.habana:
+        from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+        world_size, rank, args.local_rank = initialize_distributed_hpu()
     if args.habana and rank in [-1, 0]:
         logger.info(f"Args: {args}")
-        logger.info(f"device: {args.device}, n_hpu: {world_size}, bf16")
-
+        logger.info(f"n_hpu: {world_size}, bf16")
     # warmup, the first time inference take longer because of graph compilation
     if args.local_rank in [-1, 0]:
         start_time = time.time()
         print("Warmup, Response: ")
+
     for new_text in predict_stream(
         model_name=base_model_path,
         device="hpu" if args.habana else "cpu",
@@ -899,7 +923,9 @@ def main():
                 token_len = token_len + 1
         if args.local_rank in [-1, 0]:
             duration = time.time() - first_time_stamp
-            logger.info(f"duration: {time.time() - start_time}, msecond_per_token = {duration*1000/(token_len-1)}")
+            logger.info(
+                f"duration: {time.time() - start_time}, msecond_per_token = {duration*1000/(token_len-1)}"
+            )
             logger.info("=" * (60 + len(idxs)))
 
     for idx, tp in enumerate(zip(prompts, args.instructions)):

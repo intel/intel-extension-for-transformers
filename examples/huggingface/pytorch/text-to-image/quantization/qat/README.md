@@ -43,14 +43,36 @@ python text2images.py \
     --captions "a photo of an astronaut riding a horse on mars"
 ```
 
-Below are two results comparison of fp32 model and int8 model. Note int8 model is trained on an Intel® Xeon® Platinum 8480+ Processor.
+You can also use BF16 UNet for inference on some steps of denoising loop instead of INT8 UNet to improve output images quality, to do so, just add `--use_bf16` argument in the above command.
+
+Below are two results comparison of fp32 model, int8 model and mixture of bf16 model and int8 model. Note int8 model is trained on an Intel® Xeon® Platinum 8480+ Processor.
 <br>
-With caption `"a photo of an astronaut riding a horse on mars"`, results of fp32 model and int8 model are listed left and right respectively.
+With caption `"a photo of an astronaut riding a horse on mars"`, results of fp32 model, int8 model and mixture of bf16 model and int8 model are listed left, middle and right respectively.
 <br>
 <img src="./fp32 images/a photo of an astronaut riding a horse on mars fp32.png" width = "300" height = "300" alt="FP32" align=center />
 <img src="./int8 images/a photo of an astronaut riding a horse on mars int8.png" width = "300" height = "300" alt="INT8" align=center />
+<img src="./int8 bf16 images/a photo of an astronaut riding a horse on mars int8 bf16.png" width = "300" height = "300" alt="INT8 BF16" align=center />
 
-With caption `"The Milky Way lies in the sky, with the golden snow mountain lies below, high definition"`, results of fp32 model and int8 model are listed left and right respectively.
+With caption `"The Milky Way lies in the sky, with the golden snow mountain lies below, high definition"`, results of fp32 model, int8 model and mixture of bf16 model and int8 model are listed left, middle and right respectively.
 <br>
 <img src="./fp32 images/The Milky Way lies in the sky, with the golden snow mountain lies below, high definition fp32.png" width = "300" height = "300" alt="FP32" align=center />
 <img src="./int8 images/The Milky Way lies in the sky, with the golden snow mountain lies below, high definition int8.png" width = "300" height = "300" alt="INT8" align=center />
+<img src="./int8 bf16 images/The Milky Way lies in the sky, with the golden snow mountain lies below, high definition int8 bf16.png" width = "300" height = "300" alt="INT8 BF16" align=center />
+
+## FID evaluation
+We have also evaluated FID scores on COCO2017 validation dataset for FP32 model, BF16 model, INT8 model and mixture of BF16 and INT8 model. FID results are listed below.
+
+| Precision            | FP32  | BF16  | INT8  | INT8+BF16 |
+|----------------------|-------|-------|-------|-----------|
+| FID on COCO2017 val  | 30.48 | 30.58 | 35.46 | 30.63     |
+
+To evaluated FID score on COCO2017 validation dataset for mixture of BF16 and INT8 model, you can use below command.
+
+```bash
+python evaluate_fid.py \
+    --model_name_or_path runwayml/stable-diffusion-v1-5 \
+    --int8_model_path sdv1-5-qat_kd/quant_model.pt \
+    --dataset_path /path/to/COCO2017 \
+    --output_dir ./output_images \
+    --precision int8-bf16
+```

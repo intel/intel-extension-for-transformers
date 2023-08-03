@@ -65,6 +65,7 @@ void Llama::init(const char* path_model, model_context& lctx, int n_ctx_, int n_
   model.hparams = ml->file_loaders.at(0)->hparams;
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
   auto& hparams = model.hparams;
+  hparams.n_ctx = n_ctx;
   n_ff = ((2 * (4 * hparams.n_embd) / 3 + hparams.n_mult - 1) / hparams.n_mult) * hparams.n_mult;
   fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
   fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);

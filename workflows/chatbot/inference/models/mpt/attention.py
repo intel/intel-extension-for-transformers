@@ -20,26 +20,26 @@ def _reset_is_causal(num_query_tokens: int, num_key_tokens: int, original_is_cau
 def scaled_multihead_dot_product_attention(query, key, value, n_heads, past_key_value=None, softmax_scale=None, attn_bias=None, key_padding_mask=None, is_causal=False, dropout_p=0.0, training=False, needs_weights=False, multiquery=False,token_idx=None):
     q = rearrange(query, 'b s (h d) -> b h s d', h=n_heads)
     kv_n_heads = 1 if multiquery else n_heads
-    k = rearrange(key, 'b s (h d) -> b h d s', h=kv_n_heads)
+    k = rearrange(key, 'b s (h d) -> b h s d', h=kv_n_heads)
     v = rearrange(value, 'b s (h d) -> b h s d', h=kv_n_heads)
     if past_key_value is not None:
         if token_idx is not None:
             # HPU bug WA
             if len(past_key_value) != 0:
-                past_key_value[0].index_add_(3, token_idx - 1, k - torch.index_select(past_key_value[0], 3, token_idx - 1))
+                past_key_value[0].index_add_(2, token_idx - 1, k - torch.index_select(past_key_value[0], 2, token_idx - 1))
                 past_key_value[1].index_add_(2, token_idx - 1, v - torch.index_select(past_key_value[1], 2, token_idx - 1))
                 k = past_key_value[0]
                 v = past_key_value[1]
         else:
             if len(past_key_value) != 0:
-                k = torch.cat((past_key_value[0], k), dim=3)
+                k = torch.cat((past_key_value[0], k), dim=2)
                 v = torch.cat((past_key_value[1], v), dim=2)
         past_key_value = (k, v)
     (b, _, s_q, d) = q.shape
-    s_k = k.size(-1)
+    s_k = k.size(2)
     if softmax_scale is None:
         softmax_scale = 1 / math.sqrt(d)
-    attn_weight = q.matmul(k) * softmax_scale
+    attn_weight = q.matmul(k.transpose(2, 3)) * softmax_scale
     if attn_bias is not None:
         _s_q = max(0, attn_bias.size(2) - s_q)
         _s_k = max(0, attn_bias.size(3) - s_k)

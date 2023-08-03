@@ -1,5 +1,5 @@
 # Step-by-Step
-We provide the inference benchmarking script `run_generation.py` for Starcoder models, [bigcode/starcode](https://huggingface.co/bigcode/starcoder), [bigcode/starcodebase](https://huggingface.co/bigcode/starcoderbase) for code generation tasks. 
+We provide the inference benchmarking script `run_generation.py` for Starcoder models, [bigcode/starcode](https://huggingface.co/bigcode/starcoder), [bigcode/starcodebase](https://huggingface.co/bigcode/starcoderbase) for code generation tasks, the evaluation part(solution execution) for [MultiPL-E](https://github.com/nuprl/MultiPL-E) requires extra dependencies for some programming languages, we provide a `Dockerfile-multiple` with all dependencies, see [Docker](./Dockerfile-multiple) for more details.
 
 
 # Prerequisite​
@@ -49,7 +49,7 @@ We use the local gpt_bigcode defination script `modeling_gpt_bigcode.py` in `run
 
 ## 1. Quantization
 ``` bash
-accelerate launch run_generation.py \
+python run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --quantize \
@@ -65,26 +65,20 @@ accelerate launch run_generation.py \
 ## 2. Performance
 ```bash
 # --int8 is used for int8 model
-accelerate launch run_generation.py \
+python run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --int8 \
     --ipex \
     --benchmark \
+    --prompt_size 32 \
     --batch_size 1
 ```
 
 ## 3. Accuracy
-Please install [bigcode-evaluation-harness](https://github.com/bigcode-project/bigcode-evaluation-harness) before measuring accuracy.
-```bash
-git clone https://github.com/bigcode-project/bigcode-evaluation-harness.git
-cd bigcode-evaluation-harness
-pip install -e .
-```
-And then, run the accuracy command.
 ```bash
 # --int8 is used for int8 model
-accelerate launch run_generation.py \
+python run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --int8 \    
@@ -96,3 +90,56 @@ accelerate launch run_generation.py \
     --temperature 0.2 \
     --do_sample
 ```
+>Note:
+please follow the [guide](https://huggingface.co/docs/accelerate/usage_guides/ipex) to set up the configuration if `accelerate launch` is used.
+
+# Docker Run
+
+We provide a Dockerfile based [bigcode-evaluation-harness](https://github.com/bigcode-project/bigcode-evaluation-harness/blob/main/Dockerfile-multiple) to do quantization and evaluation on MultiPL-E inside a docker container.
+
+## Prepare model and datasets
+Please ensure that the path of fp32 model, datasets and saved int8 model are accessible by the docker container.
+
+## Building Docker images
+Here's how to build a docker image:
+```bash
+sudo make DOCKERFILE=Dockerfile-multiple all
+```
+This creates an image called `evaluation-harness-multiple`, and runs a test on it. To skip the test remove `all` form the command.
+
+## Evaluating inside a container
+Suppose the fp32 model is `starcoder-3b`, saved quantized model in `saved_results` and do evaluation on `multiple-lua` tasks with:
+```
+docker run -v $(CURDIR):$(CURDIR) -it /bin/bash
+python3 run_generation.py \
+    --model $(CURDIR)/starcoder-3b \
+    --quantize  \
+    --sq \
+    --alpha 0.7 \
+    --ipex \
+    --calib_iters 500 \
+    --calib_batch_size 1 \
+    --dataset "mbpp" \
+    --calib_split "test" \ 
+    --output_dir "$(CURDIR)/saved_results" \
+    --int8 \
+    --accuracy \
+    --tasks multiple-lua \
+    --batch_size 20 \
+    --n_samples 20 \
+    --allow_code_execution \
+    --do_sample \
+    --temperature 0.2
+
+```
+To run the container (here from image `evaluation-harness-multiple`) to quantize and evaluate on `CURDIR`, or another file mount it with -v, specify n_samples and allow code execution with --allow_code_execution (and add the number of problems --limit if it was used during generation):
+```bash
+docker run -v $(CURDIR):$(CURDIR) \
+    -it $(IMAGE_NAME) python3 run_generation.py --model $(CURDIR)/starcoder-3b --quantize   --sq --alpha 0.7 --ipex \
+    --calib_iters 5 --calib_batch_size 1 --dataset "mbpp" --calib_split "test" --output_dir "$(CURDIR)/saved_results" \
+    --int8 --accuracy --tasks multiple-lua  --batch_size 20 --n_samples 20 --allow_code_execution \
+    --do_sample --temperature 0.2 --limit 2
+
+```
+
+

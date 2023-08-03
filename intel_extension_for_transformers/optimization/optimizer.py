@@ -256,6 +256,17 @@ class NoTrainerOptimizer:   # pragma: no cover
         if self.quant_config.approach == QuantizationMode.POSTTRAININGSTATIC.value:
             assert self._calib_dataloader is not None, \
                 "Please pass calib_dataloader to NoTrainerOptimizer.calib_dataloader"
+            # transformer issue #1
+            if self._calib_dataloader.batch_size is None:
+                def _build_inc_dataloader(dataloader):
+                    class INCDataLoader:
+                        __iter__ = dataloader.__iter__
+                        def __init__(self) -> None:
+                            self.dataloader = dataloader
+                            self.batch_size = dataloader.total_batch_size
+                    return INCDataLoader()
+                self._calib_dataloader = \
+                        _build_inc_dataloader(self._calib_dataloader)
             self.quantizer.calib_dataloader = self._calib_dataloader
         elif self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             assert self._train_func is not None, \

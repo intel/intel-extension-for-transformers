@@ -34,7 +34,7 @@ target_link_libraries(${TARGET} PUBLIC ne_layers common gptj ${CMAKE_THREAD_LIBS
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
 set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-set(TARGET main_gptj_ids)
-add_executable_w_warning(${TARGET} main_gptj_ids.cpp)
-target_link_libraries(${TARGET} PUBLIC common gptj ne_layers ${CMAKE_THREAD_LIBS_INIT})
+set(TARGET pybind_gptj)
+add_executable_w_warning(${TARGET} pybind_gptj.cpp)
+target_link_libraries(${TARGET} PUBLIC ne_layers common gptj ${CMAKE_THREAD_LIBS_INIT})
 target_compile_features(${TARGET} PRIVATE cxx_std_11)

@@ -147,6 +147,8 @@ output = model(**input).logits.argmax().item()
 
 
 ## Selected Publications/Events
+* Blog of Intel Developer News: [The Moat Is Trust, Or Maybe Just Responsible AI](https://www.intel.com/content/www/us/en/developer/articles/technical/moat-is-trust-minimizing-risks-generative-ai.html) (July 2023)
+* Blog of Intel Developer News: [Create Your Own Custom Chatbot](https://www.intel.com/content/www/us/en/developer/articles/technical/train-large-language-models-create-custom-chatbot.html) (July 2023)
 * Blog of Intel Developer News: [Accelerate Llama 2 with Intel AI Hardware and Software Optimizations](https://www.intel.com/content/www/us/en/developer/articles/news/llama2.html) (July 2023)
 * Arxiv: [An Efficient Sparse Inference Software Accelerator for Transformer-based Language Models on CPUs](https://arxiv.org/abs/2306.16601) (June 2023)
 * Blog published on Medium: [Simplify Your Custom Chatbot Deployment](https://medium.com/intel-analytics-software/simplify-your-custom-chatbot-deployment-on-intel-platforms-c8a911d906cf) (June 2023)

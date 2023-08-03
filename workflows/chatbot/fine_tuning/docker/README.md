@@ -27,15 +27,11 @@ Please clone a ITREX repo to this path.
 ```bash
 git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git
 ```
-You can modify the model path at line 70 if you are going to run other models:
-```bash
-vim /path/to/workspace/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/chatbot/fine_tuning/docker/Dockerfile
-```
-```
-COPY flan-t5-xl /flan/
-```
+
 
 ## 4. Build Docker Image
+| Note: If your docker daemon is too big and cost long time to build docker image, you could create a `.dockerignore` file including useless files to reduce the daemon size.
+
 ### On Xeon SPR Environment
 ```bash
 docker build --build-arg UBUNTU_VER=22.04 --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  /path/to/workspace/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/chatbot/fine_tuning/docker/Dockerfile -t chatbot_finetune .   --target cpu
@@ -45,13 +41,16 @@ docker build --build-arg UBUNTU_VER=22.04 --build-arg https_proxy=$https_proxy -
 DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f Dockerfile  --target hpu
 ```
 ## 5. Create Docker Container
+Before creating your docker container, make sure the model has been downloaded to local. 
+
+Then mount the `model files` and `alpaca_data.json` to the docker container using `'-v'`. Make sure using the `absolute path` for local files.
 ### On Xeon SPR Environment
 ```bash
-docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm "chatbot_finetune"
+docker run -it --disable-content-trust --privileged --name="chatbot" --hostname="chatbot-container" --network=host -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json "chatbot_finetune"
 ```
 ### On Habana Gaudi Environment
 ```bash
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm --cap-add=sys_nice --net=host --ipc=host chatbot_finetuning:latest 
+docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none -e https_proxy -e http_proxy -e HTTPS_PROXY -e HTTP_PROXY -e no_proxy -e NO_PROXY -v /dev/shm:/dev/shm  -v /absolute/path/to/flan-t5-xl:/flan -v /absolute/path/to/alpaca_data.json:/dataset/alpaca_data.json --cap-add=sys_nice --net=host --ipc=host chatbot_finetuning:latest 
 ```
 
 # Finetune
@@ -60,10 +59,10 @@ We employ the [LoRA approach](https://arxiv.org/pdf/2106.09685.pdf) to finetune 
 
 ## 1. Single Node Fine-tuning  in Xeon SPR
 
-For FLAN-T5, use the below command line for finetuning on the Alpaca dataset.
+For FLAN-T5, use the below command line for finetuning on the Alpaca dataset. Please make sure the file path is consistent with the path mounted to docker container.
 
 ```bash
-python fine_tuning/instruction_tuning_pipeline/finetune_seq2seq.py \
+python instruction_tuning_pipeline/finetune_seq2seq.py \
         --model_name_or_path "/flan" \
         --train_file "/dataset/alpaca_data.json" \
         --per_device_train_batch_size 2 \
@@ -85,7 +84,7 @@ python fine_tuning/instruction_tuning_pipeline/finetune_seq2seq.py \
 For LLaMA, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
-python fine_tuning/instruction_tuning_pipeline/finetune_clm.py \
+python instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path "/llama_7b" \
         --train_file "/dataset/alpaca_data.json" \
         --dataset_concatenation \
@@ -107,7 +106,7 @@ python fine_tuning/instruction_tuning_pipeline/finetune_clm.py \
 For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
 
 ```bash
-python finetune_clm.py \
+python instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
@@ -266,7 +265,7 @@ Follow install guidance in [optimum-habana](https://github.com/huggingface/optim
 For LLaMA, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
-python finetune_clm.py \
+python instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
