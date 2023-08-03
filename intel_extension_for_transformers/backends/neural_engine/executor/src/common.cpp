@@ -210,7 +210,7 @@ vector<float> GetScales(const void* mins, const void* maxs, const int64_t size, 
       abs_max = abs_max < 1e-10 ? 1e-10 : abs_max;
       scales.emplace_back(127.f / abs_max);
     }
-  } else if (dtype == "fp32" || dytpe == "bf16") {
+  } else if (dtype == "fp32" || dtype == "bf16") {
     for (int i = 0; i < size; i++) {
       scales.emplace_back(1.f);
     }
