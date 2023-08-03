@@ -113,43 +113,53 @@ void STARCODER::load(model_context& lctx, model_progress_callback progress_callb
 
   ml->ne_ctx = ctx;
 
-  model.others[0] = ml->get_tensor("transformer.wte.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[1] = ml->get_tensor("transformer.ln_f.weight", {n_embd}, NE_BACKEND_CPU);
-  model.others[2] = ml->get_tensor("transformer.ln_f.bias", {n_embd}, NE_BACKEND_CPU);
-  model.others[3] = ml->get_tensor("lm_head.weight", {n_embd, n_vocab},
-                                   n_gpu_layer > int(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
-  model.others[4] =
-      ml->get_tensor("lm_head.bias", {n_vocab}, n_gpu_layer > int(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
+  const auto& hparams = model.hparams;
+  const int head_dim = n_embd / hparams.n_head;
+  const int kv_heads = hparams.n_head;  // 1 if MQA else hparams.n_head
+  const int kv_dim = kv_heads * head_dim;
+
+  model.others[0] = ml->get_tensor("model/ln_f/g", {n_embd}, NE_BACKEND_CPU);
+  model.others[1] = ml->get_tensor("model/ln_f/b", {n_embd}, NE_BACKEND_CPU);
+  model.others[2] = ml->get_tensor("model/wte", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  model.others[3] = ml->get_tensor("model/wpe", {n_embd, hparams.n_ctx}, NE_BACKEND_CPU);
+  model.others[4] = ml->get_tensor("model/lm_head", {n_embd, n_vocab}, NE_BACKEND_CPU);
 
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);
   size_t vram_total = 0;
+
+
   for (uint32_t i = 0; i < n_layer; ++i) {
     const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
-    std::string layers_i = "transformer.h." + std::to_string(i);
+    std::string layers_i = "model/h" + std::to_string(i);
 
     // norm: cur = ln_1_g*cur + ln_1_b
-    layer.norm[0] = ml->get_tensor(layers_i + ".ln_1.weight", {n_embd}, backend);
-    layer.norm[1] = ml->get_tensor(layers_i + ".ln_1.bias", {n_embd}, backend);
+    layer.norm[0] = ml->get_tensor(layers_i + "/ln_1/g", {n_embd}, backend);
+    layer.norm[1] = ml->get_tensor(layers_i + "/ln_1/b", {n_embd}, backend);
+    layer.norm[2] = ml->get_tensor(layers_i + "/ln_2/g", {n_embd}, backend);
+    layer.norm[3] = ml->get_tensor(layers_i + "/ln_2/b", {n_embd}, backend);
 
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".attn.q_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".attn.k_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[2] = ml->get_tensor(layers_i + ".attn.v_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[3] = ml->get_tensor(layers_i + ".attn.out_proj.weight", {n_embd, n_embd}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + "/attn/c_attn/w", {n_embd, n_embd + 2 * kv_dim}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + "/attn/c_attn/b", {n_embd + 2 * kv_dim}, backend);
+    layer.attn[2] = ml->get_tensor(layers_i + "/attn/c_proj/w", {n_embd, n_embd}, backend);
+    layer.attn[3] = ml->get_tensor(layers_i + "/attn/c_proj/b", {n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.fc_in.weight", {n_embd, n_ff}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.fc_in.bias", {n_ff}, backend);
-    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.fc_out.weight", {n_ff, n_embd}, backend);
-    layer.ffn[3] = ml->get_tensor(layers_i + ".mlp.fc_out.bias", {n_embd}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + "/mlp/c_fc/w", {n_embd, n_ff}, backend);
+    layer.ffn[1] = ml->get_tensor(layers_i + "/mlp/c_fc/b", {n_ff}, backend);
+    layer.ffn[2] = ml->get_tensor(layers_i + "/mlp/c_proj/w", {n_ff, n_embd}, backend);
+    layer.ffn[3] = ml->get_tensor(layers_i + "/mlp/c_proj/b", {n_embd}, backend);
 
     if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.ffn[2]);
+      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
+                    ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
+                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
+                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
+                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
+                    ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
     }
   }
 
