@@ -903,8 +903,6 @@ ChatGLMForConditionalGeneration::ChatGLMForConditionalGeneration(const ChatGLMCo
 
     CHATGLM_CHECK(ne_used_mem(ctx_.ctx_w.get()) == ctx_.ctx_w.get()->mem_size) << "corrupted model weights";
     CHATGLM_CHECK(ne_used_mem(ctx_.ctx_kv.get()) == ctx_.ctx_kv.get()->mem_size) << "corrupted kv cache";
-    std::cout << "(ctx_.ctx_w.get() = " << ne_used_mem(ctx_.ctx_w.get()) << "   "  << ctx_.ctx_w.get()->mem_size << std::endl;
-    std::cout << "ctx_.ctx_kv.get() = " << ne_used_mem(ctx_.ctx_kv.get()) << "   "  << ctx_.ctx_kv.get()->mem_size  << std::endl;
 
     // build state_dict
     state_dict_.reserve(3 + config.num_hidden_layers * 12);
