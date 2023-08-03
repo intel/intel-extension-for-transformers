@@ -121,7 +121,7 @@ void STARCODER::load(model_context& lctx, model_progress_callback progress_callb
   model.others[0] = ml->get_tensor("model/ln_f/g", {n_embd}, NE_BACKEND_CPU);
   model.others[1] = ml->get_tensor("model/ln_f/b", {n_embd}, NE_BACKEND_CPU);
   model.others[2] = ml->get_tensor("model/wte", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[3] = ml->get_tensor("model/wpe", {n_embd, hparams.n_ctx}, NE_BACKEND_CPU);
+  model.others[3] = ml->get_tensor("model/wpe", {n_embd, hparams.n_mult}, NE_BACKEND_CPU);
   model.others[4] = ml->get_tensor("model/lm_head", {n_embd, n_vocab}, NE_BACKEND_CPU);
 
   const int i_gpu_start = n_layer - n_gpu_layer;
