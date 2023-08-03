@@ -270,7 +270,7 @@ class FinetuneArguments:
         },
     )
     train_on_inputs: bool = field(
-        default=False,
+        default=True,
         metadata={"help": "if False, masks out inputs in loss"},
     )
     habana: bool = field(
