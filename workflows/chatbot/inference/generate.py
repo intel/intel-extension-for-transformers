@@ -4,6 +4,7 @@ import torch
 import torch.nn.functional as F
 import re, os, logging
 from threading import Thread
+import contextlib
 from transformers import (
     GenerationConfig,
     AutoModelForCausalLM,
@@ -14,6 +15,13 @@ from transformers import (
     StoppingCriteriaList,
     StoppingCriteria,
 )
+# Set necessary env variables
+os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
+os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
+from transformers.deepspeed import is_deepspeed_available
+
+if is_deepspeed_available():
+    import deepspeed
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -247,7 +255,44 @@ def get_ds_injection_policy(config):
 
 
 MODELS = {}
+def smart_context_manager(use_deepspeed=False, model_dtype=torch.bfloat16):
+    if use_deepspeed:
+        ctx_manager = deepspeed.OnDevice(dtype=model_dtype, device="cpu")
+    else:
+        ctx_manager = contextlib.nullcontext()
+    return ctx_manager
 
+
+def import_deepspeed():
+    if not is_deepspeed_available():
+        raise ImportError(
+            "This script requires deepspeed: `pip install"
+            " git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
+        )
+    # Initialize process(es) for DeepSpeed
+    deepspeed.init_distributed(dist_backend="hccl")
+    logger.info("DeepSpeed is enabled.")
+
+
+def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs):
+    # Initialize the model
+    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+
+    world_size, rank, local_rank = initialize_distributed_hpu()
+
+    ds_inference_kwargs = {"dtype": torch.bfloat16}
+    ds_inference_kwargs["tensor_parallel"] = {"tp_size": world_size}
+    ds_inference_kwargs["enable_cuda_graph"] = use_hpu_graphs
+    # Make sure all devices/nodes have access to the model checkpoints
+    torch.distributed.barrier()
+
+    ds_inference_kwargs["injection_policy"] = get_ds_injection_policy(model.config)
+    model = deepspeed.init_inference(model, **ds_inference_kwargs)
+    return model.module
+
+
+def set_cpu_running_env():
+    os.environ["ONEDNN_MAX_CPU_ISA"]="AVX512_CORE_BF16"
 
 def load_model(
     model_name,
@@ -255,7 +300,7 @@ def load_model(
     device="cpu",
     use_hpu_graphs=False,
     cpu_jit=False,
-    use_cache=False,
+    use_cache=True,
     peft_path=None,
     use_deepspeed=False,
 ):
@@ -274,34 +319,46 @@ def load_model(
         ValueError: If the model is not supported, ValueError is raised.
     """
     print("Loading model {}".format(model_name))
+    if device == 'hpu':
+        if use_deepspeed:
+            import_deepspeed()
+        # Tweak generation so that it runs faster on Gaudi
+        from optimum.habana.transformers.modeling_utils import (
+            adapt_transformers_to_gaudi,
+        )
+        adapt_transformers_to_gaudi()
+    else:
+        set_cpu_running_env()
     MODELS[model_name] = {}
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
         use_fast=False if re.search("llama", model_name, re.IGNORECASE) else True,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
-        model = AutoModelForSeq2SeqLM.from_pretrained(
-            model_name, low_cpu_mem_usage=True
-        )
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = AutoModelForSeq2SeqLM.from_pretrained(
+                model_name, low_cpu_mem_usage=True
+            )
     elif re.search("mpt", model_name, re.IGNORECASE):
         from models.mpt.modeling_mpt import MPTForCausalLM
-
-        model = MPTForCausalLM.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            torch_dtype=torch.bfloat16,
-            low_cpu_mem_usage=True,
-            torchscript=cpu_jit,
-        )
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = MPTForCausalLM.from_pretrained(
+                model_name,
+                trust_remote_code=True,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True,
+                torchscript=cpu_jit,
+            )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("opt", model_name, re.IGNORECASE)
     ):
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
-        )
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
+            )
     else:
         raise ValueError(
             f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT now."
@@ -337,7 +394,6 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-
     if device == "hpu":
         model = model.eval().to("hpu")
 
@@ -345,6 +401,9 @@ def load_model(
             from habana_frameworks.torch.hpu import wrap_in_hpu_graph
 
             model = wrap_in_hpu_graph(model)
+
+        if use_deepspeed:
+            model = init_deepspeed_inference(model=model, model_name_or_path=model_name, use_hpu_graphs=use_hpu_graphs)
 
         if peft_path:
             from peft import PeftModel
@@ -440,7 +499,7 @@ def predict_stream(**params):
     bad_words_ids = params["bad_words_ids"] if "bad_words_ids" in params else None
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
-    use_cache = params["use_cache"] if "use_cache" in params else False
+    use_cache = params["use_cache"] if "use_cache" in params else True
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
@@ -733,7 +792,7 @@ def predict(**params):
                 output_scores=True,
                 max_new_tokens=max_new_tokens,
                 lazy_mode=True,
-                use_hpu_graphs=use_hpu_graphs,
+                hpu_graphs=use_hpu_graphs,
                 ignore_eos=False,
             )
     output = tokenizer.decode(generation_output.sequences[0], skip_special_tokens=True)
@@ -776,43 +835,6 @@ def main():
     )
 
     if args.habana:
-        if use_deepspeed:
-            # Set necessary env variables
-            os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
-            os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
-
-        # Device is HPU
-        args.device = "hpu"
-        import habana_frameworks.torch.hpu as torch_hpu
-
-        # Get world size, rank and local rank
-        from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
-
-        world_size, rank, args.local_rank = initialize_distributed_hpu()
-
-        if use_deepspeed:
-            # Check if DeepSpeed is installed
-            from transformers.deepspeed import is_deepspeed_available
-
-            if not is_deepspeed_available():
-                raise ImportError(
-                    "This script requires deepspeed: `pip install"
-                    " git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
-                )
-            import deepspeed
-
-            # Initialize process(es) for DeepSpeed
-            deepspeed.init_distributed(dist_backend="hccl")
-            logger.info("DeepSpeed is enabled.")
-        else:
-            logger.info("Single-device run.")
-
-        # Tweak generation so that it runs faster on Gaudi
-        from optimum.habana.transformers.modeling_utils import (
-            adapt_transformers_to_gaudi,
-        )
-
-        adapt_transformers_to_gaudi()
         # Set seed before initializing model.
         from optimum.habana.utils import set_seed
 
@@ -825,42 +847,22 @@ def main():
         args.tokenizer_name if args.tokenizer_name is not None else base_model_path
     )
 
-    if use_deepspeed and args.habana:
-        config = AutoConfig.from_pretrained(base_model_path, trust_remote_code=True)
-        with deepspeed.OnDevice(dtype=torch.bfloat16, device="cpu"):
-            load_model(
-                base_model_path,
-                tokenizer_path,
-                device="hpu",
-                use_hpu_graphs=args.use_hpu_graphs,
-                cpu_jit=args.jit,
-                use_cache=args.use_kv_cache,
-                use_deepspeed=True,
-            )
-        model = MODELS[base_model_path]["model"]
-        # Initialize the model
-        ds_inference_kwargs = {"dtype": torch.bfloat16}
-        ds_inference_kwargs["tensor_parallel"] = {"tp_size": world_size}
-        ds_inference_kwargs["enable_cuda_graph"] = args.use_hpu_graphs
-        # Make sure all devices/nodes have access to the model checkpoints
-        torch.distributed.barrier()
-        ds_inference_kwargs["injection_policy"] = get_ds_injection_policy(config)
-        model = deepspeed.init_inference(model, **ds_inference_kwargs)
-        MODELS[base_model_path]["model"] = model.module
-    else:
-        load_model(
-            base_model_path,
-            tokenizer_path,
-            device="hpu" if args.habana else "cpu",
-            use_hpu_graphs=args.use_hpu_graphs,
-            cpu_jit=args.jit,
-            use_cache=args.use_kv_cache,
-            peft_path=args.peft_model_path,
-        )
-
+    load_model(
+        base_model_path,
+        tokenizer_path,
+        device="hpu" if args.habana else "cpu",
+        use_hpu_graphs=args.use_hpu_graphs,
+        cpu_jit=args.jit,
+        use_cache=args.use_kv_cache,
+        peft_path=args.peft_model_path,
+        use_deepspeed=True if use_deepspeed and args.habana else False,
+    )
+    if args.habana:
+        from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+        world_size, rank, args.local_rank = initialize_distributed_hpu()
     if args.habana and rank in [-1, 0]:
         logger.info(f"Args: {args}")
-        logger.info(f"device: {args.device}, n_hpu: {world_size}, bf16")
+        logger.info(f"n_hpu: {world_size}, bf16")
     # warmup, the first time inference take longer because of graph compilation
     if args.local_rank in [-1, 0]:
         start_time = time.time()

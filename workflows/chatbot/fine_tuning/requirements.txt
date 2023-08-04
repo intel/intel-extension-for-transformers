@@ -1,6 +1,6 @@
 datasets
 torch
-git+https://github.com/huggingface/transformers.git
+transformers>=4.31.0
 sentencepiece
 peft
 evaluate

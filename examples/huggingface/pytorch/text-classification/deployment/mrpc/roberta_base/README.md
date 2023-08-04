@@ -50,17 +50,17 @@ We provide with three `mode`s: `accuracy`, `throughput` or `latency`. For throug
 You can run fp32 model inference by setting `precision=fp32`, command as follows:
 
 ```shell
-bash run_bert_mini.sh --model=textattack/distilbert-base-uncased-MRPC --dataset=mrpc --precision=fp32 --mode=throughput
+bash run_roberta_base.sh --model=Intel/roberta-base-mrpc --dataset=mrpc --precision=fp32 --mode=throughput
 ```
 
 By setting `precision=int8` you could get PTQ int8 model and setting `precision=bf16` to get bf16 model.
 ```shell
-bash run_bert_mini.sh --model=textattack/distilbert-base-uncased-MRPC --dataset=mrpc --precision=int8 --mode=throughput
+bash run_roberta_base.sh --model=Intel/roberta-base-mrpc --dataset=mrpc --precision=int8 --mode=throughput
 ```
 
 By setting `precision=dynamic_int8`, you could benchmark dynamic quantized int8 model.
 ```shell
-bash run_bert_mini.sh --model=textattack/distilbert-base-uncased-MRPC --dataset=mrpc --precision=dynamic_int8 --mode=throughput
+bash run_roberta_base.sh --model=Intel/roberta-base-mrpc --dataset=mrpc --precision=dynamic_int8 --mode=throughput
 ```
 
 
