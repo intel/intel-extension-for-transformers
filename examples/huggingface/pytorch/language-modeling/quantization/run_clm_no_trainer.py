@@ -38,7 +38,7 @@ parser.add_argument("--actorder", action="store_true", help="Whether to apply th
 parser.add_argument('--percdamp', type=float, default=.01, help='Percent of the average Hessian diagonal to use for dampening.')
 parser.add_argument('--gptq_max_len', type=int, default=2048, help='calibration set sequence length.')
 # =======================================
-parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
+parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', 'GPTQ'], 
                     help="Weight-only parameter.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument("--weight_only_sym_full_range", action="store_true")
@@ -66,6 +66,16 @@ calib_size = 1
 
 def prepare_gptq_calibration(calib_dataset, model, seed = 0, nsamples = 128, seqlen = 2048):
     # directly prepare tokenized data for gptq calibration
+    class INCDataloader(object):
+        def __init__(self, gptq_dataloader):
+            self.batch_size = 1
+            self.gptq_dataloader = gptq_dataloader
+            self.length = len(gptq_dataloader)
+            self.batch_size = 1
+
+        def __iter__(self):
+            pass
+
     from transformers import AutoTokenizer
     tokenizer = AutoTokenizer.from_pretrained(model, use_fast=True)
     import random
@@ -83,7 +93,7 @@ def prepare_gptq_calibration(calib_dataset, model, seed = 0, nsamples = 128, seq
         tar = inp.clone()
         tar[:, :-1] = -100
         trainloader.append((inp, tar))
-    return trainloader
+    return INCDataloader(trainloader)
 
 class Evaluator:
     def __init__(self, dataset, tokenizer, batch_size=8, pad_val=1, pad_max=196, is_calib=False):
@@ -214,7 +224,7 @@ else:
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 
 # Set model's seq_len when GPTQ calibration is enabled.
-if args.gptq:
+if args.weight_only_algo == 'GPTQ':
     user_model.seqlen = args.gptq_max_len
 
 # to channels last
@@ -225,8 +235,8 @@ user_model.eval()
 if args.quantize:
     # dataset
     calib_dataset = load_dataset(args.dataset, split="train")
-    import pdb;pdb.set_trace()
-    calib_dataset = calib_dataset.shuffle(seed=42)
+    # import pdb;pdb.set_trace()
+    # calib_dataset = calib_dataset.shuffle(seed=42)
     calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
     calib_dataloader = DataLoader(
         calib_evaluator.dataset,
@@ -277,7 +287,7 @@ if args.quantize:
             op_type_dict=op_type_dict,
             recipes=recipes,
         )
-    elif args.gptq:
+    elif args.weight_only_algo == "GPTQ":
         recipes = {'percdamp': args.percdamp, 'actorder':args.actorder}
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
@@ -303,8 +313,9 @@ if args.quantize:
         )
 
     # when GPTQ is enabled: use assistive functions to modify calib_dataloader and calib_func
-    # if args.gptq:
-    #     calib_dataloader = prepare_gptq_calibration(calib_dataset, args.model)
+    if args.weight_only_algo == "GPTQ":
+        calib_dataloader = prepare_gptq_calibration(calib_dataset, args.model)
+        calib_func = None
     if args.weight_only_algo == 'TEQ':
         # set calib_func=None, use default training func as calib_func
         calib_func = None
