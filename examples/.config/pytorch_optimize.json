@@ -1483,7 +1483,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1505,7 +1507,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1606,7 +1610,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1628,7 +1634,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1650,7 +1658,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
