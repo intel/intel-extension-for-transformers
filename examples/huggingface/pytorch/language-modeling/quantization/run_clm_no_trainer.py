@@ -33,7 +33,7 @@ parser.add_argument("--approach", type=str, default='static',
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto",
                     help="Smooth quant parameter.")
-parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ'], 
+parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
                     help="Weight-only parameter.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument("--weight_only_sym_full_range", action="store_true")
@@ -47,9 +47,9 @@ parser.add_argument("--pad_max_length", default=512, type=int,
                     help="Pad input ids to max length.")
 parser.add_argument("--calib_iters", default=512, type=int,
                     help="calibration iters.")
-parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
-                    "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
-                    help="tasks list for accuracy validation")
+parser.add_argument("--tasks", nargs='+', default=["lambada_openai",
+    "hellaswag","winogrande","piqa","wikitext"],
+    type=str, help="tasks list for accuracy validation")
 parser.add_argument("--weight_only_bits", type=int, default=8)
 parser.add_argument("--weight_only_group", type=int, default=-1)
 parser.add_argument("--weight_only_scheme", default="sym")
@@ -74,7 +74,7 @@ class Evaluator:
 
     @torch.no_grad()
     def tokenize_function(self, examples):
-        if args.weight_only_algo in ['AWQ']:
+        if args.weight_only_algo in ['AWQ', 'TEQ']:
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             example = self.tokenizer(examples["text"], padding="max_length", max_length=self.pad_max)
@@ -137,7 +137,7 @@ class Evaluator:
         return acc
 
 torchscript = False
-if args.sq or args.weight_only_algo in ['AWQ']:
+if args.sq or args.weight_only_algo in ['AWQ', 'TEQ']:
     torchscript = True
 if re.search("llama", args.model.lower()):
     import transformers
@@ -218,7 +218,7 @@ if args.quantize:
                     'bits': args.weight_only_bits, # 1-8 bits 
                     'group_size': args.weight_only_group,  # -1 (per-channel)
                     'scheme': args.weight_only_scheme, # sym/asym
-                    'algorithm': args.weight_only_algo, # RTN/AWQ
+                    'algorithm': args.weight_only_algo, # RTN/AWQ/TEQ
                 },
             },
         }
@@ -253,6 +253,10 @@ if args.quantize:
             op_type_dict=op_type_dict,
             recipes=recipes,
         )
+
+    if args.weight_only_algo == 'TEQ':
+        # set calib_func=None, use default training func as calib_func
+        calib_func = None
 
     q_model = quantization.fit(
         user_model,
@@ -291,6 +295,3 @@ if args.accuracy:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
         else:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
-
-
-
