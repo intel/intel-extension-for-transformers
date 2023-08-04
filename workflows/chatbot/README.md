@@ -1,18 +1,25 @@
 NeuralChat
 ============
 
-NeuralChat is a powerful and versatile chatbot designed to facilitate textual conversations. By providing NeuralChat with textual instructions, users can receive accurate and relevant textual responses. We provide a comprehensive workflow for building a highly customizable end-to-end chatbot service, covering model pre-training, model fine-tuning, model compression, prompt engineering, knowledge base retrieval and quick deployment.
+NeuralChat is a general chat framework designed to create your own chatbot that can be efficiently deployed on Intel platforms. NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning and LLM inference with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot and deploy on Intel platforms rapidly. Here is the flow of NeuralChat:
+
+<a target="_blank" href="neuralchat.png">
+  <img src="neuralchat.png" alt="NeuralChat" width=600 height=400>
+</a>
+
+## Fine-tuning
+
+We provide a comprehensive pipeline on fine-tuning a customized model. It covers the process of [generating custom instruction datasets](./fine_tuning/instruction_generator/), [instruction templates](./fine_tuning/instruction_template), [fine-tuning the model with these datasets](./fine_tuning/instruction_tuning_pipeline/), and leveraging an [RLHF (Reinforcement Learning from Human Feedback) pipeline](./fine_tuning/rlhf_learning_pipeline/) for efficient LLM fine-tuning. For detailed information and step-by-step instructions, please consult this [README file](./fine_tuning/README.md).
 
 
+## Inference
 
-## Fine-tuning Pipeline
-
-We provide a comprehensive pipeline on fine-tuning a customized model. It covers the process of [generating custom instruction datasets](./fine_tuning/instruction_generator/), [instruction templates](./fine_tuning/instruction_template), [fine-tuning the model with these datasets](./fine_tuning/instruction_tuning_pipeline/), and leveraging an [RLHF (Reinforcement Learning from Human Feedback) pipeline](./fine_tuning/rlhf_learning_pipeline/) for efficient fine-tuning of the pretrained large language model (LLM). For detailed information and step-by-step instructions, please consult this [README file](./fine_tuning/README.md).
+We provide multiple plugins to argument LLM inference for chatbot. Our plugins support knowledge retrieval, query caching, prompt optimization, safety checker, etc. Knowledge retrieval consists of [document indexing](./inference/document_indexing/README.md) for efficient retrieval of relevant information, including Dense Indexing based on [LangChain](https://github.com/hwchase17/langchain) and Sparse Indexing based on [fastRAG](https://github.com/IntelLabs/fastRAG), [document rankers](./inference/document_ranker/) to prioritize the most relevant responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time. Prompt optimization suppots [auto prompt engineering](./inference/auto_prompt/) to improve user prompts, [instruction optimization](./inference/instruction_optimization/) to enhance the model's performance, and [memory controller](./inference/memory_controller/) for efficient memory utilization. For more information on these optimization techniques, please refer to this [README file](./inference/README.md).
 
 
-## Inference Pipeline
+## Pre-training
 
-We focuse on optimizing the inference process of the fine-tuned customized model. It includes [auto prompt engineering](./inference/auto_prompt/) techniques for improving user prompts, [document indexing](./inference/document_indexing/README.md) for efficient retrieval of relevant information, including Dense Indexing based on [LangChain](https://github.com/hwchase17/langchain) and Sparse Indexing based on [fastRAG](https://github.com/IntelLabs/fastRAG), [document rankers](./inference/document_ranker/) to prioritize the most relevant responses, [instruction optimization](./inference/instruction_optimization/) to enhance the model's performance, and a [memory controller](./inference/memory_controller/) for efficient memory utilization. For more information on these optimization techniques, please refer to this [README file](./inference/README.md).
+Under construction
 
 ## Deployment
 
