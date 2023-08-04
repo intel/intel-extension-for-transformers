@@ -5636,7 +5636,7 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
                                                const struct ne_tensor* src1, struct ne_tensor* dst) {
   int64_t t0 = ne_perf_time_us();
   UNUSED(t0);
-
+  // printf("ne_compute_forward_mul_mat_f16_f32\n");
   const int64_t ne00 = src0->ne[0];
   const int64_t ne01 = src0->ne[1];
   const int64_t ne02 = src0->ne[2];
@@ -5653,20 +5653,22 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   const int64_t ne3 = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const int nb00 = src0->nb[0];
-  const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  const int nb03 = src0->nb[3];
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  const size_t nb03 = src0->nb[3];
 
-  const int nb10 = src1->nb[0];
-  const int nb11 = src1->nb[1];
-  const int nb12 = src1->nb[2];
-  const int nb13 = src1->nb[3];
+  const size_t nb10 = src1->nb[0];
+  const size_t nb11 = src1->nb[1];
+  const size_t nb12 = src1->nb[2];
+  const size_t nb13 = src1->nb[3];
 
-  const int nb0 = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  const int nb2 = dst->nb[2];
-  const int nb3 = dst->nb[3];
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
+
+  // printf("%ld, %ld, %ld, %ld\n", nb0, nb1, nb2, nb3);
 
   const int ith = params->ith;
   const int nth = params->nth;

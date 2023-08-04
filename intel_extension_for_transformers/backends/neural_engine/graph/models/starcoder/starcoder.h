@@ -28,8 +28,12 @@ enum starcoder_model {
 
 static const model_scratch starcoder_mem_req(int n_layers) {
   switch (n_layers) {
+    case 24:
+      return {8192ull * MB, 8192ull * MB, 8192ull * MB, 8192ull * MB};
     case 36:
-      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
+      return {8192ull * MB, 8192ull * MB, 8192ull * MB, 8192ull * MB};
+    case 40:
+      return {32768ull * MB, 32768ull * MB, 32768ull * MB, 32768ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
