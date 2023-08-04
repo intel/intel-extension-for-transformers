@@ -451,11 +451,8 @@ template <typename Ty, uint8_t NElts = 1,
 __XETLA_API xetla_vector<Ty, N * NElts> xetla_load_local(
         xetla_vector<uint32_t, N> offsets, xetla_mask<N> pred = 1) {
     using T = native_type_t<Ty>;
-#ifdef DEBUG
-    for (int i = 0; i < N; i++) {
-        limitation::slm::check_alignment("xetla_load_local", offsets[i]);
-    }
-#endif
+    limitation::slm::check_alignment<N>("xetla_load_local", offsets);
+
     return __ESIMD_ENS::lsc_slm_gather<T, NElts,
             gpu::xetla::detail::get_data_size(DS), N>(offsets, pred);
 }
@@ -477,9 +474,8 @@ template <typename Ty, uint8_t NElts = 1,
         data_size DS = data_size::default_size>
 __XETLA_API xetla_vector<Ty, NElts> xetla_load_local(uint32_t offset) {
     using T = native_type_t<Ty>;
-#ifdef DEBUG
     limitation::slm::check_alignment("xetla_load_local", offset);
-#endif
+
     return __ESIMD_ENS::lsc_slm_block_load<T, NElts,
             gpu::xetla::detail::get_data_size(DS)>(offset);
 }
@@ -504,11 +500,7 @@ template <typename Ty, uint8_t NElts = 1,
 __XETLA_API void xetla_store_local(xetla_vector<uint32_t, N> offsets,
         xetla_vector<Ty, N * NElts> vals, xetla_mask<N> pred = 1) {
     using T = native_type_t<Ty>;
-#ifdef DEBUG
-    for (int i = 0; i < N; i++) {
-        limitation::slm::check_alignment("xetla_store_local", offsets[i]);
-    }
-#endif
+    limitation::slm::check_alignment<N>("xetla_store_local", offsets);
 
     __ESIMD_ENS::lsc_slm_scatter<T, NElts,
             gpu::xetla::detail::get_data_size(DS), N>(offsets, vals, pred);
@@ -532,9 +524,7 @@ template <typename Ty, uint8_t NElts = 1,
 __XETLA_API void xetla_store_local(
         uint32_t offset, xetla_vector<Ty, NElts> vals) {
     using T = native_type_t<Ty>;
-#ifdef DEBUG
     limitation::slm::check_alignment("xetla_store_local", offset);
-#endif
 
     __ESIMD_ENS::lsc_slm_block_store<T, NElts,
             gpu::xetla::detail::get_data_size(DS)>(offset, vals);

@@ -54,6 +54,7 @@ using remove_const_t = typename std::remove_const<T>::type;
 
 #define XETLA_MARKER(message) [[deprecated(message)]]
 
+#ifdef DEBUG
 #define STR_APPEND(a, b) a b
 #define DEVICE_PRINTF(s, ...) \
     do { \
@@ -61,6 +62,37 @@ using remove_const_t = typename std::remove_const<T>::type;
                 = STR_APPEND("[ Warning ] ", s); \
         sycl::ext::oneapi::experimental::printf(f, ##__VA_ARGS__); \
     } while (0)
+#else
+#define DEVICE_PRINTF(s, ...) \
+    do { \
+    } while (0)
+#endif
+
+#ifdef DEBUG
+ESIMD_PRIVATE ESIMD_REGISTER(8128) sycl::ext::intel::esimd::simd<int, 8> GRF127;
+ESIMD_INLINE void esimd_abort() {
+    constexpr uint32_t exDesc = 0x0;
+    constexpr uint32_t desc = 0x02000010;
+    constexpr uint8_t execSize = 0x83;
+    constexpr uint8_t sfid = 0x3;
+    constexpr uint8_t numSrc0 = 0x1;
+    constexpr uint8_t numSrc1 = 0x0;
+    constexpr uint8_t isEOT = 0x1;
+    return sycl::ext::intel::experimental::esimd::raw_send(
+            GRF127, exDesc, desc, execSize, sfid, numSrc0, isEOT);
+}
+#define DEVICE_ASSERT(c, s, ...) \
+    do { \
+        if (!(c)) { \
+            DEVICE_PRINTF(s, ##__VA_ARGS__); \
+            esimd_abort(); \
+        } \
+    } while (0)
+#else
+#define DEVICE_ASSERT(c, s, ...) \
+    do { \
+    } while (0);
+#endif
 
 template <auto val>
 XETLA_MARKER("Help function to print value")

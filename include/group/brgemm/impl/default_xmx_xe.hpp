@@ -280,6 +280,11 @@ public:
             uint32_t nbarrier_base = 0) {
         int32_t sg_idx = g.get_id() % wg_size_x;
         int32_t sg_idy = g.get_id() / wg_size_x;
+
+        DEVICE_ASSERT(g.get_id() < (wg_size_x * wg_size_y),
+                "Thread id(%d) should less than wg_size(%d)", g.get_id(),
+                wg_size_x * wg_size_y);
+
         update_sg_tile_tdesc(args, sg_idx, sg_idy);
         pre_processing_t pre_processing;
         matA_t matA;

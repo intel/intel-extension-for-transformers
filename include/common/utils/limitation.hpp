@@ -24,15 +24,31 @@
 namespace gpu::xetla::limitation {
 
 namespace slm {
-static inline void check_alignment(const char *tag, auto offset) {
-    if (offset % 4) {
-        DEVICE_PRINTF("%s: Base-address of SLM must be 4B aligned but is %d\n",
-                tag, offset);
-    }
+static inline void check_alignment(const char *tag, uint32_t offset) {
+#ifdef DEBUG
+    DEVICE_ASSERT(!(offset % 4),
+            "%s: Base-address of SLM must be 4B aligned but is %u\n", tag,
+            offset);
+#endif
 }
 
-static inline void check_alignment(auto offset) {
+static inline void check_alignment(uint32_t offset) {
     check_alignment("Unknown", offset);
+}
+
+template <uint32_t N>
+static inline void check_alignment(
+        const char *tag, xetla_vector<uint32_t, N> offsets) {
+#ifdef DEBUG
+    for (size_t i = 0; i < N; i++) {
+        check_alignment(tag, offsets[i]);
+    }
+#endif
+}
+
+template <uint32_t N>
+static inline void check_alignment(xetla_vector<uint32_t, N> offsets) {
+    check_alignment("Unknown", offsets);
 }
 } // namespace slm
 
