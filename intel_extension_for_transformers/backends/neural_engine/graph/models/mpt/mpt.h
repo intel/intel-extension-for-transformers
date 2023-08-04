@@ -26,7 +26,7 @@ enum mpt_model {
 static const model_scratch mpt_mem_req(int n_layers) {
   switch (n_layers) {
     case 32:
-      return {512ull * MB, 512ull * MB, 1026ull * MB, 768ull * MB};
+      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
