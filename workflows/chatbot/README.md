@@ -4,7 +4,9 @@ NeuralChat
 NeuralChat is a general chat framework designed to create your own chatbot that can be efficiently deployed on Intel platforms. NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning and LLM inference with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot and deploy on Intel platforms rapidly. Here is the flow of NeuralChat:
 
 <a target="_blank" href="neuralchat.png">
-  <img src="neuralchat.png" alt="NeuralChat" width=600 height=400>
+<p align="center">
+  <img src="neuralchat.png" alt="NeuralChat" width=600 height=200>
+</p>
 </a>
 
 ## Fine-tuning
