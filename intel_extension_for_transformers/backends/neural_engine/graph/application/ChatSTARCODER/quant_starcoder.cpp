@@ -33,7 +33,7 @@ class starcoder_quant_layer : public quant_layer_base {
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
     bool quantize = layername.rfind("w") == layername.size() - 1;  // ends with 'weight'?
-    if (layername == "model/wte" || layername == "model/wpe") quantize = true;
+    if (layername == "model/wte") quantize = true;
     if (layername == "model/lm_head") {
       // special layer process, can be loaded by config file
       return quant_params_internal();  // return q4_0 to cover the usage of getrow
