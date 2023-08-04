@@ -27,6 +27,8 @@ static const model_scratch gptneox_mem_req(int n_layers) {
   switch (n_layers) {
     case 44:
       return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
+    case 32:
+      return {512ull * MB, 512ull * MB, 1026ull * MB, 768ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);

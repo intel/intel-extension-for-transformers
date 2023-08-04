@@ -34,6 +34,11 @@ python scripts/convert_gptneox.py  ${input_model_name_or_path} --outtype f32 --o
 
 ./build/bin/quant_gptneox --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
 
+# convert the pytorch dolly-v2-3b model to llama.cpp format
+python scripts/convert_dolly.py  ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
+
+./build/bin/quant_dolly --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
+
 # convert the pytorch mpt model to llama.cpp format
 python scripts/convert_mpt.py ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
 
@@ -72,4 +77,4 @@ python gptj_binding.py
 ```
 
 ### Supported model
-Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b), [STARCODER](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).
+Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama),[Dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b), [STARCODER](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).
