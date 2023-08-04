@@ -140,8 +140,7 @@ function main() {
 
 		            python ${WORKING_DIR}/.github/workflows/script/models/calculate_percentage.py ${WORKING_DIR}/${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
                 done
-		        #numactl -C 0 python calculate_percertiles.py ${logs_file} ${model} ${precision} ${cores_per_instance} ${batch_size} ${input} ${output}
-            done
+		    done
         done
     done
     conda deactivate > /dev/null 2>&1

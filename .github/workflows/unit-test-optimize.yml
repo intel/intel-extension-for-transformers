@@ -4,11 +4,12 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/evaluation
-      - intel_extension_for_transformers/optimization
-      - intel_extension_for_transformers/preprocessing
+      - intel_extension_for_transformers/evaluation/**
+      - intel_extension_for_transformers/optimization/**
+      - intel_extension_for_transformers/preprocessing/**
+      - tests/**
       - .github/workflows/unit-test-optimize.yml
-      - .github/workflows/script/unitTest
+      - .github/workflows/script/unitTest/**
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -32,12 +33,12 @@ jobs:
         run: |
           docker ps -a
           if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-              docker start $(docker ps -aq)
+              docker start ${{ env.CONTAINER_NAME }}
               echo "remove left files through container ..."
               docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
           if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
-              docker start $(docker ps -aq)
+              docker start ${{ env.EXTRA_CONTAINER_NAME }}
               echo "remove left files through container ..."
               docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
@@ -54,7 +55,7 @@ jobs:
       - name: Docker Run
         run: |
           if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-            docker stop $(docker ps -aq)
+            docker stop ${{ env.CONTAINER_NAME }}
             docker rm -vf ${{ env.CONTAINER_NAME }} || true
           fi
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \

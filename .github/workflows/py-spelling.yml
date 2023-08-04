@@ -16,18 +16,21 @@ env:
     REPO_TAG: "1.0"
     DOCKER_FILE_NAME: "codeScan"
     CONTAINER_NAME: "codeScan"
+    EXTRA_CONTAINER_NAME1: "modelTest"
+    EXTRA_CONTAINER_NAME2: "utTest"
 jobs:
   format-scan:
-    runs-on: ubuntu-latest
+    runs-on: itrex-node-spell
     steps:
       - name: Docker Clean Up
         run: |
           docker ps -a
-          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-              docker start $(docker ps -aq)
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.CONTAINER_NAME }}-${{ runner.name }}
               echo "remove left files through container ..."
-              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+              docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
+
       - name: Checkout out Repo
         uses: actions/checkout@v3
 
@@ -37,23 +40,23 @@ jobs:
 
       - name: Docker Run
         run: |
-          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-            docker stop $(docker ps -aq)
-            docker rm -vf ${{ env.CONTAINER_NAME }} || true
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+            docker stop ${{ env.CONTAINER_NAME }}-${{ runner.name }}
+            docker rm -vf ${{ env.CONTAINER_NAME }}-${{ runner.name }} || true
           fi
-          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }}-${{ runner.name }} --shm-size="1g" \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
           echo '${{ toJSON(github) }}'
 
       - name: Env build
         run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
+          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
           bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
           
       - name: Code scan check
         run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
+          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
           bash -c "bash /intel-extension-for-transformers/.github/workflows/script/formatScan/pyspelling.sh"
 
 

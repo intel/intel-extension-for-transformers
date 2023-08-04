@@ -1,14 +1,35 @@
+import time
 import logging
 from typing import Dict, List, Optional, Type, Union
+from utils import detect_language
 
 import torch
 from haystack.modeling.utils import initialize_device_settings
 from haystack.nodes.prompt.prompt_node import PromptModel, PromptModelInvocationLayer
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, GenerationConfig
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer, GenerationConfig, StoppingCriteria, StoppingCriteriaList
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
 import intel_extension_for_pytorch as ipex
 logger = logging.getLogger(__name__)
 
+class StopOnTokensWithPeriod(StoppingCriteria):
+    def __init__(self, min_length: int, start_length: int, stop_token_id: list[int]):
+        self.min_length = min_length
+        self.start_length = start_length
+        self.stop_token_id = stop_token_id
+
+    def __call__(
+        self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
+    ) -> bool:
+        if scores is not None:
+            if len(scores) > self.min_length:
+                for stop_id in self.stop_token_id:
+                    if input_ids[0][self.start_length - 1 + len(scores)] == stop_id:
+                        return True
+        elif input_ids.shape[-1] - self.start_length > self.min_length:
+            for stop_id in self.stop_token_id:
+                if input_ids[0][input_ids.shape[-1] - 1] == stop_id:
+                    return True
+        return False
 
 class TransformersDecoderInvocationLayer(PromptModelInvocationLayer):
     def __init__(
@@ -102,36 +123,48 @@ class TransformersDecoderInvocationLayer(PromptModelInvocationLayer):
             dict(
                 min_new_tokens=kwargs.pop("min_new_tokens", 1),
                 max_new_tokens=kwargs.pop("max_new_tokens", self.max_length),
-                temperature=kwargs.pop("temperature", 0.001),
+                temperature=kwargs.pop("temperature", 0.3),
                 top_p=kwargs.pop("top_p", 0.9),
                 top_k=kwargs.pop("top_k", 1),
                 num_beams=kwargs.pop("beams", 1),
-                early_stopping=kwargs.pop("early_stopping", False),
+                return_dict_in_generate=True,
+                early_stopping=kwargs.pop("early_stopping", True),
             )
         )
         decode_mode = (kwargs.pop("decode_mode", "Greedy"),)
         if "Greedy" in decode_mode:
-            generate_kwargs.update(dict(beams=1, do_sample=False))
+            generate_kwargs.update(dict(num_beams=1, do_sample=False))
         elif "Beam" in decode_mode:
             generate_kwargs.update(dict(do_sample=True))
         else:
             pass
-        generation_config = GenerationConfig(**generate_kwargs)
 
         output: List[Dict[str, str]] = []
+        start_time = time.time()
         if kwargs and "prompt" in kwargs:
             prompt = kwargs.pop("prompt")
-            inputs = self.tokenizer(prompt, return_tensors="pt", padding=True)
-            if inputs.get("token_type_ids") is not None:
-                inputs.pop("token_type_ids")
-            # inputs = self.tokenizer(prompt, return_tensors="pt")
-            inputs = inputs.to("cuda" if self.use_gpu else "cpu")
+            if detect_language(prompt) == 'Chinese':
+                generate_kwargs["max_new_tokens"] = 512
+            input_tokens = self.tokenizer.batch_encode_plus(
+                [prompt], return_tensors="pt", padding=True
+            )
+            input_token_len = input_tokens.input_ids.shape[-1]
+            stop_token_ids = self.tokenizer.convert_tokens_to_ids(["<|im_end|>", "<|endoftext|>"])
+            stop_token_ids.append(self.model.generation_config.eos_token_id)
+            stop_token_ids.append(self.tokenizer(".", return_tensors="pt").input_ids)
+            stop_token_ids.append(self.tokenizer("!", return_tensors="pt").input_ids)
+            stop_token_ids.append(self.tokenizer("。", return_tensors="pt").input_ids)
+            stop_token_ids.append(self.tokenizer("！", return_tensors="pt").input_ids)
+            stop = StopOnTokensWithPeriod(min_length=108, start_length=input_token_len, stop_token_id=stop_token_ids)
+            generate_kwargs["stopping_criteria"] = StoppingCriteriaList([stop])
             with torch.no_grad():
                 with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16, cache_enabled=True):
-                    output = self.model.generate(**inputs, generation_config=generation_config)
-                output = output[0][inputs["input_ids"].shape[-1] :]
-        generated_texts = self.tokenizer.decode(output, skip_special_tokens=True)
-        return [generated_texts]
+                    output = self.model.generate(**input_tokens, **generate_kwargs)
+        generated_texts = self.tokenizer.decode(output.sequences[0], skip_special_tokens=True)
+        print("The inference time======", time.time() - start_time)
+        if "Response:" in generated_texts:
+            result =  generated_texts.split("Response:")[1].strip()
+        return [result]
 
     @classmethod
     def supports(cls, model_name_or_path: str) -> bool:

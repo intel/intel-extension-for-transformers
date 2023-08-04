@@ -87,6 +87,10 @@ function run_benchmark {
         script="run_clm_no_trainer.py"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         lm_eval_tasks="lambada_openai"
+   elif [ "${topology}" = "chatglm_weight_only" ]; then
+        script="run_clm_no_trainer.py"
+        model_name_or_path="THUDM/chatglm-6b"
+        lm_eval_tasks="lambada_openai"
     elif [ "${topology}" = "gpt_j_weight_only_awq" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"

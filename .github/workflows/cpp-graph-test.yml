@@ -6,7 +6,7 @@ on:
     paths:
        - '.github/workflows/cpp-graph-test.yml'
        - '.github/workflows/script/models/cpp_graph_inference.sh'
-       - 'intel_extension_for_transformers/backends/neural_engine/graph'
+       - 'intel_extension_for_transformers/backends/neural_engine/graph/**'
        - '!intel_extension_for_transformers/backends/neural_engine/graph/README.md'
   workflow_dispatch:
 
@@ -65,7 +65,7 @@ jobs:
           retention-days: 60 # 1 <= retention-days <= 90
 
   Genreate-Report:
-    runs-on: ubuntu-latest
+    runs-on: itrex-node-spell
     needs: [CPP-Graph-Workflow]
     steps:
       - name: Checkout out Repo

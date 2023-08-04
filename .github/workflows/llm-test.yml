@@ -6,12 +6,12 @@ on:
     paths:
        - '.github/workflows/llm-test.yml'
        - '.github/workflows/script/models/run_llm.sh'
-       - "intel_extension_for_transformers/backends"
-       - "!intel_extension_for_transformers/backends/neural_engine/kernels"
-       - "!intel_extension_for_transformers/backends/neural_engine/graph"
-       - "!intel_extension_for_transformers/backends/neural_engine/test"
-       - "!intel_extension_for_transformers/backends/neural_engine/third_party"
-       - "!intel_extension_for_transformers/backends/neural_engine/docs"
+       - "intel_extension_for_transformers/backends/**"
+       - "!intel_extension_for_transformers/backends/neural_engine/kernels/**"
+       - "!intel_extension_for_transformers/backends/neural_engine/graph/**"
+       - "!intel_extension_for_transformers/backends/neural_engine/test/**"
+       - "!intel_extension_for_transformers/backends/neural_engine/third_party/**"
+       - "!intel_extension_for_transformers/backends/neural_engine/docs/**"
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -80,7 +80,7 @@ jobs:
           retention-days: 60 # 1 <= retention-days <= 90
 
   Genreate-Report:
-    runs-on: ubuntu-latest
+    runs-on: itrex-node-spell
     needs: [LLM-Workflow]
     steps:
       - name: Checkout out Repo

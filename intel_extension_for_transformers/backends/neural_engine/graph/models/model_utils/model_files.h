@@ -206,6 +206,10 @@ struct model_file_loader {
     hparams.n_layer = file.read_u32();
     hparams.n_rot = file.read_u32();
     hparams.ftype = (enum ne_ftype)file.read_u32();
+    hparams.max_seq_len = file.read_u32();
+    file.read_raw(&hparams.alibi_bias_max, sizeof(float));
+    file.read_raw(&hparams.clip_qkv, sizeof(float));
+    hparams.par_res = file.read_u32();
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
@@ -305,7 +309,11 @@ struct model_file_saver {
     file.write_u32(hparams.n_head);
     file.write_u32(hparams.n_layer);
     file.write_u32(hparams.n_rot);
-    file.write_u32(new_ftype);
+    file.write_u32(hparams.ftype);
+    file.write_u32(hparams.max_seq_len);
+    file.write_raw(&hparams.alibi_bias_max, sizeof(float));
+    file.write_raw(&hparams.clip_qkv, sizeof(float));
+    file.write_u32(hparams.par_res);
   }
   void write_vocab() {
     if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
@@ -394,7 +402,10 @@ struct model_model_loader {
     if (it == tensors_map.name_to_idx.end()) {
       it = tensors_map.name_to_idx.find("transformer.wte.weight");
       if (it == tensors_map.name_to_idx.end()) {
-        throw std::string("missing tok_embeddings.weight");
+        it = tensors_map.name_to_idx.find("gpt_neox.embed_in.weight");
+        if (it == tensors_map.name_to_idx.end()) {
+          throw std::string("missing tok_embeddings.weight");
+        }
       }
     }
     const model_load_tensor& lt = tensors_map.tensors.at(it->second);
