@@ -231,12 +231,10 @@ if args.weight_only_algo == 'GPTQ':
 user_model = user_model.to(memory_format=torch.channels_last)
 user_model.eval()
 
-# import pdb;pdb.set_trace()
 if args.quantize:
     # dataset
     calib_dataset = load_dataset(args.dataset, split="train")
-    # import pdb;pdb.set_trace()
-    # calib_dataset = calib_dataset.shuffle(seed=42)
+    calib_dataset = calib_dataset.shuffle(seed=42)
     calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
     calib_dataloader = DataLoader(
         calib_evaluator.dataset,
