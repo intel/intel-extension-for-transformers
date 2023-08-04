@@ -20,34 +20,75 @@ We focuse on optimizing the inference process of the fine-tuned customized model
 
 We offer a rich demonstration of the capabilities of NeuralChat. It showcases a variety of components, including a basic frontend, an advanced frontend with enhanced features, a Command-Line interface for convenient interaction, and different backends to suit diverse requirements. For more detailed information and instructions, please refer to the [README file](./demo/README.md).
 
-### Service
+### Getting Started
+#### Prepare
+```bash
+## Prepare Scripts
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers/workflows/chatbot
+## Prepare Data
+wget https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json
+## Prepare Model
+git clone https://huggingface.co/mosaicml/mpt-7b-chat
+## Install Dependencies
+pip install langchain chromadb PyPDF2 farm-haystack==1.14.0
+```
 
-Under construction.
+#### Indexing
+```python
+from inference.document_indexing.doc_index import d_load_jsonl_file, persist_embedding
+documents = d_load_jsonl_file("/path/alpaca_data.json", process=False)
+persist_embedding(documents, "./output", model_path="path/mpt-7b")
+```
 
+#### Inference
+```python
+from transformers import set_seed
+from inference.generate import create_prompts, load_model, predict_stream
+set_seed(1234)
+instructions = "Transform the following sentence into one that shows contrast. The tree is rotten."
+prompts = create_prompts([{"instruction": instruction, "input": ""} for instruction in instructions])
+load_model("/path/mpt-7b-chat", "EleutherAI/gpt-neox-20b", "cpu", use_deepspeed=False)
+start_time = time.time()
+print("Warmup, Response: ")
+for new_text in predict_stream(model_name="./mpt-7b-chat", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1):
+    print(new_text, end="", flush=True)
+print(f"duration: {time.time() - start_time}")
+for idx, tp in enumerate(zip(prompts, instructions)):
+    prompt, instruction = tp
+    idxs = f"{idx+1}"
+    print("=" * 30 + idxs + "=" * 30)
+    print(f"Instruction: {instruction}")
+    start_time = time.time()
+    print("Response: ")
+    first_token = True
+    token_len = 0
+    for new_text in predict_stream(model_name="./mpt-7b-chat", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1):
+        if first_token:
+            first_time_stamp = time.time()
+            print(f"first token latency: {first_time_stamp - start_time}")
+            first_token = False
+        print(new_text, end="", flush=True)
+        token_len = token_len + 1
+    duration = time.time() - first_time_stamp
+    print(f"duration: {time.time() - start_time}, msecond_per_token = {duration*1000/(token_len-1)}")
+    print("=" * (60 + len(idxs)))
+for idx, tp in enumerate(zip(prompts, instructions)):
+    prompt, instruction = tp
+    idxs = f"{idx+1}"
+    print("=" * 30 + idxs + "=" * 30)
+    print(f"Instruction: {instruction}")
+    start_time = time.time()
+    print("Response: ")
+    out = predict(model_name="./mpt-7b-chat", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1) 
+    print(f"whole sentence out = {out}")
+    print(f"duration: {time.time() - start_time}")
+    print("=" * (60 + len(idxs)))
+```
+### Disclaimer
 
-To simplify the deployment process, we have also included Docker files for each part, allowing for easy and efficient building of the whole workflow service. These Docker files provide a standardized environment and streamline the deployment process, ensuring smooth execution of the chatbot service.
+Please refer to [DISCLAIMER](./DISCLAIMER) for details. 
 
+The WODKFLOW SCRIPTS are not intended for benchmarking Intel platforms. For any performance and/or benchmarking information on specific Intel platforms, visit https://www.intel.ai/blog.
 
-# Purpose of the NeuralChat for Intel Architecture
-
-- Demonstrate the AI workloads and deep learning models Intel has optimized and validated to run on Intel hardware
-
-- Show how to efficiently execute, train, and deploy Intel-optimized models
-
-- Make it easy to get started running Intel-optimized models on Intel hardware in the cloud or on bare metal
-
-DISCLAIMER: These scripts are not intended for benchmarking Intel platforms. For any performance and/or benchmarking information on specific Intel platforms, visit https://www.intel.ai/blog.
-
-Intel is committed to the respect of human rights and avoiding complicity in human rights abuses, a policy reflected in the Intel Global Human Rights Principles. Accordingly, by accessing the Intel material on this platform you agree that you will not use the material in a product or application that causes or contributes to a violation of an internationally recognized human right.
-
-## Models
-
-To the extent that any model(s) are referenced by Intel or accessed using tools or code on this site those models are provided by the third party indicated as the source. Intel does not create the model(s) and does not warrant their accuracy or quality. You understand that you are responsible for understanding the terms of use and that your use complies with the applicable license.
-
-## Datasets
-
-To the extent that any public or datasets are referenced by Intel or accessed using tools or code on this site those items are provided by the third party indicated as the source of the data. Intel does not create the data, or datasets, and does not warrant their accuracy or quality. By accessing the public dataset(s) you agree to the terms associated with those datasets and that your use complies with the applicable license. 
-<br>
-[Alpaca](https://github.com/tatsu-lab/stanford_alpaca)
-
-Intel expressly disclaims the accuracy, adequacy, or completeness of any public datasets, and is not liable for any errors, omissions, or defects in the data, or for any reliance on the data. Intel is not liable for any liability or damages relating to your use of public datasets.
+Intel is committed to the respect of human rights and avoiding complicity in human rights abuses, a policy reflected in the Intel Global Human Rights Principles. Accordingly, by accessing the Intel material on this platform you agree that you will not use the material in a product or application that causes or contributes to a violation of an internationally recognized human right. 

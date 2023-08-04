@@ -194,7 +194,7 @@ python generate.py --base_model_path "./mpt-7b-chat" \
 And you can use `deepspeed` to speedup the inference. currently, TP is not supported for mpt
 
 ```bash
-python ../habana/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
+python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
         --base_model_path "./mpt-7b-chat" \
         --habana \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
