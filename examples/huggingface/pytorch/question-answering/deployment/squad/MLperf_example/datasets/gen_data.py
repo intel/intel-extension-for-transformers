@@ -17,10 +17,9 @@ import tokenization
 import six
 import tensorflow as tf
 import numpy as np
+import argparse
 
 
-#flags = tf.flags
-#FLAGS = flags.FLAGS
 
 F_version_2_with_negative = False
 F_do_lower_case = True
@@ -30,7 +29,7 @@ F_doc_stride = 128
 F_max_query_length = 64
 
 
-class TF_BERTDataSet():
+class TF_BERTDataSet_v1():
     """
     feature params:
     self.unique_id = unique_id
@@ -74,7 +73,6 @@ class TF_BERTDataSet():
         self.eval_features = eval_features
         self.count = len(self.eval_features)
         self.perf_count = perf_count if perf_count is not None else self.count
-        # print(eval_features[0].segment_ids)
         self.gen_cpp_data()
 
     def gen_cpp_data(self):
@@ -113,6 +111,125 @@ class TF_BERTDataSet():
         
 
     def __len__(self):
+        return len(self.eval_features)
+
+class TF_BERTDataSet_v2():
+     def __init__(self, vocab_file, perf_count=None, label=False):
+        self.label = label
+        tf.compat.v1.logging.info("***** Creating tokenizers... *****") #tf.logging.info
+        from transformers import AutoTokenizer
+        tokenizer = AutoTokenizer.from_pretrained(vocab_file)
+        tf.compat.v1.logging.info("***** Reading examples... *****")
+        eval_examples = read_squad_examples(
+          input_file=F_predict_file, is_training=False)
+
+        new_eval_examples = {"question": [], "context": [], "id": []}
+        for eval_example in eval_examples:
+            new_eval_examples["question"].append(eval_example.question_text)
+            new_eval_examples["context"].append(" ".join(eval_example.doc_tokens))
+            new_eval_examples["id"].append(eval_example.qas_id)
+
+        from datasets import Dataset
+
+        eval_examples = Dataset.from_dict(new_eval_examples)
+        question_column_name  = "question"
+        context_column_name = "context"
+        pad_on_right = True
+        pad_to_max_length = True
+        column_names = ['id', 'context', 'question']
+
+
+        def prepare_validation_features(examples):
+            examples[question_column_name] = [q.lstrip() for q in examples[question_column_name]]
+            tokenized_examples = tokenizer(
+                examples[question_column_name if pad_on_right else context_column_name],
+                examples[context_column_name if pad_on_right else question_column_name],
+                truncation="only_second" if pad_on_right else "only_first",
+                max_length=F_max_seq_length,
+                stride=F_doc_stride,
+                return_overflowing_tokens=True,
+                return_offsets_mapping=True,
+            )
+            # Since one example might give us several features if it has a long context, we need a map from a feature to
+            # its corresponding example. This key gives us just that.
+            sample_mapping = tokenized_examples.pop("overflow_to_sample_mapping")
+
+            # For evaluation, we will need to convert our predictions to substrings of the context, so we keep the
+            # corresponding example_id and we will store the offset mappings.
+            tokenized_examples["example_id"] = []
+            tokenized_examples["token_type_ids"] = []
+
+            for i in range(len(tokenized_examples["input_ids"])):
+                # Grab the sequence corresponding to that example (to know what is the context and what is the question).
+                sequence_ids = tokenized_examples.sequence_ids(i)
+                context_index = 1 if pad_on_right else 0
+
+                # One example can give several spans, this is the index of the example containing this span of text.
+                sample_index = sample_mapping[i]
+                tokenized_examples["example_id"].append(examples["id"][sample_index])
+                tokenized_examples["token_type_ids"].append([0]*len(tokenized_examples["input_ids"][i]))
+
+
+                # Set to None the offset_mapping that are not part of the context so it's easy to determine if a token
+                # position is part of the context or not.
+                tokenized_examples["offset_mapping"][i] = [
+                    (o if sequence_ids[k] == context_index else None)
+                    for k, o in enumerate(tokenized_examples["offset_mapping"][i])
+                ]
+
+            return tokenized_examples
+
+        eval_dataset = eval_examples.map(
+                prepare_validation_features,
+                batched=True,
+                num_proc=1,
+                remove_columns=column_names,)
+
+        self.eval_features = eval_dataset
+        self.count = len(self.eval_features)
+
+        self.gen_cpp_data()
+
+     def gen_cpp_data(self):
+        feature_names=['input_ids','input_mask','segment_ids']
+        fps=[]
+        for feature_name in feature_names:
+            fp=open(feature_name+'.txt','w')
+            fp.write(str(self.count)+'\n')
+            fps.append(fp)
+
+        for eval_feature in self.eval_features:
+            for idx,feature_name in enumerate(feature_names):
+                if feature_name == "input_mask":
+                    feature_name = "attention_mask"
+                if feature_name == "segment_ids":
+                    feature_name = "token_type_ids"
+                data_list = eval_feature[feature_name]
+                fps[idx].write(str(len(data_list))+'\n')
+                for data in data_list:
+                    fps[idx].write(str(data)+' ')
+                fps[idx].write('\n')
+
+        for idx in range(len(fps)):
+            fps[idx].close()
+
+     def __getitem__(self, idx):
+        eval_feature = self.eval_features[idx]
+        input_ids_data = eval_feature.input_ids
+        input_mask_data = eval_feature.input_mask
+        segment_ids_data = eval_feature.segment_ids
+        input_ids_data += [0] * (F_max_seq_length - len(input_ids_data))
+        input_mask_data += [0] * (F_max_seq_length - len(input_mask_data))
+        segment_ids_data += [0] * (F_max_seq_length - len(segment_ids_data))
+
+        if self.label:
+            return (np.array(input_ids_data), np.array(input_mask_data),
+                    np.array(segment_ids_data)), None
+        else:
+            return np.array(input_ids_data), np.array(input_mask_data), np.array(segment_ids_data)
+
+
+     def __len__(self):
         return len(self.eval_features)
 
 ### BERTDataset ###
@@ -491,4 +608,14 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
 
 
 if __name__ == '__main__':
-    data_set = TF_BERTDataSet("bert-large-uncased-whole-word-masking-finetuned-squad", perf_count=None, label=False)
+    parser = argparse.ArgumentParser(description="Generate data based on model name")
+    parser.add_argument("--model_name", type=str, help="Model name for data")
+    args = parser.parse_args()
+    if args.model_name is None:
+        print("Please supply a model name")
+    else:
+        if args.model_name == "Minilm_l12" :
+            data_set = TF_BERTDataSet_v1("bert-large-uncased-whole-word-masking-finetuned-squad", perf_count=None, label=False)
+        elif args.model_name == "Minilm_l8" :
+            data_set = TF_BERTDataSet_v2("roberta-base", perf_count=None, label=False)
+
