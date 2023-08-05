@@ -35,19 +35,16 @@ We offer a rich demonstration of the capabilities of NeuralChat. It showcases a 
 ## Prepare Scripts
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/workflows/chatbot
-## Prepare Data
-wget https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json
-## Prepare Model
-git clone https://huggingface.co/mosaicml/mpt-7b-chat
 ## Install Dependencies
-pip install langchain chromadb PyPDF2 farm-haystack==1.14.0
+pip install langchain chromadb PyPDF2 farm-haystack InstructorEmbedding
 ```
 
 #### Indexing
 ```python
 from inference.document_indexing.doc_index import d_load_jsonl_file, persist_embedding
-documents = d_load_jsonl_file("/path/alpaca_data.json", process=False)
-persist_embedding(documents, "./output", model_path="path/mpt-7b")
+from langchain.embeddings import HuggingFaceInstructEmbeddings
+documents = d_load_jsonl_file("/path/document_data.json", process=False)
+persist_embedding(documents, "./output", model_path="path/llama-7b")
 ```
 
 #### Inference
@@ -57,7 +54,7 @@ from inference.generate import create_prompts, load_model, predict_stream
 set_seed(1234)
 instructions = "Transform the following sentence into one that shows contrast. The tree is rotten."
 prompts = create_prompts([{"instruction": instruction, "input": ""} for instruction in instructions])
-load_model("/path/mpt-7b-chat", "EleutherAI/gpt-neox-20b", "cpu", use_deepspeed=False)
+load_model("/path/llama-7b", "/path/llama-7b", "cpu", use_deepspeed=False)
 start_time = time.time()
 print("Warmup, Response: ")
 for new_text in predict_stream(model_name="./mpt-7b-chat", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1):
