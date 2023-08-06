@@ -36,7 +36,7 @@ We offer a rich demonstration of the capabilities of NeuralChat. It showcases a 
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/workflows/chatbot
 ## Install Dependencies
-pip install langchain chromadb PyPDF2 farm-haystack InstructorEmbedding
+pip install langchain chromadb PyPDF2 python-docx farm-haystack InstructorEmbedding sentence_transformers accelerate intel_extension_for_pytorch
 ```
 
 #### Indexing
@@ -50,51 +50,17 @@ persist_embedding(documents, "./output", model_path="path/llama-7b")
 #### Inference
 ```python
 from transformers import set_seed
-from inference.generate import create_prompts, load_model, predict_stream
+from inference.generate import create_prompts, load_model, predict
 set_seed(1234)
 instructions = "Transform the following sentence into one that shows contrast. The tree is rotten."
 prompts = create_prompts([{"instruction": instruction, "input": ""} for instruction in instructions])
 load_model("/path/llama-7b", "/path/llama-7b", "cpu", use_deepspeed=False)
-start_time = time.time()
-print("Warmup, Response: ")
-for new_text in predict_stream(model_name="./mpt-7b-chat", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1):
-    print(new_text, end="", flush=True)
-print(f"duration: {time.time() - start_time}")
 for idx, tp in enumerate(zip(prompts, instructions)):
     prompt, instruction = tp
     idxs = f"{idx+1}"
-    print("=" * 30 + idxs + "=" * 30)
-    print(f"Instruction: {instruction}")
-    start_time = time.time()
-    print("Response: ")
-    first_token = True
-    token_len = 0
-    for new_text in predict_stream(model_name="./mpt-7b-chat", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1):
-        if first_token:
-            first_time_stamp = time.time()
-            print(f"first token latency: {first_time_stamp - start_time}")
-            first_token = False
-        print(new_text, end="", flush=True)
-        token_len = token_len + 1
-    duration = time.time() - first_time_stamp
-    print(f"duration: {time.time() - start_time}, msecond_per_token = {duration*1000/(token_len-1)}")
-    print("=" * (60 + len(idxs)))
-for idx, tp in enumerate(zip(prompts, instructions)):
-    prompt, instruction = tp
-    idxs = f"{idx+1}"
-    print("=" * 30 + idxs + "=" * 30)
-    print(f"Instruction: {instruction}")
-    start_time = time.time()
-    print("Response: ")
-    out = predict(model_name="./mpt-7b-chat", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1) 
+    out = predict(model_name="/path/llama-7b", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1) 
     print(f"whole sentence out = {out}")
-    print(f"duration: {time.time() - start_time}")
-    print("=" * (60 + len(idxs)))
 ```
 ### Disclaimer
 
 Please refer to [DISCLAIMER](./DISCLAIMER) for details. 
-
-The WODKFLOW SCRIPTS are not intended for benchmarking Intel platforms. For any performance and/or benchmarking information on specific Intel platforms, visit https://www.intel.ai/blog.
-
-Intel is committed to the respect of human rights and avoiding complicity in human rights abuses, a policy reflected in the Intel Global Human Rights Principles. Accordingly, by accessing the Intel material on this platform you agree that you will not use the material in a product or application that causes or contributes to a violation of an internationally recognized human right. 
