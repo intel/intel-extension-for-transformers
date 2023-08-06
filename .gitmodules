@@ -93,3 +93,6 @@
 [submodule "oneDNN"]
 	path = intel_extension_for_transformers/backends/neural_engine/third_party/oneDNN
 	url = https://github.com/oneapi-src/oneDNN.git
+[submodule "intel_extension_for_transformers/backends/neural_engine/graph/application/ChatGLM/third_party/sentencepiece"]
+	path = intel_extension_for_transformers/backends/neural_engine/graph/application/ChatGLM/third_party/sentencepiece
+	url = https://github.com/google/sentencepiece.git
