@@ -24,7 +24,7 @@ import sys
 import torch
 import onnxruntime as ort
 
-unet_pattern_config = {
+qat_unet_pattern_config = {
     'pattern_switch': {
         # General Pattern
         'PaddingSequence': False,
@@ -51,9 +51,11 @@ unet_pattern_config = {
         'GroupNorm': True,
 
         # vae deocder & Transformer2Dmodel
+        'AttentionBlock_Resize2Gather': True,
         'AttentionBlock_QKVPreReshape': True,
         'AttentionBlock_AttentionMaskAddReshape': True,
         'AttentionBlock_ConstantOfShapeWithMul': True,
+
         'Transformer2Dmodel_GetSampleBatch': True,
         'Transformer2Dmodel_SampleSlice': True,
         'Transformer2Dmodel_EncoderHiddenStatesReshape': True,
@@ -65,6 +67,7 @@ unet_pattern_config = {
         'Transformer2Dmodel_AttentionMaskAddReshape': True,
         'Transformer2Dmodel_FFNInputSlice': True,
         'Transformer2Dmodel_FFNInputSlice_1': True,
+        'Transformer2DModel_UpBlockResize': True,
 
         # for all stable diffusion models
         'StableDiffusion_bf16Convert': True,
@@ -73,8 +76,18 @@ unet_pattern_config = {
         # MHA
         'TorchInsertBF16Node': False,
         'StableDiffusion_MHAReshape': True,
-        'StableDiffusion_MHA': False,
-        'ExplicitNHWCTransposeForConv': True,
+        'StableDiffusion_MHA': True,
+        'ExplicitNHWCTransposeForConv': False,
+        'ExplicitNHWCTransposeForConvQAT': True,
+        'MultiHeadAttention': False,
+
+        # QAT for the stable diffusion
+        'StableDiffusion_InsertQuantNode': True,
+        'StableDiffusion_CollectQuantInfo': True,
+        'CollectQuantInfo': False,
+        'InsertQuantNode': False,
+        'QuantizeFusion': False,
+        'StableDiffusion_QuantizeFusion': True,
 
         # Channel_last
         'ConvReshape': False
@@ -98,15 +111,15 @@ class TestUnet(unittest.TestCase):
 
     def test_unet(self):
         os.environ['GLOG_minloglevel'] = '2'
-        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion/unet_fp32/'
+        root_dir = '/tf_dataset2/models/nlp_toolkit/stable-diffusion-v1-5-qat/unet_qat_int8/'
         #root_dir = '/tf_dataset2/inc-ut/nlptoolkit_ut_model/'
         if is_win():
             root_dir = 'D:\\dataset\\nlptoolkit_ut_model\\'
         model_dir = root_dir + 'model.onnx'
         self.assertTrue(os.path.exists(model_dir), 'model is not found, please set your own model path!')
 
-        graph = compile(model_dir, config=unet_pattern_config)
-
+        graph = compile(model_dir, config=qat_unet_pattern_config)
+        
         input_0_path = root_dir + 'sample.pt'
         inputs_0 = torch.load(input_0_path)
         inputs_1 = torch.tensor([301], dtype=torch.float32)
@@ -135,7 +148,7 @@ class TestUnet(unittest.TestCase):
             'encoder_hidden_states': ortvalue3
         })
 
-        flag = np.allclose(output['out_sample:0'], outputs[0], atol=1e-2)
+        flag = np.allclose(output['out_sample:0'], outputs[0], atol=1e-0)
         self.assertTrue(flag)
 
 
