@@ -612,30 +612,6 @@
     "launcher": {
     }
   },
-  "llama-2-7b-chat": {
-    "working_dir": "huggingface/pytorch/text-generation/deployment",
-    "data_dir": "",
-    "hf_model_name": "meta-llama/Llama-2-7b-chat-hf",
-    "prepare": {
-      "cmd": "python optimize_llm.py",
-      "params": {
-         "model": "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat",
-         "dtype": "fp32/bf16/int8",
-         "output_model": "ir",
-         "pt_file": "pt"
-      }
-    },
-    "benchmark": {
-      "cmd": "python run_llm.py",
-      "params": {
-        "max-new-tokens": "32",
-	      "model": "/tf_dataset2/models/nlp_toolkit/llama-2-7b-chat",
-        "model_path": "ir"
-      }
-    },
-    "launcher": {
-    }
-  },
   "dolly-v2-3b": {
     "working_dir": "huggingface/pytorch/text-generation/deployment",
     "data_dir": "",

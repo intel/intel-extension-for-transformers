@@ -202,16 +202,16 @@ def dump_state_dict(f, weight_names, state_dict, quantization_bit, ne_type):
 
 class BaseConverter:
     @classmethod
-    def convert(cls, model, tokenizer, ne_type, save_path):
+    def convert(cls, model, tokenizer, ne_type, outfile):
         # convert all weights to fp16
-        with open(save_path, "wb") as f:
+        with open(outfile, "wb") as f:
             f.write(b"ne")  # magic
             f.write(struct.pack("ii", cls.MODEL_TYPE.value, 1))  # model type & version
             cls.dump_config(f, model.config, ne_type)
             cls.dump_tokenizer(f, tokenizer)
             cls.dump_model(f, model, ne_type)
 
-        print(f"{cls.MODEL_TYPE.name} NE model saved to {save_path}")
+        print(f"{cls.MODEL_TYPE.name} NE model saved to {outfile}")
 
 
 class ChatGLMConverter(BaseConverter):
@@ -339,7 +339,7 @@ def main():
     parser.add_argument(
         "-i",
         "--model_name_or_path",
-        default="THUDM/chatglm-6b",
+        default="THUDM/chatglm2-6b",
         type=str,
         help="Model name or path used in AutoModel.from_pretrained",
     )
@@ -351,19 +351,19 @@ def main():
         help="Lora model name or path used in PeftModel.from_pretrained",
     )
     parser.add_argument(
-        "-o", "--save_path", default="chatglm-ne.bin", type=Path, help="Path to save the generated NE model"
+        "-o", "--outfile", default="chatglm-ne.bin", type=Path, help="Path to save the generated NE model"
     )
     parser.add_argument(
         "-t",
-        "--type",
-        default="q4_0",
+        "--outtype",
+        default="q8_0",
         type=str,
         choices=["f32", "f16", "q8_0", "q4_0", "q4_1", "q5_0", "q5_1"],
         help="NE model quantization type",
     )
     args = parser.parse_args()
 
-    ne_type = NEType[args.type.upper()]
+    ne_type = NEType[args.outtype.upper()]
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, trust_remote_code=True)
     model = AutoModel.from_pretrained(args.model_name_or_path, trust_remote_code=True)
     if args.lora_model_name_or_path is not None:
@@ -373,9 +373,9 @@ def main():
         model = model.merge_and_unload()
 
     if hasattr(model.config, "multi_query_attention"):
-        ChatGLM2Converter.convert(model, tokenizer, ne_type, args.save_path)
+        ChatGLM2Converter.convert(model, tokenizer, ne_type, args.outfile)
     else:
-        ChatGLMConverter.convert(model, tokenizer, ne_type, args.save_path)
+        ChatGLMConverter.convert(model, tokenizer, ne_type, args.outfile)
 
 
 if __name__ == "__main__":
