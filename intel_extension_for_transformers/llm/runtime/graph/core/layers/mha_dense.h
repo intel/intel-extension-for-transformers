@@ -62,6 +62,22 @@ size_t jblas_fusion_attn_bf16_workspace_size(const attn_shape_t* params);
 
 void jblas_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params);
 
+typedef struct attn_fp16_fwd_args_t {
+  ne_fp16_t* Q;
+  ne_fp16_t* K;
+  ne_fp16_t* V;
+  ne_fp16_t* dst;
+  char* tmp;
+  float QK_scale;
+  bool is_causal;
+  int batch_size, head_num, head_size, sl_q, sl_kv;
+  int step_q_bs, step_q_head_num, step_q_sl;
+  int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
+  int step_v_bs, step_v_head_num, step_v_sl;
+  int step_dst_bs, step_dst_head_num, step_dst_sl;
+} attn_fp16_fwd_args_t;
+void jblas_attn_fp16_forward(const attn_fp16_fwd_args_t* params);
+
 #ifdef __cplusplus
 }
 #endif
