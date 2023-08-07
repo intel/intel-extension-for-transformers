@@ -25,7 +25,7 @@ from diffusers import DPMSolverMultistepScheduler
 import os
 
 
-def benchmark(pipe, neural_engine_graph, generator):
+def benchmark(pipe, neural_engine_graph, generator, steps=20):
     print('Benchmark start...')
     warmup = 4
     total = 8
@@ -34,7 +34,7 @@ def benchmark(pipe, neural_engine_graph, generator):
         prompt = "a photo of an astronaut riding a horse on mars"
         for i in range(total):
             start2 = time.time()
-            pipe(prompt, engine_graph=neural_engine_graph, num_inference_steps=20, generator=generator).images[0]
+            pipe(prompt, engine_graph=neural_engine_graph, num_inference_steps=steps, generator=generator).images[0]
             end2 = time.time()
             if i >= warmup:
                 total_time += end2 - start2
@@ -98,6 +98,7 @@ def parse_args():
     parser.add_argument("--mode", type=str, help="Benchmark mode of latency or accuracy.")
     parser.add_argument("--pipeline", default="text2img", type=str, help="text2img or img2img pipeline.")
     parser.add_argument("--seed", type=int, default=666, help="random seed")
+    parser.add_argument("--steps", type=int, default=20, help="denoising steps")
     parser.add_argument("--size", type=int, default=1, help="the number of output images per prompt")
     return parser.parse_args()
 
@@ -111,7 +112,7 @@ def main():
         pipe.safety_checker = lambda images, clip_input: (images, False)
         generator = torch.Generator("cpu").manual_seed(args.seed)
         if args.mode == "latency":
-            benchmark(pipe, neural_engine_graph, generator)
+            benchmark(pipe, neural_engine_graph, generator, args.steps)
             return
 
         if args.mode == "accuracy":
