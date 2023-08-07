@@ -57,3 +57,16 @@ def remove_label(input):
         input.pop('start_positions')
         input.pop('end_positions')
     return input
+
+
+def _build_inc_dataloader(dataloader):
+    # transformer issue #1
+    # for transformers 4.31.0: accelerate dataloader
+    # *** ValueError: batch_size attribute should not be set 
+    # after DataLoaderShard is initialized
+    class INCDataLoader:
+        __iter__ = dataloader.__iter__
+        def __init__(self) -> None:
+            self.dataloader = dataloader
+            self.batch_size = dataloader.total_batch_size
+    return INCDataLoader()
