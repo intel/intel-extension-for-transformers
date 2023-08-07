@@ -4,6 +4,8 @@
 
 ### 1. Build Graph
 ```shell
+git submodule update --init --recursive
+
 mkdir build
 cd build
 cmake .. 
