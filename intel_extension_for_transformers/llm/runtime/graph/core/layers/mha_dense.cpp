@@ -55,15 +55,59 @@ struct attn_fwd_args_t {
   bool is_causal;
   int batch_size, head_num, head_size, sl_q, sl_kv;
   int step_q_bs, step_q_head_num, step_q_sl;
-  int step_k_bs, step_k_head_num, step_k_sl;
+  int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
   int step_v_bs, step_v_head_num, step_v_sl;
   int step_dst_bs, step_dst_head_num, step_dst_sl;
 };
 using jblas_attn_fp32_fp16_fp16_fp32_fwd_args_t = attn_fwd_args_t<float, fp16, fp16, float>;
 
+inline __m512 poly_scale_2nd_ps(const __m512 z, const __m512 f, const __m512 c0, const __m512 c1, const __m512 c2) {
+  const auto y = _mm512_fmadd_ps(_mm512_fmadd_ps(f, c0, c1), f, c2);  // auto y = (f * c0 + c1) * f + c2;
+  const auto exp = _mm512_scalef_ps(y, z);
+  return exp;
+}
+
+inline __m512 exp_ps_0_1(const __m512 x) {
+  static const auto c0 = _mm512_set1_ps(0.240226507f);
+  static const auto c1 = _mm512_set1_ps(0.452920674f);
+  static const auto c2 = _mm512_set1_ps(0.713483036f);
+  static const float v_log2e = std::log2(std::exp(1.f));
+  static const auto log2e = _mm512_set1_ps(v_log2e);
+  static const auto half = _mm512_set1_ps(.5f);
+
+  const auto x1 = _mm512_fmadd_ps(x, log2e, half);  // auto x1 = x * log2e + _mm512_set1_ps(.5f);
+  const auto z = _mm512_floor_ps(x1);
+  const auto f = _mm512_sub_ps(x1, z);  // auto f = x1 - z;
+
+  return poly_scale_2nd_ps(z, f, c0, c1, c2);
+}
+
+#ifdef NOT_CURRENTLY_USED
+inline __m512 exp_2nd_ph(const __m512 z, const __m512 f, const __m512 c0, const __m512 c1, const __m512 c2) {
+  const auto y = _mm512_fmadd_ph(_mm512_fmadd_ph(f, c0, c1), f, c2);  // auto y = (f * c0 + c1) * f + c2;
+  const auto exp = _mm512_scalef_ph(y, z);
+  return exp;
+}
+
+inline __m512 exp_ph_0_1(const __m512 x) {
+  static const auto c0 = _mm512_castsi512_ph(_mm512_set1_epi16(fp16(0.240226507f).x));
+  static const auto c1 = _mm512_castsi512_ph(_mm512_set1_epi16(fp16(0.452920674f).x));
+  static const auto c2 = _mm512_castsi512_ph(_mm512_set1_epi16(fp16(0.713483036f).x));
+  static const float v_log2e = std::log2(std::exp(1.f));
+  static const auto log2e = _mm512_castsi512_ph(_mm512_set1_epi16(fp16(v_log2e).x));
+  static const auto half = _mm512_castsi512_ph(_mm512_set1_epi16(fp16(.5f).x));
+
+  const auto x1 = _mm512_fmadd_ph(x, log2e, half);  // auto x1 = x * log2e + _mm512_set1_ph(.5f);
+  const auto z = _mm512_floor_ph(x1);
+  const auto f = _mm512_sub_ph(x1, z);  // auto f = x1 - z;
+
+  return exp_2nd_ph(z, f, c0, c1, c2);
+}
+#endif
+
 /**
- * @brief An Epilogue that scale the fp32 result, performing exp, accumulating sum of each line of exp, and storing exp
- * as bf16 results
+ * @brief An Epilogue that optionally apply a casual mask and scale the fp32 result, performing exp, accumulating sum of
+ * each line of exp, and storing exp as bf16 results
  */
 template <JBLAS_ISA ISA_T, typename T_DST>
 class ScaleExpAccSumFp32 {
@@ -76,34 +120,12 @@ class ScaleExpAccSumFp32 {
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
   };
 
-  static inline __m512 snd_order_poly_exp(__m512 z, __m512 f, const float c[]) {
-    const auto c0 = _mm512_set1_ps(c[0]);
-    const auto c1 = _mm512_set1_ps(c[1]);
-    const auto c2 = _mm512_set1_ps(c[2]);
-
-    auto y = _mm512_fmadd_ps(_mm512_fmadd_ps(f, c0, c1), f, c2);  // auto y = (f * c0 + c1) * f + c2;
-    auto exp = _mm512_scalef_ps(y, z);
-
-    return exp;
-  }
-
-  static inline __m512 exp_ps_0_1(__m512 x) {
-    static const float v_log2e = std::log2(std::exp(1.f));
-    const auto log2e = _mm512_set1_ps(v_log2e);
-    const float _c[] = {0.240226507f, 0.452920674f, 0.713483036f};
-
-    auto x1 = _mm512_fmadd_ps(x, log2e, _mm512_set1_ps(.5f));  // auto x1 = x * log2e + _mm512_set1_ps(.5f);
-    auto z = _mm512_floor_ps(x1);
-    auto f = _mm512_sub_ps(x1, z);  // auto f = x1 - z;
-
-    return snd_order_poly_exp(z, f, _c);
-  }
-
   JBLAS_CODE forward(const float* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_sum = p.dst_sum + M_offset;
 #if MHA_2ND_EXP && CompileBF16()
+    static_assert(std::is_same<T_DST, bf16>::value, "bf16 support only");
     const auto v_scale = _mm512_set1_ps(p.scale);
     for (int i = 0; i < M; ++i) {
       const auto N_unmasked =
@@ -114,13 +136,11 @@ class ScaleExpAccSumFp32 {
       auto v_sum = _mm512_setzero_ps();
       for (; j < N_unmasked - 15; j += 16) {
         const auto v_exp = exp_ps_0_1(_mm512_mul_ps(v_scale, _mm512_loadu_ps(src + i * src_step + j)));
-        static_assert(std::is_same<T_DST, bf16>::value, "bf16 support only");
         v_sum = _mm512_add_ps(v_sum, v_exp);
         _mm256_storeu_epi16(dst + i * p.ld_dst + j, (__m256i)_mm512_cvtneps_pbh(v_exp));
       }
       if (j < N_unmasked) {
         const auto v_exp = exp_ps_0_1(_mm512_mul_ps(v_scale, _mm512_maskz_loadu_ps(v_mask, src + i * src_step + j)));
-        static_assert(std::is_same<T_DST, bf16>::value, "bf16 support only");
         v_sum = _mm512_mask_add_ps(v_sum, v_mask, v_sum, v_exp);
         _mm256_storeu_epi16(dst + i * p.ld_dst + j, (__m256i)_mm512_maskz_cvtneps_pbh(v_mask, v_exp));
         j += 16;
@@ -220,6 +240,7 @@ template <class GemmCore_T, JBLAS_ISA ISA_T, bool IsTrans, typename T_SRC = type
 class WeightPackBatchBf16Base {
  public:
   using WType = typename GemmCore_T::BType;  // weight type
+  using SType = T_SRC;                       // source type (before packed)
   using PW_T = PackedWeightBatch<WType>;     // packed weight type
   using Parallel = parallel::Parallel2DRowMajor;
 
@@ -229,7 +250,7 @@ class WeightPackBatchBf16Base {
 
   // additional parameter to pack weight at runtime
   struct PackParam {
-    T_SRC* src;
+    SType* src;
     int ld;
     std::function<int(int)> step_batch;
     int K;
@@ -300,6 +321,7 @@ class WeightPackBatchBf16Trans : public WeightPackBatchBf16Base<GemmCore_T, ISA_
   using typename Base::Parallel;
   using typename Base::Param;
   using typename Base::PW_T;
+  using typename Base::SType;
   using typename Base::WType;
 
   /// Reorder job of a thread
@@ -345,6 +367,7 @@ class WeightPackBatchBf16NonTr : public WeightPackBatchBf16Base<GemmCore_T, ISA_
   using typename Base::Parallel;
   using typename Base::Param;
   using typename Base::PW_T;
+  using typename Base::SType;
   using typename Base::WType;
 
   /// Reorder job of a thread
@@ -505,10 +528,13 @@ class MHAInterface {
   using GemmQK = typename L_ExpSum::GemmCore;
   using GemmPV = typename L_Scale::GemmCore;
   using Parallel2DRowMajor = parallel::Parallel2DRowMajor;
+  using Q_T = typename std::remove_const<typename std::remove_pointer<decltype(QKProQArgs::A)>::type>::type;
+  using K_T = typename PrologueK::SType;
+  using V_T = typename PrologueV::SType;
+  using DST_T = typename std::remove_const<typename std::remove_pointer<decltype(PVEpiArgs::dst)>::type>::type;
 
   static_assert(GemmQK::MTILE == GemmPV::MTILE, "2 GEMM should have the same M_TILE.");
 
-  template <typename Q_T, typename K_T, typename V_T, typename DST_T>
   JBLAS_CODE compute(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
     static constexpr auto M_TILE = GemmQK::MTILE;
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
@@ -593,17 +619,17 @@ class MHAInterface {
           // ptr to Q / dst matrix of the current head
           const auto head_q = p.Q + ibs * p.step_q_bs + ihn * p.step_q_head_num;
           const auto head_dst = p.dst + ibs * p.step_dst_bs + ihn * p.step_dst_head_num;
-          const auto max_unmasked = p.is_causal ? std::min(p.sl_kv, p.sl_kv - p.sl_q + i_m + M_TILE - 1 + 1) : p.sl_kv;
+          const auto unmasked_size = p.is_causal ? std::min(p.sl_kv, p.sl_kv - p.sl_q + i_m + M_TILE - 1 + 1) : p.sl_kv;
 
-          const auto max_unmasked_pad_qk = std::min(p.sl_kv, padto(max_unmasked, GemmQK::NTILE));
-          const auto max_unmasked_pad_pv = std::min(p.sl_kv, padto(max_unmasked, GemmPV::KTILE));
-          const auto ld_tmp_exp = padto(padto(max_unmasked_pad_pv, GemmQK::NTILE), GemmPV::KTILE);
+          const auto unmasked_size_pad_qk = std::min(p.sl_kv, padto(unmasked_size, GemmQK::NTILE));
+          const auto unmasked_size_pad_pv = std::min(p.sl_kv, padto(unmasked_size, GemmPV::KTILE));
+          const auto ld_tmp_exp = padto(padto(unmasked_size_pad_pv, GemmQK::NTILE), GemmPV::KTILE);
           l_expsum.launch(  // QxK => S ==exp==> P
               PC_QK{
                   /* rowidx = */ i_m,
                   /* colidx = */ 0,
                   /* rowsize = */ M_TILE,
-                  /* colsize = */ max_unmasked_pad_qk,
+                  /* colsize = */ unmasked_size_pad_qk,
                   /* MStep = */ M_TILE,
                   /* NStep = */ GemmQK::NTILE,
                   /* KStep = */ p.head_size,
@@ -612,14 +638,14 @@ class MHAInterface {
               },
               QKArgs{
                   /* .M = */ p.sl_q,
-                  /* .N = */ max_unmasked_pad_qk,
+                  /* .N = */ unmasked_size_pad_qk,
                   /* .K = */ p.head_size,
                   /* .paramA = */ QKProQArgs{head_q, p.step_q_sl},
                   /* .paramB = */ QKProKArgs{&K_pack},
                   /* .paramC = */
                   QKEpiArgs{
-                      /* .dst = */ (bf16*)tmp - i_m * ld_tmp_exp,  // pretend that we have a whole exp mat
-                      /* .dst_sum = */ exp_sum - i_m,              // pretend that we have a whole exp sum
+                      /* .dst = */ (bf16*)tmp - i_m * ld_tmp_exp,  // pretend that there is a whole exp mat
+                      /* .dst_sum = */ exp_sum - i_m,              // pretend that there is a whole exp sum
                       /* .ld_dst = */ ld_tmp_exp,
                       /* .scale = */ p.QK_scale,
                       /* .causal_offset = */ p.is_causal ? sl_diff : -1,
@@ -635,14 +661,14 @@ class MHAInterface {
                   /* colsize = */ p.head_size,
                   /* MStep = */ M_TILE,
                   /* NStep = */ GemmPV::NTILE,
-                  /* KStep = */ max_unmasked_pad_qk,  // TODO(Yi): pad?
+                  /* KStep = */ unmasked_size_pad_qk,  // TODO(Yi): pad?
                   /* w_offset = */ ibat * V_pack_batch_off,
                   /* StackSize = */ 0,
               },
               PVArgs{
                   /* .M = */ std::min(p.sl_q - i_m, M_TILE),
                   /* .N = */ p.head_size,
-                  /* .K = */ max_unmasked_pad_qk,
+                  /* .K = */ unmasked_size_pad_qk,
                   /* .paramA = */ PVProPArgs{(jblas::utils::bf16*)tmp, ld_tmp_exp},
                   /* .paramB = */ PVProVArgs{&V_pack},
                   /* .paramC = */
@@ -725,6 +751,8 @@ void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params)
   };
   const auto workspace_size = jblas_fusion_attn_bf16_workspace_size(&attn_shape);
   std::fill_n(params->tmp, workspace_size, 'f');
+  constexpr bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
+                                std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value;
 
 #pragma omp parallel for collapse(3)
   for (int ibs = 0; ibs < p.batch_size; ++ibs)
@@ -745,8 +773,13 @@ void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params)
         for (int j = 0; j < unmasked; ++j) {
           curr_row[j] = 0.f;
           for (int k = 0; k < p.head_size; ++k) {
-            curr_row[j] += static_cast<float>(static_cast<bf16>(q_curr[k])) *  // TODO(Yi) fp16 acc
-                           static_cast<float>(static_cast<bf16>(k_curr[j * p.step_k_sl + k]));
+            if (IS_BF16_GEMM) {
+              curr_row[j] += static_cast<float>(static_cast<bf16>(q_curr[k])) *  // TODO(Yi) fp16 acc
+                             static_cast<float>(static_cast<bf16>(k_curr[j * p.step_k_sl + k * p.step_k_head_size]));
+            } else {
+              curr_row[j] += static_cast<float>(q_curr[k]) *  // TODO(Yi) fp16 acc
+                             static_cast<float>(k_curr[j * p.step_k_sl + k * p.step_k_head_size]);
+            }
           }
           curr_row[j] *= p.QK_scale;
           row_max = std::max(row_max, curr_row[j]);
@@ -766,7 +799,11 @@ void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params)
         for (int j = 0; j < p.head_size; ++j) {
           float dst_f32_v = 0.f;
           for (int k = 0; k < unmasked; ++k) {
-            dst_f32_v += curr_row[k] * static_cast<float>(static_cast<bf16>(v_curr[k * p.step_v_sl + j]));
+            if (IS_BF16_GEMM) {
+              dst_f32_v += curr_row[k] * static_cast<float>(static_cast<bf16>(v_curr[k * p.step_v_sl + j]));
+            } else {
+              dst_f32_v += curr_row[k] * static_cast<float>(v_curr[k * p.step_v_sl + j]);
+            }
           }
           dst_curr[j] = static_cast<DST_T>(dst_f32_v);
         }
@@ -807,14 +844,15 @@ class TestMhaDese {
     printf("Test suit: %s\n", __FUNCTION__);
     CheckISA(AMX_BF16);
     jblas::utils::request_perm_xtile_data();
-    return_success &= test_case({1, 1, 32, 128, 64});
-    return_success &= test_case({2, 5, 32, 64, 128});
-    return_success &= test_case({2, 5, 80, 128, 77});
-    return_success &= test_case({1, 1, 256, 63, 63});
-    return_success &= test_case({3, 4, 256, 1, 384});
-    return_success &= test_case({1, 1, 64, 64, 64}, true);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 32, 128, 64});
+    return_success &= test_case<float, fp16, fp16, float>({2, 5, 32, 64, 128});
+    return_success &= test_case<float, fp16, fp16, float>({2, 5, 80, 128, 77});
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 256, 63, 63});
+    return_success &= test_case<float, fp16, fp16, float>({3, 4, 256, 1, 384});
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 64, 64, 64}, true);
     printf("Test suit done: %s\n", __FUNCTION__);
   }
+  template <class Q_T, class K_T, class V_T, class DST_T>
   bool test_case(const attn_shape_t& s, bool is_causal = false) {
     using namespace jblas::utils;
     const auto batch_size = s.batch_size;
@@ -823,13 +861,14 @@ class TestMhaDese {
     const auto sl_q = s.sl_q;
     const auto sl_kv = s.sl_kv;
 
-    printf("Test case : bs_%d hn_%d hs_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, head_size, sl_q, sl_kv,
+    printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
+    printf("bs_%d hn_%d hs_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, head_size, sl_q, sl_kv,
            is_causal ? "maksed" : "unmask");
-    std::vector<float> src_q(batch_size * head_num * sl_q * head_size);
-    std::vector<fp16> src_k(batch_size * head_num * sl_kv * head_size);
-    std::vector<fp16> src_v(batch_size * head_num * sl_kv * head_size);
-    std::vector<float> dst(batch_size * head_num * sl_q * head_size);
-    std::vector<float> ref(batch_size * head_num * sl_q * head_size);  // reference result
+    std::vector<Q_T> src_q(batch_size * head_num * sl_q * head_size);
+    std::vector<K_T> src_k(batch_size * head_num * sl_kv * head_size);
+    std::vector<V_T> src_v(batch_size * head_num * sl_kv * head_size);
+    std::vector<DST_T> dst(batch_size * head_num * sl_q * head_size);
+    std::vector<DST_T> ref(batch_size * head_num * sl_q * head_size);  // reference result
     std::vector<char> tmp(jblas_fusion_attn_bf16_workspace_size(&s));
 
     // init vector
@@ -839,7 +878,7 @@ class TestMhaDese {
     init_vector(&src_k, -1.f, 1.f, dist(rng));
     init_vector(&src_v, -1.f, 1.f, dist(rng));
 
-    jblas_attn_fp32_fp16_fp16_fp32_fwd_args_t args{
+    attn_fwd_args_t<Q_T, K_T, V_T, DST_T> args{
         /* .Q = */ src_q.data(),
         /* .K = */ src_k.data(),
         /* .V = */ src_v.data(),
@@ -858,6 +897,7 @@ class TestMhaDese {
         /* .step_k_bs = */ sl_kv * head_num * head_size,
         /* .step_k_head_num = */ head_size,
         /* .step_k_sl = */ head_num * head_size,
+        /* .step_k_head_size = */ 1,  // TODO
         /* .step_v_bs = */ sl_kv * head_num * head_size,
         /* .step_v_head_num = */ head_size,
         /* .step_v_sl = */ head_num * head_size,

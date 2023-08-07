@@ -8437,6 +8437,7 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
       .step_k_bs = step_k_bs,
       .step_k_head_num = headsize,
       .step_k_sl = embedsize,
+      .step_k_head_size = 1,  // TODO
       .step_v_bs = step_v_bs,
       .step_v_head_num = headsize,
       .step_v_sl = embedsize,
