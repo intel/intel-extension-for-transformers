@@ -131,7 +131,7 @@ void FALCON::load(model_context& lctx, model_progress_callback progress_callback
     layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
   
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * (n_embd / n_head)}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head)}, backend);
     layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
 
     // ffn GEMM

@@ -89,6 +89,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = hparams.n_rot;
+  const int head_dim = hparams.n_embd / hparams.n_head;
 
   auto& mem_per_token = lctx.mem_per_token;
   auto& buf_compute = lctx.buf_compute;
@@ -110,10 +111,12 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   ne_set_name(embd, "embd");
   memcpy(embd->data, tokens, N * ne_element_size(embd));
 
+  // wte
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
   for (int il = 0; il < n_layer; ++il) {
     struct ne_tensor* cur;
+    struct ne_tensor* layernorm_output;
 
     lctx.use_buf(ctx0, 0);
 
@@ -123,50 +126,56 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
         cur = ne_norm(ctx0, inpL);
 
         cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur),
-                      ne_repeat(ctx0, model.layers[il].norm[1], cur));
+                     ne_repeat(ctx0, model.layers[il].norm[1], cur));
       }
+      layernorm_output = cur;
 
       // compute QKV
-      {
-        cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
+      cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
 
-        cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].attn[1], cur), cur);
-      }
+      size_t fused_qkv_row_nb = (n_embd + 2 * (n_embd / n_head)) * sizeof(float);
 
-      struct ne_tensor* Qcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, n_embd / n_head, n_head, N, cur->nb[1] / n_head,
-                                                        cur->nb[1], 0 * sizeof(float) * n_embd / n_head));
-      struct ne_tensor* Kcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, n_embd / n_head, n_head, N, cur->nb[1] / n_head,
-                                                        cur->nb[1], 1 * sizeof(float) * n_embd / n_head));
-      struct ne_tensor* Vcur = ne_cont(ctx0, ne_view_3d(ctx0, cur, n_embd / n_head, n_head, N, cur->nb[1] / n_head,
-                                                        cur->nb[1], 2 * sizeof(float) * n_embd / n_head));
+      struct ne_tensor* Qcur =
+          ne_view_3d(ctx0, cur, head_dim, n_head, N, head_dim * sizeof(float), fused_qkv_row_nb, 0);
 
-      // using mode = 2 for GPT-NeoX mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2);
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2);
+      struct ne_tensor* Kcur =
+          ne_view_3d(ctx0, cur, head_dim, 1, N, head_dim * sizeof(float), fused_qkv_row_nb, n_embd * sizeof(float));
+
+      struct ne_tensor* Vcur = ne_view_3d(ctx0, cur, head_dim, 1, N, head_dim * sizeof(float), fused_qkv_row_nb,
+                                          (n_embd + head_dim) * sizeof(float));
+
+      // using mode = 2 for neox mode
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2);
 
       // store key and value to memory
       {
-        Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, n_embd, N));
+        // head_dim, 1 (head_num), N --> head_dim, N, 1 (head_num)
+        struct ne_tensor* Kcur_permuted = ne_permute(ctx0, Kcur, 0, 2, 1, 3);
+        // head_dim, 1 (head_num), N --> N, head_dim, 1 (head_num)
+        struct ne_tensor* Vcur_permuted = ne_permute(ctx0, Vcur, 1, 2, 0, 3);
 
-        struct ne_tensor* k = ne_view_1d(ctx0, kv_self.k, N * n_embd,
-                                          (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
-        struct ne_tensor* v = ne_view_2d(
-            ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
-            (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
+        struct ne_tensor* k =
+            ne_view_3d(ctx0, kv_self.k, head_dim, N, 1, ne_element_size(kv_self.k) * head_dim,
+                       ne_element_size(kv_self.k) * head_dim * n_ctx,
+                       il * n_ctx * ne_element_size(kv_self.k) * head_dim +
+                           n_past * ne_element_size(kv_self.k) * head_dim);
+        struct ne_tensor* v = ne_view_3d(
+            ctx0, kv_self.v, N, head_dim, 1, n_ctx * ne_element_size(kv_self.v),
+            n_ctx * ne_element_size(kv_self.v) * head_dim,
+            il * n_ctx * ne_element_size(kv_self.v) * head_dim + n_past * ne_element_size(kv_self.v));
 
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_permuted, k));
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_permuted, v));
       }
+
       // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0, 2, 1, 3)
       struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
 
-      // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1, 3)
-      struct ne_tensor* K = ne_permute(ctx0,
-                                        ne_reshape_3d(ctx0,
-                                                      ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_embd,
-                                                                il * n_ctx * ne_element_size(kv_self.k) * n_embd),
-                                                      n_embd / n_head, n_head, n_past + N),
-                                        0, 2, 1, 3);
+      struct ne_tensor* K =
+          ne_view_3d(ctx0, kv_self.k, head_dim, N + n_past, 1, ne_element_size(kv_self.k) * head_dim,
+                     ne_element_size(kv_self.k) * head_dim * n_ctx,
+                     il * n_ctx * ne_element_size(kv_self.k) * head_dim * 1);
 
       // K * Q
       struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
@@ -182,9 +191,9 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
 
       // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
       struct ne_tensor* V =
-          ne_view_3d(ctx0, kv_self.v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
-                      n_ctx * ne_element_size(kv_self.v) * n_embd / n_head,
-                      il * n_ctx * ne_element_size(kv_self.v) * n_embd);
+          ne_view_3d(ctx0, kv_self.v, N + n_past, head_dim, 1, ne_element_size(kv_self.v) * n_ctx,
+                     ne_element_size(kv_self.v) * n_ctx * head_dim,
+                     il * n_ctx * ne_element_size(kv_self.v) * head_dim * 1);
 
       // KQV = transpose(V) * KQ_soft_max
       struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
@@ -196,33 +205,25 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
       cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
 
       // projection
-      {
-        cur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
-
-        cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].attn[3], cur), cur);
-      }
+      { cur = ne_mul_mat(ctx0, model.layers[il].attn[1], cur); }
     }
+
     lctx.use_buf(ctx0, 1);
-    if (hparams.par_res == 0) {
-      struct ne_tensor* inpFF = ne_add(ctx0, cur, inpL);
 
-      cur = gpt_neox_ff(model.layers[il], ctx0, inpFF);
+    struct ne_tensor* inpFF = layernorm_output;
+    struct ne_tensor* attn_out = ne_cpy(ctx0, cur, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
 
-      // input for next layer
-      inpL = ne_add(ctx0, cur, inpFF);
-    } else {
-      struct ne_tensor* inpFF = cur;
-
-      // this is independent of the self-attention result, so it could be done in parallel to the self-attention
-      // note here we pass inpL instead of cur
-      cur = gpt_neox_ff(model.layers[il], ctx0, inpL);
-
-      // layer input + FF
-      cur = ne_add(ctx0, cur, inpFF);
-
-      // input for next layer
-      inpL = ne_add(ctx0, cur, inpL);
+    // FFN (pre_layer_norm output)
+    {
+      cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], inpFF);
+      cur = ne_gelu(ctx0, cur);
+      cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
     }
+
+    cur = ne_add(ctx0, cur, attn_out);
+    cur = ne_add(ctx0, cur, inpL);
+    // input for next layer
+    inpL = cur;
   }
 
   lctx.use_buf(ctx0, 0);
@@ -233,9 +234,9 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
     inpL = ne_norm(ctx0, inpL);
 
     // inpL = ln_f_g*inpL + ln_f_b
-    inpL = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL), ne_repeat(ctx0, model.others[2], inpL));
+    inpL = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL),
+                  ne_repeat(ctx0, model.others[2], inpL));
   }
-
   lctx.use_buf(ctx0, -1);
   // lm_head
   {
