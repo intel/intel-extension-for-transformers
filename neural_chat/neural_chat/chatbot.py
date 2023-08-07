@@ -14,9 +14,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Neural Chat Chatbot API."""
 
-
-from config import NeuralChatConfig, FinetuningConfig, OptimizationConfig
+from .config import NeuralChatConfig, FinetuningConfig, OptimizationConfig
 
 class NeuralChatBot:
     def __init__(self, config: NeuralChatConfig):

@@ -16,4 +16,5 @@
 # limitations under the License.
 
 """Intel® Neural Chat: An open-source Python library supporting LLM chatbot."""
+
 __version__ = "0.0.1"
