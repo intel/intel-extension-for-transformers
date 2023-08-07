@@ -44,7 +44,7 @@ pip install langchain chromadb PyPDF2 python-docx farm-haystack InstructorEmbedd
 from inference.document_indexing.doc_index import d_load_jsonl_file, persist_embedding
 from langchain.embeddings import HuggingFaceInstructEmbeddings
 documents = d_load_jsonl_file("/path/document_data.json", process=False)
-persist_embedding(documents, "./output", model_path="path/llama-7b")
+persist_embedding(documents, "./output", model_path="hkunlp/instructor-large")
 ```
 
 #### Inference
