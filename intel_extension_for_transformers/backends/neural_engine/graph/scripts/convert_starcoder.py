@@ -91,16 +91,19 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0x67676d6c)) # magic: ne in hex
     vocab_size = hparams["vocab_size"]
     fout.write(struct.pack("i", vocab_size))
-    fout.write(struct.pack("i", hparams["n_positions"]))
     fout.write(struct.pack("i", hparams["n_embd"]))
+    fout.write(struct.pack("i", hparams["n_positions"]))
     fout.write(struct.pack("i", hparams["n_head"]))
     fout.write(struct.pack("i", hparams["n_layer"]))
+    fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", use_f16))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("i", 0))
 
     byte_encoder = bytes_to_unicode()
     byte_decoder = {v:k for k, v in byte_encoder.items()}
-
-    fout.write(struct.pack("i", vocab_size))
 
     counter = 0
     # sort by value
