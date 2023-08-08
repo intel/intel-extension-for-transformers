@@ -33,7 +33,7 @@ class falcon_quant_layer : public quant_layer_base {
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
-    if (layername == "gpt_neox.embed_in.weight") {
+    if (layername == "transformer.word_embeddings.weight") {
       // special layer process, can be loaded by config file
       return quant_params_internal();  // return q4_0 to cover the usage of getrow
     }

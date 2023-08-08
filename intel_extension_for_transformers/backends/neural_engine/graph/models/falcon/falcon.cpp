@@ -35,27 +35,6 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-// feed-forward network
-struct ne_tensor* gpt_neox_ff(const model_layer& layer, ne_context* ctx0, ne_tensor* inp) {
-  struct ne_tensor* cur = ne_norm(ctx0, inp);
-
-  cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.norm[2], cur), cur), ne_repeat(ctx0, layer.norm[3], cur));
-
-  cur = ne_mul_mat(ctx0, layer.ffn[0], cur);
-
-  cur = ne_add(ctx0, ne_repeat(ctx0, layer.ffn[1], cur), cur);
-
-  // GELU activation
-  cur = ne_gelu(ctx0, cur);
-
-  // projection
-  // cur = proj_w*cur + proj_b
-  cur = ne_mul_mat(ctx0, layer.ffn[2], cur);
-
-  cur = ne_add(ctx0, ne_repeat(ctx0, layer.ffn[3], cur), cur);
-  return cur;
-}
-
 // evaluate the transformer
 //
 //   - lctx:      model context
