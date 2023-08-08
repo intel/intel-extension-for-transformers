@@ -48,7 +48,6 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose, int64
   TORCH_CHECK(alg == "sym", "unsupported alg, only support sym currently.");
   TORCH_CHECK(bits == 4 || bits == 8, "bits must be 4/8");
   std::string scale_dtype = bits == 4 ? "bf16" : "fp32";
-  // std::string scale_dtype = "fp32";
   TORCH_CHECK(Fp32Wei.sizes().size() == 2, "dim of weight dosen't meet requirement, must be 2.");
   int k = Fp32Wei.sizes()[0];
   int n = Fp32Wei.sizes()[1];

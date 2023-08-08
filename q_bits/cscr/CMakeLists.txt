@@ -1,24 +1,25 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(weight_only_jblasop LANGUAGES C CXX)
 
-set(CMAKE_CXX_FLAGS "-g -O0 -Wno-narrowing")
+# set(CMAKE_CXX_FLAGS "-g -O0 -Wno-narrowing")
+set(CMAKE_CXX_FLAGS "-O3")
 
 set(QBITS_TORCH_PATH "" CACHE STRING "Torch install path")
 
-# if(QBITS_TORCH_PATH)
-#     set(torch_path ${QBITS_TORCH_PATH})
-#     unset(TORCH_LIBRARY CACHE)  # force find_package torch
-#     unset(c10_LIBRARY CACHE)
-#     unset(TORCH_DIR CACHE)
-# else()
-#     execute_process(COMMAND python -c "import torch; print(torch.__path__[0])"
-#                     OUTPUT_VARIABLE torch_path
-#                     OUTPUT_STRIP_TRAILING_WHITESPACE)
-# endif()
+if(QBITS_TORCH_PATH)
+    set(torch_path ${QBITS_TORCH_PATH})
+    unset(TORCH_LIBRARY CACHE)  # force find_package torch
+    unset(c10_LIBRARY CACHE)
+    unset(TORCH_DIR CACHE)
+else()
+    execute_process(COMMAND python -c "import torch; print(torch.__path__[0])"
+                    OUTPUT_VARIABLE torch_path
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 
 find_package(Torch REQUIRED
-# PATHS ${torch_path}
-PATHS /home/wangzhe/anaconda3/envs/gcc12/lib/python3.10/site-packages/torch
+PATHS ${torch_path}
+# PATHS /home/wangzhe/.local/envs/cuda/lib/python3.9/site-packages/torch
 NO_DEFAULT_PATH)
 
 
