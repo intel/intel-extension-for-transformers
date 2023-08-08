@@ -13,15 +13,16 @@
 //  limitations under the License.
 #include "layers/mha_dense.h"
 
+#include <immintrin.h>
+
 #include <cmath>
+#include <random>
+
 #ifdef NE_TESTS
 #include <memory>
-#include <random>
 
 #include "layers/ne_test_layers_utils.hpp"
 #endif
-
-#include <immintrin.h>
 
 #include "core/data_types.h"
 #include "jblas/jit_blas_gemm.h"
@@ -477,7 +478,7 @@ class GemmLauncherPackWeightOff                                         //
         if (k_paddedle) {
           AType* aptr_cache = tmpA;
           this->mProA.getActivation(&aptr_cache, &acache_step, _param.paramA, m_remain, k_paddedle,
-                                    (blk_m + i + _config.rowidx), iterk);
+                                    blk_m + i + _config.rowidx, iterk);
           this->mGemmCore.forward(aptr_cache, bptr_cache, cptr_cache, m_remain, n_padded, k_paddedle,
                                   acache_step * sizeof(AType), bcache_stride, ccache_stride, iterk);
         }
@@ -1114,7 +1115,7 @@ using WeightPackBatchFp16Bf16Trans = WeightPackBatchBf16Trans<GEMM_T, ISA_T, fp1
 template <>
 void jblas_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, fp16, fp16, float>* params) {
   GetCPUDevice();
-  if (_cd->AMX_BF16()) {
+  if (_cd->AMX_BF16() && params->step_k_head_size == 1) {
     using GemmKernelFP32FP16BF16ExpSum = ::GemmLauncherPackWeightOff<  //
         JblasAMX_BF16,                                                 //
         jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
@@ -1129,8 +1130,21 @@ void jblas_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, f
         ::ScaleWriteBackFp32Fp32>;
     static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
     kernel.compute(*params);
-  } else {
-    assert(0);
+  } else if (_cd->AVX512_FP16() && params->step_k_sl == 1) {
+    using GemmKernelFP16TrackMax = ::GemmLauncherBaseWeight<  //
+        JblasAVX512_FP16,                                     //
+        jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16,        //
+        jblas::prologue::gemm::ActivationConverterFp32,       //
+        ::WeightBase,                                         //
+        ::ScaleTrackMaxFp16Fp32>;                             //
+    using GemmKernelFP16 = ::GemmLauncherBaseWeight<          //
+        JblasAVX512_FP16,                                     //
+        jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16,        //
+        jblas::prologue::gemm::ActivationBase,                //
+        ::WeightBase,                                         //
+        jblas::epilogue::gemm::AccumulatorWriteBackFp16Fp32>;
+    static MHAStableInterface<GemmKernelFP16TrackMax, GemmKernelFP16> kernel;
+    kernel.compute(*params);
   }
 }
 
@@ -1165,9 +1179,13 @@ void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params)
       p.batch_size, p.head_num, p.head_size, p.sl_q, p.sl_kv,
   };
   const auto workspace_size = jblas_fusion_attn_bf16_workspace_size(&attn_shape);
+  static std::mt19937 rng;
+  static std::uniform_int_distribution<> dist;
+  init_vector(params->tmp, workspace_size, INT8_MIN - 1, INT8_MAX + 1, dist(rng));
   std::fill_n(params->tmp, workspace_size, 'f');
-  constexpr bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
-                                std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value;
+  const bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
+                            std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
+                            p.step_k_head_size == 1;
 
 #pragma omp parallel for collapse(3)
   for (int ibs = 0; ibs < p.batch_size; ++ibs)
@@ -1276,6 +1294,12 @@ class TestMhaDese {
     return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 256, 63, 63}, false, true);
     return_success &= test_case<fp16, fp16, fp16, fp16>({3, 4, 256, 1, 384}, false, true);
     return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 64, 64, 64}, true, true);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 32, 128, 64}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({2, 5, 32, 64, 128}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({2, 5, 80, 128, 77}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 256, 63, 63}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({3, 4, 256, 1, 384}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 64, 64, 64}, true, true);
     printf("Test suit done: %s\n", __FUNCTION__);
   }
   template <class Q_T, class K_T, class V_T, class DST_T>
