@@ -8406,9 +8406,6 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
   const int64_t seq_past = seq_all - seq_cur;
   const int64_t batch = neq3;
 
-  const int step_k_bs = k->nb[3] / sizeof(float);
-  const int step_v_bs = v->nb[3] / sizeof(float);
-
   if (params->type == NE_TASK_INIT) {
     return;
   }
@@ -8416,6 +8413,16 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
   if (params->type == NE_TASK_FINALIZE) {
     return;
   }
+  const int keles = ne_element_size(k);
+  const int veles = ne_element_size(v);
+  int step_k_sl = k->nb[1] / keles;
+  int step_k_head_num = k->nb[2] / keles;
+  int step_k_head_size = k->nb[0] / keles;
+  int step_k_bs = k->nb[3] / keles;
+  int step_v_sl = v->nb[0] / veles;
+  int step_v_head_size = v->nb[1] / veles;
+  int step_v_head_num = v->nb[2] / veles;
+  int step_v_bs = k->nb[3] / veles;
   float scale = *(float*)dst->padding;
   bool mask = *(bool*)&dst->padding[sizeof(scale)];
   attn_fp32_fp16_fp16_fp32_fwd_args_t args = {
@@ -8434,12 +8441,12 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
       .step_q_head_num = headsize,
       .step_q_sl = embedsize,
       .step_k_bs = step_k_bs,
-      .step_k_head_num = headsize,
-      .step_k_sl = embedsize,
-      .step_k_head_size = 1,  // TODO
+      .step_k_head_num = step_k_head_num,
+      .step_k_sl = step_k_sl,
+      .step_k_head_size = step_k_head_size,  // TODO
       .step_v_bs = step_v_bs,
-      .step_v_head_num = headsize,
-      .step_v_sl = embedsize,
+      .step_v_head_num = step_v_head_num,
+      .step_v_sl = step_v_sl,
       .step_dst_bs = seq_cur * embedsize,
       .step_dst_head_num = headsize,
       .step_dst_sl = embedsize,
