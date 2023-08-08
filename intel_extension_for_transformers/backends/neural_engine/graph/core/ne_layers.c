@@ -2972,8 +2972,8 @@ static void ne_compute_forward_dup_same_cont(const struct ne_compute_params* par
     return;
   }
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb0 = dst->nb[0];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb0 = dst->nb[0];
 
   const int ith = params->ith;  // thread index
   const int nth = params->nth;  // number of threads
@@ -3006,15 +3006,15 @@ static void ne_compute_forward_dup_f16(const struct ne_compute_params* params, c
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;  // thread index
   const int nth = params->nth;  // number of threads
@@ -3292,15 +3292,15 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;  // thread index
   const int nth = params->nth;  // number of threads
@@ -3591,20 +3591,20 @@ static void ne_compute_forward_add_f32(const struct ne_compute_params* params, c
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(nb0 == sizeof(float));
   NE_ASSERT(nb00 == sizeof(float));
@@ -3664,20 +3664,20 @@ static void ne_compute_forward_add_f16_f32(const struct ne_compute_params* param
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(src0->type == NE_TYPE_F16);
   NE_ASSERT(src1->type == NE_TYPE_F32);
@@ -3730,20 +3730,20 @@ static void ne_compute_forward_add_f16_f16(const struct ne_compute_params* param
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(src0->type == NE_TYPE_F16);
   NE_ASSERT(src1->type == NE_TYPE_F16);
@@ -3794,20 +3794,20 @@ static void ne_compute_forward_add_q_f32(const struct ne_compute_params* params,
   const int64_t ne02 = src0->ne[2];
   // const int64_t ne03 = src0->ne[3];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -3915,15 +3915,15 @@ static void ne_compute_forward_add1_f32(const struct ne_compute_params* params, 
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(nb0 == sizeof(float));
   NE_ASSERT(nb00 == sizeof(float));
@@ -3966,15 +3966,15 @@ static void ne_compute_forward_add1_f16_f32(const struct ne_compute_params* para
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(src0->type == NE_TYPE_F16);
   NE_ASSERT(src1->type == NE_TYPE_F32);
@@ -4024,15 +4024,15 @@ static void ne_compute_forward_add1_f16_f16(const struct ne_compute_params* para
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(src0->type == NE_TYPE_F16);
   NE_ASSERT(src1->type == NE_TYPE_F16);
@@ -4082,15 +4082,15 @@ static void ne_compute_forward_add1_q_f32(const struct ne_compute_params* params
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const enum ne_type type = src0->type;
   dequantize_row_q_t const dequantize_row_q = quantize_fns[type].dequantize_row_q;
@@ -4206,18 +4206,18 @@ static void ne_compute_forward_acc_f32(const struct ne_compute_params* params, c
   const int64_t ne12 = src1->ne[2];
   const int64_t ne13 = src1->ne[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
   // src0 and dst as viewed during acc
-  const size_t nb0 = ne_element_size(src0);
+  const int64_t nb0 = ne_element_size(src0);
 
-  const size_t nb00 = nb0;
-  const size_t nb01 = nb1;
-  const size_t nb02 = nb2;
-  const size_t nb03 = nb3;
+  const int64_t nb00 = nb0;
+  const int64_t nb01 = nb1;
+  const int64_t nb02 = nb2;
+  const int64_t nb03 = nb3;
 
   NE_ASSERT(offset + (ne10 == 0 ? 0 : ne10 - 1) * nb0 + (ne11 == 0 ? 0 : ne11 - 1) * nb1 +
                 (ne12 == 0 ? 0 : ne12 - 1) * nb2 + (ne13 == 0 ? 0 : ne13 - 1) * nb3 <
@@ -4283,20 +4283,20 @@ static void ne_compute_forward_sub_f32(const struct ne_compute_params* params, c
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(nb0 == sizeof(float));
   NE_ASSERT(nb00 == sizeof(float));
@@ -4368,20 +4368,20 @@ static void ne_compute_forward_mul_f32(const struct ne_compute_params* params, c
   const int64_t ne12 = src1->ne[2];
   const int64_t ne13 = src1->ne[3];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(nb0 == sizeof(float));
   NE_ASSERT(nb00 == sizeof(float));
@@ -4459,20 +4459,20 @@ static void ne_compute_forward_div_f32(const struct ne_compute_params* params, c
   const int64_t ne1 = src0->ne[1];
   const int64_t ne2 = src0->ne[2];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(nb0 == sizeof(float));
   NE_ASSERT(nb00 == sizeof(float));
@@ -4642,9 +4642,9 @@ static void ne_compute_forward_sum_f32(const struct ne_compute_params* params, c
   const int64_t ne02 = src0->ne[2];
   const int64_t ne03 = src0->ne[3];
 
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
   ne_float sum = 0;
   ne_float row_sum = 0;
@@ -4700,13 +4700,13 @@ static void ne_compute_forward_sum_rows_f32(const struct ne_compute_params* para
   NE_ASSERT(ne2 == ne02);
   NE_ASSERT(ne3 == ne03);
 
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   for (int64_t i3 = 0; i3 < ne03; i3++) {
     for (int64_t i2 = 0; i2 < ne02; i2++) {
@@ -4750,9 +4750,9 @@ static void ne_compute_forward_mean_f32(const struct ne_compute_params* params, 
   const int64_t ne02 = src0->ne[2];
   const int64_t ne03 = src0->ne[3];
 
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
   const int64_t ne0 = dst->ne[0];
   const int64_t ne1 = dst->ne[1];
@@ -4769,9 +4769,9 @@ static void ne_compute_forward_mean_f32(const struct ne_compute_params* params, 
   UNUSED(ne2);
   UNUSED(ne3);
 
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   for (int64_t i03 = 0; i03 < ne03; i03++) {
     for (int64_t i02 = 0; i02 < ne02; i02++) {
@@ -4818,15 +4818,15 @@ static void ne_compute_forward_repeat_f32(const struct ne_compute_params* params
   const int64_t ne02 = src0->ne[2];
   const int64_t ne03 = src0->ne[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
   // guaranteed to be an integer due to the check in ne_can_repeat
   const int nr0 = (int)(ne0 / ne00);
@@ -5222,13 +5222,13 @@ static void ne_compute_forward_norm_f32(const struct ne_compute_params* params, 
   const int64_t ne02 = src0->ne[2];
   const int64_t ne03 = src0->ne[3];
 
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const float eps = 1e-5f;  // TODO: make this a parameter
 
@@ -5293,13 +5293,13 @@ static void ne_compute_forward_rms_norm_f32(const struct ne_compute_params* para
   const int64_t ne02 = src0->ne[2];
   const int64_t ne03 = src0->ne[3];
 
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const float eps = 1e-6f;  // TODO: make this a parameter
 
@@ -5361,17 +5361,17 @@ static void ne_compute_forward_rms_norm_back_f32(const struct ne_compute_params*
   const int64_t ne02 = src0->ne[2];
   const int64_t ne03 = src0->ne[3];
 
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const float eps = 1e-6f;  // TODO: make this a parameter
 
@@ -5538,23 +5538,23 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb00 = src0->nb[0];
+  const int64_t nb00 = src0->nb[0];
 
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
 
-  const size_t nb10 = src1->nb[0];
+  const int64_t nb10 = src1->nb[0];
 
-  const size_t nb11 = src1->nb[1]; UNUSED(nb11);
-  const size_t nb12 = src1->nb[2]; UNUSED(nb12);
-  const size_t nb13 = src1->nb[3]; UNUSED(nb13);
+  const int64_t nb11 = src1->nb[1]; UNUSED(nb11);
+  const int64_t nb12 = src1->nb[2]; UNUSED(nb12);
+  const int64_t nb13 = src1->nb[3]; UNUSED(nb13);
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -5652,20 +5652,20 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   const int64_t ne3 = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
 
   const int ith = params->ith;
@@ -5785,20 +5785,20 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -5915,20 +5915,20 @@ static void ne_compute_forward_mul_mat_q_f32_jblas(const struct ne_compute_param
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -6060,9 +6060,9 @@ static void ne_compute_forward_scale_f32(const struct ne_compute_params* params,
   const int ir0 = dr * ith;
   const int ir1 = MIN(ir0 + dr, nr);
 
-  const size_t nb01 = src0->nb[1];
+  const int64_t nb01 = src0->nb[1];
 
-  const size_t nb1 = dst->nb[1];
+  const int64_t nb1 = dst->nb[1];
 
   for (int i1 = ir0; i1 < ir1; i1++) {
     if (dst->data != src0->data) {
@@ -6125,13 +6125,13 @@ static void ne_compute_forward_set_f32(const struct ne_compute_params* params, c
   const int64_t ne12 = src1->ne[2];
   const int64_t ne13 = src1->ne[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  const int64_t nb12 = src1->nb[2];
+  const int64_t nb13 = src1->nb[3];
 
   // src0 and dst as viewed during set
-  const size_t nb0 = ne_element_size(src0);
+  const int64_t nb0 = ne_element_size(src0);
 
   const int im0 = (ne10 == 0 ? 0 : ne10 - 1);
   const int im1 = (ne11 == 0 ? 0 : ne11 - 1);
@@ -6463,14 +6463,14 @@ static void ne_compute_forward_diag_f32(const struct ne_compute_params* params, 
   NE_ASSERT(ne02 == ne2);
   NE_ASSERT(ne03 == ne3);
 
-  const size_t nb00 = src0->nb[0];
-  // const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  // const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   NE_ASSERT(nb00 == sizeof(float));
   NE_ASSERT(nb0 == sizeof(float));
@@ -6685,10 +6685,10 @@ static void ne_compute_forward_alibi_f32(const struct ne_compute_params* params,
   const int n = ne_nrows(src0);
   const int ne2_ne3 = n / ne1;  // ne2*ne3
 
-  const size_t nb0 = src0->nb[0];
-  const size_t nb1 = src0->nb[1];
-  const size_t nb2 = src0->nb[2];
-  // const size_t nb3 = src0->nb[3];
+  const int64_t nb0 = src0->nb[0];
+  const int64_t nb1 = src0->nb[1];
+  const int64_t nb2 = src0->nb[2];
+  // const int64_t nb3 = src0->nb[3];
 
   assert(nb0 == sizeof(float));
   assert(ne1 + n_past == ne0);
@@ -6746,10 +6746,10 @@ static void ne_compute_forward_alibi_f16(const struct ne_compute_params* params,
   const int n = ne_nrows(src0);
   const int ne2_ne3 = n / ne1;  // ne2*ne3
 
-  const size_t nb0 = src0->nb[0];
-  const size_t nb1 = src0->nb[1];
-  const size_t nb2 = src0->nb[2];
-  // const size_t nb3 = src0->nb[3];
+  const int64_t nb0 = src0->nb[0];
+  const int64_t nb1 = src0->nb[1];
+  const int64_t nb2 = src0->nb[2];
+  // const int64_t nb3 = src0->nb[3];
 
   assert(nb0 == sizeof(ne_fp16_t));
   assert(ne1 + n_past == ne0);
@@ -6829,11 +6829,11 @@ static void ne_compute_forward_clamp_f32(const struct ne_compute_params* params,
   const int n = ne_nrows(src0);
   const int nc = src0->ne[0];
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
 
   NE_ASSERT(nb0 == sizeof(float));
   NE_ASSERT(nb00 == sizeof(float));
@@ -6887,20 +6887,20 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
   assert(n_past >= 0);
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
   const int64_t ne0 = dst->ne[0];
   const int64_t ne1 = dst->ne[1];
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
   // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
@@ -6998,20 +6998,20 @@ static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, 
 
   assert(n_past >= 0);
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
   const int64_t ne0 = dst->ne[0];
   const int64_t ne1 = dst->ne[1];
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
   // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
@@ -7132,20 +7132,20 @@ static void ne_compute_forward_rope_back_f32(const struct ne_compute_params* par
 
   assert(n_past >= 0);
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
   const int64_t ne0 = dst->ne[0];
   const int64_t ne1 = dst->ne[1];
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
   // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
@@ -7241,20 +7241,20 @@ static void ne_compute_forward_rope_back_f16(const struct ne_compute_params* par
 
   assert(n_past >= 0);
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  const int64_t nb03 = src0->nb[3];
 
   const int64_t ne0 = dst->ne[0];
   const int64_t ne1 = dst->ne[1];
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
   // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
@@ -7374,20 +7374,20 @@ static void ne_compute_forward_conv_1d_1s_f16_f32(const struct ne_compute_params
   // const int64_t ne3  = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  // const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  // const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  // const size_t nb12 = src1->nb[2];
-  // const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  // const int64_t nb12 = src1->nb[2];
+  // const int64_t nb13 = src1->nb[3];
 
-  // const size_t nb0  = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  // const size_t nb2  = dst->nb[2];
-  // const size_t nb3  = dst->nb[3];
+  // const int64_t nb0  = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  // const int64_t nb2  = dst->nb[2];
+  // const int64_t nb3  = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7490,20 +7490,20 @@ static void ne_compute_forward_conv_1d_1s_f32(const struct ne_compute_params* pa
   // const int64_t ne3  = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  // const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  // const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  // const size_t nb12 = src1->nb[2];
-  // const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  // const int64_t nb12 = src1->nb[2];
+  // const int64_t nb13 = src1->nb[3];
 
-  // const size_t nb0  = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  // const size_t nb2  = dst->nb[2];
-  // const size_t nb3  = dst->nb[3];
+  // const int64_t nb0  = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  // const int64_t nb2  = dst->nb[2];
+  // const int64_t nb3  = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7623,20 +7623,20 @@ static void ne_compute_forward_conv_1d_2s_f16_f32(const struct ne_compute_params
   // const int64_t ne3  = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  // const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  // const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  // const size_t nb12 = src1->nb[2];
-  // const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  // const int64_t nb12 = src1->nb[2];
+  // const int64_t nb13 = src1->nb[3];
 
-  // const size_t nb0  = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  // const size_t nb2  = dst->nb[2];
-  // const size_t nb3  = dst->nb[3];
+  // const int64_t nb0  = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  // const int64_t nb2  = dst->nb[2];
+  // const int64_t nb3  = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7739,20 +7739,20 @@ static void ne_compute_forward_conv_1d_2s_f32(const struct ne_compute_params* pa
   // const int64_t ne3  = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const size_t nb00 = src0->nb[0];
-  const size_t nb01 = src0->nb[1];
-  const size_t nb02 = src0->nb[2];
-  // const size_t nb03 = src0->nb[3];
+  const int64_t nb00 = src0->nb[0];
+  const int64_t nb01 = src0->nb[1];
+  const int64_t nb02 = src0->nb[2];
+  // const int64_t nb03 = src0->nb[3];
 
-  const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  // const size_t nb12 = src1->nb[2];
-  // const size_t nb13 = src1->nb[3];
+  const int64_t nb10 = src1->nb[0];
+  const int64_t nb11 = src1->nb[1];
+  // const int64_t nb12 = src1->nb[2];
+  // const int64_t nb13 = src1->nb[3];
 
-  // const size_t nb0  = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  // const size_t nb2  = dst->nb[2];
-  // const size_t nb3  = dst->nb[3];
+  // const int64_t nb0  = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  // const int64_t nb2  = dst->nb[2];
+  // const int64_t nb3  = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7873,25 +7873,25 @@ static void ne_compute_forward_flash_attn_f32(const struct ne_compute_params* pa
   // const int64_t ne2  = dst->ne[2];
   // const int64_t ne3  = dst->ne[3];
 
-  const size_t nbk0 = k->nb[0];
-  const size_t nbk1 = k->nb[1];
-  const size_t nbk2 = k->nb[2];
-  const size_t nbk3 = k->nb[3];
+  const int64_t nbk0 = k->nb[0];
+  const int64_t nbk1 = k->nb[1];
+  const int64_t nbk2 = k->nb[2];
+  const int64_t nbk3 = k->nb[3];
 
-  const size_t nbq0 = q->nb[0];
-  const size_t nbq1 = q->nb[1];
-  const size_t nbq2 = q->nb[2];
-  const size_t nbq3 = q->nb[3];
+  const int64_t nbq0 = q->nb[0];
+  const int64_t nbq1 = q->nb[1];
+  const int64_t nbq2 = q->nb[2];
+  const int64_t nbq3 = q->nb[3];
 
-  const size_t nbv0 = v->nb[0];
-  const size_t nbv1 = v->nb[1];
-  const size_t nbv2 = v->nb[2];
-  const size_t nbv3 = v->nb[3];
+  const int64_t nbv0 = v->nb[0];
+  const int64_t nbv1 = v->nb[1];
+  const int64_t nbv2 = v->nb[2];
+  const int64_t nbv3 = v->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -8067,25 +8067,25 @@ static void ne_compute_forward_flash_attn_f16(const struct ne_compute_params* pa
   // const int64_t ne2  = dst->ne[2];
   // const int64_t ne3  = dst->ne[3];
 
-  const size_t nbk0 = k->nb[0];
-  const size_t nbk1 = k->nb[1];
-  const size_t nbk2 = k->nb[2];
-  const size_t nbk3 = k->nb[3];
+  const int64_t nbk0 = k->nb[0];
+  const int64_t nbk1 = k->nb[1];
+  const int64_t nbk2 = k->nb[2];
+  const int64_t nbk3 = k->nb[3];
 
-  const size_t nbq0 = q->nb[0];
-  const size_t nbq1 = q->nb[1];
-  const size_t nbq2 = q->nb[2];
-  const size_t nbq3 = q->nb[3];
+  const int64_t nbq0 = q->nb[0];
+  const int64_t nbq1 = q->nb[1];
+  const int64_t nbq2 = q->nb[2];
+  const int64_t nbq3 = q->nb[3];
 
-  const size_t nbv0 = v->nb[0];
-  const size_t nbv1 = v->nb[1];
-  const size_t nbv2 = v->nb[2];
-  const size_t nbv3 = v->nb[3];
+  const int64_t nbv0 = v->nb[0];
+  const int64_t nbv1 = v->nb[1];
+  const int64_t nbv2 = v->nb[2];
+  const int64_t nbv3 = v->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -8326,35 +8326,35 @@ static void ne_compute_forward_flash_ff_f16(const struct ne_compute_params* para
   const int64_t ne2 = dst->ne[2];
   // const int64_t ne3 = dst->ne[3];
 
-  const size_t nba0 = a->nb[0];
-  const size_t nba1 = a->nb[1];
-  const size_t nba2 = a->nb[2];
-  const size_t nba3 = a->nb[3];
+  const int64_t nba0 = a->nb[0];
+  const int64_t nba1 = a->nb[1];
+  const int64_t nba2 = a->nb[2];
+  const int64_t nba3 = a->nb[3];
 
-  const size_t nbb00 = b0->nb[0];
-  const size_t nbb01 = b0->nb[1];
-  const size_t nbb02 = b0->nb[2];
-  const size_t nbb03 = b0->nb[3];
+  const int64_t nbb00 = b0->nb[0];
+  const int64_t nbb01 = b0->nb[1];
+  const int64_t nbb02 = b0->nb[2];
+  const int64_t nbb03 = b0->nb[3];
 
-  const size_t nbb10 = b1->nb[0];
-  // const size_t nbb11 = b1->nb[1];
-  // const size_t nbb12 = b1->nb[2];
-  // const size_t nbb13 = b1->nb[3];
+  const int64_t nbb10 = b1->nb[0];
+  // const int64_t nbb11 = b1->nb[1];
+  // const int64_t nbb12 = b1->nb[2];
+  // const int64_t nbb13 = b1->nb[3];
 
-  const size_t nbc00 = c0->nb[0];
-  const size_t nbc01 = c0->nb[1];
-  const size_t nbc02 = c0->nb[2];
-  const size_t nbc03 = c0->nb[3];
+  const int64_t nbc00 = c0->nb[0];
+  const int64_t nbc01 = c0->nb[1];
+  const int64_t nbc02 = c0->nb[2];
+  const int64_t nbc03 = c0->nb[3];
 
-  const size_t nbc10 = c1->nb[0];
-  // const size_t nbc11 = c1->nb[1];
-  // const size_t nbc12 = c1->nb[2];
-  // const size_t nbc13 = c1->nb[3];
+  const int64_t nbc10 = c1->nb[0];
+  // const int64_t nbc11 = c1->nb[1];
+  // const int64_t nbc12 = c1->nb[2];
+  // const int64_t nbc13 = c1->nb[3];
 
-  const size_t nb0 = dst->nb[0];
-  const size_t nb1 = dst->nb[1];
-  const size_t nb2 = dst->nb[2];
-  const size_t nb3 = dst->nb[3];
+  const int64_t nb0 = dst->nb[0];
+  const int64_t nb1 = dst->nb[1];
+  const int64_t nb2 = dst->nb[2];
+  const int64_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -8760,9 +8760,9 @@ static void ne_compute_backward(struct ne_context* ctx, struct ne_tensor* tensor
       if (src1->grad) {
         NE_ASSERT(ne_nelements(tensor->opt[0]) == 5);
         NE_ASSERT(tensor->opt[0]->type == NE_TYPE_I32);
-        const size_t nb1 = ((int32_t*)tensor->opt[0]->data)[0];
-        const size_t nb2 = ((int32_t*)tensor->opt[0]->data)[1];
-        const size_t nb3 = ((int32_t*)tensor->opt[0]->data)[2];
+        const int64_t nb1 = ((int32_t*)tensor->opt[0]->data)[0];
+        const int64_t nb2 = ((int32_t*)tensor->opt[0]->data)[1];
+        const int64_t nb3 = ((int32_t*)tensor->opt[0]->data)[2];
         const size_t offset = ((int32_t*)tensor->opt[0]->data)[3];
 
         struct ne_tensor* tensor_grad_view = ne_view_4d(ctx, tensor->grad, src1->grad->ne[0], src1->grad->ne[1],
@@ -8980,9 +8980,9 @@ static void ne_compute_backward(struct ne_context* ctx, struct ne_tensor* tensor
     case NE_OP_SET: {
       NE_ASSERT(ne_nelements(tensor->opt[0]) == 5);
       NE_ASSERT(tensor->opt[0]->type == NE_TYPE_I32);
-      const size_t nb1 = ((int32_t*)tensor->opt[0]->data)[0];
-      const size_t nb2 = ((int32_t*)tensor->opt[0]->data)[1];
-      const size_t nb3 = ((int32_t*)tensor->opt[0]->data)[2];
+      const int64_t nb1 = ((int32_t*)tensor->opt[0]->data)[0];
+      const int64_t nb2 = ((int32_t*)tensor->opt[0]->data)[1];
+      const int64_t nb3 = ((int32_t*)tensor->opt[0]->data)[2];
       const size_t offset = ((int32_t*)tensor->opt[0]->data)[3];
 
       struct ne_tensor* tensor_grad_view = NULL;
@@ -10842,7 +10842,7 @@ enum ne_opt_result ne_opt(struct ne_context* ctx, struct ne_opt_params params, s
 
 size_t ne_quantize_q4_0(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK4_0 == 0);
-  const size_t nb = k / QK4_0;
+  const int64_t nb = k / QK4_0;
 
   for (int b = 0; b < n; b += k) {
     block_q4_0* restrict y = (block_q4_0*)dst + b / QK4_0;
@@ -10865,7 +10865,7 @@ size_t ne_quantize_q4_0(const float* src, void* dst, int n, int k, int64_t* hist
 
 size_t ne_quantize_q4_1(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK4_1 == 0);
-  const size_t nb = k / QK4_1;
+  const int64_t nb = k / QK4_1;
 
   for (int b = 0; b < n; b += k) {
     block_q4_1* restrict y = (block_q4_1*)dst + b / QK4_1;
@@ -10888,7 +10888,7 @@ size_t ne_quantize_q4_1(const float* src, void* dst, int n, int k, int64_t* hist
 
 size_t ne_quantize_q5_0(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK5_0 == 0);
-  const size_t nb = k / QK5_0;
+  const int64_t nb = k / QK5_0;
 
   for (int b = 0; b < n; b += k) {
     block_q5_0* restrict y = (block_q5_0*)dst + b / QK5_0;
@@ -10918,7 +10918,7 @@ size_t ne_quantize_q5_0(const float* src, void* dst, int n, int k, int64_t* hist
 
 size_t ne_quantize_q5_1(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK5_1 == 0);
-  const size_t nb = k / QK5_1;
+  const int64_t nb = k / QK5_1;
 
   for (int b = 0; b < n; b += k) {
     block_q5_1* restrict y = (block_q5_1*)dst + b / QK5_1;
@@ -10948,7 +10948,7 @@ size_t ne_quantize_q5_1(const float* src, void* dst, int n, int k, int64_t* hist
 
 size_t ne_quantize_q8_0(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK8_0 == 0);
-  const size_t nb = k / QK8_0;
+  const int64_t nb = k / QK8_0;
 
   for (int b = 0; b < n; b += k) {
     block_q8_0* restrict y = (block_q8_0*)dst + b / QK8_0;
