@@ -426,7 +426,8 @@ def load_model(
             level="O1",
             auto_kernel_selection=True,
         )
-        if cpu_jit and re.search("mpt-7b", model_name, re.IGNORECASE):
+        if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
+                        or re.search("neural-chat", model_name, re.IGNORECASE)):
             from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
             model = jit_trace_mpt_7b(model)
