@@ -217,13 +217,16 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                               ne_element_size(kv_self.v) * n_embd / n_head, ne_element_size(kv_self.v) * n_embd,
                               ne_element_size(kv_self.v) * n_embd * n_ctx,
                               il * n_ctx * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block),
-                   0, 2, 1, 3);
+                   1, 2, 0, 3);
 
     // split cached V into n_head heads
-    struct ne_tensor* K = ne_view_4d(
-        ctx0, kv_self.k, (n_past + N), n_embd / n_head, n_head, batch_size, n_ctx * ne_element_size(kv_self.k),
-        n_ctx * ne_element_size(kv_self.k) * n_embd / n_head, n_ctx * ne_element_size(kv_self.k) * n_embd,
-        il * n_ctx * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block);
+    struct ne_tensor* K =
+        ne_permute(ctx0,
+                   ne_view_4d(ctx0, kv_self.k, (n_past + N), n_embd / n_head, n_head, batch_size,
+                              n_ctx * ne_element_size(kv_self.k), n_ctx * ne_element_size(kv_self.k) * n_embd / n_head,
+                              n_ctx * ne_element_size(kv_self.k) * n_embd,
+                              il * n_ctx * ne_element_size(kv_self.k) * n_embd * kv_n_ctx_block),
+                   1, 0, 2, 3);
 
     ne_set_name(V, "V");
     ne_set_name(K, "K");

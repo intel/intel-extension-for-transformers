@@ -2994,7 +2994,6 @@ struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, str
   result->opt[1] = tmp_t;
   *(float*)result->padding = scale;
   *(bool*)&result->padding[sizeof(scale)] = masked;
-
   return result;
 }
 
