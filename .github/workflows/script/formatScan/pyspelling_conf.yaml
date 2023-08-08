@@ -1,0 +1,11 @@
+matrix:
+- name: Markdown
+  hunspell:
+    d: en_US.ISO8859-15
+  dictionary:
+    wordlists:
+      - ${VAL_REPO}/nlp_dict.txt
+    output: ${VAL_REPO}/nlp_dict.dic
+  sources:
+  - ${SCAN_REPO}/docs/*
+  - ${SCAN_REPO}/*.md

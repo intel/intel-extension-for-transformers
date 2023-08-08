@@ -2487,6 +2487,21 @@ class BaseTrainer():
             input.pop('end_positions')
         return input
 
+    def get_train_dataloader(self, *args, **kwargs):
+        obj = super().get_train_dataloader(*args, **kwargs)
+        if obj.batch_size is None:
+            from .utils.utility import _build_inc_dataloader
+            return _build_inc_dataloader(obj)
+        else:
+            return obj
+
+    def get_eval_dataloader(self, *args, **kwargs):
+        obj = super().get_eval_dataloader(*args, **kwargs)
+        if obj.batch_size is None:
+            from .utils.utility import _build_inc_dataloader
+            return _build_inc_dataloader(obj)
+        else:
+            return obj
 
     def benchmark(
         self,

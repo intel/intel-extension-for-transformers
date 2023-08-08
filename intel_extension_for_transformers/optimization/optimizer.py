@@ -207,7 +207,12 @@ class NoTrainerOptimizer:   # pragma: no cover
         Args:
             dataloader: calibration dataloader.
         """
-        self._calib_dataloader = dataloader
+        # transformer issue #1
+        if dataloader.batch_size is None:
+            from .utils.utility import _build_inc_dataloader
+            self._calib_dataloader = _build_inc_dataloader(dataloader)
+        else:
+            self._calib_dataloader = dataloader
 
     def init_quantizer(
         self,

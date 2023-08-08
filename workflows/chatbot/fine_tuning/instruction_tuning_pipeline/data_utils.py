@@ -37,7 +37,7 @@ def create_alpaca(examples):
     for example in examples:
         prompt_template = (
             ALPACA_PROMPT_DICT["prompt_with_input"]
-            if example["input"] != ""
+            if example.get("input") is not None and example.get("input") != ""
             else ALPACA_PROMPT_DICT["prompt_without_input"]
         )
         source = prompt_template.format_map(example)

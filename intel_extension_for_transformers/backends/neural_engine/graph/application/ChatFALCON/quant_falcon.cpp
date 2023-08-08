@@ -118,7 +118,7 @@ bool falcon_model_quantize(const std::string& fname_inp, const std::string& fnam
       ".*weight",
   };
 
-  if (!ne_common_quantize_0(finp, fout, params, to_quant, {"transformer.word_embeddings.weight", "lm_head.weight"})) {
+  if (!ne_common_quantize_0(finp, fout, params, to_quant, {"lm_head.weight"})) {
     fprintf(stderr, "%s: failed to quantize model '%s'\n", __func__, fname_inp.c_str());
     return false;
   }
