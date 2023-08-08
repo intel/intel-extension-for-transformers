@@ -31,6 +31,8 @@
 #include "jblas/jit_blas_wrapper.h"
 
 #define MHA_2ND_EXP 1
+constexpr bool MHA_PREFER_AVX512FP16 = true;
+
 #ifdef __GNUC__
 #pragma GCC push_options
 #pragma GCC target("avx512f", "avx512bw", "avx512vl")
@@ -618,6 +620,7 @@ class MHAInterface {
 
   JBLAS_CODE compute(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
     static constexpr auto M_TILE = GemmQK::MTILE;
+    assert(p.step_k_head_size == 1 || p.step_k_sl == 1);
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     const auto cb = CpuBase();
     omp_set_num_threads(cb.mNumThreads);
@@ -634,7 +637,9 @@ class MHAInterface {
     const auto V_pack_batch_off = V_pack.mKPad * V_pack.mNPad;
 
     // prepare parallel scheme for packed weight
-    const auto paralK = l_expsum.mProB.createParallel(num_heads, p.sl_kv, 1, GemmQK::NTILE);
+    const auto paralK = p.step_k_head_size == 1
+                            ? l_expsum.mProB.createParallel(num_heads, p.sl_kv, 1, GemmQK::NTILE)
+                            : l_expsum.mProB.createParallel(num_heads, p.head_size, 1, GemmQK::KTILE);
     const auto paralV = l_scale.mProB.createParallel(num_heads, p.sl_kv, 1, GemmPV::KTILE);
 
     const auto step_batch_k = [step_bs = p.step_k_bs, step_hn = p.step_k_head_num, hn = p.head_num](int ibat) {
@@ -661,7 +666,7 @@ class MHAInterface {
             QKProKArgs{&K_pack}, tid,
             QKProKPackArgs{
                 /* .src = */ p.K,
-                /* .ld = */ p.step_k_sl,
+                /* .ld = */ p.step_k_sl * p.step_k_head_size,  //  use the non-one step
                 /* .step_batch = */ step_batch_k,
                 /* .K = */ p.head_size,
                 /* .N = */ p.sl_kv,
@@ -1123,22 +1128,7 @@ using WeightPackBatchFp16Bf16Trans = WeightPackBatchBf16Trans<GEMM_T, ISA_T, fp1
 template <>
 void jblas_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, fp16, fp16, float>* params) {
   GetCPUDevice();
-  if (_cd->AMX_BF16() && params->step_k_head_size == 1) {
-    using GemmKernelFP32FP16BF16ExpSum = ::GemmLauncherPackWeightOff<  //
-        JblasAMX_BF16,                                                 //
-        jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
-        jblas::prologue::gemm::ActivationConverterFp32,                //
-        WeightPackBatchFp16Bf16Trans,                                  //
-        ::ScaleExpAccSumFp32Bf16>;                                     //
-    using GemmKernelBF16FP16FP32 = ::GemmLauncherPackWeightOff<        //
-        JblasAMX_BF16,                                                 //
-        jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
-        jblas::prologue::gemm::ActivationBase,                         //
-        WeightPackBatchFp16Bf16NonTr,                                  //
-        ::ScaleWriteBackFp32Fp32>;
-    static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
-    kernel.compute(*params);
-  } else if (_cd->AVX512_FP16() && params->step_k_sl == 1) {
+  if (MHA_PREFER_AVX512FP16 && _cd->AVX512_FP16() && params->step_k_sl == 1) {
     using GemmKernelFP16TrackMax = ::GemmLauncherBaseWeight<  //
         JblasAVX512_FP16,                                     //
         jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16,        //
@@ -1153,7 +1143,44 @@ void jblas_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, f
         jblas::epilogue::gemm::AccumulatorWriteBackFp16Fp32>;
     static MHAStableInterface<GemmKernelFP16TrackMax, GemmKernelFP16> kernel;
     kernel.compute(*params);
+    return;
   }
+  if (_cd->AMX_BF16()) {
+    if (params->step_k_head_size == 1) {
+      using GemmKernelFP32FP16BF16ExpSum = ::GemmLauncherPackWeightOff<  //
+          JblasAMX_BF16,                                                 //
+          jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
+          jblas::prologue::gemm::ActivationConverterFp32,                //
+          WeightPackBatchFp16Bf16Trans,                                  //
+          ::ScaleExpAccSumFp32Bf16>;                                     //
+      using GemmKernelBF16FP16FP32 = ::GemmLauncherPackWeightOff<        //
+          JblasAMX_BF16,                                                 //
+          jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
+          jblas::prologue::gemm::ActivationBase,                         //
+          WeightPackBatchFp16Bf16NonTr,                                  //
+          ::ScaleWriteBackFp32Fp32>;
+      static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
+      kernel.compute(*params);
+      return;
+    } else if (params->step_k_sl == 1) {
+      using GemmKernelFP32FP16BF16ExpSum = ::GemmLauncherPackWeightOff<  //
+          JblasAMX_BF16,                                                 //
+          jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
+          jblas::prologue::gemm::ActivationConverterFp32,                //
+          WeightPackBatchFp16Bf16NonTr,                                  //
+          ::ScaleExpAccSumFp32Bf16>;                                     //
+      using GemmKernelBF16FP16FP32 = ::GemmLauncherPackWeightOff<        //
+          JblasAMX_BF16,                                                 //
+          jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
+          jblas::prologue::gemm::ActivationBase,                         //
+          WeightPackBatchFp16Bf16NonTr,                                  //
+          ::ScaleWriteBackFp32Fp32>;
+      static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
+      kernel.compute(*params);
+      return;
+    }
+  }
+  assert(false);  // no suitbale launcher
 }
 
 template <>
@@ -1193,7 +1220,7 @@ void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params)
   std::fill_n(params->tmp, workspace_size, 'f');
   const bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
                             std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
-                            p.step_k_head_size == 1;
+                            (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1));
 
 #pragma omp parallel for collapse(3)
   for (int ibs = 0; ibs < p.batch_size; ++ibs)
