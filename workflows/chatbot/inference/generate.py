@@ -339,7 +339,8 @@ def load_model(
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name, low_cpu_mem_usage=True
             )
-    elif re.search("mpt", model_name, re.IGNORECASE):
+    elif (re.search("mpt", model_name, re.IGNORECASE)
+        or re.search("neural-chat", model_name, re.IGNORECASE)):
         from models.mpt.modeling_mpt import MPTForCausalLM
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = MPTForCausalLM.from_pretrained(
@@ -361,7 +362,7 @@ def load_model(
             )
     else:
         raise ValueError(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT now."
+            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/NEURAL-CHAT now."
         )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
