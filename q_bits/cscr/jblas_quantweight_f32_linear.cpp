@@ -25,9 +25,10 @@ void quantweight_f32_linear_launcher(const torch::Tensor& activation, const torc
   if (wtmp->mType == static_cast<int>(CompType::S4_Bf16) || wtmp->mType == static_cast<int>(CompType::S4_F32)) {
     if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
         wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK) {
-      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmSKernelDynamicS4KBlock;
+      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
       static GemmKernel kernel;
-      auto ret = kernel.compute({m, n, k, activation.data_ptr<float>(), lda, wtmp, output.data_ptr<float>(), ldo});
+      auto ret = kernel.compute({m, n, k, activation.data_ptr<float>(), lda, wtmp, output.data_ptr<float>(), bias_ptr,
+                                 ldo, 0, alpha, beta, NULL});
     } else if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AVX512F_8X48) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
       AVX512F_LINEAR_EXECUTE

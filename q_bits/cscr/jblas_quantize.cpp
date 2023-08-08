@@ -3,7 +3,6 @@
 #include <torch/script.h>
 
 #include "jblas/jit_blas_weight_compression.h"
-
 using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
 using PackedWeight = jblas::prologue::PackedWeight;
 
@@ -66,6 +65,7 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose, int64
   auto type = NE_FTYPE_MAP[std::make_tuple(bits, alg, scale_dtype)];
   if (compute_type == "int8") {
     TORCH_CHECK(bits == 4, "only support 4bit quant when compute_type==int8");
+    type = CompType::S4_F32;
     packedw =
         computeDispatch<S4GemmVnniKernel>(&vnnikernel, Fp32Wei.data_ptr<float>(), transpose, n, k, blocksize, type);
   } else {

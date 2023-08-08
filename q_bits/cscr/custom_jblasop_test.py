@@ -8,9 +8,9 @@ activation = torch.rand(2,32, dtype=torch.float)
 # print(raw_wei)
 trans_raw_wei=torch.rand(3,32,dtype=torch.float)
 bias=torch.rand(3,dtype=torch.float)
-trans_quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(trans_raw_wei,True,8,"sym",32,"fp32");
+trans_quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(trans_raw_wei,True,4,"sym",32,"int8");
 # print(trans_raw_wei)
-torch.ops.weight_only_jblasop.jblas_symqdq_weight(trans_raw_wei,True,8,32)
+torch.ops.weight_only_jblasop.jblas_symqdq_weight(trans_raw_wei,True,4,32)
 # trans_raw_wei=trans_raw_wei.reshape(32,2)
 # print(torch.transpose(trans_raw_wei,1,0))
 # correct=torch.matmul(activation,raw_wei)
