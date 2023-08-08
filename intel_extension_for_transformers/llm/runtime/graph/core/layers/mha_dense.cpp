@@ -791,6 +791,7 @@ class ScaleTrackMax {
                      const int N, const Param& p) const {
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_max = p.dst_max + M_offset;
+#if CompileFP16()
 #if MHA_2ND_EXP
     static_assert(std::is_same<T_SRC, fp16>::value, "fp16 support only");
     static_assert(std::is_same<T_DST, float>::value, "fp32 support only");
@@ -835,6 +836,9 @@ class ScaleTrackMax {
 #endif
 
     return JblasSuccess;
+#else
+    return JblasNotSupport;
+#endif
   }
 };
 
@@ -924,6 +928,7 @@ class MHAStableInterface {
     const auto m_tiles = updiv(p.sl_q, M_TILE);
     const auto num_tasks = num_heads * m_tiles;
     parl.update(num_tasks, 1, 1, 1, cb.mNumThreads);
+#if CompileFP16()
 
 #pragma omp parallel
     {
@@ -1076,6 +1081,9 @@ class MHAStableInterface {
       }
     }
     return JblasSuccess;
+#else
+    return JblasNotSupport;
+#endif
   }
 
  protected:
