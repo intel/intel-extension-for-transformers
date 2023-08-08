@@ -82,16 +82,13 @@ RUN conda init bash && \
     export PATH=$CONDA_DIR/bin/:${PATH} && \
     conda config --add channels intel && \
     conda create -yn chatbot-demo python=3.9 && \
-    echo "conda activate chatbot-demo" >> ~/.bashrc
-
-SHELL ["/bin/bash", "--login", "-c", "conda", "run", "-n", "chatbot-demo"]
-
-RUN conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
+    echo "conda activate chatbot-demo" >> ~/.bashrc && \
+    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
     conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
     pip install farm-haystack==1.14.0 && \
     pip install intel_extension_for_pytorch && \
-    pip install transformers diffusers accelerate SentencePiece peft evaluate nltk datasets && \
+    pip install transformers>=4.31.0 diffusers accelerate SentencePiece peft evaluate nltk datasets && \
     pip install fastapi uvicorn sse_starlette bottle gevent pymysql && \
     pip install schema && \
     pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers==1.0.0.dev20230602
