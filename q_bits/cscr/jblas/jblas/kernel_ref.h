@@ -543,6 +543,31 @@ inline JBLAS_CODE quantize_f32_s8_rowblock(const float* srcptr, int8_t* dstptr, 
   return JblasSuccess;
 }
 
+inline JBLAS_CODE quantize_f32_s4_fullrange_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
+                                                     int ld_dst, float* scales, int blocksize) {
+  for (int i = 0; i < col; i++) {
+    for (size_t j = 0; j < row; j += blocksize) {
+      float amax = 0.f, max = 0.f;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        auto v = srcptr[(j + ij) * ld_src + i];
+        if (amax < std::abs(v)) {
+          amax = std::abs(v);
+          max = v;
+        }
+      }
+      float scale = max / -8.f;
+      float rscale = scale != 0.f ? 1.f / scale : 0.f;
+      scales[j / blocksize * ld_dst + i] = scale;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        auto quant_v = srcptr[(j + ij) * ld_src + i] * rscale;
+        int8_t x = MIN(15, (int8_t)(quant_v + 8.5f));
+        dstptr[(j + ij) * ld_dst + i] = x << 4;
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
 template <JBLAS_F4_TYPE F4_T>
 inline JBLAS_CODE quantize_f32_f4_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
                                            int ld_dst, float* scales, int blocksize) {

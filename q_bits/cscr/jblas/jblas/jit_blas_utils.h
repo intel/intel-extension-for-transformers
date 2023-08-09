@@ -43,7 +43,8 @@
 #if CompileBF16()
 #include <immintrin.h>
 #endif
-
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
 namespace jblas {
 namespace utils {
 template <typename T2, typename T1>

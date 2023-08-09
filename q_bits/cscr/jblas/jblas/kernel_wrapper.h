@@ -48,8 +48,8 @@ class Memcpy2D {
   static JBLAS_CODE forward_with_gelu_and_linear(void* srcptr, void* dstptr, int row, int col, int srcstride,
                                                  int dststride, void* elt_const_v) {
     if (utils::isa_base<ISA_T>::avx512f) {
-      return kernel::jit::JitMemcpy2DAvx512f::forward_with_gelu_and_linear(srcptr, dstptr, row, col, srcstride, dststride,
-                                                                elt_const_v);
+      return kernel::jit::JitMemcpy2DAvx512f::forward_with_gelu_and_linear(srcptr, dstptr, row, col, srcstride,
+                                                                           dststride, elt_const_v);
     }
   }
 };
@@ -110,6 +110,18 @@ class QuantizeS8RowBlock {
     }
 #endif
     return ref::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+  }
+};
+
+class QuantizeS4FullRangeRowBlock {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
+                                   float* scales, int blocksize) {
+    if (row % blocksize != 0) {
+      return JblasNotSupport;
+    }
+    return ref::quantize_f32_s4_fullrange_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
   }
 };
 
@@ -206,7 +218,7 @@ class DecompressKBlockF4Fp {
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::decompress_kblock_f4_fp<_T, _DST_T, F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
-                                                                 k_offset, kblock, NPad);
+                                                                k_offset, kblock, NPad);
     }
 #endif
     return ref::decompress_kblock_f4_fp<F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);

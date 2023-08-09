@@ -453,7 +453,7 @@ class WeightFp4_BNB_KBlock;
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class WeightNf4_KBlock;
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
-class WeightS4_KBlock;
+class WeightS4_Clip_KBlock;
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class WeightBit4_KBlock {
  public:
@@ -484,39 +484,11 @@ class WeightBit4_KBlock {
     }
   }
 
-  static JBLAS_CODE qdq_f32_s8_rowblock(int bits, float* srcptr, float* dstptr, int row, int col, int ld_src,
-                                        int ld_dst, int blocksize) {
-    auto process_row = [&](int internal_blksize, int process_row, int done_row, int col_offset) {
-      for (size_t j = 0; j < process_row; j += internal_blksize) {
-        float maxval = std::numeric_limits<float>::min();
-        for (size_t ij = 0; ij < internal_blksize; ij++) {
-          maxval = std::max(maxval, std::abs(srcptr[(done_row + j + ij) * ld_src + col_offset]));
-        }
-        float scale = maxval / 127;
-        uint32_t* bf16scale = reinterpret_cast<uint32_t*>(&scale);
-        if (bits == 4) *bf16scale = *bf16scale & 0xffff0000;
-        float rscale = 1.f / scale;
-        for (size_t ij = 0; ij < internal_blksize; ij++) {
-          int8_t tmp = utils::cast<float, int8_t>(srcptr[(done_row + j + ij) * ld_src + col_offset] * rscale);
-          if (bits == 4) tmp = jblas::utils::int4x2::convert(tmp) << 4;
-          dstptr[(done_row + j + ij) * ld_dst + col_offset] = (float)tmp * scale;
-        }
-      }
-    };
-    for (int i = 0; i < col; i++) {
-      if (row < blocksize) {
-        process_row(row, row, 0, i);
-      } else {
-        process_row(blocksize, row / blocksize * blocksize, 0, i);
-        if (row % blocksize > 0) {
-          process_row(row % blocksize, row % blocksize, row / blocksize * blocksize, i);
-        }
-      }
-    }
-    return JblasSuccess;
-  }
+  virtual void fp32_qdq(int bits, float* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+                        int blocksize) = 0;
 
-  static void qdqWeight(int bits, const int N, const int K, float* B, const int ldb, int blocksize, bool transpose) {
+  void qdqWeight(const std::string& quant_type, const int N, const int K, float* B, const int ldb, int blocksize,
+                 bool transpose) {
     std::vector<float> trans_wei;
     if (transpose) {
       trans_wei.resize(N * K);
@@ -524,7 +496,8 @@ class WeightBit4_KBlock {
         for (int j = 0; j < K; j++) trans_wei[j * N + i] = B[i * K + j];
     }
     float* tmp = transpose ? trans_wei.data() : B;
-    qdq_f32_s8_rowblock(bits, tmp, tmp, K, N, ldb, N, blocksize);
+    int bits = quant_type == "s8" ? 8 : 4;
+    fp32_qdq(bits, tmp, tmp, K, N, ldb, N, blocksize);
     if (transpose) {
       for (int i = 0; i < N; i++)
         for (int j = 0; j < K; j++) B[i * K + j] = trans_wei[j * N + i];
@@ -792,7 +765,7 @@ class WeightBit4_KBlock {
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
-class WeightS4_KBlock : public WeightBit4_KBlock<_GemmCore_T, ISA_T> {
+class WeightS4_Clip_KBlock : public WeightBit4_KBlock<_GemmCore_T, ISA_T> {
  public:
   JBLAS_CODE doCompress(int8_t* srcptr, jblas::utils::bit4x2* dstptr, int row, int col, int ld_src,
                         int ld_dst) override {
@@ -801,8 +774,39 @@ class WeightS4_KBlock : public WeightBit4_KBlock<_GemmCore_T, ISA_T> {
         ld_dst);  // ld_dst here not stride
   }
 
-  void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst, float* scales,
-                     int blocksize) override {
+  virtual void fp32_qdq(int bits, float* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+                        int blocksize) override {
+    auto process_row = [&](int internal_blksize, int process_row, int done_row, int col_offset) {
+      for (size_t j = 0; j < process_row; j += internal_blksize) {
+        float maxval = std::numeric_limits<float>::min();
+        for (size_t ij = 0; ij < internal_blksize; ij++) {
+          maxval = std::max(maxval, std::abs(srcptr[(done_row + j + ij) * ld_src + col_offset]));
+        }
+        float scale = maxval / 127;
+        uint32_t* bf16scale = reinterpret_cast<uint32_t*>(&scale);
+        if (bits == 4) *bf16scale = *bf16scale & 0xffff0000;
+        float rscale = 1.f / scale;
+        for (size_t ij = 0; ij < internal_blksize; ij++) {
+          int8_t tmp = utils::cast<float, int8_t>(srcptr[(done_row + j + ij) * ld_src + col_offset] * rscale);
+          if (bits == 4) tmp = jblas::utils::int4x2::convert(tmp) << 4;
+          dstptr[(done_row + j + ij) * ld_dst + col_offset] = (float)tmp * scale;
+        }
+      }
+    };
+    for (int i = 0; i < col; i++) {
+      if (row < blocksize) {
+        process_row(row, row, 0, i);
+      } else {
+        process_row(blocksize, row / blocksize * blocksize, 0, i);
+        if (row % blocksize > 0) {
+          process_row(row % blocksize, row % blocksize, row / blocksize * blocksize, i);
+        }
+      }
+    }
+  }
+
+  virtual void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
+                             float* scales, int blocksize) override {
     kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
   }
 
@@ -828,6 +832,50 @@ class WeightS4_KBlock : public WeightBit4_KBlock<_GemmCore_T, ISA_T> {
                                         int ld_dst, utils::bf16* scales, int k_offset, int kblock, int NPad) override {
     kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, utils::bf16>(
         reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+  }
+};
+
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+class WeightS4_FullRange_KBlock : public WeightS4_Clip_KBlock<_GemmCore_T, ISA_T> {
+  void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst, float* scales,
+                     int blocksize) override {
+    kernel::wrapper::QuantizeS4FullRangeRowBlock::forward<ISA_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
+                                                                 blocksize);
+  }
+
+  void fp32_qdq(int bits, float* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+                int blocksize) override {
+    auto process_row = [&](int internal_blksize, int process_row, int done_row, int col_offset) {
+      for (size_t j = 0; j < process_row; j += internal_blksize) {
+        float amax = 0.f, max = 0.f;
+        for (size_t ij = 0; ij < internal_blksize; ij++) {
+          auto v = srcptr[(done_row + j + ij) * ld_src + col_offset];
+          if (amax < std::abs(v)) {
+            amax = std::abs(v);
+            max = v;
+          }
+        }
+        float scale = max / -8.f;
+        uint32_t* bf16scale = reinterpret_cast<uint32_t*>(&scale);
+        if (bits == 4) *bf16scale = *bf16scale & 0xffff0000;
+        float rscale = scale != 0.f ? 1.f / scale : 0.f;
+        for (size_t ij = 0; ij < internal_blksize; ij++) {
+          auto quant_v = srcptr[(done_row + j + ij) * ld_src + col_offset] * rscale;
+          int8_t x = MIN(15, (int8_t)(quant_v + 8.5f)) << 4;
+          dstptr[(done_row + j + ij) * ld_dst + col_offset] = x * scale;
+        }
+      }
+    };
+    for (int i = 0; i < col; i++) {
+      if (row < blocksize) {
+        process_row(row, row, 0, i);
+      } else {
+        process_row(blocksize, row / blocksize * blocksize, 0, i);
+        if (row % blocksize > 0) {
+          process_row(row % blocksize, row % blocksize, row / blocksize * blocksize, i);
+        }
+      }
+    }
   }
 };
 
@@ -1156,10 +1204,15 @@ namespace gemm_default {
 namespace weight_comp {
 namespace avx512f {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
-using GemmKernelS4KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+using GemmKernelS4ClipKBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F, jblas::prologue::gemm::ActivationBase,
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+        jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+    DefaultParallel>;
+using GemmKernelS4FullRangeKBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F, jblas::prologue::gemm::ActivationBase,
+        jblas::prologue::weight_comp::gemm::WeightS4_FullRange_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
     DefaultParallel>;
 using GemmKernelS8KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
@@ -1172,21 +1225,26 @@ JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
 using GemmKernelDynamicQuantS4KBlockSimple = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+        jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlock>;
 using GemmKernelDynamicQuantS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+        jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlock>;
 
-using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+using GemmSKernelDynamicS4ClipKBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
-        jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock,
         jblas::epilogue::gemm::AlphaBetaProcessFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-
+using GemmSKernelDynamicS4FullRangeKBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+        jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_FullRange_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 }  // namespace avx512_vnni
 namespace amx_bf16 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
@@ -1197,11 +1255,18 @@ using GemmKernelS8KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWe
         jblas::prologue::weight_comp::gemm::WeightS8_KBlock,
         jblas::epilogue::gemm::AlphaBetaProcessFp32>,  // output fp32->fp32
     DefaultParallel>;
-using GemmKernelS4KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+using GemmKernelS4ClipKBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
         jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
-        jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock,
+        jblas::epilogue::gemm::AlphaBetaProcessFp32>,  // output fp32->fp32
+    DefaultParallel>;
+using GemmKernelS4FullRangeKBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
+        jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
+        jblas::prologue::weight_comp::gemm::WeightS4_FullRange_KBlock,
         jblas::epilogue::gemm::AlphaBetaProcessFp32>,  // output fp32->fp32
     DefaultParallel>;
 using GemmKernelFp4KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
@@ -1221,11 +1286,17 @@ using GemmKernelNf4KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackW
 }  // namespace amx_bf16
 namespace amx_int8 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
-using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+using GemmSKernelDynamicS4ClipKBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
-        jblas::prologue::gemm::ActivationF32S8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
+        jblas::prologue::gemm::ActivationF32S8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock,
         jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+using GemmSKernelDynamicS4FullRangeKBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
+        jblas::prologue::gemm::ActivationF32S8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm::WeightS4_FullRange_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 }  // namespace amx_int8
 }  // namespace weight_comp
