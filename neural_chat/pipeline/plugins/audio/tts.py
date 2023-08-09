@@ -25,6 +25,7 @@ from transformers import SpeechT5HifiGan
 import soundfile as sf
 import intel_extension_for_pytorch as ipex
 import numpy as np
+import contextlib
 
 from utils.english_normalizer import EnglishNormalizer
 
@@ -62,7 +63,11 @@ class TextToSpeech:
             self.pat_speaker_embeddings = torch.load('speaker_embeddings/spk_embed_pat.pt')
 
         # ipex IOMP hardware resources
-        self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
+        if 'LD_PRELOAD' in os.environ and 'libiomp' in os.environ['LD_PRELOAD']:
+            self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
+        else:
+            print("Warning! You have not preloaded iomp beforehand and that may lead to performance issue")
+            self.cpu_pool = None
 
         self.normalizer = EnglishNormalizer()
 
@@ -111,7 +116,7 @@ class TextToSpeech:
             speaker_embeddings = torch.load(self._lookup_voice_embedding(voice))
 
         with torch.no_grad():
-            with ipex.cpu.runtime.pin(self.cpu_pool):
+            with ipex.cpu.runtime.pin(self.cpu_pool) if self.cpu_pool else contextlib.nullcontext():
                 spectrogram = model.generate_speech(inputs["input_ids"], speaker_embeddings)
             speech = self.vocoder(spectrogram)
         sf.write(output_audio_path, speech.cpu().numpy(), samplerate=16000)

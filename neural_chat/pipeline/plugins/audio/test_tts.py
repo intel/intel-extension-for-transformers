@@ -17,8 +17,8 @@ class TestTTS(unittest.TestCase):
         shutil.rmtree('./tmp_audio', ignore_errors=True)
 
     def test_tts(self):
-        text = "Welcome to Neural Chat!"
-        output_audio_path = os.getcwd() + "tmp_audio/1.wav"
+        text = "Welcome to Neural Chat"
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/1.wav")
         output_audio_path = self.tts.text2speech(text, output_audio_path, voice="default")
         self.assertTrue(os.path.exists(output_audio_path))
         # verify accuracy
@@ -31,7 +31,7 @@ class TestTTS(unittest.TestCase):
                 time.sleep(1)
                 yield f"Welcome {i} to Neural Chat"
         gen = text_generate()
-        output_audio_path = os.getcwd() + "tmp_audio/1.wav"
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/1.wav")
         for result_path in self.tts.stream_text2speech(gen, output_audio_path, voice="default"):
             self.assertTrue(os.path.exists(result_path))
 
