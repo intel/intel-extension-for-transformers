@@ -113,10 +113,9 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
 
   ml->ne_ctx = ctx;
 
-  model.others[0] = ml->get_tensor("gpt_neox.embed_in.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[1] = ml->get_tensor("gpt_neox.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
-  model.others[2] = ml->get_tensor("gpt_neox.final_layer_norm.bias", {n_embd}, NE_BACKEND_CPU);
-  model.others[3] = ml->get_tensor("embed_out.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  model.others[0] = ml->get_tensor("transformer.embedding.word_embeddings.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  model.others[1] = ml->get_tensor("transformer.encoder.final_layernorm.weight", {n_embd}, NE_BACKEND_CPU);
+  model.others[2] = ml->get_tensor("transformer.output_layer.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);
@@ -124,25 +123,20 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
   for (uint32_t i = 0; i < n_layer; ++i) {
     const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
-    std::string layers_i = "gpt_neox.layers." + std::to_string(i);
+    std::string layers_i = "transformer.encoder.layers." + std::to_string(i);
 
     // norm: cur = ln_1_g*cur + ln_1_b
     layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
-    layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
-    layer.norm[2] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
-    layer.norm[3] = ml->get_tensor(layers_i + ".post_attention_layernorm.bias", {n_embd}, backend);
+    layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
   
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".attention.query_key_value.weight", {n_embd, 3 * n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".attention.query_key_value.bias", {3 * n_embd}, backend);
-    layer.attn[2] = ml->get_tensor(layers_i + ".attention.dense.weight", {n_embd, n_embd}, backend);
-    layer.attn[3] = ml->get_tensor(layers_i + ".attention.dense.bias", {n_embd}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, 3 * n_embd}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {3 * n_embd}, backend);
+    layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
 
     // ffn GEMM
     layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, n_ff}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.bias", {n_ff}, backend);
-    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {n_ff, n_embd}, backend);
-    layer.ffn[3] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.bias", {n_embd}, backend);
+    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {n_ff, n_embd}, backend);
 
     if (backend != NE_BACKEND_CPU) {
       vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
