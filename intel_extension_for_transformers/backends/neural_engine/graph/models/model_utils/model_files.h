@@ -245,6 +245,7 @@ struct model_file_loader {
       shard.ne.resize(n_dims);
       file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
       std::string name = file.read_string(name_len);
+      printf("%s\n", name.c_str());
       if (n_dims < 1 || n_dims > 2) {
         throw format("model.cpp: tensor '%s' should not be %u-dimensional", name.c_str(), n_dims);
       }
@@ -263,10 +264,10 @@ struct model_file_loader {
         }
       }
 
-      if (file_version >= MODEL_FILE_VERSION_GGJT_V1) {
-        // skip to the next multiple of 32 bytes
-        file.seek(-static_cast<ptrdiff_t>(file.tell()) & 31, SEEK_CUR);
-      }
+      // if (file_version >= MODEL_FILE_VERSION_GGJT_V1) {
+      //   // skip to the next multiple of 32 bytes
+      //   file.seek(-static_cast<ptrdiff_t>(file.tell()) & 31, SEEK_CUR);
+      // }
       shard.file_idx = file_idx;
       shard.file_off = file.tell();
       if (shard.type == NE_TYPE_JBLAS) {
