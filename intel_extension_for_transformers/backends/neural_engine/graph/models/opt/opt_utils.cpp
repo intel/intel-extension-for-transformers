@@ -135,9 +135,13 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
   
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".self_attn.q_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.k_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[2] = ml->get_tensor(layers_i + ".self_attn.v_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[3] = ml->get_tensor(layers_i + ".self_attn.out_proj.weight", {n_embd, n_embd}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.q_proj.bias", {n_embd, n_embd}, backend)
+    layer.attn[2] = ml->get_tensor(layers_i + ".self_attn.k_proj.weight", {n_embd, n_embd}, backend);
+    layer.attn[3] = ml->get_tensor(layers_i + ".self_attn.k_proj.bias", {n_embd, n_embd}, backend)
+    layer.attn[4] = ml->get_tensor(layers_i + ".self_attn.v_proj.weight", {n_embd, n_embd}, backend);
+    layer.attn[5] = ml->get_tensor(layers_i + ".self_attn.k_proj.bias", {n_embd, n_embd}, backend)
+    layer.attn[6] = ml->get_tensor(layers_i + ".self_attn.out_proj.weight", {n_embd, n_embd}, backend);
+    layer.attn[6] = ml->get_tensor(layers_i + ".self_attn.out_proj.bias", {n_embd, n_embd}, backend);
 
     // ffn GEMM
     layer.ffn[0] = ml->get_tensor(layers_i + ".fc1.weight", {n_embd, n_ff}, backend);
