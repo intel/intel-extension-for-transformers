@@ -28,12 +28,12 @@
 #include "common.h"
 #include "models/model_utils/model_utils.h"
 
-class falcon_quant_layer : public quant_layer_base {
+class gptneox_quant_layer : public quant_layer_base {
  public:
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
-    if (layername == "transformer.word_embeddings.weight") {
+    if (layername == "gpt_neox.embed_in.weight") {
       // special layer process, can be loaded by config file
       return quant_params_internal();  // return q4_0 to cover the usage of getrow
     }
@@ -61,7 +61,7 @@ int main(int argc, char** argv) {
   const int64_t t_main_start_us = model_time_us();
 
   int64_t t_quantize_us = 0;
-  auto quant_layer = new falcon_quant_layer();
+  auto quant_layer = new gptneox_quant_layer();
   // load the model
   {
     const int64_t t_start_us = model_time_us();

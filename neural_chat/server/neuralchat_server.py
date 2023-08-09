@@ -70,8 +70,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             help="log file",
             default="./log/neuralchat.log")
         config = NeuralChatConfig()
-        chatbot = NeuralChatBot(config)
-        chatbot.build_chatbot()
+        self.chatbot = NeuralChatBot(config)
+        self.chatbot.build_chatbot()
 
     def init(self, config):
         """System initialization.

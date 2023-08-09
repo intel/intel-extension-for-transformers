@@ -2692,7 +2692,7 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
         # pylint: disable=E1101
         if self.args.seed:
             torch.manual_seed(self.args.seed)
-        results = self.evaluate(max_length=self.max_length, num_beams=self.num_beams)
+        results = self.evaluate(metric_key_prefix="eval")
         logger.info(results)
         if isinstance(self.metrics, list):
             nums = len(self.metrics)
