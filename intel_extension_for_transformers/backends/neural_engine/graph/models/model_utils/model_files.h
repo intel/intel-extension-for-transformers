@@ -216,6 +216,8 @@ struct model_file_loader {
     hparams.eos_token_id = file.read_u32();
     hparams.pad_token_id = file.read_u32();
     hparams.sep_token_id = file.read_u32();
+    hparams.multi_query_group_num = file.read_u32();
+    hparams.ffn_hidden_size = file.read_u32();
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);

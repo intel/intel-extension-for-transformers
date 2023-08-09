@@ -109,6 +109,8 @@ struct model_hparams {
   int32_t eos_token_id = 0;
   int32_t pad_token_id = 0;
   int32_t sep_token_id = 0;
+  int32_t multi_query_group_num = 0;
+  int32_t ffn_hidden_size = 0;
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));

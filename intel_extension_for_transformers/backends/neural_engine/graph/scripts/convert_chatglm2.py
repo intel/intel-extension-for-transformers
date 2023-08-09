@@ -177,6 +177,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
+
+    fout.write(struct.pack("i", hparams["multi_query_group_num"]))
+    fout.write(struct.pack("i", hparams["ffn_hidden_size"]))
     # fout.write(struct.pack("i", hparams["bos_token_id"]))
     # fout.write(struct.pack("i", hparams["eos_token_id"]))
     # fout.write(struct.pack("i", hparams["pad_token_id"]))

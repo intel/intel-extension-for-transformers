@@ -93,6 +93,11 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
   ml->calc_sizes(&ctx_size, &mmapped_size);
   fprintf(stderr, "%s: ne ctx size = %7.2f MB\n", __func__, ctx_size / 1024.0 / 1024.0);
 
+  const auto& hparams = model.hparams;
+  const int head_dim = n_embd / hparams.n_head;
+  const int kv_heads = hparams.n_head;  // 1 if MQA else hparams.n_head
+  const int kv_dim = kv_heads * head_dim;
+
   // create the ne context
   lctx.model.buf.resize(ctx_size);
   if (use_mlock) {
@@ -130,13 +135,13 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
     layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
   
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, 3 * n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {3 * n_embd}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
     layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, n_ff}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {n_ff, n_embd}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, model.hparams.ffn_hidden_size * 2}, backend);
+    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {model.hparams.ffn_hidden_size, n_embd}, backend);
 
     if (backend != NE_BACKEND_CPU) {
       vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
