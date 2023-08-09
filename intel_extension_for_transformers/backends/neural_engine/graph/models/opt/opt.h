@@ -59,7 +59,6 @@ class OPT : public IModel {
   model_name name = MODEL_OPT;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab, word_embed_proj_dim;
-
   int n_ctx, n_gpu_layer;
   ne_type memory_type;
   bool use_mmap, use_mlock, vocab_only;
