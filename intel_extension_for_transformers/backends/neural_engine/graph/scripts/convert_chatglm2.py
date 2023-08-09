@@ -155,11 +155,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     print(hparams)
 
+    vocab = load_vocab(Path("/home/zhenweil/models/chatglm2-6b/"))
+
     # fout.write(struct.pack("i", 0x67676D6C))
     fout.write(b"ggjt"[::-1])
     fout.write(struct.pack("i", 1))
 
-    fout.write(struct.pack("i", hparams["padded_vocab_size"]))
+    fout.write(struct.pack("i", vocab.vocab_size))
     fout.write(struct.pack("i", hparams["hidden_size"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["num_attention_heads"]))
@@ -180,18 +182,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
     # fout.write(struct.pack("i", hparams["pad_token_id"]))
     # fout.write(struct.pack("i", hparams["sep_token_id"]))
 
-    vocab_size = hparams["padded_vocab_size"]
 
-    # serialized_model_proto = tokenizer.tokenizer.sp_model.serialized_model_proto()
-    # fout.write(struct.pack("i", len(serialized_model_proto)))
-    # fout.write(serialized_model_proto)
-    vocab = load_vocab(Path("/home/zhenweil/models/chatglm2-6b/"))
-    # assert counter == config.vocab_size
     for text, score in vocab.all_tokens():
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
         fout.write(struct.pack("f", score))
-            
+
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
         print("Processing variable: " + name + " with shape: ", data.shape)
