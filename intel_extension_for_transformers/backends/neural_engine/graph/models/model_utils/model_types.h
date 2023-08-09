@@ -103,6 +103,7 @@ struct model_hparams {
   float alibi_bias_max = 0; // for mpt
   float clip_qkv = 0;  // for mpt
   int32_t par_res = 1;  // for neox 1 = true, 0 = false
+  uint32_t word_embed_proj_dim = 0;  // for opt
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));

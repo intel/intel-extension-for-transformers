@@ -15,9 +15,7 @@
 #
 # Usage:
 #
-#   python3 models/convert-h5-to-ne.py
-#
-# This script is similar to "convert-pt-to-ne.py"
+#   python3 scripts/convert_opt.py args
 #
 
 import io
@@ -77,87 +75,93 @@ def main(args_in: Optional[List[str]] = None) -> None:
     print("Loading model: ", dir_model)
     model = AutoModelForCausalLM.from_pretrained(dir_model, torch_dtype=torch.float16 if ftype == 1 else torch.float32)
     model.eval()
-    for p in model.parameters():
-        p.requires_grad = False
     hparams = model.config.to_dict()
     
     print("Model loaded: ", dir_model)
-
+    os.makedirs(os.path.dirname(fname_out), exist_ok=True)
     fout = open(fname_out, "wb")
 
+    print(hparams)
     # 0x67676d6c is unversioned ne
     # 0x67676d66 is versioned ggmf (requires token scores)
     ne_file_magic = 0x67676d6c
-    #ne_file_version = 0x00000001 # v1
-
-    hparams["multiple_of"] = 1
     fout.write(struct.pack("i", ne_file_magic)) # magic: ne in hex
-    #fout.write(struct.pack("i", ne_file_version))
 
-    fout.write(struct.pack("i", hparams["vocab_size"]))
-    fout.write(struct.pack("i", hparams["word_embed_proj_dim"]))
-    fout.write(struct.pack("i", 0)) # dummy data
-    fout.write(struct.pack("i", hparams["num_attention_heads"]))
-    fout.write(struct.pack("i", hparams["num_hidden_layers"]))
-    #fout.write(struct.pack("i", int((hparams["hidden_size"] / hparams["num_attention_heads"]
-                                #) * hparams["rotary_pct"])))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", ftype))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("f", 0.0))
-    fout.write(struct.pack("f", 0.0))
-    fout.write(struct.pack("i", 0))
-    #fout.write(struct.pack("i", int(hparams["use_parallel_residual"])))
+    fout.write(struct.pack("i", hparams["vocab_size"]))  # n_vocab
+    fout.write(struct.pack("i", hparams["hidden_size"]))  # n_embd
+    fout.write(struct.pack("i", 0))  # n_mult
+    fout.write(struct.pack("i", hparams["num_attention_heads"]))  # n_head
+    fout.write(struct.pack("i", hparams["num_hidden_layers"]))  # n_layers
+    fout.write(struct.pack("i", 0))  # n_rot
+    fout.write(struct.pack("i", ftype))  # ftype
+    fout.write(struct.pack("i", hparams["max_position_embeddings"]))  # max_seq_len
+    fout.write(struct.pack("f", 0.0))  # alibi_bias_max
+    fout.write(struct.pack("f", 0.0))  # clip_qkv
+    fout.write(struct.pack("i", 0))  # par_res
+    fout.write(struct.pack("i", hparams["word_embed_proj_dim"]))  # for opt
 
-    # Is this correct??
-    dot_token = tokenizer.encode(".")[0]
-    for i in range(hparams["vocab_size"]):
-        text = tokenizer.decode([i]).encode('utf-8')
+    vocab_size = hparams["vocab_size"]
+    encoder = tokenizer.vocab
+    # Add added_tokens (special tokens) to the encoder
+    encoder.update(tokenizer.get_added_vocab())
+
+    byte_encoder = bytes_to_unicode()
+    byte_decoder = {v:k for k, v in byte_encoder.items()}
+
+    counter = 0
+    # sort by value
+    for key in sorted(encoder, key=encoder.get):
+        # workaround for key error when c not found
+        text=""
+        for c in key:
+            if c not in byte_decoder:
+                text += c
+            else:
+                text += chr(byte_decoder[c] )
+        text = bytearray( text, encoding="utf-8" )
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
+        counter += 1
+
+    # Repeat last token until vocab_size
+    while counter < vocab_size:
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        counter += 1
 
     list_vars = model.state_dict()
-
-    print(hparams)
-    import pdb;pdb.set_trace()
     for name in list_vars.keys():
         # No gradients for these
         list_vars[name].requires_grad = False
-        src = name
-        nn = name
-
-        print(src, ' -> ', name)
-        data = list_vars[src].squeeze().numpy()
-        data = data.astype(np.float32)
+        data = list_vars[name].squeeze().numpy()
+        print("Processing variable: {} with shape: {}".format(name, data.shape))
 
         n_dims = len(data.shape)
-        print(name, n_dims, data.shape)
-
         # default type is fp32
         ftype_cur = 0
         if ftype == 1 and n_dims > 1:
-            print("  Converting to float16", data.shape, data[:3, :3].tolist())
+            print("  Converting to float16")
             data = data.astype(np.float16)
             ftype_cur = 1
         else:
-            print("  Converting to float32", data.shape,
-                data[:3, :3].tolist() if n_dims > 1 else data[:3].tolist())
-            data = data.astype(np.float32)
+            if data.dtype != np.float32:
+                print("  Converting to float32")
+                data = data.astype(np.float32)
+                ftype_cur = 0
 
         # header
-        str = name.encode('utf-8')
-        fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
+        h_str = name.encode('utf-8')
+        fout.write(struct.pack("iii", n_dims, len(h_str), ftype_cur))
         for i in range(n_dims):
             fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
-        print(str)
-        fout.write(str)
+        fout.write(h_str)
 
         # data
         data.tofile(fout)
 
     fout.close()
 
-    print("Done. Output file: " + fname_out)
+    print("Done. Output file: {}".format(fname_out))
     print("")
 
 

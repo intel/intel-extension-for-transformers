@@ -210,6 +210,7 @@ struct model_file_loader {
     file.read_raw(&hparams.alibi_bias_max, sizeof(float));
     file.read_raw(&hparams.clip_qkv, sizeof(float));
     hparams.par_res = file.read_u32();
+    hparams.word_embed_proj_dim = file.read_u32();
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
@@ -314,6 +315,7 @@ struct model_file_saver {
     file.write_raw(&hparams.alibi_bias_max, sizeof(float));
     file.write_raw(&hparams.clip_qkv, sizeof(float));
     file.write_u32(hparams.par_res);
+    file.write_u32(hparams.word_embed_proj_dim);
   }
   void write_vocab() {
     if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {

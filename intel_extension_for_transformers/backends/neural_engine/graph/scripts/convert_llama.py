@@ -949,6 +949,7 @@ class OutputFile:
         self.fout.write(struct.pack("f", 0))
         self.fout.write(struct.pack("f", 0))
         self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
 
     def write_tensor_header(self, name: str, shape: Sequence[int], data_type: DataType) -> None:
         sname = name.encode('utf-8')
