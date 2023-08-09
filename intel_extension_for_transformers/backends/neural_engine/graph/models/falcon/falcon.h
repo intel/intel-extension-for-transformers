@@ -12,32 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef GPTNEOX_H
-#define GPTNEOX_H
+#ifndef FALCON_H
+#define FALCON_H
 
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
 
-enum gptneox_model {
-  GPTNEOX_UNKNOWN,
-  GPTNEOX_7B,
+enum falcon_model {
+  FALCON_UNKNOWN,
+  FALCON_7B,
 };
 
-static const model_scratch gptneox_mem_req(int n_layers) {
+static const model_scratch falcon_mem_req(int n_layers) {
   switch (n_layers) {
-    case 44:
-      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
     case 32:
-      return {512ull * MB, 512ull * MB, 1026ull * MB, 768ull * MB};
+      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
   }
 }
 
-class GPTNEOX : public IModel {
+class FALCON : public IModel {
  private:
-  model_name name = MODEL_GPTNEOX;
+  model_name name = MODEL_FALCON;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;
@@ -51,4 +49,4 @@ class GPTNEOX : public IModel {
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };
 
-#endif  // GPTNEOX_H
+#endif  // FALCON_H
