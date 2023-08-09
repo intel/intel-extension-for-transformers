@@ -75,11 +75,18 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     fout = open(fname_out, "wb")
     fout.write(struct.pack("i", 0x67676d6c)) # magic: falcon in hex
+
     fout.write(struct.pack("i", hparams["vocab_size"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
+    fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["n_head"]))
     fout.write(struct.pack("i", hparams["n_layer"]))
+    fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", ftype))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("i", 0))
 
     reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
     byte_encoder = bytes_to_unicode()
