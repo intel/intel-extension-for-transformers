@@ -203,7 +203,7 @@ python ../habana/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
-Habana supports HPU graph mode for inference speedup, which is available for bloom, gpt2, opt, gptj, gpt_neox. However, mpt and llama model have not supported this mode yet. You can use the parameter `use_hpu_graphs` to speed up the inference.
+Habana supports HPU graph mode for inference speedup, which is available for bloom, gpt2, opt, gptj, gpt_neox, mpt, llama. You can use the parameter `use_hpu_graphs` to speed up the inference.
 
 ```bash
 python generate.py --base_model_path "EleutherAI/gpt-j-6b" \
