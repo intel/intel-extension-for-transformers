@@ -17,3 +17,6 @@ class TestASR(unittest.TestCase):
         audio_path = "pat.wav"
         text = self.asr_bf16.audio2text(audio_path)
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
+
+if __name__ == "__main__":
+    unittest.main()
