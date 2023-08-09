@@ -24,6 +24,7 @@ from typing import Any, Dict, List, Union
 from transformers import SpeechT5HifiGan
 import soundfile as sf
 import intel_extension_for_pytorch as ipex
+from num2words import num2words
 import numpy as np
 
 
@@ -115,4 +116,71 @@ class TextToSpeech:
         """Stream the generation of audios with an LLM text generator."""
         for idx, response in enumerate(generator):
             yield self.text2speech(response, f"{answer_speech_path}_{idx}.wav", voice)
+
+    def correct_abbreviation(text):
+        # formula: if one word is all capital letters, then correct this whole word
+        correct_dict = {
+            "A": "Eigh",
+            "B": "bee",
+            "C": "cee",
+            "D": "dee",
+            "E": "yee",
+            "F": "ef",
+            "G": "jee",
+            "H": "aitch",
+            "I": "I",
+            "J": "jay",
+            "K": "kay",
+            "L": "el",
+            "M": "em",
+            "N": "en",
+            "O": "o",
+            "P": "pee",
+            "Q": "cue",
+            "R": "ar",
+            "S": "ess",
+            "T": "tee",
+            "U": "u",
+            "V": "vee",
+            "W": "doubleliu",
+            "X": "ex",
+            "Y": "wy",
+            "Z": "zed"
+        }
+        words = text.split()
+        results = []
+        for idx, word in enumerate(words):
+            if word.isupper(): # W3C is also upper
+                for c in word:
+                    if c in correct_dict:
+                        results.append(correct_dict[c])
+                    else:
+                        results.append(c)
+            else:
+                results.append(word)
+        return " ".join(results)
+
+    def correct_number(text):
+        """Ignore the year or other exception right now"""
+        words = text.split()
+        results = []
+        for idx, word in enumerate(words):
+            if word.isdigit(): # if word is positive integer, it must can be num2words
+                try:
+                    word = num2words(word)
+                except Exception as e:
+                    print(f"num2words fail with word: {word} and exception: {e}")
+            else:
+                try:
+                    val = int(word)
+                    word = num2words(word)
+                except ValueError:
+                    try:
+                        val = float(word)
+                        word = num2words(word)
+                    except ValueError:
+                        # print("not a number, fallback to original word")
+                        pass
+            results.append(word)
+        return " ".join(results)
 
