@@ -15,34 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from paddlespeech.cli.asr.infer import ASRExecutor
 import time
-import shortuuid
-from typing import List
-from PIL import Image
-from pydantic import BaseModel, Field
-from fastapi.responses import StreamingResponse
 
+class ChineseAudioSpeechRecognition:
+    """Convert audio to text in Chinese."""
+    def __init__(self):
+        self.asr = ASRExecutor()
 
-class ResponseBaseModel(BaseModel):
-    id: str = Field(default_factory=lambda: f"chatcmpl-{shortuuid.random()}")
-    created: int = Field(default_factory=lambda: int(time.time()))
+    def audio2text(self, audio_path):
+        """Convert audio to text in Chinese.
 
-
-class ImageResponse(ResponseBaseModel):
-    image: Image
-
-
-class TextResponse(ResponseBaseModel):
-    content: str
-
-
-class VoiceResponse(ResponseBaseModel):
-    voice: str
-
-
-class RetrievalResponse(ResponseBaseModel):
-    content: StreamingResponse
-
-
-class FinetuneResponse(ResponseBaseModel):
-    content: str
+        audio_path: the path to the input audio, e.g. ~/xxx.mp3
+        """
+        start = time.time()
+        result = self.asr(audio_file=audio_path)
+        print(f"generated text in {time.time() - start} seconds, and the result is: {result}")
