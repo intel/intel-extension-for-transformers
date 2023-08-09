@@ -16,14 +16,18 @@ static void jblas_symqdq_weight(torch::Tensor& Fp32Wei, bool transpose, int64_t 
 
 static void jblas_quantweight_f32_linear_with_bias(const torch::Tensor& activation, const torch::Tensor& weight,
                                                    const torch::Tensor& bias, torch::Tensor& output, int64_t m,
-                                                   int64_t n, int64_t k, int64_t lda, int64_t ldo) {
-  quantweight_f32_linear_launcher(activation, weight, bias.data_ptr<float>(), output, m, n, k, lda, ldo, true);
+                                                   int64_t n, int64_t k, int64_t lda, int64_t ldo,
+                                                   const std::string& compute_type, int64_t bits) {
+  quantweight_f32_linear_launcher(activation, weight, bias.data_ptr<float>(), output, compute_type, bits, m, n, k, lda,
+                                  ldo, true);
 }
 
 static void jblas_quantweight_f32_linear_without_bias(const torch::Tensor& activation, const torch::Tensor& weight,
                                                       torch::Tensor& output, int64_t m, int64_t n, int64_t k,
-                                                      int64_t lda, int64_t ldo) {
-  quantweight_f32_linear_launcher(activation, weight, output.data_ptr<float>(), output, m, n, k, lda, ldo, false);
+                                                      int64_t lda, int64_t ldo, const std::string& compute_type,
+                                                      int64_t bits) {
+  quantweight_f32_linear_launcher(activation, weight, output.data_ptr<float>(), output, compute_type, bits, m, n, k,
+                                  lda, ldo, false);
 }
 
 TORCH_LIBRARY(weight_only_jblasop, m) {

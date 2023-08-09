@@ -1,5 +1,5 @@
 #include "jblas_quantize.hpp"
-
+#include "jblas_utils.hpp"
 #include <torch/script.h>
 
 #include "jblas/jit_blas_weight_compression.h"
@@ -19,6 +19,10 @@ static std::unordered_map<std::tuple<int, std::string, std::string>, CompType, M
     {{4, "sym", "bf16"}, CompType::S4_Bf16},
     {{8, "sym", "fp32"}, CompType::S8_F32}};
 
+#define COMPUTE_DICPATCH(KER) \
+  KER kernel;                 \
+  packedw = compressWeight<KER>(&kernel, transpose, n, k, Fp32Wei.data_ptr<float>(), blocksize, type);
+
 template <typename KER>
 PackedWeight* compressWeight(KER* ker, bool transpose, const int N, const int K, const float* B, int blocksize,
                              CompType type) {
@@ -27,17 +31,6 @@ PackedWeight* compressWeight(KER* ker, bool transpose, const int N, const int K,
     return weiptr->compressWeightTranspose(N, K, B, K, blocksize, type);
   } else {
     return weiptr->compressWeight(N, K, B, N, blocksize, type);
-  }
-}
-
-template <typename KER>
-PackedWeight* computeDispatch(KER* ker, float* fp32wei, bool transpose, const int N, const int K, int blocksize,
-                              CompType type) {
-  auto cd = jblas::utils::parallel::CpuDevice::getInstance();
-  if (cd->AVX512F()) {
-    return compressWeight<KER>(ker, transpose, N, K, fp32wei, blocksize, type);
-  } else {
-    return compressWeight<KER>(ker, transpose, N, K, fp32wei, blocksize, type);
   }
 }
 
@@ -55,24 +48,31 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose, int64
     k = n;
     n = tmp;
   }
-  using S4GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
-  using S4GemmVnniKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
-  using S8GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock;
-  S4GemmKernel s4kernel;
-  S8GemmKernel s8kernel;
-  S4GemmVnniKernel vnnikernel;
   jblas::prologue::PackedWeight* packedw = NULL;
   auto type = NE_FTYPE_MAP[std::make_tuple(bits, alg, scale_dtype)];
   if (compute_type == "int8") {
-    TORCH_CHECK(bits == 4, "only support 4bit quant when compute_type==int8");
     type = CompType::S4_F32;
-    packedw =
-        computeDispatch<S4GemmVnniKernel>(&vnnikernel, Fp32Wei.data_ptr<float>(), transpose, n, k, blocksize, type);
-  } else {
-    if (bits == 4) {
-      packedw = computeDispatch<S4GemmKernel>(&s4kernel, Fp32Wei.data_ptr<float>(), transpose, n, k, blocksize, type);
+    TORCH_CHECK(check_amx() || check_vnni(), "ISA must lagger than AVX_VNNI when compute_type==int8");
+    TORCH_CHECK(bits == 4, "quantization bits must be 4 when compute_type==int8");
+    if (check_amx()) {
+      COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::amx_int8::GemmSKernelDynamicS4KBlock);
     } else {
-      packedw = computeDispatch<S8GemmKernel>(&s8kernel, Fp32Wei.data_ptr<float>(), transpose, n, k, blocksize, type);
+      COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock);
+    }
+  } else {
+    TORCH_CHECK(check_avx512f, "ISA must lagger than AVX_512F when compute_type==fp32");
+    if (bits == 4) {
+      if (check_amx()) {
+        COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4KBlock);
+      } else {
+        COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock);
+      }
+    } else {
+      if (check_amx()) {
+        COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS8KBlock);
+      } else {
+        COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock);
+      }
     }
   }
   auto tsize = packedw->getSerializedSize();
