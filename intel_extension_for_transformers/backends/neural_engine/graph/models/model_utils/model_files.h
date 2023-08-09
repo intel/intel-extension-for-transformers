@@ -210,6 +210,12 @@ struct model_file_loader {
     file.read_raw(&hparams.alibi_bias_max, sizeof(float));
     file.read_raw(&hparams.clip_qkv, sizeof(float));
     hparams.par_res = file.read_u32();
+
+    // for tokenizer
+    hparams.bos_token_id = file.read_u32();
+    hparams.eos_token_id = file.read_u32();
+    hparams.pad_token_id = file.read_u32();
+    hparams.sep_token_id = file.read_u32();
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
