@@ -37,7 +37,8 @@ def d_load_jsonl_file(file_path, process, max_length=378):
     documents = []
     paragraphs = []
     for sub in data:
-        sub['doc'].replace('#', " ")
+        if 'doc' in sub.keys():
+            sub['doc'].replace('#', " ")
         if not process:
             sub['doc'] = re.sub(r'\s+', ' ', sub['doc'])
             new_doc = Document(page_content=sub['doc'], metadata={"source": sub['doc_id']})
