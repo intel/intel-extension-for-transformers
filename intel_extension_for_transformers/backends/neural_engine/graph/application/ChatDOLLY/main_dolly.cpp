@@ -66,7 +66,7 @@ void sigint_handler(int signo) {
 
 int main(int argc, char** argv) {
   gpt_params params;
-  params.name = MODEL_FALCON;
+  params.name = MODEL_GPTNEOX;
   if (gpt_params_parse(argc, argv, params) == false) {
     return 1;
   }

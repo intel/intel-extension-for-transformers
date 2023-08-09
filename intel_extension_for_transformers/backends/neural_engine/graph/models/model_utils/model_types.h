@@ -64,7 +64,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER };
+enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON };
 
 static const size_t MB = 1024 * 1024;
 

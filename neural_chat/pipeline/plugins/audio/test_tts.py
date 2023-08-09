@@ -41,3 +41,5 @@ class TestTTS(unittest.TestCase):
         self.assertEqual(spk_embed.shape[0], 1)
         self.assertEqual(spk_embed.shape[1], 512)
 
+if __name__ == "__main__":
+    unittest.main()
