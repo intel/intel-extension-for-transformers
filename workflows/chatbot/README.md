@@ -36,24 +36,32 @@ We offer a rich demonstration of the capabilities of NeuralChat. It showcases a 
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers/workflows/chatbot
 ## Install Dependencies
-pip install langchain chromadb PyPDF2 python-docx farm-haystack InstructorEmbedding sentence_transformers accelerate intel_extension_for_pytorch
+pip install -r ./inference/requirements.txt
+pip install -r ./inference/document_indexing/requirements.txt
 ```
 
 #### Indexing
 ```python
-from inference.document_indexing.doc_index import d_load_jsonl_file, persist_embedding
+from inference.document_indexing.doc_index import d_load_file, persist_embedding
 from langchain.embeddings import HuggingFaceInstructEmbeddings
-documents = d_load_jsonl_file("/path/document_data.json", process=False)
+documents = d_load_file("/path/document.pdf", process=False)
 persist_embedding(documents, "./output", model_path="hkunlp/instructor-large")
 ```
 
 #### Inference
 ```python
 from transformers import set_seed
+from langchain.vectorstores import Chroma
 from inference.generate import create_prompts, load_model, predict
 set_seed(1234)
-instructions = "Transform the following sentence into one that shows contrast. The tree is rotten."
-prompts = create_prompts([{"instruction": instruction, "input": ""} for instruction in instructions])
+documents=[]
+instructions = "What is Intel's financial capital allocation strategy?"
+embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-large")
+vectordb = Chroma(persist_directory='./output', embedding_function=embeddings)
+retriever = vectordb.as_retriever(search_type = "mmr", search_kwargs = {"k": 1, "fetch_k": 5})
+docs = retriever.get_relevant_documents(instructions)
+documents.append(doc.page_content for doc in docs)
+prompts = create_prompts([{"instruction": instructions, "input": documents}])
 load_model("/path/llama-7b", "/path/llama-7b", "cpu", use_deepspeed=False)
 for idx, tp in enumerate(zip(prompts, instructions)):
     prompt, instruction = tp
@@ -61,6 +69,8 @@ for idx, tp in enumerate(zip(prompts, instructions)):
     out = predict(model_name="/path/llama-7b", device="cpu", prompt="Tell me about Intel Xeon.", temperature=0.1, top_p=0.75, top_k=40, repetition_penalty=1.1, num_beams=0, max_new_tokens=128, do_sample=True, use_hpu_graphs=False, use_cache=True, num_return_sequences=1) 
     print(f"whole sentence out = {out}")
 ```
+
+For more information please go to [inference](./inference/README.md)
 ### Disclaimer
 
-Please refer to [DISCLAIMER](./DISCLAIMER) for details. 
+Please refer to [DISCLAIMER](./DISCLAIMER.md) for details. 
