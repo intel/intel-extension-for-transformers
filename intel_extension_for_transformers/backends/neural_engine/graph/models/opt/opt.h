@@ -21,7 +21,7 @@
 // n_ctx = 2048
 // FFN activation = Relu
 // word_embed_proj_dim != n_embd needss two proj gemm (in decoder block  and out decoder block)
-enum mpt_model {
+enum opt_model {
   OPT_UNKNOWN,
   OPT_125M,    // layers = 12, n_embd = 768, n_head = 12, word_embed_proj_dim = 768
   OPT_350M,    // layers = 24, n_embd = 1024, n_head = 16, word_embed_proj_dim = 512
