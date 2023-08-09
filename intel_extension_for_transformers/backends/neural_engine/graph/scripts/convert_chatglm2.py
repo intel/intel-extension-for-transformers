@@ -155,13 +155,13 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     print(hparams)
 
-    vocab = load_vocab(Path("/home/zhenweil/models/chatglm2-6b/"))
+    
 
     # fout.write(struct.pack("i", 0x67676D6C))
     fout.write(b"ggjt"[::-1])
     fout.write(struct.pack("i", 1))
 
-    fout.write(struct.pack("i", vocab.vocab_size))
+    fout.write(struct.pack("i", hparams["padded_vocab_size"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["num_attention_heads"]))
@@ -182,11 +182,19 @@ def main(args_in: Optional[List[str]] = None) -> None:
     # fout.write(struct.pack("i", hparams["pad_token_id"]))
     # fout.write(struct.pack("i", hparams["sep_token_id"]))
 
-
+    vocab = load_vocab(Path("/home/zhenweil/models/chatglm2-6b/"))
+    counter = 0
     for text, score in vocab.all_tokens():
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
         fout.write(struct.pack("f", score))
+        counter += 1
+
+    while counter < hparams["padded_vocab_size"]:
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        fout.write(struct.pack("f", 0))
+        counter += 1
 
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
