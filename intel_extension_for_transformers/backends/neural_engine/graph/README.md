@@ -82,3 +82,4 @@ python gptj_binding.py
 
 ### Supported model
 Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama),[Dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b), [STARCODER](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj), [OPT](https://huggingface.co/docs/transformers/model_doc/opt).
+
