@@ -860,9 +860,9 @@ class WeightS4_FullRange_KBlock : public WeightS4_Clip_KBlock<_GemmCore_T, ISA_T
         if (bits == 4) *bf16scale = *bf16scale & 0xffff0000;
         float rscale = scale != 0.f ? 1.f / scale : 0.f;
         for (size_t ij = 0; ij < internal_blksize; ij++) {
-          auto quant_v = srcptr[(done_row + j + ij) * ld_src + col_offset] * rscale;
-          int8_t x = MIN(15, (int8_t)(quant_v + 8.5f)) << 4;
-          dstptr[(done_row + j + ij) * ld_dst + col_offset] = x * scale;
+          int8_t quant_v = srcptr[(done_row + j + ij) * ld_src + col_offset] * rscale;
+          // int8_t x = MIN(15, (int8_t)(quant_v + 8.5f));
+          dstptr[(done_row + j + ij) * ld_dst + col_offset] = quant_v * scale;
         }
       }
     };
@@ -1248,13 +1248,13 @@ using GemmSKernelDynamicS4FullRangeKBlock = jblas::wrapper::gemm_kblock::GemmInt
 }  // namespace avx512_vnni
 namespace amx_bf16 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
-using GemmKernelS8KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
-        jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
-        jblas::prologue::weight_comp::gemm::WeightS8_KBlock,
-        jblas::epilogue::gemm::AlphaBetaProcessFp32>,  // output fp32->fp32
-    DefaultParallel>;
+// using GemmKernelS8KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+//     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+//         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
+//         jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
+//         jblas::prologue::weight_comp::gemm::WeightS8_KBlock,
+//         jblas::epilogue::gemm::AlphaBetaProcessFp32>,  // output fp32->fp32
+//     DefaultParallel>;
 using GemmKernelS4ClipKBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,

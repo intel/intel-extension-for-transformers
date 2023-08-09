@@ -17,11 +17,11 @@ void quantweight_f32_linear_launcher(const torch::Tensor& activation, const torc
   int bits = quant_type == "s8" ? 8 : 4;
 
   auto s8_linear = [&] {
-    if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AMX_BF16_16x64) {
-      LINEAR_EXECUTE(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS8KBlock)
-    } else {
-      LINEAR_EXECUTE(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock)
-    }
+    // if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AMX_BF16_16x64) {
+    //   LINEAR_EXECUTE(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS8KBlock)
+    // } else {
+    LINEAR_EXECUTE(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock)
+    // }
   };
 
   BIT4_LINEAR(s4_clip_linear, jblas::wrapper::gemm_default::weight_comp::amx_int8::GemmSKernelDynamicS4ClipKBlock,

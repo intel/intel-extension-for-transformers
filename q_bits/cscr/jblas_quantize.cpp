@@ -1,6 +1,5 @@
 #include "jblas_quantize.hpp"
 #include <torch/script.h>
-
 bool check_amx() { return jblas::utils::parallel::CpuDevice::getInstance()->AMX_BF16(); }
 bool check_vnni() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX_VNNI(); }
 bool check_avx512f() { return jblas::utils::parallel::CpuDevice::getInstance()->AVX512F(); }
@@ -37,12 +36,12 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose, const
   auto process_s8_quantize = [&] {
     TORCH_CHECK(compute_type == "fp32", "compute_type must be fp32 when execute s8-linear.");
     TORCH_CHECK(check_avx512f(), "ISA must lagger than AVX_512F when compute_type==fp32");
-    if (check_amx()) {
-      jblas::utils::request_perm_xtile_data();
-      COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS8KBlock);
-    } else {
-      COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock);
-    }
+    // if (check_amx()) {
+    //   jblas::utils::request_perm_xtile_data();
+    //   COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS8KBlock);
+    // } else {
+    COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock);
+    // }
   };
 
   BIT4_QUANTIZE(process_s4_clip_quantize,
