@@ -21,16 +21,32 @@ from pydantic import BaseModel
 from typing import Dict, List, Optional
 from fastapi import APIRouter
 from neural_chat.cli.log import logger
-from neural_chat.server.restful.openai_protocal import (
+from neural_chat.server.restful.openai_protocol import (
     CompletionRequest, CompletionResponse, CompletionResponseChoice, 
     ChatCompletionRequest, ChatCompletionResponseChoice, ChatCompletionResponse, 
     UsageInfo, ModelCard, ModelList, ModelPermission, ChatMessage
 )
+from neural_chat.chatbot import NeuralChatBot
 
 
 # TODO: process request and return params in Dict
-def generate_params(request: CompletionRequest) -> Dict:
-    return {}
+def generate_params(request: CompletionRequest, chatbot: NeuralChatBot) -> Dict:
+    prompt = request.prompt
+    temperature = request.temperature
+    top_p = request.top_p
+    top_k = 1
+    repetition_penalty = request.presence_penalty
+    max_new_tokens = request.max_tokens
+    do_sample = True
+    num_beams = 1
+    num_return_sequences = 1
+    bad_words_ids = None
+    force_words_ids = None
+    use_hpu_graphs = chatbot.config.use_hpu_graphs
+    use_cache = True
+    return prompt, temperature, top_p, top_k, repetition_penalty, \
+            max_new_tokens, do_sample, num_beams, num_return_sequences, \
+            bad_words_ids, force_words_ids, use_hpu_graphs, use_cache
 
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
@@ -66,10 +82,10 @@ class TextChatAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, chatbot: Chatbot) -> None:
+    def set_chatbot(self, chatbot: NeuralChatBot) -> None:
         self.chatbot = chatbot
 
-    def get_chatbot(self) -> Chatbot:
+    def get_chatbot(self) -> NeuralChatBot:
         if self.chatbot is None:
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
@@ -93,7 +109,7 @@ class TextChatAPIRouter(APIRouter):
     # TODO: add log
     async def handle_completion_request(self, request:CompletionRequest) -> CompletionResponse:
         chatbot = self.get_chatbot()
-        params = generate_params(request)
+        params = generate_params(request, chatbot)
         if request.stream:
             # TODO: process stream chat completion
             inference_results = chatbot.predict_stream(params)
@@ -123,7 +139,7 @@ class TextChatAPIRouter(APIRouter):
     # TODO: add log
     async def handle_chat_completion_request(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
         chatbot = self.get_chatbot()
-        params = generate_params(request)
+        params = generate_params(request, chatbot)
         if request.stream:
             # TODO: process stream chat completion
             return ChatCompletionResponse()
@@ -132,7 +148,10 @@ class TextChatAPIRouter(APIRouter):
         chat_completions = []
         usage = UsageInfo()
         for i in range(request.n):
-            content = chatbot.predict(params)
+            if request.stream:
+                content = chatbot.predict_stream(params)
+            else:
+                content = chatbot.predict(params)
             chat_completions.append(content)
         try:
             all_tasks = await asyncio.gather(*chat_completions)
