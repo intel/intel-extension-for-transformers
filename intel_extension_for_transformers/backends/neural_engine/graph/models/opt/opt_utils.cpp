@@ -67,18 +67,18 @@ void OPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gp
   auto& hparams = model.hparams;
   n_ff = 4 * hparams.n_embd;
   hparams.n_ctx = n_ctx;
-  fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
-  fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);
-  fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);
-  fprintf(stderr, "%s: n_mult     = %u\n", __func__, hparams.n_mult);
-  fprintf(stderr, "%s: n_head     = %u\n", __func__, hparams.n_head);
-  fprintf(stderr, "%s: n_layer    = %u\n", __func__, hparams.n_layer);
-  fprintf(stderr, "%s: n_rot      = %u\n", __func__, hparams.n_rot);
-  fprintf(stderr, "%s: n_ff       = %u\n", __func__, n_ff);
-  fprintf(stderr, "%s: n_parts    = %zu\n", __func__, ml->file_loaders.size());
+  fprintf(stderr, "%s: n_vocab                  = %u\n", __func__, hparams.n_vocab);
+  fprintf(stderr, "%s: n_ctx                    = %u\n", __func__, hparams.n_ctx);
+  fprintf(stderr, "%s: n_embd                   = %u\n", __func__, hparams.n_embd);
+  fprintf(stderr, "%s: n_head                   = %u\n", __func__, hparams.n_head);
+  fprintf(stderr, "%s: n_layer                  = %u\n", __func__, hparams.n_layer);
+  fprintf(stderr, "%s: n_ff                     = %u\n", __func__, n_ff);
+  fprintf(stderr, "%s: n_parts                  = %zu\n", __func__, ml->file_loaders.size());
+  fprintf(stderr, "%s: word_embed_proj_dim      = %u\n", __func__, hparams.word_embed_proj_dim);
   n_embd = hparams.n_embd;
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
+  word_embed_proj_dim = hparams.word_embed_proj_dim;
   scratch = opt_mem_req(n_layer);
   model.scratchs = scratch;
 }
@@ -113,11 +113,14 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
 
   ml->ne_ctx = ctx;
 
-  model.others[0] = ml->get_tensor("model.decoder.embed_tokens.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[1] = ml->get_tensor("model.decoder.embed_positions.weight", {n_embd}, NE_BACKEND_CPU);
+  // OPT is set up so that if padding_idx is specified then offset the embedding ids by 2
+  // and adjust num_embeddings appropriately. Other models don't have this hack
+  uint32_t pos_offset = 2;
+  model.others[0] = ml->get_tensor("model.decoder.embed_tokens.weight", {word_embed_proj_dim, n_vocab}, NE_BACKEND_CPU);
+  model.others[1] = ml->get_tensor("model.decoder.embed_positions.weight", {n_embd, n_ctx + pos_offset}, NE_BACKEND_CPU);
   model.others[2] = ml->get_tensor("model.decoder.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
   model.others[3] = ml->get_tensor("model.decoder.final_layer_norm.bias", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[4] = ml->get_tensor("lm_head.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);//is true?
+  model.others[4] = ml->get_tensor("lm_head.weight", {word_embed_proj_dim, n_vocab}, NE_BACKEND_CPU);//is true?
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);
@@ -133,15 +136,15 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
     layer.norm[2] = ml->get_tensor(layers_i + ".final_layer_norm.weight", {n_embd}, backend);
     layer.norm[3] = ml->get_tensor(layers_i + ".final_layer_norm.bias", {n_embd}, backend);
   
-    // qkv GEMM
+    // qkv GEMM + out proj GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".self_attn.q_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.q_proj.bias", {n_embd, n_embd}, backend)
+    layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.q_proj.bias", {n_embd}, backend);
     layer.attn[2] = ml->get_tensor(layers_i + ".self_attn.k_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[3] = ml->get_tensor(layers_i + ".self_attn.k_proj.bias", {n_embd, n_embd}, backend)
+    layer.attn[3] = ml->get_tensor(layers_i + ".self_attn.k_proj.bias", {n_embd}, backend);
     layer.attn[4] = ml->get_tensor(layers_i + ".self_attn.v_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[5] = ml->get_tensor(layers_i + ".self_attn.k_proj.bias", {n_embd, n_embd}, backend)
+    layer.attn[5] = ml->get_tensor(layers_i + ".self_attn.k_proj.bias", {n_embd}, backend);
     layer.attn[6] = ml->get_tensor(layers_i + ".self_attn.out_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[7] = ml->get_tensor(layers_i + ".self_attn.out_proj.bias", {n_embd, n_embd}, backend);
+    layer.attn[7] = ml->get_tensor(layers_i + ".self_attn.out_proj.bias", {n_embd}, backend);
 
     // ffn GEMM
     layer.ffn[0] = ml->get_tensor(layers_i + ".fc1.weight", {n_embd, n_ff}, backend);
@@ -154,6 +157,8 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
                     ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
                     ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
                     ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
+                    ne_nbytes(layer.attn[4]) + ne_nbytes(layer.attn[5]) +
+                    ne_nbytes(layer.attn[6]) + ne_nbytes(layer.attn[7]) +
                     ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
                     ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
     }
