@@ -139,7 +139,6 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
     layer.norm[1] = ml->get_tensor(layers_i + ".self_attn_layer_norm.bias", {n_embd}, backend);
     layer.norm[2] = ml->get_tensor(layers_i + ".final_layer_norm.weight", {n_embd}, backend);
     layer.norm[3] = ml->get_tensor(layers_i + ".final_layer_norm.bias", {n_embd}, backend);
-  
     // qkv GEMM + out proj GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".self_attn.q_proj.weight", {n_embd, n_embd}, backend);
     layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.q_proj.bias", {n_embd}, backend);

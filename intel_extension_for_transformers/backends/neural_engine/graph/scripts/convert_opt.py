@@ -15,7 +15,13 @@
 #
 # Usage:
 #
+<<<<<<< HEAD
 #   python3 scripts/convert_opt.py args
+=======
+#   python3 models/convert-h5-to-ne.py
+#
+# This script is similar to "convert-pt-to-ne.py"
+>>>>>>> enable opt 1.3b cpp model
 #
 
 import io
