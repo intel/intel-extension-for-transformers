@@ -132,6 +132,11 @@ def parse_args():
         help="Whether to use jit trace. It should speed up generation.",
     )
     parser.add_argument(
+        "--ipex_int8",
+        action="store_true",
+        help="Whether to use int8 IPEX quantized model. It should speed up generation.",
+    )
+    parser.add_argument(
         "--seed",
         default=27,
         type=int,
@@ -304,6 +309,7 @@ def load_model(
     device="cpu",
     use_hpu_graphs=False,
     cpu_jit=False,
+    ipex_int8=False,
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
@@ -345,16 +351,24 @@ def load_model(
                 model_name, low_cpu_mem_usage=True
             )
     elif re.search("mpt", model_name, re.IGNORECASE):
-        from models.mpt.modeling_mpt import MPTForCausalLM
-
         with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = MPTForCausalLM.from_pretrained(
-                model_name,
-                trust_remote_code=True,
-                torch_dtype=torch.bfloat16,
-                low_cpu_mem_usage=True,
-                torchscript=cpu_jit,
-            )
+            if ipex_int8:
+                import intel_extension_for_pytorch
+                from optimum.intel.generation.modeling import TSModelForCausalLM
+                model = TSModelForCausalLM.from_pretrained(
+                    model_name,
+                    trust_remote_code=True,
+                    file_name="best_model.pt",
+                )
+            else:
+                from models.mpt.modeling_mpt import MPTForCausalLM
+                model = MPTForCausalLM.from_pretrained(
+                    model_name,
+                    trust_remote_code=True,
+                    torch_dtype=torch.bfloat16,
+                    low_cpu_mem_usage=True,
+                    torchscript=cpu_jit,
+                )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
@@ -427,23 +441,24 @@ def load_model(
             model = PeftModel.from_pretrained(model, peft_path)
             model = model.to(torch.bfloat16)
 
-        import intel_extension_for_pytorch as intel_ipex
+        if not ipex_int8:
+            import intel_extension_for_pytorch as intel_ipex
 
-        model = intel_ipex.optimize(
-            model.eval(),
-            dtype=torch.bfloat16,
-            inplace=True,
-            level="O1",
-            auto_kernel_selection=True,
-        )
-        if cpu_jit and re.search("mpt-7b", model_name, re.IGNORECASE):
-            from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
-
-            model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
-            model = MPTTSModelForCausalLM(
-                model, config, use_cache=use_cache, model_dtype=torch.bfloat16
+            model = intel_ipex.optimize(
+                model.eval(),
+                dtype=torch.bfloat16,
+                inplace=True,
+                level="O1",
+                auto_kernel_selection=True,
             )
+            if cpu_jit and re.search("mpt-7b", model_name, re.IGNORECASE):
+                from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
+
+                model = jit_trace_mpt_7b(model)
+                config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+                model = MPTTSModelForCausalLM(
+                    model, config, use_cache=use_cache, model_dtype=torch.bfloat16
+                )
 
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
@@ -451,6 +466,14 @@ def load_model(
     if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
+
+    # warmup for int8 model
+    if ipex_int8:
+        input_ids = tokenizer("A chat between a curious human and an artificial intelligence assistant.\n"
+                              " Human: Tell me about Intel.\n Assistant:", return_tensors="pt").input_ids.to('cpu')
+        with torch.inference_mode(), torch.no_grad():
+            for i in range(2):
+                model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9, num_beams=4)
 
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
@@ -485,6 +508,7 @@ def predict_stream(**params):
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
         `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -513,6 +537,7 @@ def predict_stream(**params):
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
     prompt = params["prompt"]
+    ipex_int8=params["ipex_int8"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
 
@@ -549,24 +574,27 @@ def predict_stream(**params):
 
         def generate_output():
             with torch.no_grad():
-                with torch.cpu.amp.autocast(
-                    enabled=True, dtype=torch.bfloat16, cache_enabled=True
-                ):
-                    generation_kwargs = dict(
-                        streamer=streamer,
-                        generation_config=generation_config,
-                        return_dict_in_generate=True,
-                    )
-                    generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
-                        [
-                            StopOnTokens(
-                                min_length=max(max_new_tokens - 20, 0),
-                                start_length=input_token_len,
-                                stop_token_id=stop_token_ids,
-                            )
-                        ]
-                    )
+                generation_kwargs = dict(
+                    streamer=streamer,
+                    generation_config=generation_config,
+                    return_dict_in_generate=True,
+                )
+                generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
+                    [
+                        StopOnTokens(
+                            min_length=max(max_new_tokens - 20, 0),
+                            start_length=input_token_len,
+                            stop_token_id=stop_token_ids,
+                        )
+                    ]
+                )
+                if ipex_int8:
                     return model.generate(**input_tokens, **generation_kwargs)
+                else:
+                    with torch.cpu.amp.autocast(
+                        enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                    ):
+                        return model.generate(**input_tokens, **generation_kwargs)
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -697,6 +725,7 @@ def predict(**params):
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
         `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -724,6 +753,7 @@ def predict(**params):
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else False
     prompt = params["prompt"]
+    ipex_int8=params["ipex_int8"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
     if num_beams == 0:
@@ -755,22 +785,25 @@ def predict(**params):
         )
 
         with torch.no_grad():
-            with torch.cpu.amp.autocast(
-                enabled=True, dtype=torch.bfloat16, cache_enabled=True
-            ):
-                generation_kwargs = dict(
-                    generation_config=generation_config, return_dict_in_generate=True
-                )
-                generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
-                    [
-                        StopOnTokens(
-                            min_length=max(max_new_tokens - 20, 0),
-                            start_length=input_token_len,
-                            stop_token_id=stop_token_ids,
-                        )
-                    ]
-                )
+            generation_kwargs = dict(
+                generation_config=generation_config, return_dict_in_generate=True
+            )
+            generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
+                [
+                    StopOnTokens(
+                        min_length=max(max_new_tokens - 20, 0),
+                        start_length=input_token_len,
+                        stop_token_id=stop_token_ids,
+                    )
+                ]
+            )
+            if ipex_int8:
                 generation_output = model.generate(**input_tokens, **generation_kwargs)
+            else:
+                with torch.cpu.amp.autocast(
+                    enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                ):
+                    generation_output = model.generate(**input_tokens, **generation_kwargs)
     elif device == "hpu":
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
@@ -889,6 +922,7 @@ def main():
         device="hpu" if args.habana else "cpu",
         use_hpu_graphs=args.use_hpu_graphs,
         cpu_jit=args.jit,
+        ipex_int8=args.ipex_int8,
         use_cache=args.use_kv_cache,
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
@@ -918,6 +952,7 @@ def main():
         use_hpu_graphs=args.use_hpu_graphs,
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
+        ipex_int8=args.ipex_int8,
     ):
         if args.local_rank in [-1, 0]:
             print(new_text, end="", flush=True)
@@ -944,6 +979,7 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            ipex_int8=args.ipex_int8,
         ):
             if args.local_rank in [-1, 0]:
                 print(new_text, end="", flush=True)
@@ -973,6 +1009,7 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            ipex_int8=args.ipex_int8,
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
