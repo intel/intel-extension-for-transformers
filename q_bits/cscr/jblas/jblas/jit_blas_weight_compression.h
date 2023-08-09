@@ -1184,7 +1184,7 @@ using GemmSKernelDynamicS4KBlock = jblas::wrapper::gemm_kblock::GemmInterfaceKBl
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
         jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_KBlock,
-        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+        jblas::epilogue::gemm::AlphaBetaProcessFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
 }  // namespace avx512_vnni

@@ -51,24 +51,26 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose, int64
   jblas::prologue::PackedWeight* packedw = NULL;
   auto type = NE_FTYPE_MAP[std::make_tuple(bits, alg, scale_dtype)];
   if (compute_type == "int8") {
-    type = CompType::S4_F32;
     TORCH_CHECK(check_amx() || check_vnni(), "ISA must lagger than AVX_VNNI when compute_type==int8");
     TORCH_CHECK(bits == 4, "quantization bits must be 4 when compute_type==int8");
     if (check_amx()) {
+      jblas::utils::request_perm_xtile_data();
       COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::amx_int8::GemmSKernelDynamicS4KBlock);
     } else {
-      COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock);
+      COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmSKernelDynamicS4KBlock);
     }
   } else {
     TORCH_CHECK(check_avx512f, "ISA must lagger than AVX_512F when compute_type==fp32");
     if (bits == 4) {
       if (check_amx()) {
+        jblas::utils::request_perm_xtile_data();
         COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4KBlock);
       } else {
         COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock);
       }
     } else {
       if (check_amx()) {
+        jblas::utils::request_perm_xtile_data();
         COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS8KBlock);
       } else {
         COMPUTE_DICPATCH(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock);
