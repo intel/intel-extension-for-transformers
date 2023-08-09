@@ -20,28 +20,33 @@ from fastapi import APIRouter
 from neural_chat.cli.log import logger
 from neural_chat.server.restful.request import VoiceRequest, TextRequest
 from neural_chat.server.restful.response import VoiceResponse, TextResponse
+from neural_chat.chatbot import NeuralChatBot
 
 
 class VoiceChatAPIRouter(APIRouter):
 
     def __init__(self) -> None:
         super().__init__()
-        self.voice_bot = None
+        self.chatbot = None
 
-    def set_voice_bot(self, voice_bot: Voicebot) -> None:
-        self.voice_bot = voice_bot
+    def set_chatbot(self, chatbot: NeuralChatBot) -> None:
+        self.chatbot = chatbot
 
-    def get_voice_bot(self) -> Voicebot:
-        if self.voice_bot is None:
+    def get_chatbot(self) -> NeuralChatBot:
+        if self.chatbot is None:
             raise RuntimeError("Chatbot instance has not been set.")
-        return self.voice_bot
+        return self.chatbot
     
     async def handle_voice2text_request(self, request: VoiceRequest) -> TextResponse:
         # TODO: implement voice to text
+        chatbot = self.get_chatbot()
+        # TODO: chatbot.voice2text()
         return TextResponse(content=None)
     
     async def handle_text2voice_request(self, request: TextRequest) -> VoiceResponse:
         # TODO: implement text to voice
+        chatbot = self.get_chatbot()
+        # TODO: chatbot.text2voice()
         return VoiceResponse(content=None)
     
 
