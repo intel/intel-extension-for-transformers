@@ -22,67 +22,119 @@ import numpy as np
 from transformers import TrainingArguments
 from transformers.utils.versions import require_version
 
+
 @dataclass
 class ModelArguments:
     """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
+    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
     """
 
-    model_name_or_path: str = field(
-        metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
+    model_name_or_path: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "The model checkpoint for weights initialization."
+            "Don't set if you want to train a model from scratch."
+        },
     )
     config_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained config name or path if not the same as model_name"
+        },
     )
     tokenizer_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained tokenizer name or path if not the same as model_name"
+        },
     )
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={"help": "Where to store the pretrained models downloaded from huggingface.co"},
+        metadata={
+            "help": "Where do you want to store the pretrained models downloaded from huggingface.co"
+        },
     )
     use_fast_tokenizer: bool = field(
         default=True,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+        metadata={
+            "help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."
+        },
     )
     model_revision: str = field(
         default="main",
-        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+        metadata={
+            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
+        },
     )
     use_auth_token: bool = field(
         default=False,
         metadata={
-            "help": (
-                "Will use the token generated when running `huggingface-cli login` (necessary to use this script "
-                "with private models)."
-            )
+            "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
+            "with private models)."
+        },
+    )
+    trust_remote_code: bool = field(
+        default=False,
+        metadata={
+            "help": "should enable when using custom model architecture that is not yet part of the Hugging Face transformers package like MPT)."
         },
     )
 
+
 @dataclass
-class DataTrainingArguments:
+class DataArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and eval.
     """
 
     dataset_name: Optional[str] = field(
-        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={"help": "The name of the dataset to use (via the datasets library)."},
     )
     dataset_config_name: Optional[str] = field(
-        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+        default=None,
+        metadata={
+            "help": "The configuration name of the dataset to use (via the datasets library)."
+        },
     )
-    train_file: Optional[str] = field(default=None, metadata={"help": "The input training data file (a text file)."})
+    train_file: Optional[str] = field(
+        default=None, metadata={"help": "The input training data file (a text file)."}
+    )
     validation_file: Optional[str] = field(
         default=None,
-        metadata={"help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."},
+        metadata={
+            "help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."
+        },
+    )
+    max_seq_length: Optional[int] = field(
+        default=512,
+        metadata={
+            "help": "The maximum total input sequence length after tokenization. Sequences longer "
+            "than this will be truncated."
+        },
+    )
+    validation_split_percentage: Optional[int] = field(
+        default=0,
+        metadata={
+            "help": "The percentage of the train set used as validation set in case there's no validation split"
+        },
+    )
+    overwrite_cache: bool = field(
+        default=False,
+        metadata={"help": "Overwrite the cached preprocessed datasets or not."},
+    )
+    pad_to_max_length: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to pad all samples to `max_seq_length`. "
+            "If False, will pad the samples dynamically when batching to the maximum length in the batch."
+        },
     )
     max_train_samples: Optional[int] = field(
         default=None,
         metadata={
-            "help": (
-                "For debugging purposes or quicker training, truncate the number of training examples to this "
-                "value if set."
-            )
+            "help": "For debugging purposes or quicker training, truncate the number of training examples to this "
+            "value if set."
         },
     )
     max_eval_samples: Optional[int] = field(
@@ -92,7 +144,34 @@ class DataTrainingArguments:
             "value if set."
         },
     )
-
+    keep_in_memory: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to keep in memory the loaded dataset. Defaults to False."
+        },
+    )
+    dataset_seed: int = field(
+        default=42,
+        metadata={
+            "help": "Seed to use in dataset processing, different seeds might yield different datasets. This seed and the seed in training arguments are not related"
+        },
+    )
+    dataset_cache_directory: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Path to directory where the processed dataset will be saved. If path exists, try to load processed dataset from this path."
+        },
+    )
+    dataset_concatenation: Optional[bool] = field(
+        default=False,
+        metadata={
+            "help": "Whether to concatenate the sentence for more efficient training."
+        },
+    )
+    special_tokens: Optional[List[str]] = field(
+        default=None,
+        metadata={"help": "The list of special tokens to add in tokenizer."}
+    )
     max_source_length: Optional[int] = field(
         default=512,
         metadata={
@@ -111,17 +190,7 @@ class DataTrainingArguments:
             )
         },
     )
-
     streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
-    overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
-    )
-    validation_split_percentage: Optional[int] = field(
-        default=1,
-        metadata={
-            "help": "The percentage of the train set used as validation set in case there's no validation split"
-        },
-    )
     preprocessing_num_workers: Optional[int] = field(
         default=None,
         metadata={"help": "The number of processes to use for the preprocessing."},
@@ -140,55 +209,81 @@ class DataTrainingArguments:
                 extension = self.validation_file.split(".")[-1]
                 assert extension in ["csv", "json", "txt"], "`validation_file` should be a csv, a json or a txt file."
 
+
 @dataclass
-class FinetuneArguments:
+class FinetuningArguments:
     """
-    Arguments finetuning with lora config.
+    Arguments of finetune we are going to apply on the model.
     """
+
     lora_rank: int = field(
         default=8,
-        metadata={
-            "help": "Rank parameter in the LoRA method."
-        },
+        metadata={"help": "Rank parameter in the LoRA method."},
     )
     lora_alpha: int = field(
-        default=32,
-        metadata={
-            "help": "Alpha parameter in the LoRA method."
-        },
+        default=16,
+        metadata={"help": "Alpha parameter in the LoRA method."},
     )
     lora_dropout: float = field(
-        default=0.1,
-        metadata={
-            "help": "Dropout parameter in the LoRA method."
-        },
+        default=0.05,
+        metadata={"help": "Dropout parameter in the LoRA method."},
     )
     lora_target_modules: List[str] = field(
-        default_factory=lambda: ["q", "v"],
+        default_factory=lambda: None,
+        metadata={"help": "Target modules for the LoRA method."},
+    )
+    adapter_layers: int = field(
+        default=30,
+        metadata={"help": "adapter layer number in the LLaMA-adapter."},
+    )
+    adapter_len: int = field(
+        default=10,
         metadata={
-            "help": "Target modules for the LoRA method."
+            "help": "The length of the adaption prompt to insert in the LLaMA-adapter."
         },
+    )
+    num_virtual_tokens: int = field(
+        default=10,
+        metadata={
+            "help": "The length of the vitrual tokens to insert in P-tuning/Prompt-tuning/Prefix-tuning"
+        },
+    )
+    ptun_hidden_size: int = field(
+        default=1024,
+        metadata={"help": "The encoder hidden size in P-tuning"},
     )
     peft: Optional[str] = field(
         default="lora",
         metadata={
-            "help": (
-                "apply peft. default set to lora"
-            ),
-            "choices": ["lora"],
+            "help": ("apply peft. default set to lora"),
+            "choices": ["llama_adapter", "lora", "ptun", "prefix", "prompt"],
         },
     )
+    train_on_inputs: bool = field(
+        default=False,
+        metadata={"help": "if False, masks out inputs in loss"},
+    )
+    device: str = field(
+        default="cpu",
+        metadata={
+            "help": "What device to use for finetuning.",
+            "choices": ["cpu", "cuda", "habana"],
+        },
+    )
+
 
 class FinetuningConfig:
     def __init__(self,
                  model_args: ModelArguments,
-                 data_args: DataTrainingArguments,
+                 data_args: DataArguments,
                  training_args: TrainingArguments,
-                 finetune_args: FinetuneArguments):
+                 finetune_args: FinetuningArguments
+    ):
         self.model_args = model_args
         self.data_args = data_args
         self.training_args = training_args
         self.finetune_args = finetune_args
+
 
 class OptimizationConfig:
     def __init__(self,
