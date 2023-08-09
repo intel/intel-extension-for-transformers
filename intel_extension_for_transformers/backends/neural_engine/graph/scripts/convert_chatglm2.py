@@ -202,6 +202,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
         print("Processing variable: " + name + " with shape: ", data.shape)
+        if 'inv_freq' in name:
+            continue
 
         n_dims = len(data.shape)
 
