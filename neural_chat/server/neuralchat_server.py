@@ -5,6 +5,7 @@ from typing import List
 
 import uvicorn
 import yaml
+import logging
 from yacs.config import CfgNode
 from fastapi import FastAPI
 from fastapi import APIRouter
@@ -15,6 +16,8 @@ from .base_commands import cli_server_register
 
 from neural_chat.cli.log import logger
 from .restful.api import setup_router
+from neural_chat.config import NeuralChatConfig
+from neural_chat.chatbot import NeuralChatBot
 
 
 __all__ = ['NeuralChatServerExecutor']
@@ -66,6 +69,9 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             action="store",
             help="log file",
             default="./log/neuralchat.log")
+        config = NeuralChatConfig()
+        chatbot = NeuralChatBot(config)
+        chatbot.build_chatbot()
 
     def init(self, config):
         """System initialization.
@@ -74,7 +80,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             config (CfgNode): config object
 
         Returns:
-            bool: 
+            bool:
         """
         # init api
         api_list = list(task.split("_")[0] for task in config.tasks_list)
@@ -82,6 +88,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         app.include_router(api_router)
 
         return True
+
 
     def execute(self, argv: List[str]) -> bool:
         args = self.parser.parse_args(argv)
@@ -100,4 +107,5 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         """
         config = get_config(config_file)
         if self.init(config):
+            logging.basicConfig(filename=log_file, level=logging.INFO)
             uvicorn.run(app, host=config.host, port=config.port)
