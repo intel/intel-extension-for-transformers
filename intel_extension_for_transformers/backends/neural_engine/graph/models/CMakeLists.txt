@@ -18,6 +18,7 @@ add_subdirectory(gptj)
 add_subdirectory(mpt)
 add_subdirectory(gptneox)
 add_subdirectory(starcoder)
+add_subdirectory(falcon)
 add_subdirectory(opt)
 add_subdirectory(falcon)
 
