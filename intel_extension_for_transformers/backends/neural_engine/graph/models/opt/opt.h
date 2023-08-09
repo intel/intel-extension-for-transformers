@@ -18,15 +18,36 @@
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
 
-enum gptneox_model {
+// n_ctx = 2048
+// FFN activation = Relu
+// word_embed_proj_dim != n_embd needss two proj gemm (in decoder block  and out decoder block)
+enum mpt_model {
   OPT_UNKNOWN,
-  OPT_1B,
+  OPT_125M,    // layers = 12, n_embd = 768, n_head = 12, word_embed_proj_dim = 768
+  OPT_350M,    // layers = 24, n_embd = 1024, n_head = 16, word_embed_proj_dim = 512
+  OPT_1DOT3B,  // layers = 24, n_embd = 2048, n_head = 32, word_embed_proj_dim = 2048
+  OPT_2DOT7B,  // layers = 32, n_embd = 2560, n_head = 32, word_embed_proj_dim = 2560
+  OPT_6DOT7B,  // layers = 32, n_embd = 4096, n_head = 32, word_embed_proj_dim = 4096
+  OPT_13B,     // layers = 40, n_embd = 5120, n_head = 40, word_embed_proj_dim = 5120
+  OPT_30B,     // layers = 48, n_embd = 7168, n_head = 56, word_embed_proj_dim = 7168
+  OPT_66B,     // layers = 64, n_embd = 9216, n_head = 72, word_embed_proj_dim = 9216
 };
 
-static const model_scratch OPT_mem_req(int n_layers) {
+// TODO naive memory buffer size
+static const model_scratch opt_mem_req(int n_layers) {
   switch (n_layers) {
-    case 24:
-      return {512ull * MB, 512ull * MB, 1024ull * MB, 768ull * MB};//is right?
+    case 12:  // OPT_125M
+      return {512ull * MB, 512ull * MB, 1024ull * MB, 768ull * MB};
+    case 24:  // OPT_350M, OPT_1DOT3B
+      return {1024ull * MB, 1024ull * MB, 2048ull * MB, 1536ull * MB};
+    case 32:  // OPT_2DOT7B OPT_6DOT7B
+      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
+    case 40:
+      return {2560ull * MB, 2560ull * MB, 5120ull * MB, 3840ull * MB};
+    case 48:
+      return {3072ull * MB, 3072ull * MB, 6144ull * MB, 4608ull * MB};
+    case 64:
+      return {4096ull * MB, 4096ull * MB, 8192ull * MB, 6144ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
