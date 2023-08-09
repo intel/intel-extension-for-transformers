@@ -15,6 +15,42 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
+from typing import Optional, Dict
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
+
+
+class RequestBaseModel(BaseModel):
+    class Config:
+        # Forbid any extra fields in the request to avoid silent failures
+        extra = Extra.forbid
+
+
+class RetrievalRequest(RequestBaseModel):
+    query: str
+    domain: str
+    blob: Optional[str]
+    filename: Optional[str]
+    embedding: Optional[str] = 'dense'
+    params: Optional[Dict] = None
+    debug: Optional[bool] = False
+
+
+class Text2ImageRequest(RequestBaseModel):
+    prompt: str
+    steps: Optional[int] = 25
+    seed: Optional[int] = 42
+    guidance_scale: Optional[int] = 7.5
+    sd_inference_token: Optional[str] = None
+
+
+class VoiceRequest(RequestBaseModel):
+    voice: str
+
+
+class TextRequest(RequestBaseModel):
+    text: str
+
+
+class FinetuneRequest(RequestBaseModel):
+    content: str

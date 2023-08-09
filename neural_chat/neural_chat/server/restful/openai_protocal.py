@@ -20,9 +20,7 @@ Code source from FastChat's OpenAI protocol: https://github.com/lm-sys/FastChat/
 """
 
 from typing import Literal, Optional, List, Dict, Any, Union
-
 import time
-
 import shortuuid
 from pydantic import BaseModel, Field
 

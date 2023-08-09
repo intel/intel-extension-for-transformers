@@ -15,7 +15,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+import shortuuid
 from typing import List
+from PIL import Image
+from pydantic import BaseModel, Field
+from fastapi.responses import StreamingResponse
 
-from pydantic import BaseModel
 
+class ResponseBaseModel(BaseModel):
+    id: str = Field(default_factory=lambda: f"chatcmpl-{shortuuid.random()}")
+    created: int = Field(default_factory=lambda: int(time.time()))
+
+
+class ImageResponse(ResponseBaseModel):
+    image: Image
+
+
+class TextResponse(ResponseBaseModel):
+    content: str
+
+
+class VoiceResponse(ResponseBaseModel):
+    voice: str
+
+
+class RetrievalResponse(ResponseBaseModel):
+    content: StreamingResponse
+
+
+class FinetuneResponse(ResponseBaseModel):
+    content: str
