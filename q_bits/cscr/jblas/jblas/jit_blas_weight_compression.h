@@ -812,35 +812,63 @@ class WeightS4_Clip_KBlock : public WeightBit4_KBlock<_GemmCore_T, ISA_T> {
 
   void DecompressKblockF32DstF32Scale(utils::bit4x2* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
                                       float* scales, int k_offset, int kblock, int NPad) override {
-    kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, float>(
+    kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, float, S4_TYPE>(
         reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
   }
 
   void DecompressKblockF32DstBf16Scale(utils::bit4x2* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
                                        utils::bf16* scales, int k_offset, int kblock, int NPad) override {
-    kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, utils::bf16>(
+    kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, utils::bf16, S4_TYPE>(
         reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
   }
 
   void DecompressKblockBf16DstF32Scale(utils::bit4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
                                        int ld_dst, float* scales, int k_offset, int kblock, int NPad) override {
-    kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, float>(
+    kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, float, S4_TYPE>(
         reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
   }
 
   void DecompressKblockBf16DstBf16Scale(utils::bit4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
                                         int ld_dst, utils::bf16* scales, int k_offset, int kblock, int NPad) override {
-    kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, utils::bf16>(
+    kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, utils::bf16, S4_TYPE>(
         reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
   }
+
+ private:
+  static const JBLAS_S4_TYPE S4_TYPE = S4_CLIP;
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class WeightS4_FullRange_KBlock : public WeightS4_Clip_KBlock<_GemmCore_T, ISA_T> {
+  static const JBLAS_S4_TYPE S4_TYPE = S4_FULLRANGE;
   void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst, float* scales,
                      int blocksize) override {
     kernel::wrapper::QuantizeS4FullRangeRowBlock::forward<ISA_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
                                                                  blocksize);
+  }
+
+  void DecompressKblockF32DstF32Scale(utils::bit4x2* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+                                      float* scales, int k_offset, int kblock, int NPad) override {
+    kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, float, S4_TYPE>(
+        reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+  }
+
+  void DecompressKblockF32DstBf16Scale(utils::bit4x2* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+                                       utils::bf16* scales, int k_offset, int kblock, int NPad) override {
+    kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, utils::bf16, S4_TYPE>(
+        reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+  }
+
+  void DecompressKblockBf16DstF32Scale(utils::bit4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
+                                       int ld_dst, float* scales, int k_offset, int kblock, int NPad) override {
+    kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, float, S4_TYPE>(
+        reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+  }
+
+  void DecompressKblockBf16DstBf16Scale(utils::bit4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
+                                        int ld_dst, utils::bf16* scales, int k_offset, int kblock, int NPad) override {
+    kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, utils::bf16, S4_TYPE>(
+        reinterpret_cast<utils::int4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
   }
 
   void fp32_qdq(int bits, float* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
@@ -860,9 +888,9 @@ class WeightS4_FullRange_KBlock : public WeightS4_Clip_KBlock<_GemmCore_T, ISA_T
         if (bits == 4) *bf16scale = *bf16scale & 0xffff0000;
         float rscale = scale != 0.f ? 1.f / scale : 0.f;
         for (size_t ij = 0; ij < internal_blksize; ij++) {
-          int8_t quant_v = srcptr[(done_row + j + ij) * ld_src + col_offset] * rscale;
-          // int8_t x = MIN(15, (int8_t)(quant_v + 8.5f));
-          dstptr[(done_row + j + ij) * ld_dst + col_offset] = quant_v * scale;
+          auto quant_v = srcptr[(done_row + j + ij) * ld_src + col_offset] * rscale;
+          int8_t x = MIN(15, (int8_t)(quant_v + 8.5f));
+          dstptr[(done_row + j + ij) * ld_dst + col_offset] = (x - 8) * scale;
         }
       }
     };

@@ -197,12 +197,13 @@ class AccumulateDequantizeS32F32 {
 template <typename _DST_T>
 class DecompressKBlockS4FP {
  public:
-  template <JBLAS_ISA ISA_T, typename _T>
+  template <JBLAS_ISA ISA_T, typename _T, JBLAS_S4_TYPE S4_T>
   static inline JBLAS_CODE forward(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
                                    _T* scales, int k_offset, int kblock, int NPad) {
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return avx512f::decompress_kblock_s4_fp(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+      return avx512f::decompress_kblock_s4_fp<_T, _DST_T, S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
+                                                                k_offset, kblock, NPad);
     }
 #endif
     return ref::decompress_kblock_s4_fp(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);

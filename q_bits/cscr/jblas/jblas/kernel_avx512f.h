@@ -39,13 +39,19 @@ static inline __m512i unpack_4bits(__m256i v4bits, __m512i vmask) {
   return zmm1;
 }
 
+template <JBLAS_S4_TYPE S4_T>
 static inline void convert_s4_s8(int8_t* dstptr, int8_t* srcptr, __m512i vmask, int LoadMask) {
   auto ymm = _mm256_maskz_loadu_epi32(LoadMask, (const __m256i*)(srcptr));
   auto zmm = unpack_4bits(ymm, vmask);
+  if (S4_T == S4_FULLRANGE) {
+    zmm = _mm512_srli_epi32(zmm, 4);
+    auto s8 = _mm512_set1_epi8(8);
+    zmm = _mm512_sub_epi8(zmm, s8);
+  }
   _mm512_mask_storeu_epi64(dstptr, LoadMask, zmm);
 }
 
-constexpr void (*pad_fp4)(int8_t* dstptr, int8_t* srcptr, __m512i vmask, int) = &convert_s4_s8;
+constexpr void (*pad_fp4)(int8_t* dstptr, int8_t* srcptr, __m512i vmask, int) = &convert_s4_s8<S4_CLIP>;
 
 template <int N, typename _DST_T>
 static inline void dequant_s8_N(_DST_T* dstptr, int8_t* srcptr, __m512* vscales) {
@@ -367,15 +373,15 @@ static inline JBLAS_CODE decompress_kblock_bit4_bf16(utils::bit4x2* srcptr, util
   return JblasNotSupport;
 }
 
-template <typename _ST, typename _DST_T>
+template <typename _ST, typename _DST_T, JBLAS_S4_TYPE S4_T>
 static inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src,
                                                  int ld_dst, _ST* scales, int k_offset, int kblock, int NPad) {
   if (std::is_same<_DST_T, float>::value) {
     return decompress_kblock_bit4_fp32<_ST>(srcptr, (float*)dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock,
-                                            NPad, &dequant_s8_N<48, float>, &convert_s4_s8);
+                                            NPad, &dequant_s8_N<48, float>, &convert_s4_s8<S4_T>);
   } else if (std::is_same<_DST_T, utils::bf16>::value) {
     return decompress_kblock_bit4_bf16<_ST>(srcptr, (utils::bf16*)dstptr, row, col, ld_src, ld_dst, scales, k_offset,
-                                            kblock, NPad, &dequant_s8_N<64, utils::bf16>, &convert_s4_s8);
+                                            kblock, NPad, &dequant_s8_N<64, utils::bf16>, &convert_s4_s8<S4_T>);
   }
   return JblasNotSupport;
 }
@@ -404,14 +410,14 @@ static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr,
     size_t i = 0;
     constexpr int LoadMask64 = (1 << (64 / 8)) - 1;
     for (; i < ele256; i += 256) {
-      convert_s4_s8(dstptr + i + 0, (int8_t*)(srcptr + i / 2 + 0), zmm_mask, LoadMask64);
-      convert_s4_s8(dstptr + i + 64, (int8_t*)(srcptr + i / 2 + 32), zmm_mask, LoadMask64);
-      convert_s4_s8(dstptr + i + 128, (int8_t*)(srcptr + i / 2 + 64), zmm_mask, LoadMask64);
-      convert_s4_s8(dstptr + i + 192, (int8_t*)(srcptr + i / 2 + 96), zmm_mask, LoadMask64);
+      convert_s4_s8<S4_CLIP>(dstptr + i + 0, (int8_t*)(srcptr + i / 2 + 0), zmm_mask, LoadMask64);
+      convert_s4_s8<S4_CLIP>(dstptr + i + 64, (int8_t*)(srcptr + i / 2 + 32), zmm_mask, LoadMask64);
+      convert_s4_s8<S4_CLIP>(dstptr + i + 128, (int8_t*)(srcptr + i / 2 + 64), zmm_mask, LoadMask64);
+      convert_s4_s8<S4_CLIP>(dstptr + i + 192, (int8_t*)(srcptr + i / 2 + 96), zmm_mask, LoadMask64);
     }
     if (i + 64 <= ele64) {
       for (; i < ele64; i += 64) {
-        convert_s4_s8(dstptr + i, (int8_t*)(srcptr + i / 2), zmm_mask, LoadMask64);
+        convert_s4_s8<S4_CLIP>(dstptr + i, (int8_t*)(srcptr + i / 2), zmm_mask, LoadMask64);
       }
     }
     for (; i < elesize; i += 2) {

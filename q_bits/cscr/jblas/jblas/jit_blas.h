@@ -66,6 +66,11 @@ enum JBLAS_F4_TYPE {
   NF4,
 };
 
+enum JBLAS_S4_TYPE {
+  S4_CLIP,
+  S4_FULLRANGE,
+};
+
 void jblas_sgemm(const JBLAS_LAYOUT Layout, const JBLAS_TRANSPOSE TransA, const JBLAS_TRANSPOSE TransB, const int M,
                  const int N, const int K, const float alpha, const float* A, const int lda, const float* B,
                  const int ldb, float* C, const int ldc, const float beta, const float* D, const int ldd);
