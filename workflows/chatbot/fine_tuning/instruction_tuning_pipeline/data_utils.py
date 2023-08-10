@@ -232,9 +232,8 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
 
     if finetune_args.task == "chat":
         new_datasets = datasets.DatasetDict()
-        for key in ["train_ift", "train"]:
-            prompts = create_chat(raw_datasets[key])
-            new_datasets["train"] = datasets.Dataset.from_dict(prompts)
+        prompts = create_chat(raw_datasets["train_ift"])
+        new_datasets["train"] = datasets.Dataset.from_dict(prompts)
 
         preprocess_fn = tokenize_chat(tokenizer, data_args, finetune_args)
 

@@ -121,6 +121,10 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
 5. Code Generation: To enhance code performance of LLMs (Large Language Models), we use the [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1). The `data format` and `template` is same with `Instruction data format` and `Instruction template`.
 
+
+**note:** for more details about the dataset preprocessing and custom dataset, please refer `instruction_tuning_pipeline/data_utils.py`
+
+
 # Finetune
 
 We employ the [LoRA approach](https://arxiv.org/pdf/2106.09685.pdf) to finetune the LLM efficiently, currently, FLAN-T5 and LLaMA are supported for finetuning.
@@ -238,7 +242,7 @@ python finetune_clm.py \
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "meta-llama/Llama-2-7b" \
+        --model_name_or_path "meta-llama/Llama-2-7b-hf" \
         --bf16 True \
         --dataset_name "theblackcat102/evol-codealpaca-v1" \
         --task instruction \
