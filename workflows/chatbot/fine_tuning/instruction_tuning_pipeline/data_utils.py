@@ -144,7 +144,7 @@ def tokenize_oasst(tokenizer, data_args, finetune_args):
                     max_input)
 
             if len(truncated_convs) == 0:
-                truncated_convs = [convs_tokens[-1][:max_input - 1] + convs_tokens[-1][-1:]]
+                truncated_convs = [convs_tokens[-1][:max_input - 3] + convs_tokens[-1][-3:]]
 
             prompt_tokens = [header_tokens] + truncated_convs + [assistant_tokens]
             prompt_ids = [tokenizer.convert_tokens_to_ids(prompt_token) for prompt_token in prompt_tokens]
