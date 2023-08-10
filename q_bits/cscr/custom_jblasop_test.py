@@ -30,7 +30,7 @@ def test(m,n,k,blocksize,compute_type,quant_type,transpose,dump_tensor_info=Fals
     quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(raw_wei,transpose,"sym",blocksize,compute_type,quant_type);
     torch.ops.weight_only_jblasop.jblas_symqdq_weight(raw_wei,transpose,quant_type,blocksize)
     if transpose:
-        raw_wei=raw_wei.reshape(k,n)
+        raw_wei=torch.transpose(raw_wei,0,1)
     trans_correct=torch.matmul(activation,raw_wei)
     trans_dst = torch.zeros(m,n,dtype=torch.float)
     if dump_tensor_info:
