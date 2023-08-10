@@ -38,40 +38,40 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
 1. Text Generation (General domain instruction): We use the [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json). In Alpaca, researchers have manually crafted 175 seed tasks to guide `text-davinci-003` in generating 52K instruction data for diverse tasks.
 
-- Data format:
-```python
-{
-    "instruction": "Give three tips for staying healthy.",
-    "input": "",
-    "output": "1.Eat a balanced diet and make sure to include plenty of fruits and vegetables. \n2. Exercise regularly to keep your body active and strong. \n3. Get enough sleep and maintain a consistent sleep schedule."
-}
-```
-
-- Instruction template:
-    - for examples with a non-empty input field:
+    - Data format:
     ```python
-    Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+    {
+        "instruction": "Give three tips for staying healthy.",
+        "input": "",
+        "output": "1.Eat a balanced diet and make sure to include plenty of fruits and vegetables. \n2. Exercise regularly to keep your body active and strong. \n3. Get enough sleep and maintain a consistent sleep schedule."
+    }
+    ```
 
-    ### Instruction:
-    {instruction}
+    - Instruction template:
+        - for examples with a non-empty input field:
+        ```python
+        Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+        ### Instruction:
+        {instruction}
     
-    ### Input:
-    {input}
+        ### Input:
+        {input}
 
-    ### Response:
+        ### Response:
 
-    ```
-    - for examples with a non-empty input field:
-    ```python
-    Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+        ```
+        - for examples with a non-empty input field:
+        ```python
+        Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
-    ### Instruction:
-    {instruction}
+        ### Instruction:
+        {instruction}
 
 
-    ### Response:
+        ### Response:
 
-    ```
+        ```
 
 2. Text Generation (Domain-specific instruction): Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`.
 
