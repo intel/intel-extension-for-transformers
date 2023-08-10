@@ -45,7 +45,7 @@ void model_load_internal(const std::string& fname, model_name name, model_contex
   lctx.t_start_us = ne_time_us();
 
   std::unique_ptr<IModel> ms(new OPT());
-  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only);
+  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, true);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
@@ -75,10 +75,12 @@ void OPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gp
   fprintf(stderr, "%s: n_ff                     = %u\n", __func__, n_ff);
   fprintf(stderr, "%s: n_parts                  = %zu\n", __func__, ml->file_loaders.size());
   fprintf(stderr, "%s: word_embed_proj_dim      = %u\n", __func__, hparams.word_embed_proj_dim);
+  fprintf(stderr, "%s: max_seq_len      = %u\n", __func__, hparams.max_seq_len);
   n_embd = hparams.n_embd;
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
   word_embed_proj_dim = hparams.word_embed_proj_dim;
+  max_seq_len = hparams.max_seq_len;
   scratch = opt_mem_req(n_layer);
   model.scratchs = scratch;
 }
@@ -117,7 +119,7 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
   // and adjust num_embeddings appropriately. Other models don't have this hack
   uint32_t pos_offset = 2;
   model.others[0] = ml->get_tensor("model.decoder.embed_tokens.weight", {word_embed_proj_dim, n_vocab}, NE_BACKEND_CPU);
-  model.others[1] = ml->get_tensor("model.decoder.embed_positions.weight", {n_embd, n_ctx + pos_offset}, NE_BACKEND_CPU);
+  model.others[1] = ml->get_tensor("model.decoder.embed_positions.weight", {n_embd, max_seq_len + pos_offset}, NE_BACKEND_CPU);
   model.others[2] = ml->get_tensor("model.decoder.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
   model.others[3] = ml->get_tensor("model.decoder.final_layer_norm.bias", {n_embd, n_vocab}, NE_BACKEND_CPU);
   if (word_embed_proj_dim != n_embd) {
