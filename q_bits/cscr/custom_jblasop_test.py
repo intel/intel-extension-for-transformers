@@ -42,15 +42,19 @@ def test(m,n,k,blocksize,compute_type,quant_type,transpose,dump_tensor_info=Fals
         print(trans_dst)
         print("~~~~~~~~~~~~~~~~~~")
         print(trans_correct+bias)
-    torch.allclose(trans_dst,trans_correct+bias,rtol=0.03)
+    ok=True
+    ok =ok&torch.allclose(trans_dst,trans_correct+bias,rtol=0.03)
     torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_without_bias(activation,quant_wei,trans_dst,m,n,k,k,n,compute_type,quant_type)
     if(dump_tensor_info):
         print("==============transformat without bias result===============")
         print(trans_dst)
         print("~~~~~~~~~~~~~~~~~~")
         print(trans_correct)
-    torch.allclose(trans_dst,trans_correct,rtol=0.03)
-    print("ok.")
+    ok=ok&torch.allclose(trans_dst,trans_correct,rtol=0.03)
+    if ok:
+        print("ok.")
+    else:
+        print("fail")
 
 test(2,3,32,32,"fp32","s8",True)
 test(2,3,32,32,"fp32","s4_clip",True)
