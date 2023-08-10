@@ -2257,3 +2257,9 @@ ChatMPT
 LLM
 MPT
 mailto
+CODEOWNERS
+Cpplint
+DCO
+cloc
+jira
+servicedesk

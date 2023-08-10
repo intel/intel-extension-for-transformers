@@ -58,11 +58,11 @@ See [PR template](../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md)
 |     Optimize UT + Coverage    |     a. No failure, no core dump, no segmentation fault b. No coverage drop|     1         |
 |     Engine UT + Coverage      |     a. No failure, no core dump, no segmentation fault b. No coverage drop|     3         |
 |     Kernel UT                 |     No failure, no core dump, no segmentation fault   |     1         |
-|     Kernel Benchmark          |     No failure, No performance regresion              |     1         |
+|     Kernel Benchmark          |     No failure, No performance regression              |     1         |
 |     Optimize Model Test       |     a. Quantize success  b. Fp32 Benchmark/Throughput/Accuracy success and no regression  c. Int8 Benchmark/Throughput/Accuracy success and no regression|     2         |
 |     Backend Model Test        |     a. Fp32 inference no regression   b. Int8 inference no regression  c. C++ API inference no regression|     2         |
-|     LLM Test                  |     No failure, No performance regresion      |     1         |
-|     CPP Graph Test            |     No failure, No performance regresion      |     1         |
+|     LLM Test                  |     No failure, No performance regression      |     1         |
+|     CPP Graph Test            |     No failure, No performance regression      |     1         |
 
 
 ## FAQ
@@ -77,7 +77,7 @@ See [PR template](../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md)
 
     Create a [ticket](https://opensource.intel.com/jira/servicedesk/customer/portal/1/create/29) to join “intel-extension-for-transformers-write” team. 
 
-    if you don't have permision to create ticket, please contact [Maintainers](inc.maintainers@intel.com) to apply for help.
+    if you don't have permission to create ticket, please contact [Maintainers](inc.maintainers@intel.com) to apply for help.
 
 
 ## Support
