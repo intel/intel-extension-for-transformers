@@ -86,6 +86,11 @@ pattern_default_setting = {
 
     'GroupNorm': True,
 
+    # QAT Quantization
+    'CollectQuantInfo': True,
+    'InsertQuantNode': True,
+    'QuantizeFusion': True,
+
     # transpose_mode_int8
     'QKVMerge': False,
 
@@ -124,6 +129,12 @@ pattern_default_setting = {
     'StableDiffusion_MHAReshape': False,
     'StableDiffusion_MHA': False,
     'ExplicitNHWCTransposeForConv': False,
+    'ExplicitNHWCTransposeForConvQAT': False,
+
+    # QAT for the stable diffusion
+    'StableDiffusion_InsertQuantNode': False,
+    'StableDiffusion_CollectQuantInfo': False,
+    'StableDiffusion_QuantizeFusion': False,
     
     #GPT-J
     'TorchEmbedding': True,
