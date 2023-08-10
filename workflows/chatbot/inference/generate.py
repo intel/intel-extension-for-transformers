@@ -5,6 +5,7 @@ import torch
 import re, os, logging
 from threading import Thread
 import contextlib
+from typing import List
 from transformers import (
     GenerationConfig,
     AutoModelForCausalLM,
@@ -160,7 +161,7 @@ def parse_args():
 
 
 class StopOnTokens(StoppingCriteria):
-    def __init__(self, min_length: int, start_length: int, stop_token_id: list[int]):
+    def __init__(self, min_length: int, start_length: int, stop_token_id: List[int]):
         self.min_length = min_length
         self.start_length = start_length
         self.stop_token_id = stop_token_id

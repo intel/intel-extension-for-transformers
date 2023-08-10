@@ -416,7 +416,7 @@ Follow install guidance in [optimum-habana](https://github.com/huggingface/optim
 For LLaMA, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
-python ../../habana/gaudi_spawn.py \
+python ../../utils/gaudi_spawn.py \
         --world_size 8 --use_mpi finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
@@ -446,7 +446,7 @@ python ../../habana/gaudi_spawn.py \
 For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
 
 ```bash
-python ../../habana/gaudi_spawn.py \
+python ../../utils/gaudi_spawn.py \
         --world_size 8 --use_mpi finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
