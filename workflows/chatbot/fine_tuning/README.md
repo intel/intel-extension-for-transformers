@@ -38,6 +38,41 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
 1. Text Generation (General domain instruction): We use the [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json). In Alpaca, researchers have manually crafted 175 seed tasks to guide `text-davinci-003` in generating 52K instruction data for diverse tasks.
 
+- Data format:
+```python
+{
+    "instruction": "Give three tips for staying healthy.",
+    "input": "",
+    "output": "1.Eat a balanced diet and make sure to include plenty of fruits and vegetables. \n2. Exercise regularly to keep your body active and strong. \n3. Get enough sleep and maintain a consistent sleep schedule."
+}
+```
+
+- Instruction template:
+    - for examples with a non-empty input field:
+    ```python
+    Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+    ### Instruction:
+    {instruction}
+    
+    ### Input:
+    {input}
+
+    ### Response:
+
+    ```
+    - for examples with a non-empty input field:
+    ```python
+    Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
+
+    ### Instruction:
+    {instruction}
+
+
+    ### Response:
+
+    ```
+
 2. Text Generation (Domain-specific instruction): Inspired by Alpaca, we constructed a domain-specific dataset focusing on Business and Intel-related issues. We made minor modifications to the [prompt template](https://github.com/tatsu-lab/stanford_alpaca/blob/main/prompt.txt) to proactively guide Alpaca in generating more Intel and Business related instruction data. The generated data could be find in `intel_domain.json`.
 
 3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [HuggingFaceH4/oasst1_en](https://huggingface.co/datasets/HuggingFaceH4/oasst1_en).
@@ -85,6 +120,7 @@ python finetune_clm.py \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
         --dataset_concatenation \
+        --task instruction \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
@@ -109,6 +145,7 @@ python finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
         --dataset_name "HuggingFaceH4/oasst1_en" \
+        --task chat \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
@@ -137,6 +174,7 @@ python finetune_clm.py \
         --bf16 True \
         --dataset_name "cnn_dailymail" \
         --dataset_config_name "3.0.0" \
+        --task summarization \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
@@ -163,6 +201,7 @@ python finetune_clm.py \
         --model_name_or_path "meta-llama/Llama-2-7b" \
         --bf16 True \
         --dataset_name "theblackcat102/evol-codealpaca-v1" \
+        --task instruction \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
@@ -191,6 +230,7 @@ python finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
+        --task instruction \
         --dataset_concatenation \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
@@ -290,6 +330,7 @@ export MASTER_ADDR=xxx.xxx.xxx.xxx #node0 ip
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
     --model_name_or_path decapoda-research/llama-7b-hf \
     --train_file ./alpaca_data.json \
+    --task instruction \
     --bf16 True \
     --output_dir ./llama_peft_finetuned_model \
     --num_train_epochs 3 \
@@ -314,6 +355,7 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
     --model_name_or_path mosaicml/mpt-7b \
     --train_file ./alpaca_data.json \
+    --task instruction \
     --bf16 True \
     --output_dir ./mpt_peft_finetuned_model \
     --num_train_epochs 3 \
@@ -349,6 +391,7 @@ python finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
+        --task instruction \
         --dataset_concatenation \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -378,6 +421,7 @@ python finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
+         --task instruction \
         --dataset_concatenation \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -421,6 +465,7 @@ python ../../utils/gaudi_spawn.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
+        --task instruction \
         --dataset_concatenation \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -451,6 +496,7 @@ python ../../utils/gaudi_spawn.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
+        --task instruction \
         --dataset_concatenation \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
