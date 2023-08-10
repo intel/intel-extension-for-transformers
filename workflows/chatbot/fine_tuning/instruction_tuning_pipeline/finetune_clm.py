@@ -281,6 +281,12 @@ class FinetuneArguments:
         default=False,
         metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
     )
+    task: Optional[str] = field(
+        default="instruction",
+        metadata={"help": "task name, different task means different data format.",
+            "choices": ["instruction", "chat", "summarization"]
+            },
+    )
 
 
 def find_all_linear_names(model):

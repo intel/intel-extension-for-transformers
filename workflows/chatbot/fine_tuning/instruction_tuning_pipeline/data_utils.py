@@ -5,7 +5,7 @@ from itertools import chain
 
 IGNORE_INDEX = -100
 
-ALPACA_PROMPT_DICT = {
+instruction_prompt_template = {
     "prompt_with_input": (
         "Below is an instruction that describes a task, paired with an input that provides further context. "
         "Write a response that appropriately completes the request.\n\n"
@@ -18,15 +18,15 @@ ALPACA_PROMPT_DICT = {
     ),
 }
 
-conv_header = """<|im_start|>system
+chat_header = """<|im_start|>system
 - You are a helpful assistant chatbot trained by Intel.
 - You answer questions.
 - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
 - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>\n"""
 
-user = "<|im_start|>user\n"
-assistant = "<|im_start|>assistant\n"
-end = "<|im_end|>"
+chat_user = "<|im_start|>user\n"
+chat_assistant = "<|im_start|>assistant\n"
+chat_end = "<|im_end|>"
 
 summarization_suffix_template = "\nSummarize the highlights of this article.\n"
 
@@ -36,9 +36,9 @@ def create_alpaca(examples):
     prompts["target"] = []
     for example in examples:
         prompt_template = (
-            ALPACA_PROMPT_DICT["prompt_with_input"]
+            instruction_prompt_template["prompt_with_input"]
             if example.get("input") is not None and example.get("input") != ""
-            else ALPACA_PROMPT_DICT["prompt_without_input"]
+            else instruction_prompt_template["prompt_without_input"]
         )
         source = prompt_template.format_map(example)
         prompts["source"].append(source)
@@ -83,20 +83,20 @@ def tokenize_alpaca(tokenizer, data_args, finetune_args):
     return preprocess_function
 
 
-def create_oasst(examples):
+def create_chat(examples):
     prompts = {}
     prompts["prompt_sources"] = []
     prompts["prompt_targets"] = []
 
     for conv in examples:
         conv = conv["messages"]
-        prompt = conv_header
+        prompt = chat_header
 
         for j in range(0, len(conv) - 1, 2):
             u = conv[j]["content"]
             ass = conv[j+1]["content"]
-            prompt = prompt + user + u + end + '\n' + assistant
-            response = ass + end
+            prompt = prompt + chat_user + u + chat_end + '\n' + chat_assistant
+            response = ass + chat_end
             prompts["prompt_sources"].append(prompt)
             prompts["prompt_targets"].append(response)
 
@@ -114,10 +114,10 @@ def truncate_sequences(sequences, max_length):
 
     return sequences
 
-def tokenize_oasst(tokenizer, data_args, finetune_args):
+def tokenize_chat(tokenizer, data_args, finetune_args):
 
     # special tokens
-    assistant_tokens = tokenizer.tokenize(assistant)
+    assistant_tokens = tokenizer.tokenize(chat_assistant)
 
     def preprocess_function(examples):
 
@@ -181,7 +181,7 @@ def tokenize_oasst(tokenizer, data_args, finetune_args):
 
     return preprocess_function
 
-def tokenize_cnn(tokenizer, data_args, finetune_args):
+def tokenize_summarization(tokenizer, data_args, finetune_args):
     template_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(summarization_suffix_template))
 
     def preprocess_function(examples):
@@ -230,21 +230,20 @@ def tokenize_cnn(tokenizer, data_args, finetune_args):
 
 def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
 
-    dataset_name = data_args.dataset_name if data_args.dataset_name is not None else data_args.train_file
-    if "oasst" in dataset_name:
+    if finetune_args.task == "chat":
         new_datasets = datasets.DatasetDict()
-        for key in ["train_ift"]:
-            prompts = create_oasst(raw_datasets[key])
+        for key in ["train_ift", "train"]:
+            prompts = create_chat(raw_datasets[key])
             new_datasets["train"] = datasets.Dataset.from_dict(prompts)
 
-        preprocess_fn = tokenize_oasst(tokenizer, data_args, finetune_args)
+        preprocess_fn = tokenize_chat(tokenizer, data_args, finetune_args)
 
         return new_datasets, preprocess_fn
 
-    elif "cnn" in dataset_name:
-        preprocess_fn = tokenize_cnn(tokenizer, data_args, finetune_args)
+    elif finetune_args.task == "summarization":
+        preprocess_fn = tokenize_summarization(tokenizer, data_args, finetune_args)
         return raw_datasets, preprocess_fn
-    else:
+    elif finetune_args.task == "instruction":
         # default use alpaca instruction template
         for key in raw_datasets:
             prompts = create_alpaca(raw_datasets[key])
@@ -260,3 +259,5 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
         preprocess_fn = tokenize_alpaca(tokenizer, data_args, finetune_args)
 
         return raw_datasets, preprocess_fn
+    else:
+        raise NotImplementedError(f'finetune task is not support currently.')
