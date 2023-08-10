@@ -120,7 +120,11 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
   model.others[1] = ml->get_tensor("model.decoder.embed_positions.weight", {n_embd, n_ctx + pos_offset}, NE_BACKEND_CPU);
   model.others[2] = ml->get_tensor("model.decoder.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
   model.others[3] = ml->get_tensor("model.decoder.final_layer_norm.bias", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[4] = ml->get_tensor("lm_head.weight", {word_embed_proj_dim, n_vocab}, NE_BACKEND_CPU);//is true?
+  if (word_embed_proj_dim != n_embd) {
+    model.others[4] = ml->get_tensor("model.decoder.project_in.weight", {word_embed_proj_dim, n_embd}, NE_BACKEND_CPU);
+    model.others[5] = ml->get_tensor("model.decoder.project_out.weight", {n_embd, word_embed_proj_dim}, NE_BACKEND_CPU);
+  }
+  model.others[6] = ml->get_tensor("lm_head.weight", {word_embed_proj_dim, n_vocab}, NE_BACKEND_CPU);
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);
