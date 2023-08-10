@@ -233,9 +233,9 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
     dataset_name = data_args.dataset_name if data_args.dataset_name is not None else data_args.train_file
     if "oasst" in dataset_name:
         new_datasets = datasets.DatasetDict()
-        for key in ["train"]:
+        for key in ["train_ift"]:
             prompts = create_oasst(raw_datasets[key])
-            new_datasets[key] = datasets.Dataset.from_dict(prompts)
+            new_datasets["train"] = datasets.Dataset.from_dict(prompts)
 
         preprocess_fn = tokenize_oasst(tokenizer, data_args, finetune_args)
 
