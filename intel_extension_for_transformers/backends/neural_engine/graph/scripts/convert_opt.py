@@ -101,6 +101,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("f", 0.0))  # clip_qkv
     fout.write(struct.pack("i", 0))  # par_res
     fout.write(struct.pack("i", hparams["word_embed_proj_dim"]))  # for opt
+    fout.write(struct.pack("i", int(hparams["do_layer_norm_before"])))  # for opt
 
     vocab_size = hparams["vocab_size"]
     encoder = tokenizer.vocab

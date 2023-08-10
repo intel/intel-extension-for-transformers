@@ -80,7 +80,11 @@ void OPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gp
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
   word_embed_proj_dim = hparams.word_embed_proj_dim;
+<<<<<<< HEAD
   max_seq_len = hparams.max_seq_len;
+=======
+  do_layer_norm_before = hparams.do_layer_norm_before;
+>>>>>>> add do_layer_norm_before
   scratch = opt_mem_req(n_layer);
   model.scratchs = scratch;
 }
@@ -117,11 +121,13 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
 
   // OPT is set up so that if padding_idx is specified then offset the embedding ids by 2
   // and adjust num_embeddings appropriately. Other models don't have this hack
-  uint32_t pos_offset = 2;
+  const uint32_t pos_offset = 2;
   model.others[0] = ml->get_tensor("model.decoder.embed_tokens.weight", {word_embed_proj_dim, n_vocab}, NE_BACKEND_CPU);
   model.others[1] = ml->get_tensor("model.decoder.embed_positions.weight", {n_embd, max_seq_len + pos_offset}, NE_BACKEND_CPU);
-  model.others[2] = ml->get_tensor("model.decoder.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
-  model.others[3] = ml->get_tensor("model.decoder.final_layer_norm.bias", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  if (do_layer_norm_before) {
+    model.others[2] = ml->get_tensor("model.decoder.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
+    model.others[3] = ml->get_tensor("model.decoder.final_layer_norm.bias", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  }
   if (word_embed_proj_dim != n_embd) {
     model.others[4] = ml->get_tensor("model.decoder.project_in.weight", {word_embed_proj_dim, n_embd}, NE_BACKEND_CPU);
     model.others[5] = ml->get_tensor("model.decoder.project_out.weight", {n_embd, word_embed_proj_dim}, NE_BACKEND_CPU);
