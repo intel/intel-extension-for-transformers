@@ -174,6 +174,7 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
         past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
         input_ids: torch.LongTensor = None,
         attention_mask: Optional[torch.FloatTensor] = None,
+        decoder_attention_mask: Optional[torch.FloatTensor] = None,
         **kwargs,
     ) -> Seq2SeqLMOutput:
         # Encode if needed : first prediction pass
@@ -193,6 +194,7 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
             decoder_outputs = self.decoder(
                 input_ids=decoder_input_ids,
                 encoder_hidden_states=encoder_hidden_states,
+                attention_mask=decoder_attention_mask
             )
             if not self.config.return_dict:
                 if isinstance(decoder_outputs, tuple):
@@ -207,6 +209,7 @@ class INCModelForSeq2SeqLM(INCBaseModelForSeq2SeqLM, GenerationMixin):
                 input_ids=decoder_input_ids,
                 past_key_values=past_key_values,
                 encoder_hidden_states=encoder_hidden_states,
+                attention_mask=decoder_attention_mask
             )
             if not self.config.return_dict:
                 if isinstance(decoder_outputs, tuple):
@@ -407,6 +410,7 @@ class INCDecoder(torch.nn.Module):
         input_ids: torch.LongTensor,
         encoder_hidden_states: torch.FloatTensor,
         past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None,
+        attention_mask: Optional[torch.LongTensor] = None,
         encoder_attention_mask: Optional[torch.LongTensor] = None,
         return_dict = True,
         **kwargs
@@ -423,6 +427,10 @@ class INCDecoder(torch.nn.Module):
 
         if past_key_values is not None:
             inputs["past_key_values"] = past_key_values
+
+        # Add the attention_mask inputs when needed
+        if attention_mask is not None:
+            inputs["decoder_attention_mask"] = attention_mask
 
         # Run inference
         outputs = self.model(**inputs)
