@@ -53,16 +53,17 @@ struct attn_fwd_args_t {
   K_T* K;
   V_T* V;
   DST_T* dst;
+  float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
   bool is_causal;
   int batch_size, head_num, head_size, sl_q, sl_kv;
+  ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
   int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
-  int step_v_bs, step_v_head_num, step_v_sl;
+  int step_v_bs, step_v_head_num, step_v_sl, step_v_head_size;
   int step_dst_bs, step_dst_head_num, step_dst_sl;
 };
-using jblas_attn_fp32_fp16_fp16_fp32_fwd_args_t = attn_fwd_args_t<float, fp16, fp16, float>;
 
 inline __m512 poly_scale_2nd_ps(const __m512 z, const __m512 f, const __m512 c0, const __m512 c1, const __m512 c2) {
   const auto y = _mm512_fmadd_ps(_mm512_fmadd_ps(f, c0, c1), f, c2);  // auto y = (f * c0 + c1) * f + c2;
@@ -620,6 +621,10 @@ class MHAInterface {
 
   JBLAS_CODE compute(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
     static constexpr auto M_TILE = GemmQK::MTILE;
+    assert(p.Q_sc == 1 && p.K_sc == 1 && p.V_sc == 1 && p.dst_sc == 1);
+    assert(p.Q_layout == ATTN_FWD_LAYOUT_PLAIN && p.K_layout == ATTN_FWD_LAYOUT_PLAIN &&
+           p.V_layout == ATTN_FWD_LAYOUT_PLAIN && p.dst_layout == ATTN_FWD_LAYOUT_PLAIN);
+    assert(p.step_v_head_size == 1);
     assert(p.step_k_head_size == 1 || p.step_k_sl == 1);
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     const auto cb = CpuBase();
@@ -922,6 +927,10 @@ class MHAStableInterface {
   static constexpr auto M_TILE = GemmQK::MTILE;
 
   JBLAS_CODE compute(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
+    assert(p.Q_sc == 1 && p.K_sc == 1 && p.V_sc == 1 && p.dst_sc == 1);
+    assert(p.Q_layout == ATTN_FWD_LAYOUT_PLAIN && p.K_layout == ATTN_FWD_LAYOUT_PLAIN &&
+           p.V_layout == ATTN_FWD_LAYOUT_PLAIN && p.dst_layout == ATTN_FWD_LAYOUT_PLAIN);
+    assert(p.step_v_head_size == 1);
     assert(p.step_k_sl == 1);
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     const auto cb = CpuBase();
@@ -1097,14 +1106,14 @@ class MHAStableInterface {
 };
 
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
-void jblas_attn_forward(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params) = delete;
+void jblas_fusion_attn_forward(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params) = delete;
 
 template <class GEMM_T, JBLAS_ISA ISA_T>
 using WeightPackBatchBf16Bf16NonTr = WeightPackBatchBf16NonTr<GEMM_T, ISA_T, bf16>;
 template <class GEMM_T, JBLAS_ISA ISA_T>
 using WeightPackBatchBf16Bf16Trans = WeightPackBatchBf16Trans<GEMM_T, ISA_T, bf16>;
 template <>
-void jblas_attn_forward<bf16, bf16, bf16, bf16>(const attn_fwd_args_t<bf16, bf16, bf16, bf16>* params) {
+void jblas_fusion_attn_forward<bf16, bf16, bf16, bf16>(const attn_fwd_args_t<bf16, bf16, bf16, bf16>* params) {
   using GemmKernelBF16ExpSum = ::GemmLauncherPackWeightOff<  //
       JblasAMX_BF16,                                         //
       jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,           //
@@ -1126,7 +1135,7 @@ using WeightPackBatchFp16Bf16NonTr = WeightPackBatchBf16NonTr<GEMM_T, ISA_T, fp1
 template <class GEMM_T, JBLAS_ISA ISA_T>
 using WeightPackBatchFp16Bf16Trans = WeightPackBatchBf16Trans<GEMM_T, ISA_T, fp16>;
 template <>
-void jblas_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, fp16, fp16, float>* params) {
+void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, fp16, fp16, float>* params) {
   GetCPUDevice();
   if (MHA_PREFER_AVX512FP16 && _cd->AVX512_FP16() && params->step_k_sl == 1) {
     using GemmKernelFP16TrackMax = ::GemmLauncherBaseWeight<  //
@@ -1184,7 +1193,7 @@ void jblas_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, f
 }
 
 template <>
-void jblas_attn_forward<fp16, fp16, fp16, fp16>(const attn_fwd_args_t<fp16, fp16, fp16, fp16>* params) {
+void jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(const attn_fwd_args_t<fp16, fp16, fp16, fp16>* params) {
   GetCPUDevice();
   if (_cd->AMX_BF16()) {
     using GemmKernelFP16TrackMax = ::GemmLauncherBaseWeight<  //
@@ -1207,13 +1216,13 @@ void jblas_attn_forward<fp16, fp16, fp16, fp16>(const attn_fwd_args_t<fp16, fp16
 }
 
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
-void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params) {
+void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params) {
   const auto p = *params;
   assert(!p.is_causal || p.sl_q <= p.sl_kv);
   attn_shape_t attn_shape{
       p.batch_size, p.head_num, p.head_size, p.sl_q, p.sl_kv,
   };
-  const auto workspace_size = jblas_fusion_attn_bf16_workspace_size(&attn_shape);
+  const auto workspace_size = jblas_fusion_attn_workspace_size(&attn_shape);
   static std::mt19937 rng;
   static std::uniform_int_distribution<> dist;
   init_vector(params->tmp, workspace_size, INT8_MIN - 1, INT8_MAX + 1, dist(rng));
@@ -1279,8 +1288,8 @@ void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params)
 }
 }  // namespace
 
-void jblas_attn_bf16_forward(const attn_bf16_fwd_args_t* params) {
-  return jblas_attn_forward(reinterpret_cast<const attn_fwd_args_t<bf16, bf16, bf16, bf16>*>(params));
+void jblas_fusion_attn_bf16_forward(const attn_bf16_fwd_args_t* params) {
+  return jblas_fusion_attn_forward(reinterpret_cast<const attn_fwd_args_t<bf16, bf16, bf16, bf16>*>(params));
 }
 bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params) {
   GetCPUDevice();
@@ -1289,18 +1298,18 @@ bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params) {
 }
 
 void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params) {
-  return jblas_attn_forward(reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
-  // return jblas_attn_forward_ref(reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
+  return jblas_fusion_attn_forward(reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
+  // return jblas_fusion_attn_forward_ref(reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
 }
 
-size_t jblas_fusion_attn_bf16_workspace_size(const attn_shape_t* params) {
+void jblas_fusion_attn_fp16_forward(const attn_fp16_fwd_args_t* params) {
+  return jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(
+      reinterpret_cast<const attn_fwd_args_t<fp16, fp16, fp16, fp16>*>(params));
+}
+
+size_t jblas_fusion_attn_workspace_size(const attn_shape_t* params) {
   const auto& p = *params;  // TODO(Yi): Better way to get tmp size?
   return size_t(omp_get_max_threads() * sizeof(float) * 16) * padto(p.sl_kv, 64);
-}
-
-void jblas_attn_fp16_forward(const attn_fp16_fwd_args_t* params) {
-  return jblas_attn_forward<fp16, fp16, fp16, fp16>(
-      reinterpret_cast<const attn_fwd_args_t<fp16, fp16, fp16, fp16>*>(params));
 }
 
 #ifdef __GNUC__
@@ -1354,7 +1363,7 @@ class TestMhaDese {
     std::vector<V_T> src_v(batch_size * head_num * sl_kv * head_size);
     std::vector<DST_T> dst(batch_size * head_num * sl_q * head_size);
     std::vector<DST_T> ref(batch_size * head_num * sl_q * head_size);  // reference result
-    std::vector<char> tmp(jblas_fusion_attn_bf16_workspace_size(&s));
+    std::vector<char> tmp(jblas_fusion_attn_workspace_size(&s));
 
     // init vector
     static std::mt19937 rng(1);
@@ -1368,6 +1377,10 @@ class TestMhaDese {
         /* .K = */ src_k.data(),
         /* .V = */ src_v.data(),
         /* .dst = */ ref.data(),
+        /* .Q_sc = */ 1.f,
+        /* .K_sc = */ 1.f,
+        /* .V_sc = */ 1.f,
+        /* .dst_sc = */ 1.f,
         /* .tmp = */ tmp.data(),
         /* .QK_scale = */ 1.f / sqrtf(static_cast<float>(head_size)),
         /* .is_causal = */ is_causal,
@@ -1376,6 +1389,10 @@ class TestMhaDese {
         /* .head_size = */ head_size,
         /* .sl_q = */ sl_q,
         /* .sl_kv = */ sl_kv,
+        /* .Q_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+        /* .K_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+        /* .V_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+        /* .dst_layout = */ ATTN_FWD_LAYOUT_PLAIN,
         /* .step_q_bs = */ sl_q * head_num * head_size,
         /* .step_q_head_num = */ head_size,
         /* .step_q_sl = */ head_num * head_size,
@@ -1386,15 +1403,16 @@ class TestMhaDese {
         /* .step_v_bs = */ sl_kv * head_num * head_size,
         /* .step_v_head_num = */ head_size,
         /* .step_v_sl = */ head_num * head_size,
+        /* .step_v_head_num = */ 1,
         /* .step_dst_bs = */ sl_q * head_num * head_size,
         /* .step_dst_head_num = */ head_size,
         /* .step_dst_sl = */ head_num * head_size,
     };
 
-    jblas_attn_forward_ref(&args);
+    jblas_fusion_attn_forward_ref(&args);
 
     args.dst = dst.data();
-    jblas_attn_forward(&args);
+    jblas_fusion_attn_forward(&args);
 
     // Check result
     return compare_data(dst.data(), ref.data(), dst.size(), 1e-2f);

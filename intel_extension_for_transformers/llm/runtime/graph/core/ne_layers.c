@@ -2984,7 +2984,7 @@ struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, str
   bool is_node = true;
   struct ne_tensor* result = ne_new_tensor_4d(ctx, NE_TYPE_F32, headsize, headnum, seq_cur, batch, NE_SIZE_CALC);
   attn_shape_t atte_shape = {batch, headnum, headsize, seq_cur, seq_all};
-  size_t tmpsize = jblas_fusion_attn_bf16_workspace_size(&atte_shape);
+  size_t tmpsize = jblas_fusion_attn_workspace_size(&atte_shape);
   struct ne_tensor* tmp_t = ne_new_tensor_1d(ctx, NE_TYPE_I8, tmpsize, NE_SIZE_CALC);
   result->op = NE_OP_FLASH_ATTN;
   result->grad = NULL;
@@ -8429,14 +8429,23 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
       .Q = (float*)q->data,
       .K = (ne_fp16_t*)k->data,
       .V = (ne_fp16_t*)v->data,
-      .batch_size = batch,
-      .head_size = headsize,
-      .head_num = headnum,
       .dst = (float*)dst->data,
-      .is_causal = mask,
+      .Q_sc = 1.f,
+      .K_sc = 1.f,
+      .V_sc = 1.f,
+      .dst_sc = 1.f,
+      .tmp = tmp->data,
       .QK_scale = scale,
+      .is_causal = mask,
+      .batch_size = batch,
+      .head_num = headnum,
+      .head_size = headsize,
       .sl_q = seq_cur,
       .sl_kv = seq_all,
+      .Q_layout = ATTN_FWD_LAYOUT_PLAIN,
+      .K_layout = ATTN_FWD_LAYOUT_PLAIN,
+      .V_layout = ATTN_FWD_LAYOUT_PLAIN,
+      .dst_layout = ATTN_FWD_LAYOUT_PLAIN,
       .step_q_bs = seq_cur * embedsize,
       .step_q_head_num = headsize,
       .step_q_sl = embedsize,
@@ -8447,10 +8456,10 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
       .step_v_bs = step_v_bs,
       .step_v_head_num = step_v_head_num,
       .step_v_sl = step_v_sl,
+      .step_v_head_size = 1,
       .step_dst_bs = seq_cur * embedsize,
       .step_dst_head_num = headsize,
       .step_dst_sl = embedsize,
-      .tmp = tmp->data,
   };
   jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(&args);
 }
