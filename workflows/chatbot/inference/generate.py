@@ -644,32 +644,32 @@ def predict_stream(**params):
         raise ValueError(
             f"Unsupported device type {device}, only supports cpu and hpu now."
         )
-    output_token_len = 0
+    output_word_len = 0
 
     for new_text in streamer:
         if len(new_text) == 0:
             continue
-        if output_token_len == 0:
+        if output_word_len == 0:
             first_token_output_time = datetime.now()
-        output_token_len += 1
+        output_word_len += 1
         yield new_text
 
     end_time = datetime.now()
     duration = int((end_time - start_time).total_seconds() * 1000)
-    first_token_latency = int(
+    first_word_latency = int(
         (first_token_output_time - start_time).total_seconds() * 1000
     )
-    token_per_second = (
-        (duration - first_token_latency) / (output_token_len - 1)
-        if output_token_len != 1
+    msecond_per_word = (
+        (duration - first_word_latency) / (output_word_len - 1)
+        if output_word_len != 1
         else 0
     )
     stats = {
         "input_token_len": input_token_len,
-        "output_token_len": output_token_len,
+        "output_word_len": output_word_len,
         "duration": duration,
-        "first_token_latency": first_token_latency,
-        "token_per_second": token_per_second,
+        "first_word_latency": first_word_latency,
+        "msecond_per_word": msecond_per_word,
     }
     yield "END_OF_STREAM_STATS={}".format(stats)
 
