@@ -125,4 +125,7 @@ class ExplicitNHWCTransposeForConv(Pattern):
 
             model.remove_nodes(remove_node_name)
 
+        if len(model.nodes[-1].input_tensors) != 1:
+            del model.nodes[-1].input_tensors[1:]
+
         return model
