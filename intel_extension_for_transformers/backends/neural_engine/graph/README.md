@@ -27,31 +27,52 @@ Currently, Graph uses the same models as llama.cpp. You can also convert the mod
 ```bash
 ls ./models
 65B 30B 13B 7B tokenizer_checklist.chk tokenizer.model
+```
 
+LLaMA and LLaMA-2:
+```bash
 # convert the pytorch 7B model to llama.cpp format
 python scripts/convert_llama.py --outtype f32 --outfile ${output_path}/ne-f32.bin models/7B/
 
 ./build/bin/quant_llama --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4 --block_size 32 # bits=4, block_size=128, gemm_isa=vnni means q4_j_vnni_b128(recommend)  
 
+# Notes: LLaMA-2-7B uses the same command as LLaMA because of the same model layers.
+```
+
+Gptneox:
+```bash
 # convert the pytorch gptneox model to llama.cpp format
 python scripts/convert_gptneox.py  ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
 
 ./build/bin/quant_gptneox --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
+```
 
+Dolly-v2-3b:
+```bash
 # convert the pytorch dolly-v2-3b model to llama.cpp format
 python scripts/convert_dolly.py  ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
 
 ./build/bin/quant_dolly --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
+```
 
+MPT:
+```bash
 # convert the pytorch mpt model to llama.cpp format
 python scripts/convert_mpt.py ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
 
 ./build/bin/quant_mpt --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
+```
+
+Falcon:
+```bash
 # convert the pytorch falcon model to llama.cpp format (0 for fp32 model type)
 python scripts/convert_falcon.py ${input_model_name_or_path} --outtype f32 --outfile ${output_path}
 
 ./build/bin/quant_falcon --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
+```
 
+Starcoder:
+```bash
 # convert the pytorch starcoder model to llama.cpp format
 python scripts/convert_starcoder.py --model={input_model_name_or_path} --outfile={output_path}/ne-fp32.bin --outtype=fp32
 
