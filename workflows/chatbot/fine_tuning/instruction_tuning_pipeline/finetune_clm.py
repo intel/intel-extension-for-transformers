@@ -479,7 +479,7 @@ def main():
     if model_args.model_name_or_path:
         model_dtype = torch.bfloat16 if training_args.bf16 else None
         if (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
-            re.search("neural-chat", model_args.model_name_or_path, re.IGNORECASE)):
+            re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
             from models.mpt.modeling_mpt import MPTForCausalLM
 
             model = MPTForCausalLM.from_pretrained(
