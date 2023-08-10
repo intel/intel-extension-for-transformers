@@ -17,23 +17,19 @@ void quantweight_f32_linear_launcher(const torch::Tensor& activation, const torc
   int bits = quant_type == "s8" ? 8 : 4;
 
   auto s8_linear = [&] {
-    // if (wtmp->mCoreType == jblas::gemm::GemmCoreType::AMX_BF16_16x64) {
-    //   LINEAR_EXECUTE(jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS8KBlock)
-    // } else {
+    // TODO(yu/zhe): add amx_bf16 support.
     LINEAR_EXECUTE(jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS8KBlock)
-    // }
   };
 
-  BIT4_LINEAR(s4_clip_linear, jblas::wrapper::gemm_default::weight_comp::amx_int8::GemmSKernelDynamicS4ClipKBlock,
-              jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmSKernelDynamicS4ClipKBlock,
-              jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4ClipKBlock,
-              jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4ClipKBlock)
+  BIT4_FULL_CMPTYPE_LINEAR(s4_clip_linear,
+                           jblas::wrapper::gemm_default::weight_comp::amx_int8::GemmSKernelDynamicS4ClipKBlock,
+                           jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmSKernelDynamicS4ClipKBlock,
+                           jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4ClipKBlock,
+                           jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4ClipKBlock)
 
-  BIT4_LINEAR(s4_fullrange_linear,
-              jblas::wrapper::gemm_default::weight_comp::amx_int8::GemmSKernelDynamicS4FullRangeKBlock,
-              jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmSKernelDynamicS4FullRangeKBlock,
-              jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4FullRangeKBlock,
-              jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4FullRangeKBlock)
+  BIT4_FP32_CMPTYPE_LINEAR(s4_fullrange_linear,
+                           jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4FullRangeKBlock,
+                           jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4FullRangeKBlock)
 
   if (quant_type == "s8") s8_linear();
   if (quant_type == "s4_clip") s4_clip_linear();

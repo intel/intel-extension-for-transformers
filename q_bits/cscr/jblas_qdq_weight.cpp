@@ -13,7 +13,6 @@ void symqdq_weight_launcher(torch::Tensor& Fp32Wei, bool transpose, const std::s
     k = n;
     n = tmp;
   }
-
   if (quant_type == "s8" || quant_type == "s4_clip") {
     jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock<jblas::gemm::GemmCore_Row_NN_8x48_AVX512F, JblasNoSIMD>
         qdq_ker;

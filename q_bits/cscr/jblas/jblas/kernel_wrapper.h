@@ -206,7 +206,7 @@ class DecompressKBlockS4FP {
                                                                 k_offset, kblock, NPad);
     }
 #endif
-    return ref::decompress_kblock_s4_fp(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+    return ref::decompress_kblock_s4_fp<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
   }
 };
 

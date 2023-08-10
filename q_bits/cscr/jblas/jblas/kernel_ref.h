@@ -118,6 +118,21 @@ static inline JBLAS_CODE decompress_s4_f32(jblas::utils::int4x2* srcptr, float* 
   return JblasSuccess;
 }
 
+template <JBLAS_S4_TYPE S4_T>
+inline int8_t get_s8(int8_t v) {
+  switch (S4_T) {
+    case S4_CLIP:
+      return v << 4;
+    case S4_FULLRANGE:
+      v &= 0x0f;
+      return v - 8;
+    default:
+      assert(false);
+      break;
+  }
+}
+
+template <JBLAS_S4_TYPE S4_T>
 inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, float* dstptr, int row, int col, int ld_src,
                                           int ld_dst, float* scales, int k_offset, int kblock, int NPad) {
   // float fixed rowpack==1
@@ -126,8 +141,8 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, float* dstptr, 
     auto sptr = scales + kpos * NPad;
     for (int j = 0; j < col; j += 2) {
       auto tmp = srcptr[i * ld_src + j / 2];
-      dstptr[i * ld_dst + j + 0] = float((int8_t)tmp.x << 4) * sptr[j + 0];
-      dstptr[i * ld_dst + j + 1] = float((int8_t)tmp.y << 4) * sptr[j + 1];
+      dstptr[i * ld_dst + j + 0] = float(get_s8<S4_T>((int8_t)tmp.x)) * sptr[j + 0];
+      dstptr[i * ld_dst + j + 1] = float(get_s8<S4_T>((int8_t)tmp.y)) * sptr[j + 1];
     }
   }
   return JblasSuccess;
@@ -157,6 +172,7 @@ inline JBLAS_CODE decompress_kblock_s8_f32(int8_t* srcptr, float* dstptr, int ro
   return JblasSuccess;
 }
 
+template <JBLAS_S4_TYPE S4_T>
 inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, float* dstptr, int row, int col, int ld_src,
                                           int ld_dst, utils::bf16* scales, int k_offset, int kblock, int NPad) {
   // float fixed rowpack==1
@@ -165,13 +181,14 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, float* dstptr, 
     auto sptr = scales + kpos * NPad;
     for (int j = 0; j < col; j += 2) {
       auto tmp = srcptr[i * ld_src + j / 2];
-      dstptr[i * ld_dst + j + 0] = float((int8_t)tmp.x << 4) * sptr[j + 0].tofloat();
-      dstptr[i * ld_dst + j + 1] = float((int8_t)tmp.y << 4) * sptr[j + 1].tofloat();
+      dstptr[i * ld_dst + j + 0] = float(get_s8<S4_T>((int8_t)tmp.x)) * sptr[j + 0].tofloat();
+      dstptr[i * ld_dst + j + 1] = float(get_s8<S4_T>((int8_t)tmp.y)) * sptr[j + 1].tofloat();
     }
   }
   return JblasSuccess;
 }
 
+template <JBLAS_S4_TYPE S4_T>
 inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
                                           int ld_dst, utils::bf16* scales, int k_offset, int kblock, int NPad) {
   // bf16 fixed rowpack==2
@@ -181,8 +198,9 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, utils::bf16* ds
     for (int j = 0; j < col; j += 2) {
       auto tmp = srcptr[i * ld_src + j / 2];
       utils::bf16 bf16_ret1, bf16_ret2;
-      bf16_ret1.fromfloat(float((int8_t)tmp.x << 4) * sptr[j / 2].tofloat());  // interleave with the same scale
-      bf16_ret2.fromfloat(float((int8_t)tmp.y << 4) * sptr[j / 2].tofloat());
+      bf16_ret1.fromfloat(float(get_s8<S4_T>((int8_t)tmp.x)) *
+                          sptr[j / 2].tofloat());  // interleave with the same scale
+      bf16_ret2.fromfloat(float(get_s8<S4_T>((int8_t)tmp.y)) * sptr[j / 2].tofloat());
       dstptr[i * ld_dst + j + 0] = bf16_ret1;
       dstptr[i * ld_dst + j + 1] = bf16_ret2;
     }
@@ -190,6 +208,7 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, utils::bf16* ds
   return JblasSuccess;
 }
 
+template <JBLAS_S4_TYPE S4_T>
 inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
                                           int ld_dst, float* scales, int k_offset, int kblock, int NPad) {
   // bf16 fixed rowpack==2
@@ -199,8 +218,8 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, utils::bf16* ds
     for (int j = 0; j < col; j += 2) {
       auto tmp = srcptr[i * ld_src + j / 2];
       utils::bf16 bf16_ret1, bf16_ret2;
-      bf16_ret1.fromfloat(float((int8_t)tmp.x << 4) * sptr[j / 2]);  // interleave with the same scale
-      bf16_ret2.fromfloat(float((int8_t)tmp.y << 4) * sptr[j / 2]);
+      bf16_ret1.fromfloat(float(get_s8<S4_T>((int8_t)tmp.x)) * sptr[j / 2]);  // interleave with the same scale
+      bf16_ret2.fromfloat(float(get_s8<S4_T>((int8_t)tmp.y)) * sptr[j / 2]);
       dstptr[i * ld_dst + j + 0] = bf16_ret1;
       dstptr[i * ld_dst + j + 1] = bf16_ret2;
     }
@@ -559,8 +578,8 @@ inline JBLAS_CODE quantize_f32_s4_fullrange_rowblock(const float* srcptr, int8_t
       float rscale = scale != 0.f ? 1.f / scale : 0.f;
       scales[j / blocksize * ld_dst + i] = scale;
       for (size_t ij = 0; ij < blocksize; ij++) {
-        auto quant_v = srcptr[(j + ij) * ld_src + i] * rscale;
-        int8_t x = MIN(15, (int8_t)(quant_v + 8.5f));
+        int8_t quant_v = srcptr[(j + ij) * ld_src + i] * rscale + 8.5f;
+        int8_t x = MIN(15, quant_v);
         dstptr[(j + ij) * ld_dst + i] = x << 4;
       }
     }

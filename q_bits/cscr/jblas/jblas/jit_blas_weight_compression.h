@@ -1276,13 +1276,6 @@ using GemmSKernelDynamicS4FullRangeKBlock = jblas::wrapper::gemm_kblock::GemmInt
 }  // namespace avx512_vnni
 namespace amx_bf16 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
-// using GemmKernelS8KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
-//     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-//         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
-//         jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
-//         jblas::prologue::weight_comp::gemm::WeightS8_KBlock,
-//         jblas::epilogue::gemm::AlphaBetaProcessFp32>,  // output fp32->fp32
-//     DefaultParallel>;
 using GemmKernelS4ClipKBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,

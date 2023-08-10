@@ -1,38 +1,62 @@
 import torch
+import inspect
+from functools import wraps
 torch.ops.load_library("build/libweight_only_jblasop.so")
-activation = torch.rand(2,32, dtype=torch.float)
-# raw_wei = torch.rand(256,512, dtype=torch.float)
-# print(raw_wei)
-# quant_wei = torch.ops.weight_only_jblasop.jblas_quantize(raw_wei,False,4,"sym",32,"fp32");
-# torch.ops.weight_only_jblasop.jblas_symqdq_s4weight(raw_wei,False,32)
-# print(raw_wei)
-trans_raw_wei=torch.rand(3,32,dtype=torch.float)
-bias=torch.rand(3,dtype=torch.float)
-bias*=10
-trans_quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(trans_raw_wei,True,"sym",32,"fp32","s4_fullrange");
-# print(trans_raw_wei)
-torch.ops.weight_only_jblasop.jblas_symqdq_weight(trans_raw_wei,True,"s4_fullrange",32)
-# trans_raw_wei=trans_raw_wei.reshape(32,2)
-# print(torch.transpose(trans_raw_wei,1,0))
-# correct=torch.matmul(activation,raw_wei)
-trans_correct=torch.matmul(activation,torch.transpose(trans_raw_wei,1,0))
-# trans_correct=torch.matmul(activation,trans_raw_wei)
-trans_dst = torch.zeros(2,3,dtype=torch.float)
-# dst = torch.zeros(512,512,dtype=torch.float)
-# torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear(activation,quant_wei,dst,512,512,256,256,512)
-print("==========bias========")
-print(bias)
-torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_with_bias(activation,trans_quant_wei,bias,trans_dst,2,3,32,32,3,"fp32","s4_fullrange")
-print("==============transformat with bias result===============")
-print(trans_dst)
-print("~~~~~~~~~~~~~~~~~~")
-print(trans_correct+bias)
-torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_without_bias(activation,trans_quant_wei,trans_dst,2,3,32,32,3,"fp32","s4_fullrange")
-print("==============transformat without bias result===============")
-print(trans_dst)
-print("~~~~~~~~~~~~~~~~~~")
-print(trans_correct)
-# print("==============non-transformat result===============")
-# print(dst)
-# print("~~~~~~~~~~~~~~~~~~")
-# print(correct)
+
+def capture_args(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        sig = inspect.signature(f)
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        arg_strs = []
+        for name, value in bound_args.arguments.items():
+            arg_strs.append(f'{name}={value}')
+        result = ', '.join(arg_strs)
+        print(result)
+        return f(*args, **kwargs)
+    return wrapper
+
+@capture_args
+def test(m,n,k,blocksize,compute_type,quant_type,transpose,dump_tensor_info=False):
+    activation = torch.rand(m,k, dtype=torch.float)
+    wei_row=k
+    wei_col=n
+    if transpose:
+        wei_row,wei_col=wei_col,wei_row;     
+    raw_wei=torch.rand(wei_row,wei_col,dtype=torch.float)
+    bias=torch.rand(n,dtype=torch.float)
+    bias*=10
+    quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(raw_wei,transpose,"sym",blocksize,compute_type,quant_type);
+    torch.ops.weight_only_jblasop.jblas_symqdq_weight(raw_wei,transpose,quant_type,blocksize)
+    if transpose:
+        raw_wei=raw_wei.reshape(k,n)
+    trans_correct=torch.matmul(activation,raw_wei)
+    trans_dst = torch.zeros(m,n,dtype=torch.float)
+    if dump_tensor_info:
+        print("==========bias========")
+        print(bias)
+    torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_with_bias(activation,quant_wei,bias,trans_dst,m,n,k,k,n,compute_type,quant_type)
+    if dump_tensor_info:
+        print("==============transformat with bias result===============")
+        print(trans_dst)
+        print("~~~~~~~~~~~~~~~~~~")
+        print(trans_correct+bias)
+    torch.allclose(trans_dst,trans_correct+bias,rtol=0.03)
+    torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_without_bias(activation,quant_wei,trans_dst,m,n,k,k,n,compute_type,quant_type)
+    if(dump_tensor_info):
+        print("==============transformat without bias result===============")
+        print(trans_dst)
+        print("~~~~~~~~~~~~~~~~~~")
+        print(trans_correct)
+    torch.allclose(trans_dst,trans_correct,rtol=0.03)
+    print("ok.")
+
+test(2,3,32,32,"fp32","s8",True)
+test(2,3,32,32,"fp32","s4_clip",True)
+test(2,3,32,32,"int8","s4_clip",True)
+test(2,3,32,32,"fp32","s4_fullrange",True)
+test(2,3,32,32,"fp32","s8",False)
+test(2,3,32,32,"fp32","s4_clip",False)
+test(2,3,32,32,"int8","s4_clip",False)
+test(2,3,32,32,"fp32","s4_fullrange",False)

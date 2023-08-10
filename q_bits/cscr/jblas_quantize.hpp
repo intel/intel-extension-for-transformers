@@ -23,7 +23,7 @@ static std::unordered_map<std::tuple<int, std::string, std::string>, CompType, M
   KER kernel;                 \
   packedw = compressWeight<KER>(&kernel, transpose, n, k, Fp32Wei.data_ptr<float>(), blocksize, type);
 
-#define BIT4_QUANTIZE(NAME, AMX_INT8_KER, VNNI_INT8_KER, AMX_BF16_KER, AVX512F_FP32_KER)                 \
+#define BIT4_FULL_CMPTYPE_QUANTIZE(NAME, AMX_INT8_KER, VNNI_INT8_KER, AMX_BF16_KER, AVX512F_FP32_KER)    \
   auto NAME = [&] {                                                                                      \
     if (compute_type == "int8") {                                                                        \
       TORCH_CHECK(check_amx() || check_vnni(), "ISA must lagger than AVX_VNNI when compute_type==int8"); \
@@ -45,5 +45,16 @@ static std::unordered_map<std::tuple<int, std::string, std::string>, CompType, M
     }                                                                                                    \
   };
 
+#define BIT4_FP32_CMPTYPE_QUANTIZE(NAME, AMX_BF16_KER, AVX512F_FP32_KER)                                 \
+  auto NAME = [&] {                                                                                      \
+    TORCH_CHECK(check_avx512f, "ISA must lagger than AVX_512F when compute_type==fp32");                 \
+    TORCH_CHECK(compute_type == "fp32", std::string(#NAME) + std::string(" compute_type must be fp32")); \
+    if (check_amx()) {                                                                                   \
+      jblas::utils::request_perm_xtile_data();                                                           \
+      COMPUTE_DICPATCH(AMX_BF16_KER);                                                                    \
+    } else {                                                                                             \
+      COMPUTE_DICPATCH(AVX512F_FP32_KER);                                                                \
+    }                                                                                                    \
+  };
 torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose, const std::string& alg, int64_t block_size,
                              const std::string& compute_type, const std::string& quant_type);
