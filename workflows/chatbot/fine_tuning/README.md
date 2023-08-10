@@ -4,11 +4,12 @@ NeuralChat Fine-tuning
 This example demonstrates how to finetune the pretrained large language model (LLM) with the instruction-following dataset for creating the NeuralChat, a chatbot that can conduct the textual conversation. Giving NeuralChat the textual instruction, it will respond with the textual response. This example have been validated on the 4th Gen Intel® Xeon® Processors, Sapphire Rapids.
 
 ## Validated Model List
-|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | summarization tuning 
-|------------------------------------|---|---|---
-|LLaMA series| ✅| ✅| ✅
-|MPT series|✅ |✅ |✅
-|FLAN-T5 series| ✅ | NA | NA
+|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation | 
+|------------------------------------|---|---|--- | --- |
+|LLaMA series| ✅| ✅|✅| ✅
+|LLaMA2 series| ✅| ✅|✅| ✅
+|MPT series| ✅| ✅|✅| ✅
+|FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
 
 # Prerequisite​
 
@@ -42,6 +43,8 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 3. Text Generation (ChatBot): To finetune a chatbot, we use the chat-style dataset [OpenAssistant/oasst1](https://huggingface.co/datasets/OpenAssistant/oasst1).
 
 4. Summarization: An English-language dataset [cnn_dailymail](https://huggingface.co/datasets/cnn_dailymail) containing just over 300k unique news articles as written by journalists at CNN and the Daily Mail, is used for this task.
+
+5. Code Generation: To enhance code performance of LLMs (Large Language Models), we use the [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
 # Finetune
 
@@ -99,13 +102,13 @@ python finetune_clm.py \
         --no_cuda \
 ```
 
-- use the below command line for finetuning chatbot on the [Intel/openassistant-preprocessed](https://huggingface.co/datasets/Intel/openassistant-preprocessed).
+- use the below command line for finetuning chatbot on the [OpenAssistant/oasst1](https://huggingface.co/datasets/OpenAssistant/oasst1).
 
 ```bash
 python finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
-        --dataset_name "Intel/openassistant-preprocessed" \
+        --dataset_name "OpenAssistant/oasst1" \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
@@ -130,7 +133,7 @@ python finetune_clm.py \
 
 ```bash
 python finetune_clm.py \
-        --model_name_or_path "/models/llama-7b-hf" \
+        --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
         --dataset_name "cnn_dailymail" \
         --dataset_config_name "3.0.0" \
@@ -152,6 +155,34 @@ python finetune_clm.py \
 
 # the script also support other models, like mpt.
 ```
+
+- use the below command line for code tuning with `meta-llama/Llama-2-7b` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
+
+```bash
+python finetune_clm.py \
+        --model_name_or_path "meta-llama/Llama-2-7b" \
+        --bf16 True \
+        --dataset_name "theblackcat102/evol-codealpaca-v1" \
+        --per_device_train_batch_size 8 \
+        --per_device_eval_batch_size 8 \
+        --gradient_accumulation_steps 1 \
+        --do_train \
+        --learning_rate 1e-4 \
+        --num_train_epochs 3 \
+        --logging_steps 100 \
+        --save_total_limit 2 \
+        --overwrite_output_dir \
+        --log_level info \
+        --save_strategy epoch \
+        --output_dir ./llama_peft_finetuned_model \
+        --peft lora \
+        --use_fast_tokenizer false \
+        --no_cuda
+
+# the script also support other models, like mpt.
+```
+
+
 
 **For [MPT](https://huggingface.co/mosaicml/mpt-7b)**, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
 
@@ -385,7 +416,7 @@ Follow install guidance in [optimum-habana](https://github.com/huggingface/optim
 For LLaMA, use the below command line for finetuning on the Alpaca dataset.
 
 ```bash
-python ../../habana/gaudi_spawn.py \
+python ../../utils/gaudi_spawn.py \
         --world_size 8 --use_mpi finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
@@ -415,7 +446,7 @@ python ../../habana/gaudi_spawn.py \
 For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
 
 ```bash
-python ../../habana/gaudi_spawn.py \
+python ../../utils/gaudi_spawn.py \
         --world_size 8 --use_mpi finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \

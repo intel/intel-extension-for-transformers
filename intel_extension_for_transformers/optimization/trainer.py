@@ -314,20 +314,6 @@ class BaseTrainer():
             # pylint: disable=E1101
             self.quantizer.calib_dataloader = self.get_train_dataloader() \
                 if self._calib_dataloader is None else self._calib_dataloader
-            # transformer issue #1
-            # for transformers 4.31.0: accelerate dataloader
-            # *** ValueError: batch_size attribute should not be set 
-            # after DataLoaderShard is initialized
-            if self.quantizer.calib_dataloader.batch_size is None:
-                def _build_inc_dataloader(dataloader):
-                    class INCDataLoader:
-                        __iter__ = dataloader.__iter__
-                        def __init__(self) -> None:
-                            self.dataloader = dataloader
-                            self.batch_size = dataloader.total_batch_size
-                    return INCDataLoader()
-                self.quantizer.calib_dataloader = \
-                        _build_inc_dataloader(self.quantizer.calib_dataloader)
         if self.quant_config.approach == QuantizationMode.QUANTIZATIONAWARETRAINING.value:
             self.quantizer.q_func = \
                 self.builtin_train_func if self._train_func is None else self._train_func
@@ -2501,6 +2487,21 @@ class BaseTrainer():
             input.pop('end_positions')
         return input
 
+    def get_train_dataloader(self, *args, **kwargs):
+        obj = super().get_train_dataloader(*args, **kwargs)
+        if obj.batch_size is None:
+            from .utils.utility import _build_inc_dataloader
+            return _build_inc_dataloader(obj)
+        else:
+            return obj
+
+    def get_eval_dataloader(self, *args, **kwargs):
+        obj = super().get_eval_dataloader(*args, **kwargs)
+        if obj.batch_size is None:
+            from .utils.utility import _build_inc_dataloader
+            return _build_inc_dataloader(obj)
+        else:
+            return obj
 
     def benchmark(
         self,
@@ -2691,7 +2692,7 @@ class NLPSeq2SeqTrainer(BaseTrainer, Seq2SeqTrainer):
         # pylint: disable=E1101
         if self.args.seed:
             torch.manual_seed(self.args.seed)
-        results = self.evaluate(max_length=self.max_length, num_beams=self.num_beams)
+        results = self.evaluate(metric_key_prefix="eval")
         logger.info(results)
         if isinstance(self.metrics, list):
             nums = len(self.metrics)

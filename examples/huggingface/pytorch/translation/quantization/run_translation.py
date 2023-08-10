@@ -659,7 +659,7 @@ def main():
         )
 
     if optim_args.benchmark or optim_args.accuracy_only:
-        results = trainer.evaluate(max_length=max_length, num_beams=num_beams)
+        results = trainer.evaluate()
         logger.info("metrics keys: {}".format(results.keys()))
         throughput = results.get("eval_samples_per_second")
         print('Batch size = {:d}'.format(training_args.per_device_eval_batch_size))

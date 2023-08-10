@@ -35,15 +35,15 @@ if [[ ${cast_type} == 'dynamic_int8' ]]; then
 # 1. text encoder
 echo "[INFO] Text encoder ir will be $precision ..."
 echo "[INFO] Start to export text encoder ir..."
-python export_ir.py --onnx_model=${input_model}/text_encoder_${precision}/model.onnx --pattern_config=text_encoder --output_path=./${precision}_${cast_type}_ir/text_encoder/ --dtype=${precision}
+python export_ir.py --onnx_model=${input_model}/text_encoder_fp32/model.onnx --pattern_config=text_encoder --output_path=./${precision}_${cast_type}_ir/text_encoder/ --dtype=${precision}
 
 # 2. unet
 echo "[INFO] Start to export unet ir..."
-python export_ir.py --onnx_model=${input_model}/unet_${precision}/model.onnx --pattern_config=unet --output_path=./${precision}_${cast_type}_ir/unet/ --dtype=${cast_type}
+python export_ir.py --onnx_model=${input_model}/unet_fp32/model.onnx --pattern_config=unet --output_path=./${precision}_${cast_type}_ir/unet/ --dtype=${cast_type}
 
 # 3. vae_decoder
 echo "[INFO] start to export vae_decoder ir..."
-python export_ir.py --onnx_model=${input_model}/vae_decoder_${precision}/model.onnx --pattern_config=vae_decoder --output_path=./${precision}_${cast_type}_ir/vae_decoder/ --dtype=${cast_type}
+python export_ir.py --onnx_model=${input_model}/vae_decoder_fp32/model.onnx --pattern_config=vae_decoder --output_path=./${precision}_${cast_type}_ir/vae_decoder/ --dtype=${cast_type}
 exit
 fi
 
