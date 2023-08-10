@@ -31,9 +31,13 @@ void quantweight_f32_linear_launcher(const torch::Tensor& activation, const torc
                            jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4FullRangeKBlock,
                            jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4FullRangeKBlock)
 
+  BIT4_FP32_CMPTYPE_LINEAR(nf4_linear, jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelNf4KBlock,
+                           jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelNf4KBlock)
+
   if (quant_type == "s8") s8_linear();
   if (quant_type == "s4_clip") s4_clip_linear();
   if (quant_type == "s4_fullrange") s4_fullrange_linear();
+  if (quant_type == "nf4") nf4_linear();
 
   if (q_bit_verbose) {
     auto end = std::chrono::high_resolution_clock::now();

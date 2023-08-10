@@ -19,7 +19,8 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose, const
                              const std::string& compute_type, const std::string& quant_type) {
   TORCH_CHECK(compute_type == "int8" || compute_type == "fp32", "unsupported compute_type, must be int8/fp32");
   TORCH_CHECK(alg == "sym", "unsupported alg, only support sym currently.");
-  TORCH_CHECK(quant_type == "s8" || quant_type == "s4_clip" || quant_type == "s4_fullrange", "unsupported quant_type.");
+  TORCH_CHECK(quant_type == "s8" || quant_type == "s4_clip" || quant_type == "s4_fullrange" || quant_type == "nf4",
+              "unsupported quant_type.");
   TORCH_CHECK(Fp32Wei.sizes().size() == 2, "dim of weight dosen't meet requirement, must be 2.");
   std::string scale_dtype = quant_type == "s8" ? "fp32" : "bf16";
   int bits = quant_type == "s8" ? 8 : 4;
@@ -50,9 +51,14 @@ torch::Tensor quant_launcher(const torch::Tensor& Fp32Wei, bool transpose, const
                              jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4FullRangeKBlock,
                              jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4FullRangeKBlock)
 
+  BIT4_FP32_CMPTYPE_QUANTIZE(process_nf4_quantize,
+                             jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelNf4KBlock,
+                             jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelNf4KBlock)
+
   if (quant_type == "s8") process_s8_quantize();
   if (quant_type == "s4_clip") process_s4_clip_quantize();
   if (quant_type == "s4_fullrange") process_s4_fullrange_quantize();
+  if (quant_type == "nf4") process_nf4_quantize();
 
   auto tsize = packedw->getSerializedSize();
   torch::Tensor output = torch::zeros(tsize, torch::kInt8);

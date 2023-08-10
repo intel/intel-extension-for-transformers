@@ -455,6 +455,35 @@ inline int8_t f4_quantize(float x) {
 }
 
 template <JBLAS_F4_TYPE F4_T>
+inline void f4_fp32_qdq(int bits, float* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
+                        int blocksize) {
+  auto process_row = [&](int internal_blksize, int process_row, int done_row, int col_offset) {
+    for (size_t j = 0; j < process_row; j += internal_blksize) {
+      float scale = std::numeric_limits<float>::min();
+      for (size_t ij = 0; ij < internal_blksize; ij++) {
+        scale = std::max(scale, std::abs(srcptr[(done_row + j + ij) * ld_src + col_offset]));
+      }
+      uint32_t* bf16scale = reinterpret_cast<uint32_t*>(&scale);
+      *bf16scale = *bf16scale & 0xffff0000;  // data type of scale in  bit4-wei is bf16.
+      for (size_t ij = 0; ij < internal_blksize; ij++) {
+        int8_t tmp = f4_quantize<F4_T>(srcptr[(done_row + j + ij) * ld_src + col_offset]);
+        dstptr[(done_row + j + ij) * ld_dst + col_offset] = f4_dequantize<F4_T>(tmp, scale);
+      }
+    }
+  };
+  for (int i = 0; i < col; i++) {
+    if (row < blocksize) {
+      process_row(row, row, 0, i);
+    } else {
+      process_row(blocksize, row / blocksize * blocksize, 0, i);
+      if (row % blocksize > 0) {
+        process_row(row % blocksize, row % blocksize, row / blocksize * blocksize, i);
+      }
+    }
+  }
+}
+
+template <JBLAS_F4_TYPE F4_T>
 inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
                                           float* scales, int k_offset, int kblock, int NPad) {
   for (int i = 0; i < row; i++) {

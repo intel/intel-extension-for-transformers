@@ -938,6 +938,10 @@ class WeightS4_FullRange_KBlock : public WeightS4_Clip_KBlock<_GemmCore_T, ISA_T
       override {                                                                                                       \
     kernel::wrapper::DecompressKBlockF4Fp<utils::bf16>::forward<ISA_T, utils::bf16, F4_TYPE>(                          \
         reinterpret_cast<utils::f4x2*>(srcptr), dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);     \
+  }                                                                                                                    \
+  virtual void fp32_qdq(int bits, float* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,              \
+                        int blocksize) override {                                                                      \
+    jblas::kernel::ref::f4_fp32_qdq<F4_TYPE>(bits, srcptr, dstptr, row, col, ld_src, ld_dst, blocksize);               \
   }
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
@@ -1241,6 +1245,11 @@ using GemmKernelS4FullRangeKBlock = jblas::wrapper::gemm_pack_weight::GemmInterf
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F, jblas::prologue::gemm::ActivationBase,
         jblas::prologue::weight_comp::gemm::WeightS4_FullRange_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+    DefaultParallel>;
+using GemmKernelNf4KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F, jblas::prologue::gemm::ActivationBase,
+        jblas::prologue::weight_comp::gemm::WeightNf4_KBlock, jblas::epilogue::gemm::AlphaBetaProcessFp32>,
     DefaultParallel>;
 using GemmKernelS8KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
