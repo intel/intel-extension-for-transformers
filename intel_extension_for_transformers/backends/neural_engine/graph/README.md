@@ -9,17 +9,28 @@ ITREX Graph is an experimental c++ bare metal LLM inference solution that mainly
 
 In short, ITREX Graph is an experimental feature and may keep changing.
 
-### Supported Models
-Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [LLaMA2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [Dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON](https://huggingface.co/tiiuae/falcon-7b), [STARCODER](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).
+## Supported Models
+Now we support:
+* [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), 
+* [LLaMA](https://github.com/facebookresearch/llama), [LLaMA2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), 
+* [ChatGLM-1](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM-2](https://huggingface.co/THUDM/chatglm2-6b)
+* [Dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), 
+* [MPT](https://huggingface.co/mosaicml/mpt-7b), 
+* [FALCON](https://huggingface.co/tiiuae/falcon-7b), 
+* [STARCODER](https://huggingface.co/bigcode/starcoder), 
+* [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).
 
 ## How to use
 
 ### 1. Build Graph
-```shell
+```bash
 mkdir build
 cd build
 cmake .. -G Ninja
 ninja
+
+# Notes: if running ChatGLM-1 & 2, please:
+git submodule update --init --recursive
 ```
 
 ### 2. Convert Models
@@ -79,6 +90,15 @@ python scripts/convert_starcoder.py --model={input_model_name_or_path} --outfile
 ./build/bin/quant_starcoder --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
 ```
 
+ChatGLM-1 & 2
+```bash
+# convert the pytorch ChatGLM-1 model to llama.cpp format
+python scripts/convert_chatglm.py -t q8_0 -o ne-chatglm1-q8_0.bin -i THUDM/chatglm-6b
+
+# convert the pytorch ChatGLM-2 model to llama.cpp format
+python scripts/convert_chatglm.py -t q8_0 -o ne-chatglm2-q8_0.bin -i THUDM/chatglm2-6b
+```
+
 ### 3. Run Models
 Running LLAMA model, for details please refer to [LLaMA model documentation](./application/ChatLLAMA/README.md).
 
@@ -86,11 +106,24 @@ Running LLAMA model, for details please refer to [LLaMA model documentation](./a
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 ./build/bin/main_llama -m ~/llama.cpp/models/ne-model-q4_j.bin --seed 12 -c 512 -b 1024 -n 256 --keep 48 -t 56 --repeat-penalty 1.0 --color -p "She opened the door and see"
 ```
 
-Running GPT-NEOX / MPT / FALCON / / GPT-J / STARCODER model, please use `main_gptneox` / `main_mpt` / `main_falcon` / `main_starcoder` (Please type **prompt about codes** when use `STARCODER`. For example, `-p "def fibonnaci("`).
+Running GPT-NEOX / MPT / FALCON / / GPT-J / STARCODER model, please use 
+* `main_gptneox`
+* `main_mpt` 
+* `main_falcon` 
+* `main_starcoder`
 
-
+(Please type **prompt about codes** when use `STARCODER`. For example, `-p "def fibonnaci("`).
 ```bash
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 ./build/bin/main_gptneox -m ${output_path}/ne-q8.bin --seed 12 -c 512 -b 1024 -n 256 -t 56 --repeat-penalty 1.0 -p "She opened the door and see"
+```
+
+Running ChatGLM-1 & 2, please use:
+* `main_chatglm`
+```bash
+./build/bin/main_chatglm -m ./ne-chatglm2-q8_0.bin -p "你好"
+
+# using -i to check the interactive mode
+./build/bin/main_chatglm -m ./ne-chatglm2-q8_0.bin -i
 ```
 
 For GPT-J, you can also try python binds which is experimental currently:
@@ -100,3 +133,4 @@ cp scripts/gptj_binding.py build
 cd build
 python gptj_binding.py
 ```
+
