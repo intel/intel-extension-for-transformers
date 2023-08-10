@@ -338,7 +338,8 @@ def load_model(
     MODELS[model_name] = {}
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
-        use_fast=False if re.search("llama", model_name, re.IGNORECASE) else True,
+        use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -346,7 +347,7 @@ def load_model(
                 model_name, low_cpu_mem_usage=True
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
-        or re.search("neural-chat", model_name, re.IGNORECASE)):
+        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
         from models.mpt.modeling_mpt import MPTForCausalLM
 
         with smart_context_manager(use_deepspeed=use_deepspeed):
@@ -362,6 +363,7 @@ def load_model(
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("opt", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
@@ -439,7 +441,7 @@ def load_model(
             auto_kernel_selection=True,
         )
         if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
-                        or re.search("neural-chat", model_name, re.IGNORECASE)):
+                        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
             from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
             model = jit_trace_mpt_7b(model)
