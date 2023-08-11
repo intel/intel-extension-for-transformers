@@ -42,7 +42,7 @@
 #include "models/model_utils/util.h"
 
 #define MODEL_MAX_NORM 4
-#define MODEL_MAX_ATTN 4
+#define MODEL_MAX_ATTN 8
 #define MODEL_MAX_FFN 4
 #define MODEL_MAX_OTHERS 7
 
