@@ -340,7 +340,7 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
       // return result for just the last token
       logits_out.resize(n_vocab);
       memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
-#ifdef 0
+#if 0
       for (int k = 0; k < 64; ++k) {
         printf("logits[%d]: %2.5f ", k, logits_out[k]);
       }
