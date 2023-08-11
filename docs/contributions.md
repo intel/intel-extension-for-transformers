@@ -43,7 +43,7 @@ See [PR template](../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md)
 
 (3) ALL conversations solved
 
-(4) Third-party dependency license compliable
+(4) Third-party dependency license Compatible
 
 
 ## CI Introduction

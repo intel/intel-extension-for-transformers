@@ -2263,3 +2263,24 @@ DCO
 cloc
 jira
 servicedesk
+Bas
+GHA
+clangformat
+dco
+gtest
+inteltf
+jenk
+mr
+sign off
+formatScan
+Neuralchat
+PenghuiCheng
+VincyZhang
+XuehaoSun
+airMeng
+kevinintel
+lkk
+luoyu
+lvliang
+xin
+zhenwei

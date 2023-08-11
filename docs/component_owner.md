@@ -5,10 +5,10 @@ Contributions to Intel Extension for Transformers specific component must get ap
 
 |     Component      |     Owner       |     Backup      |
 |--------------------|-----------------|-----------------|
-|     Kernel         |     Hengyu      |     Luo yu      |
-|     Engine         |     Dong bo     |     Zhenwei     |
-|     Pytorch        |     Penghui     |     He xin      |
-|     Tensorflow     |     Lv liang    |     Penghui     |
-|     Neuralchat     |     Lv liang    |     Kaokao      |
-|     Workflow       |     Lv liang    |     Haihao      |
-|     Tests          |     Wenxin      |     Xuehao      |
+|     Kernel         |     airMeng      |     luoyu-intel      |
+|     Engine         |     a32543254     |     zhenwei-intel     |
+|     Pytorch        |     PenghuiCheng     |     xin3he      |
+|     Tensorflow     |   lvliang-intel    |     PenghuiCheng     |
+|     Neuralchat     |   lvliang-intel    |     lkk12014402      |
+|     Workflow       |    lvliang-intel    |     kevinintel      |
+|     Tests          |     VincyZhang      |     XuehaoSun      |
