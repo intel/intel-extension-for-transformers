@@ -64,6 +64,19 @@ void sigint_handler(int signo) {
 }
 #endif
 
+std::string build_prompt(const std::vector<std::string> &history) {
+    // CHATGLM_CHECK(history.size() % 2 == 1) << "invalid history size " << history.size();
+
+    std::ostringstream oss_prompt;
+    for (size_t i = 0; i < history.size(); i += 2) {
+        oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
+        if (i < history.size() - 1) {
+            oss_prompt << history[i + 1] << "\n\n";
+        }
+    }
+    return oss_prompt.str();
+}
+
 int main(int argc, char** argv) {
   gpt_params params;
   params.name = MODEL_CHATGLM;
@@ -182,7 +195,12 @@ int main(int argc, char** argv) {
   }
 
   // tokenize the prompt
-  std::vector<int> embd_inp = ::model_tokenize(ctx, params.prompt, false);
+  // std::vector<int> embd_inp = ::model_tokenize(ctx, params.prompt, false);
+  std::vector<std::string> prompts;
+  prompts.push_back(params.prompt);
+  std::string prompt = build_prompt(prompts);
+  std::vector<int> embd_inp = ::model_tokenize(ctx, prompt, false);
+  embd_inp.insert(embd_inp.begin(), {64790, 64792}); // special prefix
 
   const int n_ctx = model_n_ctx(ctx);
 
