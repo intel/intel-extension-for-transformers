@@ -62,8 +62,7 @@ RUN conda init bash && \
     echo "conda activate chatbot-finetuning" >> ~/.bashrc && \
     source ~/.bashrc
 
-SHELL ["/bin/bash", "--login", "-c", "conda", "run", "-n", "chatbot-finetuning"]
-RUN wget https://intel-extension-for-pytorch.s3.amazonaws.com/torch_ccl/cpu/oneccl_bind_pt-1.13.0%2Bcpu-cp39-cp39-linux_x86_64.whl && \
+RUN source activate && conda activate chatbot-finetuning && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
     cd /itrex && pip install -v . && \
