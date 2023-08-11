@@ -68,6 +68,12 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = n_embd / n_head / 2;
+  const int head_size = n_embd / n_head;
+  const int rope_dim = head_size / 2;
+  const int mqa_scale = n_head / hparams.multi_query_group_num;
+  const int num_kv_heads = hparams.multi_query_group_num;
+  const int qlen = N;
+  const int hidden_size = n_embd;
 
   auto& mem_per_token = lctx.mem_per_token;
   auto& buf_compute = lctx.buf_compute;
@@ -103,49 +109,49 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       // compute QKV
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
 
-      size_t fused_qkv_row_nb = (n_embd + 2 * (n_embd / n_head)) * sizeof(float);
 
-      struct ne_tensor* Qcur =
-          ne_view_3d(ctx0, cur, head_dim, n_head, N, head_dim * sizeof(float), fused_qkv_row_nb, 0);
+      struct ne_tensor *query_layer =
+        ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
+                     0); // [qlen, heads, head_size]
+      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0);
+      query_layer = ne_cont(ctx0, ne_permute(ctx0, query_layer, 0, 2, 1, 3)); // [heads, qlen, head_size]
+      query_layer = ne_reshape_3d(ctx0, query_layer, head_size, mqa_scale * qlen,
+                                  num_kv_heads); // [kv_heads, mqa_scale * qlen, head_size]
 
-      struct ne_tensor* Kcur =
-          ne_view_3d(ctx0, cur, head_dim, 1, N, head_dim * sizeof(float), fused_qkv_row_nb, n_embd * sizeof(float));
+      struct ne_tensor *key_layer =
+        ne_view_3d(ctx0, cur, head_size, num_kv_heads, qlen, head_size * ne_element_size(cur), cur->nb[1],
+                     hidden_size * ne_element_size(cur)); // [qlen, kv_heads, head_size]
+      key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 0);
+      key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3); // [kv_heads, qlen, head_size]
 
-      struct ne_tensor* Vcur = ne_view_3d(ctx0, cur, head_dim, 1, N, head_dim * sizeof(float), fused_qkv_row_nb,
-                                          (n_embd + head_dim) * sizeof(float));
-
-      // using mode = 2 for neox mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2);
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2);
+      struct ne_tensor *value_layer =
+          ne_view_3d(ctx0, cur, head_size, num_kv_heads, qlen, head_size * ne_element_size(cur), cur->nb[1],
+                      (hidden_size + head_size * num_kv_heads) * ne_element_size(cur)); // [qlen, kv_heads, head_size]
+      value_layer = ne_permute(ctx0, value_layer, 1, 2, 0, 3);                           // [kv_heads, head_size, qlen]
 
       // store key and value to memory
       {
-        // head_dim, 1 (head_num), N --> head_dim, N, 1 (head_num)
-        struct ne_tensor* Kcur_permuted = ne_permute(ctx0, Kcur, 0, 2, 1, 3);
-        // head_dim, 1 (head_num), N --> N, head_dim, 1 (head_num)
-        struct ne_tensor* Vcur_permuted = ne_permute(ctx0, Vcur, 1, 2, 0, 3);
 
-        struct ne_tensor* k =
-            ne_view_3d(ctx0, kv_self.k, head_dim, N, 1, ne_element_size(kv_self.k) * head_dim,
-                       ne_element_size(kv_self.k) * head_dim * n_ctx,
-                       il * n_ctx * ne_element_size(kv_self.k) * head_dim +
-                           n_past * ne_element_size(kv_self.k) * head_dim);
-        struct ne_tensor* v = ne_view_3d(
-            ctx0, kv_self.v, N, head_dim, 1, n_ctx * ne_element_size(kv_self.v),
-            n_ctx * ne_element_size(kv_self.v) * head_dim,
-            il * n_ctx * ne_element_size(kv_self.v) * head_dim + n_past * ne_element_size(kv_self.v));
+        struct ne_tensor *k_cache_view =
+            ne_view_3d(ctx0, kv_self.k, head_size, qlen, num_kv_heads, kv_self.k->nb[1], kv_self.k->nb[2],
+                        n_past * head_size * ne_element_size(kv_self.k)); // [kv_heads, qlen, head_size]
 
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_permuted, k));
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_permuted, v));
+        struct ne_tensor *v_cache_view =
+            ne_view_3d(ctx0, kv_self.v, qlen, head_size, num_kv_heads, kv_self.v->nb[1], kv_self.v->nb[2],
+                        n_past * ne_element_size(kv_self.v)); // [kv_heads, head_size, qlen]
+        
+        
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, key_layer, k_cache_view));
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
       }
 
       // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0, 2, 1, 3)
       struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
 
       struct ne_tensor* K =
-          ne_view_3d(ctx0, kv_self.k, head_dim, N + n_past, 1, ne_element_size(kv_self.k) * head_dim,
-                     ne_element_size(kv_self.k) * head_dim * n_ctx,
-                     il * n_ctx * ne_element_size(kv_self.k) * head_dim * 1);
+          ne_view_3d(ctx0, kv_self.k, head_size, N + n_past, 1, ne_element_size(kv_self.k) * head_size,
+                     ne_element_size(kv_self.k) * head_size * n_ctx,
+                     il * n_ctx * ne_element_size(kv_self.k) * head_size * 1);
 
       // K * Q
       struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
@@ -161,9 +167,9 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
       // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
       struct ne_tensor* V =
-          ne_view_3d(ctx0, kv_self.v, N + n_past, head_dim, 1, ne_element_size(kv_self.v) * n_ctx,
-                     ne_element_size(kv_self.v) * n_ctx * head_dim,
-                     il * n_ctx * ne_element_size(kv_self.v) * head_dim * 1);
+          ne_view_3d(ctx0, kv_self.v, N + n_past, head_size, 1, ne_element_size(kv_self.v) * n_ctx,
+                     ne_element_size(kv_self.v) * n_ctx * head_size,
+                     il * n_ctx * ne_element_size(kv_self.v) * head_size * 1);
 
       // KQV = transpose(V) * KQ_soft_max
       struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
