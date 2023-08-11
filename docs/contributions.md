@@ -30,45 +30,29 @@ If you have improvements to Intel® Extension for Transformers, pull requests fo
 Before sending your pull requests, follow the information below:
 
 - Changes are consistent with the Python [Coding Style](https://github.com/google/styleguide/blob/gh-pages/pyguide.md).
-- Use pylint to check your Python code.
-- Use flake8 and autopep8 to make Python code clean.
+- Use pylint to check your Python code, more detail please go to [pylint script](../.github/workflows/script/formatScan/pylint.sh)
 
 ### Pull Request Template
 See [PR template](../.github/PULL_REQUEST_TEMPLATE/pull_request_template.md)
 
 ### Pull Request Acceptance Criteria
 
-(1) At least two approval from reviewers (1 approval from the component [owner](../.github/CODEOWNERS))
+(1) At least two approvals from reviewers (1 approval from the component [owner](./component_owner.md))
 
 (2) ALL detected CI checks pass
 
-(3) ALL conversation solved
+(3) ALL conversations solved
+
+(4) Third-party dependency license compliable
 
 
 ## CI Introduction
-
-
-
-|     Test Name                 |     Test Pass Criteria                        |     Checks    |
-|-------------------------------|-----------------------------------------------|---------------|
-|     Format Scan               |     Pylint/Cpplint/bandit/cloc Pass           |     4         |
-|     Spell Check               |     Check Pass                                |     1         |
-|     Copyright Check           |     Check Pass                                |     1         |
-|     DCO                       |     Check Pass                                |     1         |
-|     Optimize UT + Coverage    |     a. No failure, no core dump, no segmentation fault b. No coverage drop|     1         |
-|     Engine UT + Coverage      |     a. No failure, no core dump, no segmentation fault b. No coverage drop|     3         |
-|     Kernel UT                 |     No failure, no core dump, no segmentation fault   |     1         |
-|     Kernel Benchmark          |     No failure, No performance regression              |     1         |
-|     Optimize Model Test       |     a. Quantize success  b. Fp32 Benchmark/Throughput/Accuracy success and no regression  c. Int8 Benchmark/Throughput/Accuracy success and no regression|     2         |
-|     Backend Model Test        |     a. Fp32 inference no regression   b. Int8 inference no regression  c. C++ API inference no regression|     2         |
-|     LLM Test                  |     No failure, No performance regression      |     1         |
-|     CPP Graph Test            |     No failure, No performance regression      |     1         |
-
+See [CI Introduction](./CI_introduction.md)
 
 ## FAQ
 
 
-1. How to add third-party dependency
+1. How to check third-party dependency license compliance
 	
     If you are using third-party component by: (1) import lib and uses its API (2) static/dynamic linked (3) copy code and modified (4) other uncertain usage, please contact [Maintainers](inc.maintainers@intel.com) to check license compliance before push code to repo.
 
