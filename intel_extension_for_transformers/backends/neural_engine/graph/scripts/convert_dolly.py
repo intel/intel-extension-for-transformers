@@ -11,6 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+# Convert Hugging Face fine-tuned gpt-neox-like models to ne format
+#
+# Usage:
+#
+#   python3 models/convert-h5-to-ne.py
+#
+# This script is similar to "convert-pt-to-ne.py"
+#
 
 import io
 import os
@@ -24,7 +32,7 @@ from pathlib import Path
 import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -64,42 +72,63 @@ def main(args_in: Optional[List[str]] = None) -> None:
     ftype = 0
     if args.outtype== "f16":
         ftype = 1
-    
+
     tokenizer = AutoTokenizer.from_pretrained(dir_model)
-    config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
-    hparams = config.to_dict()
     print("Loading model: ", dir_model)
-    model = AutoModelForCausalLM.from_pretrained(dir_model, config=config, torch_dtype=torch.float16
-                    if ftype == 1 else torch.float32, low_cpu_mem_usage=True, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(dir_model, torch_dtype=torch.float16 if ftype == 1 else torch.float32)
+    model.eval()
+    for p in model.parameters():
+        p.requires_grad = False
+    hparams = model.config.to_dict()
     print("Model loaded: ", dir_model)
 
     fout = open(fname_out, "wb")
-    fout.write(struct.pack("i", 0x67676d6c)) # magic: falcon in hex
+
+    # 0x67676d6c is unversioned ne
+    # 0x67676d66 is versioned ggmf (requires token scores)
+    ne_file_magic = 0x67676d6c
+    #ne_file_version = 0x00000001 # v1
+
+    hparams["multiple_of"] = 1
+    fout.write(struct.pack("i", ne_file_magic)) # magic: ne in hex
+    #fout.write(struct.pack("i", ne_file_version))
 
     fout.write(struct.pack("i", hparams["vocab_size"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", hparams["n_head"]))
-    fout.write(struct.pack("i", hparams["n_layer"]))
-    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0)) # dummy data
+    fout.write(struct.pack("i", hparams["num_attention_heads"]))
+    fout.write(struct.pack("i", hparams["num_hidden_layers"]))
+    fout.write(struct.pack("i", int((hparams["hidden_size"] / hparams["num_attention_heads"]
+                                ) * hparams["rotary_pct"])))
     fout.write(struct.pack("i", ftype))
     fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("f", 0))
-    fout.write(struct.pack("f", 0))
-    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("f", 0.0))
+    fout.write(struct.pack("f", 0.0))
+    fout.write(struct.pack("i", int(hparams["use_parallel_residual"])))
 
-    reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
-    byte_encoder = bytes_to_unicode()
-    byte_decoder = {v:k for k, v in byte_encoder.items()}
-
+    # Is this correct??
+    dot_token = tokenizer.encode(".")[0]
     for i in range(hparams["vocab_size"]):
-        text = bytearray([byte_decoder[c] for c in reverse_vocab[i]])
+        text = tokenizer.decode([i]).encode('utf-8')
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
 
     list_vars = model.state_dict()
+
+    print(hparams)
+
     for name in list_vars.keys():
+        if name.startswith('gpt_neox.layers.'):
+            if 'attention.masked_bias' in name or \
+                'attention.rotary_emb.inv_freq' in name or \
+                'attention.bias' in name:
+                continue
+        # No gradients for these
+        list_vars[name].requires_grad = False
         src = name
+        nn = name
+
+        print(src, ' -> ', name)
         data = list_vars[src].squeeze().numpy()
         data = data.astype(np.float32)
 
@@ -109,15 +138,20 @@ def main(args_in: Optional[List[str]] = None) -> None:
         # default type is fp32
         ftype_cur = 0
         if ftype == 1 and n_dims > 1:
-            print("  Converting to float16")
+            print("  Converting to float16", data.shape, data[:3, :3].tolist())
             data = data.astype(np.float16)
             ftype_cur = 1
+        else:
+            print("  Converting to float32", data.shape,
+                data[:3, :3].tolist() if n_dims > 1 else data[:3].tolist())
+            data = data.astype(np.float32)
 
         # header
         str = name.encode('utf-8')
         fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
         for i in range(n_dims):
             fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+        print(str)
         fout.write(str)
 
         # data
@@ -127,6 +161,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     print("Done. Output file: " + fname_out)
     print("")
+
 
 if __name__ == '__main__':
     main()
