@@ -74,6 +74,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int num_kv_heads = hparams.multi_query_group_num;
   const int qlen = N;
   const int hidden_size = n_embd;
+  const int num_attention_heads = n_head;
 
   auto& mem_per_token = lctx.mem_per_token;
   auto& buf_compute = lctx.buf_compute;
@@ -108,7 +109,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     {
       // compute QKV
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
-
+      cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].attn[1], cur), cur);
 
       struct ne_tensor *query_layer =
         ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
@@ -145,43 +146,35 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
         ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
       }
 
-      // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0, 2, 1, 3)
-      struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
+      // concat key & value with past kv
+      key_layer = ne_view_3d(ctx0, kv_self.k, head_size, n_past + qlen, num_kv_heads, kv_self.k->nb[1], kv_self.k->nb[2],
+                              0); // [kv_heads, klen, head_size]
+      value_layer = ne_view_3d(ctx0, kv_self.v, n_past + qlen, head_size, num_kv_heads, kv_self.v->nb[1], kv_self.v->nb[2],
+                                0); // [kv_heads, head_size, klen]
 
-      struct ne_tensor* K =
-          ne_view_3d(ctx0, kv_self.k, head_size, N + n_past, 1, ne_element_size(kv_self.k) * head_size,
-                     ne_element_size(kv_self.k) * head_size * n_ctx,
-                     il * n_ctx * ne_element_size(kv_self.k) * head_size * 1);
+      // attention
+      struct ne_tensor *attn_scores = ne_mul_mat(ctx0, key_layer, query_layer); // [kv_heads, mqa_scale * qlen, klen]
+      attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, 1.f / std::sqrt(head_size)));
 
-      // K * Q
-      struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
+      if (n_past == 0) {
+        // build attention mask for context input
+        attn_scores = ne_reshape_3d(ctx0, attn_scores, n_past + qlen, qlen,
+                                      num_attention_heads); // [heads, qlen, klen]
+        attn_scores = ne_diag_mask_inf_inplace(ctx0, attn_scores, n_past);
+        attn_scores = ne_reshape_3d(ctx0, attn_scores, n_past + qlen, mqa_scale * qlen,
+                                      num_kv_heads); // [kv_heads, mqa_scale * qlen, klen]
+      }
 
-      // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scaled = ne_scale_inplace(ctx0, KQ, ne_new_f32(ctx0, 1.0f / sqrt(float(n_embd) / n_head)));
+      struct ne_tensor *attn_probs = ne_soft_max_inplace(ctx0, attn_scores); // [kv_heads, mqa_scale * qlen, klen]
 
-      // KQ_masked = mask_past(KQ_scaled)
-      struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
+      struct ne_tensor *context_layer = ne_mul_mat(ctx0, value_layer, attn_probs); // [kv_heads, mqa_scale * qlen, head_size]
+      context_layer = ne_reshape_3d(ctx0, context_layer, head_size, qlen,
+                                      num_attention_heads);                           // [heads, qlen, head_size]
+      context_layer = ne_cont(ctx0, ne_permute(ctx0, context_layer, 0, 2, 1, 3)); // [qlen, heads, head_size]
+      context_layer = ne_reshape_2d(ctx0, context_layer, hidden_size, qlen); // [qlen, hidden]
 
-      // KQ = soft_max(KQ_masked)
-      struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
-
-      // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
-      struct ne_tensor* V =
-          ne_view_3d(ctx0, kv_self.v, N + n_past, head_size, 1, ne_element_size(kv_self.v) * n_ctx,
-                     ne_element_size(kv_self.v) * n_ctx * head_size,
-                     il * n_ctx * ne_element_size(kv_self.v) * head_size * 1);
-
-      // KQV = transpose(V) * KQ_soft_max
-      struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
-
-      // KQV_merged = KQV.permute(0, 2, 1, 3)
-      struct ne_tensor* KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
-
-      // cur = KQV_merged.contiguous().view(n_embd, N)
-      cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
-
-      // projection
-      { cur = ne_mul_mat(ctx0, model.layers[il].attn[1], cur); }
+      // struct ne_tensor *attn_output = dense.forward(ctx0, context_layer);
+      cur = ne_mul_mat(ctx0, model.layers[il].attn[2], context_layer);
     }
 
     lctx.use_buf(ctx0, 1);
