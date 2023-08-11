@@ -17,7 +17,7 @@
 
 from typing import List
 import sys
-from collections import defaultdict
+from ..utils.command import NeuralChatCommandDict
 
 
 __all__ = [
@@ -29,9 +29,6 @@ __all__ = [
     'neuralchat_client_commands'
 ]
 
-class NeuralChatCommandDict(defaultdict):
-    def __init__(self):
-        super().__init__(NeuralChatCommandDict)
 
 neuralchat_server_commands = NeuralChatCommandDict()
 neuralchat_client_commands = NeuralChatCommandDict()

@@ -24,7 +24,7 @@ class NeuralChatBot:
         self.config = config
         # Initialize other attributes here
 
-    def build_chatbot(self):
+    def build(self):
         # Implement the logic to build the chatbot
         pass
 
@@ -39,10 +39,6 @@ class NeuralChatBot:
         # Implement the logic to optimize the model
         pass
 
-    def register_model(self, model):
-        # Implement the logic to register the model
-        pass
-
     def predict(self, prompt, temperature, top_p, top_k, repetition_penalty,
                 max_new_tokens, do_sample, num_beams, num_return_sequences,
                 bad_words_ids, force_words_ids, use_hpu_graphs, use_cache):
@@ -50,6 +46,18 @@ class NeuralChatBot:
         pass
 
     def predict_stream(self, prompt, temperature, top_p, top_k, repetition_penalty,
+                       max_new_tokens, do_sample, num_beams, num_return_sequences,
+                       bad_words_ids, force_words_ids, use_hpu_graphs, use_cache):
+        # Implement the logic to generate predictions in a streaming manner
+        pass
+
+    def chat(self, prompt, temperature, top_p, top_k, repetition_penalty,
+                max_new_tokens, do_sample, num_beams, num_return_sequences,
+                bad_words_ids, force_words_ids, use_hpu_graphs, use_cache):
+        # Implement the logic to generate predictions
+        pass
+
+    def chat_stream(self, prompt, temperature, top_p, top_k, repetition_penalty,
                        max_new_tokens, do_sample, num_beams, num_return_sequences,
                        bad_words_ids, force_words_ids, use_hpu_graphs, use_cache):
         # Implement the logic to generate predictions in a streaming manner

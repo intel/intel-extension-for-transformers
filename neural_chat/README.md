@@ -33,7 +33,7 @@ neuralchat textchat --prompt "Tell me about Intel Xeon Scalable Processors."
 >>> from neural_chat.chatbot import NeuralChatBot
 >>> config = NeuralChatConfig()
 >>> chatbot = NeuralChatBot(config)
->>> chatbot.build_chatbot()
+>>> chatbot.build()
 >>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
@@ -69,8 +69,8 @@ For the Python API code, users have the option to enable different voice chat mo
 >>> from neural_chat.chatbot import NeuralChatBot
 >>> config = NeuralChatConfig(audio_input=True, audio_output=True)
 >>> chatbot = NeuralChatBot(config)
->>> chatbot.build_chatbot()
->>> result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+>>> chatbot.build()
+>>> result = chatbot.chat("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 ## Finetuning
@@ -92,9 +92,9 @@ neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config finetu
 >>> finetuneCfg = FinetuningConfig()
 >>> config = NeuralChatConfig(finetuneConfig=finetuneCfg)
 >>> chatbot = NeuralChatBot(config)
->>> chatbot.build_chatbot()
+>>> chatbot.build()
 >>> chatbot.finetune()
->>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+>>> response = chatbot.chat("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 
