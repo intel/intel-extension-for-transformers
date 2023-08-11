@@ -72,8 +72,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
     return false;
   }
 
-  cache.k = ne_new_tensor_1d(cache.ctx, wtype, n_elements, NE_SIZE_CALC);
-  cache.v = ne_new_tensor_1d(cache.ctx, wtype, n_elements, NE_SIZE_CALC);
+  cache.k = ne_new_tensor_3d(cache.ctx, NE_TYPE_F16, 4096 / 32, 32768, 2, NE_SIZE_CALC);
+  cache.v = ne_new_tensor_3d(cache.ctx, NE_TYPE_F16, 32768, 4096 / 32, 2, NE_SIZE_CALC);
   ne_set_name(cache.k, "cache_k");
   ne_set_name(cache.v, "cache_v");
 
