@@ -44,6 +44,8 @@ nohup npm run dev &
 
 ```
 cd /itrex/workflows/chatbot/inference/backend/chat/
+git-lfs install
+git clone https://huggingface.co/hkunlp/instructor-large
 ```
 
 ### Modify run_ipex.sh

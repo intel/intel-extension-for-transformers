@@ -89,13 +89,16 @@ RUN source activate && conda activate chatbot-demo && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
     conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
+    conda install git-lfs && \
     pip install 'farm-haystack[inference]' && \
     pip install intel_extension_for_pytorch && \
     pip install transformers diffusers accelerate && \
     pip install einops SentencePiece peft evaluate nltk datasets && \
     pip install fastapi uvicorn sse_starlette bottle gevent pymysql && \
     pip install schema python-multipart speechbrain soundfile gptcache pydub && \
-    pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers==1.0.0.dev20230602
+    pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers==1.0.0.dev20230602 && \
+    pip uninstall sentence_transformers -y && \
+    pip install git+https://github.com/UKPLab/sentence-transformers.git
 
 
 # Add user
@@ -114,4 +117,4 @@ ADD https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.10-l
 # Switch to root user
 USER root
 
-WORKDIR /itrex/workflows/chatbot/demo/
+WORKDIR /itrex/workflows/chatbot/
