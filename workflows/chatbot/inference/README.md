@@ -88,6 +88,7 @@ python generate.py \
         --base_model_path "decapoda-research/llama-7b-hf" \
         --peft_model_path "./llama_peft_finetuned_model" \
         --use_slow_tokenizer \
+        --use_kv_cache \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
@@ -100,6 +101,7 @@ python generate.py \
         --repetition_penalty 1.2 \
         --base_model_path "decapoda-research/llama-7b-hf" \
         --use_slow_tokenizer \
+        --use_kv_cache \
         --instructions "Tell me about China."
 ```
 
