@@ -18,4 +18,4 @@
 """Intel® Neural Chat: An open-source Python library supporting LLM chatbot."""
 from .version import __version__
 
-from .config import FinetuningConfig, OptimizationConfig, NeuralChatConfig
+from ..config import FinetuningConfig, OptimizationConfig, NeuralChatConfig
