@@ -13,7 +13,7 @@ class TestASR(unittest.TestCase):
         text = self.asr.audio2text(audio_path)
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
-    def test_audio2text(self):
+    def test_audio2text_bf16(self):
         audio_path = "pat.wav"
         text = self.asr_bf16.audio2text(audio_path)
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
