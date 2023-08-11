@@ -45,7 +45,7 @@ void model_load_internal(const std::string& fname, model_name name, model_contex
   lctx.t_start_us = ne_time_us();
 
   std::unique_ptr<IModel> ms(new OPT());
-  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, true);
+  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;

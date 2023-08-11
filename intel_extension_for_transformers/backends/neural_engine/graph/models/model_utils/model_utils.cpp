@@ -912,7 +912,7 @@ static void model_quantize_internal(const quant_params& params, quant_layer_base
     nthread = std::thread::hardware_concurrency();
   }
   std::unique_ptr<model_model_loader> model_loader(new model_model_loader(params.model_file, /*use_mmap*/ false,
-                                                                          /*vocab_only*/ true));
+                                                                          /*vocab_only*/ false));
   model_file_saver file_saver(params.out_file.c_str(), model_loader->file_loaders.at(0).get(), ftype);
   size_t total_size_org = 0;
   size_t total_size_new = 0;
