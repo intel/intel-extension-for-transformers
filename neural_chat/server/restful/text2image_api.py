@@ -23,6 +23,7 @@ from typing import Optional
 from neural_chat.cli.log import logger
 from neural_chat.server.restful.request import Text2ImageRequest
 from neural_chat.server.restful.response import ImageResponse
+from neural_chat.chatbot import NeuralChatBot
 
 
 def check_text2image_params(request: Text2ImageRequest) -> Optional[str]:
@@ -43,15 +44,15 @@ class Text2ImageAPIRouter(APIRouter):
 
     def __init__(self) -> None:
         super().__init__()
-        self.sdbot = None
+        self.chatbot = None
 
-    def set_sdbot(self, sdbot: SDbot) -> None:
-        self.sdbot = sdbot
+    def set_chatbot(self, chatbot: NeuralChatBot) -> None:
+        self.chatbot = chatbot
 
-    def get_sdbot(self) -> SDbot:
-        if self.sdbot is None:
+    def get_chatbot(self) -> NeuralChatBot:
+        if self.chatbot is None:
             raise RuntimeError("Chatbot instance has not been set.")
-        return self.sdbot
+        return self.chatbot
 
     async def handle_text2image_request(self, request: Text2ImageRequest) -> ImageResponse:
         data = {
@@ -61,8 +62,9 @@ class Text2ImageAPIRouter(APIRouter):
             "seed": request.seed,
             "token": request.sd_inference_token
         }
-        sdbot = self.get_sdbot()
-        image_string = sdbot.predict(data)
+        chatbot = self.get_chatbot()
+        # TODO: NeuralChatBot.text2image()
+        image_string = chatbot.predict(data)
         image_byte = base64.b64decode(image_string)
         image_io = BytesIO(image_byte)
         image = Image.open(image_io)

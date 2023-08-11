@@ -21,6 +21,7 @@ from fastapi import APIRouter
 from neural_chat.cli.log import logger
 from neural_chat.server.restful.request import FinetuneRequest
 from neural_chat.server.restful.response import FinetuneResponse
+from neural_chat.chatbot import NeuralChatBot
 
 
 def check_finetune_params(request: FinetuneRequest) -> Optional[str]:
@@ -34,19 +35,19 @@ class FinetuneAPIRouter(APIRouter):
 
     def __init__(self) -> None:
         super().__init__()
-        self.finetune_bot = None
+        self.chatbot = None
 
-    def set_finetune_bot(self, finetune_bot: Finetunebot) -> None:
-        self.finetune_bot = finetune_bot
+    def set_chatbot(self, chatbot: NeuralChatBot) -> None:
+        self.chatbot = chatbot
 
-    def get_finetune_bot(self) -> Finetunebot:
-        if self.finetune_bot is None:
+    def get_chatbot(self) -> NeuralChatBot:
+        if self.chatbot is None:
             raise RuntimeError("Finetunebot instance has not been set.")
-        return self.finetune_bot
+        return self.chatbot
     
     def handle_finetune_request(self, request: FinetuneRequest) -> FinetuneResponse:
-        bot = self.get_finetune_bot()
-        result = bot.predict(request)
+        bot = self.get_chatbot()
+        result = bot.finetune_model(bot.config.finetune_config)
         return FinetuneResponse(content=result)
 
 

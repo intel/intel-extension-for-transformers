@@ -55,8 +55,13 @@ import evaluate
 import torch
 import importlib.util
 from transformers.utils.import_utils import is_optimum_available
-from data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
+from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
 from ...config import FinetuningConfig
+
+
+def is_optimum_habana_available():
+    return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
+
 
 class Finetuning:
     def __init__(self, finetuning_config: FinetuningConfig):
@@ -66,6 +71,14 @@ class Finetuning:
             finetuning_config.training_args,
             finetuning_config.finetune_args
         )
+        if finetuning_config.finetune_args.device == "cpu":
+            finetuning_config.training_args.no_cuda = True
+            Arguments = type(finetuning_config.training_args)
+            training_args = {
+                k: getattr(finetuning_config.training_args, k) \
+                    for k in Arguments.__dataclass_fields__.keys() if Arguments.__dataclass_fields__[k].init
+            }
+            self.training_args = Arguments(**training_args)
 
         os.environ["WANDB_DISABLED"] = "true"
 
@@ -196,6 +209,7 @@ class Finetuning:
             )
         else:
             raise ValueError("Please provide value for model_name_or_path or config_name.")
+        return config
 
     def load_tokenizer(self, model_args):
         tokenizer_kwargs = {
@@ -220,19 +234,21 @@ class Finetuning:
         return tokenizer
 
     def finetune(self):
-        pass
+        config = self.load_model_config(self.model_args)
+        if config.architectures[0].endswith("ForCausalLM"):
+            self.finetune_clm()
+        elif config.architectures[0].endswith("ForConditionalGeneration"):
+            self.finetune_seq2seq()
+        else:
+            raise NotImplementedError(
+                "Unsupported architecture {}, only support CausalLM (CLM) and ConditionalGeneration (Seq2seq) now.".format(
+                    config.architectures[0]
+                )
+            )
 
-
-class FinetuningCLM(Finetuning):
-    def __init__(self, finetuning_config: FinetuningConfig):
-        super().__init__(finetuning_config)
-
-    def finetune(self):
+    def finetune_clm(self):
         model_args, data_args, training_args, finetune_args = \
             self.model_args, self.data_args, self.training_args, self.finetune_args
-
-        def is_optimum_habana_available():
-            return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
 
         def find_all_linear_names(model):
             cls = torch.nn.Linear
@@ -471,12 +487,7 @@ class FinetuningCLM(Finetuning):
                         training_args.output_dir, state_dict=unwrapped_model.state_dict()
                     )
 
-
-class FinetuningSeq2Seq(Finetuning):
-    def __init__(self, finetuning_config: FinetuningConfig):
-        super().__init__(finetuning_config)
-
-    def finetune(self):
+    def finetune_seq2seq(self):
         model_args, data_args, training_args, finetune_args = \
             self.model_args, self.data_args, self.training_args, self.finetune_args
 

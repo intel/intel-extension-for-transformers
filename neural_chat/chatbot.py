@@ -17,6 +17,7 @@
 """Neural Chat Chatbot API."""
 
 from .config import NeuralChatConfig, FinetuningConfig, OptimizationConfig
+from .pipeline.finetuning.finetuning import Finetuning
 
 class NeuralChatBot:
     def __init__(self, config: NeuralChatConfig):
@@ -27,9 +28,12 @@ class NeuralChatBot:
         # Implement the logic to build the chatbot
         pass
 
-    def finetune_model(self, config: FinetuningConfig):
+    def finetune_model(self, config: FinetuningConfig=None):
         # Implement the logic to finetune the model
-        pass
+        config = config if config is not None else self.config.finetune_config
+        assert config is not None, "FinetuningConfig is needed for finetuning."
+        self.finetuning = Finetuning(config)
+        self.finetuning.finetune()
 
     def optimize_model(self, config: OptimizationConfig):
         # Implement the logic to optimize the model

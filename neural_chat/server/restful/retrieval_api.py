@@ -21,6 +21,7 @@ from fastapi import APIRouter
 from neural_chat.cli.log import logger
 from neural_chat.server.restful.request import RetrievalRequest
 from neural_chat.server.restful.response import RetrievalResponse
+from neural_chat.chatbot import NeuralChatBot
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -34,18 +35,19 @@ class RetrievalAPIRouter(APIRouter):
 
     def __init__(self) -> None:
         super().__init__()
-        self.retrieval_bot = None
+        self.chatbot = None
 
-    def set_retrieval_bot(self, bot: RetrievalBot) -> None:
-        self.retrieval_bot = bot
+    def set_chatbot(self, bot: NeuralChatBot) -> None:
+        self.chatbot = bot
 
-    def get_retrieval_bot(self) -> RetrievalBot:
-        if self.retrieval_bot is None:
+    def get_chatbot(self) -> NeuralChatBot:
+        if self.chatbot is None:
             raise RuntimeError("Retrievalbot instance has not been set.")
-        return self.retrieval_bot
+        return self.chatbot
     
     def handle_retrieval_request(self, request: RetrievalRequest) -> RetrievalResponse:
-        bot = self.get_retrieval_bot()
+        bot = self.get_chatbot()
+        # TODO: NeuralChatBot.retrieve_model()
         result = bot.predict(request)
         return RetrievalResponse(content=result)
     
