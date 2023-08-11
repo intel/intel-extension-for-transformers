@@ -12,7 +12,7 @@ import threading
 import uuid
 
 from fastapi import FastAPI, Request, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, PlainTextResponse 
 import requests
 from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, GenerationConfig, StoppingCriteria, StoppingCriteriaList
 import torch

@@ -83,14 +83,18 @@ RUN conda init bash && \
     conda config --add channels intel && \
     conda create -yn chatbot-demo python=3.9 && \
     echo "conda activate chatbot-demo" >> ~/.bashrc && \
+    source ~/.bashrc
+
+RUN source activate && conda activate chatbot-demo && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
     conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
-    pip install farm-haystack==1.14.0 && \
+    pip install 'farm-haystack[inference]' && \
     pip install intel_extension_for_pytorch && \
-    pip install transformers>=4.31.0 diffusers accelerate SentencePiece peft evaluate nltk datasets && \
+    pip install transformers diffusers accelerate && \
+    pip install einops SentencePiece peft evaluate nltk datasets && \
     pip install fastapi uvicorn sse_starlette bottle gevent pymysql && \
-    pip install schema && \
+    pip install schema python-multipart speechbrain soundfile gptcache pydub && \
     pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers==1.0.0.dev20230602
 
 
