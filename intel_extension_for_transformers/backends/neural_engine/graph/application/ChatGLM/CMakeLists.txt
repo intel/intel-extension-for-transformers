@@ -12,22 +12,22 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-include_directories(third_party/sentencepiece/src)
-add_subdirectory(third_party/sentencepiece)
+# include_directories(third_party/sentencepiece/src)
+# add_subdirectory(third_party/sentencepiece)
 
-set(CHATGLM ne_chatglm)
-add_library(${CHATGLM} STATIC chatglm.cpp)
-target_link_libraries(${CHATGLM} PUBLIC ne_layers common sentencepiece-static ${CMAKE_THREAD_LIBS_INIT})
-target_compile_features(${CHATGLM} PRIVATE cxx_std_17)
+# set(CHATGLM ne_chatglm)
+# add_library(${CHATGLM} STATIC chatglm.cpp)
+# target_link_libraries(${CHATGLM} PUBLIC ne_layers common sentencepiece-static ${CMAKE_THREAD_LIBS_INIT})
+# target_compile_features(${CHATGLM} PRIVATE cxx_std_17)
 
-set(TARGET main_chatglm_old)
-add_executable_w_warning(${TARGET} main_chatglm_old.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers common ne_chatglm ${CMAKE_THREAD_LIBS_INIT})
-target_compile_features(${TARGET} PRIVATE cxx_std_17)
+# set(TARGET main_chatglm_old)
+# add_executable_w_warning(${TARGET} main_chatglm_old.cpp)
+# target_link_libraries(${TARGET} PUBLIC ne_layers common ne_chatglm ${CMAKE_THREAD_LIBS_INIT})
+# target_compile_features(${TARGET} PRIVATE cxx_std_17)
 
-if(TARGET BUILD_INFO)
-  add_dependencies(${TARGET} BUILD_INFO)
-endif()
+# if(TARGET BUILD_INFO)
+#   add_dependencies(${TARGET} BUILD_INFO)
+# endif()
 
 set(TARGET main_chatglm)
 add_executable_w_warning(${TARGET} main_chatglm.cpp)

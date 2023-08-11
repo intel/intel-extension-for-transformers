@@ -12,10 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+include_directories(third_party/sentencepiece/src)
+add_subdirectory(third_party/sentencepiece)
+
 file(GLOB MODEL_UTILS_SOURCE "model_utils/*.cpp")
-add_subdirectory(llama)
-add_subdirectory(gptj)
-add_subdirectory(mpt)
-add_subdirectory(gptneox)
-add_subdirectory(starcoder)
+# add_subdirectory(llama)
+# add_subdirectory(gptj)
+# add_subdirectory(mpt)
+# add_subdirectory(gptneox)
+# add_subdirectory(starcoder)
 add_subdirectory(chatglm)
