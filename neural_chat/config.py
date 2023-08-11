@@ -267,8 +267,12 @@ class FinetuningArguments:
         default="cpu",
         metadata={
             "help": "What device to use for finetuning.",
-            "choices": ["cpu", "cuda", "habana"],
+            "choices": ["cpu", "cuda", "habana", "auto"],
         },
+    )
+    lora_all_linear: bool = field(
+        default=False,
+        metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
     )
 
 
@@ -323,10 +327,15 @@ class NeuralChatConfig:
         self.audio_output = audio_output
         self.server_mode = server_mode
         self.finetune_config = finetune_config if finetune_config else FinetuningConfig(
-            model_args=ModelArguments(),
-            data_args=DataTrainingArguments(),
+            model_args=ModelArguments(
+                model_name_or_path=model_name_or_path
+            ),
+            data_args=DataArguments(),
             training_args=TrainingArguments(),
-            finetune_args=FinetuneArguments())
+            finetune_args=FinetuningArguments(
+                device=device
+            )
+        )
         self.optimize_config = optimize_config if optimize_config else OptimizationConfig()
         self.use_hpu_graphs = use_hpu_graphs
 
