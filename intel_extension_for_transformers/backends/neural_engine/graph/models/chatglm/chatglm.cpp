@@ -99,7 +99,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
   // const int qlen = inpL->ne[1];
-  for (int il = 0; il < 1; ++il) {
+  for (int il = 0; il < n_layer; ++il) {
     struct ne_tensor* cur;
 
     lctx.use_buf(ctx0, 0);
