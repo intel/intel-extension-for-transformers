@@ -422,6 +422,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
             key: decoder_dummy_inputs[key] for key in decoder_signature.parameters \
                 if decoder_dummy_inputs.get(key, None) is not None
         }
+        del decoder_model_inputs["attention_mask"]
         decoder_model_inputs["encoder_outputs"] = (decoder_model_inputs["encoder_outputs"][0:1][0].to(torch_dtype),)
         encoder_traced_model = torch.jit.trace(model.encoder, example_kwarg_inputs=encoder_model_inputs)
         decoder_traced_model = torch.jit.trace(model, example_kwarg_inputs=decoder_model_inputs)
@@ -442,6 +443,7 @@ class INCBaseModelForSeq2SeqLM(OptimizedModel):
             }
             decoder_with_past_model_inputs["encoder_outputs"] = \
                 (decoder_with_past_model_inputs["encoder_outputs"][0:1][0].to(torch_dtype),)
+            del decoder_with_past_model_inputs["attention_mask"]
             pkv = []
             for i in range(len(decoder_with_past_model_inputs['past_key_values'])):
                 pkv.append([])
