@@ -126,7 +126,7 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
   model.others[1] = ml->get_tensor("model.decoder.embed_positions.weight", {n_embd, max_seq_len + pos_offset}, NE_BACKEND_CPU);
   if (do_layer_norm_before) {
     model.others[2] = ml->get_tensor("model.decoder.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
-    model.others[3] = ml->get_tensor("model.decoder.final_layer_norm.bias", {n_embd, n_vocab}, NE_BACKEND_CPU);
+    model.others[3] = ml->get_tensor("model.decoder.final_layer_norm.bias", {n_embd}, NE_BACKEND_CPU);
   }
   if (word_embed_proj_dim != n_embd) {
     model.others[4] = ml->get_tensor("model.decoder.project_in.weight", {word_embed_proj_dim, n_embd}, NE_BACKEND_CPU);
