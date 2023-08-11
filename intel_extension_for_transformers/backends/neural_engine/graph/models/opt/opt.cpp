@@ -119,7 +119,7 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
   }
 
   for (int il = 0; il < n_layer; ++il) {
-    struct ne_tensor* cur;
+    struct ne_tensor* cur = inpL;
 
     lctx.use_buf(ctx0, 0);
 
@@ -238,7 +238,7 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
 
     // attn norm
     if (!do_layer_norm_before) {
-      cur = ne_norm(ctx0, inpL);
+      cur = ne_norm(ctx0, cur);
       cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur),
                    ne_repeat(ctx0, model.layers[il].norm[1], cur));
     }
@@ -340,9 +340,10 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
       // return result for just the last token
       logits_out.resize(n_vocab);
       memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
-#if 0
+#if 0  // for debug
+      printf("\n");
       for (int k = 0; k < 64; ++k) {
-        printf("logits[%d]: %2.5f ", k, logits_out[k]);
+        printf("%2.5f, ", logits_out[k]);
       }
       printf("\n");
 #endif
