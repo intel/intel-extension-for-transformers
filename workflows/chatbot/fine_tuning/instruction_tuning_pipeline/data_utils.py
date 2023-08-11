@@ -5,104 +5,6 @@ from itertools import chain
 
 IGNORE_INDEX = -100
 
-instruction_prompt_template = {
-    "prompt_with_input": (
-        "Below is an instruction that describes a task, paired with an input that provides further context. "
-        "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
-    ),
-    "prompt_without_input": (
-        "Below is an instruction that describes a task. "
-        "Write a response that appropriately completes the request.\n\n"
-        "### Instruction:\n{instruction}\n\n### Response:"
-    ),
-}
-
-chat_header = """<|im_start|>system
-- You are a helpful assistant chatbot trained by Intel.
-- You answer questions.
-- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>\n"""
-
-chat_user = "<|im_start|>user\n"
-chat_assistant = "<|im_start|>assistant\n"
-chat_end = "<|im_end|>"
-
-summarization_suffix_template = "\nSummarize the highlights of this article.\n"
-
-def create_alpaca(examples):
-    prompts = {}
-    prompts["source"] = []
-    prompts["target"] = []
-    for example in examples:
-        prompt_template = (
-            instruction_prompt_template["prompt_with_input"]
-            if example.get("input") is not None and example.get("input") != ""
-            else instruction_prompt_template["prompt_without_input"]
-        )
-        source = prompt_template.format_map(example)
-        prompts["source"].append(source)
-        prompts["target"].append(example["output"])
-    return prompts
-
-
-def tokenize_alpaca(tokenizer, data_args, finetune_args):
-    def tokenize(prompt, add_eos_token=True):
-        results = tokenizer(
-                prompt,
-                truncation=True,
-                max_length=data_args.max_seq_length,
-                padding=False,
-                return_tensors=None,)
-        for i in range(len(results["input_ids"])):
-            if (results["input_ids"][i][-1] != tokenizer.eos_token_id \
-                    and len(results["input_ids"][i]) < data_args.max_seq_length \
-                    and add_eos_token \
-                    ):
-                results["input_ids"][i].append(tokenizer.eos_token_id)
-                results["attention_mask"][i].append(1)
-        results["labels"] = copy.deepcopy(results["input_ids"])
-        results["input_id_len"] = [len(result) for result in results["input_ids"]]
-        return results
-
-    def preprocess_function(examples):
-        st = [s + t for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])]
-        examples_tokenized = tokenize(st)
-        input_ids = examples_tokenized["input_ids"]
-        labels = examples_tokenized["labels"]
-        if not finetune_args.train_on_inputs:
-            sources_tokenized = tokenize(examples["prompt_sources"], add_eos_token=False)
-            for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
-                label[:source_len] = [IGNORE_INDEX] * source_len
-        return dict(
-                input_ids=input_ids,
-                labels=labels,
-                attention_mask=examples_tokenized["attention_mask"],
-                )
-
-    return preprocess_function
-
-
-def create_chat(examples):
-    prompts = {}
-    prompts["prompt_sources"] = []
-    prompts["prompt_targets"] = []
-
-    for conv in examples:
-        conv = conv["messages"]
-        prompt = chat_header
-
-        for j in range(0, len(conv) - 1, 2):
-            u = conv[j]["content"]
-            ass = conv[j+1]["content"]
-            prompt = prompt + chat_user + u + chat_end + '\n' + chat_assistant
-            response = ass + chat_end
-            prompts["prompt_sources"].append(prompt)
-            prompts["prompt_targets"].append(response)
-
-            prompt += response + '\n'
-    return prompts
-
 def truncate_sequences(sequences, max_length):
     words_to_cut = sum(list(map(len, sequences))) - max_length
     if words_to_cut <= 0:
@@ -114,138 +16,242 @@ def truncate_sequences(sequences, max_length):
 
     return sequences
 
-def tokenize_chat(tokenizer, data_args, finetune_args):
+class InstructionDataPreprocess:
+    prompt_template = {
+            "prompt_with_input": (
+                "Below is an instruction that describes a task, paired with an input that provides further context. "
+                "Write a response that appropriately completes the request.\n\n"
+                "### Instruction:\n{instruction}\n\n### Input:\n{input}\n\n### Response:"
+            ),
+            "prompt_without_input": (
+                "Below is an instruction that describes a task. "
+                "Write a response that appropriately completes the request.\n\n"
+                "### Instruction:\n{instruction}\n\n### Response:"
+            ),
+    }
+    
+    def create_data(self, examples):
+        prompts = {}
+        prompts["source"] = []
+        prompts["target"] = []
+        for example in examples:
+            prompt_template = (
+                self.prompt_template["prompt_with_input"]
+                if example.get("input") is not None and example.get("input") != ""
+                else self.prompt_template["prompt_without_input"]
+            )
+            source = prompt_template.format_map(example)
+            prompts["source"].append(source)
+            prompts["target"].append(example["output"])
+        return prompts
 
-    # special tokens
-    assistant_tokens = tokenizer.tokenize(chat_assistant)
+    @staticmethod
+    def tokenize_func(tokenizer, data_args, finetune_args):
+        def tokenize(prompt, add_eos_token=True):
+            results = tokenizer(
+                    prompt,
+                    truncation=True,
+                    max_length=data_args.max_seq_length,
+                    padding=False,
+                    return_tensors=None,)
+            for i in range(len(results["input_ids"])):
+                if (results["input_ids"][i][-1] != tokenizer.eos_token_id \
+                        and len(results["input_ids"][i]) < data_args.max_seq_length \
+                        and add_eos_token \
+                        ):
+                    results["input_ids"][i].append(tokenizer.eos_token_id)
+                    results["attention_mask"][i].append(1)
+            results["labels"] = copy.deepcopy(results["input_ids"])
+            results["input_id_len"] = [len(result) for result in results["input_ids"]]
+            return results
 
-    def preprocess_function(examples):
-
-        instructions = [q.strip() for q in examples["prompt_sources"]]
-        responses = [q.strip() for q in examples["prompt_targets"]]
-
-        examples["input_ids"] = []
-        examples["labels"] = []
-        examples["attention_mask"] = []
-
-        for instruction, response in zip(instructions, responses):
-            header = re.findall("\<\|im_start\|\>system.*?\<\|im_end\|\>", instruction, re.DOTALL)[0]
-            convs = re.findall("\<\|im_start\|\>.*?\<\|im_end\|\>", instruction, re.DOTALL)[1:]
-
-            convs_tokens = [
-                tokenizer.tokenize(conv) + tokenizer.tokenize("\n")
-                for conv in convs
-            ]
-            header_tokens = tokenizer.tokenize(header) + tokenizer.tokenize("\n")
-
-            max_input = data_args.max_source_length - len(header_tokens) - len(assistant_tokens)
-
-            truncated_convs = truncate_sequences(convs_tokens,
-                    max_input)
-
-            if len(truncated_convs) == 0:
-                truncated_convs = [convs_tokens[-1][:max_input - 3] + convs_tokens[-1][-3:]]
-
-            prompt_tokens = [header_tokens] + truncated_convs + [assistant_tokens]
-            prompt_ids = [tokenizer.convert_tokens_to_ids(prompt_token) for prompt_token in prompt_tokens]
-            prompt_ids = list(chain(*prompt_ids))
-
-            resp_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(response.strip()))
-            # keep last and eos_id
-            max_resp = data_args.max_seq_length - len(prompt_ids) - 1
-            if len(resp_ids) > max_resp:
-                resp_ids = resp_ids[:max_resp - 1] + resp_ids[-1:]
-
-            input_ids = prompt_ids + resp_ids  + [tokenizer.eos_token_id]
+        def preprocess_function(examples):
+            st = [s + t for s, t in zip(examples["prompt_sources"], examples["prompt_targets"])]
+            examples_tokenized = tokenize(st)
+            input_ids = examples_tokenized["input_ids"]
+            labels = examples_tokenized["labels"]
             if not finetune_args.train_on_inputs:
-                labels = [-100] * len(prompt_ids) + resp_ids + [tokenizer.eos_token_id]
-            else:
-                labels = prompt_ids + resp_ids + [tokenizer.eos_token_id]
+                sources_tokenized = tokenize(examples["prompt_sources"], add_eos_token=False)
+                for label, source_len in zip(labels, sources_tokenized["input_id_len"]):
+                    label[:source_len] = [IGNORE_INDEX] * source_len
+            return dict(
+                    input_ids=input_ids,
+                    labels=labels,
+                    attention_mask=examples_tokenized["attention_mask"],
+                    )
 
-            # padding
-            input_len = len(input_ids)
-            pad_len = data_args.max_seq_length - input_len
-            input_ids = input_ids + [tokenizer.eos_token_id] * pad_len
-            labels = labels + [-100] * pad_len
-            attention_mask = [1] * input_len + [0] * pad_len
+        return preprocess_function
 
-            assert len(input_ids) == data_args.max_seq_length
-            assert len(prompt_ids) <= data_args.max_source_length
-            assert len(labels) == len(input_ids) == len(attention_mask)
 
-            examples["input_ids"].append(input_ids)
-            examples["labels"].append(labels)
-            examples["attention_mask"].append(attention_mask)
+class ChatDataPreprocess:
+    prompt_template = """<|im_start|>system
+    - You are a helpful assistant chatbot trained by Intel.
+    - You answer questions.
+    - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>\n"""
+    user = "<|im_start|>user\n"
+    assistant = "<|im_start|>assistant\n"
+    end = "<|im_end|>"
 
-        return examples
+    def create_data(self, examples):
+        prompts = {}
+        prompts["prompt_sources"] = []
+        prompts["prompt_targets"] = []
 
-    return preprocess_function
+        for conv in examples:
+            conv = conv["messages"]
+            prompt = self.prompt_template
 
-def tokenize_summarization(tokenizer, data_args, finetune_args):
-    template_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(summarization_suffix_template))
+            for j in range(0, len(conv) - 1, 2):
+                u = conv[j]["content"]
+                ass = conv[j+1]["content"]
+                prompt = prompt + self.user + u + self.end + '\n' + self.assistant
+                response = ass + self.end
+                prompts["prompt_sources"].append(prompt)
+                prompts["prompt_targets"].append(response)
 
-    def preprocess_function(examples):
+                prompt += response + '\n'
+        return prompts
 
-        articles = [q.strip() for q in examples["article"]]
-        highlights = [q.strip() for q in examples["highlights"]]
+    def tokenize_func(self, tokenizer, data_args, finetune_args):
 
-        examples["input_ids"] = []
-        examples["labels"] = []
-        examples["attention_mask"] = []
+        # special tokens
+        assistant_tokens = tokenizer.tokenize(self.assistant)
 
-        for article, highlight in zip(articles, highlights):
-            max_input = data_args.max_source_length - len(template_ids)
+        def preprocess_function(examples):
 
-            article_tokens = tokenizer.tokenize(article)[:max_input]
-            prompt_ids = tokenizer.convert_tokens_to_ids(article_tokens) + template_ids
+            instructions = [q.strip() for q in examples["prompt_sources"]]
+            responses = [q.strip() for q in examples["prompt_targets"]]
 
-            max_resp = data_args.max_seq_length - len(prompt_ids) - 1
-            resp_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(highlight))[:max_resp]
+            examples["input_ids"] = []
+            examples["labels"] = []
+            examples["attention_mask"] = []
 
-            input_ids = prompt_ids + resp_ids  + [tokenizer.eos_token_id]
-            if not finetune_args.train_on_inputs:
-                labels = [-100] * len(prompt_ids) + resp_ids + [tokenizer.eos_token_id]
-            else:
-                labels = prompt_ids + resp_ids + [tokenizer.eos_token_id]
+            for instruction, response in zip(instructions, responses):
+                header = re.findall("\<\|im_start\|\>system.*?\<\|im_end\|\>", instruction, re.DOTALL)[0]
+                convs = re.findall("\<\|im_start\|\>.*?\<\|im_end\|\>", instruction, re.DOTALL)[1:]
 
-            # padding
-            input_len = len(input_ids)
-            pad_len = data_args.max_seq_length - input_len
-            input_ids = input_ids + [tokenizer.eos_token_id] * pad_len
-            labels = labels + [-100] * pad_len
-            attention_mask = [1] * input_len + [0] * pad_len
+                convs_tokens = [
+                    tokenizer.tokenize(conv) + tokenizer.tokenize("\n")
+                    for conv in convs
+                ]
+                header_tokens = tokenizer.tokenize(header) + tokenizer.tokenize("\n")
 
-            assert len(input_ids) == data_args.max_seq_length
-            assert len(prompt_ids) <= data_args.max_source_length
-            assert len(labels) == len(input_ids) == len(attention_mask)
+                max_input = data_args.max_source_length - len(header_tokens) - len(assistant_tokens)
 
-            examples["input_ids"].append(input_ids)
-            examples["labels"].append(labels)
-            examples["attention_mask"].append(attention_mask)
+                truncated_convs = truncate_sequences(convs_tokens,
+                        max_input)
 
-        return examples
+                if len(truncated_convs) == 0:
+                    truncated_convs = [convs_tokens[-1][:max_input - 3] + convs_tokens[-1][-3:]]
 
-    return preprocess_function
+                prompt_tokens = [header_tokens] + truncated_convs + [assistant_tokens]
+                prompt_ids = [tokenizer.convert_tokens_to_ids(prompt_token) for prompt_token in prompt_tokens]
+                prompt_ids = list(chain(*prompt_ids))
+
+                resp_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(response.strip()))
+                # keep last and eos_id
+                max_resp = data_args.max_seq_length - len(prompt_ids) - 1
+                if len(resp_ids) > max_resp:
+                    resp_ids = resp_ids[:max_resp - 1] + resp_ids[-1:]
+
+                input_ids = prompt_ids + resp_ids  + [tokenizer.eos_token_id]
+                if not finetune_args.train_on_inputs:
+                    labels = [-100] * len(prompt_ids) + resp_ids + [tokenizer.eos_token_id]
+                else:
+                    labels = prompt_ids + resp_ids + [tokenizer.eos_token_id]
+
+                # padding
+                input_len = len(input_ids)
+                pad_len = data_args.max_seq_length - input_len
+                input_ids = input_ids + [tokenizer.eos_token_id] * pad_len
+                labels = labels + [-100] * pad_len
+                attention_mask = [1] * input_len + [0] * pad_len
+
+                assert len(input_ids) == data_args.max_seq_length
+                assert len(prompt_ids) <= data_args.max_source_length
+                assert len(labels) == len(input_ids) == len(attention_mask)
+
+                examples["input_ids"].append(input_ids)
+                examples["labels"].append(labels)
+                examples["attention_mask"].append(attention_mask)
+
+            return examples
+
+        return preprocess_function
+
+
+class SummarizationDataPreprocess:
+    prompt_template = "\nSummarize the highlights of this article.\n"
+
+    def tokenize_func(self, tokenizer, data_args, finetune_args):
+        template_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(self.prompt_template))
+
+        def preprocess_function(examples):
+
+            articles = [q.strip() for q in examples["article"]]
+            highlights = [q.strip() for q in examples["highlights"]]
+
+            examples["input_ids"] = []
+            examples["labels"] = []
+            examples["attention_mask"] = []
+
+            for article, highlight in zip(articles, highlights):
+                max_input = data_args.max_source_length - len(template_ids)
+
+                article_tokens = tokenizer.tokenize(article)[:max_input]
+                prompt_ids = tokenizer.convert_tokens_to_ids(article_tokens) + template_ids
+
+                max_resp = data_args.max_seq_length - len(prompt_ids) - 1
+                resp_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(highlight))[:max_resp]
+
+                input_ids = prompt_ids + resp_ids  + [tokenizer.eos_token_id]
+                if not finetune_args.train_on_inputs:
+                    labels = [-100] * len(prompt_ids) + resp_ids + [tokenizer.eos_token_id]
+                else:
+                    labels = prompt_ids + resp_ids + [tokenizer.eos_token_id]
+
+                # padding
+                input_len = len(input_ids)
+                pad_len = data_args.max_seq_length - input_len
+                input_ids = input_ids + [tokenizer.eos_token_id] * pad_len
+                labels = labels + [-100] * pad_len
+                attention_mask = [1] * input_len + [0] * pad_len
+
+                assert len(input_ids) == data_args.max_seq_length
+                assert len(prompt_ids) <= data_args.max_source_length
+                assert len(labels) == len(input_ids) == len(attention_mask)
+
+                examples["input_ids"].append(input_ids)
+                examples["labels"].append(labels)
+                examples["attention_mask"].append(attention_mask)
+
+            return examples
+
+        return preprocess_function
 
 
 def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
 
     if finetune_args.task == "chat":
+        preprocess = ChatDataPreprocess()
         new_datasets = datasets.DatasetDict()
-        prompts = create_chat(raw_datasets["train_ift"])
+        prompts = preprocess.create_data(raw_datasets["train_ift"])
         new_datasets["train"] = datasets.Dataset.from_dict(prompts)
 
-        preprocess_fn = tokenize_chat(tokenizer, data_args, finetune_args)
+        preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
 
         return new_datasets, preprocess_fn
 
     elif finetune_args.task == "summarization":
-        preprocess_fn = tokenize_summarization(tokenizer, data_args, finetune_args)
+        preprocess = SummarizationDataPreprocess()
+        preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
         return raw_datasets, preprocess_fn
     elif finetune_args.task == "instruction":
         # default use alpaca instruction template
+        preprocess = InstructionDataPreprocess() 
         for key in raw_datasets:
-            prompts = create_alpaca(raw_datasets[key])
+            prompts = preprocess.create_data(raw_datasets[key])
             columns_to_be_removed = list(raw_datasets[key].features.keys())
             raw_datasets[key] = raw_datasets[key].add_column(
                     "prompt_sources", prompts["source"]
@@ -255,8 +261,8 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
                     )
             raw_datasets[key] = raw_datasets[key].remove_columns(columns_to_be_removed)
 
-        preprocess_fn = tokenize_alpaca(tokenizer, data_args, finetune_args)
+        preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
 
         return raw_datasets, preprocess_fn
     else:
-        raise NotImplementedError(f'finetune task is not support currently.')
+        raise NotImplementedError(f'finetune task data preprocessing is not support currently.')

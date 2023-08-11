@@ -40,6 +40,13 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
     - **Instruction data format:** the data fields are `instruction, input, output` ([Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca)), one of examples is:
     ```python
+    # for examples with a non-empty input field
+    {
+        "instruction": "Explain why the following fraction is equivalent to 1/4",
+        "input": "4/16",
+        "output": "The fraction 4/16 is equivalent to 1/4 because both numerators and denominators are divisible by 4. Dividing both the top and bottom numbers by 4 yields the fraction 1/4."
+    }
+    # for examples with a empty input field 
     {
         "instruction": "Give three tips for staying healthy.",
         "input": "",
@@ -61,7 +68,7 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
         ### Response:
 
         ```
-        - for examples with a non-empty input field:
+        - for examples with a empty input field:
         ```python
         Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
 
