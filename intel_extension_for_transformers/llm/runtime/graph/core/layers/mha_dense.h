@@ -30,7 +30,7 @@ typedef enum ATTN_FWD_LAYOUT {
   ATTN_FWD_LAYOUT_PLAIN,
 
   // step of sl/hs only works on indices which is a multiple of 64/4 on corresponding dimensions
-  ATTN_FWD_LAYOUT_NTILE64_ROWPACK4,
+  ATTN_FWD_LAYOUT_NTILE48_ROWPACK4,
 } ATTN_FWD_LAYOUT;
 
 typedef struct attn_bf16_fwd_args_t {
@@ -84,6 +84,21 @@ typedef struct attn_fp16_fwd_args_t {
   int step_dst_bs, step_dst_head_num, step_dst_sl;
 } attn_fp16_fwd_args_t;
 void jblas_fusion_attn_fp16_forward(const attn_fp16_fwd_args_t* params);
+
+typedef struct attn_int8_fwd_args_t {
+  int8_t *Q, *K, *V, *dst;
+  float Q_sc, K_sc, V_sc, dst_sc;
+  char* tmp;
+  float QK_scale;
+  bool is_causal;
+  int batch_size, head_num, head_size, sl_q, sl_kv;
+  ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
+  int step_q_bs, step_q_head_num, step_q_sl;
+  int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
+  int step_v_bs, step_v_head_num, step_v_sl, step_v_head_size;
+  int step_dst_bs, step_dst_head_num, step_dst_sl;
+} attn_int8_fwd_args_t;
+void jblas_fusion_attn_int8_forward(const attn_int8_fwd_args_t* params);
 
 #ifdef __cplusplus
 }
