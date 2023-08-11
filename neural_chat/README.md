@@ -23,7 +23,7 @@ Giving NeuralChat the textual instruction, it will respond with the textual resp
 **command line experience**
 
 ```shell
-neuralchat textchat --prompt "Tell me about Intel Xeon processors."
+neuralchat textchat --prompt "Tell me about Intel Xeon Scalable Processors."
 ```
 
 **Python API experience**
@@ -34,7 +34,7 @@ neuralchat textchat --prompt "Tell me about Intel Xeon processors."
 >>> config = NeuralChatConfig()
 >>> chatbot = NeuralChatBot(config)
 >>> chatbot.build_chatbot()
->>> response = chatbot.predict("Tell me about Intel Xeon processors.")
+>>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 
@@ -56,7 +56,7 @@ In the context of voice chat, users have the option to engage in various modes: 
 
 - text in and audio output
     ```shell
-    neuralchat voicechat --input "Tell me about Intel Xeon processors." --output response.wav
+    neuralchat voicechat --input "Tell me about Intel Xeon Scalable Processors." --output response.wav
     ```
 
 
@@ -70,7 +70,7 @@ For the Python API code, users have the option to enable different voice chat mo
 >>> config = NeuralChatConfig(audio_input=True, audio_output=True)
 >>> chatbot = NeuralChatBot(config)
 >>> chatbot.build_chatbot()
->>> result = chatbot.predict("Tell me about Intel Xeon processors.")
+>>> result = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 ## Finetuning
@@ -94,7 +94,7 @@ neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config finetu
 >>> chatbot = NeuralChatBot(config)
 >>> chatbot.build_chatbot()
 >>> chatbot.finetune()
->>> response = chatbot.predict("Tell me about Intel Xeon processors.")
+>>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 
@@ -123,7 +123,7 @@ Users can have a try of NeuralChat server with [NeuralChat Server Command Line](
 
 - Command Line
     ```shell
-    neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --prompt "Tell me about Intel Xeon processors."
+    neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --prompt "Tell me about Intel Xeon Scalable Processors."
     ```
 
 - Python API
@@ -132,14 +132,14 @@ Users can have a try of NeuralChat server with [NeuralChat Server Command Line](
 
     executor = TextChatClientExecutor()
     executor(
-        prompt="Tell me about Intel Xeon processors.",
+        prompt="Tell me about Intel Xeon Scalable Processors.",
         server_ip="127.0.0.1",
         port=8000)
     ```
 
 - Curl
     ```
-    curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon processors."}' http://127.0.0.1:80/v1/chat/completions
+    curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
     ```
 
 **Access Voice Chat Service**

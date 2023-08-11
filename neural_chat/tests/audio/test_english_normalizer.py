@@ -1,4 +1,4 @@
-from utils.english_normalizer import EnglishNormalizer
+from neural_chat.pipeline.plugins.audio.utils.english_normalizer import EnglishNormalizer
 import unittest
 
 class TestTTS(unittest.TestCase):

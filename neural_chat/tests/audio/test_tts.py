@@ -1,5 +1,5 @@
-from tts import TextToSpeech
-from asr import AudioSpeechRecognition
+from neural_chat.pipeline.plugins.audio.tts import TextToSpeech
+from neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 import unittest
 import shutil
 import os
@@ -36,7 +36,7 @@ class TestTTS(unittest.TestCase):
             self.assertTrue(os.path.exists(result_path))
 
     def test_create_speaker_embedding(self):
-        driven_audio_path = "pat.wav"
+        driven_audio_path = "../../assets/audio/pat.wav"
         spk_embed = self.tts.create_speaker_embedding(driven_audio_path)
         self.assertEqual(spk_embed.shape[0], 1)
         self.assertEqual(spk_embed.shape[1], 512)
