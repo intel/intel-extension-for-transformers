@@ -97,11 +97,11 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     lctx.use_buf(ctx0, 0);
 
     // self-attention
-    struct ne_tensor *cur = ne_rms_norm(ctx0, inpL);
+    cur = ne_rms_norm(ctx0, inpL);
     cur = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur);
     {
-            // compute QKV
-      cur = ne_mul_mat(ctx0, model.layers[il].attn[0], attn_input);
+      // compute QKV
+      cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
 
       size_t fused_qkv_row_nb = (n_embd + 2 * (n_embd / n_head)) * sizeof(float);
 
@@ -175,19 +175,23 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
 
       // projection
-      { attn_output = ne_mul_mat(ctx0, model.layers[il].attn[1], cur); }
+      { cur = ne_mul_mat(ctx0, model.layers[il].attn[1], cur); }
     }
 
     lctx.use_buf(ctx0, 1);
     
-    struct ne_tensor *hidden_states = ne_add(ctx0, inpL, attn_output);
+    struct ne_tensor *hidden_states = ne_add(ctx0, inpL, cur);
     
     // mlp.forward
     struct ne_tensor *mlp_output = ne_norm(ctx0, hidden_states);
     mlp_output = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[1], mlp_output), mlp_output);
     
-    struct ne_tensor *mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[0], mlp_output);
-    mlp_output = ne_gelu(ctx0, mlp_output);
+    mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[0], mlp_output);
+    struct ne_tensor *x0 = ne_view_2d(ctx0, mlp_output, mlp_output->ne[0] / 2, mlp_output->ne[1], mlp_output->nb[1], 0);
+    x0 = ne_silu(ctx0, x0);
+    struct ne_tensor *x1 = ne_view_2d(ctx0, mlp_output, mlp_output->ne[0] / 2, mlp_output->ne[1], mlp_output->nb[1],
+                                mlp_output->ne[0] / 2 * ne_element_size(mlp_output));
+    mlp_output = ne_mul_inplace(ctx0, x0, x1);
     mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
 
     inpL = ne_add(ctx0, hidden_states, mlp_output);
