@@ -19,7 +19,7 @@ import sys, os
 import argparse
 from typing import List
 from ..utils.command import NeuralChatCommandDict
-from base_executor import BaseCommandExecutor
+from .base_executor import BaseCommandExecutor
 from neural_chat.config import NeuralChatConfig, FinetuningConfig
 from neural_chat.chatbot import NeuralChatBot
 from neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
