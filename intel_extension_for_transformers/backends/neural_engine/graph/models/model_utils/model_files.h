@@ -152,15 +152,7 @@ struct model_load_tensors_map {
   std::unordered_map<std::string, size_t> name_to_idx;
 };
 
-class BaseTokenizer {
-  public:
-    virtual ~BaseTokenizer() = default;
-    virtual std::vector<int> encode(const std::string &text) const = 0;
-    virtual std::string decode(const std::vector<int> &ids) const = 0;
-    virtual std::vector<int> encode_history(const std::vector<std::string> &history, int max_length) const = 0;
-};
-
-class ChatGLM2Tokenizer : public BaseTokenizer {
+class ChatGLM2Tokenizer {
   public:
   ChatGLM2Tokenizer(std::string_view serialized_model_proto) {
     const auto status = sp.LoadFromSerializedProto(serialized_model_proto);
@@ -235,6 +227,7 @@ struct model_file_loader {
   model_file_version file_version;
   model_hparams hparams;
   model_vocab vocab;
+  std::unique_ptr<ChatGLM2Tokenizer> tokenizer;
 
   model_file_loader(const char* fname, size_t file_idx, model_load_tensors_map& tensors_map) : file(fname, "rb") {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
@@ -299,23 +292,10 @@ struct model_file_loader {
     hparams.ffn_hidden_size = file.read_u32();
   }
   void read_vocab() {
-    vocab.id_to_token.resize(hparams.n_vocab);
-
-    for (uint32_t i = 0; i < hparams.n_vocab; i++) {
-      uint32_t len = file.read_u32();
-      std::string word = file.read_string(len);
-
-      float score = 0.0f;
-      if (file_version >= MODEL_FILE_VERSION_GGMF_V1) {
-        file.read_raw(&score, sizeof(score));
-      }
-
-      vocab.token_to_id[word] = i;
-
-      auto& tok_score = vocab.id_to_token[i];
-      tok_score.tok = std::move(word);
-      tok_score.score = score;
-    }
+    uint32_t proto_size = file.read_u32();
+    std::string word = file.read_string(proto_size);
+    std::string_view serialized_model_proto(word);
+    tokenizer = std::make_unique<ChatGLM2Tokenizer>(serialized_model_proto);
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
