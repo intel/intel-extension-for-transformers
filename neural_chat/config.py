@@ -315,7 +315,8 @@ class NeuralChatConfig:
     def __init__(self, model_name_or_path="meta-llama/Llama-2-70b-hf", inputs=None, device="auto",
                  backend="auto", retrieval=False, retrieval_type=None, txt2Image=False,
                  audio_input=False, audio_output=False, server_mode=True, finetune_config=None,
-                 optimize_config=None, use_hpu_graphs=False):
+                 optimize_config=None, use_hpu_graphs=False, use_deepspeed=False, peft_path=None,
+                 cpu_jit=False, use_cache=False, num_gpus=0, max_gpu_memory=None):
         self.model_name_or_path = model_name_or_path
         self.inputs = inputs
         self.device = device
@@ -338,4 +339,10 @@ class NeuralChatConfig:
         )
         self.optimize_config = optimize_config if optimize_config else OptimizationConfig()
         self.use_hpu_graphs = use_hpu_graphs
+        self.use_deepspeed = use_deepspeed
+        self.peft_path = peft_path
+        self.cpu_jit = cpu_jit
+        self.use_cache = use_cache
+        self.num_gpus = num_gpus
+        self.max_gpu_memory = max_gpu_memory
 
