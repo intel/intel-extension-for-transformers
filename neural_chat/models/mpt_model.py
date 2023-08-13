@@ -29,6 +29,7 @@ from transformers import (
     TextIteratorStreamer,
     StoppingCriteriaList,
 )
+from fastchat.conversation import get_conv_template, Conversation
 from .utils import set_cpu_running_env, import_deepspeed, smart_context_manager
 from .utils import model_is_optimized, init_deepspeed_inference, max_input_len, StopOnTokens
 
@@ -149,6 +150,9 @@ class MptModel(BaseModel):
 
         print("model loaded")
         return model, tokenizer
+
+    def match(self, model_path: str):
+        return "mpt" in model_path.lower()
 
     def predict_stream(self, params):
         """
@@ -511,3 +515,6 @@ class MptModel(BaseModel):
         if "### Response:" in output:
             return output.split("### Response:")[1].strip()
         return output
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("mpt-7b-chat")

@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from .base_model import BaseModel
-import copy
+from fastchat.conversation import get_conv_template, Conversation
 from datetime import datetime
 import torch
 import logging
@@ -144,6 +144,9 @@ class ChatGlmModel(BaseModel):
         print("model loaded")
         return model, tokenizer
 
+    def match(self, model_path: str):
+        return "chatglm" in model_path.lower()
+
     def predict_stream(self, params):
         """
         Generates streaming text based on the given parameters and prompt.
@@ -208,3 +211,9 @@ class ChatGlmModel(BaseModel):
             response = self.process_response(response)
 
             yield response
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        model_path = model_path.lower()
+        if "chatglm2" in model_path.lower():
+            return get_conv_template("chatglm2")
+        return get_conv_template("chatglm")

@@ -17,6 +17,7 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from fastchat.conversation import get_conv_template, Conversation
 
 class BaseModel(ABC):
     def __init__(self):
@@ -32,6 +33,9 @@ class BaseModel(ABC):
             tokenizer: The initialized tokenizer.
         """
         pass
+
+    def match(self, model_path: str):
+        return True
 
     @abstractmethod
     def predict_stream(self, params):
@@ -56,3 +60,6 @@ class BaseModel(ABC):
             predictions: Predicted results.
         """
         pass
+
+    def get_default_conv_template(self, model_path: str) -> Conversation:
+        return get_conv_template("one_shot")
