@@ -84,14 +84,17 @@ class InstructionDataPreprocess:
 
 
 class ChatDataPreprocess:
-    prompt_template = """### System:
+    base_template = """### System:
     - You are a helpful assistant chatbot trained by Intel.
     - You answer questions.
     - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.</s>\n"""
-    user = "### User:\n"
-    assistant = "### Assistant:\n"
-    end = "</s>"
+    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.{eos_token}\n"""
+
+    def __init__(self, eos_token):
+        self.prompt_template = self.base_template.format_map({"eos_token": eos_token})
+        self.user = "### User:\n"
+        self.assistant = "### Assistant:\n"
+        self.end = eos_token
 
     def create_data(self, examples):
         prompts = {}
@@ -128,9 +131,8 @@ class ChatDataPreprocess:
             examples["attention_mask"] = []
 
             for instruction, response in zip(instructions, responses):
-                header = re.findall("### System.*?\<\\/s\>", instruction, re.DOTALL)[0]
-                convs = re.findall("### User.*?\<\/s\>|### Assistant.*?\<\/s\>", instruction, re.DOTALL)
-
+                header = re.findall(r"### System.*?{}".format(self.end), instruction, re.DOTALL)[0]
+                convs = re.findall(r"### User.*?{0}|### Assistant.*?{0}".format(self.end), instruction, re.DOTALL)
                 convs_tokens = [
                     tokenizer.tokenize(conv) + tokenizer.tokenize("\n")
                     for conv in convs
@@ -234,7 +236,7 @@ class SummarizationDataPreprocess:
 def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
 
     if finetune_args.task == "chat":
-        preprocess = ChatDataPreprocess()
+        preprocess = ChatDataPreprocess(tokenizer.eos_token)
         new_datasets = datasets.DatasetDict()
         prompts = preprocess.create_data(raw_datasets["train_ift"])
         new_datasets["train"] = datasets.Dataset.from_dict(prompts)
