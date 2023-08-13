@@ -212,7 +212,6 @@ python finetune_clm.py \
         --peft lora \
         --use_fast_tokenizer false \
         --no_cuda \
-        --special_tokens "<|im_start|>" "<|im_end|>"
 
 # the script also support other models, like mpt.
 ```

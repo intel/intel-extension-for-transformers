@@ -84,14 +84,14 @@ class InstructionDataPreprocess:
 
 
 class ChatDataPreprocess:
-    prompt_template = """<|im_start|>system
+    prompt_template = """### System:
     - You are a helpful assistant chatbot trained by Intel.
     - You answer questions.
     - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>\n"""
-    user = "<|im_start|>user\n"
-    assistant = "<|im_start|>assistant\n"
-    end = "<|im_end|>"
+    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.</s>\n"""
+    user = "### User:\n"
+    assistant = "### Assistant:\n"
+    end = "</s>"
 
     def create_data(self, examples):
         prompts = {}
@@ -128,8 +128,8 @@ class ChatDataPreprocess:
             examples["attention_mask"] = []
 
             for instruction, response in zip(instructions, responses):
-                header = re.findall("\<\|im_start\|\>system.*?\<\|im_end\|\>", instruction, re.DOTALL)[0]
-                convs = re.findall("\<\|im_start\|\>.*?\<\|im_end\|\>", instruction, re.DOTALL)[1:]
+                header = re.findall("### System.*?\<\\/s\>", instruction, re.DOTALL)[0]
+                convs = re.findall("### User.*?\<\/s\>|### Assistant.*?\<\/s\>", instruction, re.DOTALL)
 
                 convs_tokens = [
                     tokenizer.tokenize(conv) + tokenizer.tokenize("\n")
