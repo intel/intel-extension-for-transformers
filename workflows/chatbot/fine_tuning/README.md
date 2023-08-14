@@ -38,7 +38,7 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
 
 1. Text Generation (General domain instruction): We use the [Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca) from Stanford University as the general domain dataset to fine-tune the model. This dataset is provided in the form of a JSON file, [alpaca_data.json](https://github.com/tatsu-lab/stanford_alpaca/blob/main/alpaca_data.json). In Alpaca, researchers have manually crafted 175 seed tasks to guide `text-davinci-003` in generating 52K instruction data for diverse tasks.
 
-    - **Instruction data format:** the data fields are `instruction, input, output` ([Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca)), one of examples is:
+    - **Completion data format:** the data fields are `instruction, input, output` ([Alpaca dataset](https://github.com/tatsu-lab/stanford_alpaca)), one of examples is:
     ```python
     # for examples with a non-empty input field
     {
@@ -54,7 +54,7 @@ We select 4 kind of datasets to conduct the finetuning process for different tas
     }
     ```
 
-    - **Instruction template:**
+    - **Completion template:**
         - for examples with a non-empty input field:
         ```python
         Below is an instruction that describes a task, paired with an input that provides further context. Write a response that appropriately completes the request.
@@ -171,7 +171,7 @@ python finetune_clm.py \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
         --dataset_concatenation \
-        --task instruction \
+        --task completion \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
@@ -251,7 +251,7 @@ python finetune_clm.py \
         --model_name_or_path "meta-llama/Llama-2-7b-hf" \
         --bf16 True \
         --dataset_name "theblackcat102/evol-codealpaca-v1" \
-        --task instruction \
+        --task completion \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
         --gradient_accumulation_steps 1 \
@@ -280,7 +280,7 @@ python finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
-        --task instruction \
+        --task completion \
         --dataset_concatenation \
         --per_device_train_batch_size 8 \
         --per_device_eval_batch_size 8 \
@@ -380,7 +380,7 @@ export MASTER_ADDR=xxx.xxx.xxx.xxx #node0 ip
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
     --model_name_or_path decapoda-research/llama-7b-hf \
     --train_file ./alpaca_data.json \
-    --task instruction \
+    --task completion \
     --bf16 True \
     --output_dir ./llama_peft_finetuned_model \
     --num_train_epochs 3 \
@@ -405,7 +405,7 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
     --model_name_or_path mosaicml/mpt-7b \
     --train_file ./alpaca_data.json \
-    --task instruction \
+    --task completion \
     --bf16 True \
     --output_dir ./mpt_peft_finetuned_model \
     --num_train_epochs 3 \
@@ -441,7 +441,7 @@ python finetune_clm.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
-        --task instruction \
+        --task completion \
         --dataset_concatenation \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -471,7 +471,7 @@ python finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
-         --task instruction \
+         --task completion \
         --dataset_concatenation \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -515,7 +515,7 @@ python ../../utils/gaudi_spawn.py \
         --model_name_or_path "decapoda-research/llama-7b-hf" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
-        --task instruction \
+        --task completion \
         --dataset_concatenation \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
@@ -546,7 +546,7 @@ python ../../utils/gaudi_spawn.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
-        --task instruction \
+        --task completion \
         --dataset_concatenation \
         --per_device_train_batch_size 2 \
         --per_device_eval_batch_size 2 \
