@@ -26,7 +26,7 @@
 #include "core/ne_layers.h"
 #include "models/model_utils/util.h"
 #include "models/models.h"
-#include <sentencepiece_processor.h>
+
 
 template <typename T>
 static T checked_mul(T a, T b) {
@@ -152,82 +152,13 @@ struct model_load_tensors_map {
   std::unordered_map<std::string, size_t> name_to_idx;
 };
 
-class ChatGLM2Tokenizer {
-  public:
-  ChatGLM2Tokenizer(std::string_view serialized_model_proto) {
-    const auto status = sp.LoadFromSerializedProto(serialized_model_proto);
-    // CHATGLM_CHECK(status.ok()) << status.ToString();
-
-    int special_id = sp.GetPieceSize();
-    mask_token_id = special_id++;
-    gmask_token_id = special_id++;
-    smask_token_id = special_id++;
-    sop_token_id = special_id++;
-    eop_token_id = special_id++;
-  }
-
-  std::vector<int> encode(const std::string &text) const {
-      std::vector<int> ids;
-      sp.Encode(text, &ids);
-      ids.insert(ids.begin(), {gmask_token_id, sop_token_id}); // special prefix
-      return ids;
-  }
-
-  std::string decode(const std::vector<int> &ids) const {
-      // filter out special tokens
-      std::vector<int> normal_ids(ids);
-      normal_ids.erase(std::remove_if(normal_ids.begin(), normal_ids.end(), [this](int id) { return is_special_id(id); }),
-                      normal_ids.end());
-
-      std::string text;
-      sp.Decode(normal_ids, &text);
-      return text;
-  }
-
-  std::vector<int> encode_history(const std::vector<std::string> &history, int max_length) {
-      std::string prompt = build_prompt(history);
-      std::vector<int> input_ids = encode(prompt);
-      if ((int)input_ids.size() > max_length) {
-          // sliding window: drop the least recent history while keeping the special prefix tokens
-          int num_drop = (int)input_ids.size() - max_length;
-          input_ids.erase(input_ids.begin() + 2, input_ids.begin() + 2 + num_drop);
-      }
-      return input_ids;
-  }
-
-  std::string build_prompt(const std::vector<std::string> &history) {
-      // CHATGLM_CHECK(history.size() % 2 == 1) << "invalid history size " << history.size();
-
-      std::ostringstream oss_prompt;
-      for (size_t i = 0; i < history.size(); i += 2) {
-          oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
-          if (i < history.size() - 1) {
-              oss_prompt << history[i + 1] << "\n\n";
-          }
-      }
-      return oss_prompt.str();
-  }
-
-  bool is_special_id(int id) const {
-      return id == mask_token_id || id == gmask_token_id || id == smask_token_id || id == sop_token_id ||
-            id == eop_token_id;
-  }
-
-  public:
-    sentencepiece::SentencePieceProcessor sp;
-    int mask_token_id;
-    int gmask_token_id;
-    int smask_token_id;
-    int sop_token_id;
-    int eop_token_id;
-};
 
 struct model_file_loader {
   model_file file;
   model_file_version file_version;
   model_hparams hparams;
   model_vocab vocab;
-  std::unique_ptr<ChatGLM2Tokenizer> tokenizer;
+  ChatGLM2Tokenizer *tokenizer;
 
   model_file_loader(const char* fname, size_t file_idx, model_load_tensors_map& tensors_map) : file(fname, "rb") {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
@@ -295,7 +226,7 @@ struct model_file_loader {
     uint32_t proto_size = file.read_u32();
     std::string word = file.read_string(proto_size);
     std::string_view serialized_model_proto(word);
-    tokenizer = std::make_unique<ChatGLM2Tokenizer>(serialized_model_proto);
+    tokenizer = new ChatGLM2Tokenizer(serialized_model_proto);
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
@@ -427,10 +358,12 @@ struct model_model_loader {
   size_t num_ne_tensors_created = 0;
   struct ne_context* ne_ctx = NULL;
   std::unique_ptr<model_mmap> mapping;
+  ChatGLM2Tokenizer *tokenizer;
 
   model_model_loader(const std::string& fname_base, bool use_mmap, bool vocab_only) {
     auto* first_file = new model_file_loader(fname_base.c_str(), 0, tensors_map);
     file_loaders.emplace_back(first_file);
+    tokenizer = first_file->tokenizer;
     uint32_t n_parts = vocab_only ? 1 : guess_n_parts();
     for (uint32_t i = 1; i < n_parts; i++) {
       std::string fname = fname_base + "." + std::to_string(i);

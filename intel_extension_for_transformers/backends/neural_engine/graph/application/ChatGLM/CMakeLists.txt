@@ -29,6 +29,8 @@
 #   add_dependencies(${TARGET} BUILD_INFO)
 # endif()
 
+include_directories(third_party/sentencepiece/src)
+
 set(TARGET main_chatglm)
 add_executable_w_warning(${TARGET} main_chatglm.cpp)
 target_link_libraries(${TARGET} PUBLIC ne_layers chatglm common ${CMAKE_THREAD_LIBS_INIT})

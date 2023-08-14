@@ -17,7 +17,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
+#include <sentencepiece_processor.h>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -41,6 +41,7 @@
 #include "core/ne_layers.h"
 #include "models/model_utils/util.h"
 
+
 #define MODEL_MAX_NORM 4
 #define MODEL_MAX_ATTN 4
 #define MODEL_MAX_FFN 4
@@ -60,6 +61,78 @@
 #define MODEL_FILE_MAGIC_UNVERSIONED MODEL_FILE_MAGIC_NE
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
+
+
+class ChatGLM2Tokenizer {
+  public:
+  ChatGLM2Tokenizer(std::string_view serialized_model_proto) {
+    const auto status = sp.LoadFromSerializedProto(serialized_model_proto);
+    // CHATGLM_CHECK(status.ok()) << status.ToString();
+
+    int special_id = sp.GetPieceSize();
+    mask_token_id = special_id++;
+    gmask_token_id = special_id++;
+    smask_token_id = special_id++;
+    sop_token_id = special_id++;
+    eop_token_id = special_id++;
+  }
+
+  std::vector<int> encode(const std::string &text) const {
+      std::vector<int> ids;
+      sp.Encode(text, &ids);
+      ids.insert(ids.begin(), {gmask_token_id, sop_token_id}); // special prefix
+      return ids;
+  }
+
+  std::string decode(const std::vector<int> &ids) const {
+      // filter out special tokens
+      std::vector<int> normal_ids(ids);
+      normal_ids.erase(std::remove_if(normal_ids.begin(), normal_ids.end(), [this](int id) { return is_special_id(id); }),
+                      normal_ids.end());
+
+      std::string text;
+      sp.Decode(normal_ids, &text);
+      return text;
+  }
+
+  std::vector<int> encode_history(const std::vector<std::string> &history, int max_length) {
+      std::string prompt = build_prompt(history);
+      std::vector<int> input_ids = encode(prompt);
+      if ((int)input_ids.size() > max_length) {
+          // sliding window: drop the least recent history while keeping the special prefix tokens
+          int num_drop = (int)input_ids.size() - max_length;
+          input_ids.erase(input_ids.begin() + 2, input_ids.begin() + 2 + num_drop);
+      }
+      return input_ids;
+  }
+
+  std::string build_prompt(const std::vector<std::string> &history) {
+      // CHATGLM_CHECK(history.size() % 2 == 1) << "invalid history size " << history.size();
+
+      std::ostringstream oss_prompt;
+      for (size_t i = 0; i < history.size(); i += 2) {
+          oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
+          if (i < history.size() - 1) {
+              oss_prompt << history[i + 1] << "\n\n";
+          }
+      }
+      return oss_prompt.str();
+  }
+
+  bool is_special_id(int id) const {
+      return id == mask_token_id || id == gmask_token_id || id == smask_token_id || id == sop_token_id ||
+            id == eop_token_id;
+  }
+
+  public:
+    sentencepiece::SentencePieceProcessor sp;
+    int mask_token_id;
+    int gmask_token_id;
+    int smask_token_id;
+    int sop_token_id;
+    int eop_token_id;
+};
+
 
 #ifdef __cplusplus
 extern "C" {

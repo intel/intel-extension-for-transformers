@@ -183,6 +183,7 @@ int main(int argc, char** argv) {
 
   // tokenize the prompt
   std::vector<int> embd_inp = ::model_tokenize(ctx, params.prompt, false);
+  // std::vector<int> embd_inp = ctx->modeltokenizer->encode_history(params.prompt, 512);
 
   const int n_ctx = model_n_ctx(ctx);
 
