@@ -46,7 +46,7 @@ jobs:
               echo "remove left files through container ..."
               docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
-          
+
       - name: Checkout out Repo
         uses: actions/checkout@v3
 
@@ -63,7 +63,6 @@ jobs:
           docker run -dit --memory="4g" --memory-reservation="1g" --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }}-${{ runner.name }} --shm-size="1g" \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
-          echo '${{ toJSON(github) }}'
 
       - name: Env build
         run: |
