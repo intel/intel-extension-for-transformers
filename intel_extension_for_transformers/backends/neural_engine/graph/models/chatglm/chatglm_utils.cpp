@@ -178,7 +178,7 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
   if (progress_callback) {
     progress_callback(1.0f, progress_callback_user_data);
   }
-
+  lctx.model.tokenizer = ml->tokenizer;
   model.mapping = std::move(ml->mapping);
 }
 

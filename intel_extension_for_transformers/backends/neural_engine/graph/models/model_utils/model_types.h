@@ -224,6 +224,8 @@ struct model_struct {
   model_hparams hparams;
   model_scratch scratchs;
 
+  ChatGLM2Tokenizer *tokenizer;
+
   struct ne_tensor* others[MODEL_MAX_OTHERS];
   std::vector<model_layer> layers;
 
