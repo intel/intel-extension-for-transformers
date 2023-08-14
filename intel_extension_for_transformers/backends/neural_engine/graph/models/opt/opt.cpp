@@ -55,6 +55,17 @@ static bool opt_model_eval_internal(model_context& lctx, const model_token* toke
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
+#if 0  // debug   print input_ids
+  static int p = 1;
+  if (p++ == 1) {
+    printf("\n n_tokens: %d \n", n_tokens);
+    printf("input ids: \n");
+    for (int j = 0; j < n_tokens; ++j) {
+      printf("%d, ", *(tokens+j));
+    }
+    printf("\n");
+  }
+#endif
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;

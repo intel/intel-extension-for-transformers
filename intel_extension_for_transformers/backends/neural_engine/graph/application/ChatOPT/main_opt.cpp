@@ -64,6 +64,8 @@ void sigint_handler(int signo) {
 }
 #endif
 
+#define OPT_BOS_TOKEN 2
+
 int main(int argc, char** argv) {
   gpt_params params;
   params.name = MODEL_OPT;
@@ -508,6 +510,9 @@ int main(int argc, char** argv) {
       --n_remain;
     } else {
       // some user input remains from prompt or interaction, forward it to processing
+      // OPT model use GPT-2 tokenizer. It will prepend bos_token when encode user's prompt
+      // https://github.com/huggingface/transformers/issues/3311
+      embd.push_back(OPT_BOS_TOKEN);
       while ((int)embd_inp.size() > n_consumed) {
         embd.push_back(embd_inp[n_consumed]);
         last_n_tokens.erase(last_n_tokens.begin());
