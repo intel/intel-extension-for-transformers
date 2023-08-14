@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base_model import BaseModel
+from .base_model import BaseModel, register_model_adapter
 from fastchat.conversation import get_conv_template, Conversation
 from datetime import datetime
 import torch
@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 invalid_score_processor = InvalidScoreLogitsProcessor()
 
+@register_model_adapter
 class ChatGlmModel(BaseModel):
     def init_model(self, config):
         print("Loading model {}".format(config.model_name_or_path))

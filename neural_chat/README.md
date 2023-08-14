@@ -1,4 +1,19 @@
-**NeuralChat** is a powerful and versatile chatbot designed to facilitate textual or voice conversations. By providing NeuralChat with textual or voice instructions, users can receive accurate and relevant responses. We provide a comprehensive API for building a highly customizable end-to-end chatbot service, covering model pre-training, model fine-tuning, model compression, prompt engineering, knowledge base retrieval, talkingbot and quick deployment.
+<div align="center">
+
+Intel® Neural Chat
+===========================
+<h3> An open-source Python library that empowers you to customize your chatbot with a diverse range of plugins.</h3>
+
+---
+<div align="left">
+
+NeuralChat is a general chat framework designed to create your own chatbot that can be efficiently deployed on Intel CPU/GPU, Habana HPU and Nvidia GPU. NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning and LLM inference with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot and deploy on Intel platforms rapidly. Here is the flow of NeuralChat:
+
+<a target="_blank" href="./assets/pictures/neuralchat.png">
+<p align="center">
+  <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=200>
+</p>
+</a>
 
 # Installation
 
@@ -15,8 +30,9 @@ pip install intel-extension-for-transformers
 
 Users can have a try of NeuralChat with [NeuralChat Command Line](./cli/README.md) or Python API.
 
+## Inference
 
-## Text Chat
+### Text Chat
 
 Giving NeuralChat the textual instruction, it will respond with the textual response.
 
@@ -30,15 +46,33 @@ neuralchat textchat --prompt "Tell me about Intel Xeon Scalable Processors."
 
 ```python
 >>> from neural_chat.config import NeuralChatConfig
->>> from neural_chat.chatbot import NeuralChatBot
+>>> from neural_chat.chatbot import build_chatbot
 >>> config = NeuralChatConfig()
->>> chatbot = NeuralChatBot(config)
->>> chatbot.build()
+>>> chatbot = build_chatbot(config)
 >>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
+### Text Chat With Retreival
 
-## Voice Chat
+Giving NeuralChat the textual instruction, it will respond with the textual response.
+
+**command line experience**
+
+```shell
+neuralchat textchat --prompt "Tell me about Intel Xeon Scalable Processors."
+```
+
+**Python API experience**
+
+```python
+>>> from neural_chat.config import NeuralChatConfig
+>>> from neural_chat.chatbot import build_chatbot
+>>> config = NeuralChatConfig()
+>>> chatbot = build_chatbot(config)
+>>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+```
+
+### Voice Chat
 
 In the context of voice chat, users have the option to engage in various modes: utilizing input audio and receiving output audio, employing input audio and receiving textual output, or providing input in textual form and receiving audio output.
 
@@ -66,12 +100,14 @@ For the Python API code, users have the option to enable different voice chat mo
 
 ```python
 >>> from neural_chat.config import NeuralChatConfig
->>> from neural_chat.chatbot import NeuralChatBot
+>>> from neural_chat.chatbot import build_chatbot
 >>> config = NeuralChatConfig(audio_input=True, audio_output=True)
->>> chatbot = NeuralChatBot(config)
->>> chatbot.build()
+>>> chatbot = build_chatbot(config)
 >>> result = chatbot.chat("Tell me about Intel Xeon Scalable Processors.")
 ```
+
+We provide multiple plugins to augment the chatbot on top of LLM inference. Our plugins support [knowledge retrieval](./pipeline/plugins/retrievers/), [query caching](./pipeline/plugins/caching/), [prompt optimization](./pipeline/plugins/prompts/), [safety checker](./pipeline/plugins/security/), etc. Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time. Prompt optimization suppots auto prompt engineering to improve user prompts, instruction optimization to enhance the model's performance, and memory controller for efficient memory utilization.
+
 
 ## Finetuning
 
@@ -80,21 +116,37 @@ Finetune the pretrained large language model (LLM) with the instruction-followin
 **command line experience**
 
 ```shell
-neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config finetuning/config/finetuning.config
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.config
 ```
 
 
 **Python API experience**
 
 ```python
->>> from neural_chat.config import FinetuningConfig, NeuralChatConfig
->>> from neural_chat.chatbot import NeuralChatBot
->>> finetuneCfg = FinetuningConfig()
->>> config = NeuralChatConfig(finetuneConfig=finetuneCfg)
->>> chatbot = NeuralChatBot(config)
->>> chatbot.build()
->>> chatbot.finetune()
->>> response = chatbot.chat("Tell me about Intel Xeon Scalable Processors.")
+>>> from neural_chat.config import FinetuningConfig
+>>> from neural_chat.chatbot import finetune_model
+>>> finetune_cfg = FinetuningConfig()
+>>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+## Quantization
+
+NeuralChat provides three quantization approaches respectively (PostTrainingDynamic, PostTrainingStatic, QuantAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+
+**command line experience**
+
+```shell
+neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/optimization/config/optimization.config
+```
+
+
+**Python API experience**
+
+```python
+>>> from neural_chat.config import OptimizationConfig
+>>> from neural_chat.chatbot import optimize_model
+>>> opt_cfg = OptimizationConfig()
+>>> optimized_model = optimize_model(opt_cfg)
 ```
 
 
@@ -115,7 +167,7 @@ Users can have a try of NeuralChat server with [NeuralChat Server Command Line](
     from neuralchat.server.neuralchat_server import NeuralChatServerExecutor
     server_executor = NeuralChatServerExecutor()
     server_executor(
-        config_file="./conf/neuralchat.yaml", 
+        config_file="./conf/neuralchat.yaml",
         log_file="./log/neuralchat.log")
     ```
 
@@ -137,7 +189,7 @@ Users can have a try of NeuralChat server with [NeuralChat Server Command Line](
         port=8000)
     ```
 
-- Curl
+- Curl with Restful API
     ```
     curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
     ```

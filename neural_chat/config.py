@@ -22,6 +22,25 @@ import numpy as np
 from transformers import TrainingArguments
 from transformers.utils.versions import require_version
 
+from enum import Enum, auto
+
+class DeviceOptions(Enum):
+    AUTO = auto()
+    CPU = auto()
+    GPU = auto()
+    XPU = auto()
+    HPU = auto()
+    CUDA = auto()
+
+class BackendOptions(Enum):
+    AUTO = auto()
+    TORCH = auto()
+    IPEX = auto()
+    ITREX = auto()
+
+class AudioOptions(Enum):
+    ENGLISH = auto()
+    CHINESE = auto()
 
 @dataclass
 class ModelArguments:
@@ -312,32 +331,46 @@ class OptimizationConfig:
 
 
 class NeuralChatConfig:
-    def __init__(self, model_name_or_path="meta-llama/Llama-2-70b-hf", inputs=None, device="auto",
-                 backend="auto", retrieval=False, retrieval_type=None, txt2Image=False,
-                 audio_input=False, audio_output=False, server_mode=True, finetune_config=None,
-                 optimize_config=None, use_hpu_graphs=False, use_deepspeed=False, peft_path=None,
-                 cpu_jit=False, use_cache=False, num_gpus=0, max_gpu_memory=None):
+    def __init__(self,
+                 model_name_or_path="meta-llama/Llama-2-70b-hf",
+                 device="auto",
+                 backend="auto",
+                 retrieval=False,
+                 retrieval_type=None,
+                 document_path=None,
+                 audio_input=False,
+                 audio_input_path=None,
+                 audio_output=False,
+                 audio_output_path=False,
+                 audio_lang=None,
+                 txt2Image=False,
+                 server_mode=True,
+                 use_hpu_graphs=False,
+                 use_deepspeed=False,
+                 peft_path=None,
+                 cpu_jit=False,
+                 use_cache=False,
+                 num_gpus=0,
+                 max_gpu_memory=None,
+                 cache_chat=False,
+                 cache_chat_config_file=None,
+                 cache_embedding_model_dir=None,
+                 intent_detection=False,
+                 memory_controller=False,
+                 savety_checker=False):
         self.model_name_or_path = model_name_or_path
-        self.inputs = inputs
         self.device = device
         self.backend = backend
         self.retrieval = retrieval
         self.retrieval_type = retrieval_type
-        self.txt2Image = txt2Image
+        self.document_path = document_path
         self.audio_input = audio_input
+        self.audio_input_path = audio_input_path
         self.audio_output = audio_output
+        self.audio_output_path = audio_output_path
+        self.audio_lang = audio_lang
+        self.txt2Image = txt2Image
         self.server_mode = server_mode
-        self.finetune_config = finetune_config if finetune_config else FinetuningConfig(
-            model_args=ModelArguments(
-                model_name_or_path=model_name_or_path
-            ),
-            data_args=DataArguments(),
-            training_args=TrainingArguments(),
-            finetune_args=FinetuningArguments(
-                device=device
-            )
-        )
-        self.optimize_config = optimize_config if optimize_config else OptimizationConfig()
         self.use_hpu_graphs = use_hpu_graphs
         self.use_deepspeed = use_deepspeed
         self.peft_path = peft_path
@@ -345,4 +378,9 @@ class NeuralChatConfig:
         self.use_cache = use_cache
         self.num_gpus = num_gpus
         self.max_gpu_memory = max_gpu_memory
-
+        self.cache_chat = cache_chat
+        self.cache_chat_config_file = cache_chat_config_file
+        self.cache_embedding_model_dir = cache_embedding_model_dir
+        self.intent_detection = intent_detection
+        self.memory_controller = memory_controller
+        self.savety_checker = savety_checker

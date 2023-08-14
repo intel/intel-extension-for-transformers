@@ -17,6 +17,8 @@
 # limitations under the License.
 
 from abc import ABC, abstractmethod
+from typing import List
+import os
 from fastchat.conversation import get_conv_template, Conversation
 
 class BaseModel(ABC):
@@ -63,3 +65,34 @@ class BaseModel(ABC):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("one_shot")
+
+    def register_tts(self, instance):
+        self.tts = instance
+
+    def register_asr(self, instance):
+        self.asr = instance
+
+    def register_safety_checker(self, instance):
+        self.savety_checker = instance
+
+
+# A global registry for all model adapters
+model_adapters: List[BaseModel] = []
+
+def register_model_adapter(cls):
+    """Decorator for registering a model."""
+    def decorator():
+        instance = cls()
+        model_adapters.append(instance)
+        return instance
+    return decorator
+
+def get_model_adapter(model_name_path: str) -> BaseModel:
+    """Get a model adapter for a model_name_path."""
+    model_path_basename = os.path.basename(os.path.normpath(model_name_path))
+
+    for adapter in model_adapters:
+        if adapter.match(model_path_basename) and type(adapter) != BaseModel:
+            return adapter
+
+    raise ValueError(f"No valid model adapter for {model_name_path}")
