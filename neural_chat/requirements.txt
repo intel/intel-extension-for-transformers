@@ -1,1 +1,7 @@
 transformers>=4.31.0
+perft
+fastchat
+torch
+intel_extension_for_pytorch
+paddlepaddle
+paddlespeech
