@@ -16,7 +16,7 @@ def truncate_sequences(sequences, max_length):
 
     return sequences
 
-class InstructionDataPreprocess:
+class CompletionDataPreprocess:
     prompt_template = {
             "prompt_with_input": (
                 "Below is an instruction that describes a task, paired with an input that provides further context. "
@@ -249,9 +249,9 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
         preprocess = SummarizationDataPreprocess()
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
         return raw_datasets, preprocess_fn
-    elif finetune_args.task == "instruction":
-        # default use alpaca instruction template
-        preprocess = InstructionDataPreprocess() 
+    elif finetune_args.task == "completion":
+        # default use alpaca template
+        preprocess = CompletionDataPreprocess() 
         for key in raw_datasets:
             prompts = preprocess.create_data(raw_datasets[key])
             columns_to_be_removed = list(raw_datasets[key].features.keys())

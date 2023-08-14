@@ -32,13 +32,14 @@ For [MPT](https://huggingface.co/mosaicml/mpt-7b-chat), it uses the gpt-neox-20b
 If you don't have a fine-tuned model, please remove the 'peft_model_path' parameter.
 
 ```bash
-# instruction template
+# completion template
 python generate.py \
         --base_model_path "mosaicml/mpt-7b-chat" \
         --peft_model_path "./mpt_peft_finetuned_model" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
         --trust_remote_code \
+        --task completion \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 
 # chat template
