@@ -74,7 +74,7 @@ class Evaluator:
 
     @torch.no_grad()
     def tokenize_function(self, examples):
-        if args.weight_only_algo in ['AWQ', 'TEQ']:
+        if args.weight_only_algo in ['TEQ']:
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             example = self.tokenizer(examples["text"], padding="max_length", max_length=self.pad_max)
@@ -102,7 +102,6 @@ class Evaluator:
 
     @torch.no_grad()
     def evaluate(self, model):
-
         model.eval()
         # The task is to predict the last word of the input.
         total, hit = 0, 0
@@ -126,7 +125,7 @@ class Evaluator:
             pred = last_token_logits.argmax(dim=-1)
             total += label.size(0)
             hit += (pred == label).sum().item()
-            if i % 50 == 0:
+            if (i+1) % 50 == 0:
                 print(hit / total)
                 print("Processed minibatch:", i)
 
@@ -136,63 +135,66 @@ class Evaluator:
         print("Latency: ", latency)
         return acc
 
-torchscript = False
-if args.sq or args.weight_only_algo in ['AWQ', 'TEQ']:
-    torchscript = True
-if re.search("llama", args.model.lower()):
-    import transformers
-    from transformers import LlamaForCausalLM, LlamaTokenizer
-    user_model = LlamaForCausalLM.from_pretrained(
-        args.model,
-        torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
-        revision=args.revision,
-    )
-    tokenizer = LlamaTokenizer.from_pretrained(args.model)
-elif re.search("mpt-7b-chat", args.model.lower()):
-    from mpt_7b.modeling_mpt import MPTForCausalLM
-    user_model = MPTForCausalLM.from_pretrained(
+def get_user_model():
+    torchscript = False
+    if args.sq or args.weight_only_algo in ['AWQ', 'TEQ']:
+        torchscript = True
+    if re.search("llama", args.model.lower()):
+        import transformers
+        from transformers import LlamaForCausalLM, LlamaTokenizer
+        user_model = LlamaForCausalLM.from_pretrained(
+            args.model,
+            torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
+            revision=args.revision,
+        )
+        tokenizer = LlamaTokenizer.from_pretrained(args.model)
+    elif re.search("mpt-7b-chat", args.model.lower()):
+        from mpt_7b.modeling_mpt import MPTForCausalLM
+        user_model = MPTForCausalLM.from_pretrained(
+                args.model,
+                torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
+                trust_remote_code=args.trust_remote_code,
+                revision=args.revision,
+                )
+        tokenizer = AutoTokenizer.from_pretrained(args.model)
+        user_model.config.use_cache = True
+    elif re.search("falcon-7b-instruct", args.model.lower()):
+        from falcon_7b_instruct.modelling_RW import RWForCausalLM
+        user_model = RWForCausalLM.from_pretrained(
+                args.model,
+                torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
+                trust_remote_code=args.trust_remote_code,
+                revision=args.revision,
+                )
+        tokenizer = AutoTokenizer.from_pretrained(args.model)
+        user_model.config.use_cache = True
+    elif re.search("chatglm", args.model.lower()):
+        from transformers import AutoModel, AutoTokenizer
+        user_model = AutoModel.from_pretrained(
+                args.model,
+                torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
+                trust_remote_code=args.trust_remote_code,
+                revision=args.revision,
+                )
+        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+    else:
+        user_model = AutoModelForCausalLM.from_pretrained(
             args.model,
             torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
             trust_remote_code=args.trust_remote_code,
             revision=args.revision,
-            )
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
-    user_model.config.use_cache = True
-elif re.search("falcon-7b-instruct", args.model.lower()):
-    from falcon_7b_instruct.modelling_RW import RWForCausalLM
-    user_model = RWForCausalLM.from_pretrained(
-            args.model,
-            torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
-            trust_remote_code=args.trust_remote_code,
-            revision=args.revision,
-            )
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
-    user_model.config.use_cache = True
-elif re.search("chatglm", args.model.lower()):
-    from transformers import AutoModel, AutoTokenizer
-    user_model = AutoModel.from_pretrained(
-            args.model,
-            torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
-            trust_remote_code=args.trust_remote_code,
-            revision=args.revision,
-            )
-    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
-else:
-    user_model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
-        trust_remote_code=args.trust_remote_code,
-        revision=args.revision,
-    )
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+        )
+        tokenizer = AutoTokenizer.from_pretrained(args.model)
 
-# to channels last
-user_model = user_model.to(memory_format=torch.channels_last)
-user_model.eval()
+    # to channels last
+    user_model = user_model.to(memory_format=torch.channels_last)
+    user_model.eval()
+    return user_model, tokenizer
 
 
 if args.quantize:
     # dataset
+    user_model, tokenizer = get_user_model()
     calib_dataset = load_dataset(args.dataset, split="train")
     calib_dataset = calib_dataset.shuffle(seed=42)
     calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
@@ -233,7 +235,8 @@ if args.quantize:
             op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     if args.sq:
-        args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
+        # alpha can be a float number of a list of float number.
+        args.alpha = args.alpha if args.alpha == "auto" else eval(args.alpha)
         if re.search("falcon", user_model.config.model_type):
             recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha, 'folding': False}}
         else:
@@ -258,11 +261,20 @@ if args.quantize:
         # set calib_func=None, use default training func as calib_func
         calib_func = None
 
+    eval_dataset = load_dataset('lambada', split='validation')
+    evaluator = Evaluator(eval_dataset, tokenizer)
+    def eval_func(model):
+        acc = evaluator.evaluate(model)
+        return acc
+    # eval_func should be set when tuning alpha.
+    eval_func = eval_func if isinstance(args.alpha, list) else None
+
     q_model = quantization.fit(
         user_model,
         conf,
         calib_dataloader=calib_dataloader,
         calib_func=calib_func,
+        eval_func=eval_func,
     )
 
     q_model.save(args.output_dir)
@@ -275,6 +287,8 @@ if args.int8 or args.int8_bf16_mixed:
     else:
         user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)), user_model)
     user_model.eval()
+else:
+    user_model, tokenizer = get_user_model()
 
 if args.accuracy:
     user_model.eval()
