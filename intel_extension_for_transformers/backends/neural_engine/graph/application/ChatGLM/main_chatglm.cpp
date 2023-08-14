@@ -351,20 +351,23 @@ int main(int argc, char** argv) {
   int max_length = 512;
   // int n_past = 0;
   int n_eval = embd_inp.size();
+  std::vector<int> curr_input_ids(embd_inp);
   std::vector<int> output_ids;
   output_ids.reserve(max_length);
   int vocab_size = 65024;
   // embd_inp
 
-  while ((int)output_ids.size() < max_length) {
+  while ((int)output_ids.size() < 30) {
     // int next_token_id = generate_next_token(curr_input_ids, gen_config, n_past, n_ctx);
-    model_eval(ctx, &embd_inp[0], n_eval, n_past, params.n_threads);
+    model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+    n_past += curr_input_ids.size();
 
     float* logits = model_get_logits(ctx);
     int next_token_id = std::max_element(logits, logits + vocab_size) - logits;
+    curr_input_ids = {next_token_id};
 
     output_ids.emplace_back(next_token_id);
-    break;
+    // break;
   }
   printf("%s\n", ctx->model.tokenizer->decode(output_ids).c_str());
 
