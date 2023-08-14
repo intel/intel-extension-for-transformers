@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eo pipefail
 set -x
 
 cores_list=(48)
