@@ -1376,6 +1376,8 @@ Pipeline::Pipeline(const std::string &path) {
 std::string Pipeline::chat(const std::vector<std::string> &history, const GenerationConfig &gen_config,
                            BaseStreamer *streamer) const {
     std::vector<int> input_ids = tokenizer->encode_history(history, gen_config.max_context_length);
+    std::string inputs = tokenizer->decode(input_ids);
+    printf("%s" inputs);
     std::vector<int> output_ids = model->generate(input_ids, gen_config, streamer);
     std::vector<int> new_output_ids(output_ids.begin() + input_ids.size(), output_ids.end());
     std::string output = tokenizer->decode(new_output_ids);
