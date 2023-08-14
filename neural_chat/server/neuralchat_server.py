@@ -29,7 +29,7 @@ from fastapi import APIRouter
 from starlette.middleware.cors import CORSMiddleware
 
 from .base_executor import BaseCommandExecutor
-from .base_commands import cli_server_register
+from .server_commands import cli_server_register
 
 from neural_chat.cli.log import logger
 from .restful.api import setup_router

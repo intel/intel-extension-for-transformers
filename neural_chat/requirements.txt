@@ -3,5 +3,8 @@ perft
 fastchat
 torch
 intel_extension_for_pytorch
+num2words
+speechbrain
 paddlepaddle
 paddlespeech
+shortuuid

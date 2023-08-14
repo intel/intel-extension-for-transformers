@@ -29,7 +29,8 @@ class ResponseBaseModel(BaseModel):
 
 
 class ImageResponse(ResponseBaseModel):
-    image: Image
+    # Convert the image to bytes and store it as bytes
+    image: bytes
 
 
 class TextResponse(ResponseBaseModel):
@@ -41,7 +42,7 @@ class VoiceResponse(ResponseBaseModel):
 
 
 class RetrievalResponse(ResponseBaseModel):
-    content: StreamingResponse
+    content: str
 
 
 class FinetuneResponse(ResponseBaseModel):

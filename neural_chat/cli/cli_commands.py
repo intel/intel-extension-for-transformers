@@ -37,7 +37,7 @@ def get_command(name: str):
     for item in items:
         com = com[item]
 
-    return com['command']
+    return com['_command']
 
 def cli_register(name: str, description: str=''):
     def _warpper(command):
@@ -46,7 +46,7 @@ def cli_register(name: str, description: str=''):
         com = neuralchat_commands
         for item in items:
             com = com[item]
-        com['command'] = command
+        com['_command'] = command
         if description:
             com['description'] = description
         return command
@@ -58,7 +58,7 @@ def command_register(name: str, description: str='', cls: str=''):
     com = neuralchat_commands
     for item in items:
         com = com[item]
-    com['command'] = cls
+    com['_command'] = cls
     if description:
         com['description'] = description
 
@@ -72,12 +72,12 @@ def neuralchat_execute():
         idx += 1
         com = com[_argv]
 
-    if not callable(com['command']):
-        i = com['command'].rindex('.')
-        module, cls = com['command'][:i], com['command'][i + 1:]
+    if not callable(com['_command']):
+        i = com['_command'].rindex('.')
+        module, cls = com['_command'][:i], com['_command'][i + 1:]
         exec("from {} import {}".format(module, cls))
-        com['command'] = locals()[cls]
-    status = 0 if com['command']().execute(sys.argv[idx:]) else 1
+        com['_command'] = locals()[cls]
+    status = 0 if com['_command']().execute(sys.argv[idx:]) else 1
     return status
 
 @cli_register(name='neuralchat')

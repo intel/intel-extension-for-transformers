@@ -40,7 +40,7 @@ def cli_server_register(name: str, description: str=''):
         com = neuralchat_server_commands
         for item in items:
             com = com[item]
-        com['command'] = command
+        com['_command'] = command
         if description:
             com['description'] = description
         return command
@@ -54,7 +54,7 @@ def get_server_command(name: str):
     for item in items:
         com = com[item]
 
-    return com['command']
+    return com['_command']
 
 
 def cli_client_register(name: str, description: str=''):
@@ -64,7 +64,7 @@ def cli_client_register(name: str, description: str=''):
         com = neuralchat_client_commands
         for item in items:
             com = com[item]
-        com['command'] = command
+        com['_command'] = command
         if description:
             com['description'] = description
         return command
@@ -78,7 +78,7 @@ def get_client_command(name: str):
     for item in items:
         com = com[item]
 
-    return com['command']
+    return com['_command']
 
 
 def _neuralchat_execute(commands, command_name_prefix):
@@ -90,7 +90,7 @@ def _neuralchat_execute(commands, command_name_prefix):
         commands = commands[_argv]
 
     try:
-        status = 0 if commands['command']().execute(sys.argv[idx:]) else 1
+        status = 0 if commands['_command']().execute(sys.argv[idx:]) else 1
     except Exception as e:
         print("An error occurred on neuralchat command execution:", str(e))
         status = 1

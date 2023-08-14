@@ -24,7 +24,7 @@ from typing import List
 import requests
 
 from .base_executor import BaseCommandExecutor
-from .base_commands import cli_client_register
+from .server_commands import cli_client_register
 from neural_chat.cli.log import logger
 
 
