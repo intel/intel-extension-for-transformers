@@ -16,7 +16,6 @@
 # limitations under the License.
 
 import torch
-import intel_extension_for_pytorch as ipex
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 from datasets import load_dataset, Audio, Dataset
 import time
@@ -24,13 +23,14 @@ import contextlib
 
 class AudioSpeechRecognition:
     """Convert audio to text."""
-    def __init__(self, model_name_or_path="openai/whisper-small", bf16=False):
-        self.device = "cpu"
+    def __init__(self, model_name_or_path="openai/whisper-small", bf16=False, device="cpu"):
+        self.device = device
         self.model = WhisperForConditionalGeneration.from_pretrained(model_name_or_path).to(self.device)
         self.processor = WhisperProcessor.from_pretrained(model_name_or_path)
         self.model.eval()
         self.bf16 = bf16
         if self.bf16:
+            import intel_extension_for_pytorch as ipex
             self.model = ipex.optimize(self.model, dtype=torch.bfloat16)
 
     def audio2text(self, audio_path):

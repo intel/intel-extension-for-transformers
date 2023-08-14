@@ -4,12 +4,13 @@ import unittest
 import shutil
 import os
 import time
+import torch
 
 class TestTTS(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.tts = TextToSpeech()
-        self.asr = AudioSpeechRecognition("openai/whisper-tiny")
+        self.tts = TextToSpeech(device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+        self.asr = AudioSpeechRecognition("openai/whisper-small")
         os.mkdir('./tmp_audio')
 
     @classmethod
