@@ -7,7 +7,6 @@ import torch
 from datasets import load_dataset
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
 parser = argparse.ArgumentParser()
@@ -36,7 +35,6 @@ parser.add_argument("--alpha", default="auto",
 parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
                     help="Weight-only parameter.")
 parser.add_argument("--int8", action="store_true")
-parser.add_argument("--weight_only_sym_full_range", action="store_true")
 parser.add_argument("--ipex", action="store_true", help="Use intel extension for pytorch.")
 parser.add_argument("--accuracy", action="store_true")
 parser.add_argument("--batch_size", default=1, type=int,
@@ -53,6 +51,7 @@ parser.add_argument("--tasks", nargs='+', default=["lambada_openai",
 parser.add_argument("--weight_only_bits", type=int, default=8)
 parser.add_argument("--weight_only_group", type=int, default=-1)
 parser.add_argument("--weight_only_scheme", default="sym")
+parser.add_argument("--weight_only_sym_full_range", action="store_true")
 
 args = parser.parse_args()
 if args.ipex:
@@ -136,6 +135,7 @@ class Evaluator:
         return acc
 
 def get_user_model():
+    from transformers import AutoModelForCausalLM, AutoModel, AutoTokenizer
     torchscript = False
     if args.sq or args.weight_only_algo in ['AWQ', 'TEQ']:
         torchscript = True
@@ -169,7 +169,6 @@ def get_user_model():
         tokenizer = AutoTokenizer.from_pretrained(args.model)
         user_model.config.use_cache = True
     elif re.search("chatglm", args.model.lower()):
-        from transformers import AutoModel, AutoTokenizer
         user_model = AutoModel.from_pretrained(
                 args.model,
                 torchscript=torchscript,  # torchscript will force `return_dict=False` to avoid jit errors
@@ -285,11 +284,11 @@ if args.int8 or args.int8_bf16_mixed:
     if args.ipex:
         user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)))
     else:
+        user_model, _ = get_user_model()
         kwargs = {'weight_only': True} if args.approach == 'weight_only' else {}
         user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)), user_model, **kwargs)
-    user_model.eval()
 else:
-    user_model, tokenizer = get_user_model()
+    user_model, _ = get_user_model()
 
 if args.accuracy:
     user_model.eval()
