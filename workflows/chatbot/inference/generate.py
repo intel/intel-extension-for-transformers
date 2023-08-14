@@ -646,6 +646,7 @@ def predict_stream(**params):
         )
     output_word_len = 0
 
+    first_token_output_time = datetime.now()
     for new_text in streamer:
         if len(new_text) == 0:
             continue
