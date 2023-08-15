@@ -15,13 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import traceback
 from typing import Optional
 from fastapi import APIRouter
 from neural_chat.cli.log import logger
 from neural_chat.server.restful.request import FinetuneRequest
 from neural_chat.server.restful.response import FinetuneResponse
-from neural_chat.chatbot import NeuralChatBot
 
 
 def check_finetune_params(request: FinetuneRequest) -> Optional[str]:
@@ -37,10 +35,10 @@ class FinetuneAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, chatbot: NeuralChatBot) -> None:
+    def set_chatbot(self, chatbot) -> None:
         self.chatbot = chatbot
 
-    def get_chatbot(self) -> NeuralChatBot:
+    def get_chatbot(self):
         if self.chatbot is None:
             raise RuntimeError("Finetunebot instance has not been set.")
         return self.chatbot
