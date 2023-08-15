@@ -21,7 +21,7 @@ from .config import OptimizationConfig
 from .config import FinetuningConfig
 from .pipeline.finetuning.finetuning import Finetuning
 from .config import DeviceOptions, BackendOptions, AudioOptions
-from models.base_model import get_model_adapter
+from .models.base_model import get_model_adapter
 from .utils.common import get_device_type, get_backend_type
 from .pipeline.plugins.caching.cache import init_similar_cache_from_config
 from .pipeline.plugins.audio.asr import AudioSpeechRecognition
@@ -35,8 +35,11 @@ def build_chatbot(config: NeuralChatConfig):
     """Build the chatbot with a given configuration.
 
     Args:
-        config (NeuralChatConfig):  The class of NeuralChatConfig containing model path,
-                                    device, backend, plugin config etc.
+        config (NeuralChatConfig): Configuration for building the chatbot.
+
+    Returns:
+        adapter: The chatbot model adapter.
+
     Example:
         from neural_chat.config import NeuralChatConfig
         from neural_chat.chatbot import build_chatbot
@@ -45,7 +48,7 @@ def build_chatbot(config: NeuralChatConfig):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
     """
     # Validate input parameters
-    if config.device not in [option.name for option in DeviceOptions]:
+    if config.device not in [option.name.lower() for option in DeviceOptions]:
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
 
@@ -111,10 +114,20 @@ def build_chatbot(config: NeuralChatConfig):
     return adapter
 
 def finetune_model(config: FinetuningConfig):
+    """Finetune the model based on the provided configuration.
+
+    Args:
+        config (FinetuningConfig): Configuration for finetuning the model.
+    """
+
     assert config is not None, "FinetuningConfig is needed for finetuning."
     finetuning = Finetuning(config)
     finetuning.finetune()
 
 def optimize_model(config: OptimizationConfig):
-    # Implement the logic to optimize the model
+    """Optimize the model based on the provided configuration.
+
+    Args:
+        config (OptimizationConfig): Configuration for optimizing the model.
+    """
     pass

@@ -1,5 +1,5 @@
 transformers>=4.31.0
-perft
+peft
 fastchat
 torch
 intel_extension_for_pytorch
@@ -8,3 +8,5 @@ speechbrain
 paddlepaddle
 paddlespeech
 shortuuid
+gptcache
+librosa>=0.10.0
