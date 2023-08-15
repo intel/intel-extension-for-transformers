@@ -79,7 +79,9 @@ function run_benchmark {
     if [ "${topology}" = "flan-t5-large" ]; then
         DATASET_NAME="NeelNanda/pile-10k"
         model_type="t5"
-        if [[ ${int8} == "true" ]]; then
+        if [ $input_model ];then
+            model_name_or_path=${input_model}
+        elif [[ ${int8} == "true" ]]; then
             model_name_or_path=${tuned_checkpoint}
         else
             model_name_or_path="google/flan-t5-large"
@@ -91,7 +93,9 @@ function run_benchmark {
 
     if [ "${topology}" = "t5-base-tag" ]; then
         model_type="t5"
-        if [[ ${int8} == "true" ]]; then
+        if [ $input_model ];then
+            model_name_or_path=${input_model}
+        elif [[ ${int8} == "true" ]]; then
             model_name_or_path=${tuned_checkpoint}
         else
             model_name_or_path="fabiochiu/t5-base-tag-generation"
