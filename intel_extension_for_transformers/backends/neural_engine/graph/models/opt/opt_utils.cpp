@@ -80,11 +80,8 @@ void OPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gp
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
   word_embed_proj_dim = hparams.word_embed_proj_dim;
-<<<<<<< HEAD
   max_seq_len = hparams.max_seq_len;
-=======
   do_layer_norm_before = hparams.do_layer_norm_before;
->>>>>>> add do_layer_norm_before
   scratch = opt_mem_req(n_layer);
   model.scratchs = scratch;
 }
