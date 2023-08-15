@@ -72,7 +72,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int rope_dim = head_size / 2;
   const int mqa_scale = n_head / hparams.multi_query_group_num;
   const int num_kv_heads = hparams.multi_query_group_num;
-  const int qlen = N;
+  
   const int hidden_size = n_embd;
   const int num_attention_heads = n_head;
 
@@ -95,11 +95,11 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
   memcpy(embd->data, tokens, N * ne_element_size(embd));
-
+  // int qlen = embd->ne[1];
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
-  // const int qlen = inpL->ne[1];
-  for (int il = 0; il < n_layer; ++il) {
+  int qlen = inpL->ne[1];
+  for (int il = 0; il < 2; ++il) {
     struct ne_tensor* cur;
 
     lctx.use_buf(ctx0, 0);
@@ -132,6 +132,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       value_layer = ne_permute(ctx0, value_layer, 1, 2, 0, 3);                           // [kv_heads, head_size, qlen]
 
       // store key and value to memory
+      // printf("qlen: %d, head_size: %d, num_kv_heads: %d\n", qlen, head_size, num_kv_heads);
       {
 
         struct ne_tensor *k_cache_view =
@@ -206,7 +207,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     inpL = ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL);
   }
 
-  // lctx.use_buf(ctx0, -1);
+  lctx.use_buf(ctx0, -1);
   if (embd->ne[0] > 1) {
     inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
   }
@@ -241,8 +242,13 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL) + (n_vocab * (N - 1)), sizeof(float) * n_vocab);
+      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
     }
+    // printf("logits_out: ");
+    // for (int i = 0; i < 20; i++) {
+    //   printf("%f, ", logits_out[i]);
+    // }
+    // printf("\n");
   }
 
   // extract embeddings
