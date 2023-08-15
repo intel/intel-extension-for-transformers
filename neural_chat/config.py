@@ -344,7 +344,7 @@ class GenerationConfig:
                  force_words_ids=None,
                  use_hpu_graphs=False,
                  use_cache=False,
-                 model_name="meta-llama/Llama-2-7b-chat-hf"):
+                 model_name_or_path="meta-llama/Llama-2-7b-chat-hf"):
         self.device = device
         self.temperature = temperature
         self.top_k = top_k
@@ -358,7 +358,7 @@ class GenerationConfig:
         self.force_words_ids = force_words_ids
         self.use_hpu_graphs = use_hpu_graphs
         self.use_cache = use_cache
-        self.model_name = model_name
+        self.model_name_or_path = model_name_or_path
 
 class PipelineConfig:
     def __init__(self,

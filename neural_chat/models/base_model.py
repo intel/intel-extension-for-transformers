@@ -22,6 +22,25 @@ import os
 from fastchat.conversation import get_conv_template, Conversation
 from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
 from neural_chat.config import GenerationConfig
+
+def construct_parameters(query, config):
+    params = {}
+    params["prompt"] = query
+    params["temperature"] = config.temperature
+    params["top_k"] = config.top_k
+    params["top_p"] = config.top_p
+    params["repetition_penalty"] = config.repetition_penalty
+    params["max_new_tokens"] = config.max_new_tokens
+    params["do_sample"] = config.do_sample
+    params["num_beams"] = config.num_beams
+    params["model_name"] = config.model_name_or_path
+    params["num_return_sequences"] = config.num_return_sequences
+    params["bad_words_ids"] = config.bad_words_ids
+    params["force_words_ids"] = config.force_words_ids
+    params["use_hpu_graphs"] = config.use_hpu_graphs
+    params["use_cache"] = config.use_cache
+    return params
+
 class BaseModel(ABC):
     """
     A base class for LLM.
@@ -82,24 +101,9 @@ class BaseModel(ABC):
             query: The input query for prediction.
             config: Configuration for prediction.
         """
-        params = {}
         if not config:
             config = GenerationConfig()
-        params["prompt"] = query
-        params["temperature"] = config.temperature
-        params["top_k"] = config.top_k
-        params["top_p"] = config.top_p
-        params["repetition_penalty"] = config.repetition_penalty
-        params["max_new_tokens"] = config.max_new_tokens
-        params["do_sample"] = config.do_sample
-        params["num_beams"] = config.num_beams
-        params["model_name"] = config.model_name
-        params["num_return_sequences"] = config.num_return_sequences
-        params["bad_words_ids"] = config.bad_words_ids
-        params["force_words_ids"] = config.force_words_ids
-        params["use_hpu_graphs"] = config.use_hpu_graphs
-        params["use_cache"] = config.use_cache
-        return predict_stream(params)
+        return predict_stream(construct_parameters(query, config))
 
     def predict(self, query, config=None):
         """
@@ -111,22 +115,8 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        params = {}
-        params["prompt"] = query
-        params["temperature"] = config.temperature
-        params["top_k"] = config.top_k
-        params["top_p"] = config.top_p
-        params["repetition_penalty"] = config.repetition_penalty
-        params["max_new_tokens"] = config.max_new_tokens
-        params["do_sample"] = config.do_sample
-        params["num_beams"] = config.num_beams
-        params["model_name"] = config.model_name
-        params["num_return_sequences"] = config.num_return_sequences
-        params["bad_words_ids"] = config.bad_words_ids
-        params["force_words_ids"] = config.force_words_ids
-        params["use_hpu_graphs"] = config.use_hpu_graphs
-        params["use_cache"] = config.use_cache
-        return predict(params)
+
+        return predict(construct_parameters(query, config))
 
     def chat_stream(self, query, config=None):
         """
@@ -139,21 +129,7 @@ class BaseModel(ABC):
         params = {}
         if not config:
             config = GenerationConfig()
-        params["prompt"] = query
-        params["temperature"] = config.temperature
-        params["top_k"] = config.top_k
-        params["top_p"] = config.top_p
-        params["repetition_penalty"] = config.repetition_penalty
-        params["max_new_tokens"] = config.max_new_tokens
-        params["do_sample"] = config.do_sample
-        params["num_beams"] = config.num_beams
-        params["model_name"] = config.model_name
-        params["num_return_sequences"] = config.num_return_sequences
-        params["bad_words_ids"] = config.bad_words_ids
-        params["force_words_ids"] = config.force_words_ids
-        params["use_hpu_graphs"] = config.use_hpu_graphs
-        params["use_cache"] = config.use_cache
-        return predict_stream(params)
+        return predict_stream(construct_parameters(query, config))
 
     def chat(self, query, config=None):
         """
@@ -165,22 +141,7 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        params = {}
-        params["prompt"] = query
-        params["temperature"] = config.temperature
-        params["top_k"] = config.top_k
-        params["top_p"] = config.top_p
-        params["repetition_penalty"] = config.repetition_penalty
-        params["max_new_tokens"] = config.max_new_tokens
-        params["do_sample"] = config.do_sample
-        params["num_beams"] = config.num_beams
-        params["model_name"] = config.model_name
-        params["num_return_sequences"] = config.num_return_sequences
-        params["bad_words_ids"] = config.bad_words_ids
-        params["force_words_ids"] = config.force_words_ids
-        params["use_hpu_graphs"] = config.use_hpu_graphs
-        params["use_cache"] = config.use_cache
-        return predict(params)
+        return predict(construct_parameters(query, config))
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         """
