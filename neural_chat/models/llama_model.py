@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base_model import BaseModel, register_model_adapter
+from .base_model import BaseModel
 import copy
 from datetime import datetime
 import torch
@@ -41,7 +41,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-@register_model_adapter
 class LlamaModel(BaseModel):
     def init_model(self, config):
         print("Loading model {}".format(config.model_name_or_path))
