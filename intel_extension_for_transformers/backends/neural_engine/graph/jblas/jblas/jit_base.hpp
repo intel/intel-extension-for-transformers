@@ -183,6 +183,8 @@ class JitAvx512f : protected JitAvx2 {
   }
 };
 
+class JitAvx512_fp16 : protected JitAvx512f {};
+
 class JitAvx512vnni : protected JitAvx512f {
  protected:
 };

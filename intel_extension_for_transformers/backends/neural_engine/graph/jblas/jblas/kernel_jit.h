@@ -17,6 +17,7 @@
 
 #include "jit_base.hpp"
 #include "jit_blas_utils.h"
+#include "kernel_jit_injector.h"
 struct decompress_block_s4_f32_codegen_param {
   int row;
   int col;
@@ -216,73 +217,86 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
  public:
   static int constexpr VBytes = 64;
   JitMemcpy2DAvx512f() {
+    std::vector<kernel::jit_injector::eltwise_injector> empty = {};
+    this->codeGen(empty);
+  }
+  JitMemcpy2DAvx512f(std::vector<kernel::jit_injector::eltwise_injector>& injectors) { this->codeGen(injectors); }
+
+  void codeGen(std::vector<kernel::jit_injector::eltwise_injector>& injectors) {
     inLocalLabel();  // use local label for multiple instance
-    int SF_TmpSize = 64;
-    int SF_TmpPos = 16 * 10;
-    Xbyak::util::StackFrame st(this, 1, 13, 16 * 10 + SF_TmpSize);
-    const Xbyak::Reg64& parambase = st.p[0];
-    const Xbyak::Reg64& reg_srcptr = st.t[0];
-    const Xbyak::Reg64& reg_dstptr = st.t[1];
-    const Xbyak::Reg64& reg_srcstride = st.t[2];
-    const Xbyak::Reg64& reg_dststride = st.t[3];
-    const Xbyak::Reg64& reg_rowsize = st.t[4];
-    const Xbyak::Reg64& reg_colsize = st.t[5];
-    const Xbyak::Reg64& reg_iterrow = st.t[6];
-    const Xbyak::Reg64& reg_itercol = st.t[7];
-    const Xbyak::Reg64& reg_tmp = st.t[8];
-    const Xbyak::Reg64& reg_tmpsrc = st.t[9];
-    const Xbyak::Reg64& reg_tmpdst = st.t[10];
-    const Xbyak::Reg64& reg_tmp1 = st.t[12];
-    const Xbyak::Reg64& reg_ret = rax;
+    {
+      int SF_TmpSize = 64;
+      int SF_TmpPos = 16 * 10;
+      Xbyak::util::StackFrame st(this, 1, 13, 16 * 10 + SF_TmpSize);
+      const Xbyak::Reg64& parambase = st.p[0];
+      const Xbyak::Reg64& reg_srcptr = st.t[0];
+      const Xbyak::Reg64& reg_dstptr = st.t[1];
+      const Xbyak::Reg64& reg_srcstride = st.t[2];
+      const Xbyak::Reg64& reg_dststride = st.t[3];
+      const Xbyak::Reg64& reg_rowsize = st.t[4];
+      const Xbyak::Reg64& reg_colsize = st.t[5];
+      const Xbyak::Reg64& reg_iterrow = st.t[6];
+      const Xbyak::Reg64& reg_itercol = st.t[7];
+      const Xbyak::Reg64& reg_tmp = st.t[8];
+      const Xbyak::Reg64& reg_tmpsrc = st.t[9];
+      const Xbyak::Reg64& reg_tmpdst = st.t[10];
+      const Xbyak::Reg64& reg_tmp1 = st.t[12];
+      const Xbyak::Reg64& reg_ret = rax;
 
-    vreg_push(rsp);
+      vreg_push(rsp);
 
-    mov(reg_srcptr, ptr[parambase + OFFSET(srcptr)]);
-    mov(reg_dstptr, ptr[parambase + OFFSET(dstptr)]);
-    xor_(reg_srcstride, reg_srcstride);
-    mov(reg_srcstride.cvt32(), ptr[parambase + OFFSET(srcstride)]);
-    xor_(reg_dststride, reg_dststride);
-    mov(reg_dststride.cvt32(), ptr[parambase + OFFSET(dststride)]);
+      mov(reg_srcptr, ptr[parambase + OFFSET(srcptr)]);
+      mov(reg_dstptr, ptr[parambase + OFFSET(dstptr)]);
+      xor_(reg_srcstride, reg_srcstride);
+      mov(reg_srcstride.cvt32(), ptr[parambase + OFFSET(srcstride)]);
+      xor_(reg_dststride, reg_dststride);
+      mov(reg_dststride.cvt32(), ptr[parambase + OFFSET(dststride)]);
 
-    load32(reg_colsize, ptr[parambase + OFFSET(col)]);
-    load32(reg_rowsize, ptr[parambase + OFFSET(row)]);
+      load32(reg_colsize, ptr[parambase + OFFSET(col)]);
+      load32(reg_rowsize, ptr[parambase + OFFSET(row)]);
 
-    int const ColUnroll = 4;
-    xor_(reg_iterrow, reg_iterrow);
-    L(".rowloop");
-    xor_(reg_itercol, reg_itercol);
-    mov(reg_tmpsrc, reg_srcptr);
-    mov(reg_tmpdst, reg_dstptr);
-    L(".colloop");
-    mov(reg_tmp, reg_colsize);
-    sub(reg_tmp, reg_itercol);
-    cmp(reg_tmp, ColUnroll * VBytes);
-    jl(".maskproc", T_NEAR);
+      int const ColUnroll = 4;
+      xor_(reg_iterrow, reg_iterrow);
+      L(".rowloop");
+      xor_(reg_itercol, reg_itercol);
+      mov(reg_tmpsrc, reg_srcptr);
+      mov(reg_tmpdst, reg_dstptr);
+      L(".colloop");
+      mov(reg_tmp, reg_colsize);
+      sub(reg_tmp, reg_itercol);
+      cmp(reg_tmp, ColUnroll * VBytes);
+      jl(".maskproc", T_NEAR);
 
-    for (int i = 0; i < ColUnroll; i++) {
-      vmovups(Xbyak::Zmm(i), ptr[reg_srcptr + reg_itercol + i * VBytes]);
-      vmovups(ptr[reg_dstptr + reg_itercol + i * VBytes], Xbyak::Zmm(i));
+      for (int i = 0; i < ColUnroll; i++) used_zmm_idx.insert(i);
+      for (auto&& injector : injectors) injector.assign_resources(this, used_zmm_idx, reg_ret, k2);
+
+      for (int i = 0; i < ColUnroll; i++) {
+        vmovups(Xbyak::Zmm(i), ptr[reg_srcptr + reg_itercol + i * VBytes]);
+        for (auto&& injector : injectors) injector.vector_compute(Xbyak::Zmm(i));
+        vmovups(ptr[reg_dstptr + reg_itercol + i * VBytes], Xbyak::Zmm(i));
+      }
+      add(reg_itercol, ColUnroll * VBytes);
+      jmp(".colend", T_NEAR);
+      L(".maskproc");
+      generate_Nbitsmask(k1, reg_itercol, reg_colsize, reg_tmp, reg_tmp1, VBytes);
+      vmovdqu8(Xbyak::Zmm(0) | k1, ptr[reg_srcptr + reg_itercol]);
+      for (auto&& injector : injectors) injector.vector_compute(Xbyak::Zmm(0));
+      vmovdqu8(ptr[reg_dstptr + reg_itercol], Xbyak::Zmm(0) | k1);
+      add(reg_itercol, VBytes);
+      L(".colend");
+      cmp(reg_itercol, reg_colsize);
+      jb(".colloop");
+      add(reg_iterrow, 1);
+      lea(reg_srcptr, ptr[reg_srcptr + reg_srcstride]);
+      lea(reg_dstptr, ptr[reg_dstptr + reg_dststride]);
+      cmp(reg_iterrow, reg_rowsize);
+      jb(".rowloop");
+
+      mov(reg_ret, 0);
+      vreg_pop(rsp);
     }
-    add(reg_itercol, ColUnroll * VBytes);
-    jmp(".colend");
-    L(".maskproc");
-    generate_Nbitsmask(k1, reg_itercol, reg_colsize, reg_tmp, reg_tmp1, VBytes);
-    vmovdqu8(Xbyak::Zmm(0) | k1, ptr[reg_srcptr + reg_itercol]);
-    vmovdqu8(ptr[reg_dstptr + reg_itercol], Xbyak::Zmm(0) | k1);
-    add(reg_itercol, VBytes);
-    L(".colend");
-    cmp(reg_itercol, reg_colsize);
-    jb(".colloop");
-    add(reg_iterrow, 1);
-    lea(reg_srcptr, ptr[reg_srcptr + reg_srcstride]);
-    lea(reg_dstptr, ptr[reg_dstptr + reg_dststride]);
-    cmp(reg_iterrow, reg_rowsize);
-    jb(".rowloop");
-
-    mov(reg_ret, 0);
-    vreg_pop(rsp);
     outLocalLabel();  // end of local label
-
+    for (auto&& injector : injectors) injector.prepare_table();
     this->ready();
     mKernel = this->getCode<func_t>();
   }
@@ -294,27 +308,48 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
     return JblasSuccess;
   }
 
+  static JBLAS_CODE forward_with_gelu(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
+    static std::vector<kernel::jit_injector::eltwise_injector> p = {{GELU}};
+    static JitMemcpy2DAvx512f gelu_instance(p);
+    auto param = params{srcptr, dstptr, row, col, srcstride, dststride};
+    gelu_instance.mKernel(&param);
+    return JblasSuccess;
+  }
+
  private:
   func_t mKernel = nullptr;
+  std::set<int> used_zmm_idx;
 };
+
+static inline Xbyak::Zmm unpack_4bit(Xbyak::CodeGenerator* jit, Xbyak::Ymm v4bits, Xbyak::Zmm zmm, Xbyak::Zmm zmm1,
+                                     Xbyak::Zmm vmask, Xbyak::Opmask unpack_mask) {
+  Xbyak::Ymm ymm1(zmm1.getIdx());
+  jit->vpmovsxbw(zmm, v4bits);
+  jit->vpslld(ymm1, v4bits, 4);
+  jit->vpmovsxbw(zmm1, ymm1);
+  jit->vpsllw(zmm, zmm, 8);
+  jit->vmovdqu8(zmm1 | unpack_mask, zmm);
+  jit->vpandd(zmm1, vmask, zmm1);
+  return zmm1;
+}
+
+static inline Xbyak::Zmm unpack_4bit_2regs(Xbyak::CodeGenerator* jit, Xbyak::Ymm v4bits, Xbyak::Zmm tmp,
+                                           Xbyak::Zmm vmask, Xbyak::Opmask unpack_mask) {
+  Xbyak::Zmm dst(v4bits.getIdx());
+  jit->vpmovsxbw(tmp, v4bits);
+  jit->vpslld(v4bits, v4bits, 4);
+  jit->vpmovsxbw(dst, v4bits);
+  jit->vpsllw(tmp, tmp, 8);
+  jit->vmovdqu8(dst | unpack_mask, tmp);
+  jit->vpandd(dst, vmask, dst);
+  return dst;
+}
 
 class DequanKBlockS4F32 {
  public:
   static inline void decompress_load_scale(Xbyak::CodeGenerator* jit, int zmm_scale_num,
                                            const std::vector<Xbyak::Zmm>& scale_zmms, const Xbyak::Reg64& reg_scale) {
     for (int i = 0; i < zmm_scale_num; i++) jit->vmovups(scale_zmms[i], jit->zword[reg_scale + i * 16 * sizeof(float)]);
-  }
-
-  static inline Xbyak::Zmm unpack_4bit(Xbyak::CodeGenerator* jit, Xbyak::Ymm v4bits, Xbyak::Zmm zmm, Xbyak::Zmm zmm1,
-                                       Xbyak::Zmm vmask, Xbyak::Opmask unpack_mask) {
-    Xbyak::Ymm ymm1(zmm1.getIdx());
-    jit->vpslld(ymm1, v4bits, 4);
-    jit->vpmovsxbw(zmm, v4bits);
-    jit->vpmovsxbw(zmm1, ymm1);
-    jit->vpsllw(zmm, zmm, 8);
-    jit->vmovdqu8(zmm1 | unpack_mask, zmm);
-    jit->vpandd(zmm1, vmask, zmm1);
-    return zmm1;
   }
 
   struct convert_s4_s8_param {
@@ -474,6 +509,104 @@ class DequanKBlockS4F32 {
     int dump_idx = 0;
   };
 };
+
+class DecompressS4S8_AVX512F : protected jblas::xbyak::JitAvx512f {
+ public:
+  struct params {
+    void *srcptr, *dstptr;
+    size_t size;
+  };
+  typedef long long (*func_t)(params*);
+
+ public:
+  static int constexpr VBytes = 64;
+  DecompressS4S8_AVX512F() {
+    inLocalLabel();  // use local label for multiple instance
+    int SF_TmpSize = 64;
+    int SF_TmpPos = 16 * 10;
+    Xbyak::util::StackFrame st(this, 1, 13, 16 * 10 + SF_TmpSize);
+    const Xbyak::Reg64& parambase = st.p[0];
+    const Xbyak::Reg64& reg_srcptr = st.t[0];
+    const Xbyak::Reg64& reg_dstptr = st.t[1];
+    const Xbyak::Reg64& reg_srcstride = st.t[2];
+    const Xbyak::Reg64& reg_dststride = st.t[3];
+    const Xbyak::Reg64& reg_rowsize = st.t[4];
+    const Xbyak::Reg64& reg_size = st.t[5];
+    const Xbyak::Reg64& reg_iterrow = st.t[6];
+    const Xbyak::Reg64& reg_itercol = st.t[7];
+    const Xbyak::Reg64& reg_tmp = st.t[8];
+    const Xbyak::Reg64& reg_tmpsrc = st.t[9];
+    const Xbyak::Reg64& reg_tmpdst = st.t[10];
+    const Xbyak::Reg64& reg_tmp1 = st.t[12];
+    const Xbyak::Reg64& reg_ret = rax;
+
+    vreg_push(rsp);
+
+    mov(reg_srcptr, ptr[parambase + OFFSET(srcptr)]);
+    mov(reg_dstptr, ptr[parambase + OFFSET(dstptr)]);
+    mov(reg_size, ptr[parambase + OFFSET(size)]);
+    Xbyak::Opmask unpack_mask(4);
+    Xbyak::Zmm zmm_mask(31);
+    mov(reg_tmp.cvt32(), uint32_t(0xf0f0f0f0));
+    vpbroadcastd(zmm_mask, reg_tmp.cvt32());
+    mov(reg_tmp, 0xaaaaaaaaaaaaaaaa);
+    kmovq(unpack_mask, reg_tmp);
+    int const ColUnroll = 4;
+    xor_(reg_iterrow, reg_iterrow);
+    xor_(reg_itercol, reg_itercol);
+    L(".colloop");
+    mov(reg_tmp, reg_size);
+    sub(reg_tmp, reg_itercol);
+    cmp(reg_tmp, ColUnroll * VBytes);
+    jl(".maskproc", T_NEAR);
+    mov(reg_tmp, reg_itercol);
+    shr(reg_tmp, 1);
+    for (int i = 0; i < ColUnroll; i++) {
+      vmovups(Xbyak::Ymm(i), ptr[reg_srcptr + reg_tmp + i * VBytes / 2]);
+      unpack_4bit_2regs(this, Xbyak::Ymm(i), Xbyak::Zmm(ColUnroll), zmm_mask, unpack_mask);
+      vmovups(ptr[reg_dstptr + reg_itercol + i * VBytes], Xbyak::Zmm(i));
+    }
+    add(reg_itercol, ColUnroll * VBytes);
+    jmp(".colend");
+    L(".maskproc");
+    generate_Nbitsmask(k1, reg_itercol, reg_size, reg_tmp, reg_tmp1, VBytes);
+    mov(reg_tmp, reg_itercol);
+    shr(reg_tmp, 1);
+    vmovdqu8(Xbyak::Zmm(0) | k1, ptr[reg_srcptr + reg_tmp]);
+    unpack_4bit_2regs(this, Xbyak::Ymm(0), Xbyak::Zmm(ColUnroll), zmm_mask, unpack_mask);
+    vmovdqu8(ptr[reg_dstptr + reg_itercol], Xbyak::Zmm(0) | k1);
+    add(reg_itercol, VBytes);
+    L(".colend");
+    cmp(reg_itercol, reg_size);
+    jb(".colloop");
+
+    mov(reg_ret, 0);
+    vreg_pop(rsp);
+    outLocalLabel();  // end of local label
+
+    this->ready();
+    mKernel = this->getCode<func_t>();
+  }
+
+  static JBLAS_CODE forward(void* srcptr, void* dstptr, size_t size) {
+    static DecompressS4S8_AVX512F instance;
+    auto param = params{srcptr, dstptr, size};
+    instance.mKernel(&param);
+    return JblasSuccess;
+  }
+
+ private:
+  func_t mKernel = nullptr;
+};
+
+static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src,
+                                          int ld_dst) {
+  if (col != ld_src) {  // memory is not continueous
+    return JblasNotSupport;
+  }
+  DecompressS4S8_AVX512F::forward(srcptr, dstptr, (size_t)row * col);
+  return JblasSuccess;
+}
 }  // namespace jit
 }  // namespace kernel
 }  // namespace jblas

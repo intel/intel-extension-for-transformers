@@ -29,46 +29,167 @@
 #define CompileAVX512F() (defined(__GNUC__) && (__GNUC__ >= 6))
 #define CompileAVX2() (defined(__GNUC__) && (__GNUC__ >= 5))
 #define CompileAMX() (defined(__GNUC__) && (__GNUC__ >= 11))
-#define CompileAMXBF16() (CompileAMX()))
-#define CompileAMXINT8() (CompileAMX()))
+#define CompileBF16() (defined(__GNUC__) && (__GNUC__ >= 13))
+#define CompileAMXBF16() (CompileAMX())
+#define CompileAMXINT8() (CompileAMX())
 #else
 #define CompileAVX512F() _MSC_VER && (_MSC_VER >= 1911)
 #define CompileAVX2() _MSC_VER && (_MSC_VER >= 1900)
 #define CompileAMX() 0
+#define CompileBF16() 0
 #define CompileAMXBF16() 0
 #define CompileAMXINT8() 0
+#endif
+#if CompileBF16()
+#include <immintrin.h>
 #endif
 
 namespace jblas {
 namespace utils {
 
+template <typename T2, typename T1>
+inline const T2 bit_cast(T1 i) {
+  static_assert(sizeof(T1) == sizeof(T2), "Bit-casting must preserve size.");
+  T2 o;
+  memcpy(&o, &i, sizeof(T2));
+  return o;
+}
+
 struct bf16 {
   uint16_t x;
   union bf16f32 {
     float f32;
+    unsigned int u;
     uint16_t bf16[2];
   };
-  float tofloat() {
+  bf16() : x(0) {}
+
+#if CompileBF16()
+#pragma GCC target("avx512vl", "avx512bf16")
+  explicit bf16(float vf32) : x(bit_cast<uint16_t>(_mm_cvtness_sbh(vf32))) {}
+#else
+  explicit bf16(float vf32) { fromfloat(vf32); }
+#endif
+
+#if CompileBF16()
+#pragma GCC target("avx512vl", "avx512bf16")
+  float tofloat() const { return static_cast<float>(bit_cast<__bf16>(this->x)); }
+#else
+  float tofloat() const {
     bf16f32 tmp = {0.f};
     tmp.bf16[1] = x;
     return tmp.f32;
   }
+#endif
+
+  operator float() const { return tofloat(); }
+
+  static bf16 from_bin(const uint16_t x) {
+    bf16 res;
+    res.x = x;
+    return res;
+  }
+
   void fromfloat(float _v) {
+#if CompileBF16()
+    x = bit_cast<uint16_t>(_mm_cvtness_sbh(_v));
+#else
     bf16f32 tmp = {0.f};
     tmp.f32 = _v;
+    // See document of VCVTNEPS2BF16 in Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume 2
+    const auto lsb = tmp.bf16[1] & 1;
+    tmp.u += 0x7fff + lsb;
     x = tmp.bf16[1];
+#endif
   }
 };
 
-struct int4x2 {
+struct fp16 {
+  uint16_t x;
+
+  fp16() { x = 0; }
+  explicit fp16(float val) { (*this) = val; }
+  explicit fp16(bf16 val) { (*this) = static_cast<float>(val); }
+
+  fp16& operator=(float val) {
+#if CompileBF16()
+    this->x = bit_cast<uint16_t>(static_cast<_Float16>(val));
+#else
+    // round-to-nearest-even: add last bit after truncated mantissa
+    const uint32_t b = bit_cast<uint32_t>(val) + 0x00001000;
+    const uint32_t e = (b & 0x7F800000) >> 23;  // exponent
+    // mantissa; in line below: 0x007FF000 = 0x00800000-0x00001000 = decimal indicator flag - initial rounding
+    const uint32_t m = b & 0x007FFFFF;
+    // sign : normalized : denormalized : saturate
+
+    this->x = (b & 0x80000000) >> 16 | (e > 112) * ((((e - 112) << 10) & 0x7C00) | m >> 13) |
+              ((e < 113) & (e > 101)) * ((((0x007FF000 + m) >> (125 - e)) + 1) >> 1) | (e > 143) * 0x7FFF;
+#endif
+    return *this;
+  }
+  explicit operator float() const {
+#if CompileBF16()
+    return static_cast<float>(bit_cast<_Float16>(this->x));
+#else
+    // IEEE-754 16-bit floating-point format (without infinity): 1-5-10, exp-15,
+    // +-131008.0, +-6.1035156E-5, +-5.9604645E-8, 3.311 digits
+    const uint32_t e = (x & 0x7C00) >> 10;  // exponent
+    const uint32_t m = (x & 0x03FF) << 13;  // mantissa
+    // evil log2 bit hack to count leading zeros in denormalized format
+    const uint32_t v = bit_cast<uint32_t>(static_cast<float>(m)) >> 23;
+    // sign : normalized : denormalized
+    return bit_cast<float>((x & 0x8000) << 16 | (e != 0) * ((e + 112) << 23 | m) |
+                           ((e == 0) & (m != 0)) * ((v - 37) << 23 | ((m << (150 - v)) & 0x007FE000)));
+#endif
+  }
+  explicit operator bf16() const {
+#if CompileBF16()
+    return bf16(static_cast<float>(bit_cast<_Float16>(this->x)));
+#else
+    // Extract the exponent, and mantissa from the fp16 value.
+    int exponent = x >> 10 & 0x1f;
+    int mantissa = x & 0x3ff;
+
+    // If the exponent is 0, the bf16 value is 0.
+    if (exponent == 0) {
+      return bf16();
+    }
+    // If the exponent is 31, the bf16 value is the sign bit plus 0x7fff.
+    else if (exponent == 31) {
+      bf16 res{};
+      return bf16::from_bin(x | 0x7fff);
+    }
+    // Otherwise, the bf16 value is the sign bit plus the exponent minus 15,
+    // followed by the mantissa.
+    else {
+      int sign = x & 0x8000;
+      return bf16::from_bin(sign | (exponent + 128 - 16) << 7 | mantissa >> 3);
+    }
+#endif
+  }
+};
+
+struct bit4x2 {
   int8_t x : 4;
   int8_t y : 4;
+  bit4x2(int8_t v) : x(v), y(v) {}
+  bit4x2() : x(0), y(0) {}
+};
+
+struct int4x2 : bit4x2 {
+  int4x2(int8_t v) : bit4x2(v) {}
+  int4x2() : bit4x2() {}
   static int8_t convert(int8_t src) {
     int16_t dst = src;
     dst += 7;
     dst >>= 4;
     return dst > 7 ? 7 : dst;
   }
+};
+
+struct fp4x2 : bit4x2 {
+  fp4x2(int8_t v) : bit4x2(v) {}
+  fp4x2() : bit4x2() {}
 };
 
 #ifndef _WIN32
@@ -175,7 +296,7 @@ template <typename _T, int _Alignment = 64>
 class aligned_vector {
  public:
   aligned_vector() : mRawsize(0), mPtr(nullptr), mAlignedsize(0) {}
-  aligned_vector(size_t _size, _T _val = {0}) {
+  aligned_vector(size_t _size, _T _val = _T(0)) {
     resize(_size);
     std::fill_n(mVec.begin(), mVec.size(), _val);
   }
@@ -329,6 +450,7 @@ class CpuDevice {
   inline bool AVX512_VNNI() { return mHasAVX512_VNNI; }
   inline bool AMX_INT8() { return mHasAMX_INT8; }
   inline bool AMX_BF16() { return mHasAMX_BF16; }
+  inline bool AVX512_FP16() { return mHasAVX512_FP16; }
 #define ADD_FLAG(isa) mHas##isa = _cpu.has(_cpu.t##isa)
   CpuDevice() {
     static Xbyak::util::Cpu _cpu;
@@ -341,6 +463,7 @@ class CpuDevice {
     ADD_FLAG(AVX_VNNI);
     ADD_FLAG(AMX_BF16);
     ADD_FLAG(AMX_INT8);
+    ADD_FLAG(AVX512_FP16);
     numcores = _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::CoreLevel);
     ompthreads = omp_get_max_threads();
     numthreads = std::min(numcores, ompthreads);
@@ -354,11 +477,16 @@ class CpuDevice {
     static CpuDevice instance;
     return &instance;
   }
+
+  void print() {
+    printf("AVX:%d AVX2:%d AVX512F:%d AVX_VNNI:%d AVX512_VNNI:%d AMX_INT8:%d AMX_BF16:%d AVX512_FP16:%d\n", mHasAVX,
+           mHasAVX2, mHasAVX512F, mHasAVX_VNNI, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16, mHasAVX512_FP16);
+  }
 #undef ADD_FLAG
 
  protected:
   uint32_t L2Cache, L1Cache;
-  bool mHasAVX2, mHasAVX_VNNI, mHasAVX, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16, mHasAVX512F;
+  bool mHasAVX2, mHasAVX_VNNI, mHasAVX, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16, mHasAVX512F, mHasAVX512_FP16;
   int numcores;
   int ompthreads;
   int numthreads;
@@ -375,7 +503,7 @@ class CpuDevice {
   }
 
 struct Parallel2D {
-  virtual void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize) {
+  virtual void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize) const {
     if (threadIdx >= mValidThreads) {
       *rowsize = 0;
       *colsize = 0;
@@ -395,11 +523,12 @@ struct Parallel2D {
     printf("Thread Block:(%d,%d)\n", mThdRow, mThdCol);
     printf("Thread in use:%d of %d, Nx%d\n", mValidThreads, mThreadsCount, mColThreads);
   }
-  int mThdRow = 0, mThdCol = 0;
-  int mColThreads = 0;
-  int mRows = 0, mCols = 0;
-  int mPadRow = 0, mPadCol = 0;
-  int mValidThreads = 0, mThreadsCount = 0;
+  int mThdRow = 0, mThdCol = 0;  // num of rows/cols per threads
+  int mColThreads = 0;           // horizontal dimension for the 2D threads grid
+  int mRows = 0, mCols = 0;      // col/row size for each non-tail thread
+  int mPadRow = 0, mPadCol = 0;  // pad size for each thread
+  int mValidThreads = 0;         // number of threads valid
+  int mThreadsCount = 0;         // total number of threads available
 };
 
 struct Parallel2DRowMajor : Parallel2D {
@@ -550,6 +679,7 @@ struct Parallel2DGemm : Parallel2D {
   }
   void update_kstep() {
     auto rawk = (mL2Size / mNStep - mMStep * CSize) / BSize;
+    rawk = std::min(rawk, size_t(mKPadded));
     mKStep = padto_le(rawk, _GemmCore_T::KTILE);
   }
 
@@ -605,7 +735,8 @@ struct Parallel2DRowMajorColBlock : Parallel2D {
     calc_valid_threads();
   }
 
-  virtual void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize, int* block, int* idxinblk) {
+  virtual void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize, int* block,
+                        int* idxinblk) const {
     if (threadIdx >= mValidThreads) {
       *rowsize = 0;
       *colsize = 0;

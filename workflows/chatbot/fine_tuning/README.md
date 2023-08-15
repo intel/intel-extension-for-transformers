@@ -18,7 +18,7 @@ Recommend python 3.9 or higher version.
 ```shell
 pip install -r requirements.txt
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
-python -m pip install oneccl_bind_pt==1.13 -f https://developer.intel.com/ipex-whl-stable-cpu
+python -m pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
 
 ## 2. Prepare the Model
@@ -244,7 +244,7 @@ python finetune_clm.py \
 # the script also support other models, like mpt.
 ```
 
-- use the below command line for code tuning with `meta-llama/Llama-2-7b` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
+- use the below command line for code tuning with `meta-llama/Llama-2-7b-hf` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
 ```bash
 python finetune_clm.py \

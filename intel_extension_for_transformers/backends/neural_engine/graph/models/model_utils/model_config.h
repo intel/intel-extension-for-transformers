@@ -86,6 +86,9 @@ struct gpt_params {
   bool use_mlock = false;       // use mlock to keep model in memory
   bool mem_test = false;        // compute maximum memory usage
   bool verbose_prompt = false;  // print prompt tokens before generation
+  int batch_size = 1;           // number batch of prompt
+  bool beam_search = false;     // use beam_search or not
+  int beam_size = 1;            // only valid if use beam search
 };
 
 bool gpt_params_parse(int argc, char** argv, gpt_params& params);
