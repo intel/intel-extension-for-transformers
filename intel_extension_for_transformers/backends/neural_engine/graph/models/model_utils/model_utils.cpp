@@ -38,6 +38,7 @@
 #include <sstream>
 #include <thread>
 #include <unordered_map>
+#include <iostream>
 
 #include "core/ne_layers.h"
 #include "application/common.h"
@@ -92,6 +93,9 @@ struct model_context_params model_context_default_params() {
       /*.use_mmap                    =*/true,
       /*.use_mlock                   =*/false,
       /*.embedding                   =*/false,
+      /*.batch_size                  =*/1,
+      /*.beam_search                 =*/false,
+      /*.beam_size                   =*/1,
       /*.progress_callback           =*/nullptr,
       /*.progress_callback_user_data =*/nullptr,
   };
@@ -785,21 +789,18 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     if (params.compute_type == quant_comp::int8) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
       static GemmKernel kernel;
-      if (cd->AVX512F()) {
-        packedw =
-            kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n, k, f32ptr, k, params.block_size, type);
-      } else {
-        packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n, k, f32ptr, k, params.block_size, type);
-      }
+      assert(cd->AVX512F());
+      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
     } else if (params.compute_type == quant_comp::fp32) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
       static GemmKernel kernel;
-      if (cd->AVX512F()) {
-        packedw =
-            kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n, k, f32ptr, k, params.block_size, type);
-      } else {
-        packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n, k, f32ptr, k, params.block_size, type);
-      }
+      assert(cd->AVX512F());
+      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
+    } else if (params.compute_type == quant_comp::bf16) {
+      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4KBlock;
+      static GemmKernel kernel;
+      assert(cd->AVX512F());
+      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
     }
   } else if (params.bits == quant_bits::q8) {
     // TODO add 8bit quantization
@@ -977,6 +978,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
   ctx->rng = std::mt19937(params.seed);
   ctx->logits_all = params.logits_all;
+  ctx->batch_size = params.batch_size;
 
   ne_type memory_type = params.f16_kv ? NE_TYPE_F16 : NE_TYPE_F32;
   model_name name = params.name;
@@ -990,7 +992,14 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
   // reserve memory for context buffers
   if (!params.vocab_only) {
-    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->model.hparams.n_ctx)) {
+    int kv_ctx = ctx->model.hparams.n_ctx;
+    if (params.beam_search) {
+      ctx->beam_search = true;
+      ctx->beam_size = params.beam_size;
+      ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
+      kv_ctx *= ctx->kv_n_ctx_block;
+    }
+    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, kv_ctx)) {
       fprintf(stderr, "%s: kv_cache_init() failed for self-attention cache\n", __func__);
       model_free(ctx);
       return nullptr;
@@ -1718,4 +1727,415 @@ const char* model_print_system_info(void) {
 // For internal test use
 std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tensor_map(struct model_context* ctx) {
   return ctx->model.tensors_by_name;
+}
+
+void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const std::vector<beam>& cur_beams,
+                                          const int& beam_size, model_context* lctx, const int& n_threads,
+                                          const int& n_past) {
+  auto const comp = [](const beam& a, const beam& b) { return a.p > b.p; };
+  std::vector<model_token> embd_inp;
+  std::vector<int> infer_beam_ids(beam_size);
+  int record = 0;
+  int batch_size = 0;
+  for (int i = 0; i < beam_size; ++i) {
+    // is done or not
+    if (!cur_beams[i].eos()) {
+      // (batch, 1)
+      // ordered by infer_bs_id
+      embd_inp.push_back(cur_beams[i].token_ids.back());
+      infer_beam_ids[i] = record++;
+      batch_size++;
+    }
+  }
+  // DEBUG
+#if 0
+  printf("====================== \n");
+  for (auto kk : embd_inp) {
+    printf("%s \n", (lctx->vocab.id_to_token.at(kk).tok).c_str());
+  }
+#endif
+  lctx->batch_size = batch_size;
+  int n_tokens = 1;
+
+  // int* pos = embd_inp.data();
+
+  // prints the vector
+  // std::cout << "The vector elements are: ";
+  // for (int i = 0; i < embd_inp.size(); ++i)
+  // 	std::cout << *pos++ << " ";
+
+  model_eval(lctx, embd_inp.data(), n_tokens, n_past, n_threads);
+  // DEBUG
+#if 0
+  size_t bs_stride = n_tokens * lctx->model.hparams.n_vocab;
+  for (int k = 0; k < batch_size; ++k) {
+    printf("====================== \n");
+    for (int kk = 0; kk < 10; ++kk) {
+      printf("%4.5f \n", model_get_logits(lctx) + k * bs_stride + kk);
+    }
+  }
+#endif
+  logits_info li(lctx);
+  // top_k num = beam_size
+  std::vector<std::vector<model_token_data>> next_tokens = li.top_k(2);  // sample 2
+  // DEBUG
+#if 0
+  for (int k = 0; k < next_tokens.size(); ++k) {
+    printf("====================== \n");
+    for (auto kk : next_tokens[k]) {
+      printf("%s, l: %3.6f, p: %0.6f \n", (lctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.logit,
+             li.probability_from_logit(k, kk.logit));
+    }
+  }
+#endif
+  MODEL_ASSERT(next_tokens.size() == batch_size);
+  for (int i = 0; i < beam_size; ++i) {
+    beam b = cur_beams[i];
+    if (b.eos()) {
+      // b is at end-of-sentence, so just copy it to next_beams if its probability is high enough.
+      if (next_beams.size() < beam_size) {
+        next_beams.push_back(b);
+        if (next_beams.size() == beam_size) {
+          std::make_heap(next_beams.begin(), next_beams.end(), comp);
+        }
+      } else if (next_beams.front().p < b.p) {
+        std::pop_heap(next_beams.begin(), next_beams.end(), comp);
+        next_beams.back() = b;
+        std::push_heap(next_beams.begin(), next_beams.end(), comp);
+      }
+    } else {
+      int j = 0;
+      if (next_beams.size() < beam_size) {
+        for (; next_beams.size() < beam_size && j < 2; ++j) {
+          beam next_beam = b;
+          next_beam.token_ids.push_back(next_tokens[infer_beam_ids[i]][j].id);
+          next_beam.p *= li.probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
+          next_beams.push_back(std::move(next_beam));
+        }
+        std::make_heap(next_beams.begin(), next_beams.end(), comp);
+      }
+      for (; j < 2; ++j) {  // sample 2
+        float const next_p =
+            b.p * li.probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
+        if (next_beams.front().p < next_p) {
+          std::pop_heap(next_beams.begin(), next_beams.end(), comp);
+          next_beams.back() = b;
+          next_beams.back().token_ids.push_back(next_tokens[infer_beam_ids[i]][j].id);
+          next_beams.back().p = next_p;
+          std::push_heap(next_beams.begin(), next_beams.end(), comp);
+        }
+      }
+    }
+  }
+  std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
+}
+
+// get kv cache reorder indices,
+// k: dst_beam batch idx, v: src_beam batch idx
+// for copy predicted past token kv cache
+// for example:
+//     - c
+// a -|    ---------->|
+//     - d            |       - ac
+//                    | ---> |      (beam_size = 2)
+//     - f            |       - ad
+// b -|    ---------->|
+//     - g
+// kv_cache_reorder_indices = {0:0, 1:0}
+// if kv_cache_reorder_indices = {0:0, 1:1}, then do not need reorder (cpy)
+std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& next_beams,
+                                                             const std::vector<beam>& cur_beams, const int& beam_size) {
+  MODEL_ASSERT(next_beams.size() == beam_size);
+  MODEL_ASSERT(cur_beams.size() == beam_size);
+  // DEBUG
+#if 0
+  printf("cur_beams: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", cur_beams[i].infer_bs_id);
+  }
+  printf("\n");
+  printf("next_beams: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", next_beams[i].infer_bs_id);
+  }
+  printf("\n");
+#endif
+  std::unordered_map<int, int> kv_reorder_indices;
+  kv_reorder_indices.reserve(beam_size);
+  // shuffle beams which are early stopped (eos)
+  // keep them behind beams which have non-eos
+  // next_beams infer_bs_id: [0, 1(eos), 2(eos), 3] - > [0, 3, 1(eos), 2(eos)]
+  std::vector<int> cpy_eos_bs_ids;
+  std::vector<int> cpy_final_bs_ids;
+  std::vector<int> nb_eos_ids;
+  std::vector<int> nb_shuffle_ids;
+  cpy_final_bs_ids.reserve(beam_size);
+  for (int i = 0; i < beam_size; ++i) {
+    MODEL_ASSERT(cur_beams[i].infer_bs_id == i);
+    if (next_beams[i].eos()) {
+      cpy_eos_bs_ids.push_back(next_beams[i].infer_bs_id);
+      nb_eos_ids.push_back(i);
+    } else {
+      cpy_final_bs_ids.push_back(next_beams[i].infer_bs_id);
+      nb_shuffle_ids.push_back(i);
+    }
+  }
+  cpy_final_bs_ids.insert(cpy_final_bs_ids.end(), cpy_eos_bs_ids.begin(), cpy_eos_bs_ids.end());
+  nb_shuffle_ids.insert(nb_shuffle_ids.end(), nb_eos_ids.begin(), nb_eos_ids.end());
+
+  // update indices and batch ids
+  for (int i = 0; i < beam_size; ++i) {
+    kv_reorder_indices[i] = cpy_final_bs_ids[i];
+    // update infer_bs_id before next beam generation
+    next_beams[nb_shuffle_ids[i]].infer_bs_id = i;
+  }
+  // beams should be ordered by batch id
+  std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
+#if 0  // DEBUG
+  printf("cpy_final_bs_ids: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", cpy_final_bs_ids[i]);
+  }
+  printf("\n");
+  printf("nb_shuffle_ids: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", nb_shuffle_ids[i]);
+  }
+  printf("\n");
+  printf("next_beams after: ");
+  for (int i = 0; i < beam_size; ++i) {
+    printf("%d, ", next_beams[i].infer_bs_id);
+  }
+  printf("\n");
+#endif
+  return kv_reorder_indices;
+}
+
+// As beams grow, the cumulative probabilities decrease.
+// Renormalize them to avoid floating point underflow.
+void renormalize_beam_probabilities(std::vector<beam>& beams) {
+  auto const sum_p = [](float sum, beam& b) { return sum + b.p; };
+  float const inv_sum = 1.0f / std::accumulate(beams.begin(), beams.end(), 0.0f, sum_p);
+  std::for_each(beams.begin(), beams.end(), [inv_sum](beam& b) { b.p *= inv_sum; });
+}
+
+// Return beam with highest probability.
+const beam& top_beam(std::vector<beam> const& beams) {
+  auto const by_p = [](beam const& a, beam const& b) { return a.p < b.p; };
+  return *std::max_element(beams.begin(), beams.end(), by_p);
+}
+
+// This is deterministic, but can be made probabilistic in
+// fill_next_beams_by_top_probabilities() by randomly selecting from all next_beams.
+// Not thread-safe.
+// TODO make the first step outside?
+// TODO batch_size = 1 only
+// TODO better way to return?
+std::vector<model_token> beam_search(const int& beam_size, const int& n_predict, model_context* lctx,
+                                     const model_token* tokens_inp, const int& n_tokens, const int& n_threads) {
+  if (n_tokens > model_n_ctx(lctx)) {
+    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens, model_n_ctx(lctx) - 4);
+    return std::vector<model_token>();
+  }
+  std::vector<model_token> beam_search_response;
+  // printf("%s: beam search in progress ", __func__);
+  // const int64_t t_start_search_us = ne_time_us();
+
+  // const int32_t n_vocab = lctx->model.hparams.n_vocab;
+  size_t n_past = 0;
+  // TODO add params.n_batch?
+  std::vector<model_token> embd(tokens_inp, tokens_inp + n_tokens);
+
+  lctx->batch_size = 1;
+  std::vector<beam> beams;
+  beams.reserve(beam_size);
+  beams.push_back({lctx, {}, 1.0});
+  // Init next_beams with unique next token_id each.
+  std::vector<beam> next_beams;
+  next_beams.reserve(beam_size);
+  // Loop while there are any beams that have not yet reached end-of-sentence.
+  // If the top beam is at end-of-sentence, then finish since all other
+  // beam probabilities can only decrease.
+  auto const eos = [](const beam& b) { return b.eos(); };
+  int n_ctx = lctx->model.hparams.n_ctx;
+  int n_embd = lctx->model.hparams.n_embd;
+  int kv_n_ctx_block = lctx->kv_n_ctx_block;
+  for (int n = 0; n < n_predict && !eos(top_beam(beams)) && !std::all_of(beams.begin(), beams.end(), eos); ++n) {
+    // first step
+    if (n_past == 0) {
+      // TODO add -b param for long prompt (memory issue)
+      model_eval(lctx, embd.data(), n_tokens, n_past, n_threads);
+      n_past += n_tokens;
+      // cpy batch 1 to all batch
+#pragma omp parallel for
+      for (int i = 0; i < lctx->model.layers.size(); ++i) {
+        for (int j = 1; j < kv_n_ctx_block; ++j) {
+          // [n_embd, N]
+          memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
+                     (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                      j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd),
+                 static_cast<char*>(lctx->model.kv_self.k->data) +
+                     i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
+                 ne_element_size(lctx->model.kv_self.k) * n_embd * n_tokens);
+          // memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+          //            (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+          //             j * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd),
+          //        static_cast<char*>(lctx->model.kv_self.v->data) +
+          //            i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block,
+          //        ne_element_size(lctx->model.kv_self.v) * n_embd * (n_tokens));
+          // [N, n_embd]
+          // TODO MHA_V_ORIGIN_LAYOUT
+          for (int k = 0; k < n_embd; ++k) {
+            memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+                       (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                        j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd +
+                        n_ctx * k * ne_element_size(lctx->model.kv_self.v)),
+                   static_cast<char*>(lctx->model.kv_self.v->data) +
+                       (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                        n_ctx * k * ne_element_size(lctx->model.kv_self.v)),
+                   ne_element_size(lctx->model.kv_self.v) * n_tokens);
+          }
+
+          // memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
+          //            (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+          //             j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd)
+          //       ,
+          //        static_cast<char*>(lctx->model.kv_self.k->data) +
+          //            i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+          //            0 * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd ,
+          //        ne_element_size(lctx->model.kv_self.k) * n_embd * n_ctx);
+          // // [N, n_embd]
+          // // for (int k = 0; k < n_embd; ++k) {
+          // memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+          //            (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+          //             j * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd ),
+          //        static_cast<char*>(lctx->model.kv_self.v->data) +
+          //            (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+          //             0* n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd ),
+          //        ne_element_size(lctx->model.kv_self.v) * n_ctx*n_embd);
+        }
+      }
+
+      logits_info li(lctx);
+      std::vector<std::vector<model_token_data>> next_tokens = li.top_k(beam_size);
+      MODEL_ASSERT(next_tokens.size() == 1);
+      beams.clear();
+      for (int i = 0; i < beam_size; ++i) {
+        beam b;
+        b.ctx = lctx;
+        b.token_ids.push_back(next_tokens[0][i].id);
+        b.p = li.probability_from_logit(0, next_tokens[0][i].logit);
+        b.infer_bs_id = i;
+        beams.push_back(b);
+      }
+      renormalize_beam_probabilities(beams);
+    } else {
+      fill_next_beams_by_top_probabilities(next_beams, beams, beam_size, lctx, n_threads, n_past);
+      std::unordered_map<int, int> kv_reorder_indices = update_kv_cache_reorder_indices(next_beams, beams, beam_size);
+      n_past += 1;
+      for (auto it : kv_reorder_indices) {
+        if (it.first != it.second) {
+          int len = next_beams[it.first].token_ids.size() - 1;
+          size_t input_token_offset_k = n_tokens * ne_element_size(lctx->model.kv_self.k) * n_embd;
+          size_t input_token_offset_v = n_tokens * ne_element_size(lctx->model.kv_self.v);
+
+          // std::cout << "here is first " << it.first << " " <<it.second << std::endl;
+          if (len + n_tokens > n_ctx) {
+            // all token hidden states cache should be updated
+            input_token_offset_k = 0;
+            input_token_offset_v = 0;
+            len = n_ctx;
+          }
+#pragma omp parallel for
+          for (int i = 0; i < lctx->model.layers.size(); ++i) {
+            // [n_embd, N]
+            memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
+                       (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                        it.first * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd) +
+                       input_token_offset_k,
+                   static_cast<char*>(lctx->model.kv_self.k->data) +
+                       i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                       it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset_k,
+                   ne_element_size(lctx->model.kv_self.k) * n_embd * (n_past - n_tokens));
+            // [N, n_embd]
+            memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+                       (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                        it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd) +
+                       input_token_offset_k,
+                   static_cast<char*>(lctx->model.kv_self.v->data) +
+                       i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                       it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset_k,
+                   ne_element_size(lctx->model.kv_self.v) * n_embd * (n_past - n_tokens));
+
+            // for (int k = 0; k < n_embd; ++k) {
+            //   memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+            //               it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd +
+            //               n_ctx * ne_element_size(lctx->model.kv_self.v) * k + input_token_offset_v),
+            //          static_cast<char*>(lctx->model.kv_self.v->data) +
+            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+            //               it.second * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd +
+            //               n_ctx * ne_element_size(lctx->model.kv_self.v) + input_token_offset_v),
+            //          ne_element_size(lctx->model.kv_self.v) * len);
+            // }
+            // memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
+            //            (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+            //             it.first * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd)
+            //       ,
+            //        static_cast<char*>(lctx->model.kv_self.k->data) +
+            //            i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+            //            it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd ,
+            //        ne_element_size(lctx->model.kv_self.k) * n_embd * n_ctx);
+            // // [N, n_embd]
+            // // for (int k = 0; k < n_embd; ++k) {
+            //   memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+            //               it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd ),
+            //          static_cast<char*>(lctx->model.kv_self.v->data) +
+            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+            //               it.second * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd ),
+            //          ne_element_size(lctx->model.kv_self.v) * n_ctx*n_embd);
+
+            // }
+          }
+        }
+      }
+
+      beams.swap(next_beams);
+      next_beams.clear();
+      renormalize_beam_probabilities(beams);
+    }
+
+#if 0  // DEBUG: print current beams for this iteration
+    printf("\n\nCurrent beams:\n");
+    for (size_t j = 0; j < beams.size(); ++j) {
+      printf("beams[%d]: ", j);
+      beams[j].print();
+      fflush(stdout);
+    }
+// #else
+//     // Show progress
+//     if (i % 10 == 0) {
+//       printf(".");
+//       fflush(stdout);
+//     }
+#endif
+  }
+
+  const beam& top_b = top_beam(beams);
+  // printf(" done \n");
+
+#if 0  // DEBUG: print final beam result
+    printf("\n\nFinal beam:\n");
+    top_b.print();
+#endif
+
+  beam_search_response.clear();
+  for (const auto& id : top_b.token_ids) {
+    beam_search_response.push_back(id);
+  }
+
+  // int64_t t_search_us = ne_time_us() - t_start_search_us;
+  // printf("%s: beam_search time   = %8.2f ms\n", __func__, t_search_us / 1000.0f);
+  return beam_search_response;
 }
