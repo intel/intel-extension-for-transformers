@@ -66,7 +66,7 @@ class BaseModel(ABC):
         self.asr = instance
 
     def register_safety_checker(self, instance):
-        self.savety_checker = instance
+        self.safety_checker = instance
 
 
 # A global registry for all model adapters

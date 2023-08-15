@@ -358,7 +358,7 @@ class NeuralChatConfig:
                  cache_embedding_model_dir=None,
                  intent_detection=False,
                  memory_controller=False,
-                 savety_checker=False):
+                 safety_checker=False):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.device = device
@@ -385,4 +385,4 @@ class NeuralChatConfig:
         self.cache_embedding_model_dir = cache_embedding_model_dir
         self.intent_detection = intent_detection
         self.memory_controller = memory_controller
-        self.savety_checker = savety_checker
+        self.safety_checker = safety_checker
