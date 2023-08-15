@@ -21,6 +21,7 @@ from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
 from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
+from neural_chat.config import GenerationConfig
 class BaseModel(ABC):
     """
     A base class for LLM.
@@ -73,7 +74,7 @@ class BaseModel(ABC):
                    peft_path=kwargs["peft_path"],
                    use_deepspeed=kwargs["use_deepspeed"])
 
-    def predict_stream(self, query, config):
+    def predict_stream(self, query, config=None):
         """
         Predict using a streaming approach.
 
@@ -82,6 +83,8 @@ class BaseModel(ABC):
             config: Configuration for prediction.
         """
         params = {}
+        if not config:
+            config = GenerationConfig()
         params["prompt"] = query
         params["temperature"] = config.temperature
         params["top_k"] = config.top_k
@@ -98,7 +101,70 @@ class BaseModel(ABC):
         params["use_cache"] = config.use_cache
         return predict_stream(params)
 
-    def predict(self, query, config):
+    def predict(self, query, config=None):
+        """
+        Predict using a non-streaming approach.
+
+        Args:
+            query: The input query for prediction.
+            config: Configuration for prediction.
+        """
+        if not config:
+            config = GenerationConfig()
+        params = {}
+        params["prompt"] = query
+        params["temperature"] = config.temperature
+        params["top_k"] = config.top_k
+        params["top_p"] = config.top_p
+        params["repetition_penalty"] = config.repetition_penalty
+        params["max_new_tokens"] = config.max_new_tokens
+        params["do_sample"] = config.do_sample
+        params["num_beams"] = config.num_beams
+        params["model_name"] = config.model_name
+        params["num_return_sequences"] = config.num_return_sequences
+        params["bad_words_ids"] = config.bad_words_ids
+        params["force_words_ids"] = config.force_words_ids
+        params["use_hpu_graphs"] = config.use_hpu_graphs
+        params["use_cache"] = config.use_cache
+        return predict(params)
+
+    def chat_stream(self, query, config=None):
+        """
+        Chat using a streaming approach.
+
+        Args:
+            query: The input query for prediction.
+            config: Configuration for prediction.
+        """
+        params = {}
+        if not config:
+            config = GenerationConfig()
+        params["prompt"] = query
+        params["temperature"] = config.temperature
+        params["top_k"] = config.top_k
+        params["top_p"] = config.top_p
+        params["repetition_penalty"] = config.repetition_penalty
+        params["max_new_tokens"] = config.max_new_tokens
+        params["do_sample"] = config.do_sample
+        params["num_beams"] = config.num_beams
+        params["model_name"] = config.model_name
+        params["num_return_sequences"] = config.num_return_sequences
+        params["bad_words_ids"] = config.bad_words_ids
+        params["force_words_ids"] = config.force_words_ids
+        params["use_hpu_graphs"] = config.use_hpu_graphs
+        params["use_cache"] = config.use_cache
+        return predict_stream(params)
+
+    def chat(self, query, config=None):
+        """
+        Chat using a non-streaming approach.
+
+        Args:
+            query: The input query for conversation.
+            config: Configuration for conversation.
+        """
+        if not config:
+            config = GenerationConfig()
         params = {}
         params["prompt"] = query
         params["temperature"] = config.temperature

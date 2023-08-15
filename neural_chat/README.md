@@ -65,9 +65,9 @@ neuralchat textchat --prompt "Tell me about Intel Xeon Scalable Processors."
 **Python API experience**
 
 ```python
->>> from neural_chat.config import NeuralChatConfig
+>>> from neural_chat.config import PipelineConfig
 >>> from neural_chat.chatbot import build_chatbot
->>> config = NeuralChatConfig()
+>>> config = PipelineConfig()
 >>> chatbot = build_chatbot(config)
 >>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
@@ -99,9 +99,9 @@ In the context of voice chat, users have the option to engage in various modes: 
 For the Python API code, users have the option to enable different voice chat modes by setting audio_input to True for input or audio_output to True for output.
 
 ```python
->>> from neural_chat.config import NeuralChatConfig
+>>> from neural_chat.config import PipelineConfig
 >>> from neural_chat.chatbot import build_chatbot
->>> config = NeuralChatConfig(audio_input=True, audio_input_path="./assets/audio/say_hello.wav", audio_output=True, audio_output_path="./response.wav")
+>>> config = PipelineConfig(audio_input=True, audio_input_path="./assets/audio/say_hello.wav", audio_output=True, audio_output_path="./response.wav")
 >>> chatbot = build_chatbot(config)
 >>> result = chatbot.chat("Tell me about Intel Xeon Scalable Processors.")
 ```

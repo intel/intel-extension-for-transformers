@@ -24,12 +24,19 @@ except ImportError:
     print("Package 'habana_frameworks.torch.hpu' is not installed.")
     is_hpu_available = False
 
+try:
+    import intel_extension_for_pytorch as intel_ipex
+    is_ipex_available = True
+except ImportError:
+    print("Package 'intel_extension_for_pytorch' is not installed.")
+    is_ipex_available = False
+
 def get_device_type():
     if torch.cuda.is_available():
         device = "cuda"
     elif is_hpu_available:
         device = "hpu"
-    elif torch.xpu.is_available():
+    elif is_ipex_available and torch.xpu.is_available():
         device = "xpu"
     else:
         device = "cpu"

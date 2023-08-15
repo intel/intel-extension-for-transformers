@@ -329,8 +329,38 @@ class OptimizationConfig:
         self.op_name_dict = op_name_dict
         self.recipes = recipes
 
+class GenerationConfig:
+    def __init__(self,
+                 device="cpu",
+                 temperature=0.9,
+                 top_k=1,
+                 top_p=0.75,
+                 max_new_tokens=256,
+                 do_sample=True,
+                 repetition_penalty=1.1,
+                 num_beams=0,
+                 num_return_sequence=1,
+                 bad_words_ids=None,
+                 force_words_ids=None,
+                 use_hpu_graphs=False,
+                 use_cache=False,
+                 model_name="meta-llama/Llama-2-7b-chat-hf"):
+        self.device = device
+        self.temperature = temperature
+        self.top_k = top_k
+        self.top_p = top_p
+        self.repetition_penalty = repetition_penalty
+        self.num_beams = num_beams
+        self.max_new_tokens = max_new_tokens
+        self.do_sample = do_sample
+        self.num_return_sequence = num_return_sequence
+        self.bad_words_ids = bad_words_ids
+        self.force_words_ids = force_words_ids
+        self.use_hpu_graphs = use_hpu_graphs
+        self.use_cache = use_cache
+        self.model_name = model_name
 
-class NeuralChatConfig:
+class PipelineConfig:
     def __init__(self,
                  model_name_or_path="meta-llama/Llama-2-7b-hf",
                  tokenizer_name_or_path=None,

@@ -17,17 +17,17 @@
 
 import unittest
 from neural_chat.chatbot import build_chatbot
-from neural_chat.config import NeuralChatConfig
+from neural_chat.config import PipelineConfig, GenerationConfig
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
         pass
 
     def test_build_chatbot_valid_config(self):
-        config = NeuralChatConfig()
+        config = PipelineConfig()
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
-        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)
+        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
         print(response)
 
     def test_build_chatbot_invalid_config(self):

@@ -16,7 +16,7 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
-from .config import NeuralChatConfig
+from .config import PipelineConfig
 from .config import OptimizationConfig
 from .config import FinetuningConfig
 from .pipeline.finetuning.finetuning import Finetuning
@@ -34,21 +34,21 @@ from .models.mpt_model import MptModel
 from .models.chatglm_model import ChatGlmModel
 
 
-def build_chatbot(config: NeuralChatConfig):
+def build_chatbot(config: PipelineConfig):
     """Build the chatbot with a given configuration.
 
     Args:
-        config (NeuralChatConfig): Configuration for building the chatbot.
+        config (PipelineConfig): Configuration for building the chatbot.
 
     Returns:
         adapter: The chatbot model adapter.
 
     Example:
-        from neural_chat.config import NeuralChatConfig
+        from neural_chat.config import PipelineConfig
         from neural_chat.chatbot import build_chatbot
-        config = NeuralChatConfig()
-        chatbot = build_chatbot(config)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        config = PipelineConfig()
+        pipeline = build_chatbot(config)
+        response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
