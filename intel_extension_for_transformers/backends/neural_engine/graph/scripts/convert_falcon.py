@@ -87,6 +87,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
+    fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
 
     reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
     byte_encoder = bytes_to_unicode()

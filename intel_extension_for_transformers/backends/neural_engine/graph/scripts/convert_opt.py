@@ -15,21 +15,22 @@
 #
 # Usage:
 #
-#   python3 models/convert-h5-to-ne.py
-#
-# This script is similar to "convert-pt-to-ne.py"
+#   python3 scripts/convert_opt.py args
 #
 
+import io
+import os
 import sys
 import struct
 import json
+import code
 import torch
 import numpy as np
 from pathlib import Path
 import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
-from transformers import GPTJForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -38,7 +39,7 @@ def bytes_to_unicode():
     The reversible bpe codes work on unicode strings.
     This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
     When you're at something like a 10B token dataset you end up needing around 5K for decent coverage.
-    This is a signficant percentage of your normal, say, 32K bpe vocab.
+    This is a significant percentage of your normal, say, 32K bpe vocab.
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
@@ -63,105 +64,107 @@ def main(args_in: Optional[List[str]] = None) -> None:
     dir_model = args.model.as_posix()
     fname_out = args.outfile.as_posix()
 
+    # possible data types
+    #   ftype == 0 -> float32
+    #   ftype == 1 -> float16
     ftype = 0
     if args.outtype== "f16":
         ftype = 1
 
-    # output in the same directory as the model
-    with open(dir_model + "/vocab.json", "r", encoding="utf-8") as f:
-        encoder = json.load(f)
-    
-    with open(dir_model + "/added_tokens.json", "r", encoding="utf-8") as f:
-        encoder_added = json.load(f)
-    
-    with open(dir_model + "/config.json", "r", encoding="utf-8") as f:
-        hparams = json.load(f)
-
+    tokenizer = AutoTokenizer.from_pretrained(dir_model)
     print("Loading model: ", dir_model)
-    model = GPTJForCausalLM.from_pretrained(dir_model, low_cpu_mem_usage=True)
-    list_vars = model.state_dict()
-    fout = open(fname_out, "wb")
+    model = AutoModelForCausalLM.from_pretrained(dir_model, torch_dtype=torch.float16 if ftype == 1 else torch.float32)
+    model.eval()
+    hparams = model.config.to_dict()
     
-    fout.write(b"ggjt"[::-1])#0x67676d6c)) # magic: ggml in hex
-    values = [
-        1,  # file version
-        hparams["vocab_size"],
-        hparams["n_embd"],
-        hparams["n_embd"] // hparams["n_head"],
-        hparams["n_head"],
-        hparams["n_layer"],
-        hparams["rotary_dim"],
-        ftype
-    ]
-    fout.write(struct.pack("i" * len(values), *values))                                                                                                          
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("f", 0))
-    fout.write(struct.pack("f", 0))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
-    fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
+    print("Model loaded: ", dir_model)
+    os.makedirs(os.path.dirname(fname_out), exist_ok=True)
+    fout = open(fname_out, "wb")
+
+    print(hparams)
+    # 0x67676d6c is unversioned ne
+    # 0x67676d66 is versioned ggmf (requires token scores)
+    ne_file_magic = 0x67676d6c
+    fout.write(struct.pack("i", ne_file_magic)) # magic: ne in hex
+
+    fout.write(struct.pack("i", hparams["vocab_size"]))  # n_vocab
+    fout.write(struct.pack("i", hparams["hidden_size"]))  # n_embd
+    fout.write(struct.pack("i", 0))  # n_mult
+    fout.write(struct.pack("i", hparams["num_attention_heads"]))  # n_head
+    fout.write(struct.pack("i", hparams["num_hidden_layers"]))  # n_layers
+    fout.write(struct.pack("i", 0))  # n_rot
+    fout.write(struct.pack("i", ftype))  # ftype
+    fout.write(struct.pack("i", hparams["max_position_embeddings"]))  # max_seq_len
+    fout.write(struct.pack("f", 0.0))  # alibi_bias_max
+    fout.write(struct.pack("f", 0.0))  # clip_qkv
+    fout.write(struct.pack("i", 0))  # par_res
+    fout.write(struct.pack("i", hparams["word_embed_proj_dim"]))  # for opt
+    fout.write(struct.pack("i", int(hparams["do_layer_norm_before"])))  # for opt
+
+    vocab_size = hparams["vocab_size"]
+    encoder = tokenizer.vocab
+    # Add added_tokens (special tokens) to the encoder
+    encoder.update(tokenizer.get_added_vocab())
 
     byte_encoder = bytes_to_unicode()
     byte_decoder = {v:k for k, v in byte_encoder.items()}
-    
-    if(len(encoder) == hparams["vocab_size"]):
-        encoder_added = {}
 
-    for i, key in enumerate(encoder):
-    # for key in encoder:
-        text = bytearray([byte_decoder[c] for c in key])
-        fout.write(struct.pack("i", len(text)))
-        fout.write(text)
-        fout.write(struct.pack("f",0.0 - i))
-    
-    for key in encoder_added:
-        text = bytearray([byte_decoder[c] for c in key])
-        fout.write(struct.pack("i", len(text)))
-        fout.write(text)
-        fout.write(struct.pack("f", -10000))
-    
-    for name in list_vars.keys():
-        data = list_vars[name].squeeze().numpy()
-        print("Processing variable: " + name + " with shape: ", data.shape)
-    
-        # we don't need these
-        if name.endswith("attn.masked_bias") or name.endswith(".attn.bias"):
-            print("  Skipping variable: " + name)
-            continue
-    
-        n_dims = len(data.shape);
-    
-        # ftype == 0 -> float32, ftype == 1 -> float16
-        ftype_cur = 0;
-        if ftype != 0:
-            if name[-7:] == ".weight" and n_dims == 2:
-                print("  Converting to float16")
-                data = data.astype(np.float16)
-                ftype_cur = 1
+    counter = 0
+    # sort by value
+    for key in sorted(encoder, key=encoder.get):
+        # workaround for key error when c not found
+        text=""
+        for c in key:
+            if c not in byte_decoder:
+                text += c
             else:
-                print("  Converting to float32")
-                data = data.astype(np.float32)
-                ftype_cur = 0
+                text += chr(byte_decoder[c] )
+        text = bytearray( text, encoding="utf-8" )
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        counter += 1
+
+    # Repeat last token until vocab_size
+    while counter < vocab_size:
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        counter += 1
+
+    list_vars = model.state_dict()
+    for name in list_vars.keys():
+        # No gradients for these
+        list_vars[name].requires_grad = False
+        data = list_vars[name].squeeze().numpy()
+        print("Processing variable: {} with shape: {}".format(name, data.shape))
+
+        n_dims = len(data.shape)
+        # default type is fp32
+        ftype_cur = 0
+        if ftype == 1 and n_dims > 1:
+            print("  Converting to float16")
+            data = data.astype(np.float16)
+            ftype_cur = 1
         else:
             if data.dtype != np.float32:
                 print("  Converting to float32")
                 data = data.astype(np.float32)
                 ftype_cur = 0
-    
-        str = name.encode('utf-8')
-        shape = data.shape
-        fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
-        fout.write(struct.pack("i" * n_dims, *shape[::-1]))
-        fout.write(str);
-        fout.seek((fout.tell() + 31) & -32)
-    
+
+        # header
+        h_str = name.encode('utf-8')
+        fout.write(struct.pack("iii", n_dims, len(h_str), ftype_cur))
+        for i in range(n_dims):
+            fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+        fout.write(h_str)
+
         # data
         data.tofile(fout)
-    
+
     fout.close()
 
-    print("Done. Output file: " + fname_out)
+    print("Done. Output file: {}".format(fname_out))
     print("")
+
 
 if __name__ == '__main__':
     main()

@@ -12,11 +12,18 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-file(GLOB MODEL_UTILS_SOURCE "model_utils/*.cpp")
-add_subdirectory(llama)
-add_subdirectory(gptj)
-add_subdirectory(mpt)
-add_subdirectory(gptneox)
-add_subdirectory(starcoder)
-add_subdirectory(falcon)
-add_subdirectory(opt)
+set(TARGET main_opt)
+add_executable_w_warning(${TARGET} main_opt.cpp)
+target_link_libraries(${TARGET} PUBLIC ne_layers opt common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
+
+set(TARGET quant_opt)
+add_executable_w_warning(${TARGET} quant_opt.cpp)
+target_link_libraries(${TARGET} PUBLIC ne_layers opt common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()

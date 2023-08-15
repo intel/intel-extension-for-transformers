@@ -210,6 +210,8 @@ struct model_file_loader {
     file.read_raw(&hparams.alibi_bias_max, sizeof(float));
     file.read_raw(&hparams.clip_qkv, sizeof(float));
     hparams.par_res = file.read_u32();
+    hparams.word_embed_proj_dim = file.read_u32();
+    hparams.do_layer_norm_before = bool(file.read_u32());
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
@@ -314,6 +316,8 @@ struct model_file_saver {
     file.write_raw(&hparams.alibi_bias_max, sizeof(float));
     file.write_raw(&hparams.clip_qkv, sizeof(float));
     file.write_u32(hparams.par_res);
+    file.write_u32(hparams.word_embed_proj_dim);
+    file.write_u32(static_cast<int>(hparams.do_layer_norm_before));
   }
   void write_vocab() {
     if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
@@ -408,7 +412,11 @@ struct model_model_loader {
           if (it == tensors_map.name_to_idx.end()) {
             it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");
             if (it == tensors_map.name_to_idx.end()) {
-              throw std::string("missing tok_embeddings.weight");
+              it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
+              if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
+              if (it == tensors_map.name_to_idx.end()) {
+                throw std::string("missing tok_embeddings.weight");
+              }
             }
           }
         }
