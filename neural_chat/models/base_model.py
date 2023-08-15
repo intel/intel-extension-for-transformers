@@ -51,6 +51,10 @@ class BaseModel(ABC):
         Initializes the BaseModel class.
         """
         self.model_name = ""
+        self.asr = None
+        self.tts = None
+        self.audio_input_path = None
+        self.audio_output_path = None
 
     def match(self, model_path: str):
         """
@@ -105,7 +109,7 @@ class BaseModel(ABC):
             config = GenerationConfig()
         return predict_stream(**construct_parameters(query, self.model_name, config))
 
-    def predict(self, query, config=None):
+    def predict(self, query=None, config=None):
         """
         Predict using a non-streaming approach.
 
@@ -116,7 +120,14 @@ class BaseModel(ABC):
         if not config:
             config = GenerationConfig()
 
-        return predict(**construct_parameters(query, self.model_name, config))
+        if self.asr and self.audio_input_path:
+            query = self.asr.audio2text(config.audio_input_path)
+        assert query is not None, "Query cannot be None."
+        response = predict(**construct_parameters(query, self.model_name, config))
+        if self.tts and self.audio_output_path:
+            self.tts.text2audio(response, config.audio_output_path)
+            response = config.audio_output_path
+        return response
 
     def chat_stream(self, query, config=None):
         """
@@ -126,7 +137,6 @@ class BaseModel(ABC):
             query: The input query for prediction.
             config: Configuration for prediction.
         """
-        params = {}
         if not config:
             config = GenerationConfig()
         return predict_stream(**construct_parameters(query, self.model_name, config))
@@ -141,7 +151,15 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        return predict(**construct_parameters(query, self.model_name, config))
+
+        if self.asr and self.audio_input_path:
+            query = self.asr.audio2text(config.audio_input_path)
+        assert query is not None, "Query cannot be None."
+        response = predict(**construct_parameters(query, self.model_name, config))
+        if self.tts and self.audio_output_path:
+            self.tts.text2audio(response, config.audio_output_path)
+            response = config.audio_output_path
+        return response
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         """
@@ -155,7 +173,7 @@ class BaseModel(ABC):
         """
         return get_conv_template("one_shot")
 
-    def register_tts(self, instance):
+    def register_tts(self, instance, audio_output_path):
         """
         Register a text-to-speech (TTS) instance.
 
@@ -163,8 +181,9 @@ class BaseModel(ABC):
             instance: An instance of a TTS module.
         """
         self.tts = instance
+        self.audio_output_path = audio_output_path
 
-    def register_asr(self, instance):
+    def register_asr(self, instance, audio_input_path):
         """
         Register an automatic speech recognition (ASR) instance.
 
@@ -172,6 +191,7 @@ class BaseModel(ABC):
             instance: An instance of an ASR module.
         """
         self.asr = instance
+        self.audio_input_path = audio_input_path
 
     def register_safety_checker(self, instance):
         """

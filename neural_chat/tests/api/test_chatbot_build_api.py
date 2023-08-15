@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import unittest
+import os
 from neural_chat.chatbot import build_chatbot
 from neural_chat.config import PipelineConfig, GenerationConfig
 
@@ -34,7 +35,7 @@ class TestChatbotBuilder(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
 
-    def test_build_chatbot_with_customize_pipelinecfg(self):
+    def test_build_chatbot_with_customized_pipelinecfg(self):
         config = PipelineConfig(model_name_or_path="mosaicml/mpt-7b-chat", use_cache=True)
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
@@ -42,7 +43,7 @@ class TestChatbotBuilder(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
 
-    def test_predict_with_customize_generationcfg(self):
+    def test_build_chatbot_with_customized_generationcfg(self):
         config = PipelineConfig()
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
@@ -51,6 +52,16 @@ class TestChatbotBuilder(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
 
+    def test_build_chatbot_with_audio_plugin(self):
+        config = PipelineConfig(audio_input=True, audio_input_path="../../assets/audio/pat.wav",
+                                audio_output=True, audio_output_path="./response.wav",
+                                audio_lang="english")
+        chatbot = build_chatbot(config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict()
+        self.assertIsNotNone(response)
+        print("output audio path: ", response)
+        self.assertFalse(os.path.exists(config.audio_output_path))
 
 if __name__ == '__main__':
     unittest.main()
