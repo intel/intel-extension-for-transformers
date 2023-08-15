@@ -42,9 +42,9 @@
 #include "models/model_utils/util.h"
 
 #define MODEL_MAX_NORM 4
-#define MODEL_MAX_ATTN 4
+#define MODEL_MAX_ATTN 8
 #define MODEL_MAX_FFN 4
-#define MODEL_MAX_OTHERS 5
+#define MODEL_MAX_OTHERS 7
 
 #define MODEL_USE_SCRATCH
 #define MODEL_MAX_SCRATCH_BUFFERS 16
@@ -64,7 +64,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON };
+
+enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, MODEL_OPT };
 
 static const size_t MB = 1024 * 1024;
 
@@ -103,6 +104,8 @@ struct model_hparams {
   float alibi_bias_max = 0; // for mpt
   float clip_qkv = 0;  // for mpt
   int32_t par_res = 1;  // for neox 1 = true, 0 = false
+  uint32_t word_embed_proj_dim = 0;  // for opt
+  bool do_layer_norm_before = false; // for opt
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
