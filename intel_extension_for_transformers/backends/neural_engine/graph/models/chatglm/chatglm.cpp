@@ -183,7 +183,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     struct ne_tensor *hidden_states = ne_add(ctx0, inpL, cur);
     
     // mlp.forward
-    struct ne_tensor *mlp_output = ne_norm(ctx0, hidden_states);
+    struct ne_tensor *mlp_output = ne_rms_norm(ctx0, hidden_states);
     mlp_output = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[1], mlp_output), mlp_output);
     
     mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[0], mlp_output);
@@ -202,11 +202,14 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   struct ne_tensor* embeddings = NULL;
   // norm
   {
-    inpL = ne_norm(ctx0, inpL);
+    inpL = ne_rms_norm(ctx0, inpL);
     inpL = ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL);
   }
 
-  lctx.use_buf(ctx0, -1);
+  // lctx.use_buf(ctx0, -1);
+  if (embd->ne[0] > 1) {
+    inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
+  }
   // lm_head
   inpL = ne_mul_mat(ctx0, model.others[2], inpL);
 
