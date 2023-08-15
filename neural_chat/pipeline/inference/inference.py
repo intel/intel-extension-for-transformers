@@ -365,7 +365,7 @@ def load_model(
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-        from models.mpt.modeling_mpt import MPTForCausalLM
+        from neural_chat.models.mpt.modeling_mpt import MPTForCausalLM
 
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = MPTForCausalLM.from_pretrained(

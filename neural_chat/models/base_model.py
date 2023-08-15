@@ -23,7 +23,7 @@ from fastchat.conversation import get_conv_template, Conversation
 from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
 from neural_chat.config import GenerationConfig
 
-def construct_parameters(query, config):
+def construct_parameters(query, model_name, config):
     params = {}
     params["prompt"] = query
     params["temperature"] = config.temperature
@@ -33,7 +33,7 @@ def construct_parameters(query, config):
     params["max_new_tokens"] = config.max_new_tokens
     params["do_sample"] = config.do_sample
     params["num_beams"] = config.num_beams
-    params["model_name"] = config.model_name_or_path
+    params["model_name"] = model_name
     params["num_return_sequences"] = config.num_return_sequences
     params["bad_words_ids"] = config.bad_words_ids
     params["force_words_ids"] = config.force_words_ids
@@ -50,7 +50,7 @@ class BaseModel(ABC):
         """
         Initializes the BaseModel class.
         """
-        pass
+        self.model_name = ""
 
     def match(self, model_path: str):
         """
@@ -83,6 +83,7 @@ class BaseModel(ABC):
             "use_deepspeed": False
         }
         """
+        self.model_name = kwargs["model_name"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
@@ -102,7 +103,7 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        return predict_stream(**construct_parameters(query, config))
+        return predict_stream(**construct_parameters(query, self.model_name, config))
 
     def predict(self, query, config=None):
         """
@@ -115,7 +116,7 @@ class BaseModel(ABC):
         if not config:
             config = GenerationConfig()
 
-        return predict(**construct_parameters(query, config))
+        return predict(**construct_parameters(query, self.model_name, config))
 
     def chat_stream(self, query, config=None):
         """
@@ -128,7 +129,7 @@ class BaseModel(ABC):
         params = {}
         if not config:
             config = GenerationConfig()
-        return predict_stream(**construct_parameters(query, config))
+        return predict_stream(**construct_parameters(query, self.model_name, config))
 
     def chat(self, query, config=None):
         """
@@ -140,7 +141,7 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        return predict(**construct_parameters(query, config))
+        return predict(**construct_parameters(query, self.model_name, config))
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         """
