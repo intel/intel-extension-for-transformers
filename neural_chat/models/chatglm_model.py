@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base_model import BaseModel
+from .base_model import BaseModel, register_model_adapter
 from fastchat.conversation import get_conv_template, Conversation
 from datetime import datetime
 import torch
@@ -217,3 +217,5 @@ class ChatGlmModel(BaseModel):
         if "chatglm2" in model_path.lower():
             return get_conv_template("chatglm2")
         return get_conv_template("chatglm")
+
+register_model_adapter(ChatGlmModel)

@@ -20,9 +20,6 @@ from abc import ABC, abstractmethod
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
-from .llama_model import LlamaModel
-from .mpt_model import MptModel
-from .chatglm_model import ChatGlmModel
 
 class BaseModel(ABC):
     def __init__(self):
@@ -86,9 +83,6 @@ def register_model_adapter(cls):
     """Register a model adapter."""
     model_adapters.append(cls())
 
-register_model_adapter(LlamaModel)
-register_model_adapter(MptModel)
-register_model_adapter(ChatGlmModel)
 
 def get_model_adapter(model_name_path: str) -> BaseModel:
     """Get a model adapter for a model_name_path."""

@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .base_model import BaseModel
+from .base_model import BaseModel, register_model_adapter
 import copy
 from datetime import datetime
 import torch
@@ -518,3 +518,5 @@ class MptModel(BaseModel):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("mpt-7b-chat")
+
+register_model_adapter(MptModel)
