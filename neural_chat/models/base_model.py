@@ -83,7 +83,6 @@ class BaseModel(ABC):
             "use_deepspeed": False
         }
         """
-        print("Loading model {}".format(kwargs["model_name"]))
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
@@ -103,7 +102,7 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        return predict_stream(construct_parameters(query, config))
+        return predict_stream(**construct_parameters(query, config))
 
     def predict(self, query, config=None):
         """
@@ -116,7 +115,7 @@ class BaseModel(ABC):
         if not config:
             config = GenerationConfig()
 
-        return predict(construct_parameters(query, config))
+        return predict(**construct_parameters(query, config))
 
     def chat_stream(self, query, config=None):
         """
@@ -129,7 +128,7 @@ class BaseModel(ABC):
         params = {}
         if not config:
             config = GenerationConfig()
-        return predict_stream(construct_parameters(query, config))
+        return predict_stream(**construct_parameters(query, config))
 
     def chat(self, query, config=None):
         """
@@ -141,7 +140,7 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        return predict(construct_parameters(query, config))
+        return predict(**construct_parameters(query, config))
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         """

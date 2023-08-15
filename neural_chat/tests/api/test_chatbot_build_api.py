@@ -21,28 +21,36 @@ from neural_chat.config import PipelineConfig, GenerationConfig
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
-        pass
+        return super().setUp()
 
-    def test_build_chatbot_valid_config(self):
+    def tearDown(self) -> None:
+        return super().tearDown()
+
+    def test_build_chatbot_with_default_config(self):
         config = PipelineConfig()
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
         print(response)
+        self.assertIsNotNone(response)
 
-    def test_build_chatbot_invalid_config(self):
-        # Similar to the previous test, but with an invalid configuration
-        pass
+    def test_build_chatbot_with_customize_pipelinecfg(self):
+        config = PipelineConfig(model_name_or_path="mosaicml/mpt-7b-chat", use_cache=True)
+        chatbot = build_chatbot(config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        self.assertIsNotNone(response)
 
-    def test_build_chatbot_retrieval(self):
-        # Test the retrieval logic
-        pass
+    def test_predict_with_customize_generationcfg(self):
+        config = PipelineConfig()
+        chatbot = build_chatbot(config)
+        self.assertIsNotNone(chatbot)
+        config = GenerationConfig(max_new_tokens=512, temperature=0.1)
+        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)
+        print(response)
+        self.assertIsNotNone(response)
 
-    def test_build_chatbot_audio(self):
-        # Test the audio logic
-        pass
-
-    # Add more tests for other components of the function
 
 if __name__ == '__main__':
     unittest.main()
