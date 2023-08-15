@@ -41,7 +41,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-@register_model_adapter
 class MptModel(BaseModel):
     def init_model(self, config):
         print("Loading model {}".format(config.model_name_or_path))
@@ -519,3 +518,5 @@ class MptModel(BaseModel):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("mpt-7b-chat")
+
+register_model_adapter(MptModel)

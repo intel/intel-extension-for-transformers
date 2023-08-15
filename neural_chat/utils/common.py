@@ -16,12 +16,18 @@
 # limitations under the License.
 
 import torch
-import habana_frameworks.torch.hpu as hthpu
+
+try:
+    import habana_frameworks.torch.hpu as hthpu
+    is_hpu_available = True
+except ImportError:
+    print("Package 'habana_frameworks.torch.hpu' is not installed.")
+    is_hpu_available = False
 
 def get_device_type():
     if torch.cuda.is_available():
         device = "cuda"
-    elif hthpu.is_available():
+    elif is_hpu_available:
         device = "hpu"
     elif torch.xpu.is_available():
         device = "xpu"

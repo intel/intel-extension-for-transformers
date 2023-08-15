@@ -41,7 +41,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-@register_model_adapter
 class LlamaModel(BaseModel):
     def init_model(self, config):
         print("Loading model {}".format(config.model_name_or_path))
@@ -518,3 +517,5 @@ class LlamaModel(BaseModel):
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         return get_conv_template("llama-2")
+
+register_model_adapter(LlamaModel)

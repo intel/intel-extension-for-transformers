@@ -39,7 +39,6 @@ logger = logging.getLogger(__name__)
 
 invalid_score_processor = InvalidScoreLogitsProcessor()
 
-@register_model_adapter
 class ChatGlmModel(BaseModel):
     def init_model(self, config):
         print("Loading model {}".format(config.model_name_or_path))
@@ -218,3 +217,5 @@ class ChatGlmModel(BaseModel):
         if "chatglm2" in model_path.lower():
             return get_conv_template("chatglm2")
         return get_conv_template("chatglm")
+
+register_model_adapter(ChatGlmModel)
