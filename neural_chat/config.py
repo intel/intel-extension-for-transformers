@@ -339,7 +339,7 @@ class GenerationConfig:
                  do_sample=True,
                  repetition_penalty=1.1,
                  num_beams=0,
-                 num_return_sequence=1,
+                 num_return_sequences=1,
                  bad_words_ids=None,
                  force_words_ids=None,
                  use_hpu_graphs=False,
@@ -353,7 +353,7 @@ class GenerationConfig:
         self.num_beams = num_beams
         self.max_new_tokens = max_new_tokens
         self.do_sample = do_sample
-        self.num_return_sequence = num_return_sequence
+        self.num_return_sequences = num_return_sequences
         self.bad_words_ids = bad_words_ids
         self.force_words_ids = force_words_ids
         self.use_hpu_graphs = use_hpu_graphs
