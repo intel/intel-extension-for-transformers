@@ -101,7 +101,7 @@ For the Python API code, users have the option to enable different voice chat mo
 ```python
 >>> from neural_chat.config import NeuralChatConfig
 >>> from neural_chat.chatbot import build_chatbot
->>> config = NeuralChatConfig(audio_input=True, audio_output=True)
+>>> config = NeuralChatConfig(audio_input=True, audio_input_path="./assets/audio/say_hello.wav", audio_output=True, audio_output_path="./response.wav")
 >>> chatbot = build_chatbot(config)
 >>> result = chatbot.chat("Tell me about Intel Xeon Scalable Processors.")
 ```

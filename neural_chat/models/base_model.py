@@ -23,21 +23,14 @@ from fastchat.conversation import get_conv_template, Conversation
 
 class BaseModel(ABC):
     def __init__(self):
-        self.model, self.tokenizer = self.init_model()
-
-    @abstractmethod
-    def init_model(self, config):
-        """
-        Abstract method for initializing the model and tokenizer.
-        This method must be implemented in the derived classes.
-        Returns:
-            model: The initialized model.
-            tokenizer: The initialized tokenizer.
-        """
         pass
 
     def match(self, model_path: str):
         return True
+
+    @abstractmethod
+    def load_model(self, kwargs: dict):
+        pass
 
     @abstractmethod
     def predict_stream(self, params):

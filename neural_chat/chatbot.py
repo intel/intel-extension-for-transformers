@@ -29,6 +29,9 @@ from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese_tts import ChineseTextToSpeech
 from .pipeline.plugins.security.SensitiveChecker import SensitiveChecker
+from .models.llama_model import LlamaModel
+from .models.mpt_model import MptModel
+from .models.chatglm_model import ChatGlmModel
 
 
 def build_chatbot(config: NeuralChatConfig):
@@ -111,6 +114,20 @@ def build_chatbot(config: NeuralChatConfig):
         safety_checker = SensitiveChecker()
         adapter.register_safety_checker(safety_checker)
 
+    parameters = {}
+    parameters["model_name"] = config.model_name_or_path
+    if config.tokenizer_name_or_path:
+        parameters["tokenizer_name"] = config.tokenizer_name_or_path
+    else:
+        parameters["tokenizer_name"] = config.model_name_or_path
+    parameters["device"] = config.device
+    parameters["use_hpu_graphs"] = config.use_hpu_graphs
+    parameters["cpu_jit"] = config.cpu_jit
+    parameters["use_cache"] = config.use_cache
+    parameters["peft_path"] = config.peft_path
+    parameters["use_deepspeed"] = config.use_deepspeed
+
+    adapter.load_model(parameters)
     return adapter
 
 def finetune_model(config: FinetuningConfig):
