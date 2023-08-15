@@ -65,7 +65,7 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, ne_context* ctx0, ne_ten
 //
 
 static bool gptneox_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                     const int n_past, const int n_threads) {
+                                        const int n_past, const int n_threads) {
   // // enforce that the first token is BOS
   // if (n_past == 0 && tokens[0] != model_token_bos()) {
   //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
@@ -123,7 +123,7 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
         cur = ne_norm(ctx0, inpL);
 
         cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur),
-                      ne_repeat(ctx0, model.layers[il].norm[1], cur));
+                     ne_repeat(ctx0, model.layers[il].norm[1], cur));
       }
 
       // compute QKV
@@ -148,11 +148,11 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
       {
         Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, n_embd, N));
 
-        struct ne_tensor* k = ne_view_1d(ctx0, kv_self.k, N * n_embd,
-                                          (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
-        struct ne_tensor* v = ne_view_2d(
-            ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
-            (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
+        struct ne_tensor* k =
+            ne_view_1d(ctx0, kv_self.k, N * n_embd, (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
+        struct ne_tensor* v =
+            ne_view_2d(ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
+                       (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
 
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
@@ -162,11 +162,11 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
 
       // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1, 3)
       struct ne_tensor* K = ne_permute(ctx0,
-                                        ne_reshape_3d(ctx0,
-                                                      ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_embd,
+                                       ne_reshape_3d(ctx0,
+                                                     ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_embd,
                                                                 il * n_ctx * ne_element_size(kv_self.k) * n_embd),
-                                                      n_embd / n_head, n_head, n_past + N),
-                                        0, 2, 1, 3);
+                                                     n_embd / n_head, n_head, n_past + N),
+                                       0, 2, 1, 3);
 
       // K * Q
       struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
@@ -181,10 +181,9 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
       struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
 
       // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
-      struct ne_tensor* V =
-          ne_view_3d(ctx0, kv_self.v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
-                      n_ctx * ne_element_size(kv_self.v) * n_embd / n_head,
-                      il * n_ctx * ne_element_size(kv_self.v) * n_embd);
+      struct ne_tensor* V = ne_view_3d(
+          ctx0, kv_self.v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
+          n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, il * n_ctx * ne_element_size(kv_self.v) * n_embd);
 
       // KQV = transpose(V) * KQ_soft_max
       struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
@@ -233,7 +232,8 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
     inpL = ne_norm(ctx0, inpL);
 
     // inpL = ln_f_g*inpL + ln_f_b
-    inpL = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL), ne_repeat(ctx0, model.others[2], inpL));
+    inpL = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL),
+                  ne_repeat(ctx0, model.others[2], inpL));
   }
 
   lctx.use_buf(ctx0, -1);

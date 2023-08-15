@@ -333,6 +333,20 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
         break;
       }
       params.input_suffix = argv[i];
+    } else if (arg == "--batch_size") {  // TODO ambiguous with batch-size (n_batch)
+      if (++i >= argc) {
+        invalid_param = true;
+        break;
+      }
+      params.batch_size = std::stoi(argv[i]);
+    } else if (arg == "--beam_search") {
+      params.beam_search = true;
+    } else if (arg == "--beam_size") {
+      if (++i >= argc) {
+        invalid_param = true;
+        break;
+      }
+      params.beam_size = std::stoi(argv[i]);
     } else {
       fprintf(stderr, "error: unknown argument: %s\n", arg.c_str());
       gpt_print_usage(argc, argv, default_params);
@@ -442,5 +456,8 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
           "  --lora-base FNAME     optional model to use as a base for the layers modified by the LoRA adapter\n");
   fprintf(stderr, "  -m FNAME, --model FNAME\n");
   fprintf(stderr, "                        model path (default: %s)\n", params.model.c_str());
+  fprintf(stderr, "  --batch_size 2        number batch of prompt\n");
+  fprintf(stderr, "  --beam_search         use beam search for text generation\n");
+  fprintf(stderr, "  --beam_size 4         number of beams for beam_search, only valid after --beam_search\n");
   fprintf(stderr, "\n");
 }
