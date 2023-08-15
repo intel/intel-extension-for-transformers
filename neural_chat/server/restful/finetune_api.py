@@ -15,20 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Optional
 from fastapi import APIRouter
 from neural_chat.cli.log import logger
-from neural_chat.server.restful.request import FinetuneRequest
-from neural_chat.server.restful.response import FinetuneResponse
-from neural_chat.config import NeuralChatConfig
-from neural_chat.chatbot import build_chatbot
-
-
-def check_finetune_params(request: FinetuneRequest) -> Optional[str]:
-    if request.content is not None and not isinstance(request.content, str):
-        return f'Param Error: request.content {request.content} is not in the type of str'
-
-    return None
 
 
 class FinetuneAPIRouter(APIRouter):
@@ -42,24 +30,24 @@ class FinetuneAPIRouter(APIRouter):
 
     def get_chatbot(self):
         if self.chatbot is None:
+            logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
     
-    def handle_finetune_request(self, request: FinetuneRequest) -> FinetuneResponse:
+    def handle_finetune_request(self) -> str:
         bot = self.get_chatbot()
-        result = bot.finetune_model(bot.config.finetune_config)
-        return FinetuneResponse(content=result)
+        try:
+            bot.finetune_model()
+        except:
+            raise Exception("Exception occurred when finetuning model, please check the arguments.")
+        else:
+            logger.info('Model finetuning finished.')
+            return "Succeed"
 
 
 router = FinetuneAPIRouter()
-config = NeuralChatConfig()
-bot = build_chatbot(config)
-router.set_chatbot(bot)
 
 
 @router.post("/v1/finetune")
-async def finetune_endpoint(request: FinetuneRequest) -> FinetuneResponse:
-    ret = check_finetune_params(request)
-    if ret is not None:
-        raise RuntimeError("Invalid parameter.")
+async def finetune_endpoint(request: str) -> str:
     return await router.handle_finetune_request(request)

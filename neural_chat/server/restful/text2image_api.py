@@ -19,24 +19,9 @@ import base64
 from io import BytesIO
 from PIL import Image
 from fastapi import APIRouter
-from typing import Optional
+from typing import ByteString
 from neural_chat.cli.log import logger
-from neural_chat.server.restful.request import Text2ImageRequest
 from neural_chat.server.restful.response import ImageResponse
-
-
-def check_text2image_params(request: Text2ImageRequest) -> Optional[str]:
-    if request.steps is not None and (not isinstance(request.steps, int)):
-        return f'Param Error: request.steps {request.steps} is not in the type of int'
-    
-    if request.seed is not None and (not isinstance(request.seed, int)):
-        return f'Param Error: request.seed {request.seed} is not in the type of int'
-    
-    if request.guidance_scale is not None and (
-        not isinstance(request.guidance_scale, int) and not isinstance(request.guidance_scale, float)):
-        return f'Param Error: request.guidance_scale {request.guidance_scale} is not valid under any of the given schemas'
-    
-    return None
 
 
 class Text2ImageAPIRouter(APIRouter):
@@ -50,31 +35,23 @@ class Text2ImageAPIRouter(APIRouter):
 
     def get_chatbot(self):
         if self.chatbot is None:
+            logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
 
-    async def handle_text2image_request(self, request: Text2ImageRequest) -> ImageResponse:
-        data = {
-            "prompt": request.prompt,
-            "steps": request.steps,
-            "guidance_scale": request.guidance_scale,
-            "seed": request.seed,
-            "token": request.sd_inference_token
-        }
+    async def handle_text2image_request(self, request: str) -> ImageResponse:
         chatbot = self.get_chatbot()
-        # TODO: NeuralChatBot.text2image()
-        image_string = chatbot.predict(data)
-        image_byte = base64.b64decode(image_string)
-        image_io = BytesIO(image_byte)
-        image = Image.open(image_io)
-        return ImageResponse(image=image)
+        try:
+            image = chatbot.predict(request)
+        except:
+            raise Exception("Exception occurred when generating image from text.")
+        else:
+            logger.info('Text transfering to image finished.')
+            return ImageResponse(image=image, response="Succeed")
     
 
 router = Text2ImageAPIRouter()
 
-@router.post("/v1/text2image/inference")
-async def text2image(request: Text2ImageRequest) -> ImageResponse:
-    ret = check_text2image_params(request)
-    if ret is not None:
-        raise RuntimeError("Invalid parameter.")
+@router.post("/v1/text2image")
+async def text2image(request: str) -> ByteString:
     return await router.handle_text2image_request(request)

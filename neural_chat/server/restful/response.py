@@ -17,8 +17,7 @@
 
 import time
 import shortuuid
-from typing import List
-from PIL import Image
+from typing import ByteString
 from pydantic import BaseModel, Field
 from fastapi.responses import StreamingResponse
 
@@ -30,12 +29,9 @@ class ResponseBaseModel(BaseModel):
 
 class ImageResponse(ResponseBaseModel):
     # Convert the image to bytes and store it as bytes
-    image: bytes
+    image: ByteString
+    response: str
 
 
 class RetrievalResponse(ResponseBaseModel):
-    content: str
-
-
-class FinetuneResponse(ResponseBaseModel):
     content: str

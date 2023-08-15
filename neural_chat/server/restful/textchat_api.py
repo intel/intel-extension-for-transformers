@@ -24,10 +24,8 @@ from neural_chat.cli.log import logger
 from neural_chat.server.restful.openai_protocol import (
     CompletionRequest, CompletionResponse, CompletionResponseChoice, 
     ChatCompletionRequest, ChatCompletionResponseChoice, ChatCompletionResponse, 
-    UsageInfo, ModelCard, ModelList, ModelPermission, ChatMessage
+    UsageInfo, ChatMessage
 )
-from neural_chat.config import NeuralChatConfig
-from neural_chat.chatbot import build_chatbot
 
 
 # TODO: process request and return params in Dict
@@ -88,35 +86,24 @@ class TextChatAPIRouter(APIRouter):
 
     def get_chatbot(self):
         if self.chatbot is None:
+            logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
     
-    def get_model_list(self) -> List[str]:
-        chatbot = self.get_chatbot()
-        model_list = chatbot.get_model_list()
-        if model_list is None or len(model_list)==0:
-            raise RuntimeError("No Model list is found.")
-        return model_list
-    
-    async def handle_models_request(self) -> ModelList:
-        model_list = self.get_model_list()
-        model_list.sort()
-        model_cards = []
-        for m in model_list:
-            model_cards.append(ModelCard(id=m, root=m, permission=[ModelPermission()]))
-        return ModelList(data=model_cards)
 
-    # TODO: process stream chat completion
-    # TODO: add log
     async def handle_completion_request(self, request:CompletionRequest) -> CompletionResponse:
         chatbot = self.get_chatbot()
         params = generate_params(request, chatbot)
-        if request.stream:
-            # TODO: process stream chat completion
-            inference_results = chatbot.predict_stream(params)
+        try:
+            if request.stream:
+                inference_results = chatbot.predict_stream(params)
+            else:
+                inference_results = chatbot.predict(params)
+        except:
+            raise Exception("Exception occurred when inferencing chatbot.")
         else:
-            inference_results = chatbot.predict(params)
-        
+            logger.info('Chatbot completions finished.')
+         
         choices = []
         usage = UsageInfo()
         for i, content in enumerate(inference_results):
@@ -136,8 +123,7 @@ class TextChatAPIRouter(APIRouter):
             model=request.model, choices=choices, usage=UsageInfo.parse_obj(usage)
         )
     
-    # TODO: process stream chat completion
-    # TODO: add log
+
     async def handle_chat_completion_request(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
         chatbot = self.get_chatbot()
         params = generate_params(request, chatbot)
@@ -178,14 +164,6 @@ class TextChatAPIRouter(APIRouter):
     
 
 router = TextChatAPIRouter()
-config = NeuralChatConfig()
-bot = build_chatbot(config)
-router.set_chatbot(bot)
-
-
-@router.post("/v1/models")
-async def models_endpoint() -> ModelList:
-    return await router.handle_models_request()
 
     
 @router.post("/v1/completions")
