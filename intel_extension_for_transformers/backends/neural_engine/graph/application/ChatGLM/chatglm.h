@@ -24,10 +24,6 @@
 #include <unordered_map>
 #include <vector>
 
-#ifdef NE_USE_METAL
-#include <ne-metal.h>
-#endif
-
 namespace chatglm {
 
 // ===== common =====
@@ -98,18 +94,6 @@ static inline unique_ne_context_t make_unique_ne_context(size_t mem_size, void *
     return unique_ne_context_t(ne_init({mem_size, mem_buffer, no_alloc}));
 }
 
-#ifdef NE_USE_METAL
-struct ne_metal_context_deleter_t {
-    void operator()(ne_metal_context *ctx) const noexcept { ne_metal_free(ctx); }
-};
-
-using unique_ne_metal_context_t = std::unique_ptr<ne_metal_context, ne_metal_context_deleter_t>;
-
-static inline unique_ne_metal_context_t make_unique_ne_metal_context(int n_cb) {
-    return unique_ne_metal_context_t(ne_metal_init(n_cb));
-}
-#endif
-
 // reference: https://stackoverflow.com/questions/11149665/c-vector-that-doesnt-initialize-its-members
 struct uninitialized_char {
     char m;
@@ -121,9 +105,7 @@ struct ModelContext {
     unique_ne_context_t ctx_w;  // weight
     unique_ne_context_t ctx_kv; // kv cache
     unique_ne_context_t ctx_b;  // buffer
-#ifdef NE_USE_METAL
-    unique_ne_metal_context_t ctx_metal;
-#endif
+
     ne_cgraph gf;
     ne_scratch scratch;
     std::vector<uninitialized_char> compute_buffer; // BLAS buffer
