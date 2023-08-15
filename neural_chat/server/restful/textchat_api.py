@@ -26,11 +26,10 @@ from neural_chat.server.restful.openai_protocol import (
     ChatCompletionRequest, ChatCompletionResponseChoice, ChatCompletionResponse, 
     UsageInfo, ModelCard, ModelList, ModelPermission, ChatMessage
 )
-from neural_chat.chatbot import NeuralChatBot
 
 
 # TODO: process request and return params in Dict
-def generate_params(request: CompletionRequest, chatbot: NeuralChatBot) -> Dict:
+def generate_params(request: CompletionRequest, chatbot) -> Dict:
     prompt = request.prompt
     temperature = request.temperature
     top_p = request.top_p
@@ -82,10 +81,10 @@ class TextChatAPIRouter(APIRouter):
         super().__init__()
         self.chatbot = None
 
-    def set_chatbot(self, chatbot: NeuralChatBot) -> None:
+    def set_chatbot(self, chatbot) -> None:
         self.chatbot = chatbot
 
-    def get_chatbot(self) -> NeuralChatBot:
+    def get_chatbot(self):
         if self.chatbot is None:
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
