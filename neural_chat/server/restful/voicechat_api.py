@@ -31,22 +31,29 @@ class VoiceChatAPIRouter(APIRouter):
 
     def get_chatbot(self):
         if self.chatbot is None:
+            logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
     
     async def handle_voice2text_request(self, request: ByteString) -> str:
-        # TODO: implement voice to text
         chatbot = self.get_chatbot()
-        # TODO: chatbot.voice2text()
-        result = chatbot.predict(request.voice)
-        return result
+        try:
+            result = chatbot.predict(request)
+        except:
+            raise Exception("Exception occurred when transfering voice to text.")
+        else:
+            logger.info('Chatbot inferencing finished.')
+            return result
     
     async def handle_text2voice_request(self, text: str) -> ByteString:
-        # TODO: implement text to voice
         chatbot = self.get_chatbot()
-        # TODO: chatbot.text2voice()
-        result = chatbot.predict(text)
-        return result
+        try:
+            result = chatbot.predict(text)
+        except:
+            raise Exception("Exception occurred when transfering text to voice.")
+        else:
+            logger.info('Chatbot inferencing finished.')
+            return result
     
 
 router = VoiceChatAPIRouter()

@@ -35,6 +35,7 @@ class Text2ImageAPIRouter(APIRouter):
 
     def get_chatbot(self):
         if self.chatbot is None:
+            logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
 
