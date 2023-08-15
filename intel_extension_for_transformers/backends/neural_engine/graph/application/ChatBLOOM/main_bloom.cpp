@@ -1,6 +1,7 @@
-#include "ggml.h"
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
 
-#include "utils.h"
 
 #include <cassert>
 #include <cmath>
@@ -10,6 +11,10 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "common.h"
+#include "models/model_utils/model_types.h"
+#include "models/model_utils/model_config.h"
+#include "models/model_utils/model_utils.h"
 
 #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
 #include <signal.h>
@@ -26,52 +31,196 @@ struct bloom_hparams {
     int32_t n_head  = 32;
     int32_t n_layer = 32;
     int32_t f16     = 1;
+    float alibi_bias_max = 0;
 };
 
 struct bloom_layer {
     // normalization
-    struct ggml_tensor * attention_norm;
-    struct ggml_tensor * attention_norm_b;
+    struct ne_tensor * attention_norm;
+    struct ne_tensor * attention_norm_b;
 
     // attention
-    struct ggml_tensor * query_key_value;
-    struct ggml_tensor * query_key_value_b;
-    struct ggml_tensor * wo;
-    struct ggml_tensor * wo_b;
+    struct ne_tensor * query_key_value;
+    struct ne_tensor * query_key_value_b;
+    struct ne_tensor * wo;
+    struct ne_tensor * wo_b;
 
     // normalization
-    struct ggml_tensor * ffn_norm;
-    struct ggml_tensor * ffn_norm_b;
+    struct ne_tensor * ffn_norm;
+    struct ne_tensor * ffn_norm_b;
 
     // ff
-    struct ggml_tensor * w1;
-    struct ggml_tensor * w1_b;
-    struct ggml_tensor * w2;
-    struct ggml_tensor * w2_b;
+    struct ne_tensor * w1;
+    struct ne_tensor * w1_b;
+    struct ne_tensor * w2;
+    struct ne_tensor * w2_b;
 };
 
 struct bloom_model {
     bloom_hparams hparams;
 
-    struct ggml_tensor * tok_embeddings;
-    struct ggml_tensor * norm;
-    struct ggml_tensor * norm_b;
+    struct ne_tensor * tok_embeddings;
+    struct ne_tensor * norm;
+    struct ne_tensor * norm_b;
 
-    struct ggml_tensor * output_norm;
-    struct ggml_tensor * output_norm_b;
-    struct ggml_tensor * output;
+    struct ne_tensor * output_norm;
+    struct ne_tensor * output_norm_b;
+    struct ne_tensor * output;
     
 
     std::vector<bloom_layer> layers;
 
     // key + value memory
-    struct ggml_tensor * memory_k;
-    struct ggml_tensor * memory_v;
+    struct ne_tensor * memory_k;
+    struct ne_tensor * memory_v;
 
     //
-    struct ggml_context * ctx;
-    std::map<std::string, struct ggml_tensor *> tensors;
+    struct ne_context * ctx;
+    std::map<std::string, struct ne_tensor *> tensors;
 };
+
+std::vector<gpt_vocab::id> bloom_tokenize(const gpt_vocab & vocab, const std::string & text, bool bos) {
+    //auto res = gpt_tokenize(vocab, text);
+
+    //if (bos) {
+    //    res.insert(res.begin(), 1); // TODO: replace with vocab.bos
+    //}
+
+    std::vector<gpt_vocab::id> res;
+
+    if (bos) {
+        res.push_back(1); // TODO: replace with vocab.bos
+    }
+
+     //find the longest token that matches the text
+    int pos = 0;
+    while (true) {
+        int l = 0;
+        int t = 0;
+        for (const auto & kv : vocab.id_to_token) {
+            if (kv.second.size() < l) continue;
+            if (kv.second.size() > text.size() - pos) continue;
+            if (text.substr(pos, kv.second.size()) == kv.second) {
+                l = kv.second.size();
+                t = kv.first;
+            }
+        }
+
+        if (l == 0) {
+            break;
+        }
+
+        res.push_back(t);
+        pos += l;
+    }
+
+    return res;
+}
+
+gpt_vocab::id bloom_sample_top_p(
+        const gpt_vocab & vocab,
+        const float * logits,
+        std::vector<gpt_vocab::id> & last_n_tokens,
+        double repeat_penalty,
+        double top_p,
+        double temp,
+        std::mt19937 & rng) {
+    int n_logits = vocab.id_to_token.size();
+
+    std::vector<std::pair<double, gpt_vocab::id>> logits_id;
+    logits_id.reserve(n_logits);
+
+    // return max token (greedy search)
+    // {
+    //     int max_idx = 0;
+    //     float max_val = logits[0];
+    //     // fprintf(stdout, "\nlogits[0]: %f", logits[0]);
+    //     for (int i = 1; i < n_logits; ++i) {
+    //         if (logits[i] > max_val) {
+    //             max_val = logits[i];
+    //             max_idx = i;
+    //             // fprintf(stdout, "\nlogits[%d]: %f", i, logits[i]);
+    //         }
+    //     }
+    //     return max_idx;
+    // }
+
+    {
+        const double scale = 1.0/temp;
+        for (int i = 0; i < n_logits; ++i) {
+            // repetition penalty from CTRL paper (https://arxiv.org/abs/1909.05858)
+            // credit https://github.com/facebookresearch/bloom/compare/main...shawwn:bloom:main
+            if (std::find(last_n_tokens.begin(), last_n_tokens.end(), i) != last_n_tokens.end()) {
+                // if score < 0 then repetition penalty has to multiplied to reduce the previous token probability
+                if (logits[i] < 0.0) {
+                    logits_id.push_back(std::make_pair(logits[i]*scale*repeat_penalty, i));
+                } else {
+                    logits_id.push_back(std::make_pair(logits[i]*scale/repeat_penalty, i));
+                }                
+            } else {
+                logits_id.push_back(std::make_pair(logits[i]*scale, i));
+            }
+        }
+    }
+
+    std::sort(
+            logits_id.begin(),
+            logits_id.end(),
+            [](const std::pair<double, gpt_vocab::id> & a, const std::pair<double, gpt_vocab::id> & b) {
+        return a.first > b.first;
+    });
+
+    double maxl = -INFINITY;
+    for (const auto & kv : logits_id) {
+        maxl = std::max(maxl, kv.first);
+    }
+
+    // compute probs for the top K tokens
+    std::vector<double> probs;
+    probs.reserve(logits_id.size());
+
+    double sum = 0.0;
+    for (const auto & kv : logits_id) {
+        double p = exp(kv.first - maxl);
+        probs.push_back(p);
+        sum += p;
+    }
+
+    // normalize the probs
+    for (auto & p : probs) {
+        p /= sum;
+    }
+
+    if (top_p < 1.0f) {
+        double cumsum = 0.0f;
+        for (int i = 0; i < (int) probs.size(); i++) {
+            cumsum += probs[i];
+            if (cumsum >= top_p) {
+                probs.resize(i + 1);
+                logits_id.resize(i + 1);
+                break;
+            }
+        }
+
+        cumsum = 1.0/cumsum;
+        for (int i = 0; i < (int) probs.size(); i++) {
+            probs[i] *= cumsum;
+        }
+    }
+
+    //printf("\n");
+    //for (int i = 0; i < (int) 10; i++) {
+    //    printf("%d: '%s' %f\n", i, vocab.id_to_token.at(logits_id[i].second).c_str(), probs[i]);
+    //}
+    //printf("\n\n");
+    //exit(0);
+
+    std::discrete_distribution<> dist(probs.begin(), probs.end());
+    int idx = dist(rng);
+
+    return logits_id[idx].second;
+}
+
 
 // load the model's weights from a file
 bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab & vocab, int n_ctx) {
@@ -154,12 +303,12 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
 
     // for the big tensors, we have the option to store the data in 16-bit floats or quantized
     // in order to save memory and also to speed up the computation
-    ggml_type wtype = GGML_TYPE_COUNT;
+    ne_type wtype = NE_TYPE_COUNT;
     switch (model.hparams.f16) {
-        case 0: wtype = GGML_TYPE_F32;  break;
-        case 1: wtype = GGML_TYPE_F16;  break;
-        case 2: wtype = GGML_TYPE_Q4_0; break;
-        case 3: wtype = GGML_TYPE_Q4_1; break;
+        case 0: wtype = NE_TYPE_F32;  break;
+        case 1: wtype = NE_TYPE_F16;  break;
+        case 2: wtype = NE_TYPE_Q4_0; break;
+        case 3: wtype = NE_TYPE_Q4_1; break;
         default:
                 {
                     fprintf(stderr, "%s: invalid model file '%s' (bad f16 value %d)\n",
@@ -168,7 +317,7 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
                 }
     }
 
-    const ggml_type wtype2 = GGML_TYPE_F32;
+    const ne_type wtype2 = NE_TYPE_F32;
 
     auto & ctx = model.ctx;
 
@@ -182,34 +331,34 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
         const int n_ctx   = hparams.n_ctx;
         const int n_vocab = hparams.n_vocab;
 
-        ctx_size += n_embd*n_vocab*ggml_type_sizef(wtype); // tok_embeddings
+        ctx_size += n_embd*n_vocab*ne_type_sizef(wtype); // tok_embeddings
 
-        ctx_size += n_embd*ggml_type_sizef(GGML_TYPE_F32); // norm
-        ctx_size += n_embd*ggml_type_sizef(GGML_TYPE_F32); // norm_b
+        ctx_size += n_embd*ne_type_sizef(NE_TYPE_F32); // norm
+        ctx_size += n_embd*ne_type_sizef(NE_TYPE_F32); // norm_b
 
-        ctx_size += n_embd*ggml_type_sizef(GGML_TYPE_F32); // output_norm
-        ctx_size += n_embd*ggml_type_sizef(GGML_TYPE_F32); // output_norm_b
+        ctx_size += n_embd*ne_type_sizef(NE_TYPE_F32); // output_norm
+        ctx_size += n_embd*ne_type_sizef(NE_TYPE_F32); // output_norm_b
 
-        ctx_size += n_embd*n_vocab*ggml_type_sizef(wtype); // output
+        ctx_size += n_embd*n_vocab*ne_type_sizef(wtype); // output
 
-        ctx_size += n_layer*(n_embd*ggml_type_sizef(GGML_TYPE_F32)); // attention_norm
-        ctx_size += n_layer*(n_embd*ggml_type_sizef(GGML_TYPE_F32)); // attention_norm_b
+        ctx_size += n_layer*(n_embd*ne_type_sizef(NE_TYPE_F32)); // attention_norm
+        ctx_size += n_layer*(n_embd*ne_type_sizef(NE_TYPE_F32)); // attention_norm_b
 
-        ctx_size += n_layer*(3*n_embd*n_embd*ggml_type_sizef(wtype)); // query_key_value
-        ctx_size += n_layer*(3*n_embd*ggml_type_sizef(GGML_TYPE_F32)); // query_key_value_b
-        ctx_size += n_layer*(n_embd*n_embd*ggml_type_sizef(wtype)); // wo
-        ctx_size += n_layer*(n_embd*ggml_type_sizef(GGML_TYPE_F32)); // wo_b
+        ctx_size += n_layer*(3*n_embd*n_embd*ne_type_sizef(wtype)); // query_key_value
+        ctx_size += n_layer*(3*n_embd*ne_type_sizef(NE_TYPE_F32)); // query_key_value_b
+        ctx_size += n_layer*(n_embd*n_embd*ne_type_sizef(wtype)); // wo
+        ctx_size += n_layer*(n_embd*ne_type_sizef(NE_TYPE_F32)); // wo_b
 
-        ctx_size += n_layer*(n_embd*ggml_type_sizef(GGML_TYPE_F32)); // ffn_norm
-        ctx_size += n_layer*(n_embd*ggml_type_sizef(GGML_TYPE_F32)); // ffn_norm_b
+        ctx_size += n_layer*(n_embd*ne_type_sizef(NE_TYPE_F32)); // ffn_norm
+        ctx_size += n_layer*(n_embd*ne_type_sizef(NE_TYPE_F32)); // ffn_norm_b
 
-        ctx_size += n_layer*(n_ff*n_embd*ggml_type_sizef(wtype)); // w1
-        ctx_size += n_layer*(n_ff*ggml_type_sizef(GGML_TYPE_F32)); // w1_b
-        ctx_size += n_layer*(n_ff*n_embd*ggml_type_sizef(wtype)); // w2
-        ctx_size += n_layer*(n_ff*ggml_type_sizef(GGML_TYPE_F32)); // w2_b
+        ctx_size += n_layer*(n_ff*n_embd*ne_type_sizef(wtype)); // w1
+        ctx_size += n_layer*(n_ff*ne_type_sizef(NE_TYPE_F32)); // w1_b
+        ctx_size += n_layer*(n_ff*n_embd*ne_type_sizef(wtype)); // w2
+        ctx_size += n_layer*(n_ff*ne_type_sizef(NE_TYPE_F32)); // w2_b
 
-        ctx_size += n_ctx*n_layer*n_embd*ggml_type_sizef(GGML_TYPE_F32); // memory_k
-        ctx_size += n_ctx*n_layer*n_embd*ggml_type_sizef(GGML_TYPE_F32); // memory_v
+        ctx_size += n_ctx*n_layer*n_embd*ne_type_sizef(NE_TYPE_F32); // memory_k
+        ctx_size += n_ctx*n_layer*n_embd*ne_type_sizef(NE_TYPE_F32); // memory_v
 
         ctx_size += (5 + 10*n_layer)*256; // object overhead TODO:
 
@@ -218,14 +367,14 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
 
     // create the ggml context
     {
-        struct ggml_init_params params = {
+        struct ne_init_params params = {
             /*.mem_size   =*/ ctx_size,
             /*.mem_buffer =*/ NULL,
         };
 
-        model.ctx = ggml_init(params);
+        model.ctx = ne_init(params);
         if (!model.ctx) {
-            fprintf(stderr, "%s: ggml_init() failed\n", __func__);
+            fprintf(stderr, "%s: ne_init() failed\n", __func__);
             return false;
         }
     }
@@ -241,13 +390,13 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
 
         model.layers.resize(n_layer);
 
-        model.tok_embeddings = ggml_new_tensor_2d(ctx, wtype, n_embd, n_vocab);
-        model.norm   = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
-        model.norm_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
+        model.tok_embeddings = ne_new_tensor_2d(ctx, wtype, n_embd, n_vocab, NE_SIZE_CALC);
+        model.norm   = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+        model.norm_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-        model.output_norm = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
-        model.output_norm_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
-        model.output = ggml_new_tensor_2d(ctx, wtype,         n_embd, n_vocab);
+        model.output_norm = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+        model.output_norm_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+        model.output = ne_new_tensor_2d(ctx, wtype,         n_embd, n_vocab, NE_SIZE_CALC);
 
         // map by name
         model.tensors["tok_embeddings.weight"] = model.tok_embeddings;
@@ -261,21 +410,21 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
         for (int i = 0; i < n_layer; ++i) {
             auto & layer = model.layers[i];
 
-            layer.attention_norm = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
-            layer.attention_norm_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
+            layer.attention_norm = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+            layer.attention_norm_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-            layer.query_key_value = ggml_new_tensor_2d(ctx, wtype, n_embd, 3*n_embd);
-            layer.query_key_value_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, 3*n_embd);
-            layer.wo = ggml_new_tensor_2d(ctx, wtype, n_embd, n_embd);
-            layer.wo_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
+            layer.query_key_value = ne_new_tensor_2d(ctx, wtype, n_embd, 3*n_embd, NE_SIZE_CALC);
+            layer.query_key_value_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, 3*n_embd, NE_SIZE_CALC);
+            layer.wo = ne_new_tensor_2d(ctx, wtype, n_embd, n_embd, NE_SIZE_CALC);
+            layer.wo_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-            layer.ffn_norm = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
-            layer.ffn_norm_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
+            layer.ffn_norm = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
+            layer.ffn_norm_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
-            layer.w1 = ggml_new_tensor_2d(ctx, wtype, n_embd,   n_ff);
-            layer.w1_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_ff);
-            layer.w2 = ggml_new_tensor_2d(ctx, wtype,   n_ff, n_embd);
-            layer.w2_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
+            layer.w1 = ne_new_tensor_2d(ctx, wtype, n_embd,   n_ff, NE_SIZE_CALC);
+            layer.w1_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_ff, NE_SIZE_CALC);
+            layer.w2 = ne_new_tensor_2d(ctx, wtype,   n_ff, n_embd, NE_SIZE_CALC);
+            layer.w2_b = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_embd, NE_SIZE_CALC);
 
             // map by name
             model.tensors["layers." + std::to_string(i) + ".attention_norm.weight"] = layer.attention_norm;
@@ -307,10 +456,10 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
         const int n_mem      = n_layer*n_ctx;
         const int n_elements = n_embd*n_mem;
 
-        model.memory_k = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_elements);
-        model.memory_v = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_elements);
+        model.memory_k = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_elements, NE_SIZE_CALC);
+        model.memory_v = ne_new_tensor_1d(ctx, NE_TYPE_F32, n_elements, NE_SIZE_CALC);
 
-        const size_t memory_size = ggml_nbytes(model.memory_k) + ggml_nbytes(model.memory_v);
+        const size_t memory_size = ne_nbytes(model.memory_k) + ne_nbytes(model.memory_v);
 
         printf("%s: memory_size = %8.2f MB, n_mem = %d\n", __func__, memory_size/1024.0/1024.0, n_mem);
     }
@@ -405,12 +554,12 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
                 auto tensor = model.tensors[name.data()];
 
                 if (n_dims == 1) {
-                    if (ggml_nelements(tensor) != nelements) {
+                    if (ne_nelements(tensor) != nelements) {
                         fprintf(stderr, "%s: tensor '%s' has wrong size in model file\n", __func__, name.data());
                         return false;
                     }
                 } else {
-                    if (ggml_nelements(tensor)/n_parts != nelements) {
+                    if (ne_nelements(tensor)/n_parts != nelements) {
                         fprintf(stderr, "%s: tensor '%s' has wrong size in model file\n", __func__, name.data());
                         return false;
                     }
@@ -449,10 +598,10 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
                 size_t bpe = 0;
 
                 switch (ftype) {
-                    case 0: bpe = ggml_type_size(GGML_TYPE_F32);  break;
-                    case 1: bpe = ggml_type_size(GGML_TYPE_F16);  break;
-                    case 2: bpe = ggml_type_size(GGML_TYPE_Q4_0); assert(ne[0] % 64 == 0); break;
-                    case 3: bpe = ggml_type_size(GGML_TYPE_Q4_1); assert(ne[0] % 64 == 0); break;
+                    case 0: bpe = ne_type_size(NE_TYPE_F32);  break;
+                    case 1: bpe = ne_type_size(NE_TYPE_F16);  break;
+                    case 2: bpe = ne_type_size(NE_TYPE_Q4_0); assert(ne[0] % 64 == 0); break;
+                    case 3: bpe = ne_type_size(NE_TYPE_Q4_1); assert(ne[0] % 64 == 0); break;
                     default:
                             {
                                 fprintf(stderr, "%s: unknown ftype %d in model file\n", __func__, ftype);
@@ -461,41 +610,41 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
                 };
 
                 if (n_dims == 1 || n_parts == 1) {
-                    if ((nelements*bpe)/ggml_blck_size(tensor->type) != ggml_nbytes(tensor)) {
+                    if ((nelements*bpe)/ne_blck_size(tensor->type) != ne_nbytes(tensor)) {
                         fprintf(stderr, "%s: tensor '%s' has wrong size in model file: got %zu, expected %zu\n",
-                                __func__, name.data(), ggml_nbytes(tensor), nelements*bpe);
+                                __func__, name.data(), ne_nbytes(tensor), nelements*bpe);
                         return false;
                     }
 
                     if (part_id == 0) {
-                        fin.read(reinterpret_cast<char *>(tensor->data), ggml_nbytes(tensor));
+                        fin.read(reinterpret_cast<char *>(tensor->data), ne_nbytes(tensor));
                     } else {
-                        fin.seekg(ggml_nbytes(tensor), std::ios::cur);
+                        fin.seekg(ne_nbytes(tensor), std::ios::cur);
                     }
 
-                    total_size += ggml_nbytes(tensor);
+                    total_size += ne_nbytes(tensor);
                 } else {
-                    if ((nelements*bpe)/ggml_blck_size(tensor->type) != ggml_nbytes(tensor)/n_parts) {
+                    if ((nelements*bpe)/ne_blck_size(tensor->type) != ne_nbytes(tensor)/n_parts) {
                         fprintf(stderr, "%s: tensor '%s' has wrong size in model file: got %zu, expected %zu\n",
-                                __func__, name.data(), ggml_nbytes(tensor)/n_parts, nelements*bpe);
+                                __func__, name.data(), ne_nbytes(tensor)/n_parts, nelements*bpe);
                         return false;
                     }
 
                     if (split_type == 0) {
                         const int np0 = ne[0];
 
-                        const size_t row_size = (tensor->ne[0]/ggml_blck_size(tensor->type))*ggml_type_size(tensor->type);
+                        const size_t row_size = (tensor->ne[0]/ne_blck_size(tensor->type))*ne_type_size(tensor->type);
                         assert(row_size == tensor->nb[1]);
 
                         for (int i1 = 0; i1 < ne[1]; ++i1) {
                             const size_t offset_row = i1*row_size;
-                            const size_t offset = offset_row + ((part_id*np0)/ggml_blck_size(tensor->type))*ggml_type_size(tensor->type);
+                            const size_t offset = offset_row + ((part_id*np0)/ne_blck_size(tensor->type))*ne_type_size(tensor->type);
                             fin.read(reinterpret_cast<char *>(tensor->data) + offset, row_size/n_parts);
                         }
                     } else {
                         const int np1 = ne[1];
 
-                        const size_t row_size = (tensor->ne[0]/ggml_blck_size(tensor->type))*ggml_type_size(tensor->type);
+                        const size_t row_size = (tensor->ne[0]/ne_blck_size(tensor->type))*ne_type_size(tensor->type);
 
                         for (int i1 = 0; i1 < ne[1]; ++i1) {
                             const size_t offset_row = (i1 + part_id*np1)*row_size;
@@ -503,10 +652,10 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
                         }
                     }
 
-                    total_size += ggml_nbytes(tensor)/n_parts;
+                    total_size += ne_nbytes(tensor)/n_parts;
                 }
 
-                //printf("%42s - [%5d, %5d], type = %6s, %6.2f MB\n", name.data(), ne[0], ne[1], ftype == 0 ? "float" : "f16", ggml_nbytes(tensor)/1024.0/1024.0);
+                //printf("%42s - [%5d, %5d], type = %6s, %6.2f MB\n", name.data(), ne[0], ne[1], ftype == 0 ? "float" : "f16", ne_nbytes(tensor)/1024.0/1024.0);
                 if (++n_tensors % 8 == 0) {
                     printf(".");
                     fflush(stdout);
@@ -570,49 +719,49 @@ bool bloom_eval(
         }
     }
 
-    struct ggml_init_params params = {
+    struct ne_init_params params = {
         .mem_size   = buf_size,
         .mem_buffer = buf,
     };
 
-    struct ggml_context * ctx0 = ggml_init(params);
-    ggml_cgraph gf = {};
+    struct ne_context * ctx0 = ne_init(params);
+    ne_cgraph gf = {};
     gf.n_threads = n_threads;
 
-    struct ggml_tensor * embd = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, N);
-    memcpy(embd->data, embd_inp.data(), N*ggml_element_size(embd));
+    struct ne_tensor * embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
+    memcpy(embd->data, embd_inp.data(), N*ne_element_size(embd));
 
-    struct ggml_tensor * inpL = ggml_get_rows(ctx0, model.tok_embeddings, embd);
+    struct ne_tensor * inpL = ne_get_rows(ctx0, model.tok_embeddings, embd);
 
     // word embeddings norm
     {
-        inpL = ggml_norm(ctx0, inpL);
-        inpL = ggml_mul(ctx0, ggml_repeat(ctx0, model.norm, inpL), inpL);
-        inpL = ggml_add(ctx0, ggml_repeat(ctx0, model.norm_b, inpL), inpL);
+        inpL = ne_norm(ctx0, inpL);
+        inpL = ne_mul(ctx0, ne_repeat(ctx0, model.norm, inpL), inpL);
+        inpL = ne_add(ctx0, ne_repeat(ctx0, model.norm_b, inpL), inpL);
     }
 
     for (int il = 0; il < n_layer; ++il) {
-        struct ggml_tensor * inpSA = inpL; //TODO: copy?
+        struct ne_tensor * inpSA = inpL; //TODO: copy?
 
-        struct ggml_tensor * cur;
+        struct ne_tensor * cur;
 
         // norm
         {
-            cur = ggml_norm(ctx0, inpL);
+            cur = ne_norm(ctx0, inpL);
 
             // cur = attention_norm*cur
-            cur = ggml_mul(ctx0,
-                        ggml_repeat(ctx0, model.layers[il].attention_norm, cur),
+            cur = ne_mul(ctx0,
+                        ne_repeat(ctx0, model.layers[il].attention_norm, cur),
                         cur);
-            cur = ggml_add(ctx0, ggml_repeat(ctx0, model.layers[il].attention_norm_b, cur), cur);
+            cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].attention_norm_b, cur), cur);
         }
 
         // attn
         {
-            cur = ggml_mul_mat(ctx0,model.layers[il].query_key_value, cur);
+            cur = ne_mul_mat(ctx0,model.layers[il].query_key_value, cur);
 
-            cur = ggml_add(ctx0,
-                    ggml_repeat(ctx0, model.layers[il].query_key_value_b, cur),
+            cur = ne_add(ctx0,
+                    ne_repeat(ctx0, model.layers[il].query_key_value_b, cur),
                     cur);
         }
 
@@ -620,111 +769,111 @@ bool bloom_eval(
 
         // self-attention
         {
-            struct ggml_tensor * Qcur = ggml_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 0*sizeof(float)*n_embd);
-            struct ggml_tensor * Kcur = ggml_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 1*sizeof(float)*n_embd); //TODO: float or fp16?
-            struct ggml_tensor * Vcur = ggml_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 2*sizeof(float)*n_embd);
+            struct ne_tensor * Qcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 0*sizeof(float)*n_embd);
+            struct ne_tensor * Kcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 1*sizeof(float)*n_embd); //TODO: float or fp16?
+            struct ne_tensor * Vcur = ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 2*sizeof(float)*n_embd);
 
             // store key and value to memory
             if (N >= 1) {
-                struct ggml_tensor * k = ggml_view_1d(ctx0, model.memory_k, N*n_embd, (ggml_element_size(model.memory_k)*n_embd)*(il*n_ctx + n_past));
-                struct ggml_tensor * v = ggml_view_1d(ctx0, model.memory_v, N*n_embd, (ggml_element_size(model.memory_v)*n_embd)*(il*n_ctx + n_past));
+                struct ne_tensor * k = ne_view_1d(ctx0, model.memory_k, N*n_embd, (ne_element_size(model.memory_k)*n_embd)*(il*n_ctx + n_past));
+                struct ne_tensor * v = ne_view_1d(ctx0, model.memory_v, N*n_embd, (ne_element_size(model.memory_v)*n_embd)*(il*n_ctx + n_past));
 
-                ggml_build_forward_expand(&gf, ggml_cpy(ctx0, Kcur, k));
-                ggml_build_forward_expand(&gf, ggml_cpy(ctx0, Vcur, v));
+                ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
+                ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
             }
 
             // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0, 2, 1, 3)
-            struct ggml_tensor * Q =
-                ggml_permute(ctx0,
-                            ggml_cpy(ctx0, Qcur,
-                                ggml_new_tensor_3d(ctx0, GGML_TYPE_F32, n_embd/n_head, n_head, N)),
+            struct ne_tensor * Q =
+                ne_permute(ctx0,
+                            ne_cpy(ctx0, Qcur,
+                                ne_new_tensor_3d(ctx0, NE_TYPE_F32, n_embd/n_head, n_head, N, NE_SIZE_CALC)),
                         0, 2, 1, 3);
 
             // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1, 3)
-            struct ggml_tensor * K =
-                ggml_permute(ctx0, ggml_reshape_3d(ctx0,
-                                ggml_view_1d(ctx0, model.memory_k, (n_past + N)*n_embd, il*n_ctx*ggml_element_size(model.memory_k)*n_embd),
+            struct ne_tensor * K =
+                ne_permute(ctx0, ne_reshape_3d(ctx0,
+                                ne_view_1d(ctx0, model.memory_k, (n_past + N)*n_embd, il*n_ctx*ne_element_size(model.memory_k)*n_embd),
                                 n_embd/n_head, n_head, n_past + N),
                         0, 2, 1, 3);
 
             // K * Q
-            struct ggml_tensor * KQ = ggml_mul_mat(ctx0, K, Q);
+            struct ne_tensor * KQ = ne_mul_mat(ctx0, K, Q);
 
             // KQ_scaled = KQ / sqrt(n_embd/n_head)
-            struct ggml_tensor * KQ_scaled =
-                ggml_scale(ctx0,
+            struct ne_tensor * KQ_scaled =
+                ne_scale(ctx0,
                         KQ,
-                        ggml_new_f32(ctx0, 1.0f/sqrt(float(n_embd)/n_head))
+                        ne_new_f32(ctx0, 1.0f/sqrt(float(n_embd)/n_head))
                         );
 
             // Alibi
             // KQ_scaled_alibi = KQ_scaled + alibi_bias //TODO: optimize
-            struct ggml_tensor * KQ_scaled_alibi = ggml_alibi(ctx0, KQ_scaled, n_past, n_head);
+            struct ne_tensor * KQ_scaled_alibi = ne_alibi(ctx0, KQ_scaled, n_past, n_head, model.hparams.alibi_bias_max);
 
             // KQ_masked = mask_past(KQ_scaled)
-            struct ggml_tensor * KQ_masked = ggml_diag_mask_inf(ctx0, KQ_scaled_alibi, n_past);
+            struct ne_tensor * KQ_masked = ne_diag_mask_inf(ctx0, KQ_scaled_alibi, n_past);
 
             // KQ = soft_max(KQ_masked)
-            struct ggml_tensor * KQ_soft_max = ggml_soft_max(ctx0, KQ_masked);
+            struct ne_tensor * KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
 
             // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
-            struct ggml_tensor *V_trans =
-                    ggml_cpy(ctx0,
-                             ggml_permute(ctx0,
-                                          ggml_reshape_3d(ctx0,
-                                                          ggml_view_1d(ctx0, model.memory_v, (n_past + N) * n_embd,
-                                                                       il * n_ctx * ggml_element_size(model.memory_v) *
+            struct ne_tensor *V_trans =
+                    ne_cpy(ctx0,
+                             ne_permute(ctx0,
+                                          ne_reshape_3d(ctx0,
+                                                          ne_view_1d(ctx0, model.memory_v, (n_past + N) * n_embd,
+                                                                       il * n_ctx * ne_element_size(model.memory_v) *
                                                                        n_embd),
                                                           n_embd / n_head, n_head, n_past + N),
                                           1, 2, 0, 3),
-                             ggml_new_tensor_3d(ctx0, model.memory_v->type, n_past + N, n_embd / n_head, n_head));
+                             ne_new_tensor_3d(ctx0, model.memory_v->type, n_past + N, n_embd / n_head, n_head, NE_SIZE_CALC));
             // KQV = transpose(V) * KQ_soft_max
-            struct ggml_tensor * KQV = ggml_mul_mat(ctx0, V_trans, KQ_soft_max);
+            struct ne_tensor * KQV = ne_mul_mat(ctx0, V_trans, KQ_soft_max);
 
             // KQV_merged = KQV.permute(0, 2, 1, 3)
-            struct ggml_tensor * KQV_merged = ggml_permute(ctx0, KQV, 0, 2, 1, 3);
+            struct ne_tensor * KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
 
             // cur = KQV_merged.contiguous().view(n_embd, N)
-            cur = ggml_cpy(ctx0,
+            cur = ne_cpy(ctx0,
                     KQV_merged,
-                    ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, n_embd, N));
+                    ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
 
             // projection
-            cur = ggml_mul_mat(ctx0,
+            cur = ne_mul_mat(ctx0,
                     model.layers[il].wo,
                     cur);
-            cur = ggml_add(ctx0, ggml_repeat(ctx0, model.layers[il].wo_b, cur), cur);
+            cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].wo_b, cur), cur);
         }
 
-        struct ggml_tensor * inpFF = ggml_add(ctx0, cur, inpSA);
+        struct ne_tensor * inpFF = ne_add(ctx0, cur, inpSA);
 
         // feed-forward network
         {
             // norm
             {
-                cur = ggml_norm(ctx0, inpFF);
+                cur = ne_norm(ctx0, inpFF);
 
                 // cur = ffn_norm*cur + ffn_norm_b
-                cur = ggml_mul(ctx0,
-                        ggml_repeat(ctx0, model.layers[il].ffn_norm, cur),
+                cur = ne_mul(ctx0,
+                        ne_repeat(ctx0, model.layers[il].ffn_norm, cur),
                         cur);
-                cur = ggml_add(ctx0, ggml_repeat(ctx0, model.layers[il].ffn_norm_b, cur), cur);
+                cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn_norm_b, cur), cur);
             }
 
-            cur = ggml_mul_mat(ctx0,
+            cur = ne_mul_mat(ctx0,
                     model.layers[il].w1,
                     cur);
-            cur = ggml_add(ctx0, ggml_repeat(ctx0, model.layers[il].w1_b, cur), cur);
+            cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].w1_b, cur), cur);
 
-            cur = ggml_gelu(ctx0, cur);
+            cur = ne_gelu(ctx0, cur);
 
-            cur = ggml_mul_mat(ctx0,
+            cur = ne_mul_mat(ctx0,
                     model.layers[il].w2,
                     cur);
-            cur = ggml_add(ctx0, ggml_repeat(ctx0, model.layers[il].w2_b, cur), cur);
+            cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].w2_b, cur), cur);
         }
 
-        cur  = ggml_add(ctx0, cur, inpFF);
+        cur  = ne_add(ctx0, cur, inpFF);
 
         // input for next layer
         inpL = cur;
@@ -732,27 +881,27 @@ bool bloom_eval(
 
     // norm
     {
-        inpL = ggml_norm(ctx0, inpL);
+        inpL = ne_norm(ctx0, inpL);
 
         // inpL = norm*inpL
-        inpL = ggml_mul(ctx0,
-                    ggml_repeat(ctx0, model.output_norm, inpL),
+        inpL = ne_mul(ctx0,
+                    ne_repeat(ctx0, model.output_norm, inpL),
                     inpL);
         
-        inpL = ggml_add(ctx0, ggml_repeat(ctx0, model.output_norm_b, inpL), inpL);
+        inpL = ne_add(ctx0, ne_repeat(ctx0, model.output_norm_b, inpL), inpL);
     }
 
     // lm_head
     {
-        inpL = ggml_mul_mat(ctx0, model.output, inpL);
+        inpL = ne_mul_mat(ctx0, model.output, inpL);
     }
 
     // logits -> probs
-    //inpL = ggml_soft_max(ctx0, inpL);
+    //inpL = ne_soft_max_inplace(ctx0, inpL);
 
     // run the computation
-    ggml_build_forward_expand(&gf, inpL);
-    ggml_graph_compute       (ctx0, &gf);
+    ne_build_forward_expand(&gf, inpL);
+    ne_graph_compute       (ctx0, &gf);
 
     //if (n_past%100 == 0) {
     //    ggml_graph_print   (&gf);
@@ -760,31 +909,31 @@ bool bloom_eval(
     //}
 
     //embd_w.resize(n_vocab*N);
-    //memcpy(embd_w.data(), ggml_get_data(inpL), sizeof(float)*n_vocab*N);
+    //memcpy(embd_w.data(), ne_get_data(inpL), sizeof(float)*n_vocab*N);
 
     // return result for just the last token
     embd_w.resize(n_vocab);
-    memcpy(embd_w.data(), (float *) ggml_get_data(inpL) + (n_vocab*(N-1)), sizeof(float)*n_vocab);
+    memcpy(embd_w.data(), (float *) ne_get_data(inpL) + (n_vocab*(N-1)), sizeof(float)*n_vocab);
 
     if (mem_per_token == 0) {
-        mem_per_token = ggml_used_mem(ctx0)/N;
+        mem_per_token = ne_used_mem(ctx0)/N;
     }
-    //printf("used_mem = %zu\n", ggml_used_mem(ctx0));
+    //printf("used_mem = %zu\n", ne_used_mem(ctx0));
 
-    ggml_free(ctx0);
+    ne_free(ctx0);
 
     return true;
 }
 
 int main(int argc, char ** argv) {
-    ggml_time_init();
-    const int64_t t_main_start_us = ggml_time_us();
+    ne_time_init();
+    const int64_t t_main_start_us = ne_time_us();
 
-    gpt_params params;
+    common_params params;
     params.model = "models/ggml-model-bloomz-7b1-f16-q4_0.bin";
     params.prompt = "Je vais";
 
-    if (gpt_params_parse(argc, argv, params) == false) {
+    if (common_params_parse(argc, argv, params) == false) {
         return 1;
     }
 
@@ -809,14 +958,14 @@ int main(int argc, char ** argv) {
 
     // load the model
     {
-        const int64_t t_start_us = ggml_time_us();
+        const int64_t t_start_us = ne_time_us();
         const int n_ctx = 512;
         if (!bloom_model_load(params.model, model, vocab, n_ctx)) {  // TODO: set context from user input ??
             fprintf(stderr, "%s: failed to load model from '%s'\n", __func__, params.model.c_str());
             return 1;
         }
 
-        t_load_us = ggml_time_us() - t_start_us;
+        t_load_us = ne_time_us() - t_start_us;
     }
 
     int n_past = 0;
@@ -827,7 +976,7 @@ int main(int argc, char ** argv) {
     std::vector<float> logits;
 
     // tokenize the prompt
-    std::vector<gpt_vocab::id> embd_inp = ::bloom_tokenize(vocab, params.prompt, false); //TODO: set bos to true?
+    std::vector<int> embd_inp = ::bloom_tokenize(vocab, params.prompt, false); //TODO: set bos to true?
 
     params.n_predict = std::min(params.n_predict, model.hparams.n_ctx - (int) embd_inp.size());
 
@@ -854,14 +1003,14 @@ int main(int argc, char ** argv) {
     for (int i = embd.size(); i < embd_inp.size() + params.n_predict; i++) {
         // predict
         if (embd.size() > 0) {
-            const int64_t t_start_us = ggml_time_us();
+            const int64_t t_start_us = ne_time_us();
 
             if (!bloom_eval(model, params.n_threads, n_past, embd, logits, mem_per_token)) { // update logits
                 printf("Failed to predict\n");
                 return 1;
             }
 
-            t_predict_us += ggml_time_us() - t_start_us;
+            t_predict_us += ne_time_us() - t_start_us;
         }
 
         n_past += embd.size();
@@ -878,7 +1027,7 @@ int main(int argc, char ** argv) {
             gpt_vocab::id id = 0;
 
             {
-                const int64_t t_start_sample_us = ggml_time_us();
+                const int64_t t_start_sample_us = ne_time_us();
 
                 id = bloom_sample_top_p(vocab, logits.data() + (logits.size() - n_vocab), last_n_tokens, repeat_penalty, top_p, temp, rng);
 
@@ -888,7 +1037,7 @@ int main(int argc, char ** argv) {
                 last_n_tokens.erase(last_n_tokens.begin());
                 last_n_tokens.push_back(id);
 
-                t_sample_us += ggml_time_us() - t_start_sample_us;
+                t_sample_us += ne_time_us() - t_start_sample_us;
             }
 
             // add it to the context
@@ -921,7 +1070,7 @@ int main(int argc, char ** argv) {
 
     // report timing
     {
-        const int64_t t_main_end_us = ggml_time_us();
+        const int64_t t_main_end_us = ne_time_us();
 
         printf("\n\n");
         printf("%s: mem per token = %8zu bytes\n", __func__, mem_per_token);
@@ -931,7 +1080,9 @@ int main(int argc, char ** argv) {
         printf("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us)/1000.0f);
     }
 
-    ggml_free(model.ctx);
+    ne_free(model.ctx);
 
     return 0;
 }
+
+

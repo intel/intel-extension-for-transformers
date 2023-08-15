@@ -1,6 +1,4 @@
-#include "ggml.h"
 
-#include "utils.h"
 
 #include <cassert>
 #include <cmath>
@@ -11,7 +9,10 @@
 #include <string>
 #include <vector>
 #include <regex>
-
+#include "common.h"
+#include "models/model_utils/model_types.h"
+#include "models/model_utils/model_config.h"
+#include "models/model_utils/model_utils.h"
 // TODO: move somewhere else
 #define QK 32
 
@@ -26,18 +27,132 @@ struct bloom_hparams {
     int32_t f16     = 1;
 };
 
+size_t ggml_quantize_q4_0(float * src, void * dst, int n, int k, int qk, int64_t * hist) {
+    const int nb = k / qk;
+    const size_t bs = (sizeof(float) + sizeof(uint8_t)*qk/2);
+    const size_t row_size = nb*bs;
+
+    assert(k % qk == 0);
+
+    const size_t pp_size = qk / 2;
+    uint8_t *pp = static_cast<uint8_t*>(alloca(pp_size));
+
+    char * pdst = (char *) dst;
+
+    for (int j = 0; j < n; j += k) {
+        uint8_t * pd = (uint8_t *) (pdst + (j/k)*row_size + 0*bs);
+        uint8_t * pb = (uint8_t *) (pdst + (j/k)*row_size + 0*bs + sizeof(float));
+
+        for (int i = 0; i < nb; i++) {
+            float amax = 0.0f; // absolute max
+
+            {
+                for (int l = 0; l < qk; l++) {
+                    const float v = src[j + i*qk + l];
+                    amax = std::max(amax, fabsf(v));
+                }
+
+                const float d = amax / ((1 << 3) - 1);
+                const float id = d ? 1.0f/d : 0.0f;
+
+                *(float *) pd = d;
+                pd += bs;
+
+                for (int l = 0; l < qk; l += 2) {
+                    const float v0 = (src[j + i*qk + l + 0])*id;
+                    const float v1 = (src[j + i*qk + l + 1])*id;
+
+                    const uint8_t vi0 = ((int8_t) (round(v0))) + 8;
+                    const uint8_t vi1 = ((int8_t) (round(v1))) + 8;
+
+                    assert(vi0 >= 0 && vi0 < 16);
+                    assert(vi1 >= 0 && vi1 < 16);
+
+                    hist[vi0]++;
+                    hist[vi1]++;
+
+                    pp[l/2] = vi0 | (vi1 << 4);
+                }
+
+                memcpy(pb, pp, pp_size);
+                pb += bs;
+            }
+        }
+    }
+
+    return (n/k)*row_size;
+}
+
+size_t ggml_quantize_q4_1(float * src, void * dst, int n, int k, int qk, int64_t * hist) {
+    const int nb = k / qk;
+    const size_t row_size = nb*(2*sizeof(float) + sizeof(uint8_t)*qk/2);
+
+    assert(k % qk == 0);
+
+    const size_t pp_size = qk / 2;
+    uint8_t *pp = static_cast<uint8_t*>(alloca(pp_size));
+
+    char * pdst = (char *) dst;
+
+    for (int j = 0; j < n; j += k) {
+        float   * pm = (float *)   (pdst + (j/k)*row_size);
+        float   * pd = (float *)   (pm + nb);
+        uint8_t * pb = (uint8_t *) (pd + nb);
+
+        //printf("n = %d, k = %d, nb = %d, row_size = %d, j = %d, pm = %p, pd = %p, pb = %p\n", n, k, nb, row_size, j, pm, pd, pb);
+
+        for (int i = 0; i < nb; i++) {
+            float min = std::numeric_limits<float>::max();
+            float max = std::numeric_limits<float>::min();
+
+            {
+                for (int l = 0; l < qk; l++) {
+                    const float v = src[j + i*qk + l];
+                    if (v < min) min = v;
+                    if (v > max) max = v;
+                }
+
+                const float d = (max - min) / ((1 << 4) - 1);
+                const float id = d ? 1.0f/d : 0.0f;
+
+                pm[i] = min;
+                pd[i] = d;
+
+                for (int l = 0; l < qk; l += 2) {
+                    const float v0 = (src[j + i*qk + l + 0] - min)*id;
+                    const float v1 = (src[j + i*qk + l + 1] - min)*id;
+
+                    const uint8_t vi0 = round(v0);
+                    const uint8_t vi1 = round(v1);
+
+                    assert(vi0 >= 0 && vi0 < 16);
+                    assert(vi1 >= 0 && vi1 < 16);
+
+                    hist[vi0]++;
+                    hist[vi1]++;
+
+                    pp[l/2] = vi0 | (vi1 << 4);
+                }
+
+                memcpy(pb + i*qk/2, pp, pp_size);
+            }
+        }
+    }
+
+    return (n/k)*row_size;
+}
 
 // quantize a model
 bool bloom_model_quantize(const std::string & fname_inp, const std::string & fname_out, int itype) {
-    ggml_type type = GGML_TYPE_Q4_1;
+    ne_type type = NE_TYPE_Q4_1;
 
     switch (itype) {
-        case 2: type = GGML_TYPE_Q4_0; break;
-        case 3: type = GGML_TYPE_Q4_1; break;
+        case 2: type = NE_TYPE_Q4_0; break;
+        case 3: type = NE_TYPE_Q4_1; break;
         default: fprintf(stderr, "%s: invalid quantization type %d\n", __func__, itype); return 1;
     };
 
-    if (type != GGML_TYPE_Q4_0 && type != GGML_TYPE_Q4_1) {
+    if (type != NE_TYPE_Q4_0 && type != NE_TYPE_Q4_1) {
         fprintf(stderr, "%s: invalid quantization type %d\n", __func__, type);
         return false;
     }
@@ -132,7 +247,7 @@ bool bloom_model_quantize(const std::string & fname_inp, const std::string & fna
         std::vector<float> work;
 
         std::vector<uint8_t>     data_u8;
-        std::vector<ggml_fp16_t> data_f16;
+        std::vector<ne_fp16_t> data_f16;
         std::vector<float>       data_f32;
 
         std::vector<int64_t> hist_all(1 << 4, 0);
@@ -189,10 +304,10 @@ bool bloom_model_quantize(const std::string & fname_inp, const std::string & fna
 
                 if (ftype == 1) {
                     data_f16.resize(nelements);
-                    finp.read(reinterpret_cast<char *>(data_f16.data()), nelements * sizeof(ggml_fp16_t));
+                    finp.read(reinterpret_cast<char *>(data_f16.data()), nelements * sizeof(ne_fp16_t));
                     data_f32.resize(nelements);
                     for (int i = 0; i < nelements; ++i) {
-                        data_f32[i] = ggml_fp16_to_fp32(data_f16[i]);
+                        data_f32[i] = ne_fp16_to_fp32(data_f16[i]);
                     }
                 } else {
                     data_f32.resize(nelements);
@@ -223,13 +338,13 @@ bool bloom_model_quantize(const std::string & fname_inp, const std::string & fna
                 std::vector<int64_t> hist_cur(1 << 4, 0);
 
                 switch (type) {
-                    case GGML_TYPE_Q4_0:
+                    case NE_TYPE_Q4_0:
                         {
-                            cur_size = ggml_quantize_q4_0(data_f32.data(), work.data(), nelements, ne[0], QK, hist_cur.data());
+                            cur_size = ggml_quantize_q4_0(data_f32.data(), work.data(), nelements, (int)ne[0], (int)QK, hist_cur.data());
                         } break;
-                    case GGML_TYPE_Q4_1:
+                    case NE_TYPE_Q4_1:
                         {
-                            cur_size = ggml_quantize_q4_1(data_f32.data(), work.data(), nelements, ne[0], QK, hist_cur.data());
+                            cur_size = ggml_quantize_q4_1(data_f32.data(), work.data(), nelements, (int)ne[0], (int)QK, hist_cur.data());
                         } break;
                     default:
                         {
@@ -295,9 +410,9 @@ int main(int argc, char ** argv) {
 
     // needed to initialize f16 tables
     {
-        struct ggml_init_params params = { 0, NULL };
-        struct ggml_context * ctx = ggml_init(params);
-        ggml_free(ctx);
+        struct ne_init_params params = { 0, NULL };
+        struct ne_context * ctx = ne_init(params);
+        ne_free(ctx);
     }
 
     const std::string fname_inp = argv[1];
@@ -305,25 +420,25 @@ int main(int argc, char ** argv) {
 
     const int itype = atoi(argv[3]);
 
-    const int64_t t_main_start_us = ggml_time_us();
+    const int64_t t_main_start_us = ne_time_us();
 
     int64_t t_quantize_us = 0;
 
     // load the model
     {
-        const int64_t t_start_us = ggml_time_us();
+        const int64_t t_start_us = ne_time_us();
 
         if (!bloom_model_quantize(fname_inp, fname_out, itype)) {
             fprintf(stderr, "%s: failed to quantize model from '%s'\n", __func__, fname_inp.c_str());
             return 1;
         }
 
-        t_quantize_us = ggml_time_us() - t_start_us;
+        t_quantize_us = ne_time_us() - t_start_us;
     }
 
     // report timing
     {
-        const int64_t t_main_end_us = ggml_time_us();
+        const int64_t t_main_end_us = ne_time_us();
 
         printf("\n");
         printf("%s: quantize time = %8.2f ms\n", __func__, t_quantize_us/1000.0f);
