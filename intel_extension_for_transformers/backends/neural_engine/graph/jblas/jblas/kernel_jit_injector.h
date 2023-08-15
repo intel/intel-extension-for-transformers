@@ -20,8 +20,10 @@
 #include <unordered_map>
 #include <map>
 #include <set>
+#include <array>
 
 #include "jit_blas.h"
+#include "jit_blas_utils.h"
 #include "xbyak/xbyak.h"
 using Zmm = Xbyak::Zmm;
 using Ymm = Xbyak::Ymm;
@@ -29,21 +31,9 @@ using Xmm = Xbyak::Xmm;
 namespace jblas {
 namespace kernel {
 namespace jit_injector {
-template <typename T2, typename T1>
-inline const T2 bit_cast(T1 i) {
-  static_assert(sizeof(T1) == sizeof(T2), "Bit-casting must preserve size.");
-  T2 o;
-  memcpy(&o, &i, sizeof(T2));
-  return o;
-}
-
 class eltwise_injector {
  public:
-  eltwise_injector(JBLAS_ELTWISEOP eltwiseop, float alpha = 0.f, float beta = 0.f, float gamma = 0.f)
-      : elt_op(eltwiseop), alpha_(alpha), beta_(beta), gamma_(gamma) {
-    gain_fin_const();
-    reigster_table_entries();
-  }
+  eltwise_injector(JBLAS_ELTWISEOP eltwiseop) : elt_op(eltwiseop) { reigster_table_entries(); }
   virtual ~eltwise_injector() {}
 
   void assign_resources(Xbyak::CodeGenerator* ptr, const std::set<int>& used_zmm_idx, const Xbyak::Reg64& table_reg,
@@ -59,7 +49,8 @@ class eltwise_injector {
     assign_zmm(used_zmm_idx, &zmm_aux3);
     assign_zmm(used_zmm_idx, &zmm_aux4);
   }
-  void vector_compute(const Xbyak::Zmm& zmm_src) {
+  void assign_reg_elt_constp(const Xbyak::Reg64& reg) { reg_rt_const_p = reg; }
+  void vector_compute(const Xbyak::Zmm& zmm_src, int const_p_offset = 0) {
     load_table_addr();
     switch (elt_op) {
       case EXP:
@@ -72,16 +63,16 @@ class eltwise_injector {
         gelu_compute_vector_fwd(zmm_src);
         break;
       case RELU:
-        relu_compute_vector_fwd(zmm_src);
+        relu_compute_vector_fwd(zmm_src, const_p_offset);
         break;
       case LINEAR:
-        linear_compute_vector_fwd(zmm_src);
+        linear_compute_vector_fwd(zmm_src, const_p_offset);
         break;
       case LOW_PRECISION_EXP:
         low_precision_exp_compute_vector_fwd(zmm_src);
         break;
       case SWISH:
-        swish_compute_vector_fwd(zmm_src);
+        swish_compute_vector_fwd(zmm_src, const_p_offset);
         break;
       default:
         assert(false);
@@ -100,15 +91,6 @@ class eltwise_injector {
   }
 
  private:
-  void gain_fin_const() {
-    switch (elt_op) {
-      case SWISH:
-        alpha_ *= -1;
-        break;
-      default:
-        break;
-    }
-  }
   void reigster_table_entries() {
     static const table_t common_values{{zero, {0x00000000, true}},      {half, {0x3f000000, true}},
                                        {one, {0x3f800000, true}},       {two, {0x40000000, true}},
@@ -118,9 +100,9 @@ class eltwise_injector {
 
     static constexpr std::array<float, 3> exp_approx_f32_coeff{0.35815147f, 0.96963238f, 1.f};
     static const table_t low_precision_exp_consts{
-        {low_precision_exp_const_v0, {bit_cast<uint32_t>(exp_approx_f32_coeff[0]), true}},
-        {low_precision_exp_const_v1, {bit_cast<uint32_t>(exp_approx_f32_coeff[1]), true}},
-        {low_precision_exp_const_v2, {bit_cast<uint32_t>(exp_approx_f32_coeff[2]), true}},
+        {low_precision_exp_const_v0, {jblas::utils::bit_cast<uint32_t>(exp_approx_f32_coeff[0]), true}},
+        {low_precision_exp_const_v1, {jblas::utils::bit_cast<uint32_t>(exp_approx_f32_coeff[1]), true}},
+        {low_precision_exp_const_v2, {jblas::utils::bit_cast<uint32_t>(exp_approx_f32_coeff[2]), true}},
     };
 
     static const table_t exp_consts{{exp_log2ef, {0x3fb8aa3b, true}},
@@ -431,17 +413,6 @@ class eltwise_injector {
 
     need_t need(elt_op);
     push_entries_of(common_values);
-    mapped_table_entry_t alpha_entry{0, bit_cast<uint32_t, float>(alpha_), true};
-    mapped_table_entry_t beta_entry{0, bit_cast<uint32_t, float>(beta_), true};
-    mapped_table_entry_t gamma_entry{0, bit_cast<uint32_t, float>(gamma_), true};
-    if (elt_op == LINEAR) {
-      entry_map.insert(std::make_pair(alpha, alpha_entry));
-      entry_map.insert(std::make_pair(beta, beta_entry));
-    }
-    if (elt_op == RELU || elt_op == SWISH) {
-      entry_map.insert(std::make_pair(alpha, alpha_entry));
-    }
-
     if (need.exp()) {
       push_entries_of(exp_consts);
       push_entries_of(exp_polynomial);
@@ -522,9 +493,9 @@ class eltwise_injector {
          table_val(low_precision_exp_const_v0), table_val(low_precision_exp_const_v1),
          table_val(low_precision_exp_const_v2), {zmm_aux1, zmm_aux2});
   }
-  void swish_compute_vector_fwd(const Xbyak::Zmm& zmm_src) {
+  void swish_compute_vector_fwd(const Xbyak::Zmm& zmm_src, int const_p_offset) {
     h->vmovups(zmm_aux0, zmm_src);
-    h->vmulps(zmm_aux0, zmm_aux0, table_val(alpha, 0));
+    h->vmulps(zmm_aux0, zmm_aux0, h->zword_b[reg_rt_const_p + const_p_offset]);
     low_precision_exp_compute_vector_fwd(zmm_aux0);
     h->vaddps(zmm_aux0, zmm_aux0, table_val(one));
     h->vrcp14ps(zmm_aux0, zmm_aux0);
@@ -619,15 +590,15 @@ class eltwise_injector {
     h->vmulps(zmm_src, zmm_src, table_val(half));
     h->vmulps(zmm_src, zmm_src, zmm_aux0);
   }
-  void relu_compute_vector_fwd(const Xbyak::Zmm& zmm_src) {
+  void relu_compute_vector_fwd(const Xbyak::Zmm& zmm_src, int const_p_offset) {
     h->vmovups(zmm_aux1, zmm_src);
     h->vcmpps(k_mask, zmm_src, table_val(zero), _cmp_nle_us);
-    h->vmulps(zmm_src, zmm_src, table_val(alpha, 0));  // alpha=0 by default.
+    h->vmulps(zmm_src, zmm_src, h->zword_b[reg_rt_const_p + const_p_offset]);
     h->vblendmps(zmm_src | k_mask, zmm_src, zmm_aux1);
   }
-  void linear_compute_vector_fwd(const Xbyak::Zmm& zmm_src) {
-    h->vmovups(zmm_aux0, table_val(alpha, 0));
-    h->vfmadd213ps(zmm_src, zmm_aux0, table_val(beta, 0));
+  void linear_compute_vector_fwd(const Xbyak::Zmm& zmm_src, int const_p_offset) {
+    h->vbroadcastss(zmm_aux0, h->dword[reg_rt_const_p + const_p_offset]);
+    h->vfmadd213ps(zmm_src, zmm_aux0, h->zword_b[reg_rt_const_p + const_p_offset + 1 * sizeof(float)]);
   }
   void load_table_addr() { h->mov(p_table, l_table); }
   void assign_zmm(const std::set<int>& used_zmm_idx, Zmm* zmm) {
@@ -642,17 +613,15 @@ class eltwise_injector {
   }
 
  private:
-  Xbyak::CodeGenerator* h = nullptr;
   JBLAS_ELTWISEOP elt_op;
-
-  /*const val*/
-  float alpha_, beta_, gamma_;
+  Xbyak::CodeGenerator* h = nullptr;
 
   /*labels*/
   Xbyak::Label l_table;
 
   /*register for fwd*/
   Xbyak::Reg64 p_table;
+  Xbyak::Reg64 reg_rt_const_p;
   std::set<int> assign_zmm_idx;
   Zmm zmm_mask, zmm_aux0, zmm_aux1, zmm_aux2, zmm_aux3, zmm_aux4;
   Xbyak::Opmask k_mask;
@@ -671,10 +640,7 @@ class eltwise_injector {
   };
 
   enum key_t {
-    gamma = 0,                            // scale argument
-    alpha,                                // alpha argument
-    beta,                                 // beta argument
-    zero,                                 // 0.f
+    zero = 0,                             // 0.f
     half,                                 // 0.5f
     one,                                  // 1.f  or  mask for exponent bits
     two,                                  // 2.f

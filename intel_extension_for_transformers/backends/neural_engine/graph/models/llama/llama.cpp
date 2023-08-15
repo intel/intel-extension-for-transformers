@@ -33,6 +33,9 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
+#include "core/layers/inner_product.h"
+#include "core/layers/mha_dense.h"
+#include "models/model_utils/model_config.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_utils.h"
@@ -109,7 +112,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
     }
     ne_tensor *Qcur, *Kcur, *Vcur;
-    if (model.layers[il].attn[0]->type == NE_TYPE_JBLAS) {  // fused execution of QKV
+    if (jblas_fusion_QKV_f32f32_support(model.layers[il].attn[0]->data, model.layers[il].attn[1]->data,
+                                        model.layers[il].attn[2]->data, N, model.layers[il].attn[0]->ne[1],
+                                        model.layers[il].attn[0]->ne[0])) {  // fused execution of QKV
       struct ne_tensor* QKVcur =
           ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
       Qcur = ne_rope_inplace(
@@ -219,7 +224,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
         cur = ne_mul(ctx0, cur, model.layers[il].norm[1]);
       }
 
-      if (model.layers[il].ffn[0]->type == NE_TYPE_JBLAS) {
+      if (jblas_fusion_FFN_SiLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
+                                               model.layers[il].ffn[2]->data, N, cur->ne[0],
+                                               model.layers[il].ffn[0]->ne[1], model.layers[il].ffn[1]->ne[1])) {
         cur = ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], cur);
       } else {
         struct ne_tensor* tmp = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);

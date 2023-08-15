@@ -127,7 +127,7 @@ class DequanS8F32 {
     }
 
     void generateNTile(int N) {
-      for (size_t i = 0; i < N; i++) {
+      for (int i = 0; i < N; i++) {
         vmovups(Xbyak::Zmm(RegScale + i), ptr[reg_scaleptr + i * 64]);
       }
       inLocalLabel();
@@ -208,7 +208,7 @@ class DequanKBlockS8F32 {
 class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
  public:
   struct params {
-    void *srcptr, *dstptr;
+    void *srcptr, *dstptr, *elt_const_v;
     int row, col;
     int srcstride, dststride;
   };
@@ -216,13 +216,41 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
 
  public:
   static int constexpr VBytes = 64;
-  JitMemcpy2DAvx512f() {
-    std::vector<kernel::jit_injector::eltwise_injector> empty = {};
-    this->codeGen(empty);
+  JitMemcpy2DAvx512f(int unroll_row, std::vector<kernel::jit_injector::eltwise_injector>& injectors) {
+    generate(unroll_row, injectors);
   }
-  JitMemcpy2DAvx512f(std::vector<kernel::jit_injector::eltwise_injector>& injectors) { this->codeGen(injectors); }
 
-  void codeGen(std::vector<kernel::jit_injector::eltwise_injector>& injectors) {
+  template <typename _SRC_T, typename _DST_T, typename... Eltops>
+  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
+                            void* elt_const_v = nullptr, Eltops... ops) {
+    static std::vector<kernel::jit_injector::eltwise_injector> p = {static_cast<JBLAS_ELTWISEOP>(ops)...};
+    if constexpr (sizeof...(ops) != 0)
+      static_assert(std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value);
+    static JitMemcpy2DAvx512f instance_withops(1, p);
+    static JitMemcpy2DAvx512f instance4_withops(4, p);
+    auto param = params{srcptr, dstptr, elt_const_v, row, col, srcstride, dststride};
+    int row4 = utils::padto_le(row, 4);
+    int irow = 0;
+    if (row4) {
+      param.row = row4;
+      instance4_withops.mKernel(&param);
+    }
+    int rowtail = row - row4;
+    if (rowtail) {
+      param.srcptr = (char*)param.srcptr + row4 * srcstride;
+      param.dstptr = (char*)param.dstptr + row4 * dststride;
+      param.row = rowtail;
+      instance_withops.mKernel(&param);
+    }
+    return JblasSuccess;
+  }
+
+ protected:
+  void generate(int unrollk, std::vector<kernel::jit_injector::eltwise_injector>& injectors) {  // unrollK=[1,2,4]
+    if (unrollk != 1 && unrollk != 2 && unrollk != 4) {
+      assert(false);
+      return;
+    }
     inLocalLabel();  // use local label for multiple instance
     {
       int SF_TmpSize = 64;
@@ -238,9 +266,11 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
       const Xbyak::Reg64& reg_iterrow = st.t[6];
       const Xbyak::Reg64& reg_itercol = st.t[7];
       const Xbyak::Reg64& reg_tmp = st.t[8];
+      const Xbyak::Reg64& reg_elt_constv = st.t[8];  // alias of reg_tmp.
       const Xbyak::Reg64& reg_tmpsrc = st.t[9];
       const Xbyak::Reg64& reg_tmpdst = st.t[10];
       const Xbyak::Reg64& reg_tmp1 = st.t[12];
+      const Xbyak::Reg64& reg_tmp2 = st.t[11];
       const Xbyak::Reg64& reg_ret = rax;
 
       vreg_push(rsp);
@@ -254,41 +284,94 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
 
       load32(reg_colsize, ptr[parambase + OFFSET(col)]);
       load32(reg_rowsize, ptr[parambase + OFFSET(row)]);
-
+      if (unrollk == 4) {
+        imul(reg_tmp1, reg_srcstride, 3);
+        imul(reg_tmp2, reg_dststride, 3);
+      }
       int const ColUnroll = 4;
+
+      for (int i = 0; i < unrollk * ColUnroll; i++) used_zmm_idx.insert(i);
+      for (auto&& injector : injectors) {
+        injector.assign_resources(this, used_zmm_idx, reg_ret, k2);
+        injector.assign_reg_elt_constp(reg_elt_constv);
+      }
+
       xor_(reg_iterrow, reg_iterrow);
       L(".rowloop");
       xor_(reg_itercol, reg_itercol);
       mov(reg_tmpsrc, reg_srcptr);
       mov(reg_tmpdst, reg_dstptr);
+
       L(".colloop");
       mov(reg_tmp, reg_colsize);
       sub(reg_tmp, reg_itercol);
       cmp(reg_tmp, ColUnroll * VBytes);
       jl(".maskproc", T_NEAR);
-
-      for (int i = 0; i < ColUnroll; i++) used_zmm_idx.insert(i);
-      for (auto&& injector : injectors) injector.assign_resources(this, used_zmm_idx, reg_ret, k2);
-
-      for (int i = 0; i < ColUnroll; i++) {
-        vmovups(Xbyak::Zmm(i), ptr[reg_srcptr + reg_itercol + i * VBytes]);
-        for (auto&& injector : injectors) injector.vector_compute(Xbyak::Zmm(i));
-        vmovups(ptr[reg_dstptr + reg_itercol + i * VBytes], Xbyak::Zmm(i));
+      push(reg_tmp);
+      mov(reg_elt_constv, ptr[parambase + OFFSET(elt_const_v)]);
+      if (unrollk > 1) {
+        for (int j = 0; j < unrollk; j++) {
+          for (int i = 0; i < ColUnroll; i++) {
+            if (j == 3) {
+              vmovups(Xbyak::Zmm(i + j * ColUnroll), ptr[reg_tmpsrc + reg_tmp1 + i * VBytes]);
+              for (int k = 0; k < injectors.size(); k++)
+                injectors[k].vector_compute(Xbyak::Zmm(i + j * ColUnroll), k * 3 * sizeof(float));
+              vmovups(ptr[reg_tmpdst + reg_tmp2 + i * VBytes], Xbyak::Zmm(i + j * ColUnroll));
+            } else {
+              vmovups(Xbyak::Zmm(i + j * ColUnroll), ptr[reg_tmpsrc + reg_srcstride * j + i * VBytes]);
+              for (int k = 0; k < injectors.size(); k++)
+                injectors[k].vector_compute(Xbyak::Zmm(i + j * ColUnroll), k * 3 * sizeof(float));
+              vmovups(ptr[reg_tmpdst + reg_dststride * j + i * VBytes], Xbyak::Zmm(i + j * ColUnroll));
+            }
+          }
+        }
+      } else {
+        for (int i = 0; i < ColUnroll; i++) {
+          vmovups(Xbyak::Zmm(i), ptr[reg_tmpsrc + i * VBytes]);
+          for (int k = 0; k < injectors.size(); k++) injectors[k].vector_compute(Xbyak::Zmm(i), k * 3 * sizeof(float));
+          vmovups(ptr[reg_tmpdst + i * VBytes], Xbyak::Zmm(i));
+        }
       }
+      pop(reg_tmp);
+      add(reg_tmpsrc, ColUnroll * VBytes);
+      add(reg_tmpdst, ColUnroll * VBytes);
       add(reg_itercol, ColUnroll * VBytes);
       jmp(".colend", T_NEAR);
       L(".maskproc");
+      push(reg_tmp1);
       generate_Nbitsmask(k1, reg_itercol, reg_colsize, reg_tmp, reg_tmp1, VBytes);
-      vmovdqu8(Xbyak::Zmm(0) | k1, ptr[reg_srcptr + reg_itercol]);
-      for (auto&& injector : injectors) injector.vector_compute(Xbyak::Zmm(0));
-      vmovdqu8(ptr[reg_dstptr + reg_itercol], Xbyak::Zmm(0) | k1);
+      pop(reg_tmp1);
+      push(reg_tmp);
+      mov(reg_elt_constv, ptr[parambase + OFFSET(elt_const_v)]);
+      if (unrollk > 1) {
+        for (int j = 0; j < unrollk; j++) {
+          if (j == 3) {
+            vmovdqu8(Xbyak::Zmm(0) | k1, ptr[reg_tmpsrc + reg_tmp1]);
+            for (int k = 0; k < injectors.size(); k++)
+              injectors[k].vector_compute(Xbyak::Zmm(0), k * 3 * sizeof(float));
+            vmovdqu8(ptr[reg_tmpdst + reg_tmp2], Xbyak::Zmm(0) | k1);
+          } else {
+            vmovdqu8(Xbyak::Zmm(0) | k1, ptr[reg_tmpsrc + reg_srcstride * j]);
+            for (int k = 0; k < injectors.size(); k++)
+              injectors[k].vector_compute(Xbyak::Zmm(0), k * 3 * sizeof(float));
+            vmovdqu8(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Zmm(0) | k1);
+          }
+        }
+      } else {
+        vmovdqu8(Xbyak::Zmm(0) | k1, ptr[reg_tmpsrc]);
+        for (int k = 0; k < injectors.size(); k++) injectors[k].vector_compute(Xbyak::Zmm(0), k * 3 * sizeof(float));
+        vmovdqu8(ptr[reg_tmpdst], Xbyak::Zmm(0) | k1);
+      }
+      pop(reg_tmp);
+      add(reg_tmpsrc, VBytes);
+      add(reg_tmpdst, VBytes);
       add(reg_itercol, VBytes);
       L(".colend");
       cmp(reg_itercol, reg_colsize);
       jb(".colloop");
-      add(reg_iterrow, 1);
-      lea(reg_srcptr, ptr[reg_srcptr + reg_srcstride]);
-      lea(reg_dstptr, ptr[reg_dstptr + reg_dststride]);
+      add(reg_iterrow, unrollk);
+      lea(reg_srcptr, ptr[reg_srcptr + reg_srcstride * unrollk]);
+      lea(reg_dstptr, ptr[reg_dstptr + reg_dststride * unrollk]);
       cmp(reg_iterrow, reg_rowsize);
       jb(".rowloop");
 
@@ -301,24 +384,36 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
     mKernel = this->getCode<func_t>();
   }
 
-  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
-    static JitMemcpy2DAvx512f instance;
-    auto param = params{srcptr, dstptr, row, col, srcstride, dststride};
-    instance.mKernel(&param);
-    return JblasSuccess;
-  }
-
-  static JBLAS_CODE forward_with_gelu(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
-    static std::vector<kernel::jit_injector::eltwise_injector> p = {{GELU}};
-    static JitMemcpy2DAvx512f gelu_instance(p);
-    auto param = params{srcptr, dstptr, row, col, srcstride, dststride};
-    gelu_instance.mKernel(&param);
-    return JblasSuccess;
-  }
-
- private:
   func_t mKernel = nullptr;
   std::set<int> used_zmm_idx;
+};
+
+class CustomMemCpy : public JitMemcpy2DAvx512f {
+ public:
+  CustomMemCpy(int unroll_row, std::vector<kernel::jit_injector::eltwise_injector>& injectors)
+      : JitMemcpy2DAvx512f(unroll_row, injectors) {}
+  template <JBLAS_ELTWISEOP _OP>
+  static JBLAS_CODE forward(const float* srcptr, float* dstptr, int row, int col, int srcstride, int dststride,
+                            void* elt_const_v) {
+    static std::vector<kernel::jit_injector::eltwise_injector> p = {_OP};
+    static CustomMemCpy instance_withops(1, p);
+    static CustomMemCpy instance4_withops(4, p);
+    auto param = params{const_cast<float*>(srcptr), dstptr, elt_const_v, row, col, srcstride, dststride};
+    int row4 = utils::padto_le(row, 4);
+    int irow = 0;
+    if (row4) {
+      param.row = row4;
+      instance4_withops.mKernel(&param);
+    }
+    int rowtail = row - row4;
+    if (rowtail) {
+      param.srcptr = (char*)param.srcptr + row4 * srcstride;
+      param.dstptr = (char*)param.dstptr + row4 * dststride;
+      param.row = rowtail;
+      instance_withops.mKernel(&param);
+    }
+    return JblasSuccess;
+  }
 };
 
 static inline Xbyak::Zmm unpack_4bit(Xbyak::CodeGenerator* jit, Xbyak::Ymm v4bits, Xbyak::Zmm zmm, Xbyak::Zmm zmm1,

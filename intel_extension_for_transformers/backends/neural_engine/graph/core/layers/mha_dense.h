@@ -53,9 +53,10 @@ typedef struct attn_fp32_fp16_fp16_fp32_fwd_args_t {
 
 void jblas_attn_bf16_forward(const attn_bf16_fwd_args_t* params);
 
-void jblas_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params);
+bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params);
+void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params);
 
-size_t jblas_attn_bf16_workspace_size(const attn_shape_t* params);
+size_t jblas_fusion_attn_bf16_workspace_size(const attn_shape_t* params);
 
 #ifdef __cplusplus
 }

@@ -32,7 +32,13 @@
 #define MHA_2ND_EXP 1
 #ifdef __GNUC__
 #pragma GCC push_options
-#pragma GCC target("avx512f", "avx512bw", "avx512vl", "avx512bf16")
+#pragma GCC target("avx512f", "avx512bw", "avx512vl")
+#if CompileBF16()
+#pragma GCC target("avx512bf16")
+#endif
+#if CompileFP16()
+#pragma GCC target("avx512fp16")
+#endif
 #endif
 
 namespace {
@@ -59,7 +65,7 @@ using jblas_attn_fp32_fp16_fp16_fp32_fwd_args_t = attn_fwd_args_t<float, fp16, f
  * @brief An Epilogue that scale the fp32 result, performing exp, accumulating sum of each line of exp, and storing exp
  * as bf16 results
  */
-template <typename T_DST>
+template <JBLAS_ISA ISA_T, typename T_DST>
 class ScaleExpAccSumFp32 {
  public:
   struct Param {
@@ -93,12 +99,11 @@ class ScaleExpAccSumFp32 {
     return snd_order_poly_exp(z, f, _c);
   }
 
-  template <JBLAS_ISA ISA_T>
   JBLAS_CODE forward(const float* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_sum = p.dst_sum + M_offset;
-#if MHA_2ND_EXP
+#if MHA_2ND_EXP && CompileBF16()
     const auto v_scale = _mm512_set1_ps(p.scale);
     for (int i = 0; i < M; ++i) {
       const auto N_unmasked =
@@ -142,11 +147,13 @@ class ScaleExpAccSumFp32 {
     return JblasSuccess;
   }
 };
+template <JBLAS_ISA ISA_T>
+using ScaleExpAccSumFp32Bf16 = ScaleExpAccSumFp32<ISA_T, bf16>;
 
 /**
  * @brief An Epilogue that scale the fp32 result, convert to bf16 and write back to memory
  */
-template <typename T_DST>
+template <JBLAS_ISA ISA_T, typename T_DST>
 class ScaleWriteBackFp32 {
  public:
   struct Param {
@@ -155,7 +162,6 @@ class ScaleWriteBackFp32 {
     int ld_dst;
   };
 
-  template <JBLAS_ISA ISA_T>
   JBLAS_CODE forward(const float* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) {
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
@@ -168,6 +174,10 @@ class ScaleWriteBackFp32 {
     return JblasSuccess;
   }
 };
+template <JBLAS_ISA ISA_T>
+using ScaleWriteBackFp32Bf16 = ScaleWriteBackFp32<ISA_T, bf16>;
+template <JBLAS_ISA ISA_T>
+using ScaleWriteBackFp32Fp32 = ScaleWriteBackFp32<ISA_T, float>;
 
 /**
  * @brief PackedWeight(Default) with batch
@@ -175,26 +185,30 @@ class ScaleWriteBackFp32 {
  * @tparam T element type of the weight
  */
 template <typename T>
-class PackedWeightBatch : public jblas::prologue::gemm::PackedWeightDefault<T> {
+class PackedWeightBatch : public jblas::prologue::gemm::StorageWeight {
  public:
   explicit PackedWeightBatch(jblas::gemm::GemmCoreType _type)
-      : jblas::prologue::gemm::PackedWeightDefault<T>(_type), mBatch(0) {}
+      : jblas::prologue::gemm::StorageWeight(_type), mBatch(0) {}
 
   void resize(int NPad, int KPad) = delete;
   void resize(int NPad, int KPad, int num_batch) {
-    // See：https://stackoverflow.com/questions/11405
-    this->mNPad = NPad;
-    this->mKPad = KPad;
-    this->mBatch = num_batch;
-    this->mWeights.resize((size_t)mBatch * NPad * KPad);
-    this->mWPtr = this->mWeights.data();
-    this->mWSize = this->mWeights.size();
+    mNPad = NPad;
+    mKPad = KPad;
+    mBatch = num_batch;
+
+    mBuffer.resize((size_t)mBatch * NPad * KPad * jblas::gemm::getWeightSize(mCoreType));
+    mRawPtr = mBuffer.data();
+    mWPtr = getPtr<T>();
+    mWSize = getSize<T>();
   }
+
   int mBatch;
+  T* mWPtr;
+  size_t mWSize;
 
  protected:
   virtual size_t getDataSerializedSize() override {
-    return jblas::prologue::gemm::PackedWeightDefault<T>::getSerializedSize() + sizeof(mBatch);
+    return jblas::prologue::gemm::StorageWeight::getSerializedSize() + sizeof(mBatch);
   }
 };
 
@@ -245,18 +259,14 @@ class WeightPackBatchBf16Base {
   JBLAS_CODE packWeight(...) = delete;
 
   // from KxN int8 symmetric weight to packed N//NtilexKPadxNTile int4 weight
-  jblas::prologue::PackedWeight* packWeight(const int N, const int K, const WType* src, const int ld,
-                                            jblas::prologue::gemm::PackType type) {
+  jblas::prologue::PackedWeight* packWeight(const int N, const int K, const WType* src, const int ld) {
     static_assert(std::is_same<WType, ne_bf16_t>::value, "Only support BF16 weight pack.");
     const auto KPad = padto(K, GemmCore_T::KTILE);
     const auto NPad = padto(N, GemmCore_T::NTILE);
-    if (type == jblas::prologue::gemm::PackType::Default) {
-      const auto pw = new PackedWeightBatch<WType>(GemmCore_T::TYPE);
-      pw->resize(NPad, KPad);
-      assert(false);  // TODO(Yi): call reorderT
-      return pw;
-    }
-    return nullptr;
+    const auto pw = new PackedWeightBatch<WType>(GemmCore_T::TYPE);
+    pw->resize(NPad, KPad);
+    assert(false);  // TODO(Yi): call reorderT
+    return pw;
   }
 
   /**
@@ -312,15 +322,15 @@ class WeightPackBatchBf16Trans : public WeightPackBatchBf16Base<GemmCore_T, ISA_
     assert(padto(pp.N, GemmCore_T::NTILE) == NPad);
 
     using KernInterleave = typename jblas::kernel::wrapper::PaddingTransInterleaveMN<  //
-        GemmCore_T::NTILE, sizeof(WType), GemmCore_T::PACK_ROW>;
+        GemmCore_T::NTILE, GemmCore_T::PACK_ROW>;
 
     for (int ibat = y; ibat < y + ny; ++ibat) {
-      const auto forward_stat = KernInterleave::template forward_cvt<ISA_T, T_SRC, WType>(  //
-          pp.src + pp.step_batch(ibat) + x * pp.ld,                                         //
-          pw->mWPtr + ibat * KPad * NPad + x * KPad,                                        //
-          nx, pp.K,                                                                         // size
-          nx_pad, KPad,                                                                     // padded size
-          pp.ld, KPad);                                                                     // step
+      const auto forward_stat = KernInterleave::template forward<ISA_T, T_SRC, WType>(  //
+          pp.src + pp.step_batch(ibat) + x * pp.ld,                                     //
+          pw->mWPtr + ibat * KPad * NPad + x * KPad,                                    //
+          nx, pp.K,                                                                     // size
+          nx_pad, KPad,                                                                 // padded size
+          pp.ld, KPad);                                                                 // step
       assert(forward_stat == JblasSuccess);
     }
   };
@@ -357,15 +367,15 @@ class WeightPackBatchBf16NonTr : public WeightPackBatchBf16Base<GemmCore_T, ISA_
     assert(padto(pp.N, GemmCore_T::NTILE) == NPad);
 
     using KernInterleave = typename jblas::kernel::wrapper::PaddingInterleaveMN<  //
-        GemmCore_T::NTILE, sizeof(WType), GemmCore_T::PACK_ROW>;
+        GemmCore_T::NTILE, GemmCore_T::PACK_ROW>;
 
     for (int ibat = y; ibat < y + ny; ++ibat) {
-      const auto forward_stat = KernInterleave::template forward_cvt<ISA_T, T_SRC, WType>(  //
-          pp.src + pp.step_batch(ibat) + x * pp.ld,                                         //
-          pw->mWPtr + ibat * KPad * NPad + x * GemmCore_T::NTILE,                           //
-          nx, pp.N,                                                                         // size
-          nx_pad, NPad,                                                                     // padded size
-          pp.ld, KPad);                                                                     // stride
+      const auto forward_stat = KernInterleave::template forward<ISA_T, T_SRC, WType>(  //
+          pp.src + pp.step_batch(ibat) + x * pp.ld,                                     //
+          pw->mWPtr + ibat * KPad * NPad + x * GemmCore_T::NTILE,                       //
+          nx, pp.N,                                                                     // size
+          nx_pad, NPad,                                                                 // padded size
+          pp.ld, KPad);                                                                 // stride
       assert(forward_stat == JblasSuccess);
     }
   };
@@ -374,8 +384,8 @@ class WeightPackBatchBf16NonTr : public WeightPackBatchBf16Base<GemmCore_T, ISA_
 /**
  * @brief GemmLauncherPackWeight with addition input as packed weight offset
  */
-template <JBLAS_ISA RT_ISA_, class _GemmCore_T, template <class _T> class _PrologueA_T,
-          template <class, JBLAS_ISA> class _PrologueB_T, class _Epilogue_T>
+template <JBLAS_ISA RT_ISA_, class _GemmCore_T, template <class, JBLAS_ISA> class _PrologueA_T,
+          template <class, JBLAS_ISA> class _PrologueB_T, template <JBLAS_ISA> class _Epilogue_T>
 class GemmLauncherPackWeightOff                                         //
     : public jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
           RT_ISA_, _GemmCore_T, _PrologueA_T, _PrologueB_T, _Epilogue_T> {
@@ -429,7 +439,7 @@ class GemmLauncherPackWeightOff                                         //
       int k_paddedle = padto_le(k_remain, GemmCore::KTILE);
       BType* bptr_cache = nullptr;
       int bcache_step = 0;
-      this->mProB.getWeight(&bptr_cache, &bcache_step,      //
+      this->mProB.getWeight(&bptr_cache, &bcache_step,      // See：https://stackoverflow.com/questions/11405
                             k_padded, n_padded,             //
                             iterk, _config.colidx + blk_n,  //
                             _param.paramB.packedW);
@@ -443,24 +453,24 @@ class GemmLauncherPackWeightOff                                         //
         int acache_step = 0;
         if (k_paddedle) {
           AType* aptr_cache = tmpA;
-          this->mProA.template getActivation<RT_ISA>(&aptr_cache, &acache_step, _param.paramA, m_remain, k_paddedle,
-                                                     (blk_m + i + _config.rowidx), iterk);
+          this->mProA.getActivation(&aptr_cache, &acache_step, _param.paramA, m_remain, k_paddedle,
+                                    (blk_m + i + _config.rowidx), iterk);
           this->mGemmCore.forward(aptr_cache, bptr_cache, cptr_cache, m_remain, n_padded, k_paddedle,
                                   acache_step * sizeof(AType), bcache_stride, ccache_stride, iterk);
         }
         int k_tail = k_remain - k_paddedle;
         if (k_tail) {
           AType* aptr_cache = tmpA;
-          this->mProA.template getActivation<RT_ISA>(&aptr_cache, &acache_step, _param.paramA, m_remain, k_tail,
-                                                     blk_m + i + _config.rowidx, iterk + k_paddedle);
+          this->mProA.getActivation(&aptr_cache, &acache_step, _param.paramA, m_remain, k_tail,
+                                    blk_m + i + _config.rowidx, iterk + k_paddedle);
           this->mGemmCore.forward(aptr_cache, bptr_cache + k_paddedle * GemmCore::NTILE, cptr_cache, m_remain, n_padded,
                                   GemmCore::KTILE, acache_step * sizeof(AType), bcache_stride, ccache_stride,
                                   iterk + k_paddedle);
         }
       }
     }
-    this->mEpilogue.template forward<RT_ISA>(tmpC, _config.NStep, _config.rowidx + blk_m, _config.colidx + blk_n,
-                                             blk_msize, blk_nsize, _param.paramC);
+    this->mEpilogue.forward(tmpC, _config.NStep, _config.rowidx + blk_m, _config.colidx + blk_n, blk_msize, blk_nsize,
+                            _param.paramC);
   }
 };
 
@@ -497,10 +507,10 @@ class MHAInterface {
   using Parallel2DRowMajor = parallel::Parallel2DRowMajor;
 
   static_assert(GemmQK::MTILE == GemmPV::MTILE, "2 GEMM should have the same M_TILE.");
-  static constexpr auto M_TILE = GemmQK::MTILE;
 
   template <typename Q_T, typename K_T, typename V_T, typename DST_T>
   JBLAS_CODE compute(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
+    static constexpr auto M_TILE = GemmQK::MTILE;
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     const auto cb = CpuBase();
     omp_set_num_threads(cb.mNumThreads);
@@ -668,13 +678,13 @@ void jblas_attn_forward<bf16, bf16, bf16, bf16>(const attn_fwd_args_t<bf16, bf16
       jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,           //
       jblas::prologue::gemm::ActivationBase,                 //
       WeightPackBatchBf16Bf16Trans,                          //
-      ::ScaleExpAccSumFp32<bf16>>;                           //
+      ::ScaleExpAccSumFp32Bf16>;                             //
   using GemmKernelBF16 = ::GemmLauncherPackWeightOff<        //
       JblasAMX_BF16,                                         //
       jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,           //
       jblas::prologue::gemm::ActivationBase,                 //
       WeightPackBatchBf16Bf16NonTr,                          //
-      ::ScaleWriteBackFp32<bf16>>;
+      ::ScaleWriteBackFp32Bf16>;
   static MHAInterface<GemmKernelBF16ExpSum, GemmKernelBF16> kernel;
   kernel.compute(*params);
 }
@@ -692,13 +702,13 @@ void jblas_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, f
         jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
         jblas::prologue::gemm::ActivationConverterFp32,                //
         WeightPackBatchFp16Bf16Trans,                                  //
-        ::ScaleExpAccSumFp32<bf16>>;                                   //
+        ::ScaleExpAccSumFp32Bf16>;                                     //
     using GemmKernelBF16FP16FP32 = ::GemmLauncherPackWeightOff<        //
         JblasAMX_BF16,                                                 //
         jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
         jblas::prologue::gemm::ActivationBase,                         //
         WeightPackBatchFp16Bf16NonTr,                                  //
-        ::ScaleWriteBackFp32<float>>;
+        ::ScaleWriteBackFp32Fp32>;
     static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
     kernel.compute(*params);
   } else {
@@ -713,7 +723,7 @@ void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params)
   attn_shape_t attn_shape{
       p.batch_size, p.head_num, p.head_size, p.sl_q, p.sl_kv,
   };
-  const auto workspace_size = jblas_attn_bf16_workspace_size(&attn_shape);
+  const auto workspace_size = jblas_fusion_attn_bf16_workspace_size(&attn_shape);
   std::fill_n(params->tmp, workspace_size, 'f');
 
 #pragma omp parallel for collapse(3)
@@ -767,13 +777,18 @@ void jblas_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params)
 void jblas_attn_bf16_forward(const attn_bf16_fwd_args_t* params) {
   return jblas_attn_forward(reinterpret_cast<const attn_fwd_args_t<bf16, bf16, bf16, bf16>*>(params));
 }
+bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params) {
+  GetCPUDevice();
+  // TODO check K V's layout
+  return _cd->AMX_BF16();
+}
 
-void jblas_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params) {
+void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params) {
   return jblas_attn_forward(reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
   // return jblas_attn_forward_ref(reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
 }
 
-size_t jblas_attn_bf16_workspace_size(const attn_shape_t* params) {
+size_t jblas_fusion_attn_bf16_workspace_size(const attn_shape_t* params) {
   const auto& p = *params;  // TODO(Yi): Better way to get tmp size?
   return size_t(omp_get_max_threads() * sizeof(float) * 16) * padto(p.sl_kv, 64);
 }
@@ -815,7 +830,7 @@ class TestMhaDese {
     std::vector<fp16> src_v(batch_size * head_num * sl_kv * head_size);
     std::vector<float> dst(batch_size * head_num * sl_q * head_size);
     std::vector<float> ref(batch_size * head_num * sl_q * head_size);  // reference result
-    std::vector<char> tmp(jblas_attn_bf16_workspace_size(&s));
+    std::vector<char> tmp(jblas_fusion_attn_bf16_workspace_size(&s));
 
     // init vector
     static std::mt19937 rng(1);
