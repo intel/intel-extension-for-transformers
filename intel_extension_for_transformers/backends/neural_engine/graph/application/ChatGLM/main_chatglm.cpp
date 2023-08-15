@@ -133,24 +133,24 @@ int main(int argc, char** argv) {
 
   // determine the maximum memory usage needed to do inference for the given n_batch and n_predict parameters
   // uncomment the "used_mem" line in gptj.cpp to see the results
-  if (params.mem_test) {
-    {
-      const std::vector<model_token> tmp(params.n_batch, model_token_bos());
-      model_eval(ctx, tmp.data(), tmp.size(), 0, params.n_threads);
-    }
+  // if (params.mem_test) {
+  //   {
+  //     const std::vector<model_token> tmp(params.n_batch, model_token_bos());
+  //     model_eval(ctx, tmp.data(), tmp.size(), 0, params.n_threads);
+  //   }
 
-    {
-      const std::vector<model_token> tmp = {
-          0,
-      };
-      model_eval(ctx, tmp.data(), tmp.size(), params.n_predict - 1, params.n_threads);
-    }
+  //   {
+  //     const std::vector<model_token> tmp = {
+  //         0,
+  //     };
+  //     model_eval(ctx, tmp.data(), tmp.size(), params.n_predict - 1, params.n_threads);
+  //   }
 
-    model_print_timings(ctx);
-    model_free(ctx);
+  //   model_print_timings(ctx);
+  //   model_free(ctx);
 
-    return 0;
-  }
+  //   return 0;
+  // }
 
   // Add a space in front of the first character to match OG gptj tokenizer behavior
   // params.prompt.insert(0, 1, ' ');
@@ -357,7 +357,7 @@ int main(int argc, char** argv) {
   int vocab_size = 65024;
   // embd_inp
 
-  while ((int)output_ids.size() < 30) {
+  while ((int)output_ids.size() < 5) {
     // int next_token_id = generate_next_token(curr_input_ids, gen_config, n_past, n_ctx);
     model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
     n_past += curr_input_ids.size();
@@ -365,6 +365,12 @@ int main(int argc, char** argv) {
     float* logits = model_get_logits(ctx);
     int next_token_id = std::max_element(logits, logits + vocab_size) - logits;
     curr_input_ids = {next_token_id};
+
+    printf("logits\n");
+    for (int i = 0; i < 20; i++) {
+      printf("%f, ", logits[i]);
+    }
+    printf("\n");
 
     output_ids.emplace_back(next_token_id);
     // break;
