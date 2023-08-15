@@ -121,11 +121,11 @@ class BaseModel(ABC):
             config = GenerationConfig()
 
         if self.asr and self.audio_input_path:
-            query = self.asr.audio2text(config.audio_input_path)
+            query = self.asr.audio2text(self.audio_input_path)
         assert query is not None, "Query cannot be None."
         response = predict(**construct_parameters(query, self.model_name, config))
         if self.tts and self.audio_output_path:
-            self.tts.text2audio(response, config.audio_output_path)
+            self.tts.text2speech(response, self.audio_output_path)
             response = config.audio_output_path
         return response
 
@@ -153,11 +153,11 @@ class BaseModel(ABC):
             config = GenerationConfig()
 
         if self.asr and self.audio_input_path:
-            query = self.asr.audio2text(config.audio_input_path)
+            query = self.asr.audio2text(self.audio_input_path)
         assert query is not None, "Query cannot be None."
         response = predict(**construct_parameters(query, self.model_name, config))
         if self.tts and self.audio_output_path:
-            self.tts.text2audio(response, config.audio_output_path)
+            self.tts.text2speech(response, self.audio_output_path)
             response = config.audio_output_path
         return response
 

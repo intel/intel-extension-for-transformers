@@ -117,6 +117,7 @@ class TextToSpeech:
             speaker_embeddings = torch.load(self._lookup_voice_embedding(voice))
 
         with torch.no_grad():
+            import intel_extension_for_pytorch as ipex
             with ipex.cpu.runtime.pin(self.cpu_pool) if self.cpu_pool else contextlib.nullcontext():
                 spectrogram = model.generate_speech(inputs["input_ids"], speaker_embeddings)
             speech = self.vocoder(spectrogram)

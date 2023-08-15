@@ -86,13 +86,13 @@ def build_chatbot(config: PipelineConfig):
         if config.audio_output and not config.audio_output_path:
             raise ValueError(f"The audio output path must be set when audio output enabled.")
         if config.audio_input:
-            if config.audio_lang == AudioOptions.CHINESE.lower():
+            if config.audio_lang == AudioLanguageOptions.CHINESE.name.lower():
                 asr = ChineseAudioSpeechRecognition()
             else:
                 asr = AudioSpeechRecognition()
             adapter.register_asr(asr, config.audio_input_path)
         if config.audio_output:
-            if config.audio_lang == AudioOptions.CHINESE.lower():
+            if config.audio_lang == AudioLanguageOptions.CHINESE.name.lower():
                 tts = ChineseTextToSpeech()
             else:
                 tts = TextToSpeech()
