@@ -18,8 +18,6 @@
 from typing import ByteString
 from fastapi import APIRouter
 from neural_chat.cli.log import logger
-from neural_chat.config import NeuralChatConfig
-from neural_chat.chatbot import build_chatbot
 
 
 class VoiceChatAPIRouter(APIRouter):
@@ -52,9 +50,6 @@ class VoiceChatAPIRouter(APIRouter):
     
 
 router = VoiceChatAPIRouter()
-config = NeuralChatConfig()
-bot = build_chatbot(config)
-router.set_chatbot(bot)
 
 # voice to text
 @router.post("/v1/voice/asr")

@@ -26,8 +26,6 @@ from neural_chat.server.restful.openai_protocol import (
     ChatCompletionRequest, ChatCompletionResponseChoice, ChatCompletionResponse, 
     UsageInfo, ModelCard, ModelList, ModelPermission, ChatMessage
 )
-from neural_chat.config import NeuralChatConfig
-from neural_chat.chatbot import build_chatbot
 
 
 # TODO: process request and return params in Dict
@@ -178,9 +176,6 @@ class TextChatAPIRouter(APIRouter):
     
 
 router = TextChatAPIRouter()
-config = NeuralChatConfig()
-bot = build_chatbot(config)
-router.set_chatbot(bot)
 
 
 @router.post("/v1/models")

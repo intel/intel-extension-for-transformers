@@ -35,18 +35,3 @@ class RetrievalRequest(RequestBaseModel):
     params: Optional[Dict] = None
     debug: Optional[bool] = False
 
-
-class Text2ImageRequest(RequestBaseModel):
-    prompt: str
-    steps: Optional[int] = 25
-    seed: Optional[int] = 42
-    guidance_scale: Optional[int] = 7.5
-    sd_inference_token: Optional[str] = None
-
-
-class TextRequest(RequestBaseModel):
-    text: str
-
-
-class FinetuneRequest(RequestBaseModel):
-    content: str
