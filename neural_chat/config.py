@@ -332,7 +332,7 @@ class OptimizationConfig:
 
 class NeuralChatConfig:
     def __init__(self,
-                 model_name_or_path="meta-llama/Llama-2-70b-hf",
+                 model_name_or_path="meta-llama/Llama-2-7b-hf",
                  tokenizer_name_or_path=None,
                  device="auto",
                  backend="auto",

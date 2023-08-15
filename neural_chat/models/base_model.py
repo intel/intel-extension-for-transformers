@@ -20,52 +20,139 @@ from abc import ABC, abstractmethod
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
-
+from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
 class BaseModel(ABC):
+    """
+    A base class for LLM.
+    """
+
     def __init__(self):
+        """
+        Initializes the BaseModel class.
+        """
         pass
 
     def match(self, model_path: str):
+        """
+        Check if the provided model_path matches the current model.
+
+        Args:
+            model_path (str): Path to a model.
+
+        Returns:
+            bool: True if the model_path matches, False otherwise.
+        """
         return True
 
-    @abstractmethod
     def load_model(self, kwargs: dict):
-        pass
+        """
+        Load the model using the provided arguments.
 
-    @abstractmethod
-    def predict_stream(self, params):
-        """
-        Abstract method for performing streaming prediction.
-        This method must be implemented in the derived classes.
         Args:
-            params: Parameters needed for prediction.
-        Returns:
-            predictions: Predicted results from the streaming process.
-        """
-        pass
+            kwargs (dict): A dictionary containing the configuration parameters for model loading.
 
-    @abstractmethod
-    def predict(self, params):
+        Example 'kwargs' dictionary:
+        {
+            "model_name": "my_model",
+            "tokenizer_name": "my_tokenizer",
+            "device": "cuda",
+            "use_hpu_graphs": True,
+            "cpu_jit": False,
+            "use_cache": True,
+            "peft_path": "/path/to/peft",
+            "use_deepspeed": False
+        }
         """
-        Abstract method for performing batch prediction.
-        This method must be implemented in the derived classes.
+        print("Loading model {}".format(kwargs["model_name"]))
+        load_model(model_name=kwargs["model_name"],
+                   tokenizer_name=kwargs["tokenizer_name"],
+                   device=kwargs["device"],
+                   use_hpu_graphs=kwargs["use_hpu_graphs"],
+                   cpu_jit=kwargs["cpu_jit"],
+                   use_cache=kwargs["use_cache"],
+                   peft_path=kwargs["peft_path"],
+                   use_deepspeed=kwargs["use_deepspeed"])
+
+    def predict_stream(self, query, config):
+        """
+        Predict using a streaming approach.
+
         Args:
-            params: Parameters needed for prediction.
-        Returns:
-            predictions: Predicted results.
+            query: The input query for prediction.
+            config: Configuration for prediction.
         """
-        pass
+        params = {}
+        params["prompt"] = query
+        params["temperature"] = config.temperature
+        params["top_k"] = config.top_k
+        params["top_p"] = config.top_p
+        params["repetition_penalty"] = config.repetition_penalty
+        params["max_new_tokens"] = config.max_new_tokens
+        params["do_sample"] = config.do_sample
+        params["num_beams"] = config.num_beams
+        params["model_name"] = config.model_name
+        params["num_return_sequences"] = config.num_return_sequences
+        params["bad_words_ids"] = config.bad_words_ids
+        params["force_words_ids"] = config.force_words_ids
+        params["use_hpu_graphs"] = config.use_hpu_graphs
+        params["use_cache"] = config.use_cache
+        return predict_stream(params)
+
+    def predict(self, query, config):
+        params = {}
+        params["prompt"] = query
+        params["temperature"] = config.temperature
+        params["top_k"] = config.top_k
+        params["top_p"] = config.top_p
+        params["repetition_penalty"] = config.repetition_penalty
+        params["max_new_tokens"] = config.max_new_tokens
+        params["do_sample"] = config.do_sample
+        params["num_beams"] = config.num_beams
+        params["model_name"] = config.model_name
+        params["num_return_sequences"] = config.num_return_sequences
+        params["bad_words_ids"] = config.bad_words_ids
+        params["force_words_ids"] = config.force_words_ids
+        params["use_hpu_graphs"] = config.use_hpu_graphs
+        params["use_cache"] = config.use_cache
+        return predict(params)
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
+        """
+        Get the default conversation template for the given model path.
+
+        Args:
+            model_path (str): Path to the model.
+
+        Returns:
+            Conversation: A default conversation template.
+        """
         return get_conv_template("one_shot")
 
     def register_tts(self, instance):
+        """
+        Register a text-to-speech (TTS) instance.
+
+        Args:
+            instance: An instance of a TTS module.
+        """
         self.tts = instance
 
     def register_asr(self, instance):
+        """
+        Register an automatic speech recognition (ASR) instance.
+
+        Args:
+            instance: An instance of an ASR module.
+        """
         self.asr = instance
 
     def register_safety_checker(self, instance):
+        """
+        Register a safety checker instance.
+
+        Args:
+            instance: An instance of a safety checker module.
+        """
         self.safety_checker = instance
 
 

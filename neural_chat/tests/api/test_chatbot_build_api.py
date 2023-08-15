@@ -25,13 +25,9 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_valid_config(self):
         config = NeuralChatConfig()
-        config.device = "cpu"
-        config.backend = "torch"
-        config.model_name_or_path = "meta-llama/Llama-2-7b-chat-hf"
-
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
-        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)
         print(response)
 
     def test_build_chatbot_invalid_config(self):
