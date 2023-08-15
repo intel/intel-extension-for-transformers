@@ -1062,7 +1062,10 @@ struct ne_tensor* ne_dup_tensor(struct ne_context* ctx, const struct ne_tensor* 
 }
 
 struct ne_tensor* ne_set_zero(struct ne_tensor* tensor) {
-  memset(tensor->data, 0, ne_nbytes(tensor));
+  size_t data_size = ne_nbytes(tensor);
+  if (data_size > 0) {
+    memset_s(tensor->data, data_size, 0, data_size);
+  }
   return tensor;
 }
 
@@ -9890,7 +9893,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
       /*.has_work  =*/false,
       /*.stop      =*/false,
   };
-  struct ne_compute_state* workers = n_threads > 1 ? alloca(sizeof(struct ne_compute_state) * (n_threads - 1)) : NULL;
+  struct ne_compute_state* workers = n_threads > 1 ? malloc(sizeof(struct ne_compute_state) * (n_threads - 1)) : NULL;
 #ifndef _OPENMP
   // create thread pool
   if (n_threads > 1) {
@@ -10350,6 +10353,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
     }
 
     ne_lock_destroy(&state_shared.spin);
+	free(workers);
   }
 #endif
 
@@ -10961,13 +10965,17 @@ static enum ne_opt_result ne_opt_lbfgs(struct ne_context* ctx, struct ne_opt_par
   ne_opt_get_params(np, ps, x);
 
   // the L-BFGS memory
-  struct ne_lbfgs_iteration_data* lm = alloca(sizeof(struct ne_lbfgs_iteration_data) * m);
-
-  for (int i = 0; i < m; ++i) {
-    lm[i].alpha = 0.0f;
-    lm[i].ys = 0.0f;
-    lm[i].s = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;
-    lm[i].y = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;
+  struct ne_lbfgs_iteration_data* lm = malloc(sizeof(struct ne_lbfgs_iteration_data) * m);
+  if(lm == NULL){
+	   printf("Memory allocation failed.\n");
+	   return false; 
+  }else{
+	  for (int i = 0; i < m; ++i) {
+			lm[i].alpha = 0.0f;
+			lm[i].ys = 0.0f;
+			lm[i].s = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;
+			lm[i].y = ne_new_tensor_1d(ctx, NE_TYPE_F32, nx, NE_SIZE_CALC)->data;
+		}
   }
 
   // evaluate the function value and its gradient
@@ -11126,7 +11134,9 @@ static enum ne_opt_result ne_opt_lbfgs(struct ne_context* ctx, struct ne_opt_par
       ne_vec_mad_f32(nx, d, lm[j].s, lm[j].alpha - beta);
       j = (j + 1) % m;
     }
-
+    if (lm != NULL) {
+        free(lm);
+    }
     step = 1.0;
   }
 

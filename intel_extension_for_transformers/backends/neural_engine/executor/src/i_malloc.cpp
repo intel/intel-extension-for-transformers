@@ -106,6 +106,7 @@ static void mempool_enlarge(struct malloc_mempool* pool, size_t increase_size) {
     if (ret != 0) {
       printf("Failed to unmap the memory.\n");
     }
+	pool->start_addr = NULL;
   }
   mempool_init(pool, pool->total_size + increase_size);
 }

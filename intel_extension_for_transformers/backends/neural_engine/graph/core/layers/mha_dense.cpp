@@ -406,16 +406,23 @@ class GemmLauncherPackWeightOff                                         //
                                : sizeof(BType) * _config.NStep * _config.KStep +      //
                                      sizeof(AType) * _config.MStep * _config.KStep +  //
                                      sizeof(CType) * padto(rowremain, _config.MStep) * padto(colremain, _config.NStep);
-    auto StackTmp = alloca(StackSize);
-    auto tmpB = (BType*)(StackTmp);
-    auto tmpA = (AType*)(tmpB + _config.NStep * _config.KStep);
-    auto tmpC = (CType*)(tmpA + _config.MStep * _config.KStep);
-    for (int itern = 0; itern < colremain; itern += _config.NStep) {
-      int n_remain = remainsize(itern, colremain, _config.NStep);
-      for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
-        int m_remain = remainsize(iterm, rowremain, _config.MStep);
-        run_block(_config, _param, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC);
-      }
+    auto tmpB = static_cast<BType*>(malloc(StackSize));
+    auto tmpA = static_cast<AType*>(malloc(StackSize));
+    auto tmpC = static_cast<CType*>(malloc(StackSize));
+    
+    if (tmpB == nullptr || tmpA == nullptr || tmpC == nullptr) {
+        printf("Memory allocation failed.\n");
+    } else {
+        for (int itern = 0; itern < colremain; itern += _config.NStep) {
+            int n_remain = remainsize(itern, colremain, _config.NStep);
+            for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
+                int m_remain = remainsize(iterm, rowremain, _config.MStep);
+                run_block(_config, _param, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC);
+            }
+        }
+        free(tmpB);
+        free(tmpA);
+        free(tmpC);
     }
   }
 

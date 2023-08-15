@@ -866,16 +866,24 @@ class GemmLauncherKBlockPackWeight {
   void launch(const ParallelConfig& _config, const Param& _param, const QuanAParam& _quan) {
     int rowremain = utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
     int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
-    auto StackTmp = alloca(_config.StackSize);
-    auto tmpB = (BType*)(StackTmp);
-    auto tmpA = (AType*)(tmpB + _config.NStep * _config.KStep);
-    auto tmpC = (CType*)(tmpA + GemmCore::MTILE * _config.KStep);
-    for (int itern = 0; itern < colremain; itern += _config.NStep) {
-      int n_remain = utils::remainsize(itern, colremain, _config.NStep);
-      for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
-        int m_remain = utils::remainsize(iterm, rowremain, _config.MStep);
-        run_block(_config, _param, _quan, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC);
-      }
+    auto tmpB = static_cast<BType*>(malloc(_config.StackSize));
+        auto tmpA = static_cast<AType*>(malloc(_config.StackSize));
+        auto tmpC = static_cast<CType*>(malloc(_config.StackSize));
+    
+        if (tmpB == nullptr || tmpA == nullptr || tmpC == nullptr) {
+            printf("Memory allocation failed.\n");
+        } else {
+            for (int itern = 0; itern < colremain; itern += _config.NStep) {
+                int n_remain = utils::remainsize(itern, colremain, _config.NStep);
+                for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
+                    int m_remain = utils::remainsize(iterm, rowremain, _config.MStep);
+                    run_block(_config, _param, _quan, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC);
+                }
+            }
+            free(tmpB);
+            free(tmpA);
+            free(tmpC);
+        }
     }
   }
 
@@ -974,17 +982,24 @@ class GemmSLauncherKBlockPackWeight {
     }
     int rowremain = utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
     int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
-    auto StackTmp = alloca(_config.StackSize);
-    auto tmpB = (BType*)(StackTmp);
-    auto tmpA = (AType*)(tmpB + _config.NStep * _config.KStep);
-    auto tmpC = (CType*)(tmpA + GemmCore::MTILE * _config.KStep);
-    for (int itern = 0; itern < colremain; itern += _config.NStep) {
-      int n_remain = utils::remainsize(itern, colremain, _config.NStep);
-      for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
-        int m_remain = utils::remainsize(iterm, rowremain, _config.MStep);
-        run_block(_config, _param, blkptr, _quan, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC);
-      }
-    }
+    auto tmpB = static_cast<BType*>(malloc(_config.StackSize));
+        auto tmpA = static_cast<AType*>(malloc(_config.StackSize));
+        auto tmpC = static_cast<CType*>(malloc(_config.StackSize));
+    
+        if (tmpB == nullptr || tmpA == nullptr || tmpC == nullptr) {
+            printf("Memory allocation failed.\n");
+        } else {
+            for (int itern = 0; itern < colremain; itern += _config.NStep) {
+                int n_remain = utils::remainsize(itern, colremain, _config.NStep);
+                for (int iterm = 0; iterm < rowremain; iterm += _config.MStep) {
+                    int m_remain = utils::remainsize(iterm, rowremain, _config.MStep);
+                    run_block(_config, _param, blkptr, _quan, iterm, itern, m_remain, n_remain, tmpA, tmpB, tmpC);
+                }
+            }
+            free(tmpB);
+            free(tmpA);
+            free(tmpC);
+        }
   }
 
  protected:

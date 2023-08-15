@@ -218,11 +218,15 @@ inline bool matmul_vnni_p2031_p2013_k_t::thread_exec(const std::vector<const voi
   const auto curr_src2 = reinterpret_cast<const float*>(rt_data[io::SRC2]) + curr_dst_offset;
   const size_t tmp_total_len = tmp0_bytes + tmp1_bytes + tmp_sum_bytes;
   size_t tmp_total_len_raw = tmp_total_len + 64;
-  void* mem_tmp = alloca(tmp_total_len_raw);  // 64 for alignment
+  void* mem_tmp = malloc(tmp_total_len_raw);  // Allocate memory on the heap
+  if (mem_tmp == nullptr) {
+    printf("Memory allocation failed.\n");
+    return false;  // Return false to indicate failure
+  }
   std::align(64, tmp_total_len, mem_tmp, tmp_total_len_raw);
-  const auto curr_src0_tmp = reinterpret_cast<uint8_t*>(mem_tmp);
-  const auto curr_src1_tmp = reinterpret_cast<int8_t*>(reinterpret_cast<char*>(mem_tmp) + tmp0_bytes);
-  const auto curr_sum_tmp = reinterpret_cast<int32_t*>(reinterpret_cast<char*>(mem_tmp) + tmp0_bytes + tmp1_bytes);
+  uint8_t* curr_src0_tmp = reinterpret_cast<uint8_t*>(mem_tmp);
+  int8_t* curr_src1_tmp = reinterpret_cast<int8_t*>(reinterpret_cast<char*>(mem_tmp) + tmp0_bytes);
+  int32_t* curr_sum_tmp = reinterpret_cast<int32_t*>(reinterpret_cast<char*>(mem_tmp) + tmp0_bytes + tmp1_bytes);
 
   // reorder src1 and compute sum over K
   jit_seq_cpy_48x4::rt_data_t rt_cpy_src1{
@@ -266,6 +270,7 @@ inline bool matmul_vnni_p2031_p2013_k_t::thread_exec(const std::vector<const voi
       (j <= N_ - 48 ? *matmul_ker_ : *matmul_tile_n_ker_)(&rt_matmul);
     }
   }
+  free(mem_tmp);
   return true;
 }
 

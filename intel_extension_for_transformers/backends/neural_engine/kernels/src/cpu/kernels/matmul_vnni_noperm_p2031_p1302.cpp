@@ -190,16 +190,12 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
 
   uint8_t* src0_tmp;
   int8_t* src1_tmp;
-  if (src0_tmp_ != nullptr) {
-    src0_tmp = src0_tmp_ + (ibs0 * bs1_ + ibs1) * M_ * K_;
-    src1_tmp = src1_tmp_ + (ibs0 * bs1_ + ibs1) * N_ * K_;
-  } else {
-    size_t tmp_total_len = (M_ + N_) * K_ + 64 + 4;  // 64 for alignment; 4 for extra access due to ping-pong loading
-    void* mem_tmp = alloca(tmp_total_len);
-    char* mem_tmp_aligned = static_cast<char*>(std::align(64, (M_ + N_) * K_, mem_tmp, tmp_total_len));
-    src0_tmp = reinterpret_cast<uint8_t*>(mem_tmp_aligned);
-    src1_tmp = reinterpret_cast<int8_t*>(mem_tmp_aligned + M_ * K_);
-  }
+
+  size_t tmp_total_len = (M_ + N_) * K_ + 64 + 4;
+  void* mem_tmp = malloc(tmp_total_len);
+  char* mem_tmp_aligned = static_cast<char*>(std::align(64, (M_ + N_) * K_, mem_tmp, tmp_total_len));
+  src0_tmp = reinterpret_cast<uint8_t*>(mem_tmp_aligned);
+  src1_tmp = reinterpret_cast<int8_t*>(mem_tmp_aligned + M_ * K_);
 
   for (dim_t i = 0; i < M_; i += m_tile) {
     // src0: bs0_ bs1_ M_ K_
@@ -232,7 +228,9 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
         (*jit_ker_Ba4b_Ab4a_ba_)(&rt_param);
       }
     }
+  free(mem_tmp);
 }
+
 
 bool matmul_vnni_noperm_p2031_p1302_k_t::execute(const std::vector<const void*>& rt_data) const {
   auto base_src0 = reinterpret_cast<const uint8_t*>(rt_data[io::SRC0]);
