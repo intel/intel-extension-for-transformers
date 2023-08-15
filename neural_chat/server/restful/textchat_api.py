@@ -26,6 +26,8 @@ from neural_chat.server.restful.openai_protocol import (
     ChatCompletionRequest, ChatCompletionResponseChoice, ChatCompletionResponse, 
     UsageInfo, ModelCard, ModelList, ModelPermission, ChatMessage
 )
+from neural_chat.config import NeuralChatConfig
+from neural_chat.chatbot import build_chatbot
 
 
 # TODO: process request and return params in Dict
@@ -172,10 +174,13 @@ class TextChatAPIRouter(APIRouter):
                 for usage_key, usage_value in task_usage.dict().items():
                     setattr(usage, usage_key, getattr(usage, usage_key) + usage_value)
 
-        return ChatCompletionResponse(model=request.model, choices=choices, usage=usage)
+        return ChatCompletionResponse(model=request.model, choices=choices, usage=usage) 
     
 
 router = TextChatAPIRouter()
+config = NeuralChatConfig()
+bot = build_chatbot(config)
+router.set_chatbot(bot)
 
 
 @router.post("/v1/models")
@@ -183,7 +188,7 @@ async def models_endpoint() -> ModelList:
     return await router.handle_models_request()
 
     
-@router.post("/v1/completion")
+@router.post("/v1/completions")
 async def completion_endpoint(request: CompletionRequest) -> CompletionResponse:
     ret = check_completion_request()
     if ret is not None:
