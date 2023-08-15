@@ -44,9 +44,13 @@ LLaMA, LLaMA2-7B and LLaMA-13B:
 # convert the pytorch 7B model to llama.cpp format
 python scripts/convert_llama.py --outtype f32 --outfile ${output_path}/ne-f32.bin models/7B/
 
-./build/bin/quant_llama --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4 --block_size 32 # bits=4, block_size=128, gemm_isa=vnni means q4_j_vnni_b128(recommend)  
+# q4_0
+./build/bin/quant_llama --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_0.bin --bits 4 --block_size 32 # bits=4, block_size=128, gemm_isa=vnni means q4_j_vnni_b128(recommend)  
 
-# Notes: LLaMA-2-7B uses the same command as LLaMA because of the same model layers.
+# q4_j
+./build/bin/quant_llama --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4 --block_size 32 --compute_type int8
+
+# Notes: LLaMA-2-7B/13B uses the same command as LLaMA because of the same model layers.
 ```
 
 Gptneox:
