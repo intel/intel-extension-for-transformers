@@ -21,6 +21,8 @@ from fastapi import APIRouter
 from neural_chat.cli.log import logger
 from neural_chat.server.restful.request import RetrievalRequest
 from neural_chat.server.restful.response import RetrievalResponse
+from neural_chat.config import NeuralChatConfig
+from neural_chat.chatbot import build_chatbot
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -52,6 +54,9 @@ class RetrievalAPIRouter(APIRouter):
     
 
 router = RetrievalAPIRouter()
+config = NeuralChatConfig()
+bot = build_chatbot(config)
+router.set_chatbot(bot)
 
 
 @router.post("/v1/retrieval")

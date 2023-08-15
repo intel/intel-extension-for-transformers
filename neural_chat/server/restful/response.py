@@ -33,14 +33,6 @@ class ImageResponse(ResponseBaseModel):
     image: bytes
 
 
-class TextResponse(ResponseBaseModel):
-    content: str
-
-
-class VoiceResponse(ResponseBaseModel):
-    voice: str
-
-
 class RetrievalResponse(ResponseBaseModel):
     content: str
 

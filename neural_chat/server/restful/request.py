@@ -44,10 +44,6 @@ class Text2ImageRequest(RequestBaseModel):
     sd_inference_token: Optional[str] = None
 
 
-class VoiceRequest(RequestBaseModel):
-    voice: str
-
-
 class TextRequest(RequestBaseModel):
     text: str
 

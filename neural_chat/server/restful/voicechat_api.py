@@ -15,11 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Union
+from typing import ByteString
 from fastapi import APIRouter
 from neural_chat.cli.log import logger
-from neural_chat.server.restful.request import VoiceRequest, TextRequest
-from neural_chat.server.restful.response import VoiceResponse, TextResponse
+from neural_chat.config import NeuralChatConfig
+from neural_chat.chatbot import build_chatbot
 
 
 class VoiceChatAPIRouter(APIRouter):
@@ -36,28 +36,33 @@ class VoiceChatAPIRouter(APIRouter):
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
     
-    async def handle_voice2text_request(self, request: VoiceRequest) -> TextResponse:
+    async def handle_voice2text_request(self, request: ByteString) -> str:
         # TODO: implement voice to text
         chatbot = self.get_chatbot()
         # TODO: chatbot.voice2text()
-        return TextResponse(content=None)
+        result = chatbot.predict(request.voice)
+        return result
     
-    async def handle_text2voice_request(self, request: TextRequest) -> VoiceResponse:
+    async def handle_text2voice_request(self, text: str) -> ByteString:
         # TODO: implement text to voice
         chatbot = self.get_chatbot()
         # TODO: chatbot.text2voice()
-        return VoiceResponse(content=None)
+        result = chatbot.predict(text)
+        return result
     
 
 router = VoiceChatAPIRouter()
+config = NeuralChatConfig()
+bot = build_chatbot(config)
+router.set_chatbot(bot)
 
 # voice to text
 @router.post("/v1/voice/asr")
-async def voice2text(requst: VoiceRequest) -> TextResponse:
-    return await router.handle_voice2text_request(requst)
+async def voice2text(request: ByteString) -> str:
+    return await router.handle_voice2text_request(request)
 
 
 # text to voice
 @router.post("/v1/voice/tts")
-async def voice2text(requst: TextRequest) -> VoiceResponse:
+async def voice2text(requst: str) -> ByteString:
     return await router.handle_text2voice_request(requst)
