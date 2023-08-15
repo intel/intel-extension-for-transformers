@@ -100,10 +100,10 @@ struct model_hparams {
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;
-  int32_t max_seq_len = 0;  // for mpt
-  float alibi_bias_max = 0; // for mpt
-  float clip_qkv = 0;  // for mpt
-  int32_t par_res = 1;  // for neox 1 = true, 0 = false
+  int32_t max_seq_len = 0;           // for mpt
+  float alibi_bias_max = 0;          // for mpt
+  float clip_qkv = 0;                // for mpt
+  int32_t par_res = 1;               // for neox 1 = true, 0 = false
   uint32_t word_embed_proj_dim = 0;  // for opt
   bool do_layer_norm_before = false; // for opt
 
@@ -207,11 +207,15 @@ struct model_context {
 
   model_struct model;
   model_vocab vocab;
+  int batch_size = 1;
+  bool beam_search = false;
+  int beam_size = 1;
+  int kv_n_ctx_block = 1;
   std::vector<std::vector<std::string>> tensors_name;
 
   size_t mem_per_token = 0;
 
-  // decode output (2-dimensional array: [n_tokens][n_vocab])
+  // decode output (3-dimensional array: [batch_size] [n_tokens] [n_vocab])
   std::vector<float> logits;
   bool logits_all = false;
 
@@ -266,7 +270,7 @@ struct model_context {
   }
 };
 
-typedef int model_token;
+typedef model_vocab::id model_token;
 
 typedef struct model_token_data {
   model_token id;  // token id
@@ -293,6 +297,9 @@ struct model_context_params {
   bool use_mmap;     // use mmap if possible
   bool use_mlock;    // force system to keep model in RAM
   bool embedding;    // embedding mode only
+  int batch_size;    // batch_size of prompt
+  bool beam_search;  // beam search or not
+  int beam_size;     // number of beams for beam search
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;

@@ -33,6 +33,7 @@ supported_patterns = [
     'InputData',
     'RemoveConstantOP',
     'CollectQuantInfo',
+    'StableDiffusion_CollectQuantInfo',
     'TorchInnerProductInsertBias',
     'LayerNorm',
     'WordEmbeddings',
@@ -130,9 +131,11 @@ supported_patterns = [
     'NeoxRoraryPosEmb',
 
     'InsertQuantNode',
+    'StableDiffusion_InsertQuantNode',
     'InsertBF16Node',
     'TorchInsertBF16Node',
-    'QunatizeFusion',
+    'QuantizeFusion',
+    'StableDiffusion_QuantizeFusion',
     'LlamaRoraryPosEmb',
     'QKVMerge',
     'ReshapeFusion',
@@ -148,6 +151,7 @@ supported_patterns = [
     'OutputData',
     'QuantizedGraphDtypeRefactor',
     'ExplicitNHWCTransposeForConv',
+    'ExplicitNHWCTransposeForConvQAT',
 
     'Int8BF16MixedPrecisionChecker',
     'LlamaPostprocess',

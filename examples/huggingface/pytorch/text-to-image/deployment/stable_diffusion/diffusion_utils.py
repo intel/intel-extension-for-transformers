@@ -669,7 +669,7 @@ def neural_engine_init(ir_path):
     uent_path = ir_path + '/unet/'
     unet_conf = uent_path + 'conf.yaml'
     unet_bin = uent_path + 'model.bin'
-    unet_graph.graph_init(unet_conf, unet_bin)
+    unet_graph.graph_init(unet_conf, unet_bin, True)
 
     vae_decoder_graph = Graph()
     vae_decoder_path = ir_path + '/vae_decoder/'

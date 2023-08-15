@@ -53,7 +53,7 @@ python scripts/convert_falcon.py ${input_model_name_or_path} --outtype f32 --out
 ./build/bin/quant_falcon --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
 
 # convert the pytorch starcoder model to llama.cpp format
-python scripts/convert_starcoder.py --model={input_model_name_or_path} --outfile={output_path}/ne-fp32.bin --outtype=fp32
+python scripts/convert_starcoder.py {input_model_name_or_path} --outfile={output_path}/ne-fp32.bin --outtype=fp32
 
 ./build/bin/quant_starcoder --model_file ${output_path}/ne-f32.bin --out_file ${output_path}/ne-q4_j.bin --bits 4
 

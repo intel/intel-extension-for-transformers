@@ -47,7 +47,7 @@ enum ne_op {
   NE_OP_RMS_NORM_BACK,
 
   NE_OP_MUL_MAT,
-
+  NE_OP_MUL_MAT_BIAS,
   NE_OP_SCALE,
   NE_OP_SET,
   NE_OP_CPY,
@@ -72,6 +72,8 @@ enum ne_op {
   // LLM related
   NE_OP_MUL_QKV,
   NE_OP_MUL_FFN_SILU,
+  NE_OP_MUL_FFN_GELU,
+  NE_OP_MUL_FFN_ADD_GELU,
   NE_OP_FLASH_ATTN,
   NE_OP_FLASH_FF,
 

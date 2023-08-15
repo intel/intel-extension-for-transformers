@@ -72,6 +72,8 @@ text_encoder_pattern_config = {
         'StableDiffusion_MHAReshape': True,
         'StableDiffusion_MHA': False,
         'ExplicitNHWCTransposeForConv': True,
+        'ExplicitNHWCTransposeForConvQAT': False,
+        'MultiHeadAttention': False,
 
         # Channel_last
         'ConvReshape': False
@@ -132,6 +134,78 @@ unet_pattern_config = {
         'StableDiffusion_MHAReshape': True,
         'StableDiffusion_MHA': False,
         'ExplicitNHWCTransposeForConv': True,
+        'ExplicitNHWCTransposeForConvQAT': False,
+        'MultiHeadAttention': False,
+
+        # Channel_last
+        'ConvReshape': False
+    }
+}
+
+qat_unet_pattern_config = {
+    'pattern_switch': {
+        # General Pattern
+        'PaddingSequence': False,
+        'AttentionReshape': False,
+        'QKVReshape': False,
+        'ReshapeFusion': False,
+        'InsertBF16Node': False,
+        'OperatorAdaptor': False,
+
+        # transpose_int8
+        'QKVMerge': False,
+
+        # 'TextEncoder
+        'TextEncoder_WordEmbedding': False,
+        'TextEncoder_QReshape': False,
+        'TextEncoder_KVReshape': False,
+        'TextEncoder_AttentionMaskAddReshape': False,
+        'TextEncoder_SoftmaxReshape': False,
+        'TextEncoder_MulReshape': False,
+        'TextEncoder_AttentionReshape': False,
+        'TextEncoder_CasualAttentionMask': False,
+
+        # for unet and vae decoder
+        'GroupNorm': True,
+
+        # vae deocder & Transformer2Dmodel
+        'AttentionBlock_Resize2Gather': True,
+        'AttentionBlock_QKVPreReshape': True,
+        'AttentionBlock_AttentionMaskAddReshape': True,
+        'AttentionBlock_ConstantOfShapeWithMul': True,
+
+        'Transformer2Dmodel_GetSampleBatch': True,
+        'Transformer2Dmodel_SampleSlice': True,
+        'Transformer2Dmodel_EncoderHiddenStatesReshape': True,
+        'Transformer2Dmodel_ConstantOfShapeWithMul': True,
+        'Transformer2Dmodel_QKVPreReshape': True,
+        'Transformer2Dmodel_QKVReshape': True,
+        'AttentionBlock_QKVReshape': False,
+        'Transformer2Dmodel_QKVReshapeTo4D': True,
+        'Transformer2Dmodel_AttentionMaskAddReshape': True,
+        'Transformer2Dmodel_FFNInputSlice': True,
+        'Transformer2Dmodel_FFNInputSlice_1': True,
+        'Transformer2DModel_UpBlockResize': True,
+
+        # for all stable diffusion models
+        'StableDiffusion_bf16Convert': True,
+        'StableDiffusion_ReshapeFusion': True,
+
+        # MHA
+        'TorchInsertBF16Node': False,
+        'StableDiffusion_MHAReshape': True,
+        'StableDiffusion_MHA': True,
+        'ExplicitNHWCTransposeForConv': False,
+        'ExplicitNHWCTransposeForConvQAT': True,
+        'MultiHeadAttention': False,
+
+        # QAT for the stable diffusion
+        'StableDiffusion_InsertQuantNode': True,
+        'StableDiffusion_CollectQuantInfo': True,
+        'CollectQuantInfo': False,
+        'InsertQuantNode': False,
+        'QuantizeFusion': False,
+        'StableDiffusion_QuantizeFusion': True,
 
         # Channel_last
         'ConvReshape': False
@@ -192,6 +266,8 @@ vae_decoder_pattern_config = {
         'StableDiffusion_MHAReshape': True,
         'StableDiffusion_MHA': False,
         'ExplicitNHWCTransposeForConv': True,
+        'ExplicitNHWCTransposeForConvQAT': False,
+        'MultiHeadAttention': False,
 
         # Channel_last
         'ConvReshape': False
@@ -222,6 +298,11 @@ if __name__ == '__main__':
             graph = compile(args.onnx_model, args.pattern_config)
             graph.save(args.output_path)
     elif args.dtype == "dynamic_int8":
+        with autocast(args.dtype):
+            graph = compile(args.onnx_model, args.pattern_config)
+            graph.save(args.output_path)
+    elif args.dtype == "qat_int8":
+        args.pattern_config = qat_unet_pattern_config
         with autocast(args.dtype):
             graph = compile(args.onnx_model, args.pattern_config)
             graph.save(args.output_path)
