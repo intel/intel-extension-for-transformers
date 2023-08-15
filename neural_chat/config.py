@@ -38,7 +38,7 @@ class BackendOptions(Enum):
     IPEX = auto()
     ITREX = auto()
 
-class AudioOptions(Enum):
+class AudioLanguageOptions(Enum):
     ENGLISH = auto()
     CHINESE = auto()
 

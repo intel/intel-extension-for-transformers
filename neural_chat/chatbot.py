@@ -20,7 +20,7 @@ from .config import PipelineConfig
 from .config import OptimizationConfig
 from .config import FinetuningConfig
 from .pipeline.finetuning.finetuning import Finetuning
-from .config import DeviceOptions, BackendOptions, AudioOptions
+from .config import DeviceOptions, BackendOptions, AudioLanguageOptions
 from .models.base_model import get_model_adapter
 from .utils.common import get_device_type, get_backend_type
 from .pipeline.plugins.caching.cache import init_similar_cache_from_config
@@ -78,8 +78,8 @@ def build_chatbot(config: PipelineConfig):
     if config.audio_input or config.audio_output:
         if not config.audio_lang:
             raise ValueError(f"The audio language must be set when audio input or output.")
-        if config.audio_lang not in [option.name for option in AudioOptions]:
-            valid_options = ", ".join([option.name.lower() for option in AudioOptions])
+        if config.audio_lang not in [option.name.lower() for option in AudioLanguageOptions]:
+            valid_options = ", ".join([option.name.lower() for option in AudioLanguageOptions])
             raise ValueError(f"Invalid audio language value '{config.audio_lang}'. Must be one of {valid_options}")
         if config.audio_input and not config.audio_input_path:
             raise ValueError(f"The audio input path must be set when audio input enabled.")
