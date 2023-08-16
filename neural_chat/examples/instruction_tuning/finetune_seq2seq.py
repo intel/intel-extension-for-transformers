@@ -25,9 +25,8 @@ from neural_chat.config import (
     DataArguments,
     FinetuningArguments,
     FinetuningConfig,
-    NeuralChatConfig
 )
-from neural_chat.chatbot import NeuralChatBot
+from neural_chat.chatbot import finetune_model
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -51,16 +50,13 @@ def main():
             finetune_args,
         ) = parser.parse_args_into_dataclasses()
 
-    finetuneCfg = FinetuningConfig(
+    finetune_cfg = FinetuningConfig(
         model_args=model_args,
         data_args=data_args,
         training_args=training_args,
         finetune_args=finetune_args,
     )
-    config = NeuralChatConfig(finetune_config=finetuneCfg)
-    chatbot = NeuralChatBot(config)
-    chatbot.finetune_model()
-    # response = chatbot.predict("Tell me about Intel Xeon processors.")
+    finetune_model(finetune_cfg)
 
 if __name__ == "__main__":
     main()

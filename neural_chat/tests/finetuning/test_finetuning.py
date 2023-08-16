@@ -26,9 +26,8 @@ from neural_chat.config import (
     DataArguments,
     FinetuningArguments,
     FinetuningConfig,
-    NeuralChatConfig
 )
-from neural_chat.chatbot import NeuralChatBot
+from neural_chat.chatbot import finetune_model
 
 json_data = \
 """
@@ -60,15 +59,13 @@ class TestFinetuning(unittest.TestCase):
             overwrite_output_dir=True
         )
         finetune_args = FinetuningArguments()
-        finetuneCfg = FinetuningConfig(
+        finetune_cfg = FinetuningConfig(
             model_args=model_args,
             data_args=data_args,
             training_args=training_args,
             finetune_args=finetune_args,
         )
-        config = NeuralChatConfig(finetune_config=finetuneCfg)
-        chatbot = NeuralChatBot(config)
-        chatbot.finetune_model()
+        finetune_model(finetune_cfg)
 
     def test_finetune_seq2seq(self):
         model_args = ModelArguments(model_name_or_path="google/flan-t5-small")
@@ -80,15 +77,13 @@ class TestFinetuning(unittest.TestCase):
             overwrite_output_dir=True
         )
         finetune_args = FinetuningArguments()
-        finetuneCfg = FinetuningConfig(
+        finetune_cfg = FinetuningConfig(
             model_args=model_args,
             data_args=data_args,
             training_args=training_args,
             finetune_args=finetune_args,
         )
-        config = NeuralChatConfig(finetune_config=finetuneCfg)
-        chatbot = NeuralChatBot(config)
-        chatbot.finetune_model()
+        finetune_model(finetune_cfg)
 
 if __name__ == "__main__":
     unittest.main()
