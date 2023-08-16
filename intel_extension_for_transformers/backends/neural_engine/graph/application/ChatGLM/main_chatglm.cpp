@@ -355,10 +355,8 @@ int main(int argc, char** argv) {
   std::vector<int> output_ids;
   output_ids.reserve(max_length);
   int vocab_size = 65024;
-  // embd_inp
 
-  while ((int)output_ids.size() < 5) {
-    // int next_token_id = generate_next_token(curr_input_ids, gen_config, n_past, n_ctx);
+  while ((int)output_ids.size() < n_remain) {
     model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
     n_past += curr_input_ids.size();
 
@@ -366,18 +364,17 @@ int main(int argc, char** argv) {
     int next_token_id = std::max_element(logits, logits + vocab_size) - logits;
     curr_input_ids = {next_token_id};
 
-    printf("logits\n");
-    for (int i = 0; i < 20; i++) {
-      printf("%f, ", logits[i]);
-    }
-    printf("\n");
-
     output_ids.emplace_back(next_token_id);
-    // break;
-  }
-  printf("%s\n", ctx->model.tokenizer->decode(output_ids).c_str());
+    printf("%s", ctx->model.tokenizer->decode({next_token_id}).c_str());
 
-  fflush(stdout);
+    fflush(stdout);
+
+    if (next_token_id == ctx->model.tokenizer->eos_token_id) {
+      break;
+    }
+  }
+  printf("\n");
+
 
   model_print_timings(ctx);
   model_free(ctx);

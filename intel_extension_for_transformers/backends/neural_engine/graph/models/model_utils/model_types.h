@@ -75,6 +75,8 @@ class ChatGLM2Tokenizer {
     smask_token_id = special_id++;
     sop_token_id = special_id++;
     eop_token_id = special_id++;
+
+    eos_token_id = sp.PieceToId("<eop>");
   }
 
   std::vector<int> encode(const std::string &text) const {
@@ -132,6 +134,7 @@ class ChatGLM2Tokenizer {
     int sop_token_id;
     int eop_token_id;
     int proto_size;
+    int eos_token_id;
 };
 
 
