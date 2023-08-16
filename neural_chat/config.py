@@ -354,6 +354,7 @@ class GenerationConfig:
                  num_gpus=0,
                  max_gpu_memory=None,
                  use_fp16=False,
+                 ipex_int8=False
                  ):
         self.device = device
         self.temperature = temperature
@@ -374,6 +375,7 @@ class GenerationConfig:
         self.num_gpus = num_gpus
         self.max_gpu_memory = max_gpu_memory
         self.use_fp16 = use_fp16
+        self.ipex_int8 = ipex_int8
 
 class PipelineConfig:
     def __init__(self,
