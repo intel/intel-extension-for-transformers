@@ -1,4 +1,4 @@
-"""The wrapper for Chroma retriever with langchain"""
+"""The wrapper for Chroma retriever based on langchain"""
 
 from langchain.vectorstores import Chroma
 

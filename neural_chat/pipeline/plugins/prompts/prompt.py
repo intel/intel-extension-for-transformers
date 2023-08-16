@@ -1,3 +1,4 @@
+"""The function for generating the target prompt."""
 
 from haystack.nodes.prompt.prompt_node import PromptTemplate
 
