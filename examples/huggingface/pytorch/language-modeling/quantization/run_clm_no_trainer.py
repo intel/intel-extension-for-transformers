@@ -3,6 +3,8 @@ import os
 import time
 import json
 import re
+import sys
+sys.path.insert(0, '/home/hengguo/code/intel-extension-for-transformers')
 import torch
 from datasets import load_dataset
 from torch.nn.functional import pad
@@ -237,7 +239,7 @@ if args.quantize:
         if re.search("falcon", user_model.config.model_type):
             recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha, 'folding': False}}
         else:
-            recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha}}
+            recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha, 'folding': False}}
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
             approach=args.approach,
