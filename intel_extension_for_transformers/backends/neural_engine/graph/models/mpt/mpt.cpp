@@ -304,7 +304,7 @@ std::vector<model_token> model_tokenize(struct model_context* ctx, const std::st
 struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   auto lparams = model_context_default_params();
 
-  lparams.name = params.name;
+  lparams.arch = params.model_arch;
   lparams.n_ctx = params.n_ctx;
   lparams.n_gpu_layers = params.n_gpu_layers;
   lparams.seed = params.seed;

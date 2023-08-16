@@ -83,7 +83,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
 
 struct model_context_params model_context_default_params() {
   struct model_context_params result = {
-      /*name                         =*/MODEL_LLAMA,
+      /*arch                         =*/MODEL_LLAMA,
       /*.n_ctx                       =*/512,
       /*.gpu_layers                  =*/0,
       /*.seed                        =*/-1,
@@ -124,11 +124,11 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_name name, model_context& lctx, int n_ctx, int n_gpu_layers,
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
                        ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
                        model_progress_callback progress_callback, void* progress_callback_user_data) {
   try {
-    model_load_internal(fname, name, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
+    model_load_internal(fname, arch, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
                         progress_callback, progress_callback_user_data);
     return true;
   } catch (const std::string& err) {
@@ -905,7 +905,7 @@ __WRITE_FILE:
   printf("\n");
 }
 
-static void model_quantize_internal(const quant_params& params, quant_layer_base* quant_layer) {
+static void model_quantize_internal(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   auto ftype = quant_params_to_ftype(params);
   quant_layer->set_global_config(params.nthread, quant_params_to_internal(params));
   int nthread = params.nthread;
@@ -981,9 +981,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->batch_size = params.batch_size;
 
   ne_type memory_type = params.f16_kv ? NE_TYPE_F16 : NE_TYPE_F32;
-  model_name name = params.name;
+  model_archs arch = params.arch;
 
-  if (!model_load(path_model, name, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
+  if (!model_load(path_model, arch, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
                   params.use_mlock, params.vocab_only, params.progress_callback, params.progress_callback_user_data)) {
     fprintf(stderr, "%s: failed to load model\n", __func__);
     model_free(ctx);
@@ -1034,7 +1034,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-int model_quantize(const quant_params& params, quant_layer_base* quant_layer) {
+int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   try {
     model_quantize_internal(params, quant_layer);
     return 0;

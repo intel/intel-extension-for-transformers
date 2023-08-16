@@ -48,7 +48,7 @@
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
 
-void model_load_internal(const std::string& fname, model_name name, model_context& lctx, int n_ctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
                          ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
                          model_progress_callback progress_callback, void* progress_callback_user_data);
 
@@ -80,7 +80,7 @@ MODEL_API void model_free(struct model_context* ctx);
 // Returns 0 on success
 // param - from args
 // quant_layer - depends on each model's config
-MODEL_API int model_quantize(const quant_params& param, quant_layer_base* quant_layer);
+MODEL_API int model_quantize(const quant_params& param, std::shared_ptr<quant_layer_base> quant_layer);
 
 // Apply a LoRA adapter to a loaded model
 // path_base_model is the path to a higher quality model to use as a base for

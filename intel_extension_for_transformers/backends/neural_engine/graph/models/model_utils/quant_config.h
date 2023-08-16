@@ -14,6 +14,7 @@
 
 #include <stdint.h>
 #include <string>
+#include <memory>
 #include "core/data_types.h"
 
 enum class quant_bits : int { q4 = 0, q8, count };
@@ -131,3 +132,56 @@ class quant_layer_base {
   quant_params_internal mGCfg;
   int mNThread;
 };
+
+// template ?
+// register quant_layer class for different models
+class ql_registry {
+ public:
+  typedef std::shared_ptr<quant_layer_base> (*creator)();
+  // model_name to model quant_layer
+  typedef std::unordered_map<model_archs, creator> creator_registry;
+
+  static creator_registry& registry() {
+    static std::unique_ptr<creator_registry> registry(new creator_registry());
+    // static creator_registry* registry = new creator_registry();
+    return *registry;
+  }
+
+  static void add_creator(const std::string& type, creator cr) {
+    creator_registry& re = registry();
+    model_archs mt = model_name_to_arch::init().find(type);
+    NE_ASSERT(mt != MODEL_UNKNOWN);
+    NE_ASSERT(re.count(mt) == 0);
+    printf("name: %s, added \n", type.c_str());
+    re[mt] = cr;
+  }
+
+  static std::shared_ptr<quant_layer_base> create_ql(const std::string& type) {
+    creator_registry& re = registry();
+    model_archs mt = model_name_to_arch::init().find(type);
+    NE_ASSERT(mt != MODEL_UNKNOWN);
+    printf("name: %s, finding... \n", type.c_str());
+    NE_ASSERT(re.count(mt) > 0);
+    return re[mt]();
+  }
+
+ private:
+  ql_registry() {}
+};
+
+class ql_registerer {
+ public:
+  ql_registerer(const std::string& type, std::shared_ptr<quant_layer_base> (*ql_creator)()) {
+    ql_registry::add_creator(type, ql_creator);
+  }
+};
+
+#define REGISTER_QUANT_LAYER_CREATOR(type, creator)                       \
+  static ql_registerer ql_creator_##type(#type, creator);
+
+#define REGISTER_QUANT_LAYER_CLASS(type)                                  \
+  std::shared_ptr<quant_layer_base> creator_##type##_quant_layer()        \
+  {                                                                       \
+    return std::shared_ptr<quant_layer_base> (new type##_quant_layer());  \
+  }                                                                       \
+  REGISTER_QUANT_LAYER_CREATOR(type, creator_##type##_quant_layer)

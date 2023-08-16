@@ -35,7 +35,7 @@ static const model_scratch mpt_mem_req(int n_layers) {
 
 class MPT : public IModel {
  private:
-  model_name name = MODEL_MPT;
+  model_archs arch = MODEL_MPT;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;
