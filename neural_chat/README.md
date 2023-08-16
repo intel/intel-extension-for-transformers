@@ -30,6 +30,16 @@ pip install intel-extension-for-transformers
 
 Users can have a try of NeuralChat with [NeuralChat Command Line](./cli/README.md) or Python API.
 
+## Install from source
+
+```
+export PYTHONPATH=<PATH TO intel-extension-for-transformers>
+conda create -n neural_chat python==3.10
+pip install -r requirements.txt
+pip install librosa==0.10.0
+```
+
+
 ## Inference
 
 ### Text Chat

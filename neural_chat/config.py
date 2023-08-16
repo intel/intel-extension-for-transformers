@@ -371,7 +371,7 @@ class PipelineConfig:
                  retrieval_type=None,
                  retrieval_document_path=None,
                  audio_input_path=None,
-                 audio_output_path=False,
+                 audio_output_path="./response.wav",
                  audio_lang="english",
                  txt2Image=False,
                  server_mode=True,

@@ -126,7 +126,7 @@ class BaseModel(ABC):
         response = predict(**construct_parameters(query, self.model_name, config))
         if self.tts and self.audio_output_path:
             self.tts.text2speech(response, self.audio_output_path)
-            response = config.audio_output_path
+            response = self.audio_output_path
         return response
 
     def chat_stream(self, query, config=None):

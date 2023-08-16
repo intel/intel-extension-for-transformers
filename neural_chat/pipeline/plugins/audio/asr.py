@@ -20,6 +20,8 @@ from transformers import WhisperForConditionalGeneration, WhisperProcessor
 from datasets import load_dataset, Audio, Dataset
 import time
 import contextlib
+from pydub import AudioSegment
+
 
 class AudioSpeechRecognition:
     """Convert audio to text."""
@@ -33,12 +35,22 @@ class AudioSpeechRecognition:
             import intel_extension_for_pytorch as ipex
             self.model = ipex.optimize(self.model, dtype=torch.bfloat16)
 
+    def _convert_audio_type(self, audio_path):
+        print("[ASR WARNING] Recommend to use mp3 or wav input audio type!")
+        audio_file_name = audio_path.split(".")[0]
+        AudioSegment.from_file(audio_path).export(f"{audio_file_name}.mp3", format="mp3")
+        return f"{audio_file_name}.mp3"
+
     def audio2text(self, audio_path):
         """Convert audio to text
 
         audio_path: the path to the input audio, e.g. ~/xxx.mp3
         """
         start = time.time()
+        if audio_path.split(".")[-1] in ['flac', 'ogg', 'aac', 'm4a']:
+            audio_path = self._convert_audio_type(audio_path)
+        elif audio_path.split(".")[-1] not in ['mp3', 'wav']:
+            raise Exception("[ASR ERROR] Audio format not supported!")
         audio_dataset = Dataset.from_dict({"audio": [audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
         waveform = audio_dataset[0]["audio"]['array']
         inputs = self.processor.feature_extractor(waveform, return_tensors="pt", sampling_rate=16_000).input_features.to(self.device)
