@@ -91,6 +91,7 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
   size_t ctx_size;
   size_t mmapped_size;
   ml->calc_sizes(&ctx_size, &mmapped_size);
+  ctx_size = ctx_size * 2;
   fprintf(stderr, "%s: ne ctx size = %7.2f MB\n", __func__, ctx_size / 1024.0 / 1024.0);
 
   const auto& hparams = model.hparams;
@@ -143,12 +144,15 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
     layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, model.hparams.ffn_hidden_size * 2}, backend);
     layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {model.hparams.ffn_hidden_size, n_embd}, backend);
 
+    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096 / 32, 32768, 2);
+    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 32768, 4096 / 32, 2);
     if (backend != NE_BACKEND_CPU) {
       vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
                     ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
                     ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
                     ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
                     ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
+                    ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) + 
                     ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
     }
   }

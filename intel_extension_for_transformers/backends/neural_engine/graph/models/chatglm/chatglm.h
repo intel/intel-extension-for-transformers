@@ -26,7 +26,7 @@ enum chatglm_model {
 static const model_scratch chatglm_mem_req(int n_layers) {
   switch (n_layers) {
     case 28:
-      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
+      return {4 * 2048ull * MB, 4 * 2048ull * MB, 2 * 4096ull * MB, 2 * 3072ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);

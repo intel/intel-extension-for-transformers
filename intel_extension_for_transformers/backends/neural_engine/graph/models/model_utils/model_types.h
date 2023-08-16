@@ -199,6 +199,9 @@ struct model_layer {
 
   // ff
   struct ne_tensor* ffn[MODEL_MAX_FFN];
+
+  struct ne_tensor* k_cache;
+  struct ne_tensor* v_cache;
 };
 
 struct model_kv_cache {
