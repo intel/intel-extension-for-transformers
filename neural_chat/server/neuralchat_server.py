@@ -17,6 +17,7 @@
 
 import argparse
 import sys
+import os
 from typing import List
 
 
@@ -33,8 +34,8 @@ from .server_commands import cli_server_register
 
 from neural_chat.cli.log import logger
 from .restful.api import setup_router
-from neural_chat.config import NeuralChatConfig
-from neural_chat.chatbot import NeuralChatBot
+from neural_chat.config import PipelineConfig
+from neural_chat.chatbot import build_chatbot
 
 
 __all__ = ['NeuralChatServerExecutor']
@@ -86,9 +87,6 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             action="store",
             help="log file",
             default="./log/neuralchat.log")
-        config = NeuralChatConfig()
-        self.chatbot = NeuralChatBot(config)
-        self.chatbot.build_chatbot()
 
     def init(self, config):
         """System initialization.
@@ -99,11 +97,38 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         Returns:
             bool:
         """
-        # init api
-        api_list = list(task.split("_")[0] for task in config.tasks_list)
-        api_router = setup_router(api_list)
-        app.include_router(api_router)
+        plugin_list = list(plugin for plugin in config.plugins_list)
+        params = {}
+        # Model configuration
+        if config.model_name:
+            params["model_name_or_path"] = config.model_name
+        # Audio plugin configuration
+        if "audio" in plugin_list:
+            params["audio_input"] = config.audio.audio_input
+            params["audio_output"] = config.audio.audio_output
+        # Retrieval plugin configuration
+        if "retrieval" in plugin_list:
+            params["retrieval_type"] = config.retrieval.retrieval_type
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            retrieval_document_path = os.path.join(script_dir, config.retrieval.retrieval_document_path)
+            params["retrieval_document_path"] = retrieval_document_path
+        # Caching plugin configuration
+        if "caching" in plugin_list:
+            params["cache_chat_config_file"] = config.caching.cache_chat_config_file
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            retrieval_document_path = os.path.join(script_dir, config.caching.cache_embedding_model_dir)
+            params["cache_embedding_model_dir"] = retrieval_document_path
+        # Other plugins configurations
+        for plugin in ["memory_controller", "intent_detection", "safety_checker"]:
+            if plugin in config.plugins_list:
+                params[plugin] = True
+        pipeline_config = PipelineConfig(**params)
+        self.chatbot = build_chatbot(pipeline_config)
 
+        # init api
+        api_list = list(task for task in config.tasks_list)
+        api_router = setup_router(api_list, self.chatbot)
+        app.include_router(api_router)
         return True
 
 

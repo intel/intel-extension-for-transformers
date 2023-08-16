@@ -126,7 +126,7 @@ Finetune the pretrained large language model (LLM) with the instruction-followin
 **command line experience**
 
 ```shell
-neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.config
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
 ```
 
 
@@ -146,7 +146,7 @@ NeuralChat provides three quantization approaches respectively (PostTrainingDyna
 **command line experience**
 
 ```shell
-neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/optimization/config/optimization.config
+neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/optimization/config/optimization.yaml
 ```
 
 
@@ -168,50 +168,48 @@ Users can have a try of NeuralChat server with [NeuralChat Server Command Line](
 
 **Start Server**
 - Command Line (Recommended)
-    ```shell
-    neuralchat_server start --config_file ./conf/neuralchat.yaml
-    ```
+```shell
+neuralchat_server start --config_file ./conf/neuralchat.yaml
+```
 
 - Python API
-    ```python
-    from neuralchat.server.neuralchat_server import NeuralChatServerExecutor
-    server_executor = NeuralChatServerExecutor()
-    server_executor(
-        config_file="./conf/neuralchat.yaml",
-        log_file="./log/neuralchat.log")
-    ```
+```python
+from neuralchat.server.neuralchat_server import NeuralChatServerExecutor
+server_executor = NeuralChatServerExecutor()
+server_executor(config_file="./conf/neuralchat.yaml", log_file="./log/neuralchat.log")
+```
 
 **Access Text Chat Service**
 
 - Command Line
-    ```shell
-    neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --prompt "Tell me about Intel Xeon Scalable Processors."
-    ```
+```shell
+neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --prompt "Tell me about Intel Xeon Scalable Processors."
+```
 
 - Python API
-    ```python
-    from neuralchat.server.neuralchat_client import TextChatClientExecutor
+```python
+from neuralchat.server.neuralchat_client import TextChatClientExecutor
 
-    executor = TextChatClientExecutor()
-    executor(
-        prompt="Tell me about Intel Xeon Scalable Processors.",
-        server_ip="127.0.0.1",
-        port=8000)
-    ```
+executor = TextChatClientExecutor()
+executor(
+    prompt="Tell me about Intel Xeon Scalable Processors.",
+    server_ip="127.0.0.1",
+    port=8000)
+```
 
 - Curl with Restful API
-    ```
-    curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
-    ```
+```shell
+curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
+```
 
 **Access Voice Chat Service**
 
 ```shell
-neuralchat_client voicechat --server_ip 127.0.0.1 --port 8000 --input say_hello.wav --output response.wav
+neuralchat_client voicechat --server_ip 127.0.0.1 --port 8000 --input ./assets/audio/pat.wav --output response.wav
 ```
 
 **Access Retrieval Service**
 ```shell
-neuralchat_client retrieval --server_ip 127.0.0.1 --port 8000 --input ./docs/
+neuralchat_client retrieval --server_ip 127.0.0.1 --port 8000 --input ./assets/docs/
 ```
 
