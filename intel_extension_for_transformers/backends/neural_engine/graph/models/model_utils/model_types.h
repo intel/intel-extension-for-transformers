@@ -187,6 +187,8 @@ struct model_vocab {
 
   std::unordered_map<token, id> token_to_id;
   std::vector<token_score> id_to_token;
+  id bos_token_id = -1; //The default value is -1
+  id eos_token_id = -1; //The default value is -1
 };
 
 struct model_context {

@@ -107,6 +107,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", int(hparams["use_parallel_residual"])))
     fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
     fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
+    fout.write(struct.pack("i", int(hparams.get("bos_token_id", -1))))
+    fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
+
 
     # Is this correct??
     dot_token = tokenizer.encode(".")[0]
