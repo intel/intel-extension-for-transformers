@@ -32,6 +32,3 @@ def generate_prompt(query, history=None):
 def generate_intent_prompt(query)
     prompt = """Please identify the intent of the provided context. 
         You may only respond with "chitchat" or "QA" without explanations or engaging in conversation.\nContext:{}\nIntent:""".format(query)
-
-
-
