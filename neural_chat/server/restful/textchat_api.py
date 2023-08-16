@@ -53,7 +53,6 @@ class TextChatAPIRouter(APIRouter):
 
     def __init__(self) -> None:
         super().__init__()
-        self.chatbot = None
 
     def set_chatbot(self, chatbot) -> None:
         self.chatbot = chatbot

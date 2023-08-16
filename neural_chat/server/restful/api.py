@@ -37,7 +37,7 @@ from typing import List
 
 from fastapi import APIRouter
 from neural_chat.cli.log import logger
-
+import sys
 
 from .textchat_api import router as textchat_router
 from .voicechat_api import router as voicechat_router
@@ -47,27 +47,31 @@ from .finetune_api import router as finetune_router
 
 _router = APIRouter()
 
+# Create a dictionary to map API names to their corresponding routers
+api_router_mapping = {
+    'textchat': textchat_router,
+    'voicechat': voicechat_router,
+    'retrieval': retrieval_router,
+    'text2image': text2image_router,
+    'finetune': finetune_router
+}
 
-def setup_router(api_list: List):
-    """setup router for fastapi
+def setup_router(api_list, chatbot):
+    """Setup router for FastAPI
 
     Args:
-        api_list (List): [textchat, voicechat, retrieval, text2image, finetune]
+        api_list (List): List of API names
+        chatbot: The chatbot instance
 
     Returns:
         APIRouter
     """
     for api_name in api_list:
-        if api_name.lower() == 'textchat':
-            _router.include_router(textchat_router)
-        elif api_name.lower() == 'voicechat':
-            _router.include_router(voicechat_router)
-        elif api_name.lower() == 'retrieval':
-            _router.include_router(retrieval_router)
-        elif api_name.lower() == 'text2image':
-            _router.include_router(text2image_router)
-        elif api_name.lower() == 'finetune':
-            _router.include_router(finetune_router)
+        lower_api_name = api_name.lower()
+        if lower_api_name in api_router_mapping:
+            api_router = api_router_mapping[lower_api_name]
+            api_router.set_chatbot(chatbot)
+            _router.include_router(api_router)
         else:
             logger.error(f"NeuralChat has not supported such service yet: {api_name}")
             sys.exit(-1)

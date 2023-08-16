@@ -348,7 +348,13 @@ class GenerationConfig:
                  force_words_ids=None,
                  use_hpu_graphs=False,
                  use_cache=False,
-                 audio_output_path=None):
+                 audio_output_path=None,
+                 use_deepspeed=False,
+                 cpu_jit=False,
+                 num_gpus=0,
+                 max_gpu_memory=None,
+                 use_fp16=False,
+                 ):
         self.device = device
         self.temperature = temperature
         self.top_k = top_k
@@ -363,6 +369,11 @@ class GenerationConfig:
         self.use_hpu_graphs = use_hpu_graphs
         self.use_cache = use_cache
         self.audio_output_path = audio_output_path
+        self.use_deepspeed = use_deepspeed
+        self.cpu_jit = cpu_jit
+        self.num_gpus = num_gpus
+        self.max_gpu_memory = max_gpu_memory
+        self.use_fp16 = use_fp16
 
 class PipelineConfig:
     def __init__(self,
@@ -378,13 +389,7 @@ class PipelineConfig:
                  audio_lang="english",
                  txt2Image=False,
                  server_mode=True,
-                 use_hpu_graphs=False,
-                 use_deepspeed=False,
                  peft_path=None,
-                 cpu_jit=False,
-                 use_cache=False,
-                 num_gpus=0,
-                 max_gpu_memory=None,
                  cache_chat=False,
                  cache_chat_config_file=None,
                  cache_embedding_model_dir=None,
@@ -403,13 +408,7 @@ class PipelineConfig:
         self.audio_lang = audio_lang
         self.txt2Image = txt2Image
         self.server_mode = server_mode
-        self.use_hpu_graphs = use_hpu_graphs
-        self.use_deepspeed = use_deepspeed
         self.peft_path = peft_path
-        self.cpu_jit = cpu_jit
-        self.use_cache = use_cache
-        self.num_gpus = num_gpus
-        self.max_gpu_memory = max_gpu_memory
         self.cache_chat = cache_chat
         self.cache_chat_config_file = cache_chat_config_file
         self.cache_embedding_model_dir = cache_embedding_model_dir
