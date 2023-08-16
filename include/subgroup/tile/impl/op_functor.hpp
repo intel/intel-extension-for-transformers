@@ -51,6 +51,71 @@ struct relu_op_t {
     }
 };
 
+/// @brief Is the element-wise tanh op functor.
+/// Get the tanh input from matAcc, update the the tanh output in place,
+/// Used in epilogue::tile_op or chained_tile_op.
+struct tanh_op_t {
+    struct arguments_t {};
+    template <typename matAcc_t, typename coord_t>
+    __XETLA_API KERNEL_FUNC void operator()(matAcc_t &matAcc,
+            const coord_t &coord, uint32_t slm_base = 0,
+            uint32_t nbarrier_base = 0) {
+        constexpr int elems = matAcc_t::tile_desc::block_elems;
+        constexpr int rounds = matAcc_t::tile_desc::tile_elems / elems;
+        using dtype = typename matAcc_t::dtype;
+#pragma unroll
+        for (int i = 0; i < rounds; ++i) {
+            auto sub_vec = matAcc.reg.xetla_select<elems, 1>(elems * i);
+            sub_vec = xetla_tanh<dtype, elems>(sub_vec);
+        }
+        constexpr int remained_elems = matAcc_t::tile_desc::tile_elems % elems;
+        if constexpr (remained_elems != 0) {
+            auto sub_vec = matAcc.reg.xetla_select<remained_elems, 1>(
+                    elems * (matAcc_t::tile_elems / elems));
+            sub_vec = xetla_tanh<dtype, remained_elems>(sub_vec);
+        }
+    }
+};
+
+/// @brief Is the element-wise sigmoid op functor.
+/// Get the sigmoid input from matAcc, update the the sigmoid output in place,
+/// Used in epilogue::tile_op or chained_tile_op.
+struct sigmoid_op_t {
+    struct arguments_t {};
+    template <typename matAcc_t, typename coord_t>
+    __XETLA_API KERNEL_FUNC void operator()(matAcc_t &matAcc,
+            const coord_t &coord, uint32_t slm_base = 0,
+            uint32_t nbarrier_base = 0) {
+        constexpr int elems = matAcc_t::tile_desc::block_elems;
+        constexpr int rounds = matAcc_t::tile_desc::tile_elems / elems;
+        constexpr float one = 1.0f;
+#pragma unroll
+        for (int i = 0; i < rounds; ++i) {
+            auto sub_vec = matAcc.reg.xetla_select<elems, 1>(elems * i);
+            xetla_mask<elems> mask = sub_vec >= 10;
+            xetla_vector<typename matAcc_t::dtype, elems> temp_vec
+                    = xetla_exp<typename matAcc_t::dtype, elems>(sub_vec);
+            xetla_vector<typename matAcc_t::dtype, elems> sigmoid_value
+                    = temp_vec / (temp_vec + one);
+            sigmoid_value.xetla_merge(1, mask);
+            sub_vec = sigmoid_value;
+        }
+        constexpr int remained_elems = matAcc_t::tile_desc::tile_elems % elems;
+        if constexpr (remained_elems != 0) {
+            auto sub_vec = matAcc.reg.xetla_select<remained_elems, 1>(
+                    elems * (matAcc_t::tile_elems / elems));
+            xetla_mask<remained_elems> mask = sub_vec >= 250;
+            xetla_vector<typename matAcc_t::dtype, remained_elems> temp_vec
+                    = xetla_exp<typename matAcc_t::dtype, remained_elems>(
+                            sub_vec);
+            xetla_vector<typename matAcc_t::dtype, remained_elems> sigmoid_value
+                    = temp_vec / (temp_vec + one);
+            sigmoid_value.xetla_merge(1, mask);
+            sub_vec = sigmoid_value;
+        }
+    }
+};
+
 /// @brief Is the element-wise gelu inference forward op functor.
 /// Get the gelu input from matAcc, update the the gelu output in place,
 /// Used in epilogue::tile_op or chained_tile_op.

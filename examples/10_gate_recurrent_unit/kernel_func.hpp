@@ -143,9 +143,12 @@ struct gru_layer {
             mem_loc_input, gpu_arch::Xe>;
     using matC_payload_t = mem_payload_t<T, matC_tile_desc_t,
             msg_type::block_2d, layout_out, mem_loc_out, gpu_arch::Xe>;
-
+    using sigmoid_t = typename subgroup::sigmoid_op_t;
+    using tanh_t = typename subgroup::tanh_op_t;
     static void inline call(xetla_exec_item<3> &ei, fused_config_t<T> *args) {
         brgemm_op op;
+        sigmoid_t sigmoid;
+        tanh_t tanh;
         // declare two accumulators to stroe the results of two GEMMs
         // and its activation
         matAcc_t matAcc_0, matAcc_1;
@@ -220,7 +223,7 @@ struct gru_layer {
                 BRGEMM_CALL(0, 0, args->layer_ptr + seq_id * pre_layer_size,
                         args->W_ir_ptr);
                 BRGEMM_CALL(1, 0, args->hx_ptr, args->W_hr_ptr);
-                subgroup::elemwise_op<matAcc_t, post_kind::sigmoid>(matAcc_0);
+                sigmoid(matAcc_0, 0);
                 // calculate new gate : n_t = tanh(X_t x W_in + r_t * (h_{t - 1} x
                 // W_hn)) acc1 = h_{t - 1} x W_hn acc0 *= acc1 acc0 += X_t x W_in acc0 =
                 // tanh(acc0) Mathematically elemwise_op is a map that applies to each
@@ -232,7 +235,7 @@ struct gru_layer {
                 BRGEMM_CALL(0, 0, args->layer_ptr + seq_id * pre_layer_size,
                         args->W_in_ptr);
 
-                subgroup::elemwise_op<matAcc_t, post_kind::tanh>(matAcc_0);
+                tanh(matAcc_0, 0);
                 // calculate input gate z_t = \sigma(X_t x W_iz + h_{t - 1} x W_hz)
                 // acc1 = X_t x W_iz
                 // acc1 += h_{t - 1} x W_hz
@@ -243,7 +246,7 @@ struct gru_layer {
                 BRGEMM_CALL(1, 1, args->hx_ptr, args->W_hz_ptr);
                 BRGEMM_CALL(0, 1, args->layer_ptr + seq_id * pre_layer_size,
                         args->W_iz_ptr);
-                subgroup::elemwise_op<matAcc_t, post_kind::sigmoid>(matAcc_1);
+                sigmoid(matAcc_1, 0);
                 // calculate h_t = (1 - z_t) n_t + z_t h_{t - 1} NOTICE z_t in Acc1,
                 // n_t in Acc0 reload h_{t - 1}
                 // acc0 = acc0 * (1 - acc1) + acc1 * h_{t -1}
