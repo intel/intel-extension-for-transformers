@@ -44,3 +44,12 @@ def get_device_type():
 
 def get_backend_type():
     return "ipex"
+
+def is_audio_file(filename):
+    audio_extensions = ['.mp3', '.wav', '.flac', '.ogg', '.aac', '.m4a']
+    file_extension = filename.split('.')[-1].lower()
+
+    if file_extension in audio_extensions:
+        return True
+    else:
+        return False

@@ -367,11 +367,9 @@ class PipelineConfig:
                  retrieval=False,
                  retrieval_type=None,
                  document_path=None,
-                 audio_input=False,
                  audio_input_path=None,
-                 audio_output=False,
                  audio_output_path=False,
-                 audio_lang=None,
+                 audio_lang="english",
                  txt2Image=False,
                  server_mode=True,
                  use_hpu_graphs=False,
@@ -394,9 +392,7 @@ class PipelineConfig:
         self.retrieval = retrieval
         self.retrieval_type = retrieval_type
         self.document_path = document_path
-        self.audio_input = audio_input
         self.audio_input_path = audio_input_path
-        self.audio_output = audio_output
         self.audio_output_path = audio_output_path
         self.audio_lang = audio_lang
         self.txt2Image = txt2Image
