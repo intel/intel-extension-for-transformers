@@ -182,7 +182,7 @@ server_executor(config_file="./server/config/neuralchat.yaml", log_file="./log/n
 
 - Command Line
 ```shell
-neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --prompt "Tell me about Intel Xeon Scalable Processors."
+neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --query "Tell me about Intel Xeon Scalable Processors."
 ```
 
 - Python API
@@ -191,7 +191,7 @@ from neuralchat.server.neuralchat_client import TextChatClientExecutor
 
 executor = TextChatClientExecutor()
 executor(
-    prompt="Tell me about Intel Xeon Scalable Processors.",
+    query="Tell me about Intel Xeon Scalable Processors.",
     server_ip="127.0.0.1",
     port=8000)
 ```
@@ -204,11 +204,11 @@ curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about I
 **Access Voice Chat Service**
 
 ```shell
-neuralchat_client voicechat --server_ip 127.0.0.1 --port 8000 --input ./assets/audio/pat.wav --output response.wav
+neuralchat_client voicechat --server_ip 127.0.0.1 --port 8000 --audio_input_path ./assets/audio/pat.wav --audio_output_path response.wav
 ```
 
 **Access Retrieval Service**
 ```shell
-neuralchat_client retrieval --server_ip 127.0.0.1 --port 8000 --input ./assets/docs/
+neuralchat_client retrieval --server_ip 127.0.0.1 --port 8000 --retrieval_document_path ./assets/docs/
 ```
 

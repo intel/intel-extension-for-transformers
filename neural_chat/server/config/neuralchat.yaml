@@ -42,4 +42,4 @@ caching:
     cache_chat_config_file: "../../plugins/caching/cache_config.yaml"
     cache_embedding_model_dir: "hkunlp/instructor-large"
 
-model_name: "meta-llama/Llama-2-70b-chat-hf"
+model_name: "meta-llama/Llama-2-7b-chat-hf"
