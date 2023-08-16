@@ -179,11 +179,9 @@ class TextChatExecutor(BaseCommandExecutor):
 
     Attributes:
         parser (argparse.ArgumentParser): An argument parser for command-line input.
-        config (NeuralChatConfig): Configuration instance for the chatbot.
-        chatbot (NeuralChatBot): An instance of the chatbot for text-based conversations.
+        config (PipelineConfig): Configuration instance for the chatbot.
 
     Methods:
-        infer(prompt): Perform model inference on the provided prompt.
         execute(argv): Execute the chatbot using command-line arguments.
         __call__(prompt): Python API for calling the chatbot executor.
 
@@ -201,8 +199,8 @@ class TextChatExecutor(BaseCommandExecutor):
             prog='neuralchat.textchat', add_help=True)
         self.parser.add_argument(
             '--prompt', type=str, default=None, help='Prompt text.')
-        self.config = PipelineConfig()
-        self.chatbot = build_chatbot(self.config)
+        self.parser.add_argument(
+            '--model_name_or_path', type=str, default=None, help='Model name or path.')
 
     def execute(self, argv: List[str]) -> bool:
         """
@@ -211,6 +209,12 @@ class TextChatExecutor(BaseCommandExecutor):
         parser_args = self.parser.parse_args(argv)
 
         prompt = parser_args.prompt
+        model_name = parser_args.model_name_or_path
+        if model_name:
+            self.config = PipelineConfig(model_name_or_path=model_name)
+        else:
+            self.config = PipelineConfig()
+        self.chatbot = build_chatbot(self.config)
         try:
             res = self(prompt)
             print(res)
@@ -225,10 +229,10 @@ class TextChatExecutor(BaseCommandExecutor):
         """
             Python API to call an executor.
         """
+        
         result = self.chatbot.chat(prompt)
         self._outputs['preds'] = result
         return result
-
 
 class VoiceChatExecutor(BaseCommandExecutor):
     def __init__(self):
@@ -239,7 +243,8 @@ class VoiceChatExecutor(BaseCommandExecutor):
             '--input', type=str, default=None, help='Input aduio or text.')
         self.parser.add_argument(
             '--output', type=str, default=None, help='Output aduio or text.')
-
+        self.parser.add_argument(
+            '--model_name_or_path', type=str, default=None, help='Model name or path.')
 
     def execute(self, argv: List[str]) -> bool:
         """
@@ -249,9 +254,15 @@ class VoiceChatExecutor(BaseCommandExecutor):
 
         input = parser_args.input
         output = parser_args.output
-        self.config = PipelineConfig(audio_input=True if input else False,
-                                     audio_output=True if output else False)
-        self.chatbot = build_chatbot(self.config)
+        model_name = parser_args.model_name_or_path
+        if model_name:
+            config = PipelineConfig(audio_input=True if input else False,
+                                        audio_output=True if output else False
+                                        model_name_or_path=model_name)
+        else:
+            config = PipelineConfig(audio_input=True if input else False,
+                                        audio_output=True if output else False)
+        self.chatbot = build_chatbot(config)
         try:
             res = self(input, output)
             print(res)
@@ -313,4 +324,4 @@ for com, info in specific_commands.items():
     command_register(
         name='neuralchat.{}'.format(com),
         description=info[0],
-        cls='neuralchat.cli.{}.{}'.format(com, info[1]))
+        cls='neural_chat.cli.cli_commands.{}'.format(info[1]))
