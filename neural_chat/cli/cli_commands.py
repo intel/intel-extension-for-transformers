@@ -20,8 +20,8 @@ import argparse
 from typing import List
 from ..utils.command import NeuralChatCommandDict
 from .base_executor import BaseCommandExecutor
-from neural_chat.config import NeuralChatConfig, FinetuningConfig
-from neural_chat.chatbot import NeuralChatBot
+from neural_chat.config import PipelineConfig, FinetuningConfig, GenerationConfig
+from neural_chat.chatbot import build_chatbot, finetune_model
 from neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 from neural_chat.pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from neural_chat.pipeline.plugins.audio.tts import TextToSpeech
@@ -201,9 +201,8 @@ class TextChatExecutor(BaseCommandExecutor):
             prog='neuralchat.textchat', add_help=True)
         self.parser.add_argument(
             '--prompt', type=str, default=None, help='Prompt text.')
-        self.config = NeuralChatConfig()
-        self.chatbot = NeuralChatBot(self.config)
-        self.chatbot.build()
+        self.config = PipelineConfig()
+        self.chatbot = build_chatbot(self.config)
 
     def execute(self, argv: List[str]) -> bool:
         """
@@ -250,10 +249,9 @@ class VoiceChatExecutor(BaseCommandExecutor):
 
         input = parser_args.input
         output = parser_args.output
-        self.config = NeuralChatConfig(audio_input=True if input else False,
-                                       audio_output=True if output else False)
-        self.chatbot = NeuralChatBot(self.config)
-        self.chatbot.build()
+        self.config = PipelineConfig(audio_input=True if input else False,
+                                     audio_output=True if output else False)
+        self.chatbot = build_chatbot(self.config)
         try:
             res = self(input, output)
             print(res)
@@ -268,18 +266,10 @@ class VoiceChatExecutor(BaseCommandExecutor):
         """
             Python API to call an executor.
         """
-        asr = AudioSpeechRecognition()
-        tts = TextToSpeech()
-        if os.path.exists(input):
-            prompt = asr.audio2text(input)
-        else:
-            prompt = input
-        res = self.chatbot.chat(prompt=prompt)
-        if os.path.exists(output):
-            tts.text2speech(res, output_audio_path=output)
-        else:
-            output = res
-        return output
+        config = GenerationConfig(audio_output_path=output)
+        result = self.chatbot.chat(input, config=config)
+        self._outputs['preds'] = result
+        return result
 
 class FinetuingExecutor(BaseCommandExecutor):
     def __init__(self):
@@ -298,10 +288,7 @@ class FinetuingExecutor(BaseCommandExecutor):
         """
         parser_args = self.parser.parse_args(argv)
 
-        finetuneCfg = FinetuningConfig()
-        self.config = NeuralChatConfig(finetuneConfig=finetuneCfg)
-        self.chatbot = NeuralChatBot(self.config)
-        self.chatbot.build()
+        self.finetuneCfg = FinetuningConfig()
         try:
             res = self()
             print(res)
@@ -313,7 +300,8 @@ class FinetuingExecutor(BaseCommandExecutor):
         """
             Python API to call an executor.
         """
-        return self.chatbot.finetune_model()
+        finetuned_model = finetune_model(self.finetuneCfg)
+        return finetuned_model
 
 specific_commands = {
     'textchat': ['neuralchat text chat command', 'TextChatExecutor'],
