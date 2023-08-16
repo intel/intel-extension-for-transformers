@@ -60,7 +60,7 @@ class TestChatbotBuilder(unittest.TestCase):
         response = chatbot.predict(query="../../assets/audio/pat.wav", config=gen_config)
         self.assertIsNotNone(response)
         print("output audio path: ", response)
-        self.assertTrue(os.path.exists(pipeline_config.audio_output_path))
+        self.assertTrue(os.path.exists(gen_config.audio_output_path))
 
 if __name__ == '__main__':
     unittest.main()
