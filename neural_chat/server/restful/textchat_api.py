@@ -51,7 +51,7 @@ def check_completion_request(request: BaseModel) -> Optional[str]:
 
 class TextChatAPIRouter(APIRouter):
 
-    def __init__(self, chatbot) -> None:
+    def __init__(self) -> None:
         super().__init__()
 
     def set_chatbot(self, chatbot) -> None:

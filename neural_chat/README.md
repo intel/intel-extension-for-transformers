@@ -39,7 +39,6 @@ pip install -r requirements.txt
 pip install librosa==0.10.0
 ```
 
-
 ## Inference
 
 ### Text Chat
@@ -169,14 +168,14 @@ Users can have a try of NeuralChat server with [NeuralChat Server Command Line](
 **Start Server**
 - Command Line (Recommended)
 ```shell
-neuralchat_server start --config_file ./conf/neuralchat.yaml
+neuralchat_server start --config_file ./server/conf/neuralchat.yaml
 ```
 
 - Python API
 ```python
 from neuralchat.server.neuralchat_server import NeuralChatServerExecutor
 server_executor = NeuralChatServerExecutor()
-server_executor(config_file="./conf/neuralchat.yaml", log_file="./log/neuralchat.log")
+server_executor(config_file="./server/conf/neuralchat.yaml", log_file="./log/neuralchat.log")
 ```
 
 **Access Text Chat Service**
