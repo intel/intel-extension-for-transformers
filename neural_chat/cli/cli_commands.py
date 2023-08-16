@@ -198,7 +198,7 @@ class TextChatExecutor(BaseCommandExecutor):
         self.parser = argparse.ArgumentParser(
             prog='neuralchat.textchat', add_help=True)
         self.parser.add_argument(
-            '--prompt', type=str, default=None, help='Prompt text.')
+            '--query', type=str, default=None, help='Prompt text.')
         self.parser.add_argument(
             '--model_name_or_path', type=str, default=None, help='Model name or path.')
 
@@ -257,7 +257,7 @@ class VoiceChatExecutor(BaseCommandExecutor):
         model_name = parser_args.model_name_or_path
         if model_name:
             config = PipelineConfig(audio_input=True if input else False,
-                                        audio_output=True if output else False
+                                        audio_output=True if output else False,
                                         model_name_or_path=model_name)
         else:
             config = PipelineConfig(audio_input=True if input else False,
