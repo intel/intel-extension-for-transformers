@@ -2,7 +2,7 @@
 import requests
 import unittest
 from neural_chat.tests.restful.config import HOST, API_COMPLETION, API_CHAT_COMPLETION
-from neural_chat.server.restful.openai_protocol import CompletionRequest, ChatCompletionRequest
+from neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 from neural_chat.cli.log import logger
 
 
@@ -14,8 +14,7 @@ class UnitTest(unittest.TestCase):
 
     def test_completions(self):
         logger.info(f'Testing POST request: {self.host+API_COMPLETION}')
-        request = CompletionRequest(
-            model="mpt-7b-chat",
+        request = ChatCompletionRequest(
             prompt="This is a test."
         )
         response = requests.post(self.host+API_COMPLETION, data=request)
@@ -26,11 +25,7 @@ class UnitTest(unittest.TestCase):
     def test_chat_completions(self):
         logger.info(f'Testing POST request: {self.host+API_CHAT_COMPLETION}')
         request = ChatCompletionRequest(
-            model="mpt-7b-chat",
-            messages=[
-                {"role": "system","content": "You are a helpful assistant."},
-                {"role": "user","content": "Hello!"}
-            ]
+            prompt="This is a test."
         )
         response = requests.post(self.host+API_CHAT_COMPLETION, data=request)
         logger.info('Response status code: {}'.format(response.status_code))

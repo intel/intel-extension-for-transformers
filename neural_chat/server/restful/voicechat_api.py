@@ -38,7 +38,7 @@ class VoiceChatAPIRouter(APIRouter):
     async def handle_voice2text_request(self, request: ByteString) -> str:
         chatbot = self.get_chatbot()
         try:
-            result = chatbot.predict(request)
+            result = chatbot.chat(request)
         except:
             raise Exception("Exception occurred when transfering voice to text.")
         else:
@@ -48,7 +48,7 @@ class VoiceChatAPIRouter(APIRouter):
     async def handle_text2voice_request(self, text: str) -> ByteString:
         chatbot = self.get_chatbot()
         try:
-            result = chatbot.predict(text)
+            result = chatbot.chat(text)
         except:
             raise Exception("Exception occurred when transfering text to voice.")
         else:

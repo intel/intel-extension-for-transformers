@@ -17,6 +17,8 @@
 
 from fastapi import APIRouter
 from neural_chat.cli.log import logger
+from neural_chat.chatbot import finetune_model
+from neural_chat.config import FinetuningConfig
 
 
 class FinetuneAPIRouter(APIRouter):
@@ -37,7 +39,8 @@ class FinetuneAPIRouter(APIRouter):
     def handle_finetune_request(self) -> str:
         bot = self.get_chatbot()
         try:
-            bot.finetune_model()
+            config = FinetuningConfig()
+            fintuned_model = finetune_model(config)
         except:
             raise Exception("Exception occurred when finetuning model, please check the arguments.")
         else:
