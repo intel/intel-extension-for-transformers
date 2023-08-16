@@ -285,7 +285,7 @@ static std::vector<model_vocab::id> model_tokenize(const model_vocab& vocab, con
   }
 
   if (bos) {
-    output.push_back(model_token_bos());
+    output.push_back(vocab.bos_token_id);
   }
 
   tokenizer.tokenize(text, output);

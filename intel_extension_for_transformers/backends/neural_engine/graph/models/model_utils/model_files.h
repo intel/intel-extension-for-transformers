@@ -215,6 +215,8 @@ struct model_file_loader {
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
+    file.read_raw(&vocab.bos_token_id, sizeof(int));
+    file.read_raw(&vocab.eos_token_id, sizeof(int));
 
     for (uint32_t i = 0; i < hparams.n_vocab; i++) {
       uint32_t len = file.read_u32();
@@ -231,6 +233,7 @@ struct model_file_loader {
       tok_score.tok = std::move(word);
       tok_score.score = score;
     }
+
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
