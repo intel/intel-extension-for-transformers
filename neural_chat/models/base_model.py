@@ -125,14 +125,14 @@ class BaseModel(ABC):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
             if self.asr:
-                query = self.asr.audio2text(self.audio_input_path)
+                query = self.asr.audio2text(query)
             else:
                 raise ValueError(f"The query {query} is audio file but there is no ASR registered.")
         assert query is not None, "Query cannot be None."
         response = predict(**construct_parameters(query, self.model_name, config))
         if self.tts:
-            self.tts.text2speech(response, self.audio_output_path)
-            response = self.audio_output_path
+            self.tts.text2speech(response, config.audio_output_path)
+            response = config.audio_output_path
         return response
 
     def chat_stream(self, query, config=None):
