@@ -951,8 +951,8 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
         self.fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
-        fout.write(struct.pack("i", 1)) #llama's bos_token_id is 1
-        fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
+        self.fout.write(struct.pack("i", 1)) #llama's bos_token_id is 1
+        self.fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
 
     def write_tensor_header(self, name: str, shape: Sequence[int], data_type: DataType) -> None:
         sname = name.encode('utf-8')

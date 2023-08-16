@@ -215,8 +215,8 @@ struct model_file_loader {
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
-    file.read_raw(&vocab.bos_token_id, sizeof(int));
-    file.read_raw(&vocab.eos_token_id, sizeof(int));
+    file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
 
     for (uint32_t i = 0; i < hparams.n_vocab; i++) {
       uint32_t len = file.read_u32();
