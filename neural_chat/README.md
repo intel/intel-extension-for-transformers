@@ -90,12 +90,12 @@ In the context of voice chat, users have the option to engage in various modes: 
 
 - audio in and audio output
 ```shell
-neuralchat voicechat --audio_input_path ./assets/audio/say_hello.wav --audio_output_path ./response.wav
+neuralchat voicechat --audio_input_path ./assets/audio/pat.wav --audio_output_path ./response.wav
 ```
 
 - audio in and text output
 ```shell
-neuralchat voicechat --audio_input_path ./assets/audio/say_hello.wav
+neuralchat voicechat --audio_input_path ./assets/audio/pat.wav
 ```
 
 - text in and audio output

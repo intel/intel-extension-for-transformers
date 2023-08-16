@@ -50,7 +50,9 @@ class TextToSpeech:
         )
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
         self.vocoder.eval()
-        self.default_speaker_embedding = torch.load('../../assets/speaker_embeddings/spk_embed_default.pt') # load the default speaker embedding
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        default_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')
+        self.default_speaker_embedding = torch.load(default_speaker_embedding_path) # load the default speaker embedding
 
         # preload the demo model in case of time-consuming runtime loading
         self.pat_model = None
@@ -58,8 +60,9 @@ class TextToSpeech:
             self.pat_model = torch.load("pat.pt", map_location=device)
 
         self.pat_speaker_embeddings = None
-        if os.path.exists('../../assets/speaker_embeddings/spk_embed_pat.pt'):
-            self.pat_speaker_embeddings = torch.load('../../assets/speaker_embeddings/spk_embed_pat.pt')
+        pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_pat.pt')
+        if os.path.exists(pat_speaker_embedding_path):
+            self.pat_speaker_embeddings = torch.load(pat_speaker_embedding_path)
 
         self.cpu_pool = None
         if not torch.cuda.is_available():
@@ -86,11 +89,16 @@ class TextToSpeech:
         return speaker_embeddings.cpu()
 
     def _lookup_voice_embedding(self, voice):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
         if os.path.exists(f"speaker_embeddings/spk_embed_{voice}.pt") == False:
             print("No customized speaker embedding is found! Use the default one")
-            return "../../assets/speaker_embeddings/spk_embed_default.pt"
+            default_speaker_embedding_path = os.path.join(script_dir,
+                                        '../../../assets/speaker_embeddings/spk_embed_default.pt')
+            return default_speaker_embedding_path
         else:
-            return f"../../assets/speaker_embeddings/spk_embed_{voice}.pt"
+            specific_speaker_embedding_path = os.path.join(script_dir,
+                                        f"../../../assets/speaker_embeddings/spk_embed_{voice}.pt")
+            return specific_speaker_embedding_path
 
     def text2speech(self, text, output_audio_path, voice="default"):
         """Text to speech.
