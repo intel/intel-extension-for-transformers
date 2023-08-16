@@ -12,37 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-set(TARGET models)
-
-add_library(${TARGET} INTERFACE)
-# add_library(${TARGET}::${TARGET} ALIAS ${TARGET})
 file(GLOB MODEL_UTILS_SOURCE "model_utils/*.cpp")
-
 add_subdirectory(llama)
-# add_library(llama::llama ALIAS llama)
 add_subdirectory(gptj)
-# add_library(gptj::gptj ALIAS gptj)
 add_subdirectory(mpt)
-# add_library(mpt::mpt ALIAS mpt)
 add_subdirectory(gptneox)
-# add_library(gptneox::gptneox ALIAS gptneox)
 add_subdirectory(starcoder)
-# add_library(starcoder::starcoder ALIAS starcoder)
 add_subdirectory(falcon)
-# add_library(falcon::falcon ALIAS falcon)
-
-target_link_libraries(${TARGET}
-  INTERFACE 
-    # starcoder::starcoder
-    # llama::llama
-    # gptj::gptj
-    # mpt::mpt
-    # gptneox::gptneox
-    # falcon::falcon
-    starcoder
-    llama
-    gptj
-    mpt
-    gptneox
-    falcon
-)

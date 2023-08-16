@@ -35,10 +35,20 @@ std::shared_ptr<quant_layer_base> get_model_quant_layer(const std::string model_
 int main(int argc, char** argv) {
   model_init_backend();
   quant_params q_params;
+#ifdef MODEL_NAME
+  q_params.model_name = MODEL_NAME;
+#endif
+
   if (quant_params_parse(argc, argv, q_params) == false) {
     return 1;
   }
-  printf("model name: %s \n", q_params.model_name.c_str());
+  model_archs mt = model_name_to_arch::init().find(q_params.model_name);
+  if (mt == MODEL_UNKNOWN) {
+    fprintf(stderr, "error, please set model_name \n");
+    exit(0);
+  }
+  q_params.model_arch = mt;
+
   const std::string fname_inp = q_params.model_file;
   const std::string fname_out = q_params.out_file;
   ne_ftype ftype = quant_params_to_ftype(q_params);

@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+# common
 set(TARGET common)
 
 add_library(${TARGET} OBJECT
@@ -27,15 +28,7 @@ target_link_libraries(${TARGET} PUBLIC jblas::jblas)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-set(TARGET quant_model)
-add_executable_w_warning(${TARGET} quant_model.cpp)
-warning_check(${TARGET})
-target_link_libraries(${TARGET} PUBLIC models common ${CMAKE_THREAD_LIBS_INIT})
-target_compile_features(${TARGET} PRIVATE cxx_std_11)
-if(TARGET BUILD_INFO)
-  add_dependencies(${TARGET} BUILD_INFO)
-endif()
-
+# pybind
 set(TARGET GptjPyBind)
 add_library_w_warning(${TARGET} SHARED pybind_gptj.cpp)
 target_link_libraries(${TARGET} PUBLIC ne_layers common gptj ${CMAKE_THREAD_LIBS_INIT})
@@ -46,5 +39,77 @@ set(TARGET pybind_gptj)
 add_executable_w_warning(${TARGET} pybind_gptj.cpp)
 target_link_libraries(${TARGET} PUBLIC ne_layers common gptj ${CMAKE_THREAD_LIBS_INIT})
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
+
+# all models quant
+set(TARGET quant_falcon)
+add_executable_w_warning(${TARGET} quant_model.cpp)
+warning_check(${TARGET})
+target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="falcon")
+target_link_libraries(${TARGET} PUBLIC falcon common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
+
+set(TARGET quant_gptj)
+add_executable_w_warning(${TARGET} quant_model.cpp)
+warning_check(${TARGET})
+target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="gptj")
+target_link_libraries(${TARGET} PUBLIC gptj common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
+
+set(TARGET quant_gptneox)
+add_executable_w_warning(${TARGET} quant_model.cpp)
+warning_check(${TARGET})
+target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="gptneox")
+target_link_libraries(${TARGET} PUBLIC gptneox common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
+
+
+set(TARGET quant_dolly)
+add_executable_w_warning(${TARGET} quant_model.cpp)
+warning_check(${TARGET})
+target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="dolly")
+target_link_libraries(${TARGET} PUBLIC gptneox common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
+
+set(TARGET quant_llama)
+add_executable_w_warning(${TARGET} quant_model.cpp)
+warning_check(${TARGET})
+target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="llama")
+target_link_libraries(${TARGET} PUBLIC llama common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
+
+set(TARGET quant_mpt)
+add_executable_w_warning(${TARGET} quant_model.cpp)
+warning_check(${TARGET})
+target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="mpt")
+target_link_libraries(${TARGET} PUBLIC mpt common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
+
+set(TARGET quant_starcoder)
+add_executable_w_warning(${TARGET} quant_model.cpp)
+warning_check(${TARGET})
+target_compile_definitions(${TARGET} PUBLIC -DMODEL_NAME="starcoder")
+target_link_libraries(${TARGET} PUBLIC starcoder common ${CMAKE_THREAD_LIBS_INIT})
+target_compile_features(${TARGET} PRIVATE cxx_std_11)
+if(TARGET BUILD_INFO)
+  add_dependencies(${TARGET} BUILD_INFO)
+endif()
 
 add_subdirectory(chat)

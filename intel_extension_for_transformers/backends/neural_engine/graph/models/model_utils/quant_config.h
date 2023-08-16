@@ -143,7 +143,6 @@ class ql_registry {
 
   static creator_registry& registry() {
     static std::unique_ptr<creator_registry> registry(new creator_registry());
-    // static creator_registry* registry = new creator_registry();
     return *registry;
   }
 
@@ -152,7 +151,6 @@ class ql_registry {
     model_archs mt = model_name_to_arch::init().find(type);
     NE_ASSERT(mt != MODEL_UNKNOWN);
     NE_ASSERT(re.count(mt) == 0);
-    printf("name: %s, added \n", type.c_str());
     re[mt] = cr;
   }
 
@@ -160,7 +158,6 @@ class ql_registry {
     creator_registry& re = registry();
     model_archs mt = model_name_to_arch::init().find(type);
     NE_ASSERT(mt != MODEL_UNKNOWN);
-    printf("name: %s, finding... \n", type.c_str());
     NE_ASSERT(re.count(mt) > 0);
     return re[mt]();
   }

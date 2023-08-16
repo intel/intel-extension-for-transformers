@@ -66,16 +66,19 @@ void sigint_handler(int signo) {
 
 int main(int argc, char** argv) {
   gpt_params params;
+#ifdef MODEL_NAME
+  params.model_name = MODEL_NAME;
+#endif
   if (gpt_params_parse(argc, argv, params) == false) {
     return 1;
   }
-
-  if (params.model_arch == MODEL_UNKNOWN) {
+  model_archs mt = model_name_to_arch::init().find(params.model_name);
+  if (mt == MODEL_UNKNOWN) {
     fprintf(stderr, "error, please set model_name \n");
     exit(0);
-  } else {
-    printf("model name: %s \n", params.model_name.c_str());
   }
+  params.model_arch = mt;
+
   // save choice to use color for later
   // (note for later: this is a slightly awkward choice)
   con_st.use_color = params.use_color;
