@@ -123,12 +123,11 @@ def build_chatbot(config: PipelineConfig):
     else:
         parameters["tokenizer_name"] = config.model_name_or_path
     parameters["device"] = config.device
-    parameters["use_hpu_graphs"] = config.use_hpu_graphs
-    parameters["cpu_jit"] = config.cpu_jit
-    parameters["use_cache"] = config.use_cache
-    parameters["peft_path"] = config.peft_path
-    parameters["use_deepspeed"] = config.use_deepspeed
-
+    parameters["use_hpu_graphs"] = config.loading_config.use_hpu_graphs
+    parameters["cpu_jit"] = config.loading_config.cpu_jit
+    parameters["use_cache"] = config.loading_config.use_cache
+    parameters["peft_path"] = config.loading_config.peft_path
+    parameters["use_deepspeed"] = config.loading_config.use_deepspeed
     adapter.load_model(parameters)
     return adapter
 

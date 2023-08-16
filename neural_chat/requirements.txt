@@ -13,3 +13,4 @@ evaluate
 fschat
 pydub
 librosa>=0.10.0
+python-multipart
