@@ -21,6 +21,7 @@
 #include "application/common.h"
 #include "models/model_utils/quant_config.h"
 #include "models/model_utils/model_types.h"
+#include "models/model_utils/model_config.h"
 
 #ifdef MODEL_SHARED
 #if defined(_WIN32) && !defined(__MINGW32__)

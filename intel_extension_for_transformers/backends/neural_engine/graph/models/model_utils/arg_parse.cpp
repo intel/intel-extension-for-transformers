@@ -228,7 +228,7 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
         break;
       }
       params.mirostat_tau = std::stof(argv[i]);
-    } else if (arg == "-b" || arg == "--batch-size") {
+    } else if (arg == "-b" || arg == "--batch-size-truncate") {
       if (++i >= argc) {
         invalid_param = true;
         break;
@@ -333,15 +333,15 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
         break;
       }
       params.input_suffix = argv[i];
-    } else if (arg == "--batch_size") {  // TODO ambiguous with batch-size (n_batch)
+    } else if (arg == "--batch-size") {  // TODO ambiguous with batch-size-truncate (n_batch)
       if (++i >= argc) {
         invalid_param = true;
         break;
       }
       params.batch_size = std::stoi(argv[i]);
-    } else if (arg == "--beam_search") {
+    } else if (arg == "--beam-search") {
       params.beam_search = true;
-    } else if (arg == "--beam_size") {
+    } else if (arg == "--beam-size") {
       if (++i >= argc) {
         invalid_param = true;
         break;
@@ -448,7 +448,7 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   fprintf(stderr, "  --no-penalize-nl      do not penalize newline token\n");
   fprintf(stderr, "  --memory-f32          use f32 instead of f16 for memory key+value\n");
   fprintf(stderr, "  --temp N              temperature (default: %.1f)\n", (double)params.temp);
-  fprintf(stderr, "  -b N, --batch-size N  batch size for prompt processing (default: %d)\n", params.n_batch);
+  fprintf(stderr, "  -b N, --batch-size-truncate N  batch size for prompt processing (default: %d)\n", params.n_batch);
   fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");
   fprintf(stderr, "  --keep                number of tokens to keep from the initial prompt (default: %d, -1 = all)\n",
           params.n_keep);
@@ -469,9 +469,9 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
           "  --lora-base FNAME     optional model to use as a base for the layers modified by the LoRA adapter\n");
   fprintf(stderr, "  -m FNAME, --model FNAME\n");
   fprintf(stderr, "                        model path (default: %s)\n", params.model.c_str());
-  fprintf(stderr, "  --batch_size 2        number batch of prompt\n");
-  fprintf(stderr, "  --beam_search         use beam search for text generation\n");
-  fprintf(stderr, "  --beam_size 4         number of beams for beam_search, only valid after --beam_search\n");
+  fprintf(stderr, "  --batch-size 2        number batch of prompt\n");
+  fprintf(stderr, "  --beam-search         use beam search for text generation\n");
+  fprintf(stderr, "  --beam-size 4         number of beams for beam_search, only valid after --beam-search\n");
   fprintf(stderr, "  --model-name          input model name, options are: ");
   model_name_to_arch::init().valid_options();
   fprintf(stderr, "\n");

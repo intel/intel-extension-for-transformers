@@ -71,7 +71,8 @@ int main(int argc, char** argv) {
   }
 
   if (params.model_arch == MODEL_UNKNOWN) {
-    fprintf(stderr, "please set model_name \n");
+    fprintf(stderr, "error, please set model_name \n");
+    exit(0);
   } else {
     printf("model name: %s \n", params.model_name.c_str());
   }

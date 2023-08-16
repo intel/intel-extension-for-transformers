@@ -31,7 +31,7 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
-#include "models/model_utils/model_config.h"
+// #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
@@ -319,47 +319,4 @@ int model_eval(struct model_context* ctx, const model_token* tokens, int n_token
   }
 
   return 0;
-}
-
-// TODO: not great allocating this every time
-std::vector<model_token> model_tokenize(struct model_context* ctx, const std::string& text, bool add_bos) {
-  // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
-  std::vector<model_token> res(text.size() + (int)add_bos);
-  const int n = model_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
-  assert(n >= 0);
-  res.resize(n);
-
-  return res;
-}
-
-struct model_context* model_init_from_gpt_params(const gpt_params& params) {
-  auto lparams = model_context_default_params();
-
-  lparams.arch = params.model_arch;
-  lparams.n_ctx = params.n_ctx;
-  lparams.n_gpu_layers = params.n_gpu_layers;
-  lparams.seed = params.seed;
-  lparams.f16_kv = params.memory_f16;
-  lparams.use_mmap = params.use_mmap;
-  lparams.use_mlock = params.use_mlock;
-  lparams.logits_all = params.perplexity;
-  lparams.embedding = params.embedding;
-
-  model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
-
-  if (lctx == NULL) {
-    fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model.c_str());
-    return NULL;
-  }
-
-  if (!params.lora_adapter.empty()) {
-    int err = model_apply_lora_from_file(lctx, params.lora_adapter.c_str(),
-                                         params.lora_base.empty() ? NULL : params.lora_base.c_str(), params.n_threads);
-    if (err != 0) {
-      fprintf(stderr, "%s: error: failed to apply lora adapter\n", __func__);
-      return NULL;
-    }
-  }
-
-  return lctx;
 }

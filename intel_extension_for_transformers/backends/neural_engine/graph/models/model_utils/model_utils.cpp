@@ -1302,6 +1302,45 @@ int model_apply_lora_from_file(struct model_context* ctx, const char* path_lora,
   }
 }
 
+struct model_context* model_init_from_gpt_params(const gpt_params& params) {
+  if (params.model_arch == MODEL_UNKNOWN) {
+    fprintf(stderr, "error, please set model_name \n");
+    exit(0);
+  }
+  auto lparams = model_context_default_params();
+
+  lparams.arch = params.model_arch;
+  lparams.n_ctx = params.n_ctx;
+  lparams.n_gpu_layers = params.n_gpu_layers;
+  lparams.seed = params.seed;
+  lparams.f16_kv = params.memory_f16;
+  lparams.use_mmap = params.use_mmap;
+  lparams.use_mlock = params.use_mlock;
+  lparams.logits_all = params.perplexity;
+  lparams.embedding = params.embedding;
+  lparams.batch_size = params.batch_size;
+  lparams.beam_search = params.beam_search;
+  lparams.beam_size = params.beam_size;
+
+  model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
+
+  if (lctx == NULL) {
+    fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model.c_str());
+    return NULL;
+  }
+
+  if (!params.lora_adapter.empty()) {
+    int err = model_apply_lora_from_file(lctx, params.lora_adapter.c_str(),
+                                         params.lora_base.empty() ? NULL : params.lora_base.c_str(), params.n_threads);
+    if (err != 0) {
+      fprintf(stderr, "%s: error: failed to apply lora adapter\n", __func__);
+      return NULL;
+    }
+  }
+
+  return lctx;
+}
+
 int model_get_kv_cache_token_count(const struct model_context* ctx) { return ctx->model.kv_self.n; }
 
 #define MODEL_MAX_RNG_STATE (64 * 1024)
@@ -1651,6 +1690,16 @@ int model_tokenize(struct model_context* ctx, const char* text, model_token* tok
   }
 
   return res.size();
+}
+
+std::vector<model_token> model_tokenize(struct model_context* ctx, const std::string& text, bool add_bos) {
+  // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
+  std::vector<model_token> res(text.size() + (int)add_bos);
+  const int n = model_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
+  assert(n >= 0);
+  res.resize(n);
+
+  return res;
 }
 
 int model_n_vocab(const struct model_context* ctx) { return ctx->vocab.id_to_token.size(); }
