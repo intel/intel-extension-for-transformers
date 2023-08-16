@@ -177,11 +177,11 @@ def get_chuck_data(content, max_length, input):
 
 
 class DocumentIndexing:
-    def __init__(self, mode, document_store=None, output_dir=None, process=False, embedding_model=None, max_length=378):
+    def __init__(self, retrieval_type="dense", document_store=None, output_dir="./output", process=False, embedding_model="hkunlp/instructor-large", max_length=378):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
         """
-        self.mode = mode
+        self.retrieval_type = retrieval_type
         self.document_store = document_store
         self.process = process
         self.output_dir = output_dir
@@ -233,7 +233,7 @@ class DocumentIndexing:
         """
         Construct the local knowledge base based on the uploaded file/files.
         """
-        if self.mode == "dense":
+        if self.retrieval_type == "dense":
             if os.path.exists(input):
                 if os.path.isfile(input):
                     data_collection = self.parse_document(input)

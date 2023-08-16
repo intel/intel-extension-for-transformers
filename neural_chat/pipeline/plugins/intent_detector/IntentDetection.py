@@ -1,7 +1,7 @@
 """Function to check the intent of the input user query with LLM."""
 import transformers
 import torch
-from .prompts import generate_intent_prompt
+from .prompts.prompt import generate_intent_prompt
 
 def intent_detection(model, query, tokenizer):
     """Using the LLM to detect the intent of the user query."""

@@ -29,6 +29,9 @@ from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese_tts import ChineseTextToSpeech
+from .pipeline.plugins.retrievers.indexing.DocumentParser import DocumentIndexing
+from .pipeline.plugins.retrievers.retriever.langchain_retriever import ChromaRetriever
+from .pipeline.plugins.retrievers.retriever import BM25Retriever
 from .pipeline.plugins.security.SensitiveChecker import SensitiveChecker
 from .models.llama_model import LlamaModel
 from .models.mpt_model import MptModel
@@ -78,7 +81,12 @@ def build_chatbot(config: PipelineConfig):
             raise ValueError("Must provide a retrieval document path")
         if not os.path.exists(config.retrieval_document_path):
             raise ValueError(f"The retrieval document path {config.retrieval_document_path} is not exist.")
-        # TODO construct document retrieval
+        db = DocumentIndexing(config.retrieval_type).KB_construct(config.retrieval_document_path)
+        if config.retrieval_type == "dense":
+            retriever = ChromaRetriever(db).retriever
+        else:
+            retriever = BM25Retriever(document_store = db)
+        adapter.register_retriever(retriever, config.retrieval_type)
 
     # construct audio plugin
     if config.audio_input or config.audio_output:
