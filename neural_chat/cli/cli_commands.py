@@ -208,7 +208,7 @@ class TextChatExecutor(BaseCommandExecutor):
         """
         parser_args = self.parser.parse_args(argv)
 
-        prompt = parser_args.prompt
+        prompt = parser_args.query
         model_name = parser_args.model_name_or_path
         if model_name:
             self.config = PipelineConfig(model_name_or_path=model_name)
@@ -229,7 +229,6 @@ class TextChatExecutor(BaseCommandExecutor):
         """
             Python API to call an executor.
         """
-        
         result = self.chatbot.chat(prompt)
         self._outputs['preds'] = result
         return result
@@ -240,9 +239,11 @@ class VoiceChatExecutor(BaseCommandExecutor):
         self.parser = argparse.ArgumentParser(
             prog='neuralchat.voicechat', add_help=True)
         self.parser.add_argument(
-            '--input', type=str, default=None, help='Input aduio or text.')
+            '--audio_input_path', type=str, default=None, help='Input aduio path.')
         self.parser.add_argument(
-            '--output', type=str, default=None, help='Output aduio or text.')
+            '--audio_output_path', type=str, default=None, help='Output aduio path.')
+        self.parser.add_argument(
+            '--query', type=str, default=None, help='Input text.')
         self.parser.add_argument(
             '--model_name_or_path', type=str, default=None, help='Model name or path.')
 
@@ -252,19 +253,23 @@ class VoiceChatExecutor(BaseCommandExecutor):
         """
         parser_args = self.parser.parse_args(argv)
 
-        input = parser_args.input
-        output = parser_args.output
+        audio_input_path = parser_args.audio_input_path
+        audio_output_path = parser_args.audio_output_path
+        query = parser_args.query
         model_name = parser_args.model_name_or_path
         if model_name:
-            config = PipelineConfig(audio_input=True if input else False,
-                                        audio_output=True if output else False,
-                                        model_name_or_path=model_name)
+            config = PipelineConfig(audio_input=True if audio_input_path else False,
+                                    audio_output=True if audio_output_path else False,
+                                    model_name_or_path=model_name)
         else:
-            config = PipelineConfig(audio_input=True if input else False,
-                                        audio_output=True if output else False)
+            config = PipelineConfig(audio_input=True if audio_input_path else False,
+                                    audio_output=True if audio_output_path else False)
         self.chatbot = build_chatbot(config)
         try:
-            res = self(input, output)
+            if audio_input_path:
+                res = self(audio_input_path, audio_output_path)
+            else:
+                res = self(query, audio_output_path)
             print(res)
             return True
         except Exception as e:
@@ -279,7 +284,6 @@ class VoiceChatExecutor(BaseCommandExecutor):
         """
         config = GenerationConfig(audio_output_path=output)
         result = self.chatbot.chat(input, config=config)
-        self._outputs['preds'] = result
         return result
 
 class FinetuingExecutor(BaseCommandExecutor):
@@ -292,12 +296,13 @@ class FinetuingExecutor(BaseCommandExecutor):
         self.parser.add_argument(
             '--config', type=str, default=None, help='Configuration file path for finetuning.')
 
-
     def execute(self, argv: List[str]) -> bool:
         """
             Command line entry.
         """
         parser_args = self.parser.parse_args(argv)
+        base_model = parser_args.base_model
+        config = parser_args.config
 
         self.finetuneCfg = FinetuningConfig()
         try:
