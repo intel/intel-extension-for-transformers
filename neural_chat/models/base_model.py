@@ -131,7 +131,8 @@ class BaseModel(ABC):
         assert query is not None, "Query cannot be None."
         response = predict(**construct_parameters(query, self.model_name, config))
         if self.tts:
-            response = self.tts.text2speech(response, config.audio_output_path)
+            self.tts.text2speech(response, self.audio_output_path)
+            response = self.audio_output_path
         return response
 
     def chat_stream(self, query, config=None):

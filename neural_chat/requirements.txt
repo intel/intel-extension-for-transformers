@@ -6,7 +6,9 @@ intel_extension_for_pytorch
 num2words
 speechbrain
 paddlepaddle
-paddlespeech
+paddlespeech==1.4.1
 shortuuid
 gptcache
-librosa>=0.10.0
+evaluate
+fschat
+pydub
