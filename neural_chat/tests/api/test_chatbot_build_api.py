@@ -53,9 +53,8 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_audio_plugin(self):
-        config = PipelineConfig(audio_input=True, audio_input_path="../../assets/audio/pat.wav",
-                                audio_output=True, audio_output_path="./response.wav",
-                                audio_lang="english")
+        config = PipelineConfig(audio_input_path="../../assets/audio/pat.wav",
+                                audio_output_path="./response.wav")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict()
