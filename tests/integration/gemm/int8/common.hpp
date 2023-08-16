@@ -41,6 +41,8 @@ public:
                 + mem_layout_a_str + "_" + mem_layout_b_str;
         return name;
     }
+
+    static constexpr mma_engine engine = mma_engine::xmx;
 };
 
 class Test0 : public TestBase {
@@ -182,30 +184,34 @@ public:
     using data_type_acc = int;
 };
 
-template <class Test, typename data_type_a, typename data_type_b,
-        typename data_type_c, typename data_type_acc>
-using int8_gemm_func = int8gemm_test_func<data_type_a, data_type_b, data_type_c,
-        data_type_acc, Test::wg_m, Test::wg_n, Test::sg_m, Test::sg_n,
-        Test::sg_k, Test::layout_a, Test::layout_b, Test::l3_kslicing,
-        Test::slm_kslicing>;
+template <class Test>
+using int8_gemm_func = int8gemm_test_func<typename Test::data_type_a,
+        typename Test::data_type_b, typename Test::data_type_c,
+        typename Test::data_type_acc, Test::wg_m, Test::wg_n, Test::sg_m,
+        Test::sg_n, Test::sg_k, Test::layout_a, Test::layout_b,
+        Test::l3_kslicing, Test::slm_kslicing, Test::engine>;
 
-template <class Test, typename data_type_a, typename data_type_b,
-        typename data_type_c, typename data_type_acc>
+template <class Test>
 class result_validate {
 
 public:
-    int operator()(data_type_a *A_device, data_type_b *B_device,
-            data_type_c *C_device, sycl::queue &queue, sycl::context &context) {
-        auto A = alloc_host_and_copy<data_type_a>(
+    using dtype_a = Test::data_type_a;
+    using dtype_b = Test::data_type_b;
+    using dtype_c = Test::data_type_c;
+    using dtype_acc = Test::data_type_acc;
+
+    int operator()(dtype_a *A_device, dtype_b *B_device, dtype_c *C_device,
+            sycl::queue &queue) {
+        auto A = alloc_host_and_copy<dtype_a>(
                 A_device, Test::mat_m * Test::mat_k, queue);
-        auto B = alloc_host_and_copy<data_type_b>(
+        auto B = alloc_host_and_copy<dtype_b>(
                 B_device, Test::mat_k * Test::mat_n, queue);
-        auto C = alloc_host_and_copy<data_type_c>(
+        auto C = alloc_host_and_copy<dtype_c>(
                 C_device, Test::mat_m * Test::mat_n, queue);
 
-        buff_cmp::buff_vals<data_type_c> data(
+        buff_cmp::buff_vals<dtype_c> data(
                 C, Test::mat_m, Test::mat_n, Test::mat_n);
-        std::vector<data_type_acc> acc_buffer(Test::mat_m * Test::mat_n, 0);
+        std::vector<dtype_acc> acc_buffer(Test::mat_m * Test::mat_n, 0);
 
         {
             bool is_col_major_a = Test::layout_a == mem_layout::col_major;
@@ -213,10 +219,10 @@ public:
             for (int i = 0; i < Test::mat_m; i++) {
                 for (int j = 0; j < Test::mat_n; j++) {
                     for (int k = 0; k < Test::mat_k; k++) {
-                        data_type_acc a_temp = is_col_major_a
+                        dtype_acc a_temp = is_col_major_a
                                 ? A[i + k * Test::mat_m]
                                 : A[i * Test::mat_k + k];
-                        data_type_acc b_temp = is_col_major_b
+                        dtype_acc b_temp = is_col_major_b
                                 ? B[k + j * Test::mat_k]
                                 : B[k * Test::mat_n + j];
                         acc_buffer[i * Test::mat_n + j]
@@ -227,7 +233,7 @@ public:
             }
         }
 
-        buff_cmp::buff_vals<data_type_c, data_type_acc> other(
+        buff_cmp::buff_vals<dtype_c, dtype_acc> other(
                 acc_buffer.data(), Test::mat_m, Test::mat_n, Test::mat_n);
         bool result = buff_cmp::xetla_buff_cmp(data, other,
                 Test::name(Test::mat_m, Test::mat_n, Test::mat_k, Test::wg_m,

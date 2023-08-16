@@ -25,16 +25,13 @@ std::string esimd_compile_string
           " -Xfinalizer ' -printregusage -enableBCR -DPASTokenReduction ' ";
 
 template <typename T>
-class bgemm_test : public ::testing::Test {};
-TYPED_TEST_SUITE_P(bgemm_test);
-TYPED_TEST_P(bgemm_test, esimd) {
-    gemm_exec<TypeParam, typename TypeParam::data_type_a,
-            typename TypeParam::data_type_b, typename TypeParam::data_type_c,
-            typename TypeParam::data_type_acc, result_validate, bgemm_func>(
-            TypeParam::mat_m, TypeParam::mat_n, TypeParam::mat_k,
+class bf16_gemm_test : public ::testing::Test {};
+TYPED_TEST_SUITE_P(bf16_gemm_test);
+TYPED_TEST_P(bf16_gemm_test, esimd) {
+    gemm_exec<TypeParam, result_validate<TypeParam>, bf16_gemm_func<TypeParam>>(
             esimd_compile_string);
 }
-REGISTER_TYPED_TEST_SUITE_P(bgemm_test, esimd);
+REGISTER_TYPED_TEST_SUITE_P(bf16_gemm_test, esimd);
 using tests = ::testing::Types<Test0, Test1, Test2, Test3, Test4, Test5, Test6,
         Test7, Test8, Test9, Test10, Test11>;
-INSTANTIATE_TYPED_TEST_SUITE_P(bgemm_test_suite, bgemm_test, tests);
+INSTANTIATE_TYPED_TEST_SUITE_P(bf16_gemm_test_suite, bf16_gemm_test, tests);

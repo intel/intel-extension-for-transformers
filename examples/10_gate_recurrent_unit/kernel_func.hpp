@@ -80,8 +80,8 @@ struct fused_config_t {
             {boundary_n, boundary_k_##id, \
                     is_col_major_b ? matrix_k_##id : matrix_n}, \
             {start_x_b, start_y_b}); \
-    brgemm_arg.init(mem_desc_a, mem_desc_b, inner_loop_count_##id); \
-    op(g, matAcc_##acc_id, brgemm_arg); \
+    brgemm_args.init(mem_desc_a, mem_desc_b, inner_loop_count_##id); \
+    op(g, matAcc_##acc_id, brgemm_args); \
     SW_BARRIER();
 
 #define MATC_STORE(ptr_c) \
@@ -151,7 +151,7 @@ struct gru_layer {
         matAcc_t matAcc_0, matAcc_1;
         matC_t matC;
         matC_payload_t matC_payload;
-        brgemm_arguments brgemm_arg;
+        brgemm_arguments brgemm_args;
         mat_hidden_t mat_hidden;
         mat_hidden_payload_t mat_hidden_payload;
         mem_desc_a_t mem_desc_a;

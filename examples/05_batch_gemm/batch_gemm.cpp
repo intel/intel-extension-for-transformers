@@ -185,7 +185,7 @@ void batch_gemm_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             gemm_result_validate(A, B, C, batch_size, matrix_m, matrix_k,
-                    matrix_n, queue, context, mem_layout::row_major,
+                    matrix_n, queue, mem_layout::row_major,
                     mem_layout::row_major));
 
     //performance

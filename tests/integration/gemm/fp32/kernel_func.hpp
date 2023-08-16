@@ -24,9 +24,9 @@ template <typename dtype_a, typename dtype_b, typename dtype_c,
         typename dtype_acc, int wg_m, int wg_n, int sg_m, int sg_n, int sg_k,
         mem_layout layout_a, mem_layout layout_b, uint32_t l3_kslicing,
         uint32_t slm_kslicing, mma_engine engine>
-struct sgemm_test_func {
+struct fp32_gemm_test_func {
 
-    static const char *func_name() { return "sgemm_test_func"; }
+    static const char *func_name() { return "fp32_gemm_test_func"; }
 
     static inline void run(xetla_exec_item<3> &ei, dtype_a *A, dtype_b *B,
             dtype_c *C, uint32_t mat_m, uint32_t mat_n, uint32_t mat_k) {

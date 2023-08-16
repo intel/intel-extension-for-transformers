@@ -25,15 +25,19 @@ using namespace gpu::xetla;
 
 enum class test_result { complete = 0, skip = 1, fail = 2 };
 
-template <class Test, typename data_type_a, typename data_type_b,
-        typename data_type_c, typename data_type_acc,
-        template <class, typename, typename, typename, typename>
-        class validate_func,
-        template <class, typename, typename, typename, typename> class KERNEL,
+template <class Test, typename validate_func, typename KERNEL,
         int SLMSIZE = 128 * 1024, int BARNUM = 32>
-void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
-        std::string compile_str, size_t batch = 1) {
+void gemm_exec(const std::string &compile_str, size_t batch = 1) {
     test_result result = test_result::complete;
+
+    using data_type_a = Test::data_type_a;
+    using data_type_b = Test::data_type_b;
+    using data_type_c = Test::data_type_c;
+    using data_type_acc = float;
+
+    constexpr size_t matrix_m = Test::mat_m;
+    constexpr size_t matrix_n = Test::mat_n;
+    constexpr size_t matrix_k = Test::mat_k;
 
     constexpr size_t wg_tile_m = Test::wg_m;
     constexpr size_t wg_tile_n = Test::wg_n;
@@ -149,9 +153,8 @@ void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
                             gpu::xetla::xetla_exec_item<3> ei(item);
                             gpu::xetla::xetla_local_init<SLMSIZE>();
                             gpu::xetla::xetla_nbarrier_init<BARNUM>();
-                            KERNEL<Test, data_type_a, data_type_b, data_type_c,
-                                    data_type_acc>::run(ei, A_ptr, B_ptr, C_ptr,
-                                    matrix_m, matrix_n, matrix_k);
+                            KERNEL::run(ei, A_ptr, B_ptr, C_ptr, matrix_m,
+                                    matrix_n, matrix_k);
                         });
             });
             e_esimd.wait();
@@ -163,10 +166,8 @@ void gemm_exec(size_t matrix_m, size_t matrix_n, size_t matrix_k,
 
     // validation
     if (result == test_result::complete) {
-        validate_func<Test, data_type_a, data_type_b, data_type_c,
-                data_type_acc>
-                vfunc;
-        ASSERT_EQ(0, vfunc(A, B, C, queue, context));
+        validate_func vfunc;
+        ASSERT_EQ(0, vfunc(A, B, C, queue));
     }
 
     free(A, context);

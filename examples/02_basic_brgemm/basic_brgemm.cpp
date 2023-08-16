@@ -203,8 +203,7 @@ void basic_brgemm_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             gemm_result_validate(A, B, C, 1, matrix_m, matrix_k, matrix_n,
-                    queue, context, mem_layout::row_major,
-                    mem_layout::row_major));
+                    queue, mem_layout::row_major, mem_layout::row_major));
 
     // performance
     prof.print_profiling_result(profiling_selector::GPU);

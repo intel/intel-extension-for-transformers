@@ -22,8 +22,8 @@
 static void vadd_run() {
     constexpr unsigned VL = 16;
     constexpr unsigned BL = 64;
-    constexpr unsigned Size = BL * BL;
-    constexpr unsigned GroupSize = 1;
+    constexpr unsigned size = BL * BL;
+    constexpr unsigned group_size = 1;
     queue queue {};
     auto context = queue.get_info<info::queue::context>();
     auto device = queue.get_info<info::queue::device>();
@@ -31,24 +31,24 @@ static void vadd_run() {
     std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
     auto A = alloc_device_and_init<data_type>(
-            Size,
+            size,
             [](data_type *data, size_t idx) {
                 data[idx] = static_cast<data_type>(idx);
             },
             queue, device, context);
     auto B = alloc_device_and_init<data_type>(
-            Size,
+            size,
             [](data_type *data, size_t idx) {
                 data[idx] = static_cast<data_type>(idx);
             },
             queue, device, context);
     auto C = alloc_device_and_init<data_type>(
-            Size, [](data_type *data, size_t idx) {}, queue, device, context);
+            size, [](data_type *data, size_t idx) {}, queue, device, context);
 
     // each thread process 16x16 block
-    cl::sycl::range<1> Globalrange {Size / BL / BL};
-    cl::sycl::range<1> local_range {GroupSize};
-    cl::sycl::nd_range<1> nd_range(Globalrange, local_range);
+    cl::sycl::range<1> global_range {size / BL / BL};
+    cl::sycl::range<1> local_range {group_size};
+    cl::sycl::nd_range<1> nd_range(global_range, local_range);
 
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {

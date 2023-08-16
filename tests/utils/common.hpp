@@ -129,7 +129,7 @@ template <typename data_type_a, typename data_type_b, typename data_type_c,
         typename data_type_acc = float>
 int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
         data_type_c *C_device, uint32_t batch_size, uint32_t m, uint32_t k,
-        uint32_t n, sycl::queue &queue, sycl::context &context,
+        uint32_t n, sycl::queue &queue,
         mem_layout mem_layout_a_ = mem_layout::row_major,
         mem_layout mem_layout_b_ = mem_layout::row_major) {
     bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;

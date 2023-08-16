@@ -19,21 +19,23 @@
 #include "test.hpp"
 #include <gtest/gtest.h>
 
-template <class Test, typename dtype_a, typename dtype_b, typename dtype_c,
-        typename dtype_acc>
+template <class Test>
 class result_validate {
 public:
-    int operator()(dtype_a *A, dtype_b *B, dtype_c *C, sycl::queue &queue,
-            sycl::context &context) {
+    using dtype_a = Test::data_type_a;
+    using dtype_b = Test::data_type_b;
+    using dtype_c = Test::data_type_c;
+    using dtype_acc = float;
+    int operator()(dtype_a *A, dtype_b *B, dtype_c *C, sycl::queue &queue) {
         return gemm_result_validate<dtype_a, dtype_b, dtype_c, dtype_acc>(A, B,
-                C, 1, Test::mat_m, Test::mat_k, Test::mat_n, queue, context,
+                C, 1, Test::mat_m, Test::mat_k, Test::mat_n, queue,
                 Test::layout_a, Test::layout_b);
     }
 };
 
-template <class Test, typename dtype_a, typename dtype_b, typename dtype_c,
-        typename dtype_acc>
-using gemm_func = gemm_test_func<dtype_a, dtype_b, dtype_c, dtype_acc,
+template <class Test>
+using gemm_func = gemm_test_func<typename Test::data_type_a,
+        typename Test::data_type_b, typename Test::data_type_c, float,
         Test::wg_m, Test::wg_n, Test::sg_m, Test::sg_n, Test::sg_k,
         Test::layout_a, Test::layout_b, Test::l3_kslicing, Test::slm_kslicing>;
 
@@ -48,10 +50,8 @@ template <typename T>
 class gemm_tf32 : public ::testing::Test {};
 TYPED_TEST_SUITE_P(gemm_tf32);
 TYPED_TEST_P(gemm_tf32, esimd) {
-    gemm_exec<TypeParam, typename TypeParam::data_type_a,
-            typename TypeParam::data_type_b, typename TypeParam::data_type_c,
-            float, result_validate, gemm_func>(TypeParam::mat_m,
-            TypeParam::mat_n, TypeParam::mat_k, esimd_compile_string);
+    gemm_exec<TypeParam, result_validate<TypeParam>, gemm_func<TypeParam>>(
+            esimd_compile_string);
 }
 REGISTER_TYPED_TEST_SUITE_P(gemm_tf32, esimd);
 INSTANTIATE_TYPED_TEST_SUITE_P(gemm_tf32_suite, gemm_tf32, tests);

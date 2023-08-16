@@ -20,9 +20,10 @@
 #include <gtest/gtest.h>
 
 static void vadd_run() {
-    constexpr unsigned Size = 160;
+    constexpr unsigned size = 160;
     constexpr unsigned VL = 16;
-    constexpr unsigned GroupSize = 1;
+    constexpr unsigned group_size = 1;
+
     queue queue {};
     auto context = queue.get_info<info::queue::context>();
     auto device = queue.get_info<info::queue::device>();
@@ -30,24 +31,24 @@ static void vadd_run() {
     std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
     auto A = alloc_device_and_init<data_type>(
-            Size,
+            size,
             [](data_type *data, size_t idx) {
                 data[idx] = static_cast<data_type>(idx);
             },
             queue, device, context);
     auto B = alloc_device_and_init<data_type>(
-            Size,
+            size,
             [](data_type *data, size_t idx) {
                 data[idx] = static_cast<data_type>(idx);
             },
             queue, device, context);
     auto C = alloc_device_and_init<data_type>(
-            Size, [](data_type *data, size_t idx) {}, queue, device, context);
+            size, [](data_type *data, size_t idx) {}, queue, device, context);
 
     // We need that many workitems. Each processes VL elements of data.
-    cl::sycl::range<1> Globalrange {Size / VL};
-    cl::sycl::range<1> local_range {GroupSize};
-    cl::sycl::nd_range<1> nd_range(Globalrange, local_range);
+    cl::sycl::range<1> global_range {size / VL};
+    cl::sycl::range<1> local_range {group_size};
+    cl::sycl::nd_range<1> nd_range(global_range, local_range);
 
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
@@ -65,7 +66,7 @@ static void vadd_run() {
 
     // validation
     int err_cnt;
-    ASSERT_EQ(0, vadd_result_validate(A, B, C, Size, queue));
+    ASSERT_EQ(0, vadd_result_validate(A, B, C, size, queue));
 
     free(A, context);
     free(B, context);

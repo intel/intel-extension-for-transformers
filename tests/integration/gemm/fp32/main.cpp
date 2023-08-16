@@ -19,26 +19,20 @@
 #include "utils/utils.hpp"
 #include <gtest/gtest.h>
 
-using data_type_a = float;
-using data_type_b = float;
-using data_type_c = float;
-using data_type_acc = float;
-
 std::string esimd_compile_string
         = " -vc-codegen -doubleGRF  -Xfinalizer ' -printregusage -noLocalSplit "
           "-enableBCR -nolocalra  ' ";
 
 template <typename T>
-class sgemm_test : public ::testing::Test {};
-TYPED_TEST_SUITE_P(sgemm_test);
+class fp32_gemm_test : public ::testing::Test {};
+TYPED_TEST_SUITE_P(fp32_gemm_test);
 
-TYPED_TEST_P(sgemm_test, esimd) {
-    gemm_exec<TypeParam, data_type_a, data_type_b, data_type_c, data_type_acc,
-            result_validate, sgemm_func>(TypeParam::mat_m, TypeParam::mat_n,
-            TypeParam::mat_k, esimd_compile_string, TypeParam::batch_size);
+TYPED_TEST_P(fp32_gemm_test, esimd) {
+    gemm_exec<TypeParam, result_validate<TypeParam>, fp32_gemm_func<TypeParam>>(
+            esimd_compile_string, TypeParam::batch_size);
 }
 
-REGISTER_TYPED_TEST_SUITE_P(sgemm_test, esimd);
+REGISTER_TYPED_TEST_SUITE_P(fp32_gemm_test, esimd);
 using tests = ::testing::Types<Test1, Test2, Test3, Test4, Test5, Test6, Test7,
         Test8, Test9, Test10, Test11>;
-INSTANTIATE_TYPED_TEST_SUITE_P(sgemm_test_suite, sgemm_test, tests);
+INSTANTIATE_TYPED_TEST_SUITE_P(fp32_gemm_test_suite, fp32_gemm_test, tests);

@@ -109,9 +109,12 @@ static void igemm_quantize_run() {
                                 = igemm_quantize_functor::barrier_count;
                         constexpr uint32_t slm_size
                                 = igemm_quantize_functor::slm_size;
-                        xetla_nbarrier_init<barrier_count>();
-                        xetla_local_init<slm_size>();
-
+                        if constexpr (barrier_count != 0) {
+                            xetla_nbarrier_init<barrier_count>();
+                        }
+                        if constexpr (slm_size != 0) {
+                            xetla_local_init<slm_size>();
+                        }
                         igemm_quantize_functor::run(ei, A, B, C, scale, offset,
                                 matrix_m, matrix_n, matrix_k);
                     });
