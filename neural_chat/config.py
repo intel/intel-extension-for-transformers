@@ -42,6 +42,10 @@ class AudioLanguageOptions(Enum):
     ENGLISH = auto()
     CHINESE = auto()
 
+class RetrievalTypeOptions(Enum):
+    SPARSE = auto()
+    DENSE = auto()
+
 @dataclass
 class ModelArguments:
     """

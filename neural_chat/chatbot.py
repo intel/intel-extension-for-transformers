@@ -21,7 +21,7 @@ from .config import PipelineConfig
 from .config import OptimizationConfig
 from .config import FinetuningConfig
 from .pipeline.finetuning.finetuning import Finetuning
-from .config import DeviceOptions, BackendOptions, AudioLanguageOptions
+from .config import DeviceOptions, BackendOptions, AudioLanguageOptions, RetrievalTypeOptions
 from .models.base_model import get_model_adapter
 from .utils.common import get_device_type, get_backend_type, is_audio_file
 from .pipeline.plugins.caching.cache import init_similar_cache_from_config
@@ -70,9 +70,14 @@ def build_chatbot(config: PipelineConfig):
     adapter = get_model_adapter(config.model_name_or_path)
 
     # construct document retrieval using retrieval plugin
-    if config.retrieval:
-        if not config.retrieval_type or not config.document_path:
-             raise ValueError(f"The retrieval type and document path must be set when enable retrieval.")
+    if config.retrieval_type:
+        if config.retrieval_type not in [option.name.lower() for option in RetrievalTypeOptions]:
+            valid_options = ", ".join([option.name.lower() for option in RetrievalTypeOptions])
+            raise ValueError(f"Invalid retrieval type value '{config.retrieval_type}'. Must be one of {valid_options}")
+        if not config.retrieval_document_path:
+            raise ValueError("Must provide a retrieval document path")
+        if not os.path.exists(config.retrieval_document_path):
+            raise ValueError(f"The retrieval document path {config.retrieval_document_path} is not exist.")
         # TODO construct document retrieval
 
     # construct audio plugin
