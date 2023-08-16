@@ -22,6 +22,7 @@ import os
 from fastchat.conversation import get_conv_template, Conversation
 from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
 from neural_chat.config import GenerationConfig
+from neural_chat.utils.common import is_audio_file
 
 def construct_parameters(query, model_name, config):
     params = {}
@@ -109,7 +110,7 @@ class BaseModel(ABC):
             config = GenerationConfig()
         return predict_stream(**construct_parameters(query, self.model_name, config))
 
-    def predict(self, query=None, config=None):
+    def predict(self, query, config=None):
         """
         Predict using a non-streaming approach.
 
@@ -120,11 +121,16 @@ class BaseModel(ABC):
         if not config:
             config = GenerationConfig()
 
-        if self.asr and self.audio_input_path:
-            query = self.asr.audio2text(self.audio_input_path)
+        if is_audio_file(query):
+            if not os.path.exists(query):
+                raise ValueError(f"The audio file path {query} is invalid.")
+            if self.asr:
+                query = self.asr.audio2text(self.audio_input_path)
+            else:
+                raise ValueError(f"The query {query} is audio file but there is no ASR registered.")
         assert query is not None, "Query cannot be None."
         response = predict(**construct_parameters(query, self.model_name, config))
-        if self.tts and self.audio_output_path:
+        if self.tts:
             self.tts.text2speech(response, self.audio_output_path)
             response = self.audio_output_path
         return response
@@ -161,7 +167,7 @@ class BaseModel(ABC):
         """
         return get_conv_template("one_shot")
 
-    def register_tts(self, instance, audio_output_path):
+    def register_tts(self, instance):
         """
         Register a text-to-speech (TTS) instance.
 
@@ -169,9 +175,8 @@ class BaseModel(ABC):
             instance: An instance of a TTS module.
         """
         self.tts = instance
-        self.audio_output_path = audio_output_path
 
-    def register_asr(self, instance, audio_input_path):
+    def register_asr(self, instance):
         """
         Register an automatic speech recognition (ASR) instance.
 
@@ -179,7 +184,6 @@ class BaseModel(ABC):
             instance: An instance of an ASR module.
         """
         self.asr = instance
-        self.audio_input_path = audio_input_path
 
     def register_safety_checker(self, instance):
         """

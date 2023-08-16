@@ -77,7 +77,7 @@ neuralchat textchat --retrieval_type sparse --retrieval_document_path ./assets/d
 ```python
 >>> from neural_chat.config import PipelineConfig
 >>> from neural_chat.chatbot import build_chatbot
->>> config = PipelineConfig(retrieval_type="sparse", retrieval_document_path="./assets/docs/")
+>>> config = PipelineConfig(retrieval=True, retrieval_document_path="./assets/docs/")
 >>> chatbot = build_chatbot(config)
 >>> response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
 ```
@@ -111,9 +111,9 @@ For the Python API code, users have the option to enable different voice chat mo
 ```python
 >>> from neural_chat.config import PipelineConfig
 >>> from neural_chat.chatbot import build_chatbot
->>> config = PipelineConfig(audio_input_path="./assets/audio/pat.wav", audio_output_path="./response.wav")
+>>> config = PipelineConfig(audio_input=True, audio_output=True)
 >>> chatbot = build_chatbot(config)
->>> result = chatbot.predict()
+>>> result = chatbot.predict(query="./assets/audio/pat.wav")
 ```
 
 We provide multiple plugins to augment the chatbot on top of LLM inference. Our plugins support [knowledge retrieval](./pipeline/plugins/retrievers/), [query caching](./pipeline/plugins/caching/), [prompt optimization](./pipeline/plugins/prompts/), [safety checker](./pipeline/plugins/security/), etc. Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time. Prompt optimization suppots auto prompt engineering to improve user prompts, instruction optimization to enhance the model's performance, and memory controller for efficient memory utilization.

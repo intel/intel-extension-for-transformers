@@ -318,7 +318,7 @@ class OptimizationConfig:
                  device='cpu',
                  backend='ipex',
                  approach="static",
-                 precision='bf16',
+                 precision='int8',
                  excluded_precisions=[],
                  op_type_dict=None,
                  op_name_dict=None,
@@ -347,7 +347,8 @@ class GenerationConfig:
                  bad_words_ids=None,
                  force_words_ids=None,
                  use_hpu_graphs=False,
-                 use_cache=False):
+                 use_cache=False,
+                 audio_output_path=None):
         self.device = device
         self.temperature = temperature
         self.top_k = top_k
@@ -361,6 +362,7 @@ class GenerationConfig:
         self.force_words_ids = force_words_ids
         self.use_hpu_graphs = use_hpu_graphs
         self.use_cache = use_cache
+        self.audio_output_path = audio_output_path
 
 class PipelineConfig:
     def __init__(self,
@@ -368,7 +370,8 @@ class PipelineConfig:
                  tokenizer_name_or_path=None,
                  device="auto",
                  backend="auto",
-                 retrieval_type=None,
+                 retrieval=False,
+                 retrieval_type="dense",
                  retrieval_document_path=None,
                  audio_input_path=None,
                  audio_output_path="./response.wav",
@@ -392,10 +395,11 @@ class PipelineConfig:
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.device = device
         self.backend = backend
+        self.retrieval = retrieval
         self.retrieval_type = retrieval_type
         self.retrieval_document_path = retrieval_document_path
-        self.audio_input_path = audio_input_path
-        self.audio_output_path = audio_output_path
+        self.audio_input = audio_input
+        self.audio_output = audio_output
         self.audio_lang = audio_lang
         self.txt2Image = txt2Image
         self.server_mode = server_mode

@@ -23,7 +23,7 @@ from .config import FinetuningConfig
 from .pipeline.finetuning.finetuning import Finetuning
 from .config import DeviceOptions, BackendOptions, AudioLanguageOptions, RetrievalTypeOptions
 from .models.base_model import get_model_adapter
-from .utils.common import get_device_type, get_backend_type, is_audio_file
+from .utils.common import get_device_type, get_backend_type
 from .pipeline.plugins.caching.cache import init_similar_cache_from_config
 from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
@@ -70,7 +70,7 @@ def build_chatbot(config: PipelineConfig):
     adapter = get_model_adapter(config.model_name_or_path)
 
     # construct document retrieval using retrieval plugin
-    if config.retrieval_type:
+    if config.retrieval:
         if config.retrieval_type not in [option.name.lower() for option in RetrievalTypeOptions]:
             valid_options = ", ".join([option.name.lower() for option in RetrievalTypeOptions])
             raise ValueError(f"Invalid retrieval type value '{config.retrieval_type}'. Must be one of {valid_options}")
@@ -81,28 +81,22 @@ def build_chatbot(config: PipelineConfig):
         # TODO construct document retrieval
 
     # construct audio plugin
-    if config.audio_input_path or config.audio_output_path:
+    if config.audio_input or config.audio_output:
         if config.audio_lang not in [option.name.lower() for option in AudioLanguageOptions]:
             valid_options = ", ".join([option.name.lower() for option in AudioLanguageOptions])
             raise ValueError(f"Invalid audio language value '{config.audio_lang}'. Must be one of {valid_options}")
-        if config.audio_input_path:
-            if not os.path.exists(config.audio_input_path):
-                raise ValueError(f"The audio input path {config.audio_input_path} is not exist.")
-            if not is_audio_file(config.audio_input_path):
-                raise ValueError(f"The input audio {config.audio_input_path} is not a audio file.")
+        if config.audio_input:
             if config.audio_lang == AudioLanguageOptions.CHINESE.name.lower():
                 asr = ChineseAudioSpeechRecognition()
             else:
                 asr = AudioSpeechRecognition()
-            adapter.register_asr(asr, config.audio_input_path)
-        if config.audio_output_path:
-            if not is_audio_file(config.audio_output_path):
-                raise ValueError(f"The output audio {config.audio_output_path} is not a audio format.")
+            adapter.register_asr(asr)
+        if config.audio_output:
             if config.audio_lang == AudioLanguageOptions.CHINESE.name.lower():
                 tts = ChineseTextToSpeech()
             else:
                 tts = TextToSpeech()
-            adapter.register_tts(tts, config.audio_output_path)
+            adapter.register_tts(tts)
 
     # construct response caching
     if config.cache_chat:
