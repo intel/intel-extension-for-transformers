@@ -131,6 +131,7 @@ class ChatGLM2Tokenizer {
     int smask_token_id;
     int sop_token_id;
     int eop_token_id;
+    int proto_size;
 };
 
 

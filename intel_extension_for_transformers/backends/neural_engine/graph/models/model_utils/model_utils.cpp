@@ -913,7 +913,7 @@ static void model_quantize_internal(const quant_params& params, quant_layer_base
   }
   std::unique_ptr<model_model_loader> model_loader(new model_model_loader(params.model_file, /*use_mmap*/ false,
                                                                           /*vocab_only*/ false));
-  model_file_saver file_saver(params.out_file.c_str(), model_loader->file_loaders.at(0).get(), ftype);
+  model_file_saver file_saver(params.out_file.c_str(), model_loader->file_loaders.at(0).get(), ftype, model_loader->tokenizer);
   size_t total_size_org = 0;
   size_t total_size_new = 0;
   size_t idx = 0;

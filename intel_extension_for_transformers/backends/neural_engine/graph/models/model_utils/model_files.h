@@ -227,6 +227,7 @@ struct model_file_loader {
     std::string word = file.read_string(proto_size);
     std::string_view serialized_model_proto(word);
     tokenizer = new ChatGLM2Tokenizer(serialized_model_proto);
+    tokenizer->proto_size = proto_size;
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
@@ -237,7 +238,7 @@ struct model_file_loader {
       shard.ne.resize(n_dims);
       file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
       std::string name = file.read_string(name_len);
-      // printf("%s\n", name.c_str());
+      printf("%s\n", name.c_str());
       if (n_dims < 1 || n_dims > 2) {
         throw format("model.cpp: tensor '%s' should not be %u-dimensional", name.c_str(), n_dims);
       }
@@ -289,8 +290,9 @@ struct model_file_loader {
 struct model_file_saver {
   model_file file;
   model_file_loader* any_file_loader;
-  model_file_saver(const char* fname, model_file_loader* any_file_loader, enum ne_ftype new_ftype)
-      : file(fname, "wb"), any_file_loader(any_file_loader) {
+  ChatGLM2Tokenizer *tokenizer_;
+  model_file_saver(const char* fname, model_file_loader* any_file_loader, enum ne_ftype new_ftype, ChatGLM2Tokenizer *tokenizer)
+      : file(fname, "wb"), any_file_loader(any_file_loader), tokenizer_(tokenizer) {
     fprintf(stderr, "model.cpp: saving model to %s\n", fname);
     write_magic();
     write_hparams(new_ftype);
@@ -313,18 +315,18 @@ struct model_file_saver {
     file.write_raw(&hparams.alibi_bias_max, sizeof(float));
     file.write_raw(&hparams.clip_qkv, sizeof(float));
     file.write_u32(hparams.par_res);
+
+    file.write_u32(hparams.bos_token_id);
+    file.write_u32(hparams.eos_token_id);
+    file.write_u32(hparams.pad_token_id);
+    file.write_u32(hparams.sep_token_id);
+    file.write_u32(hparams.multi_query_group_num);
+    file.write_u32(hparams.ffn_hidden_size);
   }
   void write_vocab() {
-    if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
-      fprintf(stderr, "model.cpp: WARNING: input is an old file that doesn't have scores; will add dummy scores\n");
-    }
-    uint32_t n_vocab = any_file_loader->hparams.n_vocab;
-    for (uint32_t i = 0; i < n_vocab; i++) {
-      const auto& token_score = any_file_loader->vocab.id_to_token.at(i);
-      file.write_u32((uint32_t)token_score.tok.size());
-      file.write_raw(token_score.tok.data(), token_score.tok.size());
-      file.write_raw(&token_score.score, sizeof(token_score.score));
-    }
+    uint32_t proto_size = tokenizer_->proto_size;
+    file.write_u32(proto_size);
+    file.write_raw(tokenizer_->sp.serialized_model_proto().c_str(), proto_size);
   }
   void write_tensor(model_load_tensor& tensor, enum ne_type new_type, const void* new_data, size_t new_size) {
     switch (new_type) {
@@ -345,7 +347,7 @@ struct model_file_saver {
     file.write_u32(new_type);
     file.write_raw(tensor.ne.data(), sizeof(tensor.ne[0]) * tensor.ne.size());
     file.write_raw(tensor.name.data(), tensor.name.size());
-    file.seek(-static_cast<ptrdiff_t>(file.tell()) & 31, SEEK_CUR);
+    // file.seek(-static_cast<ptrdiff_t>(file.tell()) & 31, SEEK_CUR);
     if (new_type != NE_TYPE_JBLAS) MODEL_ASSERT(new_size == model_calc_tensor_size(tensor.ne, new_type));
     file.write_raw(new_data, new_size);
   }
