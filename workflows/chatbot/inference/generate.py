@@ -380,6 +380,14 @@ def load_model(
                 low_cpu_mem_usage=True,
                 torchscript=cpu_jit,
             )
+    elif ipex_int8 and re.search("llama", model_name, re.IGNORECASE):
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            from optimum.intel.generation.modeling import TSModelForCausalLM
+            model = TSModelForCausalLM.from_pretrained(
+                model_name,
+                trust_remote_code=True,
+                file_name="best_model.pt",
+            )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
