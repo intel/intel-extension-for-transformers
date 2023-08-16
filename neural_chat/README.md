@@ -39,27 +39,7 @@ Giving NeuralChat the textual instruction, it will respond with the textual resp
 **command line experience**
 
 ```shell
-neuralchat textchat --prompt "Tell me about Intel Xeon Scalable Processors."
-```
-
-**Python API experience**
-
-```python
->>> from neural_chat.config import NeuralChatConfig
->>> from neural_chat.chatbot import build_chatbot
->>> config = NeuralChatConfig()
->>> chatbot = build_chatbot(config)
->>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
-```
-
-### Text Chat With Retreival
-
-Giving NeuralChat the textual instruction, it will respond with the textual response.
-
-**command line experience**
-
-```shell
-neuralchat textchat --prompt "Tell me about Intel Xeon Scalable Processors."
+neuralchat textchat --query "Tell me about Intel Xeon Scalable Processors."
 ```
 
 **Python API experience**
@@ -72,6 +52,26 @@ neuralchat textchat --prompt "Tell me about Intel Xeon Scalable Processors."
 >>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
+### Text Chat With Retreival
+
+Giving NeuralChat the textual instruction, it will respond with the textual response.
+
+**command line experience**
+
+```shell
+neuralchat textchat --retrieval_type sparse --retrieval_document_path ./assets/docs/ --query "Tell me about Intel Xeon Scalable Processors."
+```
+
+**Python API experience**
+
+```python
+>>> from neural_chat.config import PipelineConfig
+>>> from neural_chat.chatbot import build_chatbot
+>>> config = PipelineConfig(retrieval_type="sparse", retrieval_document_path="./assets/docs/")
+>>> chatbot = build_chatbot(config)
+>>> response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
+```
+
 ### Voice Chat
 
 In the context of voice chat, users have the option to engage in various modes: utilizing input audio and receiving output audio, employing input audio and receiving textual output, or providing input in textual form and receiving audio output.
@@ -79,19 +79,19 @@ In the context of voice chat, users have the option to engage in various modes: 
 **command line experience**
 
 - audio in and audio output
-    ```shell
-    neuralchat voicechat --input assets/audio/say_hello.wav --output response.wav
-    ```
+```shell
+neuralchat voicechat --audio_input_path ./assets/audio/say_hello.wav --audio_output_path ./response.wav
+```
 
 - audio in and text output
-    ```shell
-    neuralchat voicechat --input assets/audio/say_hello.wav
-    ```
+```shell
+neuralchat voicechat --audio_input_path ./assets/audio/say_hello.wav
+```
 
 - text in and audio output
-    ```shell
-    neuralchat voicechat --input "Tell me about Intel Xeon Scalable Processors." --output response.wav
-    ```
+```shell
+neuralchat voicechat --query "Tell me about Intel Xeon Scalable Processors." --audio_output_path ./response.wav
+```
 
 
 **Python API experience**
@@ -101,9 +101,9 @@ For the Python API code, users have the option to enable different voice chat mo
 ```python
 >>> from neural_chat.config import PipelineConfig
 >>> from neural_chat.chatbot import build_chatbot
->>> config = PipelineConfig(audio_input=True, audio_input_path="./assets/audio/say_hello.wav", audio_output=True, audio_output_path="./response.wav")
+>>> config = PipelineConfig(audio_input_path="./assets/audio/pat.wav", audio_output_path="./response.wav")
 >>> chatbot = build_chatbot(config)
->>> result = chatbot.chat("Tell me about Intel Xeon Scalable Processors.")
+>>> result = chatbot.predict()
 ```
 
 We provide multiple plugins to augment the chatbot on top of LLM inference. Our plugins support [knowledge retrieval](./pipeline/plugins/retrievers/), [query caching](./pipeline/plugins/caching/), [prompt optimization](./pipeline/plugins/prompts/), [safety checker](./pipeline/plugins/security/), etc. Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time. Prompt optimization suppots auto prompt engineering to improve user prompts, instruction optimization to enhance the model's performance, and memory controller for efficient memory utilization.

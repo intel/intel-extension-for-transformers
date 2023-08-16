@@ -364,9 +364,8 @@ class PipelineConfig:
                  tokenizer_name_or_path=None,
                  device="auto",
                  backend="auto",
-                 retrieval=False,
                  retrieval_type=None,
-                 document_path=None,
+                 retrieval_document_path=None,
                  audio_input_path=None,
                  audio_output_path=False,
                  audio_lang="english",
@@ -389,9 +388,8 @@ class PipelineConfig:
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.device = device
         self.backend = backend
-        self.retrieval = retrieval
         self.retrieval_type = retrieval_type
-        self.document_path = document_path
+        self.retrieval_document_path = retrieval_document_path
         self.audio_input_path = audio_input_path
         self.audio_output_path = audio_output_path
         self.audio_lang = audio_lang

@@ -137,9 +137,7 @@ class BaseModel(ABC):
             query: The input query for prediction.
             config: Configuration for prediction.
         """
-        if not config:
-            config = GenerationConfig()
-        return predict_stream(**construct_parameters(query, self.model_name, config))
+        return self.predict_stream(query=query, config=config)
 
     def chat(self, query, config=None):
         """
@@ -149,17 +147,7 @@ class BaseModel(ABC):
             query: The input query for conversation.
             config: Configuration for conversation.
         """
-        if not config:
-            config = GenerationConfig()
-
-        if self.asr and self.audio_input_path:
-            query = self.asr.audio2text(self.audio_input_path)
-        assert query is not None, "Query cannot be None."
-        response = predict(**construct_parameters(query, self.model_name, config))
-        if self.tts and self.audio_output_path:
-            self.tts.text2speech(response, self.audio_output_path)
-            response = config.audio_output_path
-        return response
+        return self.predict(query=query, config=config)
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         """
