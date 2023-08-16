@@ -1064,7 +1064,7 @@ struct ne_tensor* ne_dup_tensor(struct ne_context* ctx, const struct ne_tensor* 
 struct ne_tensor* ne_set_zero(struct ne_tensor* tensor) {
   size_t data_size = ne_nbytes(tensor);
   if (data_size > 0) {
-    memset_s(tensor->data, data_size, 0, data_size);
+    memset(tensor->data, data_size, 0, data_size);
   }
   return tensor;
 }
@@ -10353,7 +10353,9 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
     }
 
     ne_lock_destroy(&state_shared.spin);
-	free(workers);
+    if (workers != NULL) {
+        free(workers);
+    }
   }
 #endif
 
@@ -10968,7 +10970,7 @@ static enum ne_opt_result ne_opt_lbfgs(struct ne_context* ctx, struct ne_opt_par
   struct ne_lbfgs_iteration_data* lm = malloc(sizeof(struct ne_lbfgs_iteration_data) * m);
   if(lm == NULL){
 	   printf("Memory allocation failed.\n");
-	   return false; 
+	   return false;
   }else{
 	  for (int i = 0; i < m; ++i) {
 			lm[i].alpha = 0.0f;

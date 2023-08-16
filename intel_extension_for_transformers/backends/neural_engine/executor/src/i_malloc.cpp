@@ -99,15 +99,14 @@ static void mempool_enlarge(struct malloc_mempool* pool, size_t increase_size) {
   if (pool->start_addr != NULL) {
 #ifdef _WIN32
     free(pool->start_addr);
-    int ret = 0;
 #else
     int ret = munmap(pool->start_addr, pool->total_size);
-#endif
     if (ret != 0) {
       printf("Failed to unmap the memory.\n");
     }
-	pool->start_addr = NULL;
+#endif
   }
+  pool->start_addr = NULL;
   mempool_init(pool, pool->total_size + increase_size);
 }
 

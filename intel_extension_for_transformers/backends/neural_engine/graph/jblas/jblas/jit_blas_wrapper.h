@@ -171,11 +171,15 @@ class GemmInterfacePackWeight {
 };
 
 }  // namespace gemm_pack_weight
-namespace gemm_default {
+namespace utils {
 template <class T>
 using DefaultParallel = jblas::utils::parallel::Parallel2DGemm<T>;
+} // namespace utils
+namespace gemm_default{
+  using DefaultParallel = jblas::utils::DefaultParallel<T>;
 namespace avx512f {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
+using DefaultParallel = jblas::gemm_default::DefaultParallel<T>;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
@@ -187,6 +191,7 @@ using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
 }  // namespace avx512f
 namespace avx512_vnni {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
+using DefaultParallel = jblas::gemm_default::DefaultParallel<T>;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
@@ -199,6 +204,7 @@ using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
 
 namespace amx_bf16 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
+using DefaultParallel = jblas::gemm_default::DefaultParallel<T>;
 using GemmKernelPackedWeightNN = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
@@ -219,7 +225,7 @@ using GemmKernelPackedWeightNN_48 = jblas::wrapper::gemm_pack_weight::GemmInterf
 
 namespace amx_int8 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
-
+using DefaultParallel = jblas::gemm_default::DefaultParallel<T>;
 using GemmKernel48 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //

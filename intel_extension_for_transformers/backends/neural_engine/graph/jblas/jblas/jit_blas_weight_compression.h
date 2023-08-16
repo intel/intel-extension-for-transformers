@@ -867,9 +867,9 @@ class GemmLauncherKBlockPackWeight {
     int rowremain = utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
     int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
     auto tmpB = static_cast<BType*>(malloc(_config.StackSize));
-        auto tmpA = static_cast<AType*>(malloc(_config.StackSize));
-        auto tmpC = static_cast<CType*>(malloc(_config.StackSize));
-    
+    auto tmpA = static_cast<AType*>(malloc(_config.StackSize));
+    auto tmpC = static_cast<CType*>(malloc(_config.StackSize));
+
         if (tmpB == nullptr || tmpA == nullptr || tmpC == nullptr) {
             printf("Memory allocation failed.\n");
         } else {
@@ -884,7 +884,6 @@ class GemmLauncherKBlockPackWeight {
             free(tmpA);
             free(tmpC);
         }
-    }
   }
 
  protected:
@@ -983,9 +982,9 @@ class GemmSLauncherKBlockPackWeight {
     int rowremain = utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
     int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
     auto tmpB = static_cast<BType*>(malloc(_config.StackSize));
-        auto tmpA = static_cast<AType*>(malloc(_config.StackSize));
-        auto tmpC = static_cast<CType*>(malloc(_config.StackSize));
-    
+    auto tmpA = static_cast<AType*>(malloc(_config.StackSize));
+    auto tmpC = static_cast<CType*>(malloc(_config.StackSize));
+
         if (tmpB == nullptr || tmpA == nullptr || tmpC == nullptr) {
             printf("Memory allocation failed.\n");
         } else {
