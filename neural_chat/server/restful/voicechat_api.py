@@ -35,7 +35,7 @@ class VoiceChatAPIRouter(APIRouter):
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
     
-    async def handle_voice2text_request(self, request: ByteString) -> str:
+    async def handle_voice2text_request(self, request: str) -> str:
         chatbot = self.get_chatbot()
         try:
             result = chatbot.chat(request)
@@ -45,7 +45,7 @@ class VoiceChatAPIRouter(APIRouter):
             logger.info('Chatbot inferencing finished.')
             return result
     
-    async def handle_text2voice_request(self, text: str) -> ByteString:
+    async def handle_text2voice_request(self, text: str) -> str:
         chatbot = self.get_chatbot()
         try:
             result = chatbot.chat(text)
