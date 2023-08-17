@@ -29,7 +29,7 @@
 ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
-ARG ITREX_VER=yuxiang/neural_chat_api
+ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 # See http://bugs.python.org/issue19846
@@ -92,7 +92,7 @@ RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install
 
 # Download ITREX code
-ARG ITREX_VER=yuxiang/neural_chat_api
+ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
