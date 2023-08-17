@@ -60,7 +60,7 @@ void CHATGLM::init(const char* path_model, model_context& lctx, int n_ctx_, int 
   use_mlock = use_mlock_;
   vocab_only = vocab_only_;
   auto& model = lctx.model;
-  ml.reset(new model_model_loader(path_model, use_mmap, vocab_only));
+  ml.reset(new model_model_loader(path_model, false, vocab_only));
   lctx.vocab = std::move(ml->file_loaders.at(0)->vocab);
   model.hparams = ml->file_loaders.at(0)->hparams;
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
