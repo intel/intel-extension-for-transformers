@@ -1064,7 +1064,7 @@ struct ne_tensor* ne_dup_tensor(struct ne_context* ctx, const struct ne_tensor* 
 struct ne_tensor* ne_set_zero(struct ne_tensor* tensor) {
   size_t data_size = ne_nbytes(tensor);
   if (data_size > 0) {
-    memset(tensor->data, data_size, 0, data_size);
+    memset(tensor->data, 0, ne_nbytes(tensor));
   }
   return tensor;
 }
