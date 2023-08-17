@@ -59,13 +59,13 @@ class GemmLauncherPackWeight {
   _Epilogue_T mEpilogue;
   GemmLauncherPackWeight() {}
 
-  void launch(const ParallelConfig& _config, const Param& _param) {
+void launch(const ParallelConfig& _config, const Param& _param) {
       int rowremain = utils::remainsize(_config.rowidx, _param.M, _config.rowsize);
       int colremain = utils::remainsize(_config.colidx, _param.N, _config.colsize);
       auto tmpB = static_cast<BType*>(malloc(_config.StackSize));
       auto tmpA = static_cast<AType*>(malloc(_config.StackSize));
       auto tmpC = static_cast<CType*>(malloc(_config.StackSize));
-  
+
       if (tmpB == nullptr || tmpA == nullptr || tmpC == nullptr) {
           printf("Memory allocation failed.\n");
       } else {
@@ -81,8 +81,6 @@ class GemmLauncherPackWeight {
           free(tmpC);
       }
   }
-
-
  protected:
   void run_block(const ParallelConfig& _config, const Param& _param, int blk_m, int blk_n, int blk_msize, int blk_nsize,
                  AType* tmpA, BType* tmpB, CType* tmpC) {
@@ -171,15 +169,11 @@ class GemmInterfacePackWeight {
 };
 
 }  // namespace gemm_pack_weight
-namespace utils {
+namespace gemm_default {
 template <class T>
 using DefaultParallel = jblas::utils::parallel::Parallel2DGemm<T>;
-} // namespace utils
-namespace gemm_default{
-  using DefaultParallel = jblas::utils::DefaultParallel<T>;
 namespace avx512f {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
-using DefaultParallel = jblas::gemm_default::DefaultParallel<T>;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
@@ -191,7 +185,6 @@ using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
 }  // namespace avx512f
 namespace avx512_vnni {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
-using DefaultParallel = jblas::gemm_default::DefaultParallel<T>;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
@@ -204,7 +197,6 @@ using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
 
 namespace amx_bf16 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
-using DefaultParallel = jblas::gemm_default::DefaultParallel<T>;
 using GemmKernelPackedWeightNN = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
@@ -225,7 +217,7 @@ using GemmKernelPackedWeightNN_48 = jblas::wrapper::gemm_pack_weight::GemmInterf
 
 namespace amx_int8 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
-using DefaultParallel = jblas::gemm_default::DefaultParallel<T>;
+
 using GemmKernel48 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
