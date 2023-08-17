@@ -10,7 +10,9 @@ concurrency:
 
 env:
   HTTP_PROXY_IMAGE_BUILD: http://child-prc.intel.com:913
+  HTTPS_PROXY_IMAGE_BUILD: http://child-prc.intel.com:913
   HTTP_PROXY_CONTAINER_RUN: http://proxy-chain.intel.com:911
+  HTTPS_PROXY_CONTAINER_RUN: http://proxy-chain.intel.com:911
 
 jobs:
   inference:
