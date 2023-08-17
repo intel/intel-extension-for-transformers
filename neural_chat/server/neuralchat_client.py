@@ -24,7 +24,7 @@ from typing import List
 import requests
 
 from .base_executor import BaseCommandExecutor
-from .server_commands import cli_client_register
+from .server_commands import cli_client_command_register
 from neural_chat.cli.log import logger
 
 
@@ -34,7 +34,7 @@ __all__ = [
 ]
 
 
-@cli_client_register(name='neuralstudio_client.textchat', description='visit text chat service')
+# @cli_client_register(name='neuralchat_client.textchat', description='visit text chat service')
 class TextChatClientExecutor(BaseCommandExecutor):
     def __init__(self):
         super(TextChatClientExecutor, self).__init__()
@@ -145,3 +145,15 @@ class TextChatClientExecutor(BaseCommandExecutor):
         res = requests.post(url, json.dumps(request))
         return res
 
+
+specific_commands = {
+    'textchat': ['neuralchat_client text chat command', 'TextChatClientExecutor'],
+    # 'voicechat': ['neuralchat_client voice chat command', 'VoiceChatExecutor'],
+    # 'finetune': ['neuralchat_client finetuning command', 'FinetuingExecutor'],
+}
+
+for com, info in specific_commands.items():
+    cli_client_command_register(
+        name='neuralchat_client.{}'.format(com),
+        description=info[0],
+        cls='neural_chat.server.neuralchat_client.{}'.format(info[1]))

@@ -71,6 +71,14 @@ def cli_client_register(name: str, description: str=''):
 
     return _wrapper
 
+def cli_client_command_register(name: str, description: str='', cls: str=''):
+    items = name.split('.')
+    com = neuralchat_client_commands
+    for item in items:
+        com = com[item]
+    com['_command'] = cls
+    if description:
+        com['description'] = description
 
 def get_client_command(name: str):
     items = name.split('.')
@@ -81,9 +89,11 @@ def get_client_command(name: str):
     return com['_command']
 
 
-def _neuralchat_execute(commands, command_name_prefix):
+def neuralchat_server_execute():
+    commands = neuralchat_server_commands
+    
     idx = 0
-    for _argv in ([command_name_prefix] + sys.argv[1:]):
+    for _argv in (['neuralchat_server'] + sys.argv[1:]):
         if _argv not in commands:
             break
         idx += 1
@@ -97,11 +107,23 @@ def _neuralchat_execute(commands, command_name_prefix):
 
     return status
 
-def neuralchat_server_execute():
-    return _neuralchat_execute(neuralchat_server_commands, 'neuralchat_server')
-
 def neuralchat_client_execute():
-    return _neuralchat_execute(neuralchat_client_commands, 'neuralchat_client')
+    com = neuralchat_client_commands
+
+    idx = 0
+    for _argv in (['neuralchat_client'] + sys.argv[1:]):
+        if _argv not in com:
+            break
+        idx += 1
+        com = com[_argv]
+
+    if not callable(com['_command']):
+        i = com['_command'].rindex('.')
+        module, cls = com['_command'][:i], com['_command'][i + 1:]
+        exec("from {} import {}".format(module, cls))
+        com['_command'] = locals()[cls]
+    status = 0 if com['_command']().execute(sys.argv[idx:]) else 1
+    return status
 
 
 @cli_server_register(name='neuralchat_server')
