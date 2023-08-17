@@ -56,7 +56,7 @@ class TestChatbotBuilder(unittest.TestCase):
         pipeline_config = PipelineConfig(audio_input=True, audio_output=True)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
-        gen_config = GenerationConfig(max_new_tokens=64, audio_output_path="./response.wav")
+        gen_config = GenerationConfig(max_new_tokens=128, audio_output_path="./response.wav")
         response = chatbot.predict(query="../../assets/audio/pat.wav", config=gen_config)
         self.assertIsNotNone(response)
         print("output audio path: ", response)

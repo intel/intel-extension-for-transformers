@@ -92,18 +92,52 @@ class TextToSpeech:
         else:
             return f"../../assets/speaker_embeddings/spk_embed_{voice}.pt"
 
-    def text2speech(self, text, output_audio_path, voice="default"):
+    def _batch_long_text(self, text, batch_length):
+        """Batch the long text into sequences of shorter sentences."""
+        res = []
+        hitted_ends = ['.', '?', '!', '。', ";"]
+        idx = 0
+        cur_start = 0
+        cur_end = -1
+        while idx < len(text):
+            if idx - cur_start > batch_length:
+                if cur_end != -1 and cur_end > cur_start:
+                    res.append(text[cur_start:cur_end+1])
+                else:
+                    print(f"[TTS Warning] Check your input text and it should be splitted by one of {hitted_ends} "
+                        + f"in each {batch_length} charaters! Try to add batch_length!")
+                    cur_end = cur_start+batch_length-1
+                    res.append(text[cur_start:cur_end+1])
+                idx = cur_end
+                cur_start = cur_end + 1
+            if text[idx] in hitted_ends:
+                cur_end = idx
+            idx += 1
+        # deal with the last sequence
+        res.append(text[cur_start:idx])
+        return res
+
+
+    def text2speech(self, text, output_audio_path, voice="default", do_batch_tts=False, batch_length=400):
         """Text to speech.
 
         text: the input text
         voice: default/pat/huma/tom/eric...
+        batch_length: the batch length for spliting long texts into batches to do text to speech
         """
+        print(text)
+        if batch_length > 600 or batch_length < 50:
+            raise Exception(f"[TTS] Invalid batch_length {batch_length}, should be between 50 and 600!")
         text = self.normalizer.correct_abbreviation(text)
         text = self.normalizer.correct_number(text)
-        inputs = self.processor(text=text, return_tensors="pt")
+        # Do the batching of long texts
+        if len(text) > batch_length or do_batch_tts:
+            texts = self._batch_long_text(text, batch_length)
+        else:
+            texts = [text]
+        print(texts)
         model = self.original_model
         speaker_embeddings = self.default_speaker_embedding
-
         if voice == "pat":
             if self.pat_model == None:
                 print("Finetuned model is not found! Use the default one")
@@ -115,13 +149,16 @@ class TextToSpeech:
                 speaker_embeddings = self.pat_speaker_embeddings
         elif voice != "default":
             speaker_embeddings = torch.load(self._lookup_voice_embedding(voice))
-
-        with torch.no_grad():
-            import intel_extension_for_pytorch as ipex
-            with ipex.cpu.runtime.pin(self.cpu_pool) if self.cpu_pool else contextlib.nullcontext():
-                spectrogram = model.generate_speech(inputs["input_ids"], speaker_embeddings)
-            speech = self.vocoder(spectrogram)
-        sf.write(output_audio_path, speech.cpu().numpy(), samplerate=16000)
+        all_speech = np.array([])
+        for text_in in texts:
+            inputs = self.processor(text=text_in, return_tensors="pt")
+            with torch.no_grad():
+                with ipex.cpu.runtime.pin(self.cpu_pool) if self.cpu_pool else contextlib.nullcontext():
+                    spectrogram = model.generate_speech(inputs["input_ids"], speaker_embeddings)
+                speech = self.vocoder(spectrogram)
+                all_speech = np.concatenate([all_speech, speech.cpu().numpy()])
+                all_speech = np.concatenate([all_speech, np.array([0 for i in range(8000)])])  # pad after each end
+        sf.write(output_audio_path, all_speech, samplerate=16000)
         return output_audio_path
 
     def stream_text2speech(self, generator, answer_speech_path, voice="default"):
