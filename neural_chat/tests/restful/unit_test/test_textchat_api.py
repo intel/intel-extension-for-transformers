@@ -1,8 +1,8 @@
 #!/usr/bin/env python
+import json
 import requests
 import unittest
 from neural_chat.tests.restful.config import HOST, API_COMPLETION, API_CHAT_COMPLETION
-from neural_chat.server.restful.openai_protocol import ChatCompletionRequest
 from neural_chat.cli.log import logger
 
 
@@ -14,22 +14,24 @@ class UnitTest(unittest.TestCase):
 
     def test_completions(self):
         logger.info(f'Testing POST request: {self.host+API_COMPLETION}')
-        request = ChatCompletionRequest(
-            prompt="This is a test."
-        )
-        response = requests.post(self.host+API_COMPLETION, data=request)
+        request = {
+            "prompt": "Tell me about Intel Xeon Scalable Processors."
+        }
+        response = requests.post(self.host+API_COMPLETION, json.dumps(request))
+        response_dict = response.json()
         logger.info('Response status code: {}'.format(response.status_code))
-        logger.info('Response text: {}'.format(response.choices.text))
+        logger.info('Response text: {}'.format(response_dict['response']))
         self.assertEqual(response.status_code, 200, msg="Abnormal response status code.")
 
     def test_chat_completions(self):
         logger.info(f'Testing POST request: {self.host+API_CHAT_COMPLETION}')
-        request = ChatCompletionRequest(
-            prompt="This is a test."
-        )
-        response = requests.post(self.host+API_CHAT_COMPLETION, data=request)
+        request = {
+            "prompt": "Tell me about Intel Xeon Scalable Processors."
+        }
+        response = requests.post(self.host+API_CHAT_COMPLETION, json.dumps(request))
+        response_dict = response.json()
         logger.info('Response status code: {}'.format(response.status_code))
-        logger.info('Response text: {}'.format(response.choices.message.content))
+        logger.info('Response text: {}'.format(response_dict['response']))
         self.assertEqual(response.status_code, 200, msg="Abnormal response status code.")
 
 

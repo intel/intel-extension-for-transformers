@@ -108,8 +108,8 @@ class TextChatClientExecutor(BaseCommandExecutor):
             time_end = time.time()
             time_consume = time_end - time_start
             response_dict = res.json()
-            logger.info("Text generation duration: %f s." %
-                        (response_dict['result']['duration']))
+            print("======= Textchat Client Response =======")
+            print(response_dict['response'])
             logger.info("Response time: %f s." % (time_consume))
             return True
         except Exception as e:
