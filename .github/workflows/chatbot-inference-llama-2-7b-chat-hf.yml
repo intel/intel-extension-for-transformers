@@ -21,13 +21,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build Docker Image
-        run: docker build ./ --build-arg http_proxy=$HTTP_PROXY_IMAGE_BUILD --build-arg https_proxy=$HTTPS_PROXY_IMAGE_BUILD -f workflows/chatbot/inference/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
+        run: docker build ./ --build-arg http_proxy="$HTTP_PROXY_IMAGE_BUILD" --build-arg https_proxy="$HTTPS_PROXY_IMAGE_BUILD" -f workflows/chatbot/inference/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy=$HTTP_PROXY_CONTAINER_RUN -e https_proxy=$HTTPS_PROXY_CONTAINER_RUN --name="chatbotinfer" --hostname="chatbotinfer-container" chatbotinfer:latest
+          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="$HTTP_PROXY_CONTAINER_RUN" -e https_proxy="$HTTPS_PROXY_CONTAINER_RUN" --name="chatbotinfer" --hostname="chatbotinfer-container" chatbotinfer:latest
 
       - name: Run Inference Test
         run: |
