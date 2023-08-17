@@ -15,16 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
-from typing import Dict, List, Optional
+from typing import Optional
 from fastapi import APIRouter
 from neural_chat.cli.log import logger
+from neural_chat.config import GenerationConfig
 from neural_chat.server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
+    logger.info(f"Checking parameters of completion request...")
     if request.temperature is not None and request.temperature < 0:
         return f"Param Error: {request.temperature} is less than the minimum of 0 --- 'temperature'"
     
@@ -53,7 +54,6 @@ class TextChatAPIRouter(APIRouter):
 
     def __init__(self) -> None:
         super().__init__()
-        self.chatbot = None
 
     def set_chatbot(self, chatbot) -> None:
         self.chatbot = chatbot
@@ -73,13 +73,13 @@ class TextChatAPIRouter(APIRouter):
         chatbot = self.get_chatbot()
 
         try:
-            if request.stream:
-                response = chatbot.predict_stream(query=request.prompt)
-            else:
-                response = chatbot.predict(query=request.prompt)
-        except Exception:
-            raise Exception("Exception occurred while chat completion.")
+            logger.info(f"Predicting chat completion using prompt '{request.prompt}'")
+            config = GenerationConfig(max_new_tokens=64)
+            response = chatbot.predict(query=request.prompt, config=config)
+        except Exception as e:
+            raise Exception(e)
         else:
+            logger.info(f"Chat completion finished.")
             return ChatCompletionResponse(response=response) 
     
 
@@ -88,7 +88,7 @@ router = TextChatAPIRouter()
     
 @router.post("/v1/completions")
 async def completion_endpoint(request: ChatCompletionRequest) -> ChatCompletionResponse:
-    ret = check_completion_request()
+    ret = check_completion_request(request)
     if ret is not None:
         raise RuntimeError("Invalid parameter.")
     return await router.handle_completion_request(request)
@@ -96,7 +96,7 @@ async def completion_endpoint(request: ChatCompletionRequest) -> ChatCompletionR
 
 @router.post("/v1/chat/completions")
 async def chat_completion_endpoint(chat_request: ChatCompletionRequest) -> ChatCompletionResponse:
-    ret = check_completion_request()
+    ret = check_completion_request(chat_request)
     if ret is not None:
         raise RuntimeError("Invalid parameter.")
     return await router.handle_chat_completion_request(chat_request)

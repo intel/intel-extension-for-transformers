@@ -50,5 +50,5 @@ class Text2ImageAPIRouter(APIRouter):
 router = Text2ImageAPIRouter()
 
 @router.post("/v1/text2image")
-async def text2image(request: str) -> ByteString:
+async def text2image(request: str) -> str:
     return await router.handle_text2image_request(request)

@@ -193,7 +193,18 @@ class BaseModel(ABC):
             instance: An instance of a safety checker module.
         """
         self.safety_checker = instance
+    
+    def register_retriever(self, retriever, retrieval_type):
+        """
+        Register a database retriever.
 
+        Args:
+            instance: An instance of a retriever.
+            retrieval_type: The type pf the retrieval method.
+        """
+        self.retriever = retriever
+        self.retrieval_type = retrieval_type
+        
 
 # A global registry for all model adapters
 model_adapters: List[BaseModel] = []

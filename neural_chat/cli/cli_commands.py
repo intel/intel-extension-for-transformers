@@ -220,7 +220,7 @@ class TextChatExecutor(BaseCommandExecutor):
             print(res)
             return True
         except Exception as e:
-            print("TextChatExecutor Exception...")
+            print("TextChatExecutor Exception: ", e)
             return False
 
     def __call__(
@@ -230,7 +230,6 @@ class TextChatExecutor(BaseCommandExecutor):
             Python API to call an executor.
         """
         result = self.chatbot.chat(prompt)
-        self._outputs['preds'] = result
         return result
 
 class VoiceChatExecutor(BaseCommandExecutor):
@@ -273,7 +272,7 @@ class VoiceChatExecutor(BaseCommandExecutor):
             print(res)
             return True
         except Exception as e:
-            print("VoiceChatExecutor Exception...")
+            print("VoiceChatExecutor Exception: ", e)
             return False
 
     def __call__(self,
@@ -282,7 +281,7 @@ class VoiceChatExecutor(BaseCommandExecutor):
         """
             Python API to call an executor.
         """
-        config = GenerationConfig(audio_output_path=output)
+        config = GenerationConfig(audio_output_path=output, max_new_tokens=64)
         result = self.chatbot.chat(input, config=config)
         return result
 
@@ -310,6 +309,7 @@ class FinetuingExecutor(BaseCommandExecutor):
             print(res)
             return True
         except Exception as e:
+            print("FinetuingExecutor Exception: ", e)
             return False
 
     def __call__(self):

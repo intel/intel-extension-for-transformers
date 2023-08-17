@@ -23,7 +23,23 @@
 host: 0.0.0.0
 port: 8000
 
-# task choices = ['textchat_python', 'voicechat_python', 'retrieval_python', 'text2image_python', 'finetune_python']
-tasks_list: ['textchat_python', 'retrieval_python']    # text chatbot with document retrieval
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
+tasks_list: ['textchat', 'retrieval']    # text chatbot with document retrieval
 
-model_name: "meta-llama/Llama-2-70b-chat-hf"
+# plugins choices = ['audio', 'retrieval', 'caching', 'memory_controller', 'intent_detection', 'safety_checker']
+plugins_list: ['audio', 'retrieval', 'caching']
+
+audio:
+    audio_input: true
+    audio_output: true
+    language: "english"
+
+retrieval:
+    retrieval_type: "dense"
+    retrieval_document_path: "../../assets/docs/"
+
+caching:
+    cache_chat_config_file: "../../plugins/caching/cache_config.yaml"
+    cache_embedding_model_dir: "hkunlp/instructor-large"
+
+model_name: "meta-llama/Llama-2-7b-chat-hf"

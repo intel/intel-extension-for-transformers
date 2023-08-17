@@ -29,6 +29,9 @@ from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese_tts import ChineseTextToSpeech
+from .pipeline.plugins.retrievers.indexing.document_parser import DocumentIndexing
+from .pipeline.plugins.retrievers.retriever.langchain import ChromaRetriever
+from .pipeline.plugins.retrievers.retriever import BM25Retriever
 from .pipeline.plugins.security.SensitiveChecker import SensitiveChecker
 from .models.llama_model import LlamaModel
 from .models.mpt_model import MptModel
@@ -78,7 +81,12 @@ def build_chatbot(config: PipelineConfig):
             raise ValueError("Must provide a retrieval document path")
         if not os.path.exists(config.retrieval_document_path):
             raise ValueError(f"The retrieval document path {config.retrieval_document_path} is not exist.")
-        # TODO construct document retrieval
+        db = DocumentIndexing(config.retrieval_type).KB_construct(config.retrieval_document_path)
+        if config.retrieval_type == "dense":
+            retriever = ChromaRetriever(db).retriever
+        else:
+            retriever = BM25Retriever(document_store = db)
+        adapter.register_retriever(retriever, config.retrieval_type)
 
     # construct audio plugin
     if config.audio_input or config.audio_output:
@@ -123,12 +131,11 @@ def build_chatbot(config: PipelineConfig):
     else:
         parameters["tokenizer_name"] = config.model_name_or_path
     parameters["device"] = config.device
-    parameters["use_hpu_graphs"] = config.use_hpu_graphs
-    parameters["cpu_jit"] = config.cpu_jit
-    parameters["use_cache"] = config.use_cache
-    parameters["peft_path"] = config.peft_path
-    parameters["use_deepspeed"] = config.use_deepspeed
-
+    parameters["use_hpu_graphs"] = config.loading_config.use_hpu_graphs
+    parameters["cpu_jit"] = config.loading_config.cpu_jit
+    parameters["use_cache"] = config.loading_config.use_cache
+    parameters["peft_path"] = config.loading_config.peft_path
+    parameters["use_deepspeed"] = config.loading_config.use_deepspeed
     adapter.load_model(parameters)
     return adapter
 

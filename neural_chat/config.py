@@ -17,10 +17,10 @@
 """Configs for Neural Chat."""
 
 from dataclasses import dataclass, field
-from typing import Optional, List
-import numpy as np
+from typing import Optional, List, Dict
 from transformers import TrainingArguments
 from transformers.utils.versions import require_version
+from dataclasses import dataclass
 
 from enum import Enum, auto
 
@@ -298,121 +298,72 @@ class FinetuningArguments:
         metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
     )
 
-
+@dataclass
 class FinetuningConfig:
-    def __init__(self,
-                 model_args: ModelArguments,
-                 data_args: DataArguments,
-                 training_args: TrainingArguments,
-                 finetune_args: FinetuningArguments
-    ):
-        self.model_args = model_args
-        self.data_args = data_args
-        self.training_args = training_args
-        self.finetune_args = finetune_args
+    model_args: ModelArguments
+    data_args: DataArguments
+    training_args: TrainingArguments
+    finetune_args: FinetuningArguments
 
-
+@dataclass
 class OptimizationConfig:
-    def __init__(self,
-                 mode='latency',
-                 device='cpu',
-                 backend='ipex',
-                 approach="static",
-                 precision='int8',
-                 excluded_precisions=[],
-                 op_type_dict=None,
-                 op_name_dict=None,
-                 recipes={}):
-        self.mode = mode
-        self.device = device
-        self.backend = backend
-        self.approach = approach
-        self.precision = precision
-        self.excluded_precisions = excluded_precisions
-        self.op_type_dict = op_type_dict
-        self.op_name_dict = op_name_dict
-        self.recipes = recipes
+    mode: str = 'latency'
+    device: str = 'cpu'
+    backend: str = 'ipex'
+    approach: str = "static"
+    precision: str = 'int8'
+    excluded_precisions: List[str] = None
+    op_type_dict: Dict = None
+    op_name_dict: Dict = None
+    recipes: Dict = None
 
+@dataclass
 class GenerationConfig:
-    def __init__(self,
-                 device="cpu",
-                 temperature=0.9,
-                 top_k=1,
-                 top_p=0.75,
-                 max_new_tokens=256,
-                 do_sample=True,
-                 repetition_penalty=1.1,
-                 num_beams=0,
-                 num_return_sequences=1,
-                 bad_words_ids=None,
-                 force_words_ids=None,
-                 use_hpu_graphs=False,
-                 use_cache=False,
-                 audio_output_path=None):
-        self.device = device
-        self.temperature = temperature
-        self.top_k = top_k
-        self.top_p = top_p
-        self.repetition_penalty = repetition_penalty
-        self.num_beams = num_beams
-        self.max_new_tokens = max_new_tokens
-        self.do_sample = do_sample
-        self.num_return_sequences = num_return_sequences
-        self.bad_words_ids = bad_words_ids
-        self.force_words_ids = force_words_ids
-        self.use_hpu_graphs = use_hpu_graphs
-        self.use_cache = use_cache
-        self.audio_output_path = audio_output_path
+    device: str = "cpu"
+    temperature: float = 0.9
+    top_k: int = 1
+    top_p: float = 0.75
+    repetition_penalty: float = 1.1
+    num_beams: int = 0
+    max_new_tokens: int = 256
+    do_sample: bool = True
+    num_return_sequences: int = 1
+    bad_words_ids: List[int] = None
+    force_words_ids: List[int] = None
+    use_hpu_graphs: bool = False
+    use_cache: bool = False
+    audio_output_path: str = None
+    cpu_jit: bool = False
+    num_gpus: int = 0
+    max_gpu_memory: int = None
+    use_fp16: bool = False
+    ipex_int8: bool = False
 
+@dataclass
+class LoadingModelConfig:
+    cpu_jit: bool = None
+    peft_path: str = None
+    use_hpu_graphs: bool = False
+    use_cache: bool = False
+    use_deepspeed: bool = False
+
+@dataclass
 class PipelineConfig:
-    def __init__(self,
-                 model_name_or_path="meta-llama/Llama-2-7b-hf",
-                 tokenizer_name_or_path=None,
-                 device="auto",
-                 backend="auto",
-                 retrieval=False,
-                 retrieval_type="dense",
-                 retrieval_document_path=None,
-                 audio_input=False,
-                 audio_output=False,
-                 audio_lang="english",
-                 txt2Image=False,
-                 server_mode=True,
-                 use_hpu_graphs=False,
-                 use_deepspeed=False,
-                 peft_path=None,
-                 cpu_jit=False,
-                 use_cache=False,
-                 num_gpus=0,
-                 max_gpu_memory=None,
-                 cache_chat=False,
-                 cache_chat_config_file=None,
-                 cache_embedding_model_dir=None,
-                 intent_detection=False,
-                 memory_controller=False,
-                 safety_checker=False):
-        self.model_name_or_path = model_name_or_path
-        self.tokenizer_name_or_path = tokenizer_name_or_path
-        self.device = device
-        self.backend = backend
-        self.retrieval = retrieval
-        self.retrieval_type = retrieval_type
-        self.retrieval_document_path = retrieval_document_path
-        self.audio_input = audio_input
-        self.audio_output = audio_output
-        self.audio_lang = audio_lang
-        self.txt2Image = txt2Image
-        self.server_mode = server_mode
-        self.use_hpu_graphs = use_hpu_graphs
-        self.use_deepspeed = use_deepspeed
-        self.peft_path = peft_path
-        self.cpu_jit = cpu_jit
-        self.use_cache = use_cache
-        self.num_gpus = num_gpus
-        self.max_gpu_memory = max_gpu_memory
-        self.cache_chat = cache_chat
-        self.cache_chat_config_file = cache_chat_config_file
-        self.cache_embedding_model_dir = cache_embedding_model_dir
-        self.intent_detection = intent_detection
-        self.memory_controller = memory_controller
-        self.safety_checker = safety_checker
+    model_name_or_path: str = "meta-llama/Llama-2-7b-hf"
+    tokenizer_name_or_path: str = None
+    device: str = "auto"
+    backend: str = "auto"
+    retrieval: bool = False
+    retrieval_type: str = "dense"
+    retrieval_document_path: str = None
+    audio_input: bool = False
+    audio_output: bool = False
+    audio_lang: str = "english"
+    txt2Image: bool = False
+    cache_chat: bool = False
+    cache_chat_config_file: str = None
+    cache_embedding_model_dir: str = None
+    intent_detection: bool = False
+    memory_controller: bool = False
+    safety_checker: bool = False
+    loading_config: LoadingModelConfig = LoadingModelConfig()

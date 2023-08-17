@@ -45,7 +45,7 @@ class TextChatClientExecutor(BaseCommandExecutor):
         self.parser.add_argument(
             '--port', type=int, default=8000, help='server port')
         self.parser.add_argument(
-            '--prompt',
+            '--query',
             type=str,
             default=None,
             help='the initial input or context provided to the text generation model',
@@ -83,7 +83,7 @@ class TextChatClientExecutor(BaseCommandExecutor):
 
     def execute(self, argv: List[str]) -> bool:
         args = self.parser.parse_args(argv)
-        prompt = args.prompt
+        prompt = args.query
         server_ip = args.server_ip
         port = args.port
         device = args.device
