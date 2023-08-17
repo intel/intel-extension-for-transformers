@@ -306,18 +306,6 @@ class FinetuningConfig:
     finetune_args: FinetuningArguments
 
 @dataclass
-class OptimizationConfig:
-    mode: str = 'latency'
-    device: str = 'cpu'
-    backend: str = 'ipex'
-    approach: str = "static"
-    precision: str = 'int8'
-    excluded_precisions: List[str] = None
-    op_type_dict: Dict = None
-    op_name_dict: Dict = None
-    recipes: Dict = None
-
-@dataclass
 class GenerationConfig:
     device: str = "cpu"
     temperature: float = 0.9
@@ -348,6 +336,23 @@ class LoadingModelConfig:
     use_deepspeed: bool = False
 
 @dataclass
+class WeightOnlyQuantizationConfig:
+    algorithm: str = 'RTN'
+    bits: int = 8
+    group_size: int = -1
+    scheme: str = 'sym'
+    sym_full_range: bool = True
+
+@dataclass
+class AMPConfig:
+    dtype: str = 'bfloat16'
+
+@dataclass
+class OptimizationConfig:
+    amp_config: AMPConfig = AMPConfig()
+    weight_only_quant_config: WeightOnlyQuantizationConfig = None
+
+@dataclass
 class PipelineConfig:
     model_name_or_path: str = "meta-llama/Llama-2-7b-hf"
     tokenizer_name_or_path: str = None
@@ -367,3 +372,4 @@ class PipelineConfig:
     memory_controller: bool = False
     safety_checker: bool = False
     loading_config: LoadingModelConfig = LoadingModelConfig()
+    optimization_config: OptimizationConfig = OptimizationConfig()

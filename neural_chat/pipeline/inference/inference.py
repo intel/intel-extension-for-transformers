@@ -320,6 +320,7 @@ def load_model(
     model_name,
     tokenizer_name,
     device="cpu",
+    dtype="bfloat16",
     use_hpu_graphs=False,
     cpu_jit=False,
     use_cache=True,
@@ -352,6 +353,15 @@ def load_model(
         adapt_transformers_to_gaudi()
     else:
         set_cpu_running_env()
+
+    if dtype == "bfloat16":
+        torch_dtype = torch.bfloat16
+    elif dtype == "float16":
+        torch_dtype = torch.float16
+    else:
+        logger.warning(f"Unsupported dtype {dtype}, using float32 now.")
+        torch_dtype = torch.float32
+
     MODELS[model_name] = {}
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
@@ -361,7 +371,7 @@ def load_model(
     if re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name, low_cpu_mem_usage=True
+                model_name, torch_dtype=torch_dtype, low_cpu_mem_usage=True
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
@@ -371,7 +381,7 @@ def load_model(
             model = MPTForCausalLM.from_pretrained(
                 model_name,
                 trust_remote_code=True,
-                torch_dtype=torch.bfloat16,
+                torch_dtype=torch_dtype,
                 low_cpu_mem_usage=True,
                 torchscript=cpu_jit,
             )
@@ -384,7 +394,7 @@ def load_model(
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
+                model_name, torch_dtype=torch_dtype, low_cpu_mem_usage=True
             )
     else:
         raise ValueError(
@@ -440,19 +450,19 @@ def load_model(
             from peft import PeftModel
 
             model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(torch.bfloat16)
+            model = model.to(dtype=torch_dtype)
     else:
         if peft_path:
             from peft import PeftModel
 
             model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(torch.bfloat16)
+            model = model.to(dtype=torch_dtype)
 
         import intel_extension_for_pytorch as intel_ipex
 
         model = intel_ipex.optimize(
             model.eval(),
-            dtype=torch.bfloat16,
+            dtype=torch_dtype,
             inplace=True,
             level="O1",
             auto_kernel_selection=True,
@@ -464,7 +474,7 @@ def load_model(
             model = jit_trace_mpt_7b(model)
             config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
             model = MPTTSModelForCausalLM(
-                model, config, use_cache=use_cache, model_dtype=torch.bfloat16
+                model, config, use_cache=use_cache, model_dtype=torch_dtype
             )
 
     if not model.config.is_encoder_decoder:

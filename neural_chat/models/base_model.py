@@ -92,6 +92,7 @@ class BaseModel(ABC):
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
+                   dtype=kwargs["dtype"],
                    use_hpu_graphs=kwargs["use_hpu_graphs"],
                    cpu_jit=kwargs["cpu_jit"],
                    use_cache=kwargs["use_cache"],
