@@ -32,7 +32,7 @@ from .pipeline.plugins.audio.tts_chinese_tts import ChineseTextToSpeech
 from .pipeline.plugins.retrievers.indexing.document_parser import DocumentIndexing
 from .pipeline.plugins.retrievers.retriever.langchain import ChromaRetriever
 from .pipeline.plugins.retrievers.retriever import BM25Retriever
-from .pipeline.plugins.security.SensitiveChecker import SensitiveChecker
+from .pipeline.plugins.security.sensitive_checker import SensitiveChecker
 from .models.llama_model import LlamaModel
 from .models.mpt_model import MptModel
 from .models.chatglm_model import ChatGlmModel
