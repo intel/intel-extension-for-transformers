@@ -218,6 +218,9 @@ class DataArguments:
             "than this will be truncated."
         },
     )
+    eval_dataset_size: int = field(
+        default=500, metadata={"help": "Size of validation dataset."}
+    )
 
 
 @dataclass
@@ -286,6 +289,14 @@ class FinetuneArguments:
         metadata={"help": "task name, different task means different data format.",
             "choices": ["completion", "chat", "summarization"]
             },
+    )
+    do_lm_eval: bool = field(
+        default=False,
+        metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
+    )
+    lm_eval_tasks: Optional[List[str]] = field(
+        default_factory=lambda: ["truthfulqa_mc"],
+        metadata={"help": "tasks list for accuracy validation with EleutherAI/lm-evaluation-harness."},
     )
 
 
@@ -424,21 +435,6 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
 
-        if "validation" not in raw_datasets.keys() and training_args.do_eval:
-            raw_datasets["validation"] = load_dataset(
-                data_args.dataset_name,
-                data_args.dataset_config_name,
-                split=f"train[:{data_args.validation_split_percentage}%]",
-                cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
-            )
-            raw_datasets["train"] = load_dataset(
-                data_args.dataset_name,
-                data_args.dataset_config_name,
-                split=f"train[{data_args.validation_split_percentage}%:]",
-                cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
-            )
     else:
         data_files = {}
         dataset_args = {}
@@ -462,24 +458,6 @@ def main():
             **dataset_args,
         )
 
-        # If no validation data is there, validation_split_percentage will be used to divide the dataset.
-        if "validation" not in raw_datasets.keys() and training_args.do_eval:
-            raw_datasets["validation"] = load_dataset(
-                extension,
-                data_files=data_files,
-                split=f"train[:{data_args.validation_split_percentage}%]",
-                cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
-                **dataset_args,
-            )
-            raw_datasets["train"] = load_dataset(
-                extension,
-                data_files=data_files,
-                split=f"train[{data_args.validation_split_percentage}%:]",
-                cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
-                **dataset_args,
-            )
 
     # Load model
     if model_args.model_name_or_path:
@@ -555,11 +533,13 @@ def main():
     tokenizer.padding_side = "left"  # Allow batched inference
 
     raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
+    column_names = list(raw_datasets["train"].features)
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
         tokenized_datasets = raw_datasets.map(
             preprocess_function,
             batched=True,
+            remove_columns=column_names,
             load_from_cache_file=not data_args.overwrite_cache,
         )
 
@@ -687,6 +667,18 @@ def main():
                 unwrapped_model.save_pretrained(
                     training_args.output_dir, state_dict=unwrapped_model.state_dict()
                 )
+
+        if finetune_args.do_lm_eval:
+            model.eval()
+            from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+            results = evaluate(
+                    model="hf-causal",
+                    model_args='pretrained='+model_args.model_name_or_path+',tokenizer='+model_args.model_name_or_path+',dtype=float16',
+                    user_model=model,
+                    batch_size=training_args.per_device_eval_batch_size,
+                    tasks=finetune_args.lm_eval_tasks,)
+            logger.info(results)
+
 
 
 if __name__ == "__main__":

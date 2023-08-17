@@ -238,17 +238,27 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
     if finetune_args.task == "chat":
         preprocess = ChatDataPreprocess(tokenizer.eos_token)
         new_datasets = datasets.DatasetDict()
-        prompts = preprocess.create_data(raw_datasets["train_ift"])
-        new_datasets["train"] = datasets.Dataset.from_dict(prompts)
+        for key in raw_datasets:
+            prompts = preprocess.create_data(raw_datasets[key])
+
+            # deal irregular column name 
+            if "train" in key:
+                new_key = "train"
+            if "val" in key:
+                new_key = "validation"
+            if "test" in key:
+                new_key = "test"
+            
+            new_datasets[new_key] = datasets.Dataset.from_dict(prompts)
+
+
 
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
-
-        return new_datasets, preprocess_fn
 
     elif finetune_args.task == "summarization":
         preprocess = SummarizationDataPreprocess()
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
-        return raw_datasets, preprocess_fn
+
     elif finetune_args.task == "completion":
         # default use alpaca template
         preprocess = CompletionDataPreprocess() 
@@ -265,6 +275,7 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
 
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
 
-        return raw_datasets, preprocess_fn
     else:
         raise NotImplementedError(f'finetune task data preprocessing is not support currently.')
+
+    return new_datasets, preprocess_fn
