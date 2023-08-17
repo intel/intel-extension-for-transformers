@@ -45,29 +45,36 @@ public:
     using dtype = typename matAcc_t::dtype;
 
 private:
-    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
-    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
     static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
     static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
     static constexpr uint32_t wg_size_y = tile_shape::wg_size_y;
+    static constexpr uint32_t real_wg_tile_m = sg_tile_m * wg_size_y;
+    static constexpr uint32_t real_wg_tile_n = sg_tile_n * wg_size_x;
 
     static constexpr uint32_t wg_tile_size
-            = wg_tile_m * wg_tile_n * sizeof(dtype);
+            = real_wg_tile_m * real_wg_tile_n * sizeof(dtype);
     using work_group_t = typename tile_shape::work_group_t;
     static constexpr uint32_t work_group_size = work_group_t::size;
     // cooperative split, y dir first
     static_assert((num_cooperative_wg & (num_cooperative_wg - 1)) == 0,
             "num_cooperative_wg should be power of 2");
+
+public:
     static constexpr uint32_t coop_num_y
             = gpu::xetla::subgroup::detail::gcd<num_cooperative_wg,
                     sg_tile_m>::value;
-    static constexpr uint32_t coop_num_x = num_cooperative_wg / coop_num_y;
+    static constexpr uint32_t coop_remain_num_x
+            = num_cooperative_wg / coop_num_y;
+    static constexpr bool has_redundant_wg
+            = (coop_remain_num_x * 16) > sg_tile_n;
     static constexpr uint32_t tile_size_y = sg_tile_m / coop_num_y;
-    static constexpr uint32_t tile_size_x = sg_tile_n / coop_num_x;
-    static_assert(tile_size_y * tile_size_x >= 16,
-            "please reduce your num_cooperative_wg to get better compute "
-            "efficiency");
+    static constexpr uint32_t tile_size_x
+            = has_redundant_wg ? 16 : sg_tile_n / coop_remain_num_x;
+    static constexpr uint32_t coop_num_x = sg_tile_n / tile_size_x;
+    static constexpr uint32_t num_reduce_wg = coop_num_x * coop_num_y;
+
+private:
     static constexpr uint32_t src_block_size_x = matAcc_t::block_size_x;
     static constexpr uint32_t src_block_size_y = matAcc_t::block_size_y;
 
@@ -102,14 +109,15 @@ public:
     uint32_t coop_id_x;
     uint32_t coop_id_y;
     inline cooperative_reduce_t(uint32_t coop_id_) : coop_id(coop_id_) {
-        coop_id_x = coop_id % coop_num_x;
-        coop_id_y = coop_id / coop_num_x;
+        coop_id_x = coop_id % coop_remain_num_x;
+        coop_id_y = coop_id / coop_remain_num_x;
     }
 
     /// @brief Cooperative workgroup reduction.
     /// 1) each workgroup stores tile data to local memory ->
     /// 2) cross workgroup (but still within a group) sync ->
-    /// 3) each workgroup loads slice of tile data, do the reduction.
+    /// 3) workgroups loads slice of tile data, do the reduction.
+    /// @note only workgroups with coop_id_x < coop_num_x have valid data.
     /// @param g Is the workgroup of the current tile.
     /// @param mat_slice Is the output of the reduction. Each workgroup only keeps part of the tile data.
     /// @param matAcc Is the input of the reduction.
@@ -122,11 +130,12 @@ public:
         uint32_t sg_idy = g.get_id() / wg_size_x;
 
         int32_t slm_store_offset_x = sg_idx * sg_tile_n;
-        int32_t slm_store_offset_y = coop_id * wg_tile_m + sg_idy * sg_tile_m;
+        int32_t slm_store_offset_y
+                = coop_id * real_wg_tile_m + sg_idy * sg_tile_m;
         local_st_tile_t local_st;
-        local_st_payload_t local_st_payload(slm_base, wg_tile_n,
-                wg_tile_m * num_cooperative_wg, wg_tile_n, slm_store_offset_x,
-                slm_store_offset_y);
+        local_st_payload_t local_st_payload(slm_base, real_wg_tile_n,
+                real_wg_tile_m * num_cooperative_wg, real_wg_tile_n,
+                slm_store_offset_x, slm_store_offset_y);
         local_st.reg = matAcc.reg;
         tile_store(local_st, local_st_payload);
 
@@ -135,26 +144,31 @@ public:
         nbarrier.init_nbarrier(nbar_id, nbarrier_role::producer_consumer);
         xetla_fence<memory_kind::shared_local>();
         nbarrier.arrive();
-        int32_t slm_load_offset_x
-                = sg_idx * sg_tile_n + coop_id_x * tile_size_x;
-        int32_t slm_load_offset_y
-                = sg_idy * sg_tile_m + coop_id_y * tile_size_y;
-
-        local_ld_tile_t local_ld;
-        local_ld_payload_t local_ld_payload(slm_base, wg_tile_n,
-                wg_tile_m * num_cooperative_wg, wg_tile_n, slm_load_offset_x,
-                slm_load_offset_y);
         nbarrier.wait();
 
-        tile_load(local_ld, local_ld_payload);
-        mat_slice.reg = local_ld.reg;
-#pragma unroll
-        for (int i = 1; i < num_cooperative_wg; i++) {
-            local_ld_payload.template update_tdesc<tdesc_update_dir::y_dir>(
-                    wg_tile_m);
+        if (coop_id_x < coop_num_x) {
+            // nbarrier.init_nbarrier(nbar_id, nbarrier_role::consumer);
+            // nbarrier.arrive();
+            int32_t slm_load_offset_x
+                    = sg_idx * sg_tile_n + coop_id_x * tile_size_x;
+            int32_t slm_load_offset_y
+                    = sg_idy * sg_tile_m + coop_id_y * tile_size_y;
+
+            local_ld_tile_t local_ld;
+            local_ld_payload_t local_ld_payload(slm_base, real_wg_tile_n,
+                    real_wg_tile_m * num_cooperative_wg, real_wg_tile_n,
+                    slm_load_offset_x, slm_load_offset_y);
+
             tile_load(local_ld, local_ld_payload);
-            mat_slice.reg = reduce_helper<reduce_kind, dtype>(
-                    mat_slice.reg, local_ld.reg);
+            mat_slice.reg = local_ld.reg;
+#pragma unroll
+            for (int i = 1; i < num_cooperative_wg; i++) {
+                local_ld_payload.template update_tdesc<tdesc_update_dir::y_dir>(
+                        real_wg_tile_m);
+                tile_load(local_ld, local_ld_payload);
+                mat_slice.reg = reduce_helper<reduce_kind, dtype>(
+                        mat_slice.reg, local_ld.reg);
+            }
         }
     }
 };
@@ -170,27 +184,13 @@ public:
     using dtype = typename matAcc_t::dtype;
 
 private:
-    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
-    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
-    static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
-    static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
-    static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
-    static constexpr uint32_t wg_size_y = tile_shape::wg_size_y;
-
-    static constexpr uint32_t wg_tile_size
-            = wg_tile_m * wg_tile_n * sizeof(dtype);
     using work_group_t = typename tile_shape::work_group_t;
-    static constexpr uint32_t work_group_size = work_group_t::size;
-
-    static constexpr uint32_t tile_size_x = wg_tile_n;
-    static constexpr uint32_t tile_size_y = wg_tile_m;
-    static constexpr uint32_t block_size_x = matAcc_t::block_size_x;
-    static constexpr uint32_t block_size_y = matAcc_t::block_size_y;
 
 public:
     using mat_slice_t = matAcc_t;
     static constexpr uint32_t barrier_count = 0;
     static constexpr uint32_t slm_size = 0;
+    static constexpr uint32_t coop_num_x = 1;
     uint32_t coop_id;
     uint32_t coop_id_x;
     uint32_t coop_id_y;

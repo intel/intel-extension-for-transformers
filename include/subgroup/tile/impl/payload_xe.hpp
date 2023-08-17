@@ -58,11 +58,14 @@ public:
             = memory_layout == mem_layout::col_major;
 
     static constexpr reg_layout register_layout = tile_desc::register_layout;
+    static constexpr bool reg_transpose
+            = register_layout == reg_layout::transpose_tiled;
+    static constexpr bool trans = mem_transpose ^ reg_transpose;
+
     static constexpr bool mem_transform = (sizeof(dtype) < 4) && !mem_transpose
             && (register_layout == reg_layout::vnni_tiled
                     || register_layout == reg_layout::vnni_tiled_col_major);
-    static constexpr bool mem_dword_transpose = sizeof(dtype) < 4
-            && mem_transpose && (register_layout == reg_layout::vnni_tiled);
+    static constexpr bool mem_dword_transpose = (sizeof(dtype) < 4) && trans;
 
     using mem_dtype = typename std::conditional<mem_dword_transpose, uint32_t,
             dtype>::type;
@@ -175,7 +178,7 @@ private:
             payloads_row_2d.row(j) = base_tdesc;
             // To mimic dw transpose for word/byte data type with transpose and pack
             constexpr uint8_t block_width
-                    = trans ? (size_y / scale_factor) : size_x;
+                    = trans ? (size_y / scale_factor) : (size_x / scale_factor);
             constexpr uint8_t block_height = trans ? size_x : size_y;
             constexpr uint32_t block_widthx_widthy_arrlen = (block_width - 1)
                     | ((block_height - 1) << 8) | ((arr_len - 1) << 16);
@@ -183,8 +186,8 @@ private:
                     payloads_row_2d.row(j), block_widthx_widthy_arrlen);
 
             // To mimic dw transpose for word/byte data type with transpose and pack
-            uint32_t offset_width
-                    = trans ? (base_offset_y / scale_factor) : base_offset_x;
+            uint32_t offset_width = trans ? (base_offset_y / scale_factor)
+                                          : (base_offset_x / scale_factor);
             uint32_t offset_height = trans ? base_offset_x : base_offset_y;
 
             xetla_update_tdesc_offsetx(payloads_row_2d.row(j), offset_width);

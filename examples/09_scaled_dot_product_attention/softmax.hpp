@@ -33,10 +33,12 @@ struct xetla_softmax_fwd_t {
     static constexpr mem_space mem_space_in = mem_space_in_;
     static constexpr mem_space mem_space_out = mem_space_out_;
 
-    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
-    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
     static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
+    static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
+    static constexpr uint32_t wg_size_y = tile_shape::wg_size_y;
+    static constexpr uint32_t wg_tile_m = sg_tile_m * wg_size_y;
+    static constexpr uint32_t wg_tile_n = sg_tile_n * wg_size_x;
 
     static constexpr uint32_t SIMD = SIMD_;
     static constexpr uint32_t thread_num = thread_num_;

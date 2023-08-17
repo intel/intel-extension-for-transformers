@@ -43,10 +43,16 @@ class gemm_t<dispatch_policy_int4_dequantize_kslicing<global_kslicing_ratio_,
     using brgemm_args_t = typename brgemm_t::arguments_t;
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
-    static constexpr uint32_t wg_tile_m = brgemm_t::wg_tile_m;
-    static constexpr uint32_t wg_tile_n = brgemm_t::wg_tile_n;
-    static constexpr uint32_t sg_tile_m = brgemm_t::sg_tile_m;
-    static constexpr uint32_t sg_tile_n = brgemm_t::sg_tile_n;
+    using tile_shape = typename brgemm_t::tile_shape;
+    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
+    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
+    static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
+    static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
+    static constexpr uint32_t wg_size_y = tile_shape::wg_size_y;
+    static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
+    static constexpr uint32_t real_wg_tile_m = sg_tile_m * wg_size_y;
+    static constexpr uint32_t real_wg_tile_n = sg_tile_n * wg_size_x;
+
     static constexpr uint32_t k_stride = brgemm_t::k_stride;
     static constexpr uint32_t dequant_s = brgemm_t::dequant_s;
     static constexpr uint32_t pack_ratio = brgemm_t::pack_ratio;
@@ -61,8 +67,6 @@ class gemm_t<dispatch_policy_int4_dequantize_kslicing<global_kslicing_ratio_,
     static_assert(std::is_same<typename brgemm_t::tile_shape,
                           typename epilogue_t::tile_shape>::value,
             "tile_shape should be the same");
-
-    using tile_shape = typename brgemm_t::tile_shape;
 
     using mem_desc_a_t = typename brgemm_t::mem_desc_a_t;
     using mem_desc_b_t = typename brgemm_t::mem_desc_b_t;
@@ -442,7 +446,8 @@ public:
         int32_t coop_offset_n = kslicing.coop_id_x * mat_slice_t::tile_size_x;
         int32_t coop_offset_m = kslicing.coop_id_y * mat_slice_t::tile_size_y;
         if constexpr (mem_desc_c_t::is_local) {
-            mem_desc_c.init(args.matC_base, {wg_tile_n, wg_tile_m, wg_tile_n},
+            mem_desc_c.init(args.matC_base,
+                    {real_wg_tile_n, real_wg_tile_m, real_wg_tile_n},
                     {coop_offset_n, coop_offset_m});
         } else {
             mem_desc_c.init(args.matC_base,

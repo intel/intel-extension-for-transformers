@@ -44,10 +44,16 @@ class gemm_t<dispatch_policy_kslicing<global_kslicing_ratio_,
     using brgemm_args_t = typename brgemm_t::arguments_t;
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
-    static constexpr uint32_t wg_tile_m = brgemm_t::wg_tile_m;
-    static constexpr uint32_t wg_tile_n = brgemm_t::wg_tile_n;
-    static constexpr uint32_t sg_tile_m = brgemm_t::sg_tile_m;
-    static constexpr uint32_t sg_tile_n = brgemm_t::sg_tile_n;
+    using tile_shape = typename brgemm_t::tile_shape;
+    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
+    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
+    static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
+    static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
+    static constexpr uint32_t wg_size_y = tile_shape::wg_size_y;
+    static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
+    static constexpr uint32_t real_wg_tile_m = sg_tile_m * wg_size_y;
+    static constexpr uint32_t real_wg_tile_n = sg_tile_n * wg_size_x;
+
     static constexpr uint32_t k_stride = brgemm_t::k_stride;
     using work_group_t = typename brgemm_t::work_group_t;
     static constexpr uint32_t work_group_size = work_group_t::size;
@@ -60,8 +66,6 @@ class gemm_t<dispatch_policy_kslicing<global_kslicing_ratio_,
     static_assert(std::is_same<typename brgemm_t::tile_shape,
                           typename epilogue_t::tile_shape>::value,
             "tile_shape should be the same");
-
-    using tile_shape = typename brgemm_t::tile_shape;
 
     using mem_desc_a_t = typename brgemm_t::mem_desc_a_t;
     using mem_desc_b_t = typename brgemm_t::mem_desc_b_t;
@@ -369,16 +373,16 @@ public:
         mem_desc_c_t mem_desc_c;
         //setup for matA
         if constexpr (mem_desc_a_t::is_local) {
-            mem_desc_a.init(
-                    args.matA_base, {wg_tile_k, wg_tile_m, wg_tile_k}, {0, 0});
+            mem_desc_a.init(args.matA_base,
+                    {wg_tile_k, real_wg_tile_m, wg_tile_k}, {0, 0});
         } else {
             mem_desc_a.init(args.matA_base,
                     {boundary_k, boundary_m, args.matA_ld}, {start_k, start_m});
         }
         //setup for matB
         if constexpr (mem_desc_b_t::is_local) {
-            mem_desc_b.init(
-                    args.matB_base, {wg_tile_n, wg_tile_k, wg_tile_n}, {0, 0});
+            mem_desc_b.init(args.matB_base,
+                    {real_wg_tile_n, wg_tile_k, real_wg_tile_n}, {0, 0});
         } else {
             mem_desc_b.init(args.matB_base,
                     {boundary_n, boundary_k, args.matB_ld}, {start_n, start_k});
@@ -395,21 +399,26 @@ public:
         mat_slice_t mat_slice;
         kslicing(g, mat_slice, matAcc, kslicing_slm_base, kslicing_nbarr_base);
 
-        //setup for matC
-        //set up cooperative offset for matC store
-        int32_t coop_offset_n = kslicing.coop_id_x * mat_slice_t::tile_size_x;
-        int32_t coop_offset_m = kslicing.coop_id_y * mat_slice_t::tile_size_y;
-        if constexpr (mem_desc_c_t::is_local) {
-            mem_desc_c.init(args.matC_base, {wg_tile_n, wg_tile_m, wg_tile_n},
-                    {coop_offset_n, coop_offset_m});
-        } else {
-            mem_desc_c.init(args.matC_base,
-                    {boundary_n, boundary_m, args.matC_ld},
-                    {start_n + coop_offset_n, start_m + coop_offset_m});
+        if (kslicing.coop_id_x < kslicing_t::coop_num_x) {
+            //setup for matC
+            //set up cooperative offset for matC store
+            int32_t coop_offset_n
+                    = kslicing.coop_id_x * mat_slice_t::tile_size_x;
+            int32_t coop_offset_m
+                    = kslicing.coop_id_y * mat_slice_t::tile_size_y;
+            if constexpr (mem_desc_c_t::is_local) {
+                mem_desc_c.init(args.matC_base,
+                        {real_wg_tile_n, real_wg_tile_m, real_wg_tile_n},
+                        {coop_offset_n, coop_offset_m});
+            } else {
+                mem_desc_c.init(args.matC_base,
+                        {boundary_n, boundary_m, args.matC_ld},
+                        {start_n + coop_offset_n, start_m + coop_offset_m});
+            }
+            epilogue_t epilogue;
+            epilogue(g, mat_slice, mem_desc_c, args.epilogue_args,
+                    epilogue_slm_base, epilogue_nbarr_base);
         }
-        epilogue_t epilogue;
-        epilogue(g, mat_slice, mem_desc_c, args.epilogue_args,
-                epilogue_slm_base, epilogue_nbarr_base);
     }
 };
 

@@ -39,10 +39,16 @@ class gemm_t<dispatch_policy_default<gpu_arch::Xe>, brgemm_t_, epilogue_t_> {
     using brgemm_args_t = typename brgemm_t::arguments_t;
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
-    static constexpr uint32_t wg_tile_m = brgemm_t::wg_tile_m;
-    static constexpr uint32_t wg_tile_n = brgemm_t::wg_tile_n;
-    static constexpr uint32_t sg_tile_m = brgemm_t::sg_tile_m;
-    static constexpr uint32_t sg_tile_n = brgemm_t::sg_tile_n;
+    using tile_shape = typename brgemm_t::tile_shape;
+    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
+    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
+    static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
+    static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
+    static constexpr uint32_t wg_size_y = tile_shape::wg_size_y;
+    static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
+    static constexpr uint32_t real_wg_tile_m = sg_tile_m * wg_size_y;
+    static constexpr uint32_t real_wg_tile_n = sg_tile_n * wg_size_x;
+
     static constexpr uint32_t k_stride = brgemm_t::k_stride;
     using work_group_t = typename brgemm_t::work_group_t;
 
@@ -297,24 +303,24 @@ public:
         mem_desc_c_t mem_desc_c;
         //setup for matA
         if constexpr (mem_desc_a_t::is_local) {
-            mem_desc_a.init(
-                    args.matA_base, {wg_tile_k, wg_tile_m, wg_tile_k}, {0, 0});
+            mem_desc_a.init(args.matA_base,
+                    {wg_tile_k, real_wg_tile_m, wg_tile_k}, {0, 0});
         } else {
             mem_desc_a.init(args.matA_base,
                     {boundary_k, boundary_m, args.matA_ld}, {start_k, start_m});
         }
         //setup for matB
         if constexpr (mem_desc_b_t::is_local) {
-            mem_desc_b.init(
-                    args.matB_base, {wg_tile_n, wg_tile_k, wg_tile_n}, {0, 0});
+            mem_desc_b.init(args.matB_base,
+                    {real_wg_tile_n, wg_tile_k, real_wg_tile_n}, {0, 0});
         } else {
             mem_desc_b.init(args.matB_base,
                     {boundary_n, boundary_k, args.matB_ld}, {start_n, start_k});
         }
         //setup for matC
         if constexpr (mem_desc_c_t::is_local) {
-            mem_desc_c.init(
-                    args.matC_base, {wg_tile_n, wg_tile_m, wg_tile_n}, {0, 0});
+            mem_desc_c.init(args.matC_base,
+                    {real_wg_tile_n, real_wg_tile_m, real_wg_tile_n}, {0, 0});
         } else {
             mem_desc_c.init(args.matC_base,
                     {boundary_n, boundary_m, args.matC_ld}, {start_n, start_m});

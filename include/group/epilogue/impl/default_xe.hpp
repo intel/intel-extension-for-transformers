@@ -46,8 +46,6 @@ public:
 
 private:
     using work_group_t = typename tile_shape::work_group_t;
-    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
-    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
     static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
     static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;

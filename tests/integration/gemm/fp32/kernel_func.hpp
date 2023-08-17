@@ -36,17 +36,31 @@ struct fp32_gemm_test_func {
         using tile_shape = tile_shape_t<wg_n, wg_m, sg_n, sg_m>;
         static constexpr uint32_t periodic_sync_interval = 0;
         static constexpr uint32_t prefetch_distance = 1;
-        using brgemm_t = typename brgemm_selector_t<dtype_a, dtype_b, layout_a,
-                layout_b, mem_space::global, mem_space::global, 4, 4, dtype_acc,
-                tile_shape, sg_k, engine, gpu_arch::Xe, prefetch_distance,
-                periodic_sync_interval>::brgemm;
+
+        using compute_attr = compute_attr_t<dtype_acc, dtype_acc, dtype_acc>;
+        using perf_tuning_knob = perf_tuning_knob_t<sg_k, prefetch_distance,
+                periodic_sync_interval>;
+        using compute_policy =
+                typename std::conditional<(engine == mma_engine::fpu),
+                        compute_policy_default_fpu<compute_attr,
+                                perf_tuning_knob, gpu_arch::Xe>,
+                        compute_policy_default_xmx<compute_attr,
+                                perf_tuning_knob, gpu_arch::Xe>>::type;
+        using mem_desc_input_a
+                = mem_desc_t<dtype_a, layout_a, mem_space::global>;
+        using mem_desc_input_b
+                = mem_desc_t<dtype_b, layout_b, mem_space::global>;
+        using mem_desc_output_c
+                = mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>;
+
+        using brgemm_t = brgemm_t<compute_policy, tile_shape, mem_desc_input_a,
+                mem_desc_input_b>;
 
         using update_method = typename std::conditional<(l3_kslicing > 1),
                 result_reduce_sum, result_overwrite>::type;
         using epilogue_t = epilogue_t<
                 epilogue_policy_default<update_method, gpu_arch::Xe>,
-                tile_shape,
-                mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>>;
+                tile_shape, mem_desc_output_c>;
 
         using gemm_op_t = gemm_t<dispatch_policy_kslicing<l3_kslicing,
                                          slm_kslicing, gpu_arch::Xe>,

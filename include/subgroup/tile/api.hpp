@@ -24,14 +24,14 @@
 namespace gpu::xetla::subgroup {
 
 /// @brief Is the xetla tile mma operation definition API.
-/// @tparam matA_t Is the tile type for matA.
-/// @tparam matB_t Is the tile type for matB.
-/// @tparam matAcc_src_t Is the tile type for src data of matC.
 /// @tparam matAcc_dst_t Is the tile type for dst data of matC.
+/// @tparam matAcc_src_t Is the tile type for src data of matC.
+/// @tparam matB_t Is the tile type for matB.
+/// @tparam matA_t Is the tile type for matA.
 /// @tparam engine Is the compute engine, fpu or xmx.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename matA_t, typename matB_t, typename matAcc_src_t,
-        typename matAcc_dst_t, mma_engine engine, gpu_arch arch_tag>
+template <typename matAcc_dst_t, typename matAcc_src_t, typename matB_t,
+        typename matA_t, mma_engine engine, gpu_arch arch_tag>
 struct tile_mma_t {};
 
 /// @brief Is to illustrate the memory information

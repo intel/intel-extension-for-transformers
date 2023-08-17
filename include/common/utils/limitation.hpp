@@ -57,15 +57,6 @@ namespace default_fpu {
 template <typename dtype_a, typename dtype_b, typename dtype_mma_a,
         typename dtype_mma_b, typename dtype_mma_acc>
 struct check_dtype_default_fpu_xe {
-    static_assert(std::is_same<remove_const_t<dtype_a>,
-                          remove_const_t<dtype_mma_a>>::value,
-            "in current fpu path, dtype_mma_a should be the same as "
-            "dtype_a");
-    static_assert(std::is_same<remove_const_t<dtype_b>,
-                          remove_const_t<dtype_mma_b>>::value,
-            "in current fpu path, dtype_mma_a should be the same as "
-            "dtype_a");
-
     static_assert(std::is_same<remove_const_t<dtype_mma_a>, float>::value,
             "current only support sgemm");
     static_assert(std::is_same<remove_const_t<dtype_mma_b>, float>::value,
@@ -100,6 +91,9 @@ struct check_tile_size_default_fpu_xe {
 
     static_assert((block_size_x_b % simd_len == 0),
             "block_size_x_b should be a multiple of simd_len");
+    static_assert((tile_size_x_a % block_size_x_a) == 0);
+    static_assert((tile_size_y_b % block_size_y_b) == 0);
+    static_assert(block_size_x_a == block_size_y_b);
 };
 } // namespace default_fpu
 

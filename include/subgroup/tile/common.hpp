@@ -198,7 +198,7 @@ __XETLA_API static void reset_tile_desc_core(
 #pragma unroll
     for (int j = 0; j < num_tdesc; j++) {
         constexpr uint8_t block_width
-                = trans ? (size_y / scale_factor) : size_x;
+                = trans ? (size_y / scale_factor) : (size_x / scale_factor);
         constexpr uint8_t block_height = trans ? size_x : size_y;
         constexpr uint32_t block_widthx_widthy_arrlen = (block_width - 1)
                 | ((block_height - 1) << 8) | ((arr_len - 1) << 16);
@@ -209,13 +209,18 @@ __XETLA_API static void reset_tile_desc_core(
 
 } // namespace detail
 
-template <typename tile_desc_, mem_space memory_space>
+template <typename tile_desc_, mem_space memory_space,
+        mem_layout memory_layout = mem_layout::row_major>
 struct msg_type_query {
     static constexpr msg_type value = memory_space == mem_space::global
-            ? (tile_desc_::tile_size_y == 1 ? msg_type::block_1d
-                                            : msg_type::block_2d)
-            : (tile_desc_::tile_size_y == 1 ? msg_type::block_1d
-                                            : msg_type::scatter);
+            ? (((tile_desc_::tile_size_y == 1)
+                       && (memory_layout == mem_layout::row_major))
+                            ? msg_type::block_1d
+                            : msg_type::block_2d)
+            : (((tile_desc_::tile_size_y == 1)
+                       && (memory_layout == mem_layout::row_major))
+                            ? msg_type::block_1d
+                            : msg_type::scatter);
 };
 
 template <typename tile_desc_, mem_space memory_space>

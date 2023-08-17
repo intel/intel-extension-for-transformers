@@ -60,7 +60,7 @@ struct tile_mma_func {
         using matAcc_t
                 = tile_t<dtypeAcc, tile_desc_t<n, m, 16, 8, reg_layout::tiled>>;
 
-        using tile_mma = tile_mma_t<matA_t, matB_t, matAcc_t, matAcc_t,
+        using tile_mma = tile_mma_t<matAcc_t, matAcc_t, matB_t, matA_t,
                 mma_engine::xmx, gpu_arch::Xe>;
 
         matA_t matA;
@@ -82,7 +82,7 @@ struct tile_mma_func {
         subgroup::tile_load<cache_hint::cached, cache_hint::cached>(
                 matB, matB_payload);
         SW_BARRIER();
-        tile_mma::mma(matA, matB, matAcc, matAcc);
+        tile_mma::mma(matAcc, matAcc, matB, matA);
         SW_BARRIER();
         matC.reg = xetla_cvt<dtypeC, dtypeAcc, matAcc_t::tile_desc::tile_elems>(
                 matAcc.reg);

@@ -46,8 +46,6 @@ public:
     using compute_policy = compute_policy_default_xmx<compute_attr_,
             perf_tuning_knob_, gpu_arch::Xe>;
     static constexpr uint32_t k_stride = compute_policy::k_stride;
-    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
-    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
     static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
     static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
@@ -100,15 +98,13 @@ private:
     static constexpr uint32_t tile_size_y_b = k_stride;
     static constexpr uint32_t tile_size_x_c = sg_tile_n;
     static constexpr uint32_t tile_size_y_c = sg_tile_m;
-    static constexpr uint32_t block_size_x_a
-            = compute_policy::block_bytes_x_a / sizeof(dtype_mma_a);
+    static constexpr uint32_t block_size_x_a = compute_policy::block_size_x_a;
     static constexpr uint32_t block_size_y_a
             = (compute_policy::block_size_y_a > tile_size_y_a)
             ? tile_size_y_a
             : compute_policy::block_size_y_a;
     static constexpr uint32_t block_size_x_b = compute_policy::block_size_x_b;
-    static constexpr uint32_t block_size_y_b
-            = compute_policy::block_bytes_y_b / sizeof(dtype_mma_b);
+    static constexpr uint32_t block_size_y_b = compute_policy::block_size_y_b;
 
     using arch_attr = arch_attr_t<arch_tag>;
     using check_tile_size
@@ -118,15 +114,12 @@ private:
                     tile_size_y_b, block_size_x_b, block_size_y_b>;
 
     /******** set tile  **********/
-    static constexpr bool is_vnni_tiled_a
-            = (sizeof(dtype_a) < sizeof(uint32_t)) && is_col_major_a;
-    static constexpr reg_layout reg_layout_a
-            = is_vnni_tiled_a ? reg_layout::vnni_tiled : reg_layout::tiled;
+    static constexpr reg_layout reg_layout_a = reg_layout::tiled;
     using matA_tile_desc_t = subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a,
             block_size_x_a, block_size_y_a, reg_layout_a>;
     using matA_t = subgroup::tile_t<dtype_a, matA_tile_desc_t>;
     using matA_payload_t = subgroup::mem_payload_t<dtype_a, matA_tile_desc_t,
-            subgroup::msg_type_v<matA_tile_desc_t, mem_space_a>, mem_layout_a,
+            is_local_a ? msg_type::scatter : msg_type::block_2d, mem_layout_a,
             mem_space_a, arch_tag>;
     using matA_acc_t = subgroup::tile_t<dtype_mma_a, matA_tile_desc_t>;
     using matA_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_a,
@@ -139,7 +132,7 @@ private:
             block_size_x_b, block_size_y_b, reg_layout_b>;
     using matB_t = subgroup::tile_t<dtype_b, matB_tile_desc_t>;
     using matB_payload_t = subgroup::mem_payload_t<dtype_b, matB_tile_desc_t,
-            subgroup::msg_type_v<matB_tile_desc_t, mem_space_b>, mem_layout_b,
+            is_local_b ? msg_type::scatter : msg_type::block_2d, mem_layout_b,
             mem_space_b, arch_tag>;
     using matB_acc_t = subgroup::tile_t<dtype_mma_b, matB_tile_desc_t>;
     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
@@ -152,8 +145,8 @@ public:
     using matAcc_t = subgroup::tile_t<dtype_mma_acc, matAcc_tile_desc_t>;
 
 private:
-    using tile_mma = subgroup::tile_mma_t<matA_acc_t, matB_acc_t, matAcc_t,
-            matAcc_t, mma_engine::xmx, arch_tag>;
+    using tile_mma = subgroup::tile_mma_t<matAcc_t, matAcc_t, matB_acc_t,
+            matA_acc_t, mma_engine::xmx, arch_tag>;
     static constexpr bool enable_periodic_sync = (sync_freq != 0);
     static constexpr uint32_t barrier_count_x = wg_size_y > 1 ? wg_size_x : 0;
     static constexpr uint32_t barrier_count_y = wg_size_x > 1 ? wg_size_y : 0;
@@ -162,8 +155,9 @@ public:
     static constexpr uint32_t barrier_count
             = enable_periodic_sync ? barrier_count_x + barrier_count_y : 0;
     // current only support matA from slm
-    static constexpr uint32_t slm_size
-            = is_local_a ? wg_tile_m * k_stride * sizeof(dtype_a) : 0;
+    static constexpr uint32_t slm_size = is_local_a
+            ? sg_tile_m * wg_size_y * k_stride * sizeof(dtype_a)
+            : 0;
 
     static constexpr bool is_2d_block_a
             = matA_payload_t::message_type == msg_type::block_2d;
@@ -324,10 +318,9 @@ public:
                 }
             }
             subgroup::tile_load<cache_hint::cached, cache_hint::cached>(
-                    matA, matA_payload);
-            subgroup::tile_load<cache_hint::cached, cache_hint::cached>(
                     matB, matB_payload);
-            SW_BARRIER();
+            subgroup::tile_load<cache_hint::cached, cache_hint::cached>(
+                    matA, matA_payload);
             if constexpr (stages != 0) {
                 subgroup::tile_prefetch<cache_hint::cached, cache_hint::cached>(
                         matA_prefetch_payload);
@@ -348,10 +341,11 @@ public:
             SW_BARRIER();
             matA_acc_t matA_acc;
             matB_acc_t matB_acc;
-            if constexpr (is_vnni_tiled_a) { subgroup::vnni_reverse(matA); }
+            subgroup::elemwise_cvt(matA_acc, matA);
+            subgroup::vnni_transform(matB_acc, matB);
             pre_processing(matA_acc, matB_acc, matA, matB);
             SW_BARRIER();
-            tile_mma::mma(matA_acc, matB_acc, matAcc, matAcc);
+            tile_mma::mma(matAcc, matAcc, matB_acc, matA_acc);
             SW_BARRIER();
             if constexpr (enable_periodic_sync) {
                 if ((i % sync_freq) == 0) {

@@ -59,18 +59,6 @@ inline constexpr void check_load_condition() {
         constexpr reg_layout reg_layout_ = tile_desc::register_layout;
         constexpr bool mem_transpose = payload_t::mem_transpose;
 
-        static_assert(
-                (reg_transpose && (sizeof(dtype) >= 4)) || (!reg_transpose),
-                "reverse_load only used in sgemm and dgemm");
-        static_assert(
-                (reg_transpose && (sizeof(dtype) >= 4)) || (!reg_transpose),
-                "reverse_load only used in sgemm and dgemm");
-        static_assert((sizeof(dtype) >= 4)
-                        || (!payload_t::mem_transpose
-                                || (tile_desc::register_layout
-                                        == reg_layout::vnni_tiled)),
-                "element transpose without vnni pack is not supported for data "
-                "type size < 4");
         using load_store_attr =
                 typename arch_attr_t<payload_t::arch_tag>::load_store_attr;
         constexpr int32_t max_vnni_block_width
@@ -155,6 +143,9 @@ tile_load(tile_t &tile, payload_t &payload) {
     static constexpr gpu_arch arch_tag = payload_t::arch_tag;
 
     static constexpr reg_layout reg_layout_ = tile_desc::register_layout;
+    static constexpr bool is_vnni_reverse = payload_t::mem_dword_transpose
+            && ((reg_layout_ == reg_layout::tiled)
+                    || (reg_layout_ == reg_layout::transpose_tiled));
     static constexpr bool reg_transpose = tile_desc::reg_transpose;
 
     static constexpr mem_layout mem_layout_ = payload_t::memory_layout;
@@ -227,8 +218,13 @@ tile_load(tile_t &tile, payload_t &payload) {
             "restriction");
     static_assert(tile_size_x % (block_size_x * arr_len) == 0,
             "tile_size_x should be a multiple of (block_size_x * arr_len)");
-    static_assert((block_size_y * sizeof(dtype)) % sizeof(load_dtype) == 0,
-            "block_size_y should be load_dtype elem aligned");
+    static_assert(
+            (reg_transpose
+                    && ((block_size_x * sizeof(dtype)) % sizeof(load_dtype)
+                            == 0))
+                    || ((block_size_y * sizeof(dtype)) % sizeof(load_dtype)
+                            == 0),
+            "check vnni limitation for DW transpose");
 
     auto payload_2d = payload.payloads.xetla_format<uint32_t, num_block, 16>();
     uint32_t base_offset_y = 0;
@@ -244,7 +240,7 @@ tile_load(tile_t &tile, payload_t &payload) {
             xetla_tdescriptor tdesc = payload_row.row(j);
             auto reg_blk = tile.reg.xetla_select<load_block_elems, 1>(
                     (i * num_block_x + j) * block_elems);
-            constexpr uint32_t ld_blk_height = reg_transpose
+            constexpr uint32_t ld_blk_height = (reg_transpose && trans)
                     ? detail::getNextPowerOf2<ld_blk_size_y>()
                     : ld_blk_size_y;
             constexpr uint32_t tmp_size
@@ -261,13 +257,14 @@ tile_load(tile_t &tile, payload_t &payload) {
                                         / scale_factor,
                                 L1, L3, trans, mem_transform>(tdesc);
 
-                if constexpr (reg_transpose) {
+                if constexpr (reg_transpose && trans) {
                     reg_blk.xetla_select<load_elems, 1>(ii * load_elems)
                             .xetla_format<native_type_t<load_dtype>>()
-                            = reg_tmp.xetla_format<load_dtype, block_size_x,
+                            = reg_tmp.xetla_format<load_dtype,
+                                             block_size_x / scale_factor,
                                              ld_blk_height>()
-                                      .xetla_select<block_size_x, 1,
-                                              ld_blk_size_y, 1>(0, 0);
+                                      .xetla_select<block_size_x / scale_factor,
+                                              1, ld_blk_size_y, 1>(0, 0);
                 } else {
                     reg_blk.xetla_select<tmp_size, 1>(ii * tmp_size) = reg_tmp;
                 }
@@ -331,7 +328,7 @@ tile_load(tile_t &tile, payload_t &payload) {
             auto reg_blk
                     = tile.reg.xetla_select<remained_block_elems * arr_len, 1>(
                             processed_elems + j * remained_block_elems);
-            constexpr uint32_t ld_blk_height = reg_transpose
+            constexpr uint32_t ld_blk_height = (reg_transpose && trans)
                     ? detail::getNextPowerOf2<remained_ld_blk_size_y>()
                     : remained_ld_blk_size_y;
             constexpr uint32_t tmp_size
@@ -349,13 +346,15 @@ tile_load(tile_t &tile, payload_t &payload) {
                                         / scale_factor),
                                 L1, L3, trans, mem_transform>(tdesc);
 
-                if constexpr (reg_transpose) {
+                if constexpr (reg_transpose && trans) {
                     reg_blk.xetla_select<load_elems, 1>(ii * load_elems)
                             .xetla_format<native_type_t<load_dtype>>()
-                            = reg_tmp.xetla_format<load_dtype, block_size_x,
+                            = reg_tmp.xetla_format<load_dtype,
+                                             block_size_x / scale_factor,
                                              ld_blk_height>()
-                                      .xetla_select<block_size_x, 1,
-                                              remained_ld_blk_size_y, 1>(0, 0);
+                                      .xetla_select<block_size_x / scale_factor,
+                                              1, remained_ld_blk_size_y, 1>(
+                                              0, 0);
                 } else {
                     reg_blk.xetla_select<tmp_size, 1>(ii * tmp_size) = reg_tmp;
                 }
@@ -392,6 +391,11 @@ tile_load(tile_t &tile, payload_t &payload) {
                                 mem_transform>(tdesc);
             }
         }
+    }
+
+    if constexpr (is_vnni_reverse) {
+        SW_BARRIER();
+        vnni_reverse(tile);
     }
 }
 

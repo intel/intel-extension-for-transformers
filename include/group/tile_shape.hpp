@@ -37,10 +37,6 @@ struct tile_shape_t {
     static constexpr uint32_t sg_tile_size_x = sg_tile_size_x_;
     static constexpr uint32_t sg_tile_size_y = sg_tile_size_y_;
 
-    static_assert(wg_tile_size_x % sg_tile_size_x == 0,
-            "wg_tile_size_x should be a multiple of sg_tile_size_x");
-    static_assert(wg_tile_size_y % sg_tile_size_y == 0,
-            "wg_tile_size_y should be a multiple of sg_tile_size_y");
     static constexpr uint32_t wg_size_x
             = (wg_tile_size_x + sg_tile_size_x - 1) / sg_tile_size_x;
     static constexpr uint32_t wg_size_y

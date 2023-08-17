@@ -24,9 +24,9 @@
 namespace gpu::xetla::subgroup {
 
 /// @brief Is the tile mma operation functor, specialized for Xe and matrix engine.
-template <typename matA_t_, typename matB_t_, typename matAcc_src_t_,
-        typename matAcc_dst_t_>
-struct tile_mma_t<matA_t_, matB_t_, matAcc_src_t_, matAcc_dst_t_,
+template <typename matAcc_dst_t_, typename matAcc_src_t_, typename matB_t_,
+        typename matA_t_>
+struct tile_mma_t<matAcc_dst_t_, matAcc_src_t_, matB_t_, matA_t_,
         mma_engine::xmx, gpu_arch::Xe> {
     using matA_t = matA_t_;
     using matB_t = matB_t_;
@@ -40,34 +40,34 @@ struct tile_mma_t<matA_t_, matB_t_, matAcc_src_t_, matAcc_dst_t_,
     using arch_attr = arch_attr_t<gpu_arch::Xe>;
     using mma_attr = typename arch_attr::mma_attr;
 
-    static constexpr uint32_t a_tile_size_y = matA_t::tile_desc::tile_size_y;
-    static constexpr uint32_t a_tile_size_x = matA_t::tile_desc::tile_size_x;
-    static constexpr uint32_t a_tile_elems = matA_t::tile_desc::tile_elems;
-    static constexpr uint32_t a_block_size_y = matA_t::tile_desc::block_size_y;
-    static constexpr uint32_t a_block_size_x = matA_t::tile_desc::block_size_x;
-    static constexpr uint32_t a_block_elems = matA_t::tile_desc::block_elems;
+    static constexpr uint32_t a_tile_size_y = matA_t::tile_size_y;
+    static constexpr uint32_t a_tile_size_x = matA_t::tile_size_x;
+    static constexpr uint32_t a_tile_elems = matA_t::tile_elems;
+    static constexpr uint32_t a_block_size_y = matA_t::block_size_y;
+    static constexpr uint32_t a_block_size_x = matA_t::block_size_x;
+    static constexpr uint32_t a_block_elems = matA_t::block_elems;
 
-    static constexpr uint32_t b_tile_size_x = matB_t::tile_desc::tile_size_x;
-    static constexpr uint32_t b_tile_size_y = matB_t::tile_desc::tile_size_y;
-    static constexpr uint32_t b_tile_elems = matB_t::tile_desc::tile_elems;
-    static constexpr uint32_t b_block_size_x = matB_t::tile_desc::block_size_x;
-    static constexpr uint32_t b_block_size_y = matB_t::tile_desc::block_size_y;
-    static constexpr uint32_t b_block_elems = matB_t::tile_desc::block_elems;
+    static constexpr uint32_t b_tile_size_x = matB_t::tile_size_x;
+    static constexpr uint32_t b_tile_size_y = matB_t::tile_size_y;
+    static constexpr uint32_t b_tile_elems = matB_t::tile_elems;
+    static constexpr uint32_t b_block_size_x = matB_t::block_size_x;
+    static constexpr uint32_t b_block_size_y = matB_t::block_size_y;
+    static constexpr uint32_t b_block_elems = matB_t::block_elems;
 
-    static constexpr uint32_t tile_size_m = matDst_t::tile_desc::tile_size_y;
-    static constexpr uint32_t tile_size_k = a_tile_size_x; // to be fixed
-    static constexpr uint32_t tile_size_n = matDst_t::tile_desc::tile_size_x;
+    static constexpr uint32_t tile_size_m = matDst_t::tile_size_y;
+    static constexpr uint32_t tile_size_k = a_tile_size_x;
+    static constexpr uint32_t tile_size_n = matDst_t::tile_size_x;
     static constexpr uint32_t tile_elems = tile_size_m * tile_size_n;
-    static constexpr uint32_t block_size_n = matDst_t::tile_desc::block_size_x;
+    static constexpr uint32_t block_size_n = matDst_t::block_size_x;
     static constexpr uint32_t block_size_k = a_block_size_x;
-    static constexpr uint32_t block_size_m = matDst_t::tile_desc::block_size_y;
+    static constexpr uint32_t block_size_m = matDst_t::block_size_y;
     static constexpr uint32_t block_elems = block_size_m * block_size_n;
 
-    static_assert(tile_size_m == matA_t::tile_desc::tile_size_y,
+    static_assert(tile_size_m == matA_t::tile_size_y,
             "matAcc tile m should match with matA tile m");
     static_assert(a_tile_size_x == b_tile_size_y,
             "matA tile k should match with matB tile k");
-    static_assert(tile_size_n == matB_t::tile_desc::tile_size_x,
+    static_assert(tile_size_n == matB_t::tile_size_x,
             "matAcc tile n should match with matB tile n");
     static_assert(block_size_m == a_block_size_y,
             "matAcc block m should match with matA block m");
@@ -82,10 +82,9 @@ struct tile_mma_t<matA_t_, matB_t_, matAcc_src_t_, matAcc_dst_t_,
             "Currently we don't support the "
             "splitting of block when call the DPAS");
 
-    static constexpr int32_t num_block_n = matDst_t::tile_desc::num_block_x;
-    static constexpr int32_t num_block_m = matDst_t::tile_desc::num_block_y;
+    static constexpr int32_t num_block_n = matDst_t::num_block_x;
+    static constexpr int32_t num_block_m = matDst_t::num_block_y;
     static constexpr int32_t num_block_k = tile_size_k / block_size_k;
-    static constexpr int32_t num_block = num_block_m * num_block_n;
 
     static constexpr int32_t mma_m = mma_attr::mma_m_in_elem;
     static constexpr int32_t mma_k
@@ -94,7 +93,7 @@ struct tile_mma_t<matA_t_, matB_t_, matAcc_src_t_, matAcc_dst_t_,
             "tile_size_m shoud be a multiple of mma_m");
 
     __XETLA_API static void mma(
-            matA_t &a, matB_t &b, matSrc_t &src, matDst_t &dst) {
+            matDst_t &dst, matSrc_t &src, matB_t &b, matA_t &a) {
         constexpr int32_t a_mma_elems = mma_m * a_block_size_x;
         constexpr int32_t c_mma_elems = mma_m * block_size_n;
 #pragma unroll

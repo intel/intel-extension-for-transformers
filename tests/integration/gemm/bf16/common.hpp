@@ -144,8 +144,8 @@ public:
     static constexpr size_t mat_m = 192;
     static constexpr size_t mat_n = 256;
     static constexpr size_t mat_k = 256;
-    static constexpr size_t wg_m = 192;
-    static constexpr size_t wg_n = 256;
+    static constexpr size_t wg_m = 48;
+    static constexpr size_t wg_n = 80;
     static constexpr size_t sg_m = 24;
     static constexpr size_t sg_n = 64;
     static constexpr size_t sg_k = 32;
@@ -164,7 +164,7 @@ public:
     static constexpr size_t mat_m = 96;
     static constexpr size_t mat_n = 256;
     static constexpr size_t mat_k = 256;
-    static constexpr size_t wg_m = 96;
+    static constexpr size_t wg_m = 40;
     static constexpr size_t wg_n = 256;
     static constexpr size_t sg_m = 24;
     static constexpr size_t sg_n = 64;

@@ -95,9 +95,6 @@ struct xetla_data_transformer<dtype_in_, dtype_out_, dtype_compute_,
     static constexpr uint32_t block_size_x
             = gpu::xetla::subgroup::detail::gcd<load_size_x, st_size_x>::value;
 
-    static constexpr bool is_vnni_tiled_in
-            = (sizeof(dtype_in) < sizeof(uint32_t)) && is_col_major_in;
-
     static constexpr uint32_t block_size_y_limit
             = is_col_major_in ? max_trans_block_width : max_load_height_in_elem;
 
@@ -105,8 +102,7 @@ struct xetla_data_transformer<dtype_in_, dtype_out_, dtype_compute_,
             ? tile_size_y
             : block_size_y_limit;
 
-    static constexpr reg_layout in_reg_layout
-            = is_vnni_tiled_in ? reg_layout::vnni_tiled : reg_layout::tiled;
+    static constexpr reg_layout in_reg_layout = reg_layout::tiled;
 
     using global_ld_tile_desc_t = subgroup::tile_desc_t<tile_size_x,
             tile_size_y, block_size_x, block_size_y, in_reg_layout>;
@@ -211,10 +207,6 @@ struct xetla_data_transformer<dtype_in_, dtype_out_, dtype_compute_,
                 global_st_start_y);
 
         subgroup::tile_load(mat_global_ld, global_ld_payload);
-        //If the data type is fp16 or bf8, it is necessary to use vnni_reverse to rearrange the data
-        if constexpr (is_vnni_tiled_in) {
-            subgroup::vnni_reverse(mat_global_ld);
-        }
 
         if constexpr (need_fp8_op) {
             subgroup::elemwise_cvt(mat_global_compute, mat_global_ld);

@@ -49,8 +49,7 @@ public:
             perf_tuning_knob_, dtype_scale_, dtype_zero_pt_, dequant_s_,
             gpu_arch::Xe>;
     static constexpr uint32_t k_stride = compute_policy::k_stride;
-    static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
-    static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
+
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
     static constexpr uint32_t sg_tile_n = tile_shape::sg_tile_size_x;
     static constexpr uint32_t wg_size_x = tile_shape::wg_size_x;
@@ -204,8 +203,8 @@ private:
             = subgroup::prefetch_payload_t<dtype_zero_pt, zero_pt_tile_desc_t,
                     mem_layout::row_major, mem_space::global, 1, arch_tag>;
 
-    using tile_mma = subgroup::tile_mma_t<matA_acc_t, matB_acc_t, matAcc_t,
-            matAcc_t, mma_engine::xmx, arch_tag>;
+    using tile_mma = subgroup::tile_mma_t<matAcc_t, matAcc_t, matB_acc_t,
+            matA_acc_t, mma_engine::xmx, arch_tag>;
     static constexpr bool enable_periodic_sync = (sync_freq != 0);
     static constexpr uint32_t barrier_count_x = wg_size_y > 1 ? wg_size_x : 0;
     static constexpr uint32_t barrier_count_y = wg_size_x > 1 ? wg_size_y : 0;
@@ -214,8 +213,9 @@ public:
     static constexpr uint32_t barrier_count
             = enable_periodic_sync ? barrier_count_x + barrier_count_y : 0;
     // current only support matA from slm
-    static constexpr uint32_t slm_size
-            = is_local_a ? wg_tile_m * k_stride * sizeof(dtype_a) : 0;
+    static constexpr uint32_t slm_size = is_local_a
+            ? sg_tile_m * wg_size_y * k_stride * sizeof(dtype_a)
+            : 0;
 
     using mem_desc_scale_t
             = mem_desc_t<dtype_scale, mem_layout::row_major, mem_space::global>;
@@ -447,7 +447,7 @@ public:
             subgroup::elemwise_cvt(matA_acc, matA);
             dequantize(matB_acc, matB, scale, zero_pt);
             SW_BARRIER();
-            tile_mma::mma(matA_acc, matB_acc, matAcc, matAcc);
+            tile_mma::mma(matAcc, matAcc, matB_acc, matA_acc);
             SW_BARRIER();
             if constexpr (enable_periodic_sync) {
                 if ((i % sync_freq) == 0) {
