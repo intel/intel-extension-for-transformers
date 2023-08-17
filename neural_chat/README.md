@@ -173,7 +173,7 @@ neuralchat_server start --config_file ./server/config/neuralchat.yaml
 
 - Python API
 ```python
-from neuralchat.server.neuralchat_server import NeuralChatServerExecutor
+from neural_chat.server.neuralchat_server import NeuralChatServerExecutor
 server_executor = NeuralChatServerExecutor()
 server_executor(config_file="./server/config/neuralchat.yaml", log_file="./log/neuralchat.log")
 ```
@@ -187,13 +187,13 @@ neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --query "Tell me ab
 
 - Python API
 ```python
-from neuralchat.server.neuralchat_client import TextChatClientExecutor
-
+from neural_chat.server.neuralchat_client import TextChatClientExecutor
 executor = TextChatClientExecutor()
-executor(
-    query="Tell me about Intel Xeon Scalable Processors.",
+result = executor(
+    prompt="Tell me about Intel Xeon Scalable Processors.",
     server_ip="127.0.0.1",
     port=8000)
+print(result.text)
 ```
 
 - Curl with Restful API
