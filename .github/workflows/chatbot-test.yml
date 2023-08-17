@@ -1,0 +1,23 @@
+name: Chat Bot Test
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/**'
+      - 'docker/**'
+      - 'intel_extension_for_transformers/**'
+      - 'workflows/**'
+
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  call-inference-llama-2-7b-chat-hf:
+    uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml
