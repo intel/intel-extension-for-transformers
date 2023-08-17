@@ -33,7 +33,7 @@ jobs:
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer" bash -c "cd /root/chatbot; python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hug_access_token \"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\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer" bash -c "cd /root/chatbot; python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hg_access_token \"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\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
         if: success() || failure()
