@@ -233,8 +233,8 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
       }
     }
     if(mem_tmp != nullptr){
-        free(mem_tmp);
-        mem_tmp = nullptr;
+        //free(mem_tmp);
+        //mem_tmp = nullptr;
       }
 }
 

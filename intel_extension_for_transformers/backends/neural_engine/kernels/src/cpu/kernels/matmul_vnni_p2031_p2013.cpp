@@ -270,8 +270,8 @@ inline bool matmul_vnni_p2031_p2013_k_t::thread_exec(const std::vector<const voi
     }
   }
   if (mem_tmp != nullptr) {
-    free(mem_tmp);
-    mem_tmp = nullptr;
+    //free(mem_tmp);
+    //mem_tmp = nullptr;
   }
   return true;
 }
