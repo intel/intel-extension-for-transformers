@@ -79,9 +79,9 @@ void launch(const ParallelConfig& _config, const Param& _param) {
           free(tmpB);
           free(tmpA);
           free(tmpC);
-          tmpB == NULL;
-          tmpA == NULL;
-          tmpC == NULL;
+          tmpB = NULL;
+          tmpA = NULL;
+          tmpC = NULL;
       }
   }
  protected:

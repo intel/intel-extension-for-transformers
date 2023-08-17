@@ -423,10 +423,10 @@ class GemmLauncherPackWeightOff                                         //
         free(tmpB);
         free(tmpA);
         free(tmpC);
-        tmpB == NULL;
-        tmpA == NULL;
-        tmpC == NULL;
-        
+        tmpB = NULL;
+        tmpA = NULL;
+        tmpC = NULL;
+
     }
   }
 
