@@ -66,7 +66,7 @@ RUN source activate && conda activate chatbot-finetuning && pip install oneccl_b
     pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
     cd /itrex && pip install -v . && \
-    cd workflows/chatbot/fine_tuning && pip install -r requirements.txt
+    cd neural_chat/examples/instruction_tuning && pip install -r requirements.txt
 
 WORKDIR /itrex/neural_chat/examples/instruction_tuning/
 
@@ -96,7 +96,7 @@ ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
-    cd /itrex/workflows/chatbot/fine_tuning/ && \
+    cd /itrex/neural_chat/examples/instruction_tuning/ && \
     pip install -r requirements.txt
     
 # Build ITREX
