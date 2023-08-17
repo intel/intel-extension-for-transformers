@@ -201,7 +201,7 @@ class BaseModel(ABC):
 
         Args:
             instance: An instance of a retriever.
-            retrieval_type: The type pf the retrieval method.
+            retrieval_type: The type of the retrieval method.
         """
         self.retriever = retriever
         self.retrieval_type = retrieval_type
