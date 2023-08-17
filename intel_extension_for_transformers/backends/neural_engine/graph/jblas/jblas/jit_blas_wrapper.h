@@ -66,7 +66,7 @@ void launch(const ParallelConfig& _config, const Param& _param) {
       auto tmpA = static_cast<AType*>(malloc(_config.StackSize));
       auto tmpC = static_cast<CType*>(malloc(_config.StackSize));
 
-      if (tmpB == nullptr || tmpA == nullptr || tmpC == nullptr) {
+      if (tmpB == NULL || tmpA == NULL || tmpC == NULL) {
           printf("Memory allocation failed.\n");
       } else {
           for (int itern = 0; itern < colremain; itern += _config.NStep) {
@@ -79,6 +79,9 @@ void launch(const ParallelConfig& _config, const Param& _param) {
           free(tmpB);
           free(tmpA);
           free(tmpC);
+          tmpB == NULL;
+          tmpA == NULL;
+          tmpC == NULL;
       }
   }
  protected:

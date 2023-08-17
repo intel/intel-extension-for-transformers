@@ -10355,6 +10355,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
     ne_lock_destroy(&state_shared.spin);
     if (workers != NULL) {
         free(workers);
+        workers = NULL;
     }
   }
 #endif
@@ -11138,6 +11139,7 @@ static enum ne_opt_result ne_opt_lbfgs(struct ne_context* ctx, struct ne_opt_par
     }
     if (lm != NULL) {
         free(lm);
+        lm = NULL;
     }
     step = 1.0;
   }

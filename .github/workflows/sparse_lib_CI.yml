@@ -34,7 +34,7 @@ jobs:
           if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
               podman start ${{ env.CONTAINER_NAME }}
               echo "remove left files through container ..."
-              podman exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+              podman exec --user root ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
       - name: Checkout out Repo
         uses: actions/checkout@v3

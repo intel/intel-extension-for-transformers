@@ -228,7 +228,10 @@ void matmul_vnni_noperm_p2031_p1302_k_t::thread_exec(const std::vector<const voi
         (*jit_ker_Ba4b_Ab4a_ba_)(&rt_param);
       }
     }
-  free(mem_tmp);
+  if(mem_tmp != NULL){
+    free(mem_tmp);
+    mem_tmp = NULL;
+  }
 }
 
 

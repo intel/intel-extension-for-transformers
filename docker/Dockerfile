@@ -30,7 +30,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 ENV LANG C.UTF-8
 ARG PYTHON=python3.10
-USER root
+
 RUN mkdir -p /app/intel-extension-for-transformers
 WORKDIR /app/intel-extension-for-transformers
 
@@ -45,7 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
-USER ${USER_ID}:${GROUP_ID}
+
 COPY . /app/intel-extension-for-transformers
 
 RUN ${PYTHON} -m pip install -r requirements.txt --no-cache-dir -f https://download.pytorch.org/whl/cpu/torch_stable.html

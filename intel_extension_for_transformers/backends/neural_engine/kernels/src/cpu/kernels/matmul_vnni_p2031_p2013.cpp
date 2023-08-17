@@ -219,7 +219,7 @@ inline bool matmul_vnni_p2031_p2013_k_t::thread_exec(const std::vector<const voi
   const size_t tmp_total_len = tmp0_bytes + tmp1_bytes + tmp_sum_bytes;
   size_t tmp_total_len_raw = tmp_total_len + 64;
   void* mem_tmp = malloc(tmp_total_len_raw);  // Allocate memory on the heap
-  if (mem_tmp == nullptr) {
+  if (mem_tmp == NULL) {
     printf("Memory allocation failed.\n");
     return false;  // Return false to indicate failure
   }
@@ -270,7 +270,10 @@ inline bool matmul_vnni_p2031_p2013_k_t::thread_exec(const std::vector<const voi
       (j <= N_ - 48 ? *matmul_ker_ : *matmul_tile_n_ker_)(&rt_matmul);
     }
   }
-  free(mem_tmp);
+  if(mem_tmp != NULL){
+    free(mem_tmp);
+    mem_tmp = NULL;
+  }
   return true;
 }
 
