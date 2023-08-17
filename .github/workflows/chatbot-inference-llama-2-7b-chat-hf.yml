@@ -1,6 +1,5 @@
 name: Chatbot inference on llama-2-7b-chat-hf
 
-
 on:
   workflow_call:
 
