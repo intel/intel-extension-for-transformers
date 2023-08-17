@@ -146,10 +146,66 @@ class TextChatClientExecutor(BaseCommandExecutor):
         return res
 
 
+class VoiceChatClientExecutor(BaseCommandExecutor):
+    def __init__(self):
+        super(VoiceChatClientExecutor, self).__init__()
+        self.parser = argparse.ArgumentParser(
+            prog='neuralstudio_client.voicechat', add_help=True)
+        self.parser.add_argument(
+            '--server_ip', type=str, default='127.0.0.1', help='server ip')
+        self.parser.add_argument(
+            '--port', type=int, default=8000, help='server port')
+        self.parser.add_argument(
+            '--audio_input_path', type=str, default=None, help='Input aduio path.')
+        self.parser.add_argument(
+            '--audio_output_path', type=str, default=None, help='Output aduio path.')
+        
+    def execute(self, argv: List[str]) -> bool:
+        args = self.parser.parse_args(argv)
+        server_ip = args.server_ip
+        port = args.port
+        audio_input_path = args.audio_input_path
+        audio_output_path = args.audio_output_path
+
+        try:
+            time_start = time.time()
+            res = self(
+                server_ip=server_ip,
+                port=port,
+                audio_input_path=audio_input_path,
+                audio_output_path=audio_output_path)
+            time_end = time.time()
+            time_consume = time_end - time_start
+            print("======= Voicechat Client Response =======")
+            print(res.text)
+            logger.info("Response time: %f s." % (time_consume))
+            return True
+        except Exception as e:
+            logger.error("Failed to generate text response.")
+            logger.error(e)
+            return False
+        
+    def __call__(self,
+                 server_ip: str="127.0.0.1",
+                 port: int=8000,
+                 audio_input_path: str=None,
+                 audio_output_path: str=None):
+        url = 'http://' + server_ip + ":" + str(port) + '/v1/voicechat/completions'
+        outpath = audio_output_path if audio_output_path is not None else " "
+        with open(audio_input_path, "rb") as wav_file:
+            files = {
+                "file": ("audio.wav", wav_file, "audio/wav"),
+                "voice": (None, "pat"),
+                "audio_output_path": (None, outpath)
+            }
+            res = requests.post(url, files=files, verify=False)
+            return res
+
+
 specific_commands = {
     'textchat': ['neuralchat_client text chat command', 'TextChatClientExecutor'],
-    # 'voicechat': ['neuralchat_client voice chat command', 'VoiceChatExecutor'],
-    # 'finetune': ['neuralchat_client finetuning command', 'FinetuingExecutor'],
+    'voicechat': ['neuralchat_client voice chat command', 'VoiceChatClientExecutor'],
+    # 'finetune': ['neuralchat_client finetuning command', 'FinetuingClientExecutor'],
 }
 
 for com, info in specific_commands.items():
