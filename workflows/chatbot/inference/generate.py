@@ -104,6 +104,12 @@ def parse_args():
         help="The maximum number of new tokens to generate.",
     )
     parser.add_argument(
+        "--hg_access_token",
+        type=str,
+        default=None,
+        help="Huggingface token to access model",
+    )
+    parser.add_argument(
         "--num_beams",
         type=int,
         default=0,
@@ -330,6 +336,7 @@ def load_model(
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
+    hg_access_token=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -362,11 +369,12 @@ def load_model(
         tokenizer_name,
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+        token=hg_access_token,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name, low_cpu_mem_usage=True
+                model_name, low_cpu_mem_usage=True, token=hg_access_token
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
@@ -379,6 +387,7 @@ def load_model(
                 torch_dtype=torch.bfloat16,
                 low_cpu_mem_usage=True,
                 torchscript=cpu_jit,
+                token=hg_access_token,
             )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
@@ -389,7 +398,7 @@ def load_model(
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
+                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, token=hg_access_token
             )
     else:
         raise ValueError(
@@ -467,7 +476,7 @@ def load_model(
             from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
             model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, token=hg_access_token)
             model = MPTTSModelForCausalLM(
                 model, config, use_cache=use_cache, model_dtype=torch.bfloat16
             )
@@ -940,6 +949,7 @@ def main():
         use_cache=args.use_kv_cache,
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
+        hg_access_token=args.hg_access_token
     )
 
     if args.habana:
