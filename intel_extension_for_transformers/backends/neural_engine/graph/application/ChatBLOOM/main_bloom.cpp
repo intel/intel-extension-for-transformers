@@ -2,7 +2,6 @@
 #define _GNU_SOURCE
 #endif
 
-
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -31,7 +30,7 @@ struct bloom_hparams {
     int32_t n_head  = 32;
     int32_t n_layer = 32;
     int32_t f16     = 1;
-    float alibi_bias_max = 0;
+    float alibi_bias_max = 8;
 };
 
 struct bloom_layer {
@@ -480,7 +479,6 @@ bool bloom_model_load(const std::string & fname, bloom_model & model, gpt_vocab 
         }
 
         printf("%s: loading model part %d/%d from '%s'\n", __func__, i+1, n_parts, fname_part.c_str());
-
         fin = std::ifstream(fname_part, std::ios::binary);
         fin.seekg(file_offset);
 
@@ -967,7 +965,6 @@ int main(int argc, char ** argv) {
 
         t_load_us = ne_time_us() - t_start_us;
     }
-
     int n_past = 0;
 
     int64_t t_sample_us  = 0;
@@ -976,8 +973,7 @@ int main(int argc, char ** argv) {
     std::vector<float> logits;
 
     // tokenize the prompt
-    std::vector<int> embd_inp = ::bloom_tokenize(vocab, params.prompt, false); //TODO: set bos to true?
-
+    std::vector<gpt_vocab::id> embd_inp = ::bloom_tokenize(vocab, params.prompt, false); //TODO: set bos to true?
     params.n_predict = std::min(params.n_predict, model.hparams.n_ctx - (int) embd_inp.size());
 
     printf("\n");

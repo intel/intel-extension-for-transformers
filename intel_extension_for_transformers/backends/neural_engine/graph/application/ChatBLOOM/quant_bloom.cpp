@@ -27,121 +27,6 @@ struct bloom_hparams {
     int32_t f16     = 1;
 };
 
-size_t ggml_quantize_q4_0(float * src, void * dst, int n, int k, int qk, int64_t * hist) {
-    const int nb = k / qk;
-    const size_t bs = (sizeof(float) + sizeof(uint8_t)*qk/2);
-    const size_t row_size = nb*bs;
-
-    assert(k % qk == 0);
-
-    const size_t pp_size = qk / 2;
-    uint8_t *pp = static_cast<uint8_t*>(alloca(pp_size));
-
-    char * pdst = (char *) dst;
-
-    for (int j = 0; j < n; j += k) {
-        uint8_t * pd = (uint8_t *) (pdst + (j/k)*row_size + 0*bs);
-        uint8_t * pb = (uint8_t *) (pdst + (j/k)*row_size + 0*bs + sizeof(float));
-
-        for (int i = 0; i < nb; i++) {
-            float amax = 0.0f; // absolute max
-
-            {
-                for (int l = 0; l < qk; l++) {
-                    const float v = src[j + i*qk + l];
-                    amax = std::max(amax, fabsf(v));
-                }
-
-                const float d = amax / ((1 << 3) - 1);
-                const float id = d ? 1.0f/d : 0.0f;
-
-                *(float *) pd = d;
-                pd += bs;
-
-                for (int l = 0; l < qk; l += 2) {
-                    const float v0 = (src[j + i*qk + l + 0])*id;
-                    const float v1 = (src[j + i*qk + l + 1])*id;
-
-                    const uint8_t vi0 = ((int8_t) (round(v0))) + 8;
-                    const uint8_t vi1 = ((int8_t) (round(v1))) + 8;
-
-                    assert(vi0 >= 0 && vi0 < 16);
-                    assert(vi1 >= 0 && vi1 < 16);
-
-                    hist[vi0]++;
-                    hist[vi1]++;
-
-                    pp[l/2] = vi0 | (vi1 << 4);
-                }
-
-                memcpy(pb, pp, pp_size);
-                pb += bs;
-            }
-        }
-    }
-
-    return (n/k)*row_size;
-}
-
-size_t ggml_quantize_q4_1(float * src, void * dst, int n, int k, int qk, int64_t * hist) {
-    const int nb = k / qk;
-    const size_t row_size = nb*(2*sizeof(float) + sizeof(uint8_t)*qk/2);
-
-    assert(k % qk == 0);
-
-    const size_t pp_size = qk / 2;
-    uint8_t *pp = static_cast<uint8_t*>(alloca(pp_size));
-
-    char * pdst = (char *) dst;
-
-    for (int j = 0; j < n; j += k) {
-        float   * pm = (float *)   (pdst + (j/k)*row_size);
-        float   * pd = (float *)   (pm + nb);
-        uint8_t * pb = (uint8_t *) (pd + nb);
-
-        //printf("n = %d, k = %d, nb = %d, row_size = %d, j = %d, pm = %p, pd = %p, pb = %p\n", n, k, nb, row_size, j, pm, pd, pb);
-
-        for (int i = 0; i < nb; i++) {
-            float min = std::numeric_limits<float>::max();
-            float max = std::numeric_limits<float>::min();
-
-            {
-                for (int l = 0; l < qk; l++) {
-                    const float v = src[j + i*qk + l];
-                    if (v < min) min = v;
-                    if (v > max) max = v;
-                }
-
-                const float d = (max - min) / ((1 << 4) - 1);
-                const float id = d ? 1.0f/d : 0.0f;
-
-                pm[i] = min;
-                pd[i] = d;
-
-                for (int l = 0; l < qk; l += 2) {
-                    const float v0 = (src[j + i*qk + l + 0] - min)*id;
-                    const float v1 = (src[j + i*qk + l + 1] - min)*id;
-
-                    const uint8_t vi0 = round(v0);
-                    const uint8_t vi1 = round(v1);
-
-                    assert(vi0 >= 0 && vi0 < 16);
-                    assert(vi1 >= 0 && vi1 < 16);
-
-                    hist[vi0]++;
-                    hist[vi1]++;
-
-                    pp[l/2] = vi0 | (vi1 << 4);
-                }
-
-                memcpy(pb + i*qk/2, pp, pp_size);
-            }
-        }
-    }
-
-    return (n/k)*row_size;
-}
-
 // quantize a model
 bool bloom_model_quantize(const std::string & fname_inp, const std::string & fname_out, int itype) {
     ne_type type = NE_TYPE_Q4_1;
@@ -340,11 +225,11 @@ bool bloom_model_quantize(const std::string & fname_inp, const std::string & fna
                 switch (type) {
                     case NE_TYPE_Q4_0:
                         {
-                            cur_size = ggml_quantize_q4_0(data_f32.data(), work.data(), nelements, (int)ne[0], (int)QK, hist_cur.data());
+                            cur_size = ne_quantize_q4_0(data_f32.data(), work.data(), nelements, ne[0], hist_cur.data());
                         } break;
                     case NE_TYPE_Q4_1:
                         {
-                            cur_size = ggml_quantize_q4_1(data_f32.data(), work.data(), nelements, (int)ne[0], (int)QK, hist_cur.data());
+                            cur_size = ne_quantize_q4_0(data_f32.data(), work.data(), nelements, ne[0], hist_cur.data());
                         } break;
                     default:
                         {
