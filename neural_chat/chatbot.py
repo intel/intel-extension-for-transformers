@@ -29,8 +29,8 @@ from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese_tts import ChineseTextToSpeech
-from .pipeline.plugins.retrievers.indexing.DocumentParser import DocumentIndexing
-from .pipeline.plugins.retrievers.retriever.langchain_retriever import ChromaRetriever
+from .pipeline.plugins.retrievers.indexing.document_parser import DocumentIndexing
+from .pipeline.plugins.retrievers.retriever.langchain import ChromaRetriever
 from .pipeline.plugins.retrievers.retriever import BM25Retriever
 from .pipeline.plugins.security.SensitiveChecker import SensitiveChecker
 from .models.llama_model import LlamaModel

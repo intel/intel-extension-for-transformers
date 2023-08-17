@@ -107,6 +107,7 @@ def load_json(input, process, max_length):
 
 
 def load_xlsx(input):
+    """Load and process xlsx file."""
     df = pd.read_excel(input)
     all_data = []
     documents = []
