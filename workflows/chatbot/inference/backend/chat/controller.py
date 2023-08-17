@@ -217,7 +217,9 @@ class Controller:
                     result += a
                     yield f"data: {a}\n\n"
                     # yield f"data: \n\n"
-            from ..llmcache.cache import put
+            import sys
+            sys.path.append("..")
+            from llmcache.cache import put
             put(params["prompt"], result)
             yield f"data: [DONE]\n\n"
         except requests.exceptions.RequestException as e:
@@ -330,7 +332,9 @@ async def get_cache(request: Request):
     if "msgData" in params:
         params = params["msgData"]
     prompt = params["prompt"]
-    from ..llmcache.cache import get
+    import sys
+    sys.path.append("..")
+    from llmcache.cache import get
     result = get(prompt)
     print(result)
     if(result == None):
