@@ -19,7 +19,7 @@
 from collections import OrderedDict
 from .loaders.loader import Loader
 from .extractors.extractor import Extractor
-from .sub_graph.subgraph_matcher import SubGraphMatcher
+from .sub_graph.subgraph_matcher import SubGraphMatcher, EXECUTOR_TYPE
 from .graph_utils import get_model_fwk_name
 from .dynamic_quantize import _dynamic_quantization
 from .graph import Graph
@@ -110,8 +110,10 @@ def compile(model, config=None) -> Graph:
         else:
             config = _config_validation(config)
             model = start_pipeline(model, config=config)
+
         optimizer = Optimizer(model)
         optimizer.optimize()
     if util.get_autocast_info()['cast_type'] == "dynamic_int8":
         model = _dynamic_quantization(model)
+
     return model

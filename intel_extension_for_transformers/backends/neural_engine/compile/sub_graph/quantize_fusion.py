@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""The QunatizeFusion Pattern."""
+"""The QuantizeFusion Pattern."""
 
 from .pattern import Pattern, pattern_registry
 from collections import namedtuple, OrderedDict
@@ -24,11 +24,11 @@ from ..ops import Tensor
 from .subgraph_matcher import EXECUTOR_TYPE
 
 
-@pattern_registry(pattern_type='QunatizeFusion')
-class QunatizeFusion(Pattern):
-    """The QunatizeFusion pattern.
+@pattern_registry(pattern_type='QuantizeFusion')
+class QuantizeFusion(Pattern):
+    """The QuantizeFusion pattern.
 
-    Fuse the original sub-graph into the custom acceleration 'QunatizeFusion' graph.
+    Fuse the original sub-graph into the custom acceleration 'QuantizeFusion' graph.
     The search strategy is based on the following pattern mapping configs for different models.
     """
     def __call__(self, model):

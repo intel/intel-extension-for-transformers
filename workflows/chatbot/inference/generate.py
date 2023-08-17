@@ -5,6 +5,7 @@ import torch
 import re, os, logging
 from threading import Thread
 import contextlib
+from typing import List
 from transformers import (
     GenerationConfig,
     AutoModelForCausalLM,
@@ -31,7 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PROMPT_DICT = {
+instruction_template = {
     "prompt_with_input": (
         "Below is an instruction that describes a task, paired with an input that provides further context. "
         "Write a response that appropriately completes the request.\n\n"
@@ -42,6 +43,24 @@ PROMPT_DICT = {
         "Write a response that appropriately completes the request.\n\n"
         "### Instruction:\n{instruction}\n\n### Response:\n"
     ),
+}
+
+chat_template = """### System:
+- You are a helpful assistant chatbot trained by Intel.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.{eos_token}
+### User:\n{instruction}{eos_token}
+### Assistant:
+"""
+
+summarization_template = "{instruction}\nSummarize the highlights of this article.\n"
+
+
+template_maps = {
+        "completion": instruction_template,
+        "chat": chat_template,
+        "summarization": summarization_template
 }
 
 
@@ -160,12 +179,16 @@ def parse_args():
     parser.add_argument(
         "--local_rank", type=int, default=-1, metavar="N", help="Local process rank."
     )
+    parser.add_argument(
+        "--task", type=str, default="", choices=["completion", "chat", "summarization"],
+        help="task name, different task means different templates."
+    )
     args = parser.parse_args()
     return args
 
 
 class StopOnTokens(StoppingCriteria):
-    def __init__(self, min_length: int, start_length: int, stop_token_id: list[int]):
+    def __init__(self, min_length: int, start_length: int, stop_token_id: List[int]):
         self.min_length = min_length
         self.start_length = start_length
         self.stop_token_id = stop_token_id
@@ -190,17 +213,17 @@ def max_input_len(model, outlen=0):
     return 128
 
 
-def create_prompts(examples):
-    prompts = []
-    for example in examples:
+def add_template(example, template_name):
+    if "prompt_with_input" in template_name:
         prompt_template = (
-            PROMPT_DICT["prompt_with_input"]
-            if example["input"] != ""
-            else PROMPT_DICT["prompt_without_input"]
-        )
-        prompt = prompt_template.format_map(example)
-        prompts.append(prompt)
-    return prompts
+                template_name["prompt_with_input"]
+                if example["input"] != "" 
+                else template_name["prompt_without_input"]
+                )
+    else:
+        prompt_template = template_name
+    prompt = prompt_template.format_map(example)
+    return prompt
 
 
 def get_optimized_model_name(config):
@@ -343,14 +366,18 @@ def load_model(
     MODELS[model_name] = {}
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
-        use_fast=False if re.search("llama", model_name, re.IGNORECASE) else True,
+        use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name, low_cpu_mem_usage=True
             )
-    elif re.search("mpt", model_name, re.IGNORECASE):
+    elif (re.search("mpt", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
+        from models.mpt.modeling_mpt import MPTForCausalLM
+
         with smart_context_manager(use_deepspeed=use_deepspeed):
             if ipex_int8:
                 import intel_extension_for_pytorch
@@ -374,6 +401,7 @@ def load_model(
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("opt", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
@@ -381,7 +409,7 @@ def load_model(
             )
     else:
         raise ValueError(
-            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT now."
+            f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/NEURAL-CHAT now."
         )
 
     if re.search("llama", model.config.architectures[0], re.IGNORECASE):
@@ -540,6 +568,17 @@ def predict_stream(**params):
     ipex_int8=params["ipex_int8"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    task = params.get("task", "")
+
+    if task != "":
+        # add template
+        if template_maps.get(task) is not None:
+            template_name = template_maps.get(task)
+        else:
+            NotImplementedError(f'task template is not exist.')
+        prompt = add_template({"instruction": prompt,
+            "input": "",
+            "eos_token": tokenizer.eos_token}, template_name)
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -667,32 +706,32 @@ def predict_stream(**params):
         raise ValueError(
             f"Unsupported device type {device}, only supports cpu and hpu now."
         )
-    output_token_len = 0
+    output_word_len = 0
 
     for new_text in streamer:
         if len(new_text) == 0:
             continue
-        if output_token_len == 0:
+        if output_word_len == 0:
             first_token_output_time = datetime.now()
-        output_token_len += 1
+        output_word_len += 1
         yield new_text
 
     end_time = datetime.now()
     duration = int((end_time - start_time).total_seconds() * 1000)
-    first_token_latency = int(
+    first_word_latency = int(
         (first_token_output_time - start_time).total_seconds() * 1000
     )
-    token_per_second = (
-        (duration - first_token_latency) / (output_token_len - 1)
-        if output_token_len != 1
+    msecond_per_word = (
+        (duration - first_word_latency) / (output_word_len - 1)
+        if output_word_len != 1
         else 0
     )
     stats = {
         "input_token_len": input_token_len,
-        "output_token_len": output_token_len,
+        "output_word_len": output_word_len,
         "duration": duration,
-        "first_token_latency": first_token_latency,
-        "token_per_second": token_per_second,
+        "first_word_latency": first_word_latency,
+        "msecond_per_word": msecond_per_word,
     }
     yield "END_OF_STREAM_STATS={}".format(stats)
 
@@ -756,6 +795,19 @@ def predict(**params):
     ipex_int8=params["ipex_int8"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+
+    task = params.get("task", "")
+
+    if task != "":
+        # add template
+        if template_maps.get(task) is not None:
+            template_name = template_maps.get(task)
+        else:
+            NotImplementedError(f'task template is not exist.')
+        prompt = add_template({"instruction": prompt,
+            "input": "",
+            "eos_token": tokenizer.eos_token}, template_name)
+
     if num_beams == 0:
         num_beams = 1
         do_sample = True
@@ -873,9 +925,6 @@ def predict(**params):
 def main():
     args = parse_args()
     base_model_path = args.base_model_path
-    prompts = create_prompts(
-        [{"instruction": instruction, "input": ""} for instruction in args.instructions]
-    )
 
     # Check the validity of the arguments
     if not 0 < args.temperature <= 1.0:
@@ -927,6 +976,7 @@ def main():
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
     )
+
     if args.habana:
         from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
 
@@ -942,6 +992,7 @@ def main():
         model_name=base_model_path,
         device="hpu" if args.habana else "cpu",
         prompt="Tell me about Intel Xeon.",
+        task=args.task,
         temperature=args.temperature,
         top_p=args.top_p,
         top_k=args.top_k,
@@ -957,9 +1008,8 @@ def main():
         if args.local_rank in [-1, 0]:
             print(new_text, end="", flush=True)
 
-    for idx, tp in enumerate(zip(prompts, args.instructions)):
+    for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
-        prompt, instruction = tp
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
@@ -968,7 +1018,8 @@ def main():
         for new_text in predict_stream(
             model_name=base_model_path,
             device="hpu" if args.habana else "cpu",
-            prompt=prompt,
+            prompt=instruction,
+            task=args.task,
             temperature=args.temperature,
             top_p=args.top_p,
             top_k=args.top_k,
@@ -986,9 +1037,8 @@ def main():
         if args.local_rank in [-1, 0]:
             logger.info("=" * (60 + len(idxs)))
 
-    for idx, tp in enumerate(zip(prompts, args.instructions)):
+    for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
-        prompt, instruction = tp
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
@@ -998,7 +1048,8 @@ def main():
         out = predict(
             model_name=base_model_path,
             device="hpu" if args.habana else "cpu",
-            prompt=prompt,
+            prompt=instruction,
+            task=args.task,
             temperature=args.temperature,
             top_p=args.top_p,
             top_k=args.top_k,

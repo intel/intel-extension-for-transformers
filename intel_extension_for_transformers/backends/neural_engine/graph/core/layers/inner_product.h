@@ -11,8 +11,8 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#ifndef NE_GRAPH_INNER_PRODUCT_H
-#define NE_GRAPH_INNER_PRODUCT_H
+#ifndef NE_CORE_GRAPH_INNER_PRODUCT_H
+#define NE_CORE_GRAPH_INNER_PRODUCT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,17 +20,29 @@ extern "C" {
 void jblas_weights4block_f32_forward(float* activation, void* weiptr, float* output, int _m, int _n, int _k, int lda,
                                      int ldo);
 
+void jblas_weights4block_add_f32_forward(float* activation, void* weiptr, float* bias, float* output, int _m, int _n,
+                                         int _k, int lda, int ldo, bool boardcast_bias);
+
 void jblas_weightcomp_QKV_f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output, int _m,
                                       int _n, int _k, int lda, int ldo);
 
 void jblas_weightcomp_FFN_SiLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, void* w3ptr, float* tmp1,
                                            float* tmp2, float* output, int seq, int fin, int fmid, int fout);
 
+void jblas_weightcomp_FFN_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1, float* output,
+                                           int seq, int fin, int fmid, int fout);
+
+void jblas_weightcomp_FFN_Add_GeLu_f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr,
+                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout,
+                                               bool boardcast_bias);
+
 void jblas_timer(bool _init);
 
 int jblas_set_threads(int _nth);
 
+void jblas_init();
+
 #ifdef __cplusplus
 }
 #endif
-#endif
+#endif  // NE_CORE_GRAPH_INNER_PRODUCT_H

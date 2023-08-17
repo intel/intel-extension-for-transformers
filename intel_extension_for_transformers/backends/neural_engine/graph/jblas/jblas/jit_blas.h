@@ -28,6 +28,7 @@ enum JBLAS_ISA {
   JblasAVX512_VNNI = 14,
   JblasAMX_BF16 = 15,
   JblasAMX_INT8 = 16,
+  JblasAVX512_FP16 = 17,
 };
 enum JBLAS_DTYPE {
   JblasF64 = 59,
@@ -43,7 +44,20 @@ enum JBLAS_FP8_ENCODING {
   JblasFp8_e3m4 = 82,
 };
 enum JBLAS_LAYOUT { JblasRowMajor = 101, JblasColMajor = 102 };
-enum JBLAS_TRANSPOSE { JblasNoTrans = 111, JblasTrans = 112, JblasConjTrans = 113 };
+enum JBLAS_TRANSPOSE {
+  JblasNoTrans = 111,
+  JblasTrans = 112,
+  JblasConjTrans = 113,
+};
+enum JBLAS_ELTWISEOP {
+  GELU,
+  SWISH,
+  TANH,
+  EXP,
+  LOW_PRECISION_EXP,
+  RELU,
+  LINEAR,
+};
 
 void jblas_sgemm(const JBLAS_LAYOUT Layout, const JBLAS_TRANSPOSE TransA, const JBLAS_TRANSPOSE TransB, const int M,
                  const int N, const int K, const float alpha, const float* A, const int lda, const float* B,
