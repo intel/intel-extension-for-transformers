@@ -155,10 +155,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     print(hparams)
 
-    
 
-    # fout.write(struct.pack("i", 0x67676D6C))
-    fout.write(b"ggjt"[::-1])
+    fout.write(struct.pack("i", 0x67676d66))
     fout.write(struct.pack("i", 1))
 
     fout.write(struct.pack("i", hparams["padded_vocab_size"]))
