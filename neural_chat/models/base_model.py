@@ -194,7 +194,7 @@ class BaseModel(ABC):
         """
         self.safety_checker = instance
     
-    def register_retriever(self, retriever, retrieval_type)
+    def register_retriever(self, retriever, retrieval_type):
         """
         Register a database retriever.
 
