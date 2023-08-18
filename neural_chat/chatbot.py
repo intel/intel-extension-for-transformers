@@ -21,6 +21,7 @@ from .config import PipelineConfig
 from .config import OptimizationConfig
 from .config import FinetuningConfig
 from .pipeline.finetuning.finetuning import Finetuning
+from .pipeline.optimization.optimization import Optimization
 from .config import DeviceOptions, BackendOptions, AudioLanguageOptions, RetrievalTypeOptions
 from .models.base_model import get_model_adapter
 from .utils.common import get_device_type, get_backend_type
@@ -137,6 +138,7 @@ def build_chatbot(config: PipelineConfig):
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
     parameters["dtype"] = config.optimization_config.amp_config.dtype
+    parameters["optimization_config"] = config.optimization_config
     adapter.load_model(parameters)
     return adapter
 
@@ -151,10 +153,12 @@ def finetune_model(config: FinetuningConfig):
     finetuning = Finetuning(config)
     finetuning.finetune()
 
-def optimize_model(config: OptimizationConfig):
+def optimize_model(model, config: OptimizationConfig):
     """Optimize the model based on the provided configuration.
 
     Args:
         config (OptimizationConfig): Configuration for optimizing the model.
     """
-    pass
+    optimization = Optimization(optimization_config=config)
+    model = optimization.optimize(model)
+    return model

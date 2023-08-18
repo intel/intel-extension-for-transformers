@@ -97,7 +97,8 @@ class BaseModel(ABC):
                    cpu_jit=kwargs["cpu_jit"],
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
-                   use_deepspeed=kwargs["use_deepspeed"])
+                   use_deepspeed=kwargs["use_deepspeed"],
+                   optimization_config=kwargs["optimization_config"])
 
     def predict_stream(self, query, config=None):
         """
