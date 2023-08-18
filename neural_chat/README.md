@@ -54,10 +54,8 @@ neuralchat textchat --query "Tell me about Intel Xeon Scalable Processors."
 **Python API experience**
 
 ```python
->>> from neural_chat.config import PipelineConfig
->>> from neural_chat.chatbot import build_chatbot
->>> config = PipelineConfig()
->>> chatbot = build_chatbot(config)
+>>> from neural_chat import build_chatbot
+>>> chatbot = build_chatbot()
 >>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
@@ -74,8 +72,8 @@ neuralchat textchat --retrieval_type sparse --retrieval_document_path ./assets/d
 **Python API experience**
 
 ```python
->>> from neural_chat.config import PipelineConfig
->>> from neural_chat.chatbot import build_chatbot
+>>> from neural_chat import PipelineConfig
+>>> from neural_chat import build_chatbot
 >>> config = PipelineConfig(retrieval=True, retrieval_document_path="./assets/docs/")
 >>> chatbot = build_chatbot(config)
 >>> response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
@@ -108,8 +106,8 @@ neuralchat voicechat --query "Tell me about Intel Xeon Scalable Processors." --a
 For the Python API code, users have the option to enable different voice chat modes by setting audio_input to True for input or audio_output to True for output.
 
 ```python
->>> from neural_chat.config import PipelineConfig
->>> from neural_chat.chatbot import build_chatbot
+>>> from neural_chat import PipelineConfig
+>>> from neural_chat import build_chatbot
 >>> config = PipelineConfig(audio_input=True, audio_output=True)
 >>> chatbot = build_chatbot(config)
 >>> result = chatbot.predict(query="./assets/audio/pat.wav")
@@ -132,8 +130,8 @@ neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeli
 **Python API experience**
 
 ```python
->>> from neural_chat.config import FinetuningConfig
->>> from neural_chat.chatbot import finetune_model
+>>> from neural_chat import FinetuningConfig
+>>> from neural_chat import finetune_model
 >>> finetune_cfg = FinetuningConfig()
 >>> finetuned_model = finetune_model(finetune_cfg)
 ```
@@ -152,8 +150,8 @@ neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeli
 **Python API experience**
 
 ```python
->>> from neural_chat.config import OptimizationConfig
->>> from neural_chat.chatbot import optimize_model
+>>> from neural_chat import OptimizationConfig
+>>> from neural_chat import optimize_model
 >>> opt_cfg = OptimizationConfig()
 >>> optimized_model = optimize_model(opt_cfg)
 ```
@@ -173,7 +171,7 @@ neuralchat_server start --config_file ./server/config/neuralchat.yaml
 
 - Python API
 ```python
-from neural_chat.server.neuralchat_server import NeuralChatServerExecutor
+from neural_chat import NeuralChatServerExecutor
 server_executor = NeuralChatServerExecutor()
 server_executor(config_file="./server/config/neuralchat.yaml", log_file="./log/neuralchat.log")
 ```
@@ -187,7 +185,7 @@ neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --query "Tell me ab
 
 - Python API
 ```python
-from neural_chat.server.neuralchat_client import TextChatClientExecutor
+from neural_chat import TextChatClientExecutor
 executor = TextChatClientExecutor()
 result = executor(
     prompt="Tell me about Intel Xeon Scalable Processors.",

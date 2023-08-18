@@ -38,7 +38,7 @@ from .models.mpt_model import MptModel
 from .models.chatglm_model import ChatGlmModel
 
 
-def build_chatbot(config: PipelineConfig):
+def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
 
     Args:
@@ -48,12 +48,12 @@ def build_chatbot(config: PipelineConfig):
         adapter: The chatbot model adapter.
 
     Example:
-        from neural_chat.config import PipelineConfig
-        from neural_chat.chatbot import build_chatbot
-        config = PipelineConfig()
-        pipeline = build_chatbot(config)
+        from neural_chat import build_chatbot
+        pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
+    if not config:
+        config = PipelineConfig()
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
