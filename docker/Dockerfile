@@ -29,6 +29,7 @@ FROM itrex-base as devel
 ENV DEBIAN_FRONTEND=noninteractive
 
 ENV LANG C.UTF-8
+
 ARG PYTHON=python3.10
 
 RUN mkdir -p /app/intel-extension-for-transformers
