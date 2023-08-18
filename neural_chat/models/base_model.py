@@ -1,5 +1,4 @@
-
-#!/usr/bin/env python
+# !/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2023 Intel Corporation
@@ -23,6 +22,8 @@ from fastchat.conversation import get_conv_template, Conversation
 from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
 from neural_chat.config import GenerationConfig
 from neural_chat.utils.common import is_audio_file
+from neural_chat.pipeline.prompts.prompt import generate_qa_prompt, generate_prompt
+
 
 def construct_parameters(query, model_name, config):
     params = {}
@@ -42,6 +43,24 @@ def construct_parameters(query, model_name, config):
     params["use_cache"] = config.use_cache
     return params
 
+
+def construct_prompt(query, retriever, retrieval_type)
+    if retrieval_type == "dense":
+        documents = retriever.get_relevant_documents(query)
+        context = ""
+        for doc in documents: context = context + doc.page_content + " "
+    else:
+        documents = retriever.retrieve(query)
+        context = ""
+        for doc in documents: context = context + doc.content + " "
+    context = context.strip()
+    
+    if context != "":
+        return generate_qa_prompt(query, context)
+    else:
+        return generate_prompt(query)
+    
+
 class BaseModel(ABC):
     """
     A base class for LLM.
@@ -56,6 +75,8 @@ class BaseModel(ABC):
         self.tts = None
         self.audio_input_path = None
         self.audio_output_path = None
+        self.retriever = None
+        self.retrieval_type = None
 
     def match(self, model_path: str):
         """
@@ -97,8 +118,7 @@ class BaseModel(ABC):
                    cpu_jit=kwargs["cpu_jit"],
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
-                   use_deepspeed=kwargs["use_deepspeed"],
-                   optimization_config=kwargs["optimization_config"])
+                   use_deepspeed=kwargs["use_deepspeed"])
 
     def predict_stream(self, query, config=None):
         """
@@ -131,7 +151,26 @@ class BaseModel(ABC):
             else:
                 raise ValueError(f"The query {query} is audio file but there is no ASR registered.")
         assert query is not None, "Query cannot be None."
+        
+        if config.intent_detection:
+            intent = predict(**construct_parameters(query, self.model_name, config.intent_config))
+            if 'qa' not in intent.lower():
+                intent = "chitchat"
+                query = generate_prompt(query)
+            elif config.retrieval:
+                query = construct_prompt(query, self.retriever, self.retrieval_type)
+            else:
+                query = generate_qa_prompt(query)
+        else:
+            if config.retrieval:
+                query = construct_prompt(query, self.retriever, self.retrieval_type)
+                
+        if config.safety_checker:
+            assert self.safety_checker.sensitive_check(query) is False, "The input query contains sensitive words." 
         response = predict(**construct_parameters(query, self.model_name, config))
+        if config.safety_checker:
+            if self.safety_checker.sensitive_check(response):
+                response = self.safety_checker.sensitive_filter(response)
         if self.tts:
             self.tts.text2speech(response, config.audio_output_path)
             response = config.audio_output_path
@@ -195,7 +234,7 @@ class BaseModel(ABC):
             instance: An instance of a safety checker module.
         """
         self.safety_checker = instance
-    
+
     def register_retriever(self, retriever, retrieval_type):
         """
         Register a database retriever.
@@ -206,10 +245,11 @@ class BaseModel(ABC):
         """
         self.retriever = retriever
         self.retrieval_type = retrieval_type
-        
+
 
 # A global registry for all model adapters
 model_adapters: List[BaseModel] = []
+
 
 def register_model_adapter(cls):
     """Register a model adapter."""
