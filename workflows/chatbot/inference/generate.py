@@ -374,22 +374,27 @@ def load_model(
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name, low_cpu_mem_usage=True
             )
+    elif (
+        (re.search("mpt", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+        or re.search("llama", model_name, re.IGNORECASE))
+        and ipex_int8
+    ):
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            import intel_extension_for_pytorch
+            from optimum.intel.generation.modeling import TSModelForCausalLM
+            model = TSModelForCausalLM.from_pretrained(
+                model_name,
+                trust_remote_code=True,
+                file_name="best_model.pt",
+            )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
         from models.mpt.modeling_mpt import MPTForCausalLM
 
         with smart_context_manager(use_deepspeed=use_deepspeed):
-            if ipex_int8:
-                import intel_extension_for_pytorch
-                from optimum.intel.generation.modeling import TSModelForCausalLM
-                model = TSModelForCausalLM.from_pretrained(
-                    model_name,
-                    trust_remote_code=True,
-                    file_name="best_model.pt",
-                )
-            else:
-                from models.mpt.modeling_mpt import MPTForCausalLM
-                model = MPTForCausalLM.from_pretrained(
+            from models.mpt.modeling_mpt import MPTForCausalLM
+            model = MPTForCausalLM.from_pretrained(
                     model_name,
                     trust_remote_code=True,
                     torch_dtype=torch.bfloat16,
