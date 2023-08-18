@@ -1,6 +1,6 @@
 # Intel® Xe Templates for Linear Algebra
 
-_Intel® XeTLA [v0.3.3](/CHANGELOG.md) - June 2023_
+_Intel® XeTLA [v0.3.4](/CHANGELOG.md) - August 2023_
 
 Intel® Xe Templates for Linear Algebra (Intel® XeTLA) is a collection of SYCL/ESIMD templates that enable high-performance General Matrix Multiply (GEMM), Convolution (CONV), and related computations on Intel Xe GPU architecture. Intel® XeTLA offers reusable C++ templates for kernel, work-group and sub-group levels, allowing developers to optimize and specialize kernels based on data types, tiling policies, algorithms, fusion policies, and more.
 
@@ -13,7 +13,7 @@ One of the key features of Intel® XeTLA is its ability to abstract and hide det
   |-|-|-|
   |OS|Ubuntu [22.04](http://releases.ubuntu.com/22.04/)| [Install Ubuntu](https://ubuntu.com/tutorials)|
   |GPU Card | Intel® Data Center GPU Max Series |N/A|
-  |GPU Driver | [Stable 602](https://dgpu-docs.intel.com/releases/stable_602_20230323.html) or later|[Install Intel GPU driver](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series)|
+  |GPU Driver | [Stable 647](https://dgpu-docs.intel.com/releases/stable_647_21_20230714.html) or later|[Install Intel GPU driver](https://dgpu-docs.intel.com/installation-guides/index.html#intel-data-center-gpu-max-series)|
   |Toolchain |Intel® oneAPI Base Toolkit [2023.2](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html) or later|[Install Intel® oneAPI Base Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html)|
 
 <!-- @endcond -->

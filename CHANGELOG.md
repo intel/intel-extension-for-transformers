@@ -1,6 +1,19 @@
 [README](/README.md) > **Changelog**
 # Changelog
 
+## [v0.3.4](https://github.com/intel/xetla/releases/tag/v0.3.4) (2023-08-18)
+- New Features
+  * Enabled limitation checking.
+  * Provided "DEVICE_PRINTF" and "DEVICE_ASSERT" for kernels debugging.
+  * Refined fpu based GEMM.
+  * Refined tile reduce APIs, deprecated API "tile_row_reduce".
+  * Supported new data type int4 (experimental feature).
+  * Fixed tile load/store bugs.
+  * Enhanced examples, tests, and updated documents.
+
+- Known Issues
+    - Refer to [Limitations](/media/docs/limitations.md).
+
  ## [v0.3.3](https://github.com/intel/xetla/releases/tag/v0.3.3) (2023-06-30)
 - New Features
   * Enabled debug build support.

@@ -83,10 +83,7 @@ ESIMD_INLINE void esimd_abort() {
 }
 #define DEVICE_ASSERT(c, s, ...) \
     do { \
-        if (!(c)) { \
-            DEVICE_PRINTF(s, ##__VA_ARGS__); \
-            esimd_abort(); \
-        } \
+        if (!(c)) { DEVICE_PRINTF(s, ##__VA_ARGS__); } \
     } while (0)
 #else
 #define DEVICE_ASSERT(c, s, ...) \
