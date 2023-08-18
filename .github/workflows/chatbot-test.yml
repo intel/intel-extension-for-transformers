@@ -5,10 +5,13 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/**'
-      - 'docker/**'
+      - './requirements.txt'
+      - '.github/workflows/chatbot-test.yml'
+      - '.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml'
       - 'intel_extension_for_transformers/**'
-      - 'workflows/**'
+      - 'workflows/chatbot/inference/**'
+      - 'workflows/dlsa/**'
+      - 'workflows/hf_finetuning_and_inference_nlp/**'
 
   workflow_dispatch:
 
