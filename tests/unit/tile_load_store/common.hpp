@@ -19,26 +19,42 @@
 
 template <typename dtype, bool transform = false, bool transpose = false>
 int tile_load_store_result_validate(dtype *A, dtype *B, dtype *C,
-        unsigned Sizex, unsigned Sizey, unsigned Blockx, unsigned Blocky) {
+        unsigned Sizex, unsigned Sizey, unsigned Blockx, unsigned Blocky,
+        int offset_y = 0) {
     int err_cnt = 0;
-    int a_index, c_index;
+    size_t a_index, c_index;
     int ele_per_dw = transform ? sizeof(uint32_t) / sizeof(dtype) : 1;
-    for (unsigned i = 0; i < Blocky; ++i) {
-        for (unsigned j = 0; j < Blockx; ++j) {
-            a_index = transpose ? j * Sizey + i : i * Sizex + j;
-            c_index = i / ele_per_dw * Sizex * ele_per_dw + j * ele_per_dw
-                    + i % ele_per_dw;
+    unsigned Size;
+    if (offset_y == 0) {
+        Size = Blockx * Blocky;
+        for (unsigned i = 0; i < Blocky; ++i) {
+            for (unsigned j = 0; j < Blockx; ++j) {
+                a_index = transpose ? j * Sizey + i : i * Sizex + j;
+                c_index = i / ele_per_dw * Sizex * ele_per_dw + j * ele_per_dw
+                        + i % ele_per_dw;
 
-            if (A[a_index] != C[c_index]) {
-                if (++err_cnt < 10) {
-                    std::cout << "failed at index " << i * Blockx + j << ", "
-                              << C[c_index] << " != " << A[a_index] << "\n";
+                if (A[a_index] != C[c_index]) {
+                    if (++err_cnt < 100) {
+                        std::cout << "failed at index " << i * Blockx + j
+                                  << ", " << C[c_index] << " != " << A[a_index]
+                                  << "\n";
+                    }
+                }
+            }
+        }
+    } else {
+        for (unsigned i = 0; i < Blockx; ++i) {
+            a_index = long(offset_y) * Sizex + i;
+            Size = Blockx;
+            if (A[a_index] != C[a_index]) {
+                if (++err_cnt < 100) {
+                    std::cout << "failed at index " << a_index << ", "
+                              << C[a_index] << " != " << A[a_index] << "\n";
                 }
             }
         }
     }
 
-    unsigned Size = Blockx * Blocky;
     if (err_cnt > 0) {
         std::cout << "pass rate: "
                   << ((float)(Size - err_cnt) / (float)Size) * 100.0f << "% ("

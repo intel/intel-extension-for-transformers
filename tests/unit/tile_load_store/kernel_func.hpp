@@ -77,11 +77,12 @@ struct tile_load_store_func {
 };
 
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
-        int theight, int bwidth, int bheight, bool transform = false,
-        bool transpose = false>
+        int theight, int bwidth, int bheight, bool check_boundary = false,
+        bool transform = false, bool transpose = false>
 struct tile_load_store_atomic_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+        uint64_t offset = check_boundary ? 33554432UL * swidth : 0;
 
         mem_desc_t<dtype, mem_layout::row_major, mem_space::global> mem_desc_c(
                 {c}, {swidth, sheight, spitch}, {0, 0});
@@ -101,9 +102,16 @@ struct tile_load_store_atomic_func {
 
         matA_t matA;
         matBias_t matBias;
-        payload_block_2d_t payload_load(a, swidth, sheight, spitch, 0, 0);
-        payload_block_2d_t payload_store(mem_desc_c);
+        payload_block_2d_t payload_load(
+                a + offset, swidth, sheight, spitch, 0, 0);
+        payload_block_2d_t payload_store(
+                c + offset, swidth, sheight, spitch, 0, 0);
         payload_atomic_t payload_store_add(mem_desc_c);
+
+        if constexpr (check_boundary) {
+            payload_store_add.template update_tdesc<tdesc_update_dir::y_dir>(
+                    33554432);
+        }
 
         tile_load(matA, payload_load);
         matBias.reg = matA.reg;
@@ -151,12 +159,12 @@ struct tile_load_broadcast_store_func {
 };
 
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
-        int theight, int bwidth, int bheight, bool transform = false,
-        bool transpose = false>
+        int theight, int bwidth, int bheight, bool check_boundary = false,
+        bool transform = false, bool transpose = false>
 struct tile_load_store_1d_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
-
+        uint64_t offset = check_boundary ? 33554432UL * swidth : 0;
         using tile_desc = tile_desc_t<twidth, theight, bwidth, bheight,
                 reg_layout::tiled>;
         using matA_t = tile_t<dtype, tile_desc>;
@@ -167,8 +175,17 @@ struct tile_load_store_1d_func {
                 mem_layout::row_major, mem_space::global, 1>;
         matA_t matA;
         payload_t payload_load(a, swidth, sheight, spitch, 0, 0);
-        prefetch_payload_t prefetch_payload(a, swidth, sheight, spitch, 0, 0);
+        prefetch_payload_t prefetch_payload(
+                a + offset, swidth, sheight, spitch, 0, 0);
         payload_t payload_store(c, swidth, sheight, spitch, 0, 0);
+
+        if (check_boundary) {
+            payload_load.template update_tdesc<tdesc_update_dir::y_dir>(
+                    33554432);
+            payload_store.template update_tdesc<tdesc_update_dir::y_dir>(
+                    33554432);
+        }
+
         tile_prefetch(prefetch_payload);
         tile_load(matA, payload_load);
         tile_store(matA, payload_store);

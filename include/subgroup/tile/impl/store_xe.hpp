@@ -404,7 +404,7 @@ tile_store(tile_t &tile, payload_t &payload) {
                         = (payload.step_y + offset_y + payload.base_y
                                   + sub_block_y)
                         < payload.height_in_elems;
-                uint32_t address_offset = offset_x * sizeof(dtype)
+                uint64_t address_offset = offset_x * sizeof(dtype)
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
 
                 xetla_tatomic_store_global<dtype, payload_t::num_channel, L1,

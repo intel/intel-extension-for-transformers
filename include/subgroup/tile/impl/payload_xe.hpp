@@ -231,7 +231,7 @@ public:
                     uint32_t, dtype>::type>::type;
     static constexpr uint32_t scale_factor = sizeof(mem_dtype) / sizeof(dtype);
 
-    uint32_t base_offset;
+    uint64_t base_offset;
     mem_dtype *base_ptr;
     uint32_t pitch_in_bytes;
 
@@ -286,7 +286,7 @@ public:
     }
 
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
-    __XETLA_API void update_tdesc(int offset) {
+    __XETLA_API void update_tdesc(long offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
             base_offset += offset * sizeof(dtype);
         } else {
@@ -338,7 +338,7 @@ public:
     static constexpr uint32_t num_channel_y = num_channel / num_channel_x;
     static constexpr uint32_t store_elems = num_channel_y * block_size_x;
 
-    xetla_vector<uint32_t, num_channel> address;
+    xetla_vector<uint64_t, num_channel> address;
     xetla_vector<uint32_t, num_channel> step_x;
     xetla_vector<uint32_t, num_channel> step_y;
     uint32_t pitch_in_bytes;
@@ -447,7 +447,7 @@ public:
     }
 
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
-    __XETLA_API void update_tdesc(int offset) {
+    __XETLA_API void update_tdesc(long offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
             address += offset * sizeof(dtype);
         } else {
