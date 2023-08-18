@@ -44,7 +44,7 @@ def construct_parameters(query, model_name, config):
     return params
 
 
-def construct_prompt(query, retriever, retrieval_type)
+def construct_prompt(query, retriever, retrieval_type):
     if retrieval_type == "dense":
         documents = retriever.get_relevant_documents(query)
         context = ""

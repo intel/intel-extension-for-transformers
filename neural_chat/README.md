@@ -15,6 +15,8 @@ NeuralChat is a general chat framework designed to create your own chatbot that 
 </p>
 </a>
 
+NeuralChat is under active development with some experimental features (APIs are subject to change).
+
 # Installation
 
 NeuralChat is seamlessly integrated into the Intel Extension for Transformers. Getting started is quick and simple, just simply install 'intel-extension-for-transformers'.
