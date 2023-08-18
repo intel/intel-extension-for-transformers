@@ -348,9 +348,40 @@ class AMPConfig:
     dtype: str = 'bfloat16'
 
 @dataclass
+class RetrieverConfig:
+    search_type: str = "mmr"
+    search_kwargs: Dict[str, int] = field(default=lambda: {"k": 1, "fetch_k": 5})
+    retrieval_topk: int = 1
+    
+@dataclass
+class SafteyConfig:
+    dict_path: str = None
+    matchType: int = 2
+
+@dataclass
 class OptimizationConfig:
     amp_config: AMPConfig = AMPConfig()
     weight_only_quant_config: WeightOnlyQuantizationConfig = None
+    
+@dataclass
+class IntentConfig:
+    max_new_tokens: int = 5
+    temperature: float = 0.6
+    do_sample: bool = True
+    top_k: int = 1
+    repetition_penalty:float = 1.0
+    num_return_sequences: int = 1
+    bad_words_ids: List[int] = None
+    force_words_ids: List[int] = None
+    use_hpu_graphs: bool = False
+    use_cache: bool = False
+    audio_output_path: str = None
+    cpu_jit: bool = False
+    num_gpus: int = 0
+    max_gpu_memory: int = None
+    use_fp16: bool = False
+    ipex_int8: bool = False
+    
 
 @dataclass
 class PipelineConfig:
@@ -373,3 +404,7 @@ class PipelineConfig:
     safety_checker: bool = False
     loading_config: LoadingModelConfig = LoadingModelConfig()
     optimization_config: OptimizationConfig = OptimizationConfig()
+    saftey_config: SafteyConfig = SafteyConfig()
+    retrieval_config: RetrieverConfig = RetrieverConfig()
+    generation_config: GenerationConfig = GenerationConfig()
+    intent_config: IntentConfig = IntentConfig()
