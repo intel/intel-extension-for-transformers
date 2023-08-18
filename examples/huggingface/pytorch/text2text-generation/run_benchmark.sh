@@ -76,13 +76,34 @@ function run_benchmark {
     fi
 
 
-    if [ "${topology}" = "flan-t5" ]; then
+    if [ "${topology}" = "flan-t5-large" ]; then
         DATASET_NAME="NeelNanda/pile-10k"
         model_type="t5"
-        model_name_or_path="google/flan-t5-large"
+        if [ $input_model ];then
+            model_name_or_path=${input_model}
+        elif [[ ${int8} == "true" ]]; then
+            model_name_or_path=${tuned_checkpoint}
+        else
+            model_name_or_path="google/flan-t5-large"
+        fi
         if [ "${backend}" = "ipex" ]; then
             extra_cmd=$extra_cmd" --ipex"
         fi
+    fi
+
+    if [ "${topology}" = "t5-base-tag" ]; then
+        model_type="t5"
+        if [ $input_model ];then
+            model_name_or_path=${input_model}
+        elif [[ ${int8} == "true" ]]; then
+            model_name_or_path=${tuned_checkpoint}
+        else
+            model_name_or_path="fabiochiu/t5-base-tag-generation"
+        fi
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
+
     fi
 
     
@@ -96,7 +117,6 @@ function run_benchmark {
         python -u ./${script} \
             --model_type ${model_type} \
             --model_name_or_path ${model_name_or_path} \
-            --benchmark \
             --output_dir ${tuned_checkpoint} \
             --batch_size ${batch_size} \
             ${mode_cmd} \

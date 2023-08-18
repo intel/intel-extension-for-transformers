@@ -52,7 +52,7 @@ void model_load_internal(const std::string& fname, model_name name, model_contex
 }
 
 void MPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, ne_type memory_type_,
-                bool use_mmap_, bool use_mlock_, bool vocab_only_) {
+               bool use_mmap_, bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
   memory_type = memory_type_;
@@ -66,6 +66,7 @@ void MPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gp
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
   auto& hparams = model.hparams;
   n_ff = 4 * hparams.n_embd;
+  hparams.n_ctx = n_ctx;
   fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
   fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);
   fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);
@@ -126,7 +127,7 @@ void MPT::load(model_context& lctx, model_progress_callback progress_callback, v
     // norm: cur = ln_1_g*cur + ln_1_b
     layer.norm[0] = ml->get_tensor(layers_i + ".norm_1.weight", {n_embd}, backend);
     layer.norm[1] = ml->get_tensor(layers_i + ".norm_2.weight", {n_embd}, backend);
-  
+
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".attn.Wqkv.weight", {n_embd, 3 * n_embd}, backend);
     layer.attn[1] = ml->get_tensor(layers_i + ".attn.out_proj.weight", {n_embd, n_embd}, backend);
@@ -136,9 +137,8 @@ void MPT::load(model_context& lctx, model_progress_callback progress_callback, v
     layer.ffn[1] = ml->get_tensor(layers_i + ".ffn.down_proj.weight", {n_ff, n_embd}, backend);
 
     if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]);
+      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) + ne_nbytes(layer.attn[0]) +
+                    ne_nbytes(layer.attn[1]) + ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]);
     }
   }
 

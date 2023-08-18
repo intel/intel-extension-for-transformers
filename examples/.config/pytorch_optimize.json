@@ -1483,7 +1483,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1505,7 +1507,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1606,7 +1610,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1628,7 +1634,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1650,7 +1658,9 @@
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
-        "config": "saved_results"
+        "config": "saved_results",
+        "iters": "100",
+        "int8": "false"
       }
     }
   },
@@ -1894,7 +1904,7 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "google/flan-t5-large",
+        "topology": "flan-t5-large",
         "task": "generation",
         "approach": "static",
         "backend": "ipex",
@@ -1904,7 +1914,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "google/flan-t5-large",
+        "topology": "flan-t5-large",
         "task": "generation",
         "approach": "static",
         "backend": "ipex",
@@ -1921,7 +1931,7 @@
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "fabiochiu/t5-base-tag-generation",
+        "topology": "t5-base-tag",
         "task": "generation",
         "approach": "static",
         "backend": "ipex",
@@ -1931,7 +1941,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "fabiochiu/t5-base-tag-generation",
+        "topology": "t5-base-tag",
         "task": "generation",
         "approach": "static",
         "backend": "ipex",

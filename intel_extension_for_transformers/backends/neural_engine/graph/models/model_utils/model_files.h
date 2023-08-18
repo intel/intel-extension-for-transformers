@@ -404,7 +404,13 @@ struct model_model_loader {
       if (it == tensors_map.name_to_idx.end()) {
         it = tensors_map.name_to_idx.find("gpt_neox.embed_in.weight");
         if (it == tensors_map.name_to_idx.end()) {
-          throw std::string("missing tok_embeddings.weight");
+          it = tensors_map.name_to_idx.find("model/wte");
+          if (it == tensors_map.name_to_idx.end()) {
+            it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");
+            if (it == tensors_map.name_to_idx.end()) {
+              throw std::string("missing tok_embeddings.weight");
+            }
+          }
         }
       }
     }

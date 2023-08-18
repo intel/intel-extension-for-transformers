@@ -226,6 +226,9 @@ NE_API struct ne_tensor* ne_rms_norm_back(struct ne_context* ctx, struct ne_tens
 // result is m columns, p rows
 NE_API struct ne_tensor* ne_mul_mat(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
+NE_API struct ne_tensor* ne_mul_mat_with_bias(struct ne_context* ctx, struct ne_tensor* w, struct ne_tensor* b,
+                                              struct ne_tensor* a);
+
 // merged Q K V  ne_mul_mat
 NE_API struct ne_tensor* ne_mul_qkv(struct ne_context* ctx, struct ne_tensor* qw, struct ne_tensor* kw,
                                     struct ne_tensor* vw, struct ne_tensor* src);
@@ -233,6 +236,12 @@ NE_API struct ne_tensor* ne_mul_qkv(struct ne_context* ctx, struct ne_tensor* qw
 // merged Q K V  ne_mul_mat
 NE_API struct ne_tensor* ne_ffn_silu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2,
                                      struct ne_tensor* w3, struct ne_tensor* src);
+
+NE_API struct ne_tensor* ne_ffn_add_gelu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2,
+                                         struct ne_tensor* b1, struct ne_tensor* b2, struct ne_tensor* src);
+
+NE_API struct ne_tensor* ne_ffn_gelu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2,
+                                     struct ne_tensor* src);
 
 //
 // operations on tensors without backpropagation
@@ -366,7 +375,7 @@ NE_API struct ne_tensor* ne_conv_1d_1s(struct ne_context* ctx, struct ne_tensor*
 NE_API struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
 NE_API struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k,
-                                       struct ne_tensor* v, bool masked);
+                                       struct ne_tensor* v, float scale, bool masked);
 
 NE_API struct ne_tensor* ne_flash_ff(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b0,
                                      struct ne_tensor* b1, struct ne_tensor* c0, struct ne_tensor* c1);

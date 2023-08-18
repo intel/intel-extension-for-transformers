@@ -48,6 +48,7 @@
 #include "layers/Ops.h"
 #include "layers/ele_reduce.h"
 #include "layers/ele_wise.h"
+#include "layers/mha_dense.h"
 #include "ne.h"
 
 // if C99 - static_assert is noop
@@ -411,7 +412,7 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "RMS_NORM_BACK",
 
     "MUL_MAT",
-
+    "MUL_MAT_WITH_BIAS",
     "SCALE",
     "SET",
     "CPY",
@@ -435,6 +436,8 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
 
     "MUL_QKV",
     "FFN_SILU",
+    "FFN_GeLU",
+    "FFN_ADD_GeLU",
     "FLASH_ATTN",
     "FLASH_FF",
 
@@ -442,7 +445,7 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "MAP_BINARY",
 };
 
-static_assert(NE_OP_COUNT == 53, "NE_OP_COUNT != 53");
+static_assert(NE_OP_COUNT == 56, "NE_OP_COUNT != 56");
 
 static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "none",
@@ -474,7 +477,7 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "rms_norm_back(x)",
 
     "X*Y",
-
+    "X*Y+Z",
     "x*v",
     "y-\\>view(x)",
     "x-\\>y",
@@ -498,6 +501,8 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
 
     "QKV(x)",
     "ffn_silu(x)",
+    "ffn_gelu(x)",
+    "ffn_gelu_with_bias(x)",
     "flash_attn(x)",
     "flash_ff(x)",
 
@@ -731,7 +736,8 @@ struct ne_context* ne_init(struct ne_init_params params) {
   if (is_first_call) {
     // initialize time system (required on Windows)
     ne_time_init();
-
+    // initialize jblas's amx instruction.
+    jblas_init();
     // initialize GELU, SILU and EXP F32 tables
     {
       const uint64_t t_start = ne_time_us();
@@ -1314,14 +1320,18 @@ struct ne_tensor* ne_dup_impl(struct ne_context* ctx, struct ne_tensor* a, bool 
   return result;
 }
 
-struct ne_tensor* ne_dup(struct ne_context* ctx, struct ne_tensor* a) { return ne_dup_impl(ctx, a, false); }
+struct ne_tensor* ne_dup(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_dup_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_dup_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_dup_impl(ctx, a, true); }
+struct ne_tensor* ne_dup_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_dup_impl(ctx, a, true);
+}
 
 // ne_add
 
 struct ne_tensor* ne_add_impl(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b, bool inplace) {
-  NE_ASSERT(ne_are_same_shape(a, b));
+  NE_ASSERT(ne_can_repeat_rows(b, a));
 
   bool is_node = false;
 
@@ -1543,9 +1553,13 @@ struct ne_tensor* ne_sqr_impl(struct ne_context* ctx, struct ne_tensor* a, bool 
   return result;
 }
 
-struct ne_tensor* ne_sqr(struct ne_context* ctx, struct ne_tensor* a) { return ne_sqr_impl(ctx, a, false); }
+struct ne_tensor* ne_sqr(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_sqr_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_sqr_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_sqr_impl(ctx, a, true); }
+struct ne_tensor* ne_sqr_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_sqr_impl(ctx, a, true);
+}
 
 // ne_sqrt
 
@@ -1566,9 +1580,13 @@ struct ne_tensor* ne_sqrt_impl(struct ne_context* ctx, struct ne_tensor* a, bool
   return result;
 }
 
-struct ne_tensor* ne_sqrt(struct ne_context* ctx, struct ne_tensor* a) { return ne_sqrt_impl(ctx, a, false); }
+struct ne_tensor* ne_sqrt(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_sqrt_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_sqrt_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_sqrt_impl(ctx, a, true); }
+struct ne_tensor* ne_sqrt_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_sqrt_impl(ctx, a, true);
+}
 
 // ne_log
 
@@ -1589,9 +1607,13 @@ struct ne_tensor* ne_log_impl(struct ne_context* ctx, struct ne_tensor* a, bool 
   return result;
 }
 
-struct ne_tensor* ne_log(struct ne_context* ctx, struct ne_tensor* a) { return ne_log_impl(ctx, a, false); }
+struct ne_tensor* ne_log(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_log_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_log_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_log_impl(ctx, a, true); }
+struct ne_tensor* ne_log_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_log_impl(ctx, a, true);
+}
 
 // ne_sum
 
@@ -1701,9 +1723,13 @@ struct ne_tensor* ne_abs_impl(struct ne_context* ctx, struct ne_tensor* a, bool 
   return result;
 }
 
-struct ne_tensor* ne_abs(struct ne_context* ctx, struct ne_tensor* a) { return ne_abs_impl(ctx, a, false); }
+struct ne_tensor* ne_abs(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_abs_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_abs_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_abs_impl(ctx, a, true); }
+struct ne_tensor* ne_abs_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_abs_impl(ctx, a, true);
+}
 
 // ne_sgn
 
@@ -1724,9 +1750,13 @@ struct ne_tensor* ne_sgn_impl(struct ne_context* ctx, struct ne_tensor* a, bool 
   return result;
 }
 
-struct ne_tensor* ne_sgn(struct ne_context* ctx, struct ne_tensor* a) { return ne_sgn_impl(ctx, a, false); }
+struct ne_tensor* ne_sgn(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_sgn_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_sgn_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_sgn_impl(ctx, a, true); }
+struct ne_tensor* ne_sgn_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_sgn_impl(ctx, a, true);
+}
 
 // ne_neg
 
@@ -1747,9 +1777,13 @@ struct ne_tensor* ne_neg_impl(struct ne_context* ctx, struct ne_tensor* a, bool 
   return result;
 }
 
-struct ne_tensor* ne_neg(struct ne_context* ctx, struct ne_tensor* a) { return ne_neg_impl(ctx, a, false); }
+struct ne_tensor* ne_neg(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_neg_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_neg_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_neg_impl(ctx, a, true); }
+struct ne_tensor* ne_neg_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_neg_impl(ctx, a, true);
+}
 
 // ne_step
 
@@ -1770,9 +1804,13 @@ struct ne_tensor* ne_step_impl(struct ne_context* ctx, struct ne_tensor* a, bool
   return result;
 }
 
-struct ne_tensor* ne_step(struct ne_context* ctx, struct ne_tensor* a) { return ne_step_impl(ctx, a, false); }
+struct ne_tensor* ne_step(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_step_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_step_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_step_impl(ctx, a, true); }
+struct ne_tensor* ne_step_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_step_impl(ctx, a, true);
+}
 
 // ne_relu
 
@@ -1793,9 +1831,13 @@ struct ne_tensor* ne_relu_impl(struct ne_context* ctx, struct ne_tensor* a, bool
   return result;
 }
 
-struct ne_tensor* ne_relu(struct ne_context* ctx, struct ne_tensor* a) { return ne_relu_impl(ctx, a, false); }
+struct ne_tensor* ne_relu(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_relu_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_relu_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_relu_impl(ctx, a, true); }
+struct ne_tensor* ne_relu_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_relu_impl(ctx, a, true);
+}
 
 // ne_gelu
 
@@ -1816,9 +1858,13 @@ struct ne_tensor* ne_gelu_impl(struct ne_context* ctx, struct ne_tensor* a, bool
   return result;
 }
 
-struct ne_tensor* ne_gelu(struct ne_context* ctx, struct ne_tensor* a) { return ne_gelu_impl(ctx, a, false); }
+struct ne_tensor* ne_gelu(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_gelu_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_gelu_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_gelu_impl(ctx, a, true); }
+struct ne_tensor* ne_gelu_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_gelu_impl(ctx, a, true);
+}
 
 // ne_silu
 
@@ -1839,9 +1885,13 @@ struct ne_tensor* ne_silu_impl(struct ne_context* ctx, struct ne_tensor* a, bool
   return result;
 }
 
-struct ne_tensor* ne_silu(struct ne_context* ctx, struct ne_tensor* a) { return ne_silu_impl(ctx, a, false); }
+struct ne_tensor* ne_silu(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_silu_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_silu_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_silu_impl(ctx, a, true); }
+struct ne_tensor* ne_silu_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_silu_impl(ctx, a, true);
+}
 
 // ne_silu_back
 
@@ -1883,9 +1933,13 @@ struct ne_tensor* ne_norm_impl(struct ne_context* ctx, struct ne_tensor* a, bool
   return result;
 }
 
-struct ne_tensor* ne_norm(struct ne_context* ctx, struct ne_tensor* a) { return ne_norm_impl(ctx, a, false); }
+struct ne_tensor* ne_norm(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_norm_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_norm_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_norm_impl(ctx, a, true); }
+struct ne_tensor* ne_norm_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_norm_impl(ctx, a, true);
+}
 
 struct ne_tensor* ne_rms_norm_impl(struct ne_context* ctx, struct ne_tensor* a, bool inplace) {
   bool is_node = false;
@@ -1904,7 +1958,9 @@ struct ne_tensor* ne_rms_norm_impl(struct ne_context* ctx, struct ne_tensor* a, 
   return result;
 }
 
-struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a) { return ne_rms_norm_impl(ctx, a, false); }
+struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_rms_norm_impl(ctx, a, false);
+}
 
 struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a) {
   return ne_rms_norm_impl(ctx, a, true);
@@ -1940,14 +1996,38 @@ struct ne_tensor* ne_mul_mat(struct ne_context* ctx, struct ne_tensor* a, struct
     is_node = true;
   }
 
-  const int64_t ne[4] = { a->ne[1], b->ne[1], b->ne[2], b->ne[3] };
-  struct ne_tensor * result = ne_new_tensor(ctx, NE_TYPE_F32, MAX(a->n_dims, b->n_dims), ne, NE_SIZE_CALC);
+  const int64_t ne[4] = {a->ne[1], b->ne[1], b->ne[2], b->ne[3]};
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, MAX(a->n_dims, b->n_dims), ne, NE_SIZE_CALC);
 
   result->op = NE_OP_MUL_MAT;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
   result->src1 = b;
 
+  return result;
+}
+
+// ne_mul_mat_with_bias
+
+struct ne_tensor* ne_mul_mat_with_bias(struct ne_context* ctx, struct ne_tensor* w, struct ne_tensor* b,
+                                       struct ne_tensor* a) {
+  NE_ASSERT(ne_can_mul_mat(w, a));
+  NE_ASSERT(!ne_is_transposed(w));
+
+  bool is_node = false;
+
+  if (w->grad || b->grad || a->grad) {
+    is_node = true;
+  }
+
+  const int64_t ne[4] = {w->ne[1], a->ne[1], w->ne[2], a->ne[3]};
+  struct ne_tensor* result = ne_new_tensor(ctx, a->type, MIN(w->n_dims, a->n_dims), ne, NE_SIZE_CALC);
+
+  result->op = NE_OP_MUL_MAT_BIAS;
+  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->src0 = w;
+  result->src1 = a;
+  result->opt[0] = b;
   return result;
 }
 
@@ -2008,6 +2088,56 @@ struct ne_tensor* ne_ffn_silu(struct ne_context* ctx, struct ne_tensor* w1, stru
   result->opt[1] = w3;
   result->opt[2] = tmp;
   result->opt[3] = tmp1;
+  return result;
+}
+
+struct ne_tensor* ne_ffn_add_gelu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2,
+                                  struct ne_tensor* b1, struct ne_tensor* b2, struct ne_tensor* src) {
+  NE_ASSERT(w2->ne[0] == w1->ne[1]);
+
+  bool is_node = false;
+
+  if (src->grad || w1->grad || w2->grad || b1->grad || b2->grad) {
+    is_node = true;
+  }
+
+  const int64_t ne[4] = {w2->ne[1], src->ne[1], src->ne[2], src->ne[3]};
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, ne, NE_SIZE_CALC);
+  const int64_t tne[4] = {w1->ne[1], src->ne[1], src->ne[2], src->ne[3]};
+  struct ne_tensor* tmp = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, tne, NE_SIZE_CALC);
+
+  result->op = NE_OP_MUL_FFN_ADD_GELU;
+  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->src0 = src;
+  result->src1 = w1;
+  result->opt[0] = w2;
+  result->opt[1] = b1;
+  result->opt[2] = b2;
+  result->opt[3] = tmp;
+  return result;
+}
+
+struct ne_tensor* ne_ffn_gelu(struct ne_context* ctx, struct ne_tensor* w1, struct ne_tensor* w2,
+                              struct ne_tensor* src) {
+  NE_ASSERT(w2->ne[0] == w1->ne[1]);
+
+  bool is_node = false;
+
+  if (src->grad || w1->grad || w2->grad) {
+    is_node = true;
+  }
+
+  const int64_t ne[4] = {w2->ne[1], src->ne[1], src->ne[2], src->ne[3]};
+  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, ne, NE_SIZE_CALC);
+  const int64_t tne[4] = {w1->ne[1], src->ne[1], src->ne[2], src->ne[3]};
+  struct ne_tensor* tmp = ne_new_tensor(ctx, NE_TYPE_F32, src->n_dims, tne, NE_SIZE_CALC);
+
+  result->op = NE_OP_MUL_FFN_GELU;
+  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->src0 = src;
+  result->src1 = w1;
+  result->opt[0] = w2;
+  result->opt[1] = tmp;
   return result;
 }
 
@@ -2154,9 +2284,13 @@ struct ne_tensor* ne_cont_impl(struct ne_context* ctx, struct ne_tensor* a, bool
   return result;
 }
 
-struct ne_tensor* ne_cont(struct ne_context* ctx, struct ne_tensor* a) { return ne_cont_impl(ctx, a, false); }
+struct ne_tensor* ne_cont(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_cont_impl(ctx, a, false);
+}
 
-struct ne_tensor* ne_cont_inplace(struct ne_context* ctx, struct ne_tensor* a) { return ne_cont_impl(ctx, a, true); }
+struct ne_tensor* ne_cont_inplace(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_cont_impl(ctx, a, true);
+}
 
 // ne_reshape
 
@@ -2632,7 +2766,9 @@ struct ne_tensor* ne_soft_max_impl(struct ne_context* ctx, struct ne_tensor* a, 
   return result;
 }
 
-struct ne_tensor* ne_soft_max(struct ne_context* ctx, struct ne_tensor* a) { return ne_soft_max_impl(ctx, a, false); }
+struct ne_tensor* ne_soft_max(struct ne_context* ctx, struct ne_tensor* a) {
+  return ne_soft_max_impl(ctx, a, false);
+}
 
 struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* a) {
   return ne_soft_max_impl(ctx, a, true);
@@ -2834,26 +2970,31 @@ struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, str
 // ne_flash_attn
 
 struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k, struct ne_tensor* v,
-                                bool masked) {
+                                float scale, bool masked) {
   NE_ASSERT(ne_can_mul_mat(k, q));
-  // TODO: check if vT can be multiplied by (k*qT)
-
-  bool is_node = false;
-
-  if (q->grad || k->grad || v->grad) {
-    NE_ASSERT(false);  // TODO: implement backward
-    is_node = true;
-  }
-
-  // struct ne_tensor * result = ne_dup_tensor(ctx, q);
-  struct ne_tensor* result = ne_new_tensor(ctx, NE_TYPE_F32, 4, q->ne, NE_SIZE_CALC);
-
+  int batch = q->ne[3];
+  int headsize = q->ne[0];
+  int headnum = q->ne[2];
+  int seq_cur = q->ne[1];
+  int seq_all = k->ne[1];
+  int seq_past = seq_all - seq_cur;
+  NE_ASSERT(headsize == v->ne[1]);
+  NE_ASSERT(seq_all == v->ne[0]);
+  NE_ASSERT(headnum == v->ne[2]);
+  NE_ASSERT(batch == v->ne[3]);
+  bool is_node = true;
+  struct ne_tensor* result = ne_new_tensor_4d(ctx, NE_TYPE_F32, headsize, headnum, seq_cur, batch, NE_SIZE_CALC);
+  attn_shape_t atte_shape = {batch, headnum, headsize, seq_cur, seq_all};
+  size_t tmpsize = jblas_attn_bf16_workspace_size(&atte_shape);
+  struct ne_tensor* tmp_t = ne_new_tensor_1d(ctx, NE_TYPE_I8, tmpsize, NE_SIZE_CALC);
   result->op = NE_OP_FLASH_ATTN;
-  result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+  result->grad = NULL;
   result->src0 = q;
   result->src1 = k;
   result->opt[0] = v;
-  result->opt[1] = ne_new_i32(ctx, masked ? 1 : 0);
+  result->opt[1] = tmp_t;
+  *(float*)result->padding = scale;
+  *(bool*)&result->padding[sizeof(scale)] = masked;
 
   return result;
 }
@@ -3352,23 +3493,38 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
           }
         }
       } else if (dst->type == NE_TYPE_F16) {
-        size_t id = 0;
-        ne_fp16_t* dst_ptr = (ne_fp16_t*)dst->data;
+        if (ne_is_contiguous(src0)) {  // fp32->fp16 conversion
+          int nele = ne_nelements(src0);
+          // number of rows per thread
+          int dn = (nele + nth - 1) / nth;
+          // row range for this thread
+          int in0 = dn * ith;
+          int in1 = MIN(in0 + dn, nele);
+          float* srcptr = (float*)src0->data;
+          ne_fp16_t* dstptr = (ne_fp16_t*)dst->data;
+          for (int i = in0; i < in1; i++) {
+            dstptr[i] = NE_FP32_TO_FP16(srcptr[i]);
+          }
+        } else {
+          size_t id = 0;
+          ne_fp16_t* dst_ptr = (ne_fp16_t*)dst->data;
+          for (int i03 = 0; i03 < ne03; i03++) {
+            for (int i02 = 0; i02 < ne02; i02++) {
+              id += ne00 * ir0;
+              for (int i01 = ir0; i01 < ir1; i01++) {
+                for (int i00 = 0; i00 < ne00; i00++) {
+                  const float* src0_ptr =
+                      (float*)((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
 
-        for (int i03 = 0; i03 < ne03; i03++) {
-          for (int i02 = 0; i02 < ne02; i02++) {
-            id += ne00 * ir0;
-            for (int i01 = ir0; i01 < ir1; i01++) {
-              for (int i00 = 0; i00 < ne00; i00++) {
-                const float* src0_ptr = (float*)((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
-
-                dst_ptr[id] = NE_FP32_TO_FP16(*src0_ptr);
-                id++;
+                  dst_ptr[id] = NE_FP32_TO_FP16(*src0_ptr);
+                  id++;
+                }
               }
+              id += ne00 * (ne01 - ir1);
             }
-            id += ne00 * (ne01 - ir1);
           }
         }
+
       } else if (ne_is_quantized(dst->type)) {
         quantize_row_q_t const quantize_row_q = quantize_fns[dst->type].quantize_row_q;
 
@@ -3498,57 +3654,78 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
       }
     }
   } else if (dst->type == NE_TYPE_F16) {
-    for (int64_t i03 = 0; i03 < ne03; i03++) {
-      for (int64_t i02 = 0; i02 < ne02; i02++) {
-        i10 += ne00 * ir0;
-        while (i10 >= ne0) {
-          i10 -= ne0;
-          if (++i11 == ne1) {
-            i11 = 0;
-            if (++i12 == ne2) {
-              i12 = 0;
-              if (++i13 == ne3) {
-                i13 = 0;
+    bool dst_contiguous = nb0 < nb1 && nb1 < nb2 && nb2 < nb3;
+    bool src_perm1203 = nb01 < nb02 && nb02 < nb00 && nb00 < nb03;
+    if (dst_contiguous && src_perm1203) {  // number of rows per thread
+      int nele = ne1 * ne2;
+      int dn = (nele + nth - 1) / nth;
+      // row range for this thread
+      int in0 = dn * ith;
+      int in1 = MIN(in0 + dn, nele);
+
+      for (int ib = 0; ib < ne3; ib++) {
+        float* srcptr = (float*)((char*)src0->data + ib * nb03);
+        ne_fp16_t* dstptr = (ne_fp16_t*)((char*)dst->data + ib * nb3);
+        for (int j = 0; j < ne0; j++) {
+          for (int i = in0; i < in1; i++) {
+            dstptr[i * nb1 / sizeof(*dstptr) + j] = NE_FP32_TO_FP16(srcptr[i + j * nb00 / sizeof(*srcptr)]);
+          }
+        }
+      }
+    } else {
+      for (int64_t i03 = 0; i03 < ne03; i03++) {
+        for (int64_t i02 = 0; i02 < ne02; i02++) {
+          i10 += ne00 * ir0;
+          while (i10 >= ne0) {
+            i10 -= ne0;
+            if (++i11 == ne1) {
+              i11 = 0;
+              if (++i12 == ne2) {
+                i12 = 0;
+                if (++i13 == ne3) {
+                  i13 = 0;
+                }
               }
             }
           }
-        }
-        for (int64_t i01 = ir0; i01 < ir1; i01++) {
-          for (int64_t i00 = 0; i00 < ne00; i00++) {
-            const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
-            char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
+          for (int64_t i01 = ir0; i01 < ir1; i01++) {
+            for (int64_t i00 = 0; i00 < ne00; i00++) {
+              const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
+              char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
 
-            *(ne_fp16_t*)dst_ptr = NE_FP32_TO_FP16(*(const float*)src0_ptr);
+              *(ne_fp16_t*)dst_ptr = NE_FP32_TO_FP16(*(const float*)src0_ptr);
 
-            if (++i10 == ne0) {
-              i10 = 0;
-              if (++i11 == ne1) {
-                i11 = 0;
-                if (++i12 == ne2) {
-                  i12 = 0;
-                  if (++i13 == ne3) {
-                    i13 = 0;
+              if (++i10 == ne0) {
+                i10 = 0;
+                if (++i11 == ne1) {
+                  i11 = 0;
+                  if (++i12 == ne2) {
+                    i12 = 0;
+                    if (++i13 == ne3) {
+                      i13 = 0;
+                    }
                   }
                 }
               }
             }
           }
-        }
-        i10 += ne00 * (ne01 - ir1);
-        while (i10 >= ne0) {
-          i10 -= ne0;
-          if (++i11 == ne1) {
-            i11 = 0;
-            if (++i12 == ne2) {
-              i12 = 0;
-              if (++i13 == ne3) {
-                i13 = 0;
+          i10 += ne00 * (ne01 - ir1);
+          while (i10 >= ne0) {
+            i10 -= ne0;
+            if (++i11 == ne1) {
+              i11 = 0;
+              if (++i12 == ne2) {
+                i12 = 0;
+                if (++i13 == ne3) {
+                  i13 = 0;
+                }
               }
             }
           }
         }
       }
     }
+
   } else {
     NE_ASSERT(false);  // TODO: implement
   }
@@ -3577,7 +3754,7 @@ static void ne_compute_forward_dup(const struct ne_compute_params* params, const
 
 static void ne_compute_forward_add_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                        const struct ne_tensor* src1, struct ne_tensor* dst) {
-  NE_ASSERT(ne_are_same_shape(src0, src1) && ne_are_same_shape(src0, dst));
+  NE_ASSERT(ne_can_repeat_rows(src1, src0) && ne_are_same_shape(src0, dst));
 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
     return;
@@ -3586,10 +3763,16 @@ static void ne_compute_forward_add_f32(const struct ne_compute_params* params, c
   const int ith = params->ith;
   const int nth = params->nth;
 
-  const int nr = ne_nrows(src0);
-  const int64_t ne0 = src0->ne[0];
-  const int64_t ne1 = src0->ne[1];
-  const int64_t ne2 = src0->ne[2];
+  const int64_t nr = ne_nrows(src0);
+
+  const int64_t ne00 = src0->ne[0];
+  const int64_t ne01 = src0->ne[1];
+  const int64_t ne02 = src0->ne[2];
+
+  const int64_t ne10 = src1->ne[0];
+  const int64_t ne11 = src1->ne[1];
+  const int64_t ne12 = src1->ne[2];
+  const int64_t ne13 = src1->ne[3];
 
   const size_t nb00 = src0->nb[0];
   const size_t nb01 = src0->nb[1];
@@ -3597,9 +3780,9 @@ static void ne_compute_forward_add_f32(const struct ne_compute_params* params, c
   const size_t nb03 = src0->nb[3];
 
   const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const size_t nb11 = ne11 == 1 ? 0 : src1->nb[1];
+  const size_t nb12 = ne12 == 1 ? 0 : src1->nb[2];
+  const size_t nb13 = ne13 == 1 ? 0 : src1->nb[3];
 
   const size_t nb0 = dst->nb[0];
   const size_t nb1 = dst->nb[1];
@@ -3608,39 +3791,43 @@ static void ne_compute_forward_add_f32(const struct ne_compute_params* params, c
 
   NE_ASSERT(nb0 == sizeof(float));
   NE_ASSERT(nb00 == sizeof(float));
-
-  // rows per thread
-  const int dr = (nr + nth - 1) / nth;
-
-  // row range for this thread
-  const int ir0 = dr * ith;
-  const int ir1 = MIN(ir0 + dr, nr);
+  NE_ASSERT(ne00 == ne10);
 
   if (nb10 == sizeof(float)) {
-    for (int ir = ir0; ir < ir1; ++ir) {
-      // src0, src1 and dst are same shape => same indices
-      const int i3 = ir / (ne2 * ne1);
-      const int i2 = (ir - i3 * ne2 * ne1) / ne1;
-      const int i1 = (ir - i3 * ne2 * ne1 - i2 * ne1);
+    for (int64_t ir = ith; ir < nr; ir += nth) {
+      // src0 and dst are same shape => same indices
+      const int64_t i03 = ir / (ne02 * ne01);
+      const int64_t i02 = (ir - i03 * ne02 * ne01) / ne01;
+      const int64_t i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
 
-      ne_vec_add_f32(ne0, (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1),
-                     (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01),
-                     (float*)((char*)src1->data + i3 * nb13 + i2 * nb12 + i1 * nb11));
-      // }
-      // }
+      const int64_t i13 = i03 % ne13;
+      const int64_t i12 = i02 % ne12;
+      const int64_t i11 = i01 % ne11;
+
+      float* dst_ptr = (float*)((char*)dst->data + i03 * nb3 + i02 * nb2 + i01 * nb1);
+      float* src0_ptr = (float*)((char*)src0->data + i03 * nb03 + i02 * nb02 + i01 * nb01);
+      float* src1_ptr = (float*)((char*)src1->data + i13 * nb13 + i12 * nb12 + i11 * nb11);
+
+      ne_vec_add_f32(ne00, dst_ptr, src0_ptr, src1_ptr);
     }
   } else {
     // src1 is not contiguous
-    for (int ir = ir0; ir < ir1; ++ir) {
-      // src0, src1 and dst are same shape => same indices
-      const int i3 = ir / (ne2 * ne1);
-      const int i2 = (ir - i3 * ne2 * ne1) / ne1;
-      const int i1 = (ir - i3 * ne2 * ne1 - i2 * ne1);
+    for (int64_t ir = ith; ir < nr; ir += nth) {
+      // src0 and dst are same shape => same indices
+      // src1 is broadcastable across src0 and dst in i1, i2, i3
+      const int64_t i03 = ir / (ne02 * ne01);
+      const int64_t i02 = (ir - i03 * ne02 * ne01) / ne01;
+      const int64_t i01 = (ir - i03 * ne02 * ne01 - i02 * ne01);
 
-      float* dst_ptr = (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1);
-      float* src0_ptr = (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01);
-      for (int i0 = 0; i0 < ne0; i0++) {
-        float* src1_ptr = (float*)((char*)src1->data + i3 * nb13 + i2 * nb12 + i1 * nb11 + i0 * nb10);
+      const int64_t i13 = i03 % ne13;
+      const int64_t i12 = i02 % ne12;
+      const int64_t i11 = i01 % ne11;
+
+      float* dst_ptr = (float*)((char*)dst->data + i03 * nb3 + i02 * nb2 + i01 * nb1);
+      float* src0_ptr = (float*)((char*)src0->data + i03 * nb03 + i02 * nb02 + i01 * nb01);
+
+      for (int64_t i0 = 0; i0 < ne00; i0++) {
+        float* src1_ptr = (float*)((char*)src1->data + i13 * nb13 + i12 * nb12 + i11 * nb11 + i0 * nb10);
 
         dst_ptr[i0] = src0_ptr[i0] + *src1_ptr;
       }
@@ -4374,9 +4561,9 @@ static void ne_compute_forward_mul_f32(const struct ne_compute_params* params, c
   const size_t nb03 = src0->nb[3];
 
   const size_t nb10 = src1->nb[0];
-  const size_t nb11 = src1->nb[1];
-  const size_t nb12 = src1->nb[2];
-  const size_t nb13 = src1->nb[3];
+  const size_t nb11 = ne11 == 1 ? 0 : src1->nb[1];
+  const size_t nb12 = ne12 == 1 ? 0 : src1->nb[2];
+  const size_t nb13 = ne13 == 1 ? 0 : src1->nb[3];
 
   const size_t nb0 = dst->nb[0];
   const size_t nb1 = dst->nb[1];
@@ -4403,8 +4590,6 @@ static void ne_compute_forward_mul_f32(const struct ne_compute_params* params, c
       float* src1_ptr = (float*)((char*)src1->data + i13 * nb13 + i12 * nb12 + i11 * nb11);
 
       ne_vec_mul_f32(ne00, dst_ptr, src0_ptr, src1_ptr);
-      // }
-      // }
     }
   } else {
     // src1 is not contiguous
@@ -5538,23 +5723,25 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const int nb00 = src0->nb[0];
+  const size_t nb00 = src0->nb[0];
 
-  const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  const int nb03 = src0->nb[3];
-
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  const size_t nb03 = src0->nb[3];
 
   const int nb10 = src1->nb[0];
 
-  const int nb11 = src1->nb[1]; UNUSED(nb11);
-  const int nb12 = src1->nb[2]; UNUSED(nb12);
-  const int nb13 = src1->nb[3]; UNUSED(nb13);
+  const int nb11 = src1->nb[1];
+  UNUSED(nb11);
+  const int nb12 = src1->nb[2];
+  UNUSED(nb12);
+  const int nb13 = src1->nb[3];
+  UNUSED(nb13);
 
-  const int nb0 = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  const int nb2 = dst->nb[2];
-  const int nb3 = dst->nb[3];
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -5585,58 +5772,43 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
     return;
   }
 
-   // parallelize by src0 rows
-    const int64_t dr = (ne01 + nth - 1) / nth;
+  // parallelize by src0 rows
+  const int64_t dr = (ne01 + nth - 1) / nth;
 
-    const int64_t ir10 = dr * ith;
-    const int64_t ir11 = MIN(ir10 + dr, ne01);
+  const int64_t ir10 = dr * ith;
+  const int64_t ir11 = MIN(ir10 + dr, ne01);
 
-    // src1 rows
-    const int64_t nr1 = ne11 * ne12 * ne13;
+  // src1 rows
+  const int64_t nr1 = ne11 * ne12 * ne13;
 
-    for (int64_t ir1 = 0; ir1 < nr1; ++ir1) {
-      const int64_t i13 = (ir1 / (ne12 * ne11));
-      const int64_t i12 = (ir1 - i13 * ne12 * ne11) / ne11;
-      const int64_t i11 = (ir1 - i13 * ne12 * ne11 - i12 * ne11);
+  for (int64_t ir1 = 0; ir1 < nr1; ++ir1) {
+    const int64_t i13 = (ir1 / (ne12 * ne11));
+    const int64_t i12 = (ir1 - i13 * ne12 * ne11) / ne11;
+    const int64_t i11 = (ir1 - i13 * ne12 * ne11 - i12 * ne11);
 
-      const int64_t ir0 = (ir1 / ne11) % (ne02 * ne03);
-      const int64_t i03 = (ir0 / (ne02));
-      const int64_t i02 = (ir0 - i03 * ne02);
+    const int64_t ir0 = (ir1 / ne11) % (ne02 * ne03);
+    const int64_t i03 = (ir0 / (ne02));
+    const int64_t i02 = (ir0 - i03 * ne02);
 
-      const int64_t i1 = i11;
-      const int64_t i2 = i12;
-      const int64_t i3 = i13;
+    const int64_t i1 = i11;
+    const int64_t i2 = i12;
+    const int64_t i3 = i13;
 
-      char* src0_row = (char*) src0->data + (0 + i02 * nb02 + i03 * nb03);
-      char* src1_col = (char*) src1->data + (i11 * nb11 + i12 * nb12 + i13 * nb13);
+    char* src0_row = (char*)src0->data + (0 + i02 * nb02 + i03 * nb03);
+    char* src1_col = (char*)src1->data + (i11 * nb11 + i12 * nb12 + i13 * nb13);
 
-      float* dst_col = (float*) ((char*) dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
+    float* dst_col = (float*)((char*)dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
 
-      for (int64_t ir = ir10; ir < ir11; ++ir) {
-        ne_vec_dot_f32(ne00, &dst_col[ir], (float*) (src0_row + ir * nb01), (float*) src1_col);
+    for (int64_t ir = ir10; ir < ir11; ++ir) {
+      ne_vec_dot_f32(ne00, &dst_col[ir], (float*)(src0_row + ir * nb01), (float*)src1_col);
     }
   }
-
-  // int64_t t1 = ne_perf_time_us();
-  // static int64_t acc = 0;
-  // acc += t1 - t0;
-  // if (t1 - t0 > 10) {
-  //     printf("\n");
-  //     printf("ne00 = %5d, ne01 = %5d, ne02 = %5d, ne03 = %5d\n", ne00, ne01, ne02, ne03);
-  //     printf("nb00 = %5d, nb01 = %5d, nb02 = %5d, nb03 = %5d\n", nb00, nb01, nb02, nb03);
-  //     printf("ne10 = %5d, ne11 = %5d, ne12 = %5d, ne13 = %5d\n", ne10, ne11, ne12, ne13);
-  //     printf("nb10 = %5d, nb11 = %5d, nb12 = %5d, nb13 = %5d\n", nb10, nb11, nb12, nb13);
-
-  //    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX task %d/%d: %d us, acc = %d\n", ith, nth, (int) (t1
-  //    - t0), (int) acc);
-  //}
 }
 
 static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                                const struct ne_tensor* src1, struct ne_tensor* dst) {
   int64_t t0 = ne_perf_time_us();
   UNUSED(t0);
-
   const int64_t ne00 = src0->ne[0];
   const int64_t ne01 = src0->ne[1];
   const int64_t ne02 = src0->ne[2];
@@ -5653,20 +5825,21 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   const int64_t ne3 = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const int nb00 = src0->nb[0];
-  const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  const int nb03 = src0->nb[3];
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  const size_t nb03 = src0->nb[3];
 
-  const int nb10 = src1->nb[0];
-  const int nb11 = src1->nb[1];
-  const int nb12 = src1->nb[2];
-  const int nb13 = src1->nb[3];
+  const size_t nb10 = src1->nb[0];
+  const size_t nb11 = src1->nb[1];
+  const size_t nb12 = src1->nb[2];
+  const size_t nb13 = src1->nb[3];
 
-  const int nb0 = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  const int nb2 = dst->nb[2];
-  const int nb3 = dst->nb[3];
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
+
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -5716,38 +5889,38 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   // TODO: do not support transposed src1
   assert(nb10 / 2 == sizeof(ne_fp16_t));
 
-   // parallelize by src0 rows
-    const int64_t dr = (ne01 + nth - 1) / nth;
+  // parallelize by src0 rows
+  const int64_t dr = (ne01 + nth - 1) / nth;
 
-    const int64_t ir10 = dr * ith;
-    const int64_t ir11 = MIN(ir10 + dr, ne01);
+  const int64_t ir10 = dr * ith;
+  const int64_t ir11 = MIN(ir10 + dr, ne01);
 
-    // src1 rows
-    const int64_t nr1 = ne11 * ne12 * ne13;
+  // src1 rows
+  const int64_t nr1 = ne11 * ne12 * ne13;
 
-    void* wdata = params->wdata;
-    const size_t row_size = ne10 * NE_TYPE_SIZE[NE_TYPE_F16];
+  void* wdata = params->wdata;
+  const size_t row_size = ne10 * NE_TYPE_SIZE[NE_TYPE_F16];
 
-    for (int64_t ir1 = 0; ir1 < nr1; ++ir1) {
-      const int64_t i13 = (ir1 / (ne12 * ne11));
-      const int64_t i12 = (ir1 - i13 * ne12 * ne11) / ne11;
-      const int64_t i11 = (ir1 - i13 * ne12 * ne11 - i12 * ne11);
+  for (int64_t ir1 = 0; ir1 < nr1; ++ir1) {
+    const int64_t i13 = (ir1 / (ne12 * ne11));
+    const int64_t i12 = (ir1 - i13 * ne12 * ne11) / ne11;
+    const int64_t i11 = (ir1 - i13 * ne12 * ne11 - i12 * ne11);
 
-      const int64_t ir0 = (ir1 / ne11) % (ne02 * ne03);
-      const int64_t i03 = (ir0 / (ne02));
-      const int64_t i02 = (ir0 - i03 * ne02);
+    const int64_t ir0 = (ir1 / ne11) % (ne02 * ne03);
+    const int64_t i03 = (ir0 / (ne02));
+    const int64_t i02 = (ir0 - i03 * ne02);
 
-      const int64_t i1 = i11;
-      const int64_t i2 = i12;
-      const int64_t i3 = i13;
+    const int64_t i1 = i11;
+    const int64_t i2 = i12;
+    const int64_t i3 = i13;
 
-      char* src0_row = (char*) src0->data + (0 + i02 * nb02 + i03 * nb03);
-      char* src1_col = (char*) wdata + (i11 + i12 * ne11 + i13 * ne12 * ne11) * row_size;
+    char* src0_row = (char*)src0->data + (0 + i02 * nb02 + i03 * nb03);
+    char* src1_col = (char*)wdata + (i11 + i12 * ne11 + i13 * ne12 * ne11) * row_size;
 
-      float* dst_col = (float*) ((char*) dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
+    float* dst_col = (float*)((char*)dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
 
-      for (int64_t ir = ir10; ir < ir11; ++ir) {
-        ne_vec_dot_f16(ne00, &dst_col[ir], (ne_fp16_t*) (src0_row + ir * nb01), (ne_fp16_t*) src1_col);
+    for (int64_t ir = ir10; ir < ir11; ++ir) {
+      ne_vec_dot_f16(ne00, &dst_col[ir], (ne_fp16_t*)(src0_row + ir * nb01), (ne_fp16_t*)src1_col);
     }
   }
 
@@ -5785,20 +5958,20 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
   const int64_t ne2 = dst->ne[2];
   const int64_t ne3 = dst->ne[3];
 
-  const int nb00 = src0->nb[0];
-  const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  const int nb03 = src0->nb[3];
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  const size_t nb03 = src0->nb[3];
 
-  const int nb10 = src1->nb[0];
-  const int nb11 = src1->nb[1];
-  const int nb12 = src1->nb[2];
-  const int nb13 = src1->nb[3];
+  const size_t nb10 = src1->nb[0];
+  const size_t nb11 = src1->nb[1];
+  const size_t nb12 = src1->nb[2];
+  const size_t nb13 = src1->nb[3];
 
-  const int nb0 = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  const int nb2 = dst->nb[2];
-  const int nb3 = dst->nb[3];
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -5855,7 +6028,7 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
   // src1 rows
   const int64_t nr1 = ne11 * ne12 * ne13;
 
-  const void * wdata = params->wdata;
+  const void* wdata = params->wdata;
   const size_t row_size = ne10 * NE_TYPE_SIZE[vec_dot_type] / NE_BLCK_SIZE[vec_dot_type];
 
   for (int64_t ir1 = 0; ir1 < nr1; ++ir1) {
@@ -5871,10 +6044,10 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
     const int64_t i2 = i12;
     const int64_t i3 = i13;
 
-    const char* src0_row = (const char*) src0->data + (0 + i02 * nb02 + i03 * nb03);
-    const char* src1_col = (const char*) wdata + (i11 + i12 * ne11 + i13 * ne12 * ne11) * row_size;
+    const char* src0_row = (const char*)src0->data + (0 + i02 * nb02 + i03 * nb03);
+    const char* src1_col = (const char*)wdata + (i11 + i12 * ne11 + i13 * ne12 * ne11) * row_size;
 
-    float* dst_col = (float*) ((char*) dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
+    float* dst_col = (float*)((char*)dst->data + (i1 * nb1 + i2 * nb2 + i3 * nb3));
 
     for (int64_t ir = ir10; ir < ir11; ++ir) {
       vec_dot_q(ne00, &dst_col[ir], src0_row + ir * nb01, src1_col);
@@ -5897,6 +6070,109 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
 
 static void ne_compute_forward_mul_mat_q_f32_jblas(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                                    const struct ne_tensor* src1, struct ne_tensor* dst) {
+  int64_t t0 = ne_perf_time_us();
+  UNUSED(t0);
+
+  const int64_t ne00 = src0->ne[0];
+  const int64_t ne01 = src0->ne[1];
+  const int64_t ne02 = src0->ne[2];
+  const int64_t ne03 = src0->ne[3];
+
+  const int64_t ne10 = src1->ne[0];
+  const int64_t ne11 = src1->ne[1];
+  const int64_t ne12 = src1->ne[2];
+  const int64_t ne13 = src1->ne[3];
+
+  const int64_t ne0 = dst->ne[0];
+  const int64_t ne1 = dst->ne[1];
+  const int64_t ne2 = dst->ne[2];
+  const int64_t ne3 = dst->ne[3];
+
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  const size_t nb03 = src0->nb[3];
+
+  const size_t nb10 = src1->nb[0];
+  const size_t nb11 = src1->nb[1];
+  const size_t nb12 = src1->nb[2];
+  const size_t nb13 = src1->nb[3];
+
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
+
+  const int ith = params->ith;
+  const int nth = params->nth;
+
+  NE_ASSERT(ne02 == ne12);
+  NE_ASSERT(ne03 == ne13);
+  NE_ASSERT(ne2 == ne12);
+  NE_ASSERT(ne3 == ne13);
+
+  const enum ne_type type = src0->type;
+  quantize_row_q_t const quantize_row_q_dot = quantize_fns[type].quantize_row_q_dot;
+  vec_dot_q_t const vec_dot_q = quantize_fns[type].vec_dot_q;
+  enum ne_type const vec_dot_type = quantize_fns[type].vec_dot_type;
+
+  // we don't support permuted src0 or src1
+  NE_ASSERT(nb00 == (int)NE_TYPE_SIZE[type]);
+  NE_ASSERT(nb10 == sizeof(float));
+
+  // dst cannot be transposed or permuted
+  NE_ASSERT(nb0 == sizeof(float));
+  NE_ASSERT(nb0 <= nb1);
+  NE_ASSERT(nb1 <= nb2);
+  NE_ASSERT(nb2 <= nb3);
+
+  NE_ASSERT(ne0 == ne01);
+  NE_ASSERT(ne1 == ne11);
+  NE_ASSERT(ne2 == ne02);
+  NE_ASSERT(ne3 == ne03);
+
+  // nb01 >= nb00 - src0 is not transposed
+  //   compute by src0 rows
+
+  if (params->type == NE_TASK_INIT) {
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+  jblas_weights4block_f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, ne10, ne0);
+}
+
+static void ne_compute_forward_mul_mat(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                       const struct ne_tensor* src1, struct ne_tensor* dst) {
+  switch (src0->type) {
+    case NE_TYPE_Q4_0:
+    case NE_TYPE_Q4_1:
+    case NE_TYPE_Q5_0:
+    case NE_TYPE_Q5_1:
+    case NE_TYPE_Q8_0:
+    case NE_TYPE_Q8_1: {
+      ne_compute_forward_mul_mat_q_f32(params, src0, src1, dst);
+    } break;
+    case NE_TYPE_JBLAS: {
+      ne_compute_forward_mul_mat_q_f32_jblas(params, src0, src1, dst);
+    } break;
+    case NE_TYPE_F16: {
+      ne_compute_forward_mul_mat_f16_f32(params, src0, src1, dst);
+    } break;
+    case NE_TYPE_F32: {
+      ne_compute_forward_mul_mat_f32(params, src0, src1, dst);
+    } break;
+    default: {
+      NE_ASSERT(false);
+    } break;
+  }
+}
+
+static void ne_compute_forward_mul_mat_bias_q_f32_jblas(const struct ne_compute_params* params,
+                                                        const struct ne_tensor* src0, const struct ne_tensor* src1,
+                                                        const struct ne_tensor* bias, struct ne_tensor* dst) {
   int64_t t0 = ne_perf_time_us();
   UNUSED(t0);
 
@@ -5968,28 +6244,17 @@ static void ne_compute_forward_mul_mat_q_f32_jblas(const struct ne_compute_param
   if (params->type == NE_TASK_FINALIZE) {
     return;
   }
-  jblas_weights4block_f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, ne10, ne0);
+  const bool boardcast_bias = bias->ne[1] == 1;
+  jblas_weights4block_add_f32_forward((float*)src1->data, src0->data, (float*)bias->data, (float*)dst->data, ne1, ne0,
+                                      ne10, ne10, ne0, boardcast_bias);
 }
 
-static void ne_compute_forward_mul_mat(const struct ne_compute_params* params, const struct ne_tensor* src0,
-                                       const struct ne_tensor* src1, struct ne_tensor* dst) {
+static void ne_compute_forward_mul_mat_bias(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                            const struct ne_tensor* src1, const struct ne_tensor* bias,
+                                            struct ne_tensor* dst) {
   switch (src0->type) {
-    case NE_TYPE_Q4_0:
-    case NE_TYPE_Q4_1:
-    case NE_TYPE_Q5_0:
-    case NE_TYPE_Q5_1:
-    case NE_TYPE_Q8_0:
-    case NE_TYPE_Q8_1: {
-      ne_compute_forward_mul_mat_q_f32(params, src0, src1, dst);
-    } break;
     case NE_TYPE_JBLAS: {
-      ne_compute_forward_mul_mat_q_f32_jblas(params, src0, src1, dst);
-    } break;
-    case NE_TYPE_F16: {
-      ne_compute_forward_mul_mat_f16_f32(params, src0, src1, dst);
-    } break;
-    case NE_TYPE_F32: {
-      ne_compute_forward_mul_mat_f32(params, src0, src1, dst);
+      ne_compute_forward_mul_mat_bias_q_f32_jblas(params, src0, src1, bias, dst);
     } break;
     default: {
       NE_ASSERT(false);
@@ -6029,6 +6294,44 @@ static void ne_compute_forward_ffn_silu(const struct ne_compute_params* params, 
   const int seq = dst->ne[1];
   jblas_weightcomp_FFN_SiLu_f32_forward((float*)src->data, w1->data, w2->data, w3->data, (float*)tmp->data,
                                         (float*)tmp1->data, (float*)dst->data, seq, fin, fmid, fout);
+}
+
+static void ne_compute_forward_ffn_add_gelu(const struct ne_compute_params* params, const struct ne_tensor* src,
+                                            const struct ne_tensor* w1, const struct ne_tensor* w2,
+                                            const struct ne_tensor* b1, const struct ne_tensor* b2,
+                                            const struct ne_tensor* tmp, struct ne_tensor* dst) {
+  if (params->type == NE_TASK_INIT) {
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+  const int fin = src->ne[0];
+  const int fout = dst->ne[0];
+  const int fmid = w1->ne[1];
+  const int seq = dst->ne[1];
+  const bool boardcast_bias = b1->ne[1] == 1 || b2->ne[1] == 1;
+  jblas_weightcomp_FFN_Add_GeLu_f32_forward((float*)src->data, w1->data, w2->data, (float*)b1->data, (float*)b2->data,
+                                            (float*)tmp->data, (float*)dst->data, seq, fin, fmid, fout, boardcast_bias);
+}
+
+static void ne_compute_forward_ffn_gelu(const struct ne_compute_params* params, const struct ne_tensor* src,
+                                        const struct ne_tensor* w1, const struct ne_tensor* w2,
+                                        const struct ne_tensor* tmp, struct ne_tensor* dst) {
+  if (params->type == NE_TASK_INIT) {
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+  const int fin = src->ne[0];
+  const int fout = dst->ne[0];
+  const int fmid = w1->ne[1];
+  const int seq = dst->ne[1];
+  jblas_weightcomp_FFN_GeLu_f32_forward((float*)src->data, w1->data, w2->data, (float*)tmp->data, (float*)dst->data,
+                                        seq, fin, fmid, fout);
 }
 
 // ne_compute_forward_scale
@@ -6463,14 +6766,14 @@ static void ne_compute_forward_diag_f32(const struct ne_compute_params* params, 
   NE_ASSERT(ne02 == ne2);
   NE_ASSERT(ne03 == ne3);
 
-  const int nb00 = src0->nb[0];
-  // const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  const int nb03 = src0->nb[3];
-  const int nb0 = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  const int nb2 = dst->nb[2];
-  const int nb3 = dst->nb[3];
+  const size_t nb00 = src0->nb[0];
+  // const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  const size_t nb03 = src0->nb[3];
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
 
   NE_ASSERT(nb00 == sizeof(float));
   NE_ASSERT(nb0 == sizeof(float));
@@ -6685,10 +6988,10 @@ static void ne_compute_forward_alibi_f32(const struct ne_compute_params* params,
   const int n = ne_nrows(src0);
   const int ne2_ne3 = n / ne1;  // ne2*ne3
 
-  const int nb0 = src0->nb[0];
-  const int nb1 = src0->nb[1];
-  const int nb2 = src0->nb[2];
-  // const int nb3 = src0->nb[3];
+  const size_t nb0 = src0->nb[0];
+  const size_t nb1 = src0->nb[1];
+  const size_t nb2 = src0->nb[2];
+  // const size_t nb3 = src0->nb[3];
 
   assert(nb0 == sizeof(float));
   assert(ne1 + n_past == ne0);
@@ -6746,10 +7049,10 @@ static void ne_compute_forward_alibi_f16(const struct ne_compute_params* params,
   const int n = ne_nrows(src0);
   const int ne2_ne3 = n / ne1;  // ne2*ne3
 
-  const int nb0 = src0->nb[0];
-  const int nb1 = src0->nb[1];
-  const int nb2 = src0->nb[2];
-  // const int nb3 = src0->nb[3];
+  const size_t nb0 = src0->nb[0];
+  const size_t nb1 = src0->nb[1];
+  const size_t nb2 = src0->nb[2];
+  // const size_t nb3 = src0->nb[3];
 
   assert(nb0 == sizeof(ne_fp16_t));
   assert(ne1 + n_past == ne0);
@@ -7374,20 +7677,20 @@ static void ne_compute_forward_conv_1d_1s_f16_f32(const struct ne_compute_params
   // const int64_t ne3  = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const int nb00 = src0->nb[0];
-  const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  // const int nb03 = src0->nb[3];
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  // const size_t nb03 = src0->nb[3];
 
-  const int nb10 = src1->nb[0];
-  const int nb11 = src1->nb[1];
-  // const int nb12 = src1->nb[2];
-  // const int nb13 = src1->nb[3];
+  const size_t nb10 = src1->nb[0];
+  const size_t nb11 = src1->nb[1];
+  // const size_t nb12 = src1->nb[2];
+  // const size_t nb13 = src1->nb[3];
 
-  // const int nb0  = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  // const int nb2  = dst->nb[2];
-  // const int nb3  = dst->nb[3];
+  // const size_t nb0  = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  // const size_t nb2  = dst->nb[2];
+  // const size_t nb3  = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7490,20 +7793,20 @@ static void ne_compute_forward_conv_1d_1s_f32(const struct ne_compute_params* pa
   // const int64_t ne3  = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const int nb00 = src0->nb[0];
-  const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  // const int nb03 = src0->nb[3];
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  // const size_t nb03 = src0->nb[3];
 
-  const int nb10 = src1->nb[0];
-  const int nb11 = src1->nb[1];
-  // const int nb12 = src1->nb[2];
-  // const int nb13 = src1->nb[3];
+  const size_t nb10 = src1->nb[0];
+  const size_t nb11 = src1->nb[1];
+  // const size_t nb12 = src1->nb[2];
+  // const size_t nb13 = src1->nb[3];
 
-  // const int nb0  = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  // const int nb2  = dst->nb[2];
-  // const int nb3  = dst->nb[3];
+  // const size_t nb0  = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  // const size_t nb2  = dst->nb[2];
+  // const size_t nb3  = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7623,20 +7926,20 @@ static void ne_compute_forward_conv_1d_2s_f16_f32(const struct ne_compute_params
   // const int64_t ne3  = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const int nb00 = src0->nb[0];
-  const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  // const int nb03 = src0->nb[3];
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  // const size_t nb03 = src0->nb[3];
 
-  const int nb10 = src1->nb[0];
-  const int nb11 = src1->nb[1];
-  // const int nb12 = src1->nb[2];
-  // const int nb13 = src1->nb[3];
+  const size_t nb10 = src1->nb[0];
+  const size_t nb11 = src1->nb[1];
+  // const size_t nb12 = src1->nb[2];
+  // const size_t nb13 = src1->nb[3];
 
-  // const int nb0  = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  // const int nb2  = dst->nb[2];
-  // const int nb3  = dst->nb[3];
+  // const size_t nb0  = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  // const size_t nb2  = dst->nb[2];
+  // const size_t nb3  = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7739,20 +8042,20 @@ static void ne_compute_forward_conv_1d_2s_f32(const struct ne_compute_params* pa
   // const int64_t ne3  = dst->ne[3];
   // const int64_t ne   = ne0*ne1*ne2*ne3;
 
-  const int nb00 = src0->nb[0];
-  const int nb01 = src0->nb[1];
-  const int nb02 = src0->nb[2];
-  // const int nb03 = src0->nb[3];
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  // const size_t nb03 = src0->nb[3];
 
-  const int nb10 = src1->nb[0];
-  const int nb11 = src1->nb[1];
-  // const int nb12 = src1->nb[2];
-  // const int nb13 = src1->nb[3];
+  const size_t nb10 = src1->nb[0];
+  const size_t nb11 = src1->nb[1];
+  // const size_t nb12 = src1->nb[2];
+  // const size_t nb13 = src1->nb[3];
 
-  // const int nb0  = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  // const int nb2  = dst->nb[2];
-  // const int nb3  = dst->nb[3];
+  // const size_t nb0  = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  // const size_t nb2  = dst->nb[2];
+  // const size_t nb3  = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -7873,25 +8176,25 @@ static void ne_compute_forward_flash_attn_f32(const struct ne_compute_params* pa
   // const int64_t ne2  = dst->ne[2];
   // const int64_t ne3  = dst->ne[3];
 
-  const int nbk0 = k->nb[0];
-  const int nbk1 = k->nb[1];
-  const int nbk2 = k->nb[2];
-  const int nbk3 = k->nb[3];
+  const size_t nbk0 = k->nb[0];
+  const size_t nbk1 = k->nb[1];
+  const size_t nbk2 = k->nb[2];
+  const size_t nbk3 = k->nb[3];
 
-  const int nbq0 = q->nb[0];
-  const int nbq1 = q->nb[1];
-  const int nbq2 = q->nb[2];
-  const int nbq3 = q->nb[3];
+  const size_t nbq0 = q->nb[0];
+  const size_t nbq1 = q->nb[1];
+  const size_t nbq2 = q->nb[2];
+  const size_t nbq3 = q->nb[3];
 
-  const int nbv0 = v->nb[0];
-  const int nbv1 = v->nb[1];
-  const int nbv2 = v->nb[2];
-  const int nbv3 = v->nb[3];
+  const size_t nbv0 = v->nb[0];
+  const size_t nbv1 = v->nb[1];
+  const size_t nbv2 = v->nb[2];
+  const size_t nbv3 = v->nb[3];
 
-  const int nb0 = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  const int nb2 = dst->nb[2];
-  const int nb3 = dst->nb[3];
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -8041,12 +8344,9 @@ static void ne_compute_forward_flash_attn_f32(const struct ne_compute_params* pa
   }
 }
 
-static void ne_compute_forward_flash_attn_f16(const struct ne_compute_params* params, const struct ne_tensor* q,
-                                              const struct ne_tensor* k, const struct ne_tensor* v, const bool masked,
-                                              struct ne_tensor* dst) {
-  int64_t t0 = ne_perf_time_us();
-  UNUSED(t0);
-
+static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_params* params, const struct ne_tensor* q,
+                                                      const struct ne_tensor* k, const struct ne_tensor* v,
+                                                      const struct ne_tensor* tmp, struct ne_tensor* dst) {
   const int64_t neq0 = q->ne[0];
   const int64_t neq1 = q->ne[1];
   const int64_t neq2 = q->ne[2];
@@ -8086,6 +8386,101 @@ static void ne_compute_forward_flash_attn_f16(const struct ne_compute_params* pa
   const int nb1 = dst->nb[1];
   const int nb2 = dst->nb[2];
   const int nb3 = dst->nb[3];
+
+  const int64_t headsize = neq0;
+  const int64_t headnum = neq2;
+  const int64_t embedsize = headnum * headsize;
+  const int64_t seq_cur = neq1;
+  const int64_t seq_all = nek1;
+  const int64_t seq_past = seq_all - seq_cur;
+  const int64_t batch = neq3;
+
+  const int step_k_bs = k->nb[3] / sizeof(float);
+  const int step_v_bs = v->nb[3] / sizeof(float);
+
+  if (params->type == NE_TASK_INIT) {
+    return;
+  }
+
+  if (params->type == NE_TASK_FINALIZE) {
+    return;
+  }
+  float scale = *(float*)dst->padding;
+  bool mask = *(bool*)&dst->padding[sizeof(scale)];
+  attn_fp32_fp16_fp16_fp32_fwd_args_t args = {
+      .Q = (float*)q->data,
+      .K = (ne_fp16_t*)k->data,
+      .V = (ne_fp16_t*)v->data,
+      .batch_size = batch,
+      .head_size = headsize,
+      .head_num = headnum,
+      .dst = (float*)dst->data,
+      .is_causal = mask,
+      .QK_scale = scale,
+      .sl_q = seq_cur,
+      .sl_kv = seq_all,
+      .step_q_bs = seq_cur * embedsize,
+      .step_q_head_num = headsize,
+      .step_q_sl = embedsize,
+      .step_k_bs = step_k_bs,
+      .step_k_head_num = headsize,
+      .step_k_sl = embedsize,
+      .step_v_bs = step_v_bs,
+      .step_v_head_num = headsize,
+      .step_v_sl = embedsize,
+      .step_dst_bs = seq_cur * embedsize,
+      .step_dst_head_num = headsize,
+      .step_dst_sl = embedsize,
+      .tmp = tmp->data,
+  };
+  jblas_attn_fp32_fp16_fp16_fp32_forward(&args);
+}
+
+static void ne_compute_forward_flash_attn_f16(const struct ne_compute_params* params, const struct ne_tensor* q,
+                                              const struct ne_tensor* k, const struct ne_tensor* v, const bool masked,
+                                              struct ne_tensor* dst) {
+  int64_t t0 = ne_perf_time_us();
+  UNUSED(t0);
+
+  const int64_t neq0 = q->ne[0];
+  const int64_t neq1 = q->ne[1];
+  const int64_t neq2 = q->ne[2];
+  const int64_t neq3 = q->ne[3];
+
+  const int64_t nek0 = k->ne[0];
+  const int64_t nek1 = k->ne[1];
+  // const int64_t nek2 = k->ne[2];
+  // const int64_t nek3 = k->ne[3];
+
+  // const int64_t nev0 = v->ne[0];
+  const int64_t nev1 = v->ne[1];
+  // const int64_t nev2 = v->ne[2];
+  // const int64_t nev3 = v->ne[3];
+
+  const int64_t ne0 = dst->ne[0];
+  const int64_t ne1 = dst->ne[1];
+  // const int64_t ne2  = dst->ne[2];
+  // const int64_t ne3  = dst->ne[3];
+
+  const size_t nbk0 = k->nb[0];
+  const size_t nbk1 = k->nb[1];
+  const size_t nbk2 = k->nb[2];
+  const size_t nbk3 = k->nb[3];
+
+  const size_t nbq0 = q->nb[0];
+  const size_t nbq1 = q->nb[1];
+  const size_t nbq2 = q->nb[2];
+  const size_t nbq3 = q->nb[3];
+
+  const size_t nbv0 = v->nb[0];
+  const size_t nbv1 = v->nb[1];
+  const size_t nbv2 = v->nb[2];
+  const size_t nbv3 = v->nb[3];
+
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -8269,14 +8664,15 @@ static void ne_compute_forward_flash_attn_f16(const struct ne_compute_params* pa
 }
 
 static void ne_compute_forward_flash_attn(const struct ne_compute_params* params, const struct ne_tensor* q,
-                                          const struct ne_tensor* k, const struct ne_tensor* v, const bool masked,
-                                          struct ne_tensor* dst) {
+                                          const struct ne_tensor* k, const struct ne_tensor* v,
+                                          const struct ne_tensor* tmp, struct ne_tensor* dst) {
   switch (q->type) {
-    case NE_TYPE_F16: {
-      ne_compute_forward_flash_attn_f16(params, q, k, v, masked, dst);
-    } break;
     case NE_TYPE_F32: {
-      ne_compute_forward_flash_attn_f32(params, q, k, v, masked, dst);
+      if (k->type == NE_TYPE_F16) {
+        ne_compute_forward_flash_attn_f32_f16_f16(params, q, k, v, tmp, dst);
+      } else {
+        NE_ASSERT(false);
+      }
     } break;
     default: {
       NE_ASSERT(false);
@@ -8326,35 +8722,35 @@ static void ne_compute_forward_flash_ff_f16(const struct ne_compute_params* para
   const int64_t ne2 = dst->ne[2];
   // const int64_t ne3 = dst->ne[3];
 
-  const int nba0 = a->nb[0];
-  const int nba1 = a->nb[1];
-  const int nba2 = a->nb[2];
-  const int nba3 = a->nb[3];
+  const size_t nba0 = a->nb[0];
+  const size_t nba1 = a->nb[1];
+  const size_t nba2 = a->nb[2];
+  const size_t nba3 = a->nb[3];
 
-  const int nbb00 = b0->nb[0];
-  const int nbb01 = b0->nb[1];
-  const int nbb02 = b0->nb[2];
-  const int nbb03 = b0->nb[3];
+  const size_t nbb00 = b0->nb[0];
+  const size_t nbb01 = b0->nb[1];
+  const size_t nbb02 = b0->nb[2];
+  const size_t nbb03 = b0->nb[3];
 
-  const int nbb10 = b1->nb[0];
-  // const int nbb11 = b1->nb[1];
-  // const int nbb12 = b1->nb[2];
-  // const int nbb13 = b1->nb[3];
+  const size_t nbb10 = b1->nb[0];
+  // const size_t nbb11 = b1->nb[1];
+  // const size_t nbb12 = b1->nb[2];
+  // const size_t nbb13 = b1->nb[3];
 
-  const int nbc00 = c0->nb[0];
-  const int nbc01 = c0->nb[1];
-  const int nbc02 = c0->nb[2];
-  const int nbc03 = c0->nb[3];
+  const size_t nbc00 = c0->nb[0];
+  const size_t nbc01 = c0->nb[1];
+  const size_t nbc02 = c0->nb[2];
+  const size_t nbc03 = c0->nb[3];
 
-  const int nbc10 = c1->nb[0];
-  // const int nbc11 = c1->nb[1];
-  // const int nbc12 = c1->nb[2];
-  // const int nbc13 = c1->nb[3];
+  const size_t nbc10 = c1->nb[0];
+  // const size_t nbc11 = c1->nb[1];
+  // const size_t nbc12 = c1->nb[2];
+  // const size_t nbc13 = c1->nb[3];
 
-  const int nb0 = dst->nb[0];
-  const int nb1 = dst->nb[1];
-  const int nb2 = dst->nb[2];
-  const int nb3 = dst->nb[3];
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
 
   const int ith = params->ith;
   const int nth = params->nth;
@@ -8626,6 +9022,9 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
     case NE_OP_RMS_NORM_BACK: {
       ne_compute_forward_rms_norm_back(params, tensor->src0, tensor->src1, tensor);
     } break;
+    case NE_OP_MUL_MAT_BIAS: {
+      ne_compute_forward_mul_mat_bias(params, tensor->src0, tensor->src1, tensor->opt[0], tensor);
+    } break;
     case NE_OP_MUL_MAT: {
       ne_compute_forward_mul_mat(params, tensor->src0, tensor->src1, tensor);
     } break;
@@ -8635,6 +9034,13 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
     case NE_OP_MUL_FFN_SILU: {
       ne_compute_forward_ffn_silu(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor->opt[2],
                                   tensor->opt[3], tensor);
+    } break;
+    case NE_OP_MUL_FFN_ADD_GELU: {
+      ne_compute_forward_ffn_add_gelu(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1],
+                                      tensor->opt[2], tensor->opt[3], tensor);
+    } break;
+    case NE_OP_MUL_FFN_GELU: {
+      ne_compute_forward_ffn_gelu(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor);
     } break;
     case NE_OP_SCALE: {
       ne_compute_forward_scale(params, tensor->src0, tensor->src1, tensor);
@@ -8697,10 +9103,7 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
       ne_compute_forward_conv_1d_2s(params, tensor->src0, tensor->src1, tensor);
     } break;
     case NE_OP_FLASH_ATTN: {
-      int32_t t = ne_get_i32_1d(tensor->opt[1], 0);
-      NE_ASSERT(t == 0 || t == 1);
-      bool masked = t != 0;
-      ne_compute_forward_flash_attn(params, tensor->src0, tensor->src1, tensor->opt[0], masked, tensor);
+      ne_compute_forward_flash_attn(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor);
     } break;
     case NE_OP_FLASH_FF: {
       ne_compute_forward_flash_ff(params, tensor->src0, tensor->src1, tensor->opt[0], tensor->opt[1], tensor->opt[2],
@@ -9529,8 +9932,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
 
       switch (node->op) {
         case NE_OP_CPY: {
-          node->n_tasks = node->ne[0] == 1 ? n_threads : 1;
-
+          node->n_tasks = n_threads;  // node->ne[0] == 1 ? n_threads : 1;
           size_t cur = 0;
           if (ne_is_quantized(node->type)) {
             cur = NE_TYPE_SIZE[NE_TYPE_F32] * node->ne[0] * n_threads;
@@ -9549,7 +9951,11 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         } break;
         case NE_OP_ADD:
         case NE_OP_ADD1: {
-          node->n_tasks = 1;
+          if (node->src0->ne[1] > 4) {
+            node->n_tasks = n_threads;
+          } else {
+            node->n_tasks = 1;
+          }
 
           size_t cur = 0;
 
@@ -9578,15 +9984,19 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_SUM:
         case NE_OP_SUM_ROWS:
         case NE_OP_MEAN:
-        case NE_OP_REPEAT:
         case NE_OP_ABS:
+        case NE_OP_REPEAT:
         case NE_OP_SGN:
         case NE_OP_NEG:
         case NE_OP_STEP:
         case NE_OP_MUL:
         case NE_OP_RMS_NORM:
         case NE_OP_RELU: {
-          node->n_tasks = 1;
+          if (node->src0->ne[1] > 4) {
+            node->n_tasks = n_threads;
+          } else {
+            node->n_tasks = 1;
+          }
         } break;
         case NE_OP_GELU:
         case NE_OP_SILU:
@@ -9595,6 +10005,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_RMS_NORM_BACK: {
           node->n_tasks = n_threads;
         } break;
+        case NE_OP_MUL_MAT_BIAS:
         case NE_OP_MUL_MAT: {
           node->n_tasks = n_threads;
 
@@ -9625,6 +10036,8 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
           work_size = MAX(work_size, cur);
         } break;
         case NE_OP_MUL_FFN_SILU:
+        case NE_OP_MUL_FFN_GELU:
+        case NE_OP_MUL_FFN_ADD_GELU:
         case NE_OP_MUL_QKV: {
           node->n_tasks = 1;
         } break;
@@ -9644,10 +10057,17 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
           node->n_tasks = 1;
         } break;
         case NE_OP_DIAG_MASK_INF:
-        case NE_OP_SOFT_MAX:
         case NE_OP_ROPE:
-          node->n_tasks = 1;
+          if (node->src0->ne[1] > 4) {
+            node->n_tasks = n_threads;
+          } else {
+            node->n_tasks = 1;
+          }
           break;
+        case NE_OP_SOFT_MAX: {
+          size_t rows = ne_nrows(node->src0);
+          node->n_tasks = rows > 1 ? n_threads : 1;
+        } break;
         case NE_OP_ROPE_BACK: {
           node->n_tasks = n_threads;
         } break;
@@ -9681,23 +10101,8 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
           work_size = MAX(work_size, cur);
         } break;
         case NE_OP_FLASH_ATTN: {
-          node->n_tasks = n_threads;
-
-          size_t cur = 0;
-
-          const int64_t ne11 = ne_up(node->src1->ne[1], NE_SOFT_MAX_UNROLL);
-
-          if (node->src1->type == NE_TYPE_F32) {
-            cur = sizeof(float) * ne11 * node->n_tasks;   // TODO: this can become (n_tasks-1)
-            cur += sizeof(float) * ne11 * node->n_tasks;  // this is overestimated by x2
-          }
-
-          if (node->src1->type == NE_TYPE_F16) {
-            cur = sizeof(float) * ne11 * node->n_tasks;   // TODO: this can become (n_tasks-1)
-            cur += sizeof(float) * ne11 * node->n_tasks;  // this is overestimated by x2
-          }
-
-          work_size = MAX(work_size, cur);
+          node->n_tasks = 1;
+          work_size = 0LL;
         } break;
         case NE_OP_FLASH_FF: {
           node->n_tasks = n_threads;
@@ -10842,7 +11247,7 @@ enum ne_opt_result ne_opt(struct ne_context* ctx, struct ne_opt_params params, s
 
 size_t ne_quantize_q4_0(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK4_0 == 0);
-  const int nb = k / QK4_0;
+  const size_t nb = k / QK4_0;
 
   for (int b = 0; b < n; b += k) {
     block_q4_0* restrict y = (block_q4_0*)dst + b / QK4_0;
@@ -10865,7 +11270,7 @@ size_t ne_quantize_q4_0(const float* src, void* dst, int n, int k, int64_t* hist
 
 size_t ne_quantize_q4_1(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK4_1 == 0);
-  const int nb = k / QK4_1;
+  const size_t nb = k / QK4_1;
 
   for (int b = 0; b < n; b += k) {
     block_q4_1* restrict y = (block_q4_1*)dst + b / QK4_1;
@@ -10888,7 +11293,7 @@ size_t ne_quantize_q4_1(const float* src, void* dst, int n, int k, int64_t* hist
 
 size_t ne_quantize_q5_0(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK5_0 == 0);
-  const int nb = k / QK5_0;
+  const size_t nb = k / QK5_0;
 
   for (int b = 0; b < n; b += k) {
     block_q5_0* restrict y = (block_q5_0*)dst + b / QK5_0;
@@ -10918,7 +11323,7 @@ size_t ne_quantize_q5_0(const float* src, void* dst, int n, int k, int64_t* hist
 
 size_t ne_quantize_q5_1(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK5_1 == 0);
-  const int nb = k / QK5_1;
+  const size_t nb = k / QK5_1;
 
   for (int b = 0; b < n; b += k) {
     block_q5_1* restrict y = (block_q5_1*)dst + b / QK5_1;
@@ -10948,7 +11353,7 @@ size_t ne_quantize_q5_1(const float* src, void* dst, int n, int k, int64_t* hist
 
 size_t ne_quantize_q8_0(const float* src, void* dst, int n, int k, int64_t* hist) {
   assert(k % QK8_0 == 0);
-  const int nb = k / QK8_0;
+  const size_t nb = k / QK8_0;
 
   for (int b = 0; b < n; b += k) {
     block_q8_0* restrict y = (block_q8_0*)dst + b / QK8_0;

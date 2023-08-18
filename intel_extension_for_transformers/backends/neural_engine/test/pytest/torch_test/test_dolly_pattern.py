@@ -1073,7 +1073,7 @@ model:
         dollygraph = p_fusion(dollygraph)
         p_fusion = PATTERNS['TorchInsertBF16Node']()
         dollygraph = p_fusion(dollygraph)
-        p_fusion = PATTERNS['QunatizeFusion']()
+        p_fusion = PATTERNS['QuantizeFusion']()
         dollygraph = p_fusion(dollygraph)
         p_fusion = PATTERNS['QKVMerge']()
         dollygraph = p_fusion(dollygraph)
