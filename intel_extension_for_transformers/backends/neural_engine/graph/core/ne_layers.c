@@ -1061,17 +1061,8 @@ struct ne_tensor* ne_dup_tensor(struct ne_context* ctx, const struct ne_tensor* 
   return ne_new_tensor_impl(ctx, src->type, src->n_dims, src->ne, NULL, src->size);
 }
 
-void secure_zero(void* ptr, size_t size) {
-  volatile unsigned char* p = ptr;
-  while (size--) {
-    *p++ = 0;
-  }
-}
-
 struct ne_tensor* ne_set_zero(struct ne_tensor* tensor) {
-  // memset(tensor->data, 0, ne_nbytes(tensor));
-  // return tensor;
-  secure_zero(tensor->data, ne_nbytes(tensor));
+  memset(tensor->data, 0, ne_nbytes(tensor));
   return tensor;
 }
 
