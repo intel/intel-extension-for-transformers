@@ -17,7 +17,7 @@ def Q2B(query):
 
 class SensitiveChecker:
     def __init__(self, dict_path=None, matchType=2):
-        if dict_path == None or !os.path.exists(dict_path):
+        if dict_path == None or (not os.path.exists(dict_path)):
             dict_path = os.path.dirname(os.path.abspath(__file__))
         f = open(os.path.join(dict_path, "stopword.txt"), encoding="utf8")
         self.Stopwords = [i.split('\n')[0] for i in f.readlines()]
