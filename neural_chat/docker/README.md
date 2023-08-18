@@ -1,4 +1,4 @@
-Intel Chatbot Dockerfile
+Intel Neural Chat Dockerfile
 
 # Fine-tuning
 

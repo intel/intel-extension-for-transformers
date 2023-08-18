@@ -1,4 +1,4 @@
-Intel Chatbot Finetuning Dockerfile installer for Ubuntu22.04
+Intel Neural Chat Finetuning Dockerfile installer for Ubuntu22.04
 
 # Prerequisite​
 

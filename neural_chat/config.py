@@ -381,17 +381,17 @@ class IntentConfig:
     max_gpu_memory: int = None
     use_fp16: bool = False
     ipex_int8: bool = False
-    
+
 
 @dataclass
 class PipelineConfig:
     model_name_or_path: str = "meta-llama/Llama-2-7b-hf"
     tokenizer_name_or_path: str = None
     device: str = "auto"
-    backend: str = "auto"
     retrieval: bool = False
     retrieval_type: str = "dense"
     retrieval_document_path: str = None
+    retrieval_config: RetrieverConfig = RetrieverConfig()
     audio_input: bool = False
     audio_output: bool = False
     audio_lang: str = "english"
@@ -400,11 +400,10 @@ class PipelineConfig:
     cache_chat_config_file: str = None
     cache_embedding_model_dir: str = None
     intent_detection: bool = False
+    intent_config: IntentConfig = IntentConfig()
     memory_controller: bool = False
     safety_checker: bool = False
+    saftey_config: SafteyConfig = SafteyConfig()
     loading_config: LoadingModelConfig = LoadingModelConfig()
     optimization_config: OptimizationConfig = OptimizationConfig()
-    saftey_config: SafteyConfig = SafteyConfig()
-    retrieval_config: RetrieverConfig = RetrieverConfig()
-    generation_config: GenerationConfig = GenerationConfig()
-    intent_config: IntentConfig = IntentConfig()
+

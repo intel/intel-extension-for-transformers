@@ -1,4 +1,4 @@
-Intel Chatbot Inference Dockerfile installer for Ubuntu22.04
+Intel Neural Chat Inference Dockerfile installer for Ubuntu22.04
 
 # Do chatbot inference with Docker
 

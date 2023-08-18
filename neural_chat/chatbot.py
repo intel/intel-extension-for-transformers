@@ -22,9 +22,9 @@ from .config import OptimizationConfig
 from .config import FinetuningConfig
 from .pipeline.finetuning.finetuning import Finetuning
 from .pipeline.optimization.optimization import Optimization
-from .config import DeviceOptions, BackendOptions, AudioLanguageOptions, RetrievalTypeOptions
+from .config import DeviceOptions, AudioLanguageOptions, RetrievalTypeOptions
 from .models.base_model import get_model_adapter
-from .utils.common import get_device_type, get_backend_type
+from .utils.common import get_device_type
 from .pipeline.plugins.caching.cache import init_similar_cache_from_config
 from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
@@ -60,15 +60,8 @@ def build_chatbot(config: PipelineConfig=None):
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
 
-    if config.backend not in [option.name.lower() for option in BackendOptions]:
-        valid_options = ", ".join([option.name.lower() for option in BackendOptions])
-        raise ValueError(f"Invalid backend value '{config.backend}'. Must be one of {valid_options}")
-
     if config.device == "auto":
         config.device = get_device_type()
-
-    if config.backend == "auto":
-        config.backend = get_backend_type()
 
     # get model adapter
     adapter = get_model_adapter(config.model_name_or_path)
