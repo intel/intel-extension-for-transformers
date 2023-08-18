@@ -34,4 +34,16 @@ class RetrievalRequest(RequestBaseModel):
     embedding: Optional[str] = 'dense'
     params: Optional[Dict] = None
     debug: Optional[bool] = False
+    retrieval_type: str
+    document_path: str
 
+
+class FinetuneRequest(RequestBaseModel):
+    model_name_or_path: str = "meta-llama/Llama-2-7b-chat-hf"
+    train_file: str = None
+    dataset_name: str = None
+    output_dir: str = './tmp'
+    max_steps: int = 3
+    overwrite_output_dir: bool = True
+    dataset_concatenation: bool = False
+    peft: str = 'lora'
