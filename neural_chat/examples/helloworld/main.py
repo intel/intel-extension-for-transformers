@@ -17,6 +17,6 @@
 
 from neural_chat import build_chatbot
 chatbot = build_chatbot()
-response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+response = chatbot.predict("What are the top five must-visit attractions in Shanghai?")
 
 print("chatbot's response: ", response)

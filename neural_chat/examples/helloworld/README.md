@@ -16,5 +16,11 @@ chatbot = build_chatbot()
 ## Interact with the chatbot:
 
 ```python
-response = chatbot.predict("Tell me 5 interesting places in Shanghai.")
+response = chatbot.predict("What are the top five must-visit attractions in Shanghai?")
+```
+
+# Test
+
+```shell
+python main.py
 ```

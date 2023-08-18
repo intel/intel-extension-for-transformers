@@ -354,7 +354,7 @@ class RetrieverConfig:
     retrieval_topk: int = 1
     
 @dataclass
-class SafteyConfig:
+class SafetyConfig:
     dict_path: str = None
     matchType: int = 2
 
@@ -403,7 +403,7 @@ class PipelineConfig:
     intent_config: IntentConfig = IntentConfig()
     memory_controller: bool = False
     safety_checker: bool = False
-    saftey_config: SafteyConfig = SafteyConfig()
+    saftey_config: SafetyConfig = SafetyConfig()
     loading_config: LoadingModelConfig = LoadingModelConfig()
     optimization_config: OptimizationConfig = OptimizationConfig()
 

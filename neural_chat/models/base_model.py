@@ -22,7 +22,7 @@ from fastchat.conversation import get_conv_template, Conversation
 from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
 from neural_chat.config import GenerationConfig
 from neural_chat.utils.common import is_audio_file
-from neural_chat.pipeline.prompts.prompt import generate_qa_prompt, generate_prompt
+from neural_chat.pipeline.plugins.prompts.prompt import generate_qa_prompt, generate_prompt
 
 
 def construct_parameters(query, model_name, config):
@@ -77,6 +77,8 @@ class BaseModel(ABC):
         self.audio_output_path = None
         self.retriever = None
         self.retrieval_type = None
+        self.safety_checker = None
+        self.intent_detection = False
 
     def match(self, model_path: str):
         """
@@ -151,24 +153,24 @@ class BaseModel(ABC):
             else:
                 raise ValueError(f"The query {query} is audio file but there is no ASR registered.")
         assert query is not None, "Query cannot be None."
-        
-        if config.intent_detection:
+
+        if self.intent_detection:
             intent = predict(**construct_parameters(query, self.model_name, config.intent_config))
             if 'qa' not in intent.lower():
                 intent = "chitchat"
                 query = generate_prompt(query)
-            elif config.retrieval:
+            elif self.retriever:
                 query = construct_prompt(query, self.retriever, self.retrieval_type)
             else:
                 query = generate_qa_prompt(query)
         else:
-            if config.retrieval:
+            if self.retriever:
                 query = construct_prompt(query, self.retriever, self.retrieval_type)
-                
-        if config.safety_checker:
+
+        if self.safety_checker:
             assert self.safety_checker.sensitive_check(query) is False, "The input query contains sensitive words." 
         response = predict(**construct_parameters(query, self.model_name, config))
-        if config.safety_checker:
+        if self.safety_checker:
             if self.safety_checker.sensitive_check(response):
                 response = self.safety_checker.sensitive_filter(response)
         if self.tts:
