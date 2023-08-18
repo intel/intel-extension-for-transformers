@@ -23,5 +23,5 @@ from .chatbot import build_chatbot
 from .chatbot import finetune_model
 from .chatbot import optimize_model
 from .server.neuralchat_server import NeuralChatServerExecutor
-from .server.neuralchat_client import NeuralChatClientExecutor
+from .server.neuralchat_client import TextChatClientExecutor, VoiceChatClientExecutor, FinetuingClientExecutor
 

@@ -24,7 +24,7 @@ host: 0.0.0.0
 port: 8000
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat', 'retrieval']    # text chatbot with document retrieval
+tasks_list: ['textchat', 'finetune', 'retrieval']    # text chatbot with document retrieval
 
 # plugins choices = ['audio', 'retrieval', 'caching', 'memory_controller', 'intent_detection', 'safety_checker']
 plugins_list: ['audio', 'retrieval', 'caching']

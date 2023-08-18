@@ -205,8 +205,8 @@ curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about I
 neuralchat_client voicechat --server_ip 127.0.0.1 --port 8000 --audio_input_path ./assets/audio/pat.wav --audio_output_path response.wav
 ```
 
-**Access Retrieval Service**
+**Access Finetune Service**
 ```shell
-neuralchat_client retrieval --server_ip 127.0.0.1 --port 8000 --retrieval_document_path ./assets/docs/
+neuralchat_client finetune --server_ip 127.0.0.1 --port 8000 --model_name_or_path "facebook/opt-125m" --train_file "/path/to/finetune/dataset.json"
 ```
 

@@ -202,10 +202,64 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
             return res
 
 
+class FinetuingClientExecutor(BaseCommandExecutor):
+    def __init__(self):
+        super(FinetuingClientExecutor, self).__init__()
+        self.parser = argparse.ArgumentParser(
+            prog='neuralstudio_client.finetune', add_help=True)
+        self.parser.add_argument(
+            '--server_ip', type=str, default='127.0.0.1', help='server ip')
+        self.parser.add_argument(
+            '--port', type=int, default=8000, help='server port')
+        self.parser.add_argument(
+            '--model_name_or_path', type=str, default=None, help='Model name or model path.')
+        self.parser.add_argument(
+            '--train_file', type=str, default=None, help='Train dataset file for finetuning.')
+        
+    def execute(self, argv: List[str]) -> bool:
+        args = self.parser.parse_args(argv)
+        server_ip = args.server_ip
+        port = args.port
+        model_name_or_path = args.model_name_or_path
+        train_file = args.train_file
+
+        try:
+            time_start = time.time()
+            res = self(
+                server_ip=server_ip,
+                port=port,
+                model_name_or_path=model_name_or_path,
+                train_file=train_file)
+            time_end = time.time()
+            time_consume = time_end - time_start
+            print("======= Finetuning Client Response =======")
+            print(res.text)
+            logger.info("Response time: %f s." % (time_consume))
+            return True
+        except Exception as e:
+            logger.error("Failed to finetune.")
+            logger.error(e)
+            return False
+        
+    def __call__(self,
+                 server_ip: str="127.0.0.1",
+                 port: int=8000,
+                 model_name_or_path: str="facebook/opt-125m",
+                 train_file: str=None):
+        url = 'http://' + server_ip + ":" + str(port) + '/v1/finetune'
+        request = {
+            "model_name_or_path": model_name_or_path,
+            "train_file": train_file
+        }
+        res = requests.post(url, json.dumps(request))
+        return res
+
+
+
 specific_commands = {
     'textchat': ['neuralchat_client text chat command', 'TextChatClientExecutor'],
     'voicechat': ['neuralchat_client voice chat command', 'VoiceChatClientExecutor'],
-    # 'finetune': ['neuralchat_client finetuning command', 'FinetuingClientExecutor'],
+    'finetune': ['neuralchat_client finetuning command', 'FinetuingClientExecutor'],
 }
 
 for com, info in specific_commands.items():
