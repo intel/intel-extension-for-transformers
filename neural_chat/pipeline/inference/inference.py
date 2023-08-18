@@ -326,6 +326,7 @@ def load_model(
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
+    optimization_config=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -430,6 +431,10 @@ def load_model(
 
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
+
+    if optimization_config:
+        from neural_chat.chatbot import optimize_model
+        model = optimize_model(model, optimization_config)
 
     if device == "hpu":
         model = model.eval().to("hpu")
