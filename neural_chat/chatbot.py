@@ -20,6 +20,7 @@ import os
 from .config import PipelineConfig
 from .config import OptimizationConfig
 from .config import FinetuningConfig
+from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from .pipeline.finetuning.finetuning import Finetuning
 from .pipeline.optimization.optimization import Optimization
 from .config import DeviceOptions, AudioLanguageOptions, RetrievalTypeOptions
@@ -29,7 +30,7 @@ from .pipeline.plugins.caching.cache import init_similar_cache_from_config
 from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
-from .pipeline.plugins.audio.tts_chinese_tts import ChineseTextToSpeech
+from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 from .pipeline.plugins.retrievers.indexing.document_parser import DocumentIndexing
 from .pipeline.plugins.retrievers.retriever.langchain import ChromaRetriever
 from .pipeline.plugins.retrievers.retriever import BM25Retriever
@@ -66,57 +67,12 @@ def build_chatbot(config: PipelineConfig=None):
     # get model adapter
     adapter = get_model_adapter(config.model_name_or_path)
 
-    # construct document retrieval using retrieval plugin
-    if config.retrieval:
-        if config.retrieval_type not in [option.name.lower() for option in RetrievalTypeOptions]:
-            valid_options = ", ".join([option.name.lower() for option in RetrievalTypeOptions])
-            raise ValueError(f"Invalid retrieval type value '{config.retrieval_type}'. Must be one of {valid_options}")
-        if not config.retrieval_document_path:
-            raise ValueError("Must provide a retrieval document path")
-        if not os.path.exists(config.retrieval_document_path):
-            raise ValueError(f"The retrieval document path {config.retrieval_document_path} is not exist.")
-        db = DocumentIndexing(config.retrieval_type).KB_construct(config.retrieval_document_path)
-        if config.retrieval_type == "dense":
-            retriever = ChromaRetriever(db).retriever
-        else:
-            retriever = BM25Retriever(document_store = db)
-        adapter.register_retriever(retriever, config.retrieval_type)
-
-    # construct audio plugin
-    if config.audio_input or config.audio_output:
-        if config.audio_lang not in [option.name.lower() for option in AudioLanguageOptions]:
-            valid_options = ", ".join([option.name.lower() for option in AudioLanguageOptions])
-            raise ValueError(f"Invalid audio language value '{config.audio_lang}'. Must be one of {valid_options}")
-        if config.audio_input:
-            if config.audio_lang == AudioLanguageOptions.CHINESE.name.lower():
-                asr = ChineseAudioSpeechRecognition()
-            else:
-                asr = AudioSpeechRecognition()
-            adapter.register_asr(asr)
-        if config.audio_output:
-            if config.audio_lang == AudioLanguageOptions.CHINESE.name.lower():
-                tts = ChineseTextToSpeech()
-            else:
-                tts = TextToSpeech()
-            adapter.register_tts(tts)
-
-    # construct response caching
-    if config.cache_chat:
-        if not config.cache_chat_config_file:
-            cache_chat_config_file = "./pipeline/plugins/caching/cache_config.yaml"
-        else:
-            cache_chat_config_file = config.cache_chat_config_file
-        if not config.cache_embedding_model_dir:
-            cache_embedding_model_dir = "hkunlp/instructor-large"
-        else:
-            cache_embedding_model_dir = config.cache_embedding_model_dir
-        init_similar_cache_from_config(config_dir=cache_chat_config_file,
-                                       embedding_model_dir=cache_embedding_model_dir)
-
-    # construct safety checker
-    if config.safety_checker:
-        safety_checker = SensitiveChecker()
-        adapter.register_safety_checker(safety_checker)
+    # register plugin instance in model adaptor
+    for plugin_name in get_registered_plugins():
+        if is_plugin_enabled(plugin_name):
+            plugin_instance = get_plugin_instance(plugin_name)
+            if plugin_instance:
+                adapter.register_plugin(plugin_name, plugin_instance)
 
     parameters = {}
     parameters["model_name"] = config.model_name_or_path

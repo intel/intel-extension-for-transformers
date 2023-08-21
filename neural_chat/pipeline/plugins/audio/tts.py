@@ -27,21 +27,25 @@ import numpy as np
 import contextlib
 
 from .utils.english_normalizer import EnglishNormalizer
+from neural_chat.plugins import register_plugin
 
-
-class TextToSpeech:
+@register_plugin('tts')
+class TextToSpeech():
     """Convert text to speech with a driven speaker embedding
 
     1) Default voice (Original model + Proved good default speaker embedding from trained dataset)
     2) Finetuned voice (Fine-tuned offline model of specific person, such as Pat's voice + corresponding embedding)
     3) Customized voice (Original model + User's customized input voice embedding)
     """
-    def __init__(self, device="cpu"):
+    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu"):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
         self.original_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
         self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
         self.device = device
+        self.voice = voice
+        self.output_audio_path = output_audio_path
+        self.stream_mode = stream_mode
         self.spk_model_name = "speechbrain/spkrec-xvect-voxceleb"
         self.speaker_model = EncoderClassifier.from_hparams(
             source=self.spk_model_name,
@@ -169,7 +173,14 @@ class TextToSpeech:
         sf.write(output_audio_path, all_speech, samplerate=16000)
         return output_audio_path
 
-    def stream_text2speech(self, generator, answer_speech_path, voice="default"):
+    def stream_text2speech(self, generator, output_audio_path, voice="default"):
         """Stream the generation of audios with an LLM text generator."""
         for idx, response in enumerate(generator):
-            yield self.text2speech(response, f"{answer_speech_path}_{idx}.wav", voice)
+            yield self.text2speech(response, f"{output_audio_path}_{idx}.wav", voice)
+
+
+    def post_llm_inference_actions(self, text_or_generator):
+        if self.stream_mode:
+            return self.stream_text2speech(text_or_generator, self.output_audio_path, self.voice)
+        else:
+            return self.text2speech(text_or_generator, self.output_audio_path, self.voice)

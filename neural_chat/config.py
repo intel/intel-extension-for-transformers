@@ -22,6 +22,12 @@ from transformers import TrainingArguments
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
 
+from neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
+from neural_chat.pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
+from neural_chat.pipeline.plugins.audio.tts import TextToSpeech
+from neural_chat.pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
+from .plugins import plugins
+
 from enum import Enum, auto
 
 class DeviceOptions(Enum):
@@ -383,27 +389,25 @@ class IntentConfig:
     ipex_int8: bool = False
 
 
-@dataclass
 class PipelineConfig:
-    model_name_or_path: str = "meta-llama/Llama-2-7b-hf"
-    tokenizer_name_or_path: str = None
-    device: str = "auto"
-    retrieval: bool = False
-    retrieval_type: str = "dense"
-    retrieval_document_path: str = None
-    retrieval_config: RetrieverConfig = RetrieverConfig()
-    audio_input: bool = False
-    audio_output: bool = False
-    audio_lang: str = "english"
-    txt2Image: bool = False
-    cache_chat: bool = False
-    cache_chat_config_file: str = None
-    cache_embedding_model_dir: str = None
-    intent_detection: bool = False
-    intent_config: IntentConfig = IntentConfig()
-    memory_controller: bool = False
-    safety_checker: bool = False
-    saftey_config: SafetyConfig = SafetyConfig()
-    loading_config: LoadingModelConfig = LoadingModelConfig()
-    optimization_config: OptimizationConfig = OptimizationConfig()
+    def __init__(self,
+                 model_name_or_path="meta-llama/Llama-2-7b-hf",
+                 tokenizer_name_or_path=None,
+                 device="auto",
+                 plugin=plugins,
+                 loading_config=None,
+                 optimization_config=None):
+        self.model_name_or_path = model_name_or_path
+        self.tokenizer_name_or_path = tokenizer_name_or_path
+        self.device = device
+        self.plugin = plugin
+        self.loading_config = loading_config if loading_config is not None else LoadingModelConfig()
+        self.optimization_config = optimization_config if optimization_config is not None else OptimizationConfig()
+        for plugin_name, plugin_value in self.plugin.items():
+            if plugin_value['enable']:
+                print(f"create {plugin_name} plugin instance...")
+                print(f"plugin parameters: ", plugin_value['args'])
+                plugins[plugin_name]["instance"] = plugin_value['class'](**plugin_value['args'])
+
+
 

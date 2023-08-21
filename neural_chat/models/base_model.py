@@ -15,12 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
 from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
 from neural_chat.config import GenerationConfig
+from neural_chat.plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
 from neural_chat.utils.common import is_audio_file
 from neural_chat.pipeline.plugins.prompts.prompt import generate_qa_prompt, generate_prompt
 
@@ -79,6 +80,7 @@ class BaseModel(ABC):
         self.retrieval_type = None
         self.safety_checker = None
         self.intent_detection = False
+        self.cache = None
 
     def match(self, model_path: str):
         """
@@ -148,34 +150,28 @@ class BaseModel(ABC):
         if is_audio_file(query):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
-            if self.asr:
-                query = self.asr.audio2text(query)
-            else:
-                raise ValueError(f"The query {query} is audio file but there is no ASR registered.")
+
+        # plugin pre actions
+        for plugin_name in get_registered_plugins():
+            if is_plugin_enabled(plugin_name):
+                plugin_instance = get_plugin_instance(plugin_name)
+                if plugin_instance:
+                    if hasattr(plugin_instance, 'pre_llm_inference_actions'):
+                        query = plugin_instance.pre_llm_inference_actions(query)
+
         assert query is not None, "Query cannot be None."
 
-        if self.intent_detection:
-            intent = predict(**construct_parameters(query, self.model_name, config.intent_config))
-            if 'qa' not in intent.lower():
-                intent = "chitchat"
-                query = generate_prompt(query)
-            elif self.retriever:
-                query = construct_prompt(query, self.retriever, self.retrieval_type)
-            else:
-                query = generate_qa_prompt(query)
-        else:
-            if self.retriever:
-                query = construct_prompt(query, self.retriever, self.retrieval_type)
-
-        if self.safety_checker:
-            assert self.safety_checker.sensitive_check(query) is False, "The input query contains sensitive words." 
+        # LLM inference
         response = predict(**construct_parameters(query, self.model_name, config))
-        if self.safety_checker:
-            if self.safety_checker.sensitive_check(response):
-                response = self.safety_checker.sensitive_filter(response)
-        if self.tts:
-            self.tts.text2speech(response, config.audio_output_path)
-            response = config.audio_output_path
+
+        # plugin post actions
+        for plugin_name in get_registered_plugins():
+            if is_plugin_enabled(plugin_name):
+                plugin_instance = get_plugin_instance(plugin_name)
+                if plugin_instance:
+                    if hasattr(plugin_instance, 'post_llm_inference_actions'):
+                        response = plugin_instance.post_llm_inference_actions(response)
+
         return response
 
     def chat_stream(self, query, config=None):
@@ -210,43 +206,29 @@ class BaseModel(ABC):
         """
         return get_conv_template("one_shot")
 
-    def register_tts(self, instance):
+    def register_plugin(self, plugin_name, instance):
         """
-        Register a text-to-speech (TTS) instance.
+        Register a plugin instance.
 
         Args:
-            instance: An instance of a TTS module.
+            instance: An instance of a plugin.
         """
-        self.tts = instance
-
-    def register_asr(self, instance):
-        """
-        Register an automatic speech recognition (ASR) instance.
-
-        Args:
-            instance: An instance of an ASR module.
-        """
-        self.asr = instance
-
-    def register_safety_checker(self, instance):
-        """
-        Register a safety checker instance.
-
-        Args:
-            instance: An instance of a safety checker module.
-        """
-        self.safety_checker = instance
-
-    def register_retriever(self, retriever, retrieval_type):
-        """
-        Register a database retriever.
-
-        Args:
-            instance: An instance of a retriever.
-            retrieval_type: The type of the retrieval method.
-        """
-        self.retriever = retriever
-        self.retrieval_type = retrieval_type
+        if plugin_name == "tts":
+            self.tts = instance
+        if plugin_name == "tts_chinese":
+            self.tts_chinese = instance
+        if plugin_name == "asr":
+            self.asr = instance
+        if plugin_name == "asr_chinese":
+            self.asr_chinese = instance
+        if plugin_name == "retrieval":
+            self.retrieval = instance
+        if plugin_name == "cache":
+            self.cache = instance
+        if plugin_name == "intent_detection":
+            self.intent_detection = instance
+        if plugin_name == "safety_checker":
+            self.safety_checker = instance
 
 
 # A global registry for all model adapters

@@ -18,7 +18,7 @@
 import unittest
 import os
 from neural_chat.chatbot import build_chatbot
-from neural_chat.config import PipelineConfig, GenerationConfig
+from neural_chat.config import PipelineConfig, plugins, GenerationConfig
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
@@ -53,14 +53,17 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_audio_plugin(self):
-        pipeline_config = PipelineConfig(audio_input=True, audio_output=True)
+        plugins.asr.enable = True
+        plugins.tts.enable = True
+        plugins.tts.args["output_audio_path"]="./output_audio.wav"
+        pipeline_config = PipelineConfig(plugin=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
-        gen_config = GenerationConfig(max_new_tokens=128, audio_output_path="./response.wav")
+        gen_config = GenerationConfig(max_new_tokens=64)
         response = chatbot.predict(query="../../assets/audio/pat.wav", config=gen_config)
         self.assertIsNotNone(response)
         print("output audio path: ", response)
-        self.assertTrue(os.path.exists(gen_config.audio_output_path))
+        self.assertTrue(os.path.exists(plugins.tts.args["output_audio_path"]))
 
 if __name__ == '__main__':
     unittest.main()

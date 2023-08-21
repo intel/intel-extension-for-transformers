@@ -25,7 +25,7 @@ from neural_chat.chatbot import build_chatbot, finetune_model
 from neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 from neural_chat.pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from neural_chat.pipeline.plugins.audio.tts import TextToSpeech
-from neural_chat.pipeline.plugins.audio.tts_chinese_tts import ChineseTextToSpeech
+from neural_chat.pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 
 __all__ = ['BaseCommand', 'HelpCommand', 'TextChatExecutor', 'VoiceChatExecutor', 'FinetuingExecutor']
 
