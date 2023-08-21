@@ -65,5 +65,14 @@ class TestChatbotBuilder(unittest.TestCase):
         print("output audio path: ", response)
         self.assertTrue(os.path.exists(plugins.tts.args["output_audio_path"]))
 
+    def test_build_chatbot_with_safety_checker_plugin(self):
+        plugins.safety_checker.enable = True
+        pipeline_config = PipelineConfig(plugin=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="蔡英文是谁？")
+        print("response: ", response)
+        self.assertTrue(response, "Your query contains sensitive words, please try another query.")
+
 if __name__ == '__main__':
     unittest.main()

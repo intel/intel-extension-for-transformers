@@ -23,7 +23,7 @@ from .config import FinetuningConfig
 from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from .pipeline.finetuning.finetuning import Finetuning
 from .pipeline.optimization.optimization import Optimization
-from .config import DeviceOptions, AudioLanguageOptions, RetrievalTypeOptions
+from .config import DeviceOptions
 from .models.base_model import get_model_adapter
 from .utils.common import get_device_type
 from .pipeline.plugins.caching.cache import init_similar_cache_from_config

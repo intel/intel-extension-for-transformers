@@ -60,7 +60,7 @@ def construct_prompt(query, retriever, retrieval_type):
         return generate_qa_prompt(query, context)
     else:
         return generate_prompt(query)
-    
+
 
 class BaseModel(ABC):
     """
@@ -157,8 +157,16 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'pre_llm_inference_actions'):
-                        query = plugin_instance.pre_llm_inference_actions(query)
-
+                        response = plugin_instance.pre_llm_inference_actions(query)
+                        if plugin_name == "safety_checker" and response:
+                            return "Your query contains sensitive words, please try another query."
+                        elif plugin_name == "intent_detection":
+                            if 'qa' not in response.lower():
+                                query = generate_prompt(query)
+                            else:
+                                query = generate_qa_prompt(query)
+                        else:
+                            query = response
         assert query is not None, "Query cannot be None."
 
         # LLM inference

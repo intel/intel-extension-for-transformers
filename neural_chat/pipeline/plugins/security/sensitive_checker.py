@@ -1,8 +1,26 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Function to check the intent of the input user query with LLM."""
 from __future__ import division
 import os
+from neural_chat.plugins import register_plugin
 
-def Q2B(query):
+def convert_fullwidth_to_halfwidth(query):
     """Converting Full-width Characters to Half-width Characters."""
     content = ""
     for uchar in query:
@@ -14,7 +32,7 @@ def Q2B(query):
         content += chr(mid_char)
     return content
 
-
+@register_plugin("safety_checker")
 class SensitiveChecker:
     def __init__(self, dict_path=None, matchType=2):
         if dict_path == None or (not os.path.exists(dict_path)):
@@ -24,11 +42,10 @@ class SensitiveChecker:
         f1 = open(os.path.join(dict_path, "dict.txt"), encoding="utf8")
         lst = f1.readlines()
         self.sensitiveWordSet = [i.split("\n")[0].split("\t") for i in lst]
-        self.sensitiveWordMap = self.initSensitiveWordMap()
+        self.sensitiveWordMap = self._initSensitiveWordMap()
         self.matchType = matchType
-        
-    
-    def initSensitiveWordMap(self):
+
+    def _initSensitiveWordMap(self):
         """Initialize the sensitive word dictory."""
         sensitiveWordTree = dict()
         for category, key in self.sensitiveWordSet:
@@ -55,17 +72,17 @@ class SensitiveChecker:
                     nowNode["category"] = category
         return sensitiveWordTree
 
-    def contains(self, txt):
+    def _contains(self, txt):
         """Check if the input text contain the sensitive words."""
         flag = False
         for i in range(len(txt)):
-            matchFlag = self.checkSensitiveWord(txt, i)[0]
+            matchFlag = self._checkSensitiveWord(txt, i)[0]
             if matchFlag > 0:
                 flag = True
         return flag
 
 
-    def checkSensitiveWord(self, txt, beginIndex):
+    def _checkSensitiveWord(self, txt, beginIndex):
         """Check if the input token contains sensitive word."""
         flag = False
         category = ""
@@ -91,30 +108,27 @@ class SensitiveChecker:
         if matchFlag < 2 or not flag:
             tmpFlag = 0
         return tmpFlag, category
-    
-    
-    def sensitive_check(self, context):
-        txt_convert = Q2B(context)
-        contain = self.contains(txt=txt_convert)
-        return contain
-    
-    
-    def get_sensitive_word(self, context):
+
+    def _get_sensitive_word(self, context):
         """get the sensitive word."""
         sensitiveWordList = list()
         for i in range(len(context)):
-            length = self.checkSensitiveWord(context, i)[0]
-            category = self.checkSensitiveWord(context, i)[1]
+            length = self._checkSensitiveWord(context, i)[0]
+            category = self._checkSensitiveWord(context, i)[1]
             if length > 0:
                 word = context[i:i + length]
                 sensitiveWordList.append(category + ":" + word)
                 i = i + length - 1
         return sensitiveWordList
 
-    
+    def sensitive_check(self, context):
+        txt_convert = convert_fullwidth_to_halfwidth(context)
+        contain = self._contains(txt=txt_convert)
+        return contain
+
     def sensitive_filter(self, context, replaceChar="*"):
         """Replace the sensitive word."""
-        tupleSet = self.get_sensitive_word(context)
+        tupleSet = self._get_sensitive_word(context)
         wordSet = [i.split(":")[1] for i in tupleSet]
         resultTxt = ""
         if len(wordSet) > 0:
@@ -125,8 +139,10 @@ class SensitiveChecker:
         else:
             resultTxt = context
         return resultTxt
-        
-        
-        
-        
-    
+
+    def pre_llm_inference_actions(self, query):
+        return self.sensitive_check(query)
+
+    def post_llm_inference_actions(self, response):
+        if self.sensitive_check(response):
+            return self.sensitive_filter(response)
