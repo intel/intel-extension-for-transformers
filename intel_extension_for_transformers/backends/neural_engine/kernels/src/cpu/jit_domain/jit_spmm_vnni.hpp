@@ -39,8 +39,7 @@ class jit_spmm_vnni_t : public jit_generator {
     const dim_t imb_hi = (param_.im_start + param.BM) / TH();
     const dim_t indptr_lo = param_.indptr[imb_lo] * spns::ADJ;
     const dim_t indptr_hi = param_.indptr[imb_hi] * spns::ADJ;
-    const dim_t blk_size = param_.blocksize[0] * param_.blocksize[1];
-    dense_load_offsets.resize((indptr_hi - indptr_lo) * blk_size);
+    dense_load_offsets.resize(pad_to(indptr_hi - indptr_lo, 16));
 
     std::transform(param_.indices.begin() + indptr_lo, param_.indices.begin() + indptr_hi, dense_load_offsets.begin(),
                    [&](decltype(param_.indices)::value_type k) { return k * ld_dst(); });
