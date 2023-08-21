@@ -171,6 +171,7 @@ inline static void ne_vec_gelu_f16(const int n, ne_fp16_t* y, const ne_fp16_t* x
   }
 }
 
+#define NE_GELU_FP16
 #ifdef NE_GELU_FP16
 inline static void ne_vec_gelu_f32(const int n, float* y, const float* x) {
   uint16_t t;
