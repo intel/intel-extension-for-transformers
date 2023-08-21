@@ -9,19 +9,6 @@ from .nn import QuantizedLinearINT4, QuantizedLinearINT8
 logger = logging.getLogger(__name__)
 
 
-def _quantization_method(config):
-    r"""
-    This method returns the quantization method used for the model. If the model is not quantizable, it returns
-    `None`.
-    """
-    if config.quant_bits == 8:
-        return "int8"
-    elif config.quant_bits == 4 and config.quant_type == "int4":
-        return "int4"
-    else:
-        return None
-
-
 def replace_linear(model, modules_to_not_convert=None, current_key_name=None, quantization_config=None):
     if modules_to_not_convert is None:
         modules_to_not_convert = []
@@ -61,7 +48,7 @@ def _replace_linear(
                     in_features = module.in_features
                     out_features = module.out_features
 
-                    if _quantization_method(quantization_config) == "int8":
+                    if quantization_config.quantization_method() == "s8":
                         model._modules[name] = QuantizedLinearINT8(
                             in_features,
                             out_features,
@@ -78,7 +65,7 @@ def _replace_linear(
                             module.bias is not None,
                             compute_dtype=quantization_config.compute_dtype,
                             compress_statistics=False,
-                            quant_type=quantization_config.quant_type,
+                            quant_dtype=quantization_config.quant_dtype,
                             blocksize=quantization_config.group_size,
                             scheme=quantization_config.scheme
                         )
@@ -115,5 +102,5 @@ def convert_to_quantized_model(model, config):
             },
         },
     )
-    model = quantization.fit(model, conf)
-    replace_linear(model.model, None, None, config)
+    inc_model = quantization.fit(model, conf)
+    return replace_linear(inc_model.model, None, None, config)

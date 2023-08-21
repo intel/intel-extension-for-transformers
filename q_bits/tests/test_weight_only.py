@@ -2,7 +2,8 @@ import copy
 import numpy as np
 import torch
 import unittest
-from q_bits import convert_to_quantized_model, QBitsConfig
+from q_bits import AutoModelForCausalLM, convert_to_quantized_model, QBitsConfig
+from q_bits.nn.modules import QuantizedLinearBits
 from q_bits.utils import replace_linear
 
 
@@ -15,6 +16,8 @@ class M(torch.nn.Module):
         return self.linear(x)
 
 
+llama_model_path = "fxmarty/tiny-llama-fast-tokenizer"
+
 class TestWeightOnly(unittest.TestCase):
     def test_int8(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
@@ -26,7 +29,7 @@ class TestWeightOnly(unittest.TestCase):
             activation = torch.rand(1,32, dtype=torch.float)
             output = model(activation)
 
-            config = QBitsConfig(quant_bits=8, quant_type="int8", group_size=32)
+            config = QBitsConfig(quant_bits=8, quant_dtype="s8", group_size=32)
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -46,7 +49,7 @@ class TestWeightOnly(unittest.TestCase):
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(raw_wei)
 
-            config = QBitsConfig(quant_bits=4, quant_type="int4", group_size=32)
+            config = QBitsConfig(quant_bits=4, quant_dtype="s4fullrange", group_size=32)
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -70,7 +73,7 @@ class TestWeightOnly(unittest.TestCase):
                 return x
 
         model = LinearPredictor()
-        replace_linear(model, None, None, QBitsConfig(4, quant_type='int4'))
+        replace_linear(model, None, None, QBitsConfig(4, quant_dtype='s4fullrange'))
         lossfn = torch.nn.MSELoss()
         optimizer = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=1e-3)
         batch_size = 16
@@ -88,6 +91,23 @@ class TestWeightOnly(unittest.TestCase):
         accuracy = ((out>=0.5).float() == (x>=0).float()).sum() / batch_size * 100
         print("Accuracy:{:.2f}%".format(accuracy))
         self.assertTrue(accuracy > 90)
+
+    def test_auto_model(self):
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True)
+        module_list = []
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLinearBits):
+                module_list.append(name)
+        self.assertTrue(len(module_list) > 0)
+
+    def test_auto_model_with_config(self):
+        config = QBitsConfig()
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, quantization_config=config)
+        module_list = []
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLinearBits):
+                module_list.append(name)
+        self.assertTrue(len(module_list) > 0)
 
 
 if __name__ == "__main__":

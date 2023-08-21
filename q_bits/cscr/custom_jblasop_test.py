@@ -18,7 +18,7 @@ def capture_args(f):
     return wrapper
 
 @capture_args
-def test(m,n,k,blocksize,compute_type,quant_type,transpose,dump_tensor_info=False):
+def test(m,n,k,blocksize,compute_type,quant_dtype,transpose,dump_tensor_info=False):
     activation = torch.rand(m,k, dtype=torch.float)
     wei_row=k
     wei_col=n
@@ -27,8 +27,8 @@ def test(m,n,k,blocksize,compute_type,quant_type,transpose,dump_tensor_info=Fals
     raw_wei=torch.rand(wei_row,wei_col,dtype=torch.float)
     bias=torch.rand(n,dtype=torch.float)
     bias*=10
-    quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(raw_wei,transpose,"sym",blocksize,compute_type,quant_type);
-    torch.ops.weight_only_jblasop.jblas_symqdq_weight(raw_wei,transpose,quant_type,blocksize)
+    quant_wei=torch.ops.weight_only_jblasop.jblas_quantize(raw_wei,transpose,"sym",blocksize,compute_type,quant_dtype);
+    torch.ops.weight_only_jblasop.jblas_symqdq_weight(raw_wei,transpose,quant_dtype,blocksize)
     if transpose:
         raw_wei=torch.transpose(raw_wei,0,1)
     trans_correct=torch.matmul(activation,raw_wei)
@@ -36,7 +36,7 @@ def test(m,n,k,blocksize,compute_type,quant_type,transpose,dump_tensor_info=Fals
     if dump_tensor_info:
         print("==========bias========")
         print(bias)
-    torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_with_bias(activation,quant_wei,bias,trans_dst,m,n,k,k,n,compute_type,quant_type)
+    torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_with_bias(activation,quant_wei,bias,trans_dst,m,n,k,k,n,compute_type,quant_dtype)
     if dump_tensor_info:
         print("==============transformat with bias result===============")
         print(trans_dst)
@@ -44,7 +44,7 @@ def test(m,n,k,blocksize,compute_type,quant_type,transpose,dump_tensor_info=Fals
         print(trans_correct+bias)
     ok=True
     ok =ok&torch.allclose(trans_dst,trans_correct+bias,rtol=0.03)
-    torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_without_bias(activation,quant_wei,trans_dst,m,n,k,k,n,compute_type,quant_type)
+    torch.ops.weight_only_jblasop.jblas_quantweight_f32_linear_without_bias(activation,quant_wei,trans_dst,m,n,k,k,n,compute_type,quant_dtype)
     if(dump_tensor_info):
         print("==============transformat without bias result===============")
         print(trans_dst)

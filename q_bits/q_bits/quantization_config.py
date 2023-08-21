@@ -11,16 +11,22 @@ class QBitsConfig:
         quant_bits=8,
         llm_int8_skip_modules=None,
         compute_dtype=None,
-        quant_type="int8",
+        quant_dtype="s8", # s8 s4clip s4fullrange fp4bnb fp4e2m1 nf4
+        scale_dtype="fp32", # Now only fp32
         use_double_quant=False,
+        double_quant_dtype="s8", # reserve for double quant
+        double_quant_scale_dtype="fp32", # reserve for double quant
         group_size=None,
         scheme="sym",
         **kwargs,
     ):
         self.quant_bits = quant_bits
         self.llm_int8_skip_modules = llm_int8_skip_modules if llm_int8_skip_modules else []
-        self.quant_type = quant_type
+        self.quant_dtype = quant_dtype
+        self.scale_dtype = scale_dtype
         self.use_double_quant = use_double_quant
+        self.double_quant_dtype = double_quant_dtype
+        self.double_quant_scale_dtype = double_quant_scale_dtype
         self.scheme = scheme
 
         if group_size is None:
@@ -49,11 +55,20 @@ class QBitsConfig:
         if self.compute_dtype is not None and not isinstance(self.compute_dtype, torch.dtype):
             raise ValueError("compute_dtype must be torch.dtype")
 
-        if not isinstance(self.quant_type, str):
-            raise ValueError("quant_type must be a string")
+        if not isinstance(self.quant_dtype, str):
+            raise ValueError("quant_dtype must be a string")
+
+        if not isinstance(self.scale_dtype, str):
+            raise ValueError("scale_dtype must be a string")
 
         if not isinstance(self.use_double_quant, bool):
             raise ValueError("use_double_quant must be a boolean")
+
+        if self.use_double_quant and not isinstance(self.double_quant_dtype, str):
+            raise ValueError("double_quant_dtype must be a string")
+
+        if self.use_double_quant and not isinstance(self.double_quant_scale_dtype, str):
+            raise ValueError("double_quant_scale_dtype must be a string")
 
         if not isinstance(self.group_size, int):
             raise ValueError("group_size must be a int")
@@ -66,9 +81,9 @@ class QBitsConfig:
         This method returns the quantization method used for the model.
         """
         if self.quant_bits == 8:
-            return "int8"
-        elif self.quant_bits == 4 and self.quant_type == "int4":
-            return "int4"
+            return "s8"
+        elif self.quant_bits == 4 and self.quant_dtype == "s4fullrange":
+            return "s4fullrange"
         else:
             raise ValueError("Only support int8 and int4 quantization now!")
 
