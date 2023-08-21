@@ -50,7 +50,7 @@ inline int32x16 maskz_cvt_roundfp32x16_int32x16(int mask, fp32x16 a) {
 inline bf16x16 cvt_fp32x16_bf16x16(fp32x16 a) {
 #if __AVX512F__
 #if __AVX512BF16__ && __GNUC__ > 11
-  return _mm512_cvtneps_pbh(a);
+  return _mm256_castph_si256((__m256h)_mm512_cvtneps_pbh(a));
 #else
   return _mm512_cvtepi32_epi16(_mm512_bsrli_epi128(_mm512_castps_si512(a), 2));
 #endif
@@ -65,7 +65,7 @@ inline bf16x16 cvt_fp32x16_bf16x16(fp32x16 a) {
 inline fp32x16 cvt_bf16x16_fp32x16(bf16x16 a) {
 #if __AVX512F__
 #if __AVX512BF16__ && __GNUC__ > 11
-  return _mm512_cvtpbh_ps(a);
+  return _mm512_cvtpbh_ps((__m256bh)_mm256_castsi256_ph(a));
 #else
   return _mm512_castsi512_ps(_mm512_bslli_epi128(_mm512_cvtepu16_epi32(a), 2));
 #endif
@@ -81,7 +81,7 @@ inline fp32x16 cvt_bf16x16_fp32x16(bf16x16 a) {
 inline fp32x16 maskz_cvt_bf16x16_fp32x16(int mask, bf16x16 a) {
 #if __AVX512F__
 #if __AVX512BF16__ && __GNUC__ > 11
-  return _mm512_maskz_cvtpbh_ps(mask, a);
+  return _mm512_maskz_cvtpbh_ps(mask, (__m256bh)a);
 #else
   return _mm512_castsi512_ps(_mm512_bslli_epi128(_mm512_maskz_cvtepu16_epi32(mask, a), 2));
 #endif

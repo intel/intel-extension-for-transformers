@@ -14,7 +14,7 @@
 
 set(TARGET main_falcon)
 add_executable_w_warning(${TARGET} main_falcon.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers common ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} PUBLIC ne_layers falcon common ${CMAKE_THREAD_LIBS_INIT})
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
 if(TARGET BUILD_INFO)
   add_dependencies(${TARGET} BUILD_INFO)
@@ -22,7 +22,7 @@ endif()
 
 set(TARGET quant_falcon)
 add_executable_w_warning(${TARGET} quant_falcon.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers common ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} PUBLIC ne_layers falcon common ${CMAKE_THREAD_LIBS_INIT})
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
 if(TARGET BUILD_INFO)
   add_dependencies(${TARGET} BUILD_INFO)

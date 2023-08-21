@@ -13,10 +13,11 @@
 //  limitations under the License.
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
-#include <stdbool.h>
 #include <assert.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #ifdef __cplusplus
@@ -26,6 +27,7 @@ extern "C" {
 // floating point type used to accumulate sums
 typedef double ne_float;
 typedef uint16_t ne_fp16_t;
+typedef uint16_t ne_bf16_t;
 
 enum ne_type {
   NE_TYPE_F32 = 0,

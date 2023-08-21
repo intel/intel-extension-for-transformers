@@ -242,6 +242,113 @@ MODEL_API const char* model_print_system_info(void);
 }
 #endif
 
+/*  beam search utils  */
+struct beam {
+  const model_context* ctx = nullptr;
+  std::vector<model_token> token_ids;
+  // Cumulative beam probability (renormalized with each token)
+  float p;
+  // record inference batch indice
+  int infer_bs_id;
+  // end-of-sentence
+  // TODO eos function for each model
+  const bool eos() const { return !token_ids.empty() && token_ids.back() == 50256; }
+  void print() const {
+    printf("p: %0.6f, eos: %d, tokens: ", p, eos());
+    for (const auto& id : token_ids) {
+      printf("%s", model_token_to_str(ctx, id));
+    }
+    printf("\n");
+  }
+};
+
+// A struct for calculating logits-related info.
+struct logits_info {
+  // (batch, seq_len * vocab_size)
+  const float* const logits;
+  const int batch_size;
+  const int32_t n_vocab;
+  // last seq_len indice
+  // only handle last seq_len indice
+  const size_t offset;
+  const size_t bs_stride;
+  // max logit (batch,)
+  std::vector<float> max_ls;
+  // 1 / exp sum (batch,)
+  std::vector<float> normalizers;
+  struct sum_exp {
+    float max_l;
+    float operator()(float sum, float l) const { return sum + std::exp(l - max_l); }
+  };
+
+  logits_info(struct model_context* lctx)
+      : logits(model_get_logits(lctx)),
+        batch_size(lctx->batch_size),
+        n_vocab(lctx->model.hparams.n_vocab),
+        offset(lctx->logits.size() / lctx->batch_size - n_vocab),
+        bs_stride(lctx->logits.size() / lctx->batch_size) {
+    max_ls.resize(lctx->batch_size);
+    normalizers.resize(lctx->batch_size);
+    MODEL_ASSERT(lctx->logits.size() % lctx->batch_size == 0);
+    // batch
+#pragma omp parallel for
+    for (int i = 0; i < batch_size; ++i) {
+      max_ls[i] = *std::max_element(logits + i * bs_stride + offset, logits + i * bs_stride + offset + n_vocab);
+      normalizers[i] = 1.0f / std::accumulate(logits + i * bs_stride + offset,
+                                              logits + i * bs_stride + offset + n_vocab, 0.0f, sum_exp{max_ls[i]});
+    }
+  }
+
+  model_token_data get_token_data(const int& batch_idx, const int32_t& token_idx) const {
+    return {token_idx, *(logits + batch_idx * bs_stride + offset + token_idx), 0.0f};
+  }
+
+  // Return top k token_data by logit. (batch, top_k)
+  std::vector<std::vector<model_token_data>> top_k(const int& k) {
+    std::vector<std::vector<model_token_data>> min_heap(batch_size);  // min-heap by logit
+    int tk = std::min(k, n_vocab);
+    // min_heap.reserve(batch_size * tk);
+    for (int idx = 0; idx < batch_size; ++idx) {
+      for (int32_t token_idx = 0; token_idx < tk; ++token_idx) {
+        min_heap[idx].push_back(get_token_data(idx, token_idx));
+      }
+    }
+    auto comp = [](const model_token_data& a, const model_token_data& b) { return a.logit > b.logit; };
+    for (int idx = 0; idx < batch_size; ++idx) {
+      std::make_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+      for (int32_t token_idx = tk; token_idx < n_vocab; ++token_idx) {
+        if (min_heap[idx].front().logit < get_token_data(idx, token_idx).logit) {
+          std::pop_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+          min_heap[idx].back().id = token_idx;
+          min_heap[idx].back().logit = get_token_data(idx, token_idx).logit;
+          std::push_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+        }
+      }
+    }
+    return min_heap;
+  }
+
+  float probability_from_logit(const int& batch_idx, const float& logit) {
+    return normalizers[batch_idx] * std::exp(logit - max_ls[batch_idx]);
+  }
+};
+
+MODEL_API void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const std::vector<beam>& cur_beams,
+                                                    const int& beam_size, model_context* lctx, const int& n_threads,
+                                                    const int& n_past);
+
+MODEL_API std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& next_beams,
+                                                                       const std::vector<beam>& cur_beams,
+                                                                       const int& beam_size);
+
+MODEL_API void renormalize_beam_probabilities(std::vector<beam>& beams);
+
+MODEL_API const beam& top_beam(std::vector<beam> const& beams);
+
+MODEL_API std::vector<model_token> beam_search(const int& beam_size, const int& n_predict, model_context* lctx,
+                                               const model_token* tokens_inp, const int& n_tokens,
+                                               const int& n_threads);
+
 // Internal API to be implemented by model.cpp and used by tests/benchmarks only
 #ifdef MODEL_API_INTERNAL
 

@@ -1,7 +1,8 @@
-transformers==4.27.4
+transformers
 datasets==2.11.0
 neural-compressor==2.1
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==1.13.1
 intel_extension_for_pytorch==1.13.100
 intel-extension-for-transformers==1.0.0
+accelerate==0.21.0

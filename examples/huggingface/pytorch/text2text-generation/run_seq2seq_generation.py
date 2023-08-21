@@ -79,9 +79,11 @@ def get_example_inputs(model):
     encoder_dummy_inputs = encoder_onnx_config.generate_dummy_inputs(framework="pt")
     decoder_dummy_inputs = decoder_onnx_config.generate_dummy_inputs(framework="pt")
     decoder_dummy_inputs["encoder_outputs"] = tuple(decoder_dummy_inputs["encoder_outputs"][0:1])
+    del decoder_dummy_inputs["attention_mask"]
     decoder_with_past_dummy_inputs = decoder_with_past_onnx_config.generate_dummy_inputs(framework="pt")
     decoder_with_past_dummy_inputs["encoder_outputs"] = tuple(decoder_with_past_dummy_inputs["encoder_outputs"][0:1])
     decoder_with_past_dummy_inputs["past_key_values"] = tuple(decoder_with_past_dummy_inputs["past_key_values"])
+    del decoder_with_past_dummy_inputs["attention_mask"]
     return encoder_dummy_inputs, decoder_dummy_inputs, decoder_with_past_dummy_inputs
 
 #
@@ -358,7 +360,8 @@ def main():
                 )
         if args.sq:
             args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
-            recipes = {"smooth_quant": True, "smooth_quant_args": {"alpha": args.alpha}}
+            recipes = {"smooth_quant": True, 
+                       "smooth_quant_args": {"alpha": args.alpha, "folding": False if args.ipex else True}}
             decoder_conf = PostTrainingQuantConfig(
                 backend="ipex" if args.ipex else "default",
                 excluded_precisions=excluded_precisions,
