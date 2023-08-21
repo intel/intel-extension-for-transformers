@@ -1,11 +1,17 @@
-# Convert Hugging Face fine-tuned bloom-like models to ggml format
+
+#  Copyright (c) 2023 Intel Corporation
 #
-# Usage:
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
 #
-#   python3 models/convert-h5-to-ggml.py 
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
-# This script is similar to "convert-pt-to-ggml.py"
-#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 
 import io
 import os
@@ -15,22 +21,11 @@ import json
 import code
 import torch
 import numpy as np
-
-from transformers import BloomModel
-from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, BloomForCausalLM
-
-conv_map = {
-    'word_embeddings'       : 'tok_embeddings',
-    "word_embeddings_layernorm": 'norm',
-        'input_layernorm'        : 'attention_norm',
-        'self_attention.query_key_value': 'attention.query_key_value',
-        'self_attention.dense':          'attention.wo',
-        'post_attention_layernorm': 'ffn_norm',
-        'mlp.dense_h_to_4h'           : 'feed_forward.w1',
-        'mlp.dense_4h_to_h'           : 'feed_forward.w2',
-        'ln_f'                        : 'output_norm',
-        'lm_head' : 'output',
-        }
+from pathlib import Path
+import argparse
+from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
+                    Literal, Optional, Sequence, Tuple, TypeVar, Union)
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -54,103 +49,85 @@ def bytes_to_unicode():
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
 
-if len(sys.argv) < 3:
-    print("Usage: python convert-hf-to-ggml.py model_name dir-output [use-f32]")
-    print("  model_name: name of the model to convert. Example: 'bigscience/bloomz-560m'")
-    print("  dir-output: directory where the output file will be written")
-    print("  use-f32:    if present, use float32 instead of float16")
-    sys.exit(1)
+def main(args_in: Optional[List[str]] = None) -> None:
+    parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
+    parser.add_argument("--outtype", choices=["f32", "f16"], help="output format (default: based on input)")
+    parser.add_argument("--outfile", type=Path, help="path to write to; default: based on input")
+    parser.add_argument("model", type=Path, help="directory containing model file")
+    args = parser.parse_args(args_in)
 
-model_name = sys.argv[1]
-dir_out = sys.argv[2]
+    dir_model = args.model.as_posix()
+    fname_out = args.outfile.as_posix()
 
-# make sure the output directory exists
-os.makedirs(dir_out, exist_ok=True)
-
-# possible data types
-#   ftype == 0 -> float32
-#   ftype == 1 -> float16
-#
-# map from ftype to string
-ftype_str = ["f32", "f16"]
-ftype = 1
-if len(sys.argv) > 3:
+    # possible data types
+    #   ftype == 0 -> float32
+    #   ftype == 1 -> float16
     ftype = 0
-
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-config = AutoConfig.from_pretrained(model_name)
-hparams = config.to_dict()
-print("Loading model: ", model_name)
-model = AutoModelForCausalLM.from_pretrained(model_name, config=config, torch_dtype=torch.float16 if ftype == 1 else torch.float32, low_cpu_mem_usage=True)
-print("Model loaded: ", model_name)
-
-
-fname_out = dir_out + f"/ggml-model-{model_name.split('/')[-1]}-{ftype_str[ftype]}.bin"
-fout = open(fname_out, "wb")
-
-hparams["multiple_of"] = 1
-fout.write(struct.pack("i", 0x67676d6c)) # magic: ggml in hex
-fout.write(struct.pack("i", hparams["vocab_size"]))
-# fout.write(struct.pack("i", hparams["seq_length"]))
-fout.write(struct.pack("i", hparams["hidden_size"]))
-fout.write(struct.pack("i", hparams["multiple_of"]))
-fout.write(struct.pack("i", hparams["n_head"]))
-fout.write(struct.pack("i", hparams["n_layer"]))
-fout.write(struct.pack("i", ftype))
-
-# Is this correct??
-dot_token = tokenizer.encode(".")[0]
-for i in range(hparams["vocab_size"]):
-    text = tokenizer.decode([i]).encode('utf-8')
-    fout.write(struct.pack("i", len(text)))
-    fout.write(text)
+    if args.outtype== "f16":
+        ftype = 1
     
-list_vars = model.state_dict()
-for name in list_vars.keys():
-    src = name
-    nn = name
-    if name != "lm_head.weight":
-        nn = nn.split(".")[1:]
-    else:
-        nn = nn.split(".")
+    tokenizer = AutoTokenizer.from_pretrained(dir_model)
+    config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
+    hparams = config.to_dict()
+    print("Loading model: ", dir_model)
+    model = AutoModelForCausalLM.from_pretrained(dir_model, config=config, torch_dtype=torch.float16
+                    if ftype == 1 else torch.float32, low_cpu_mem_usage=True, trust_remote_code=True)
+    print("Model loaded: ", dir_model)
 
-    if nn[0] == "h":
-        nn[0] = "layers"
-        mapped = conv_map[".".join(nn[2:-1])]
-        name = ".".join(nn[:2] + [mapped] + nn[-1:])
-    else:
-        mapped = conv_map[".".join(nn[:-1])]
-        name = ".".join([mapped] + nn[-1:])
+    fout = open(fname_out, "wb")
+    fout.write(struct.pack("i", 0x67676d6c)) # magic: ggml in hex
 
-    if "query_key_value" in src:
-        q, k, v = list_vars[src].reshape(config.n_head, 3, -1).unbind(1)
-        list_vars[src] = torch.cat([q, k, v], dim=0).reshape_as(list_vars[src])
+    fout.write(struct.pack("i", hparams["vocab_size"]))
+    fout.write(struct.pack("i", hparams["hidden_size"]))
+    fout.write(struct.pack("i", 1))
+    fout.write(struct.pack("i", hparams["n_head"]))
+    fout.write(struct.pack("i", hparams["n_layer"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", ftype))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("i", 0))
 
-    print(src, ' -> ', name)
-    data = list_vars[src].squeeze().numpy()
-    data = data.astype(np.float32)
+    reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
+    byte_encoder = bytes_to_unicode()
+    byte_decoder = {v:k for k, v in byte_encoder.items()}
 
-    n_dims = len(data.shape)
-    print(name, n_dims, data.shape)
+    for i in range(hparams["vocab_size"]):
+        text = tokenizer.decode([i]).encode('utf-8')
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
 
-    # default type is fp32
-    ftype_cur = 0
-    if ftype == 1 and n_dims > 1:
-        print("  Converting to float16")
-        data = data.astype(np.float16)
-        ftype_cur = 1
+    list_vars = model.state_dict()
+    for name in list_vars.keys():
+        src = name
+        data = list_vars[src].squeeze().numpy()
+        data = data.astype(np.float32)
 
-    # header
-    str = name.encode('utf-8')
-    fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
-    for i in range(n_dims):
-        fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
-    fout.write(str);
+        n_dims = len(data.shape)
+        print(name, n_dims, data.shape)
 
-    # data
-    data.tofile(fout)
+        # default type is fp32
+        ftype_cur = 0
+        if ftype == 1 and n_dims > 1:
+            print("  Converting to float16")
+            data = data.astype(np.float16)
+            ftype_cur = 1
 
-fout.close()
+        # header
+        str = name.encode('utf-8')
+        fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
+        for i in range(n_dims):
+            fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+        fout.write(str)
 
-print("Done. Output file: " + fname_out)
-print("")
+        # data
+        data.tofile(fout)
+
+    fout.close()
+
+    print("Done. Output file: " + fname_out)
+    print("")
+
+if __name__ == '__main__':
+    main()
