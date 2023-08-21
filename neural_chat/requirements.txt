@@ -17,4 +17,4 @@ python-multipart
 PyPDF2
 langchain
 python-docx
-pip install farm-haystack==1.14.0
+pip install farm-haystack==1.17.2
