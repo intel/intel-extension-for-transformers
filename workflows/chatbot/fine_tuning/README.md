@@ -189,7 +189,7 @@ python finetune_clm.py \
         --no_cuda \
 ```
 
-    - set `--do_lm_eval` to evaluate model with `truthfulqa_mc` metric, and you can set `--lm_eval_tasks` to evaluate more tasks supported in [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)
+**note:** set `--do_lm_eval` to evaluate model with `truthfulqa_mc` metric, and you can set `--lm_eval_tasks` to evaluate more tasks supported in [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)
 
 
 - use the below command line for finetuning chatbot on the [HuggingFaceH4/oasst1_en](https://huggingface.co/datasets/HuggingFaceH4/oasst1_en).
@@ -247,7 +247,7 @@ python finetune_clm.py \
 # the script also support other models, like mpt.
 ```
 
-    - **note:** Use `rouge` metric to evaluate model on summarization task.
+**note:** Use `rouge` metric to evaluate model on summarization task.
 
 - use the below command line for code tuning with `meta-llama/Llama-2-7b-hf` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
