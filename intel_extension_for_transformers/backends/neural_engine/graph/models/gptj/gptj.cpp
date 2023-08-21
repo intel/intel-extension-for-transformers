@@ -112,12 +112,12 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
           ctx0,
           ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 0 * N * n_embd * ne_element_size(QKVcur)),
                         n_embd / n_head, n_head, N),
-          n_past, n_rot, 0);
+          n_past, n_rot, 0, 0);
       Kcur = ne_rope_inplace(
           ctx0,
           ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 1 * N * n_embd * ne_element_size(QKVcur)),
                         n_embd / n_head, n_head, N),
-          n_past, n_rot, 0);
+          n_past, n_rot, 0, 0);
       Vcur = ne_transpose(
           ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
                               n_embd, N));
@@ -125,10 +125,10 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     } else {
       Qcur = ne_rope_inplace(
           ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), n_embd / n_head, n_head, N),
-          n_past, n_rot, 0);
+          n_past, n_rot, 0, 0);
       Kcur = ne_rope_inplace(
           ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N),
-          n_past, n_rot, 0);
+          n_past, n_rot, 0, 0);
       Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd, N));
     }
     ne_set_name(Qcur, "Qcur");

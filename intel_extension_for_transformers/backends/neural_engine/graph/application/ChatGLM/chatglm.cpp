@@ -714,7 +714,7 @@ ne_tensor *GLMSelfAttention::forward(ModelContext *ctx, ne_tensor *hidden_states
     ne_tensor *query_layer = ne_view_3d(gctx, qkv, head_size, num_attention_heads, qlen,
                                             3 * head_size * ne_element_size(qkv), qkv->nb[1], 0);
 
-    query_layer = ne_rope_inplace(gctx, query_layer, n_past, rope_dim, 4); // [qlen, heads, head_size]
+    query_layer = ne_rope_inplace(gctx, query_layer, n_past, rope_dim, 4, n_ctx); // [qlen, heads, head_size]
     
     query_layer = ne_permute(gctx, query_layer, 0, 2, 1, 3); // [heads, qlen, head_size]
     
@@ -722,7 +722,7 @@ ne_tensor *GLMSelfAttention::forward(ModelContext *ctx, ne_tensor *hidden_states
         ne_view_3d(gctx, qkv, head_size, num_attention_heads, qlen, 3 * head_size * ne_element_size(qkv),
                      qkv->nb[1], head_size * ne_element_size(qkv));
 
-    key_layer = ne_rope_inplace(gctx, key_layer, n_past, rope_dim, 4); // [qlen, heads, head_size]
+    key_layer = ne_rope_inplace(gctx, key_layer, n_past, rope_dim, 4, n_ctx); // [qlen, heads, head_size]
     
     key_layer = ne_permute(gctx, key_layer, 0, 2, 1, 3); // [heads, qlen, head_size]
     
@@ -986,7 +986,7 @@ ne_tensor *GLM2SelfAttention::forward(ModelContext *ctx, ne_tensor *hidden_state
         ne_view_3d(gctx, qkv, head_size, num_attention_heads, qlen, head_size * ne_element_size(qkv), qkv->nb[1],
                      0); // [qlen, heads, head_size]
 
-    query_layer = ne_rope_inplace(gctx, query_layer, n_past, rope_dim, 0);
+    query_layer = ne_rope_inplace(gctx, query_layer, n_past, rope_dim, 0, 0);
     
     query_layer = ne_cont(gctx, ne_permute(gctx, query_layer, 0, 2, 1, 3)); // [heads, qlen, head_size]
     
@@ -997,7 +997,7 @@ ne_tensor *GLM2SelfAttention::forward(ModelContext *ctx, ne_tensor *hidden_state
         ne_view_3d(gctx, qkv, head_size, num_kv_heads, qlen, head_size * ne_element_size(qkv), qkv->nb[1],
                      hidden_size * ne_element_size(qkv)); // [qlen, kv_heads, head_size]
 
-    key_layer = ne_rope_inplace(gctx, key_layer, n_past, rope_dim, 0);
+    key_layer = ne_rope_inplace(gctx, key_layer, n_past, rope_dim, 0, 0);
     
     key_layer = ne_permute(gctx, key_layer, 0, 2, 1, 3); // [kv_heads, qlen, head_size]
     

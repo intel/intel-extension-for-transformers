@@ -125,7 +125,6 @@ static_assert(sizeof(block_q8_1) == 2 * sizeof(float) + QK8_1, "wrong q8_1 block
 
 /*#define NE_PERF*/
 #define NE_DEBUG 0
-#define NE_GELU_FP16
 #define NE_SILU_FP16
 
 #define NE_SOFT_MAX_UNROLL 4
@@ -2649,7 +2648,7 @@ struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* 
 // ne_rope
 
 struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                               bool inplace) {
+                               int n_ctx, bool inplace) {
   NE_ASSERT(n_past >= 0);
   bool is_node = false;
 
@@ -2666,6 +2665,7 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_dims;
   ((int32_t*)b->data)[2] = mode;
+  ((int32_t*)b->data)[3] = n_ctx;
 
   ne_scratch_load(ctx);
 
@@ -2677,12 +2677,12 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   return result;
 }
 
-struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, false);
+struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, n_ctx, false);
 }
 
-struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, true);
+struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, n_ctx, true);
 }
 
 // ne_rope_back
@@ -6974,7 +6974,8 @@ static void ne_compute_forward_rope_f32(
         return;
     }
 
-    float freq_base = 10000.0;
+    float freq_base = 10000.0f;
+    float freq_scale = 1.0f;
 
     const int64_t n_past = ((int32_t*)src1->data)[0];
     const int64_t n_dims = ((int32_t*)src1->data)[1];
@@ -6984,9 +6985,6 @@ static void ne_compute_forward_rope_f32(
     assert(n_past >= 0);
 
     NE_TENSOR_UNARY_OP_LOCALS;
-
-    //printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
-    //printf("n_past = %d, ne2 = %d\n", n_past, ne2);
 
     NE_ASSERT(nb00 == sizeof(float));
 
@@ -7020,7 +7018,7 @@ static void ne_compute_forward_rope_f32(
                 if (ir++ < ir0) continue;
                 if (ir   > ir1) break;
 
-                float theta = (float)p;
+                float theta = freq_scale * (float)p;
 
                 if (is_glm) {
                     theta = MIN(p, n_ctx - 2);
@@ -9403,7 +9401,8 @@ static void ne_compute_backward(struct ne_context* ctx, struct ne_tensor* tensor
         const int n_past = ((int32_t*)src1->data)[0];
         const int n_dims = ((int32_t*)src1->data)[1];
         const int mode = ((int32_t*)src1->data)[2];
-        src0->grad = ne_add_impl(ctx, src0->grad, ne_rope(ctx, tensor->grad, n_past, n_dims, mode), inplace);
+        const int n_ctx = ((int32_t*)src1->data)[3];
+        src0->grad = ne_add_impl(ctx, src0->grad, ne_rope(ctx, tensor->grad, n_past, n_dims, mode, n_ctx), inplace);
       }
       if (src1->grad) {
         // noop
