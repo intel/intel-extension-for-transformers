@@ -43,8 +43,8 @@
 
 #define MODEL_MAX_NORM 4
 #define MODEL_MAX_ATTN 4
-#define MODEL_MAX_FFN 4
-#define MODEL_MAX_OTHERS 5
+#define MODEL_MAX_FFN 6
+#define MODEL_MAX_OTHERS 6
 
 #define MODEL_USE_SCRATCH
 #define MODEL_MAX_SCRATCH_BUFFERS 16
@@ -64,7 +64,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON };
+enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON,
+                  MODEL_BLOOM };
 
 static const size_t MB = 1024 * 1024;
 
