@@ -90,7 +90,7 @@ struct quant_params_internal {
   int32_t block_size = 32;
   quant_sdtype scale_dtype = quant_sdtype::fp16;
   quant_comp compute_type = quant_comp::ggml;
-  bool valid() const{
+  bool valid() const {
     return bits != quant_bits::count && alg != quant_alg::count && scale_dtype != quant_sdtype::count &&
            compute_type != quant_comp::count && block_size > 0;
   }

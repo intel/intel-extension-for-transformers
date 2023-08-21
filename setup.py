@@ -268,6 +268,9 @@ if __name__ == '__main__':
         entry_points={
             'console_scripts': [
                 'neural_engine = intel_extension_for_transformers.backends.neural_engine:neural_engine_bin',
+                'neuralchat = neural_chat.cli.cli_commands:neuralchat_execute',
+                'neuralchat_server = neural_chat.server.server_commands:neuralchat_server_execute',
+                'neuralchat_client = neural_chat.server.server_commands:neuralchat_client_execute'
             ]
         },
         python_requires='>=3.7.0',

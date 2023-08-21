@@ -32,13 +32,35 @@ For [MPT](https://huggingface.co/mosaicml/mpt-7b-chat), it uses the gpt-neox-20b
 If you don't have a fine-tuned model, please remove the 'peft_model_path' parameter.
 
 ```bash
+# completion template
 python generate.py \
         --base_model_path "mosaicml/mpt-7b-chat" \
         --peft_model_path "./mpt_peft_finetuned_model" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
         --trust_remote_code \
+        --task completion \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
+
+# chat template
+python generate.py \
+        --base_model_path "mosaicml/mpt-7b-chat" \
+        --peft_model_path "./mpt_peft_finetuned_model" \
+        --tokenizer_name "EleutherAI/gpt-neox-20b" \
+        --use_kv_cache \
+        --trust_remote_code \
+        --task chat \
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
+
+# summarization template
+python generate.py \
+        --base_model_path "mosaicml/mpt-7b-chat" \
+        --peft_model_path "./mpt_peft_finetuned_model" \
+        --tokenizer_name "EleutherAI/gpt-neox-20b" \
+        --use_kv_cache \
+        --trust_remote_code \
+        --task summarization \
+        --instructions "Editor's note: In our Behind the Scenes series, CNN correspondents share their experiences in covering news and analyze the stories behind the events. Here, Soledad O'Brien takes users inside a jail where many of the inmates are mentally ill. An inmate housed on the 'forgotten floor,' where many mentally ill inmates are housed in Miami before trial. MIAMI, Florida (CNN) -- The ninth floor of the Miami-Dade pretrial detention facility is dubbed the 'forgotten floor.' Here, inmates with the most severe mental illnesses are incarcerated until they're ready to appear in court. Most often, they face drug charges or charges of assaulting an officer --charges that Judge Steven Leifman says are usually 'avoidable felonies.'"
 ```
 
 If you want to accelerate the generation, you can use the key/value cache for decoding by adding the flag `--use_kv_cache`, and use jit trace by `pip install optimum-intel` and adding the flag `--jit`.
@@ -88,6 +110,7 @@ python generate.py \
         --base_model_path "decapoda-research/llama-7b-hf" \
         --peft_model_path "./llama_peft_finetuned_model" \
         --use_slow_tokenizer \
+        --use_kv_cache \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
@@ -100,6 +123,7 @@ python generate.py \
         --repetition_penalty 1.2 \
         --base_model_path "decapoda-research/llama-7b-hf" \
         --use_slow_tokenizer \
+        --use_kv_cache \
         --instructions "Tell me about China."
 ```
 

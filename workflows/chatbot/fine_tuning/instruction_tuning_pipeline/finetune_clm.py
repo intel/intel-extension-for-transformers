@@ -281,6 +281,12 @@ class FinetuneArguments:
         default=False,
         metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
     )
+    task: Optional[str] = field(
+        default="completion",
+        metadata={"help": "task name, different task means different data format.",
+            "choices": ["completion", "chat", "summarization"]
+            },
+    )
 
 
 def find_all_linear_names(model):
@@ -478,7 +484,8 @@ def main():
     # Load model
     if model_args.model_name_or_path:
         model_dtype = torch.bfloat16 if training_args.bf16 else None
-        if re.search("mpt", model_args.model_name_or_path, re.IGNORECASE):
+        if (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
+            re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
             from models.mpt.modeling_mpt import MPTForCausalLM
 
             model = MPTForCausalLM.from_pretrained(
