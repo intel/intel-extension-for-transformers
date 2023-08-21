@@ -159,7 +159,7 @@ class ChatDataPreprocess:
 
                 input_ids = prompt_ids + resp_ids  + [tokenizer.eos_token_id]
                 if not finetune_args.train_on_inputs:
-                    labels = [-100] * len(prompt_ids) + resp_ids + [tokenizer.eos_token_id]
+                    labels = [IGNORE_INDEX] * len(prompt_ids) + resp_ids + [tokenizer.eos_token_id]
                 else:
                     labels = prompt_ids + resp_ids + [tokenizer.eos_token_id]
 
@@ -167,7 +167,7 @@ class ChatDataPreprocess:
                 input_len = len(input_ids)
                 pad_len = data_args.max_seq_length - input_len
                 input_ids = input_ids + [tokenizer.eos_token_id] * pad_len
-                labels = labels + [-100] * pad_len
+                labels = labels + [IGNORE_INDEX] * pad_len
                 attention_mask = [1] * input_len + [0] * pad_len
 
                 assert len(input_ids) == data_args.max_seq_length
@@ -197,6 +197,9 @@ class SummarizationDataPreprocess:
             examples["input_ids"] = []
             examples["labels"] = []
             examples["attention_mask"] = []
+            examples["decoder_input_ids"] = []
+            examples["decoder_attention_mask"] = []
+            examples["decoder_labels"] = []
 
             for article, highlight in zip(articles, highlights):
                 max_input = data_args.max_source_length - len(template_ids)
@@ -204,20 +207,29 @@ class SummarizationDataPreprocess:
                 article_tokens = tokenizer.tokenize(article)[:max_input]
                 prompt_ids = tokenizer.convert_tokens_to_ids(article_tokens) + template_ids
 
-                max_resp = data_args.max_seq_length - len(prompt_ids) - 1
-                resp_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(highlight))[:max_resp]
+                # for inference
+                decoder_input_ids = copy.deepcopy(prompt_ids)
 
-                input_ids = prompt_ids + resp_ids  + [tokenizer.eos_token_id]
+                max_resp = data_args.max_seq_length - len(prompt_ids) - 1
+                resp_ids = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(highlight))[:max_resp] + \
+                        [tokenizer.eos_token_id]
+
+                # for inference
+                max_decoder_labels_len = data_args.max_seq_length - data_args.max_source_length - 1
+                decoder_labels = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(highlight)
+                        )[:max_decoder_labels_len] + [tokenizer.eos_token_id]
+
+                input_ids = prompt_ids + resp_ids
                 if not finetune_args.train_on_inputs:
-                    labels = [-100] * len(prompt_ids) + resp_ids + [tokenizer.eos_token_id]
+                    labels = [IGNORE_INDEX] * len(prompt_ids) + resp_ids
                 else:
-                    labels = prompt_ids + resp_ids + [tokenizer.eos_token_id]
+                    labels = prompt_ids + resp_ids
 
                 # padding
                 input_len = len(input_ids)
                 pad_len = data_args.max_seq_length - input_len
                 input_ids = input_ids + [tokenizer.eos_token_id] * pad_len
-                labels = labels + [-100] * pad_len
+                labels = labels + [IGNORE_INDEX] * pad_len
                 attention_mask = [1] * input_len + [0] * pad_len
 
                 assert len(input_ids) == data_args.max_seq_length
@@ -227,6 +239,20 @@ class SummarizationDataPreprocess:
                 examples["input_ids"].append(input_ids)
                 examples["labels"].append(labels)
                 examples["attention_mask"].append(attention_mask)
+
+                # left padding for inference
+                input_len = len(decoder_input_ids)
+                pad_len = data_args.max_source_length - input_len
+                decoder_input_ids = [tokenizer.eos_token_id] * pad_len + decoder_input_ids
+                decoder_attention_mask = [0] * pad_len + [1] * input_len
+
+                input_len = len(decoder_labels)
+                pad_len = data_args.max_seq_length - data_args.max_source_length - input_len
+                decoder_labels = decoder_labels + [IGNORE_INDEX] * pad_len
+                examples["decoder_input_ids"].append(decoder_input_ids)
+                examples["decoder_labels"].append(decoder_labels)
+                examples["decoder_attention_mask"].append(decoder_attention_mask)
+
 
             return examples
 
@@ -251,9 +277,9 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
             
             new_datasets[new_key] = datasets.Dataset.from_dict(prompts)
 
-
-
         preprocess_fn = preprocess.tokenize_func(tokenizer, data_args, finetune_args)
+
+        return new_datasets, preprocess_fn
 
     elif finetune_args.task == "summarization":
         preprocess = SummarizationDataPreprocess()
@@ -278,4 +304,4 @@ def preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args):
     else:
         raise NotImplementedError(f'finetune task data preprocessing is not support currently.')
 
-    return new_datasets, preprocess_fn
+    return raw_datasets, preprocess_fn

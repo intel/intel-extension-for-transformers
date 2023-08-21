@@ -21,6 +21,7 @@ import datasets
 import logging
 import os
 import sys
+sys.path.append("/data2/lkk/llama/test_pr/intel-extension-for-transformers")
 import transformers
 from transformers.modeling_utils import unwrap_model
 from dataclasses import dataclass, field
@@ -216,6 +217,21 @@ class DataArguments:
         metadata={
             "help": "The maximum total source sequence length after tokenization. Sequences longer "
             "than this will be truncated."
+        },
+    )
+    max_new_tokens: Optional[int] = field(
+        default=128,
+        metadata={
+            "help": "The maximum generation sequence length when do generation."
+        },
+    )
+    num_beams: Optional[int] = field(
+        default=4,
+        metadata={
+            "help": (
+                "Number of beams to use for evaluation. This argument will be passed to ``model.generate``, "
+                "which is used during ``evaluate`` and ``predict``."
+            )
         },
     )
     eval_dataset_size: int = field(
@@ -566,19 +582,26 @@ def main():
             tokenized_datasets_, data_args.max_seq_length
         )
 
+    print(tokenized_datasets)
+
+    if training_args.do_eval:
+        if "test" not in tokenized_datasets:
+            logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
+            tokenized_datasets = tokenized_datasets["train"].train_test_split(
+                test_size=data_args.eval_dataset_size, shuffle=True, seed=42
+            )
+        eval_dataset = tokenized_datasets["test"]
+        if data_args.max_eval_samples is not None:
+            eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
+
+    print(eval_dataset[0])
+
     if training_args.do_train:
         if "train" not in tokenized_datasets:
             raise ValueError("--do_train requires a train dataset")
         train_dataset = tokenized_datasets["train"]
         if data_args.max_train_samples is not None:
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
-
-    if training_args.do_eval:
-        if "test" not in tokenized_datasets:
-            raise ValueError("--do_eval requires a test dataset")
-        eval_dataset = tokenized_datasets["test"]
-        if data_args.max_eval_samples is not None:
-            eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 
     # Data collator
     # This one will take care of randomly masking the tokens.
@@ -668,16 +691,33 @@ def main():
                     training_args.output_dir, state_dict=unwrapped_model.state_dict()
                 )
 
-        if finetune_args.do_lm_eval:
-            model.eval()
+        if finetune_args.do_lm_eval and finetune_args.task != "summarization":
+            unwrapped_model.eval()
             from intel_extension_for_transformers.evaluation.lm_eval import evaluate
-            results = evaluate(
-                    model="hf-causal",
-                    model_args='pretrained='+model_args.model_name_or_path+',tokenizer='+model_args.model_name_or_path+',dtype=float16',
-                    user_model=model,
-                    batch_size=training_args.per_device_eval_batch_size,
-                    tasks=finetune_args.lm_eval_tasks,)
-            logger.info(results)
+            with training_args.main_process_first(desc="lm_eval"):
+                if is_main_process(training_args.local_rank):
+                    with torch.no_grad():
+                        results = evaluate(
+                                model="hf-causal",
+                                model_args='pretrained='+model_args.model_name_or_path+\
+                                        ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
+                                user_model=unwrapped_model,
+                                device=unwrapped_model.device.type,
+                                batch_size=training_args.per_device_eval_batch_size,
+                                tasks=finetune_args.lm_eval_tasks,)
+                        logger.info(results)
+
+        if finetune_args.task == "summarization":
+            from eval_utils import compute_rouge_metric
+            gen_kwargs = {
+                    "num_beams": data_args.num_beams,
+                    "max_new_tokens": data_args.max_new_tokens,
+                    }
+            with training_args.main_process_first(desc="summarization eval"):
+                if is_main_process(training_args.local_rank):
+                    results = compute_rouge_metric(unwrapped_model, tokenizer, eval_dataset,
+                            training_args, gen_kwargs)
+                    logger.info(results)
 
 
 
