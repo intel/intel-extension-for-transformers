@@ -73,9 +73,9 @@ RUN source activate && conda activate chatbot-demo && \
     pip install schema && \
     pip install datasets torch transformers sentencepiece peft evaluate nltk rouge_score && \
     cd /root/chatbot && git clone https://github.com/intel/intel-extension-for-transformers.git \
-    && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ && pip install -r requirements.txt
+    && cd ./intel-extension-for-transformers/neural_chat/docker/inference/ && pip install -r requirements.txt
 
-WORKDIR /root/chatbot/intel-extension-for-transformers/workflows/chatbot/inference/
+WORKDIR /root/chatbot/intel-extension-for-transformers/neural_chat/docker/inference/
 
 
 # HABANA environment
@@ -98,7 +98,7 @@ RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
     pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
 
 RUN git clone https://github.com/intel/intel-extension-for-transformers.git \
-    && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ \
+    && cd ./intel-extension-for-transformers/neural_chat/docker/inference/ \
     && pip install -r requirements.txt
 
-WORKDIR /intel-extension-for-transformers/workflows/chatbot/inference/
+WORKDIR /intel-extension-for-transformers/neural_chat/docker/inference/
