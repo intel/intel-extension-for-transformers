@@ -52,6 +52,7 @@ parser.add_argument("--weight_only_bits", type=int, default=8)
 parser.add_argument("--weight_only_group", type=int, default=-1)
 parser.add_argument("--weight_only_scheme", default="sym")
 parser.add_argument("--weight_only_sym_full_range", action="store_true")
+parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_or_path of peft model")
 
 args = parser.parse_args()
 if args.ipex:
@@ -184,6 +185,10 @@ def get_user_model():
             revision=args.revision,
         )
         tokenizer = AutoTokenizer.from_pretrained(args.model)
+
+    if args.peft_model_id is not None:
+        from peft import PeftModel
+        user_model = PeftModel.from_pretrained(user_model, args.peft_model_id)
 
     # to channels last
     user_model = user_model.to(memory_format=torch.channels_last)
