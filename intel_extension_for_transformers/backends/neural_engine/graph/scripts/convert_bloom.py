@@ -101,6 +101,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
     list_vars = model.state_dict()
     for name in list_vars.keys():
         src = name
+        if "query_key_value" in src:
+            q, k, v = list_vars[src].reshape(config.n_head, 3, -1).unbind(1)
+            list_vars[src] = torch.cat([q, k, v], dim=0).reshape_as(list_vars[src])
+
+
         data = list_vars[src].squeeze().numpy()
         data = data.astype(np.float32)
 
