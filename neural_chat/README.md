@@ -1,8 +1,8 @@
 <div align="center">
 
-Intel® NeuralChat
+NeuralChat
 ===========================
-<h3> An open-source Python library that empowers users to easily create a chatbot with a diverse range of plugins.</h3>
+<h3> An open-source Python library that empowers users to create user own chatbot on any device within minutes.</h3>
 
 ---
 <div align="left">
@@ -13,7 +13,7 @@ Intel® NeuralChat
 
 2. [Installation](#installation)
 
-3. [Get Started](#get-started)
+3. [Getting Started](#getting-started)
 
     3.1 [Local Mode](#local-mode)
 
@@ -23,11 +23,11 @@ Intel® NeuralChat
 
     3.2.2 [Access Server](#access-server)
 
-4. [Advance Topics](#advance-topics)
+4. [Advanced Topics](#advanced-topics)
 
 ## Introduction
 
-NeuralChat is a general chat framework designed to easily create user own chatbot that can be efficiently deployed on Intel CPU/GPU, Habana HPU and Nvidia GPU. NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning and LLM inference with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot and deploy on those platforms rapidly.
+NeuralChat is a general chat framework designed to easily create user own chatbot that can be efficiently deployed across different architectures (e.g., Intel Xeon Scalable processor, Habana Gaudi AI processors and Nvidia Data Center GPUs). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning and LLM inference with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot and deploy on those platforms rapidly.
 
 <a target="_blank" href="./assets/pictures/neuralchat.png">
 <p align="center">
@@ -41,7 +41,7 @@ NeuralChat is a general chat framework designed to easily create user own chatbo
 
 NeuralChat is seamlessly integrated into the Intel Extension for Transformers. Please refer to [Installation](../docs/installation.md) page for step by step instructions.
 
-## Get Started
+## Getting Started
 
 NeuralChat could be deployed as local mode and server mode.
 
@@ -83,7 +83,7 @@ Using `curl` command like below to post request to the launched chatbot server.
 curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
 ```
 
-## Advance Topics
+## Advanced Topics
 
 ### Plugins
 
@@ -116,7 +116,7 @@ User could enable, disable, and even change the default behavior of all supporte
 ```python
 from neural_chat import build_chatbot, PipelineConf, plugins
 
-plugins.retrival.enabe = True
+plugins.retrival.enable = True
 plugins.retrival.path = '/path/to/user/doc'
 conf = PipelineConf(plugins=plugins)
 chatbot = build_chatbot(conf)
