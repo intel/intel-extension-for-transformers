@@ -189,6 +189,9 @@ python finetune_clm.py \
         --no_cuda \
 ```
 
+**note:** set `--do_lm_eval` to evaluate model with `truthfulqa_mc` metric, and you can set `--lm_eval_tasks` to evaluate more tasks supported in [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)
+
+
 - use the below command line for finetuning chatbot on the [HuggingFaceH4/oasst1_en](https://huggingface.co/datasets/HuggingFaceH4/oasst1_en).
 
 ```bash
@@ -243,6 +246,8 @@ python finetune_clm.py \
 
 # the script also support other models, like mpt.
 ```
+
+**note:** Use `rouge` metric to evaluate model on summarization task.
 
 - use the below command line for code tuning with `meta-llama/Llama-2-7b-hf` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
@@ -577,3 +582,10 @@ You could also indicate `--peft` to switch peft method in P-tuning, Prefix tunin
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 
 Add option **"--use_fast_tokenizer False"** when using latest transformers if you met failure in llama fast tokenizer for llama, The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`
+
+# Evaluation
+
+- For task=completion/chat, set `--do_lm_eval` to evaluate model with `truthfulqa_mc` metric, and you can set `--lm_eval_tasks` to evaluate more tasks supported in [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)
+- For task=summarization, we use `rouge` metric.
+- For custom evaluation function, you can refer to `instruction_tuning_pipeline/eval_utils.py`, and call it at end of the training
+ 

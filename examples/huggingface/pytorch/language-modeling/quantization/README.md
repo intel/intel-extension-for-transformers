@@ -30,6 +30,7 @@ Here is how to run the scripts:
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+# "--peft_model_id" is used to loaded PEFT weights from peft_model_id
 python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \
@@ -37,6 +38,7 @@ python run_clm_no_trainer.py \
     --alpha 1.0 \
     --output_dir "saved_results" \
     --ipex \
+    --peft_model_id "peft_model_id"
 ```
 
 ```bash
@@ -70,6 +72,7 @@ python run_clm_no_trainer.py \
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+# "--peft_model_id" is used to loaded PEFT weights from peft_model_id
 python run_clm_no_trainer.py \
     --model facebook/opt-2.7b \
     --quantize \
@@ -77,7 +80,8 @@ python run_clm_no_trainer.py \
     --alpha 0.5 \
     --ipex \
     --output_dir "saved_results" \
-    --int8_bf16_mixed
+    --int8_bf16_mixed \
+    --peft_model_id "peft_model_id"
 ```
 
 #### Accuracy with lm_eval
@@ -99,6 +103,7 @@ python run_clm_no_trainer.py \
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+# "--peft_model_id" is used to loaded PEFT weights from peft_model_id
 python run_clm_no_trainer.py \
     --model decapoda-research/llama-7b-hf \
     --quantize \
@@ -106,7 +111,8 @@ python run_clm_no_trainer.py \
     --alpha 0.8 \
     --ipex \
     --output_dir "saved_results" \
-    --int8_bf16_mixed
+    --int8_bf16_mixed \
+    --peft_model_id "peft_model_id"
 ```
 
 #### Accuracy with lm_eval
