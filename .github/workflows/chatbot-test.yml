@@ -29,4 +29,3 @@ jobs:
   call-inference-mosaicml-7b-chat:
     uses: ./.github/workflows/chatbot-inference-mosaicml-mpt-7b-chat.yml
 
-
