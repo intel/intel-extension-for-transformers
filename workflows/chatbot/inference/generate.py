@@ -2,6 +2,7 @@ import argparse
 import copy, time
 from datetime import datetime
 import torch
+from queue import Queue
 import re, os, logging
 from threading import Thread
 import contextlib
@@ -102,6 +103,12 @@ def parse_args():
         type=int,
         default=128,
         help="The maximum number of new tokens to generate.",
+    )
+    parser.add_argument(
+        "--hf_access_token",
+        type=str,
+        default=None,
+        help="Huggingface token to access model",
     )
     parser.add_argument(
         "--num_beams",
@@ -330,6 +337,7 @@ def load_model(
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
+    hf_access_token=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -362,11 +370,12 @@ def load_model(
         tokenizer_name,
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+        token=hf_access_token,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name, low_cpu_mem_usage=True
+                model_name, low_cpu_mem_usage=True, token=hf_access_token
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
@@ -379,6 +388,7 @@ def load_model(
                 torch_dtype=torch.bfloat16,
                 low_cpu_mem_usage=True,
                 torchscript=cpu_jit,
+                token=hf_access_token,
             )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
@@ -389,7 +399,7 @@ def load_model(
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
+                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, token=hf_access_token
             )
     else:
         raise ValueError(
@@ -467,7 +477,7 @@ def load_model(
             from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
             model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, token=hf_access_token)
             model = MPTTSModelForCausalLM(
                 model, config, use_cache=use_cache, model_dtype=torch.bfloat16
             )
@@ -539,9 +549,11 @@ def predict_stream(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
+    return_stats = params["return_stats"] if "return_stats" in params else False
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    errors_queue = Queue()
     task = params.get("task", "")
 
     if task != "":
@@ -586,25 +598,28 @@ def predict_stream(**params):
         )
 
         def generate_output():
-            with torch.no_grad():
-                with torch.cpu.amp.autocast(
-                    enabled=True, dtype=torch.bfloat16, cache_enabled=True
-                ):
-                    generation_kwargs = dict(
-                        streamer=streamer,
-                        generation_config=generation_config,
-                        return_dict_in_generate=True,
-                    )
-                    generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
-                        [
-                            StopOnTokens(
-                                min_length=max(max_new_tokens - 20, 0),
-                                start_length=input_token_len,
-                                stop_token_id=stop_token_ids,
-                            )
-                        ]
-                    )
-                    return model.generate(**input_tokens, **generation_kwargs)
+            try:
+                with torch.no_grad():
+                    with torch.cpu.amp.autocast(
+                        enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                    ):
+                        generation_kwargs = dict(
+                            streamer=streamer,
+                            generation_config=generation_config,
+                            return_dict_in_generate=True,
+                        )
+                        generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
+                            [
+                                StopOnTokens(
+                                    min_length=max(max_new_tokens - 20, 0),
+                                    start_length=input_token_len,
+                                    stop_token_id=stop_token_ids,
+                                )
+                            ]
+                        )
+                        return model.generate(**input_tokens, **generation_kwargs)
+            except Exception as e:
+                errors_queue.put(e)
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -655,21 +670,23 @@ def predict_stream(**params):
         # generation_config.top_p = top_p
         generation_config.temperature = temperature
         generation_config.repetition_penalty = repetition_penalty
-
         def generate_output():
-            with torch.no_grad():
-                return model.generate(
-                    **input_tokens,
-                    **generate_kwargs,
-                    streamer=streamer,
-                    generation_config=generation_config,
-                    return_dict_in_generate=True,
-                    output_scores=True,
-                    max_new_tokens=max_new_tokens,
-                    lazy_mode=True,
-                    hpu_graphs=use_hpu_graphs,
-                    ignore_eos=False,
-                )
+            try:
+                with torch.no_grad():
+                    return model.generate(
+                        **input_tokens,
+                        **generate_kwargs,
+                        streamer=streamer,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True,
+                        output_scores=True,
+                        max_new_tokens=max_new_tokens,
+                        lazy_mode=True,
+                        hpu_graphs=use_hpu_graphs,
+                        ignore_eos=False,
+                    )
+            except Exception as e:
+                errors_queue.put(e)
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -679,6 +696,14 @@ def predict_stream(**params):
         )
     output_word_len = 0
 
+    generation_thread.join(0.1)
+    if generation_thread.is_alive():
+        pass
+    else:
+        thread_exception = errors_queue.get()
+        raise thread_exception
+    # prevent crash if no words are coming out
+    first_token_output_time = datetime.now()
     for new_text in streamer:
         if len(new_text) == 0:
             continue
@@ -697,14 +722,15 @@ def predict_stream(**params):
         if output_word_len != 1
         else 0
     )
-    stats = {
-        "input_token_len": input_token_len,
-        "output_word_len": output_word_len,
-        "duration": duration,
-        "first_word_latency": first_word_latency,
-        "msecond_per_word": msecond_per_word,
-    }
-    yield "END_OF_STREAM_STATS={}".format(stats)
+    if return_stats:
+        stats = {
+            "input_token_len": input_token_len,
+            "output_word_len": output_word_len,
+            "duration": duration,
+            "first_word_latency": first_word_latency,
+            "msecond_per_word": msecond_per_word,
+        }
+        yield "END_OF_STREAM_STATS={}".format(stats)
 
 
 def predict(**params):
@@ -940,6 +966,7 @@ def main():
         use_cache=args.use_kv_cache,
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
+        hf_access_token=args.hf_access_token
     )
 
     if args.habana:
