@@ -582,8 +582,6 @@ def main():
             tokenized_datasets_, data_args.max_seq_length
         )
 
-    print(tokenized_datasets)
-
     if training_args.do_eval:
         if "test" not in tokenized_datasets:
             logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
@@ -593,8 +591,6 @@ def main():
         eval_dataset = tokenized_datasets["test"]
         if data_args.max_eval_samples is not None:
             eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
-
-    print(eval_dataset[0])
 
     if training_args.do_train:
         if "train" not in tokenized_datasets:
