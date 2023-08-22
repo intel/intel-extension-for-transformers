@@ -12,9 +12,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Load environment variables
-        uses: dotenv-actions/setup-dotenv@v2
+        uses: actions/dotenv-action 
         with:
-          dotenv_path: ~/itrex-actions-runner/.env
+          path: ~/itrex-actions-runner/.env
+          export-variables: true
 
       - name: Build Docker Image
         run: echo "token is $HF_ACCESS_TOKEN"
