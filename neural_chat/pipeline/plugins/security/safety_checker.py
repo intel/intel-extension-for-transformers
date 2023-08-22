@@ -33,7 +33,7 @@ def convert_fullwidth_to_halfwidth(query):
     return content
 
 @register_plugin("safety_checker")
-class SensitiveChecker:
+class SafetyChecker:
     def __init__(self, dict_path=None, matchType=2):
         if dict_path == None or (not os.path.exists(dict_path)):
             dict_path = os.path.dirname(os.path.abspath(__file__))

@@ -394,16 +394,16 @@ class PipelineConfig:
                  model_name_or_path="meta-llama/Llama-2-7b-hf",
                  tokenizer_name_or_path=None,
                  device="auto",
-                 plugin=plugins,
+                 plugins=plugins,
                  loading_config=None,
                  optimization_config=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.device = device
-        self.plugin = plugin
+        self.plugins = plugins
         self.loading_config = loading_config if loading_config is not None else LoadingModelConfig()
         self.optimization_config = optimization_config if optimization_config is not None else OptimizationConfig()
-        for plugin_name, plugin_value in self.plugin.items():
+        for plugin_name, plugin_value in self.plugins.items():
             if plugin_value['enable']:
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])

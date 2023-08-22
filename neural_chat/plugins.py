@@ -15,14 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .utils.docdoct import DotDict
+from .utils.dotdict import DotDict
 
 plugins = DotDict({})
 
 def register_plugin(name):
     def decorator(cls):
+        enable = True if name == "asr" else False
         plugins[name] = {
-            'enable': False,
+            'enable': enable,
             'class': cls,
             'args': {},
             'instance': None

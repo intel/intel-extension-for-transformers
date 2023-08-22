@@ -34,7 +34,8 @@ from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 from .pipeline.plugins.retrievers.indexing.document_parser import DocumentIndexing
 from .pipeline.plugins.retrievers.retriever.langchain import ChromaRetriever
 from .pipeline.plugins.retrievers.retriever import BM25Retriever
-from .pipeline.plugins.security.sensitive_checker import SensitiveChecker
+from .pipeline.plugins.security.safety_checker import SafetyChecker
+from .pipeline.plugins.intent_detector import IntentDetector
 from .models.llama_model import LlamaModel
 from .models.mpt_model import MptModel
 from .models.chatglm_model import ChatGlmModel
@@ -72,7 +73,7 @@ def build_chatbot(config: PipelineConfig=None):
         if is_plugin_enabled(plugin_name):
             plugin_instance = get_plugin_instance(plugin_name)
             if plugin_instance:
-                adapter.register_plugin(plugin_name, plugin_instance)
+                adapter.register_plugin_instance(plugin_name, plugin_instance)
 
     parameters = {}
     parameters["model_name"] = config.model_name_or_path
@@ -89,6 +90,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["dtype"] = config.optimization_config.amp_config.dtype
     parameters["optimization_config"] = config.optimization_config
     adapter.load_model(parameters)
+
     return adapter
 
 def finetune_model(config: FinetuningConfig):

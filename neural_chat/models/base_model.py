@@ -19,7 +19,7 @@ from abc import ABC
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
-from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream
+from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream, MODELS
 from neural_chat.config import GenerationConfig
 from neural_chat.plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
 from neural_chat.utils.common import is_audio_file
@@ -157,7 +157,13 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'pre_llm_inference_actions'):
-                        response = plugin_instance.pre_llm_inference_actions(query)
+                        if plugin_name == "asr" and not is_audio_file(query):
+                            continue
+                        if plugin_name == "intent_detection":
+                            response = plugin_instance.pre_llm_inference_actions(query,
+                                MODELS[self.model_name]["model"], MODELS[self.model_name]["tokenizer"])
+                        else:
+                            response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
                             return "Your query contains sensitive words, please try another query."
                         elif plugin_name == "intent_detection":
@@ -214,7 +220,7 @@ class BaseModel(ABC):
         """
         return get_conv_template("one_shot")
 
-    def register_plugin(self, plugin_name, instance):
+    def register_plugin_instance(self, plugin_name, instance):
         """
         Register a plugin instance.
 
