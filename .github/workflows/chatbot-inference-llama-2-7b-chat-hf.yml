@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build Docker Image
-        run: docker build ./ --target cpu --build-arg http_proxy="$HTTP_PROXY_IMAGE_BUILD" --build-arg https_proxy="$HTTPS_PROXY_IMAGE_BUILD" -f workflows/chatbot/inference/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
+        run: docker build ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="$HTTPS_PROXY_IMAGE_BUILD" -f workflows/chatbot/inference/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |
