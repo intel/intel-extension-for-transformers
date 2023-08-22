@@ -320,7 +320,6 @@ def load_model(
     model_name,
     tokenizer_name,
     device="cpu",
-    dtype="bfloat16",
     use_hpu_graphs=False,
     cpu_jit=False,
     use_cache=True,
@@ -333,7 +332,7 @@ def load_model(
 
     Args:
         model_name (str): The name of the model.
-        device (str, optional): The device for the model. Defaults to 'cpu'. The valid value is 'cpu' or 'hpu'.
+        device (str, optional): The device for the model. Defaults to 'cpu'. The valid value is 'cpu', 'cuda' or 'hpu'.
         use_hpu_graphs (bool, optional): Whether to use HPU graphs. Defaults to False. Only set when device is hpu.
 
     Returns:
@@ -352,8 +351,13 @@ def load_model(
         )
 
         adapt_transformers_to_gaudi()
-    else:
+    elif device == "cpu":
         set_cpu_running_env()
+
+    if optimization_config and optimization_config.amp_config:
+        dtype = optimization_config.amp_config.dtype
+    else:
+        dtype = "float32"
 
     if dtype == "bfloat16":
         torch_dtype = torch.bfloat16
@@ -463,23 +467,30 @@ def load_model(
             model = PeftModel.from_pretrained(model, peft_path)
             model = model.to(dtype=torch_dtype)
 
-        import intel_extension_for_pytorch as intel_ipex
+        if device == "cpu":
+            import intel_extension_for_pytorch as intel_ipex
 
-        model = intel_ipex.optimize(
-            model.eval(),
-            dtype=torch_dtype,
-            inplace=True,
-            level="O1",
-            auto_kernel_selection=True,
-        )
-        if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
-                        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-            from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
+            model = intel_ipex.optimize(
+                model.eval(),
+                dtype=torch_dtype,
+                inplace=True,
+                level="O1",
+                auto_kernel_selection=True,
+            )
+            if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
+                            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
+                from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
-            model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
-            model = MPTTSModelForCausalLM(
-                model, config, use_cache=use_cache, model_dtype=torch_dtype
+                model = jit_trace_mpt_7b(model)
+                config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+                model = MPTTSModelForCausalLM(
+                    model, config, use_cache=use_cache, model_dtype=torch_dtype
+                )
+        elif device == "cuda":
+            model = model.eval().to("cuda")
+        else:
+            raise ValueError(
+                f"Unsupported device {device}, only supports cpu, cuda and hpu now."
             )
 
     if not model.config.is_encoder_decoder:
@@ -493,6 +504,8 @@ def load_model(
     MODELS[model_name]["tokenizer"] = tokenizer
     print("model loaded")
 
+def prepare_inputs(inputs, device):
+    return {k:v.to(device=device) for k,v in inputs.items()}
 
 def predict_stream(**params):
     """
@@ -500,7 +513,7 @@ def predict_stream(**params):
 
     Args:
         params (dict): A dictionary containing the parameters for text generation.
-        `device` (string): Specifies the device type for text generation. It can be either "cpu" or "hpu".
+        `device` (string): Specifies the device type for text generation. It can be either "cpu", "cuda" or "hpu".
         `prompt` (string): Represents the initial input or context provided to the text generation model.
         `temperature` (float): Controls the randomness of the generated text.
                                Higher values result in more diverse outputs.
@@ -552,6 +565,8 @@ def predict_stream(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    if hasattr(model, 'device') and model.device.type != device:
+        device = model.device.type
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -559,7 +574,7 @@ def predict_stream(**params):
     if num_beams == 0:
         num_beams = 1
         do_sample = True
-    if device == "cpu":
+    if device == "cpu" or device == "cuda":
         input_tokens = tokenizer.batch_encode_plus(
             [prompt], return_tensors="pt", padding=True
         )
@@ -585,10 +600,15 @@ def predict_stream(**params):
         )
 
         def generate_output():
+            dtype = model.dtype if hasattr(model, 'dtype') else torch.bfloat16
             with torch.no_grad():
-                with torch.cpu.amp.autocast(
-                    enabled=True, dtype=torch.bfloat16, cache_enabled=True
-                ):
+                context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True) \
+                    if device == "cpu" else torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                if device == "cuda":
+                    input_tokens = prepare_inputs(
+                        input_tokens, model.device if hasattr(model, 'device') else torch.device(device)
+                    )
+                with context:
                     generation_kwargs = dict(
                         streamer=streamer,
                         generation_config=generation_config,
@@ -674,7 +694,7 @@ def predict_stream(**params):
         generation_thread.start()
     else:
         raise ValueError(
-            f"Unsupported device type {device}, only supports cpu and hpu now."
+            f"Unsupported device type {device}, only supports cpu, cuda and hpu now."
         )
     output_word_len = 0
 
@@ -712,7 +732,7 @@ def predict(**params):
 
     Args:
         params (dict): A dictionary containing the parameters for text generation.
-        `device` (string): Specifies the device type for text generation. It can be either "cpu" or "hpu".
+        `device` (string): Specifies the device type for text generation. It can be either "cpu", "cuda" or "hpu".
         `prompt` (string): Represents the initial input or context provided to the text generation model.
         `temperature` (float): Controls the randomness of the generated text.
                                Higher values result in more diverse outputs.
@@ -763,10 +783,12 @@ def predict(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    if hasattr(model, "device") and model.device.type != device:
+        device = model.device.type
     if num_beams == 0:
         num_beams = 1
         do_sample = True
-    if device == "cpu":
+    if device == "cpu" or device == "cuda":
         input_tokens = tokenizer.batch_encode_plus(
             [prompt], return_tensors="pt", padding=True
         )
@@ -790,11 +812,15 @@ def predict(**params):
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
         )
-
+        dtype = model.dtype if hasattr(model, 'dtype') else torch.bfloat16
         with torch.no_grad():
-            with torch.cpu.amp.autocast(
-                enabled=True, dtype=torch.bfloat16, cache_enabled=True
-            ):
+            context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True) \
+                if device == "cpu" else torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+            if device == "cuda":
+                input_tokens = prepare_inputs(
+                    input_tokens, model.device if hasattr(model, 'device') else torch.device(device)
+                )
+            with context:
                 generation_kwargs = dict(
                     generation_config=generation_config, return_dict_in_generate=True
                 )
