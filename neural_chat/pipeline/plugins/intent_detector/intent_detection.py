@@ -8,7 +8,7 @@ def intent_detection(model, query, tokenizer):
     prompt = generate_intent_prompt(query)
     input_ids = tokenizer(prompt, return_tensors="pt").input_ids
     input_ids = input_ids.to(model.device)
-    generate_ids = model.generate(input_ids, max_new_tokens=5, top_k=1, temperature=0.001)
+    generate_ids = model.generate(inputs=input_ids, max_new_tokens=5, top_k=1, temperature=0.001)
     intent = tokenizer.batch_decode(generate_ids[:, input_ids.shape[1]:], skip_special_tokens=False,
                                        clean_up_tokenization_spaces=False)[0]
     return intent
