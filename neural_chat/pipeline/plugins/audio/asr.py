@@ -22,8 +22,10 @@ import time
 import contextlib
 from pydub import AudioSegment
 
+from neural_chat.plugins import register_plugin
 
-class AudioSpeechRecognition:
+@register_plugin('asr')
+class AudioSpeechRecognition():
     """Convert audio to text."""
     def __init__(self, model_name_or_path="openai/whisper-small", bf16=False, device="cpu"):
         self.device = device
@@ -59,3 +61,7 @@ class AudioSpeechRecognition:
         result = self.processor.tokenizer.batch_decode(predicted_ids, skip_special_tokens=True, normalize=True)[0]
         print(f"generated text in {time.time() - start} seconds, and the result is: {result}")
         return result
+
+
+    def pre_llm_inference_actions(self, audio_path):
+        return self.audio2text(audio_path)
