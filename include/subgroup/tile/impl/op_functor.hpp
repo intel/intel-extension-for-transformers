@@ -513,7 +513,7 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
         static constexpr uint32_t tile_elems = matAcc_t::tile_elems;
         static constexpr uint32_t block_elems = matAcc_t::block_elems;
 
-        using mat_in_tile_desc_t = tile_desc_t<tile_size_x, tile_size_y,
+        using mat_in_tile_desc_t = tile_desc_t<tile_size_x, block_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using mat_in_tile_t = tile_t<dtype_in, mat_in_tile_desc_t>;
         using mat_in_payload_t = mem_payload_t<dtype_in, mat_in_tile_desc_t,
@@ -523,22 +523,24 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
         mem_desc_in_t mem_desc_in(args.base, args.shape, coord);
         mat_in_tile_t mat_in;
         mat_in_payload_t mat_in_payload(mem_desc_in);
-        tile_load<cache_hint::cached, cache_hint::cached>(
-                mat_in, mat_in_payload);
         mat_in_tile_acc_t mat_in_acc;
-        elemwise_cvt(mat_in_acc, mat_in);
 
 #pragma unroll
         for (int i = 0; i < tile_size_y / block_size_y; i++) {
+            tile_load<cache_hint::cached, cache_hint::cached>(
+                    mat_in, mat_in_payload);
+            elemwise_cvt(mat_in_acc, mat_in);
 #pragma unroll
             for (int j = 0; j < num_block_x; j++) {
                 auto dst_reg = matAcc.reg.xetla_select<block_elems, 1>(
                         (i * num_block_x + j) * block_elems);
                 auto src_reg = mat_in_acc.reg.xetla_select<block_elems, 1>(
-                        (i * num_block_x + j) * block_elems);
+                        j * block_elems);
                 dst_reg = reduce_helper<reduce_kind, dtype_acc, block_elems>(
                         src_reg, dst_reg);
             }
+            mat_in_payload.template update_tdesc<tdesc_update_dir::y_dir>(
+                    block_size_y);
         }
         // process the tail
         if constexpr ((tile_size_y % block_size_y) != 0) {
@@ -546,12 +548,32 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
                     = tile_size_y / block_size_y * block_size_y;
             constexpr int32_t tail_size_y = tile_size_y % block_size_y;
             constexpr int32_t tail_block_elems = tail_size_y * block_size_x;
+
+            using mat_tail_in_tile_desc_t = tile_desc_t<tile_size_x,
+                    tail_size_y, block_size_x, tail_size_y, reg_layout::tiled>;
+            using mat_tail_in_tile_t
+                    = tile_t<dtype_in, mat_tail_in_tile_desc_t>;
+            using mat_tail_in_payload_t = mem_payload_t<dtype_in,
+                    mat_tail_in_tile_desc_t,
+                    msg_type_v<mat_tail_in_tile_desc_t, mem_desc_in_t::space>,
+                    mem_desc_in_t::layout, mem_desc_in_t::space, gpu_arch::Xe>;
+            using mat_tail_in_tile_acc_t
+                    = tile_t<dtype_acc, mat_tail_in_tile_desc_t>;
+            mat_tail_in_tile_t mat_tail_in;
+            mat_tail_in_payload_t mat_tail_in_payload(mem_desc_in);
+            mat_tail_in_tile_acc_t mat_tail_in_acc;
+            mat_tail_in_payload.template update_tdesc<tdesc_update_dir::y_dir>(
+                    tail_start_y);
+            tile_load<cache_hint::cached, cache_hint::cached>(
+                    mat_tail_in, mat_tail_in_payload);
+            elemwise_cvt(mat_tail_in_acc, mat_tail_in);
 #pragma unroll
             for (int j = 0; j < num_block_x; j++) {
                 auto dst_reg = matAcc.reg.xetla_select<tail_block_elems, 1>(
                         tail_start_y * tile_size_x + j * tail_block_elems);
-                auto src_reg = mat_in_acc.reg.xetla_select<tail_block_elems, 1>(
-                        tail_start_y * tile_size_x + j * tail_block_elems);
+                auto src_reg
+                        = mat_tail_in_acc.reg.xetla_select<tail_block_elems, 1>(
+                                j * tail_block_elems);
                 dst_reg = reduce_helper<reduce_kind, dtype_acc,
                         tail_block_elems>(src_reg, dst_reg);
             }
