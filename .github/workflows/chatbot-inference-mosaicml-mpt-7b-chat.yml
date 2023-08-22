@@ -3,11 +3,6 @@ name: Chatbot inference on mosaicml/mpt-7b-chat
 on:
   workflow_call:
 
-# If there is a new commit, the previous jobs will be canceled
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
   inference:
     name: inference test
