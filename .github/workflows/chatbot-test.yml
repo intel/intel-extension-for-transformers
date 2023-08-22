@@ -29,4 +29,3 @@ jobs:
   call-inference-mpt-7b-chat:
     uses: ./.github/workflows/chatbot-inference-mpt-7b-chat.yml
 
-
