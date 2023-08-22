@@ -78,12 +78,14 @@ struct tile_load_store_func {
 
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         int theight, int bwidth, int bheight, bool check_boundary = false,
-        bool transform = false, bool transpose = false>
+        bool check_oob = true, bool transform = false, bool transpose = false>
 struct tile_load_store_atomic_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
         uint64_t offset = check_boundary ? 33554432UL * swidth : 0;
-
+        using check_tag_t = typename std::conditional<check_oob,
+                global_atomic_oob_check_on_tag,
+                global_atomic_oob_check_off_tag>::type;
         mem_desc_t<dtype, mem_layout::row_major, mem_space::global> mem_desc_c(
                 {c}, {swidth, sheight, spitch}, {0, 0});
 
@@ -107,6 +109,7 @@ struct tile_load_store_atomic_func {
         payload_block_2d_t payload_store(
                 c + offset, swidth, sheight, spitch, 0, 0);
         payload_atomic_t payload_store_add(mem_desc_c);
+        check_tag_t check_tag;
 
         if constexpr (check_boundary) {
             payload_store_add.template update_tdesc<tdesc_update_dir::y_dir>(
@@ -118,7 +121,7 @@ struct tile_load_store_atomic_func {
         matA.reg = 0;
         tile_store(matA, payload_store);
         SW_BARRIER();
-        tile_store(matBias, payload_store_add);
+        tile_store(matBias, payload_store_add, check_tag);
     }
 };
 

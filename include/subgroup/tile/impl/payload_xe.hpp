@@ -286,11 +286,11 @@ public:
     }
 
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
-    __XETLA_API void update_tdesc(long offset) {
+    __XETLA_API void update_tdesc(int offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
-            base_offset += offset * sizeof(dtype);
+            base_offset += int64_t(offset) * sizeof(dtype);
         } else {
-            base_offset += offset * pitch_in_bytes;
+            base_offset += int64_t(offset) * pitch_in_bytes;
         }
     }
 };
@@ -333,8 +333,8 @@ public:
                       && (block_bytes % max_store_bytes) == 0)
             ? 32
             : 16;
-    static constexpr uint32_t num_channel_x = block_size_x;
 
+    static constexpr uint32_t num_channel_x = block_size_x;
     static constexpr uint32_t num_channel_y = num_channel / num_channel_x;
     static constexpr uint32_t store_elems = num_channel_y * block_size_x;
 
@@ -447,11 +447,11 @@ public:
     }
 
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
-    __XETLA_API void update_tdesc(long offset) {
+    __XETLA_API void update_tdesc(int offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
-            address += offset * sizeof(dtype);
+            address += int64_t(offset) * sizeof(dtype);
         } else {
-            address += offset * pitch_in_bytes;
+            address += int64_t(offset) * pitch_in_bytes;
         }
     }
 };

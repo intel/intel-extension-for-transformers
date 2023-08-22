@@ -279,4 +279,11 @@ public:
             = max_store_height_in_elem > tile_size_y ? tile_size_y
                                                      : max_store_height_in_elem;
 };
+
+// This type tag represents "global atomic oob check on" behavior
+struct global_atomic_oob_check_on_tag : std::true_type {};
+
+// This type tag represents "global atomic oob check off" behavior
+struct global_atomic_oob_check_off_tag : std::false_type {};
+
 } // namespace gpu::xetla::subgroup

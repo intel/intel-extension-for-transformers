@@ -204,6 +204,15 @@ TEST(tile_load_store_atomic, esimd) {
             nd_range, result_validate);
 }
 
+TEST(tile_load_store_atomic_disable_oob_check, esimd) {
+    cl::sycl::nd_range<1> nd_range({1}, {1});
+    auto result_validate = std::bind(tile_load_store_result_validate<float>, _1,
+            _2, _3, 128, 64, 32, 32, 0);
+    kernel_run<float,
+            tile_load_store_atomic_func<float, 128, 64, 128, 32, 32, 16, 16,
+                    false, false>>(nd_range, result_validate);
+}
+
 TEST(tile_load_store_atomic_boundary, esimd) {
     cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(tile_load_store_result_validate<float>, _1,

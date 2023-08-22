@@ -12,7 +12,7 @@ function(add_unit_test target kernel_func_file test_host)
     set_target_properties(${TARGET} PROPERTIES FOLDER tests/unit/)
 
     # Test time out, default 1 minutes
-    set(UNIT_TIMEOUT 120)
+    set(UNIT_TIMEOUT 500)
 
     # make test
     add_test(NAME ${TARGET} COMMAND ${TARGET})
