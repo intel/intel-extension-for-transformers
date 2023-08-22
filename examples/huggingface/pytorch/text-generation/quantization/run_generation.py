@@ -220,6 +220,8 @@ if args.quantize:
         tuple(past_key_values),
         attention_mask,
     )
+    # do inference to check example_inputs formats
+    user_model(*example_inputs)
 
     def calib_func(prepared_model):
         for i, (input_ids, last_ind) in enumerate(calib_dataloader):
