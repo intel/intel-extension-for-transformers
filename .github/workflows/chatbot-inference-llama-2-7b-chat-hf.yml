@@ -3,6 +3,10 @@ name: Chatbot inference on llama-2-7b-chat-hf
 on:
   workflow_call:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-inf-lla-7b
+  cancel-in-progress: true
+
 jobs:
   inference:
     name: inference test
@@ -15,17 +19,17 @@ jobs:
         run: cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
 
       - name: Build Docker Image
-        run: docker build ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="$HTTPS_PROXY_IMAGE_BUILD" -f workflows/chatbot/inference/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
+        run: docker build ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f workflows/chatbot/inference/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="$HTTP_PROXY_CONTAINER_RUN" -e https_proxy="$HTTPS_PROXY_CONTAINER_RUN" --name="chatbotinfer" --hostname="chatbotinfer-container" chatbotinfer:latest
+          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer" --hostname="chatbotinfer-container" chatbotinfer:latest
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate chatbot-demo; python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"$HF_ACCESS_TOKEN\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate chatbot-demo; python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"${{ env.HF_ACCESS_TOKEN }}\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
         if: success() || failure()
