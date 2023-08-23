@@ -125,10 +125,10 @@ struct check_memory_default_xmx_xe {
             = mem_layout_b == mem_layout::col_major;
     static constexpr bool is_local_a = mem_space_a == mem_space::local;
     static constexpr bool is_local_b = mem_space_b == mem_space::local;
-    static_assert(
-            !is_local_b, "current don't support matB load from local memory");
     static_assert(!is_local_a || !is_col_major_a,
             "if matA load from local memory, then matA should be row-major");
+    static_assert(!is_local_b || !is_col_major_b,
+            "if matB load from local memory, then matB should be row-major");
 };
 
 template <typename arch_attr, typename dtype_mma, int tile_size_x_a,

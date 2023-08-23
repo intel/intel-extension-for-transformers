@@ -463,6 +463,7 @@ tile_load(tile_t &tile, payload_t &payload) {
     using load_dtype = typename payload_t::mem_dtype;
     constexpr uint32_t num_channel_y = payload_t::num_channel_y;
     constexpr uint32_t load_elems = num_channel_y * tile_desc::block_size_x;
+    static constexpr bool mem_transform = payload_t::mem_transform;
 #pragma unroll
     for (int i = 0; i < tile_desc::tile_size_y / tile_desc::block_size_y; i++) {
         uint32_t offset_y = i * tile_desc::block_size_y;
@@ -508,6 +509,10 @@ tile_load(tile_t &tile, payload_t &payload) {
                                 payload.address + address_offset);
             }
         }
+    }
+    if constexpr (mem_transform) {
+        SW_BARRIER();
+        vnni_convert(tile);
     }
 }
 

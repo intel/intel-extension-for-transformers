@@ -573,6 +573,10 @@ private:
             mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
 
 public:
+    static constexpr reg_layout register_layout = tile_desc::register_layout;
+    static constexpr bool mem_transform
+            = (sizeof(dtype) < 4) && register_layout == reg_layout::vnni_tiled;
+
     static constexpr uint32_t tile_bytes
             = tile_size_x * tile_size_y * sizeof(dtype);
     static constexpr uint32_t block_bytes

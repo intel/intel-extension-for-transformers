@@ -173,6 +173,85 @@ elemwise_op(T &mat_Acc) {
     }
 }
 
+/// @brief Converts tiled layout to vnni_tiled layout format.
+///
+/// @tparam T Is the tile data type.
+/// @param mat_Acc Is the reference of the tile object.
+/// @return No return, update the data in-place.
+template <typename T>
+__XETLA_API
+        typename std::enable_if_t<T::register_layout == reg_layout::vnni_tiled>
+        vnni_convert(T &mat_Acc) {
+    constexpr uint32_t tile_size_y = T::tile_size_y;
+    constexpr uint32_t tile_size_x = T::tile_size_x;
+    constexpr uint32_t tile_elems = tile_size_y * tile_size_x;
+    constexpr uint32_t block_size_y = T::block_size_y;
+    constexpr uint32_t block_size_x = T::block_size_x;
+    constexpr uint32_t block_elems = block_size_y * block_size_x;
+    constexpr int32_t num_block_x = tile_size_x / block_size_x;
+    using dtype = typename T::dtype;
+    constexpr int32_t vnni_stride = sizeof(uint32_t) / sizeof(dtype);
+    constexpr int32_t move_cols = block_size_x * vnni_stride;
+    constexpr int32_t move_rows = block_size_y / vnni_stride;
+    xetla_vector<dtype, tile_elems> rdst;
+    static_assert(block_size_y % vnni_stride == 0, "vnni alignement check");
+    if constexpr (tile_size_x == 1) { return; }
+#pragma unroll
+    for (int i = 0; i < tile_size_y / block_size_y; i++) {
+#pragma unroll
+        for (int j = 0; j < num_block_x; j++) {
+            auto reg = (mat_Acc.reg)
+                               .xetla_select<block_elems, 1>(
+                                       (i * num_block_x + j) * block_elems);
+            auto reg_2d = reg.xetla_format<native_type_t<dtype>, block_size_y,
+                    block_size_x>();
+            auto reg_dst = rdst.xetla_select<block_elems, 1>(
+                    (i * num_block_x + j) * block_elems);
+            auto reg_dst_2d = reg_dst.xetla_format<native_type_t<dtype>,
+                    move_rows, move_cols>();
+#pragma unroll
+            for (int vnni_i = 0; vnni_i < vnni_stride; vnni_i++) {
+                reg_dst_2d
+                        .xetla_select<move_rows, 1, block_size_x, vnni_stride>(
+                                0, vnni_i)
+                        = reg_2d.xetla_select<move_rows, vnni_stride,
+                                block_size_x, 1>(vnni_i, 0);
+            }
+        }
+    }
+    // process the tail
+    if constexpr ((tile_size_y % block_size_y) != 0) {
+        constexpr int i = tile_size_y / block_size_y;
+        constexpr uint32_t remain_elems_start = i * block_size_y * tile_size_x;
+        constexpr uint32_t remain_size_y = tile_size_y % block_size_y;
+        constexpr uint32_t remain_block_elems = remain_size_y * block_size_x;
+        static_assert(
+                remain_size_y % vnni_stride == 0, "vnni alignement check");
+        constexpr int32_t remain_move_cols = block_size_x * vnni_stride;
+        constexpr int32_t remain_move_rows = remain_size_y / vnni_stride;
+#pragma unroll
+        for (int j = 0; j < num_block_x; j++) {
+            auto reg = (mat_Acc.reg)
+                               .xetla_select<remain_block_elems, 1>(
+                                       remain_elems_start
+                                       + j * remain_block_elems);
+            auto reg_2d = reg.xetla_format<native_type_t<dtype>, remain_size_y,
+                    block_size_x>();
+            auto reg_dst = rdst.xetla_select<remain_block_elems, 1>(
+                    remain_elems_start + j * remain_block_elems);
+            auto reg_dst_2d = reg_dst.xetla_format<native_type_t<dtype>,
+                    remain_move_rows, remain_move_cols>();
+            for (int vnni_i = 0; vnni_i < vnni_stride; vnni_i++) {
+                reg_dst_2d.xetla_select<remain_move_rows, 1, block_size_x,
+                        vnni_stride>(0, vnni_i)
+                        = reg_2d.xetla_select<remain_move_rows, vnni_stride,
+                                block_size_x, 1>(vnni_i, 0);
+            }
+        }
+    }
+    mat_Acc.reg = rdst;
+}
+
 /// @brief Converts vnni_tiled layout format to tiled layout.
 ///
 /// @tparam T Is the tile data type.

@@ -155,9 +155,11 @@ public:
     static constexpr uint32_t barrier_count
             = enable_periodic_sync ? barrier_count_x + barrier_count_y : 0;
     // current only support matA from slm
-    static constexpr uint32_t slm_size = is_local_a
-            ? sg_tile_m * wg_size_y * k_stride * sizeof(dtype_a)
-            : 0;
+    static constexpr uint32_t slm_size
+            = (is_local_a ? sg_tile_m * wg_size_y * k_stride * sizeof(dtype_a)
+                          : 0)
+            + (is_local_b ? sg_tile_n * wg_size_x * k_stride * sizeof(dtype_b)
+                          : 0);
 
     static constexpr bool is_2d_block_a
             = matA_payload_t::message_type == msg_type::block_2d;

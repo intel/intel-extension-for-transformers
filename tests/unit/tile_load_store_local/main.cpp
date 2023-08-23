@@ -20,6 +20,15 @@
 
 using namespace std::placeholders;
 
+TEST(tile_load_store_vnni_local_func, esimd) {
+    cl::sycl::nd_range<1> nd_range({1}, {1});
+    auto result_validate = std::bind(
+            tile_load_store_result_validate<bf16>, _1, _2, _3, 128, 32, 32);
+    kernel_run<bf16,
+            tile_load_store_vnni_local_func<bf16, 128, 64, 128, 32, 32, 16,
+                    16>>(nd_range, result_validate);
+}
+
 TEST(tile_load_store_local, esimd) {
     cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate = std::bind(

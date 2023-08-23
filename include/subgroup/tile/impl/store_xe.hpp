@@ -48,7 +48,9 @@ struct check_store_type {
                                                          == mem_space::local)
             && (payload_t::message_type == msg_type::scatter)
             && (payload_t::arch_tag == gpu_arch::Xe)
-            && (payload_t::tile_desc::register_layout == reg_layout::tiled));
+            && (payload_t::tile_desc::register_layout == reg_layout::tiled
+                    || payload_t::tile_desc::register_layout
+                            == reg_layout::vnni_tiled));
 
     static constexpr bool is_local_scatter_vnni_col_xe
             = ((payload_t::memory_space == mem_space::local)
