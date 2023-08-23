@@ -17,8 +17,10 @@
 
 from paddlespeech.cli.asr.infer import ASRExecutor
 import time
+from neural_chat.plugins import register_plugin
 
-class ChineseAudioSpeechRecognition:
+@register_plugin('asr_chinese')
+class ChineseAudioSpeechRecognition():
     """Convert audio to text in Chinese."""
     def __init__(self):
         self.asr = ASRExecutor()
@@ -31,3 +33,6 @@ class ChineseAudioSpeechRecognition:
         start = time.time()
         result = self.asr(audio_file=audio_path)
         print(f"generated text in {time.time() - start} seconds, and the result is: {result}")
+
+    def pre_llm_inference_actions(self, audio_path):
+        return self.audio2text(audio_path)
