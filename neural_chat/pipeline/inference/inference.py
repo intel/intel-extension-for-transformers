@@ -354,10 +354,15 @@ def load_model(
     elif device == "cpu":
         set_cpu_running_env()
 
-    if optimization_config and optimization_config.amp_config:
-        dtype = optimization_config.amp_config.dtype
-    else:
-        dtype = "float32"
+    if optimization_config:
+        if optimization_config.amp_config:
+            dtype = optimization_config.amp_config.dtype
+        else:
+            dtype = "float32"
+        if optimization_config.bitsandbytes_config and device == "cuda":
+            bitsandbytes_quant_config = optimization_config.bitsandbytes_config
+        else:
+            bitsandbytes_quant_config = None
 
     if dtype == "bfloat16":
         torch_dtype = torch.bfloat16
@@ -376,7 +381,10 @@ def load_model(
     if re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name, torch_dtype=torch_dtype, low_cpu_mem_usage=True
+                model_name,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
+                quantization_config=bitsandbytes_quant_config,
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
@@ -389,6 +397,7 @@ def load_model(
                 torch_dtype=torch_dtype,
                 low_cpu_mem_usage=True,
                 torchscript=cpu_jit,
+                quantization_config=bitsandbytes_quant_config,
             )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
@@ -399,7 +408,10 @@ def load_model(
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, torch_dtype=torch_dtype, low_cpu_mem_usage=True
+                model_name,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
+                quantization_config=bitsandbytes_quant_config,
             )
     else:
         raise ValueError(
@@ -487,7 +499,8 @@ def load_model(
                     model, config, use_cache=use_cache, model_dtype=torch_dtype
                 )
         elif device == "cuda":
-            model = model.eval().to("cuda")
+            if hasattr(model, "device") and model.device.type != device:
+                model = model.eval().to(device)
         else:
             raise ValueError(
                 f"Unsupported device {device}, only supports cpu, cuda and hpu now."
