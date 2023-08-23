@@ -197,7 +197,7 @@ def get_user_model():
 
     # Set model's seq_len when GPTQ calibration is enabled.
     if args.weight_only_algo == 'GPTQ':
-        user_model.seqlen = args.gptq_max_len
+        user_model.seqlen = args.gptq_pad_max_length
 
     if args.peft_model_id is not None:
         from peft import PeftModel
