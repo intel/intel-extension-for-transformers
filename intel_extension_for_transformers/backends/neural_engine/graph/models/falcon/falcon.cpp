@@ -35,6 +35,8 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
+#define FFN_FUSION 1
+
 // evaluate the transformer
 //
 //   - lctx:      model context
@@ -194,9 +196,14 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
 
     // FFN (pre_layer_norm output)
     {
+      // FFN FUSION
+      if (model.layers[il].ffn[0]->type == NE_TYPE_JBLAS && model.layers[il].ffn[1]->type == NE_TYPE_JBLAS && FFN_FUSION) {
+      cur = ne_ffn_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1],  inpFF);
+    } else {
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], inpFF);
       cur = ne_gelu(ctx0, cur);
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
+    }
     }
 
     cur = ne_add(ctx0, cur, attn_out);

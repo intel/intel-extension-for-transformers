@@ -35,6 +35,8 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
+#define FFN_FUSION 1
+
 // evaluate the transformer
 //
 //   - lctx:      model context
@@ -185,6 +187,10 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
 
     // n = self.mlp(m)
     {
+      // FFN FUSION
+      if (model.layers[il].ffn[0]->type == NE_TYPE_JBLAS && model.layers[il].ffn[1]->type == NE_TYPE_JBLAS && FFN_FUSION) {
+      cur = ne_ffn_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1],  cur);
+    } else {
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], cur);
 
       // GELU activation
@@ -193,6 +199,7 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
       // projection
       // cur = proj_w*cur + proj_b
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
+    }
     }
 
     // x = x + n

@@ -35,6 +35,8 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
+#define FFN_FUSION 1
+
 // evaluate the transformer
 //
 //   - lctx:      model context
@@ -261,6 +263,11 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
       //
       // cur = fc_w*cur + fc_b
       // [3072, N]
+      // FFN FUSION
+      if (model.layers[il].ffn[0]->type == NE_TYPE_JBLAS && model.layers[il].ffn[2]->type == NE_TYPE_JBLAS && FFN_FUSION) {
+      cur = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2], model.layers[il].ffn[1],
+                            model.layers[il].ffn[3], cur);
+    } else {
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], cur);
 
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[1], cur), cur);
@@ -280,6 +287,7 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
 
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], cur), cur);
+    }
     }
 
     // input for next layer

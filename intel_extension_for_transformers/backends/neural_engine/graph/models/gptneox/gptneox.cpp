@@ -34,12 +34,16 @@
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
-
+#define FFN_FUSION 1
 // feed-forward network
 struct ne_tensor* gpt_neox_ff(const model_layer& layer, ne_context* ctx0, ne_tensor* inp) {
   struct ne_tensor* cur = ne_norm(ctx0, inp);
 
   cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.norm[2], cur), cur), ne_repeat(ctx0, layer.norm[3], cur));
+    if (layer.ffn[0]->type == NE_TYPE_JBLAS && layer.ffn[2]->type == NE_TYPE_JBLAS && FFN_FUSION ) {
+      cur = ne_ffn_add_gelu(ctx0, layer.ffn[0], layer.ffn[2], layer.ffn[1],
+                          layer.ffn[3], cur);
+    } else {
 
   cur = ne_mul_mat(ctx0, layer.ffn[0], cur);
 
@@ -51,6 +55,7 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, ne_context* ctx0, ne_ten
   // projection
   // cur = proj_w*cur + proj_b
   cur = ne_mul_mat(ctx0, layer.ffn[2], cur);
+  }
 
   cur = ne_add(ctx0, ne_repeat(ctx0, layer.ffn[3], cur), cur);
   return cur;
