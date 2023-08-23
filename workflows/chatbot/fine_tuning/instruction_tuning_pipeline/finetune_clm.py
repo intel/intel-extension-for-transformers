@@ -21,6 +21,7 @@ import datasets
 import logging
 import os
 import sys
+sys.path.append("/data2/lkk/llama/test_pr/intel-extension-for-transformers")
 import transformers
 from transformers.modeling_utils import unwrap_model
 from dataclasses import dataclass, field
@@ -218,6 +219,24 @@ class DataArguments:
             "than this will be truncated."
         },
     )
+    max_new_tokens: Optional[int] = field(
+        default=128,
+        metadata={
+            "help": "The maximum generation sequence length when do generation."
+        },
+    )
+    num_beams: Optional[int] = field(
+        default=4,
+        metadata={
+            "help": (
+                "Number of beams to use for evaluation. This argument will be passed to ``model.generate``, "
+                "which is used during ``evaluate`` and ``predict``."
+            )
+        },
+    )
+    eval_dataset_size: int = field(
+        default=500, metadata={"help": "Size of validation dataset."}
+    )
 
 
 @dataclass
@@ -286,6 +305,14 @@ class FinetuneArguments:
         metadata={"help": "task name, different task means different data format.",
             "choices": ["completion", "chat", "summarization"]
             },
+    )
+    do_lm_eval: bool = field(
+        default=False,
+        metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
+    )
+    lm_eval_tasks: Optional[List[str]] = field(
+        default_factory=lambda: ["truthfulqa_mc"],
+        metadata={"help": "tasks list for accuracy validation with EleutherAI/lm-evaluation-harness."},
     )
 
 
@@ -424,21 +451,6 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
 
-        if "validation" not in raw_datasets.keys() and training_args.do_eval:
-            raw_datasets["validation"] = load_dataset(
-                data_args.dataset_name,
-                data_args.dataset_config_name,
-                split=f"train[:{data_args.validation_split_percentage}%]",
-                cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
-            )
-            raw_datasets["train"] = load_dataset(
-                data_args.dataset_name,
-                data_args.dataset_config_name,
-                split=f"train[{data_args.validation_split_percentage}%:]",
-                cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
-            )
     else:
         data_files = {}
         dataset_args = {}
@@ -462,24 +474,6 @@ def main():
             **dataset_args,
         )
 
-        # If no validation data is there, validation_split_percentage will be used to divide the dataset.
-        if "validation" not in raw_datasets.keys() and training_args.do_eval:
-            raw_datasets["validation"] = load_dataset(
-                extension,
-                data_files=data_files,
-                split=f"train[:{data_args.validation_split_percentage}%]",
-                cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
-                **dataset_args,
-            )
-            raw_datasets["train"] = load_dataset(
-                extension,
-                data_files=data_files,
-                split=f"train[{data_args.validation_split_percentage}%:]",
-                cache_dir=model_args.cache_dir,
-                use_auth_token=True if model_args.use_auth_token else None,
-                **dataset_args,
-            )
 
     # Load model
     if model_args.model_name_or_path:
@@ -555,11 +549,13 @@ def main():
     tokenizer.padding_side = "left"  # Allow batched inference
 
     raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
+    column_names = list(raw_datasets["train"].features)
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
         tokenized_datasets = raw_datasets.map(
             preprocess_function,
             batched=True,
+            remove_columns=column_names,
             load_from_cache_file=not data_args.overwrite_cache,
         )
 
@@ -586,19 +582,22 @@ def main():
             tokenized_datasets_, data_args.max_seq_length
         )
 
+    if training_args.do_eval:
+        if "test" not in tokenized_datasets:
+            logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
+            tokenized_datasets = tokenized_datasets["train"].train_test_split(
+                test_size=data_args.eval_dataset_size, shuffle=True, seed=42
+            )
+        eval_dataset = tokenized_datasets["test"]
+        if data_args.max_eval_samples is not None:
+            eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
+
     if training_args.do_train:
         if "train" not in tokenized_datasets:
             raise ValueError("--do_train requires a train dataset")
         train_dataset = tokenized_datasets["train"]
         if data_args.max_train_samples is not None:
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
-
-    if training_args.do_eval:
-        if "test" not in tokenized_datasets:
-            raise ValueError("--do_eval requires a test dataset")
-        eval_dataset = tokenized_datasets["test"]
-        if data_args.max_eval_samples is not None:
-            eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 
     # Data collator
     # This one will take care of randomly masking the tokens.
@@ -687,6 +686,35 @@ def main():
                 unwrapped_model.save_pretrained(
                     training_args.output_dir, state_dict=unwrapped_model.state_dict()
                 )
+
+        if finetune_args.do_lm_eval and finetune_args.task != "summarization":
+            unwrapped_model.eval()
+            from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+            with training_args.main_process_first(desc="lm_eval"):
+                if is_main_process(training_args.local_rank):
+                    with torch.no_grad():
+                        results = evaluate(
+                                model="hf-causal",
+                                model_args='pretrained='+model_args.model_name_or_path+\
+                                        ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
+                                user_model=unwrapped_model,
+                                device=unwrapped_model.device.type,
+                                batch_size=training_args.per_device_eval_batch_size,
+                                tasks=finetune_args.lm_eval_tasks,)
+                        logger.info(results)
+
+        if finetune_args.task == "summarization":
+            from eval_utils import compute_rouge_metric
+            gen_kwargs = {
+                    "num_beams": data_args.num_beams,
+                    "max_new_tokens": data_args.max_new_tokens,
+                    }
+            with training_args.main_process_first(desc="summarization eval"):
+                if is_main_process(training_args.local_rank):
+                    results = compute_rouge_metric(unwrapped_model, tokenizer, eval_dataset,
+                            training_args, gen_kwargs)
+                    logger.info(results)
+
 
 
 if __name__ == "__main__":

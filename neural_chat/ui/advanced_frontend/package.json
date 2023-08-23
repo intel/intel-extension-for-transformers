@@ -1,0 +1,52 @@
+{
+  "name": "sveltekit-auth-example",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite dev --port 80 --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "lint": "prettier --check . && eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@fortawesome/free-solid-svg-icons": "6.2.0",
+    "@sveltejs/adapter-auto": "1.0.0-next.75",
+    "@sveltejs/kit": "^1.20.1",
+    "@tailwindcss/typography": "0.5.7",
+    "@types/debug": "4.1.7",
+    "@typescript-eslint/eslint-plugin": "^5.27.0",
+    "@typescript-eslint/parser": "^5.27.0",
+    "autoprefixer": "^10.4.7",
+    "daisyui": "^2.51.6",
+    "debug": "4.3.4",
+    "eslint": "^8.16.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-neverthrow": "1.1.4",
+    "eslint-plugin-svelte3": "^4.0.0",
+    "neverthrow": "5.0.0",
+    "pocketbase": "0.7.0",
+    "postcss": "^8.4.23",
+    "postcss-load-config": "^4.0.1",
+    "postcss-preset-env": "^8.3.2",
+    "prettier": "^2.6.2",
+    "prettier-plugin-svelte": "^2.7.0",
+    "svelte": "^3.59.1",
+    "svelte-check": "^2.7.1",
+    "svelte-fa": "3.0.3",
+    "svelte-preprocess": "^4.10.7",
+    "tailwindcss": "^3.1.5",
+    "ts-pattern": "4.0.5",
+    "tslib": "^2.3.1",
+    "typescript": "^4.7.4",
+    "vite": "^4.3.9"
+  },
+  "type": "module",
+  "dependencies": {
+    "fuse.js": "^6.6.2",
+    "ramda": "^0.29.0",
+    "sse.js": "^0.6.1"
+  }
+}
