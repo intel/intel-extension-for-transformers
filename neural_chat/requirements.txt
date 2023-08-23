@@ -18,4 +18,3 @@ PyPDF2
 langchain
 python-docx
 pip install farm-haystack
-bitsandbytes

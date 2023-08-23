@@ -38,6 +38,7 @@ from transformers import (
 os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
 os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
 from transformers.deepspeed import is_deepspeed_available
+from transformers.utils.bitsandbytes import is_bitsandbytes_available
 
 if is_deepspeed_available():
     import deepspeed
@@ -359,8 +360,14 @@ def load_model(
             dtype = optimization_config.amp_config.dtype
         else:
             dtype = "float32"
-        if optimization_config.bitsandbytes_config and device == "cuda":
-            bitsandbytes_quant_config = optimization_config.bitsandbytes_config
+        if optimization_config.bitsandbytes_config:
+            if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
+                bitsandbytes_quant_config = optimization_config.bitsandbytes_config
+            else:
+                logger.warning(
+                    "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
+                    + " library is available, ignoring bitsandbytes config now."
+                )
         else:
             bitsandbytes_quant_config = None
 

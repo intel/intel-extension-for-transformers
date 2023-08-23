@@ -16,7 +16,9 @@
 # limitations under the License.
 
 import unittest
+import torch
 from transformers import BitsAndBytesConfig
+from transformers.utils.bitsandbytes import is_bitsandbytes_available
 from neural_chat.chatbot import build_chatbot
 from neural_chat.config import PipelineConfig, OptimizationConfig, WeightOnlyQuantizationConfig
 
@@ -40,22 +42,23 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_bitsandbytes_quant(self):
-        config = PipelineConfig(
-            device='cuda',
-            optimization_config=OptimizationConfig(
-                bitsandbytes_config=BitsAndBytesConfig(
-                    load_in_4bit=True,
-                    bnb_4bit_quant_type='nf4',
-                    bnb_4bit_use_double_quant=True,
-                    bnb_4bit_compute_dtype="bfloat16"
+        if is_bitsandbytes_available() and torch.cuda.is_available():
+            config = PipelineConfig(
+                device='cuda',
+                optimization_config=OptimizationConfig(
+                    bitsandbytes_config=BitsAndBytesConfig(
+                        load_in_4bit=True,
+                        bnb_4bit_quant_type='nf4',
+                        bnb_4bit_use_double_quant=True,
+                        bnb_4bit_compute_dtype="bfloat16"
+                    )
                 )
             )
-        )
-        chatbot = build_chatbot(config)
-        self.assertIsNotNone(chatbot)
-        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
+            chatbot = build_chatbot(config)
+            self.assertIsNotNone(chatbot)
+            response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
+            print(response)
+            self.assertIsNotNone(response)
 
 if __name__ == '__main__':
     unittest.main()
