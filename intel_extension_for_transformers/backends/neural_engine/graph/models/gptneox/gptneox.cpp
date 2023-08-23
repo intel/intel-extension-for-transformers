@@ -34,7 +34,9 @@
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
+
 #define FFN_FUSION 1
+
 // feed-forward network
 struct ne_tensor* gpt_neox_ff(const model_layer& layer, ne_context* ctx0, ne_tensor* inp) {
   struct ne_tensor* cur = ne_norm(ctx0, inp);
