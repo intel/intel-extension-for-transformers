@@ -17,8 +17,9 @@
 
 import unittest
 import os
-from neural_chat.chatbot import build_chatbot
-from neural_chat.config import PipelineConfig, GenerationConfig
+from neural_chat import build_chatbot
+from neural_chat import PipelineConfig, GenerationConfig
+from neural_chat import plugins
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
@@ -53,14 +54,33 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_audio_plugin(self):
-        pipeline_config = PipelineConfig(audio_input=True, audio_output=True)
+        plugins.tts.enable = True
+        plugins.tts.args["output_audio_path"]="./output_audio.wav"
+        pipeline_config = PipelineConfig(plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
-        gen_config = GenerationConfig(max_new_tokens=128, audio_output_path="./response.wav")
+        gen_config = GenerationConfig(max_new_tokens=64)
         response = chatbot.predict(query="../../assets/audio/pat.wav", config=gen_config)
         self.assertIsNotNone(response)
         print("output audio path: ", response)
-        self.assertTrue(os.path.exists(gen_config.audio_output_path))
+        self.assertTrue(os.path.exists(plugins.tts.args["output_audio_path"]))
+
+    def test_build_chatbot_with_safety_checker_plugin(self):
+        plugins.safety_checker.enable = True
+        pipeline_config = PipelineConfig(plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="蔡英文是谁？")
+        print("response: ", response)
+        self.assertTrue(response, "Your query contains sensitive words, please try another query.")
+
+    def test_build_chatbot_with_intent_detection_plugin(self):
+        plugins.intent_detection.enable = True
+        pipeline_config = PipelineConfig(plugins=plugins)
+        chatbot = build_chatbot(pipeline_config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="hi")
+        print("response: ", response)
 
 if __name__ == '__main__':
     unittest.main()
