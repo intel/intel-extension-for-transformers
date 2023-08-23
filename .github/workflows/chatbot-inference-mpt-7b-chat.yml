@@ -1,10 +1,10 @@
-name: Chatbot inference on llama-2-7b-chat-hf
+name: Chatbot inference on mosaicml/mpt-7b-chat
 
 on:
   workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-inf-lla-7b
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-inf-mpt-7b
   cancel-in-progress: true
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate chatbot-demo; python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"${{ env.HF_ACCESS_TOKEN }}\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate chatbot-demo; python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
         if: success() || failure()
