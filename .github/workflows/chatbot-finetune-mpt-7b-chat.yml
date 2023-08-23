@@ -65,8 +65,8 @@ jobs:
                 exit 1
               fi
               sleep 30
-              pid0_s=$(docker exec chatbotfinetune-s0 bash -c "ps -p $pid0 -o pid=")
-              pid1_s=$(docker exec chatbotfinetune-s1 bash -c "ps -p $pid1 -o pid=")
+              pid0_s=$(docker exec "chatbotfinetune-s0" bash -c "ps -p $pid0 -o pid=")
+              pid1_s=$(docker exec "chatbotfinetune-s1" bash -c "ps -p $pid1 -o pid=")
             done
           fi
           # output logs
