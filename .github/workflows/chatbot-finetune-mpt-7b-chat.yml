@@ -1,0 +1,87 @@
+name: Chatbot finetune on mosaicml/mpt-7b-chat
+
+on:
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-ft-mpt-7b
+  cancel-in-progress: true
+
+jobs:
+  finetuning:
+    name: finetuning test
+    runs-on: lms-lab
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Load environment variables
+        run: cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
+
+      - name: Build Docker Image
+        run: docker build ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f workflows/chatbot/fine_tuning/docker/Dockerfile -t chatbotfinetune:latest && yes | docker container prune && yes | docker image prune
+
+      - name: Start Docker Container on socket 0
+        id: master_container
+        run: |
+          cid=$(docker ps -q --filter "name=chatbotfinetune-s0")
+          if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
+          numactl --cpunodebind=0 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-s0" --hostname="chatbotfinetune-container-s0" chatbotfinetune:latest
+          master=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-s0")
+          echo "master_node=$master" >> $GITHUB_OUTPUT
+
+      - name: Start Docker Container on socket 1
+        run: |
+          cid=$(docker ps -q --filter "name=chatbotfinetune-s1")
+          if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
+          numactl --cpunodebind=1 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-s1" --hostname="chatbotfinetune-container-s1" chatbotfinetune:latest
+
+      - name: Run Finetuning in Background
+        run: |
+          master_node=${{ steps.master_container.outputs.master_node }}
+          docker exec "chatbotfinetune-s0" bash -c "cd /root/chatbot && source activate && conda activate chatbot-finetuning; sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat.sh $master_node 0"
+          docker exec "chatbotfinetune-s1" bash -c "cd /root/chatbot && source activate && conda activate chatbot-finetuning; sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat.sh $master_node 1"
+
+      - name: Wait for Finetuning Completion
+        run: |
+          pid0=$(cat ./pid0.txt)
+          pid1=$(cat ./pid1.txt)
+          if [ -z "$pid0" ] || [ -z "$pid1" ]; then
+            echo "Error: failed to create finetuning processes. Master pid is $pid0. Slave pid is $pid1"
+            exit 1
+          else
+            # query finetuning process status
+            pid0_s=$(docker exec chatbotfinetune-s0 bash -c "ps -p $pid0 -o pid=")
+            pid1_s=$(docker exec chatbotfinetune-s1 bash -c "ps -p $pid1 -o pid=")
+            while [ ! -z "$pid0_s" ] || [ ! -z "$pid1_s" ]; do
+              if [ -f "./error0.txt" ] && [ -s "./error0.txt" ]; then
+                echo "Error from master ft process:"
+                cat ./error0.txt
+                exit 1
+              fi
+              if [ -f "./error1.txt" ] && [ -s "./error1.txt" ]; then
+                echo "Error from slave ft process:"
+                cat ./error1.txt
+                exit 1
+              fi
+              sleep 30
+              pid0_s=$(docker exec chatbotfinetune-s0 bash -c "ps -p $pid0 -o pid=")
+              pid1_s=$(docker exec chatbotfinetune-s1 bash -c "ps -p $pid1 -o pid=")
+            done
+          fi
+          # output logs
+          echo "Log from master ft process:"
+          cat ./log0.txt
+          echo "Log from master slave process:"
+          cat ./log1.txt
+
+      - name: Stop Container
+        if: success() || failure()
+        run: |
+          cid=$(docker ps -q --filter "name=chatbotfinetune-s0")
+          if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
+          cid=$(docker ps -q --filter "name=chatbotfinetune-s1")
+          if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
+
+      - name: Test Summary
+        run: echo "Finetuning completed successfully"
