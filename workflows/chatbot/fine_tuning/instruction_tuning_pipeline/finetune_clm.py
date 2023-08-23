@@ -575,11 +575,8 @@ def main():
                 concatenated_dataset[column] = reshaped_data
             return datasets.Dataset.from_dict(concatenated_dataset)
 
-        tokenized_datasets_ = tokenized_datasets["train"].remove_columns(
-            ["prompt_sources", "prompt_targets"]
-        )
         tokenized_datasets["train"] = concatenate_data(
-            tokenized_datasets_, data_args.max_seq_length
+            tokenized_datasets["train"], data_args.max_seq_length
         )
 
     if training_args.do_eval:
