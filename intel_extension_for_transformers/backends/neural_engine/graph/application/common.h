@@ -156,11 +156,6 @@ ne_ftype quant_params_to_ftype(const quant_params& params);
 
 bool quant_params_parse(int argc, char** argv, quant_params& params);
 
-size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params params, int n, int k);
-
-bool ne_common_quantize_0(std::ifstream& finp, std::ofstream& fout, const quant_params params,
-                          const std::vector<std::string>& to_quant, const std::vector<std::string>& to_skip);
-
 #define ANSI_COLOR_RED "\x1b[31m"
 #define ANSI_COLOR_GREEN "\x1b[32m"
 #define ANSI_COLOR_YELLOW "\x1b[33m"

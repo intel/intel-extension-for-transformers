@@ -362,8 +362,8 @@ static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr,
   return JblasNotSupport;
 }
 
-static inline JBLAS_CODE quantize_f32_s8_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
-                                                  int ld_dst, float* scales, int blocksize) {
+static inline JBLAS_CODE quantize_f32_s8_rowblock_sym(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
+                                                      int ld_dst, float* scales, int blocksize) {
   int constexpr VLen = 16;
   auto v127 = _mm512_set1_ps(127.f);
   int col16 = utils::padto_le(col, 16);
@@ -404,6 +404,71 @@ static inline JBLAS_CODE quantize_f32_s8_rowblock(const float* srcptr, int8_t* d
     }
   }
   return JblasSuccess;
+}
+
+static inline JBLAS_CODE quantize_f32_s8_rowblock_asym(const float* srcptr, int8_t* dstptr, int row, int col,
+                                                       int ld_src, int ld_dst, float* scales, float* zero_points,
+                                                       int blocksize) {
+  int constexpr VLen = 16;
+  auto v255 = _mm512_set1_ps(255.f);
+  auto v2 = _mm512_set1_ps(2.f);
+  int col16 = utils::padto_le(col, 16);
+  int i = 0;
+  for (; i < col16; i += VLen) {
+    for (size_t j = 0; j < row; j += blocksize) {
+      __m512 vscale;
+      __m512 vzero_point;
+      __m512 vmaxval = _mm512_loadu_ps(&srcptr[j * ld_src + i]);
+      __m512 vminval = vmaxval;
+      for (size_t ij = 1; ij < blocksize; ij++) {
+        auto vsrc = _mm512_loadu_ps(&srcptr[(j + ij) * ld_src + i]);
+        vmaxval = _mm512_max_ps(vmaxval, vsrc);
+        vminval = _mm512_min_ps(vminval, vsrc);
+      }
+      __m512 vrangeval = _mm512_sub_ps(vmaxval, vminval);
+      vscale = _mm512_div_ps(vrangeval, v255);
+      auto vrscale = _mm512_div_ps(v255, vmaxval);
+      vzero_point = _mm512_div_ps(_mm512_add_ps(vmaxval, vminval), v2);
+      _mm512_storeu_ps(&scales[j / blocksize * ld_dst + i], vscale);
+      _mm512_storeu_ps(&zero_points[j / blocksize * ld_dst + i], vzero_point);
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        auto vsrc = _mm512_loadu_ps(&srcptr[(j + ij) * ld_src + i]);
+        vsrc = _mm512_mul_ps(vsrc, vrscale);
+        vsrc = _mm512_add_ps(vsrc, vzero_point);
+        auto vdsrc = _mm512_cvtps_epi32(vsrc);
+        auto vbsrc = _mm512_cvtepi32_epi8(vdsrc);
+        _mm_storeu_si128((__m128i*)&dstptr[(j + ij) * ld_dst + i], vbsrc);
+      }
+    }
+  }
+  for (; i < col; i++) {
+    for (size_t j = 0; j < row; j += blocksize) {
+      float maxval = std::numeric_limits<float>::min();
+      float minval = std::numeric_limits<float>::max();
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        maxval = std::max(maxval, srcptr[(j + ij) * ld_src + i]);
+        minval = std::min(minval, srcptr[(j + ij) * ld_src + i]);
+      }
+      float scale = (maxval - minval) / 255;
+      float rscale = 1.f / scale;
+      float zero_point = (maxval + minval) / 2;
+      scales[j / blocksize * ld_dst + i] = scale;
+      zero_points[i / blocksize * ld_dst + i] = zero_point;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        dstptr[(j + ij) * ld_dst + i] = utils::cast<float, int8_t>(srcptr[(j + ij) * ld_src + i] * rscale + zero_point);
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE quantize_f32_s8_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
+                                                  int ld_dst, float* scales, float* zero_points, int blocksize) {
+  if (zero_points == nullptr) {
+    return quantize_f32_s8_rowblock_sym(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+  } else {
+    return quantize_f32_s8_rowblock_asym(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, blocksize);
+  }
 }
 
 static inline JBLAS_CODE quantize_f32_u8_colblock(int row, int col, const float* srcptr, int ld_src, uint8_t* dstptr,

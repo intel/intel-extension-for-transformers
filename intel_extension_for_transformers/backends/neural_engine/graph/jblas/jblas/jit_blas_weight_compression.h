@@ -33,13 +33,15 @@ enum class WeightCompType : int {
 
 class PackedWeightS4F32 : public prologue::weight_comp::PackedWeightKBlock {
  public:
-  PackedWeightS4F32(jblas::gemm::GemmCoreType type) : PackedWeightKBlock(type) {
+  PackedWeightS4F32(jblas::gemm::GemmCoreType type, bool is_symmetric = true) : PackedWeightKBlock(type) {
     mWPtr = NULL;
     mWSize = 0;
     mCoreType = type;
     mSPtr = NULL;
-    mSSize = 0;
+    mZPtr = NULL;
+    mBlockNumPad = 0;
     mBlockSize = 0;
+    isSymmetric = is_symmetric;
     mType = static_cast<int>(WeightCompType::S4_F32);
   }
 
@@ -50,16 +52,19 @@ class PackedWeightS4F32 : public prologue::weight_comp::PackedWeightKBlock {
     mBlockSize = Block;
     int nk_scale = utils::updiv(KPad, Block);
     mScales.resize(nk_scale * NPad);
+    if (!isSymmetric) mZeroPoints.resize(nk_scale * Block);
     mWPtr = mWeights.data();
     mWSize = mWeights.size();
     mSPtr = mScales.data();
-    mSSize = mScales.size();
+    mZPtr = mZeroPoints.data();
+    mBlockNumPad = mScales.size();
   }
 
   utils::int4x2* mWPtr;
   size_t mWSize;
   float* mSPtr;
-  size_t mSSize;
+  float* mZPtr;
+  size_t mBlockNumPad;
 
  protected:
   virtual size_t getDataSerializedSize() override {
@@ -67,8 +72,9 @@ class PackedWeightS4F32 : public prologue::weight_comp::PackedWeightKBlock {
     totalsize += sizeof(mBlockSize);
     totalsize += sizeof(mWSize);
     totalsize += mWSize * sizeof(mWPtr[0]);
-    totalsize += sizeof(mSSize);
-    totalsize += mSSize * sizeof(mSPtr[0]);
+    totalsize += sizeof(mBlockNumPad);
+    totalsize += mBlockNumPad * sizeof(mSPtr[0]);
+    if (!isSymmetric) totalsize += mBlockNumPad * sizeof(mZeroPoints[0]);
     return totalsize;
   }
   virtual void serializeDataToBuffer(void* buf) override {
@@ -78,9 +84,10 @@ class PackedWeightS4F32 : public prologue::weight_comp::PackedWeightKBlock {
     for (size_t i = 0; i < mWSize; i++) {
       utils::serialize(wptr, mWPtr[i]);
     }
-    utils::serialize(wptr, mSSize);
-    for (size_t i = 0; i < mSSize; i++) {
+    utils::serialize(wptr, mBlockNumPad);
+    for (size_t i = 0; i < mBlockNumPad; i++) {
       utils::serialize(wptr, mSPtr[i]);
+      if (!isSymmetric) utils::serialize(wptr, mZeroPoints[i]);
     }
   }
   virtual void deserializeDataBuffer(void* buf, int memalloc) override {
@@ -98,29 +105,42 @@ class PackedWeightS4F32 : public prologue::weight_comp::PackedWeightKBlock {
     }
     rptr += rsize * sizeof(mWeights[0]);
     rsize = utils::deserialize<size_t>(rptr);
+    mBlockNumPad = rsize;
     if (memalloc) {
       mScales.resize(rsize);
       std::memcpy(mScales.data(), rptr, rsize * sizeof(mScales[0]));
       mSPtr = mScales.data();
-      mSSize = mScales.size();
+      if (!isSymmetric) {
+        mZeroPoints.resize(rsize);
+        rptr += rsize * sizeof(mScales[0]);
+        std::memcpy(mZeroPoints.data(), rptr, rsize * sizeof(mZeroPoints[0]));
+        mZPtr = mZeroPoints.data();
+      }
     } else {
       mSPtr = (float*)rptr;
-      mSSize = rsize;
+      if (!isSymmetric) {
+        rptr += rsize * sizeof(mScales[0]);
+        mZPtr = (float*)rptr;
+      }
     }
     rptr += rsize * sizeof(mScales[0]);
   }
   utils::aligned_vector<utils::int4x2> mWeights;
   utils::aligned_vector<float> mScales;
+  utils::aligned_vector<float> mZeroPoints;
+  bool isSymmetric;
 };
 
 class PackedWeightS4Bf16 : public prologue::weight_comp::PackedWeightKBlock {
  public:
-  PackedWeightS4Bf16(jblas::gemm::GemmCoreType _type) : PackedWeightKBlock(_type) {
+  PackedWeightS4Bf16(jblas::gemm::GemmCoreType _type, bool is_symmetric = true) : PackedWeightKBlock(_type) {
     mWPtr = NULL;
     mWSize = 0;
     mSPtr = NULL;
-    mSSize = 0;
+    mZPtr = NULL;
+    mBlockNumPad = 0;
     mBlockSize = 0;
+    isSymmetric = is_symmetric;
     mType = static_cast<int>(WeightCompType::S4_Bf16);
   }
 
@@ -131,16 +151,18 @@ class PackedWeightS4Bf16 : public prologue::weight_comp::PackedWeightKBlock {
     mBlockSize = Block;
     int nk_scale = utils::updiv(KPad, Block);
     mScales.resize(nk_scale * NPad);
+    if (!isSymmetric) mZeroPoints.resize(nk_scale * Block);
     mWPtr = mWeights.data();
     mWSize = mWeights.size();
     mSPtr = mScales.data();
-    mSSize = mScales.size();
+    mBlockNumPad = mScales.size();
   }
 
   utils::int4x2* mWPtr;
   size_t mWSize;
   utils::bf16* mSPtr;
-  size_t mSSize;
+  utils::bf16* mZPtr;
+  size_t mBlockNumPad;
 
  protected:
   virtual size_t getDataSerializedSize() override {
@@ -148,8 +170,9 @@ class PackedWeightS4Bf16 : public prologue::weight_comp::PackedWeightKBlock {
     totalsize += sizeof(mBlockSize);
     totalsize += sizeof(mWSize);
     totalsize += mWSize * sizeof(mWPtr[0]);
-    totalsize += sizeof(mSSize);
-    totalsize += mSSize * sizeof(mSPtr[0]);
+    totalsize += sizeof(mBlockNumPad);
+    totalsize += mBlockNumPad * sizeof(mSPtr[0]);
+    if (!isSymmetric) totalsize += mBlockNumPad * sizeof(mZeroPoints[0]);
     return totalsize;
   }
   virtual void serializeDataToBuffer(void* buf) override {
@@ -159,15 +182,17 @@ class PackedWeightS4Bf16 : public prologue::weight_comp::PackedWeightKBlock {
     for (size_t i = 0; i < mWSize; i++) {
       utils::serialize(wptr, mWPtr[i]);
     }
-    utils::serialize(wptr, mSSize);
-    for (size_t i = 0; i < mSSize; i++) {
+    utils::serialize(wptr, mBlockNumPad);
+    for (size_t i = 0; i < mBlockNumPad; i++) {
       utils::serialize(wptr, mSPtr[i]);
+      if (!isSymmetric) utils::serialize(wptr, mZeroPoints[i]);
     }
   }
   virtual void deserializeDataBuffer(void* buf, int memalloc) override {
     auto rptr = reinterpret_cast<int8_t*>(buf);
     mBlockSize = utils::deserialize<int>(rptr);
     size_t rsize = utils::deserialize<size_t>(rptr);
+    mBlockNumPad = rsize;
     if (memalloc) {
       mWeights.resize(rsize);
       std::memcpy(mWeights.data(), rptr, rsize * sizeof(mWeights[0]));
@@ -179,29 +204,42 @@ class PackedWeightS4Bf16 : public prologue::weight_comp::PackedWeightKBlock {
     }
     rptr += rsize * sizeof(mWeights[0]);
     rsize = utils::deserialize<size_t>(rptr);
+    mBlockNumPad = rsize;
     if (memalloc) {
       mScales.resize(rsize);
       std::memcpy(mScales.data(), rptr, rsize * sizeof(mScales[0]));
       mSPtr = mScales.data();
-      mSSize = mScales.size();
+      if (!isSymmetric) {
+        mZeroPoints.resize(rsize);
+        rptr += rsize * sizeof(mScales[0]);
+        std::memcpy(mZeroPoints.data(), rptr, rsize * sizeof(mZeroPoints[0]));
+        mZPtr = mZeroPoints.data();
+      }
     } else {
       mSPtr = (utils::bf16*)rptr;
-      mSSize = rsize;
+      if (!isSymmetric) {
+        rptr += rsize * sizeof(mScales[0]);
+        mZPtr = (utils::bf16*)rptr;
+      }
     }
     rptr += rsize * sizeof(mScales[0]);
   }
   utils::aligned_vector<utils::int4x2> mWeights;
   utils::aligned_vector<utils::bf16> mScales;
+  utils::aligned_vector<utils::bf16> mZeroPoints;
+  bool isSymmetric;
 };
 
 class PackedWeightS8F32 : public prologue::weight_comp::PackedWeightKBlock {
  public:
-  PackedWeightS8F32(jblas::gemm::GemmCoreType _type) : PackedWeightKBlock(_type) {
+  PackedWeightS8F32(jblas::gemm::GemmCoreType _type, bool is_symmetric = true) : PackedWeightKBlock(_type) {
     mWPtr = NULL;
     mWSize = 0;
     mSPtr = NULL;
-    mSSize = 0;
+    mZPtr = NULL;
+    mBlockNumPad = 0;
     mBlockSize = 0;
+    isSymmetric = is_symmetric;
     mType = static_cast<int>(WeightCompType::S8_F32);
   }
 
@@ -212,16 +250,19 @@ class PackedWeightS8F32 : public prologue::weight_comp::PackedWeightKBlock {
     mBlockSize = Block;
     int nk_scale = utils::updiv(KPad, Block);
     mScales.resize(nk_scale * NPad);
+    if (!isSymmetric) mZeroPoints.resize(nk_scale * Block);
     mWPtr = mWeights.data();
     mWSize = mWeights.size();
     mSPtr = mScales.data();
-    mSSize = mScales.size();
+    mZPtr = mZeroPoints.data();
+    mBlockNumPad = mScales.size();
   }
 
   int8_t* mWPtr;
   size_t mWSize;
   float* mSPtr;
-  size_t mSSize;
+  float* mZPtr;
+  size_t mBlockNumPad;
 
  protected:
   virtual size_t getDataSerializedSize() override {
@@ -229,8 +270,9 @@ class PackedWeightS8F32 : public prologue::weight_comp::PackedWeightKBlock {
     totalsize += sizeof(mBlockSize);
     totalsize += sizeof(mWSize);
     totalsize += mWSize * sizeof(mWPtr[0]);
-    totalsize += sizeof(mSSize);
-    totalsize += mSSize * sizeof(mSPtr[0]);
+    totalsize += sizeof(mBlockNumPad);
+    totalsize += mBlockNumPad * sizeof(mSPtr[0]);
+    if (!isSymmetric) totalsize += mBlockNumPad * sizeof(mZeroPoints[0]);
     return totalsize;
   }
   virtual void serializeDataToBuffer(void* buf) override {
@@ -240,9 +282,10 @@ class PackedWeightS8F32 : public prologue::weight_comp::PackedWeightKBlock {
     for (size_t i = 0; i < mWSize; i++) {
       utils::serialize(wptr, mWPtr[i]);
     }
-    utils::serialize(wptr, mSSize);
-    for (size_t i = 0; i < mSSize; i++) {
+    utils::serialize(wptr, mBlockNumPad);
+    for (size_t i = 0; i < mBlockNumPad; i++) {
       utils::serialize(wptr, mSPtr[i]);
+      if (!isSymmetric) utils::serialize(wptr, mZeroPoints[i]);
     }
   }
   virtual void deserializeDataBuffer(void* buf, int memalloc) override {
@@ -260,19 +303,30 @@ class PackedWeightS8F32 : public prologue::weight_comp::PackedWeightKBlock {
     }
     rptr += rsize * sizeof(mWeights[0]);
     rsize = utils::deserialize<size_t>(rptr);
+    mBlockNumPad = rsize;
     if (memalloc) {
       mScales.resize(rsize);
       std::memcpy(mScales.data(), rptr, rsize * sizeof(mScales[0]));
       mSPtr = mScales.data();
-      mSSize = mScales.size();
+      if (!isSymmetric) {
+        mZeroPoints.resize(rsize);
+        rptr += rsize * sizeof(mScales[0]);
+        std::memcpy(mZeroPoints.data(), rptr, rsize * sizeof(mZeroPoints[0]));
+        mZPtr = mZeroPoints.data();
+      }
     } else {
       mSPtr = (float*)rptr;
-      mSSize = rsize;
+      if (!isSymmetric) {
+        rptr += rsize * sizeof(mScales[0]);
+        mZPtr = (float*)rptr;
+      }
     }
     rptr += rsize * sizeof(mScales[0]);
   }
   utils::aligned_vector<int8_t> mWeights;
   utils::aligned_vector<float> mScales;
+  utils::aligned_vector<float> mZeroPoints;
+  bool isSymmetric;
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
@@ -282,8 +336,8 @@ class WeightS8_KBlock {
     const prologue::PackedWeight* packedW;
   };
 
-  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB,
-                      float* scales) {
+  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB, float* scales,
+                      float* zero_points) {
     utils::parallel::Parallel2DRowMajor _para;
     utils::CpuBase cb;
     _para.update(K, N, blocksize, 16, cb.mNumThreads);
@@ -297,9 +351,9 @@ class WeightS8_KBlock {
         int rowremain = utils::remainsize(rowidx, K,
                                           rowsize);  // rowremain: src valid size. rowsize: padded size
         int colremain = utils::remainsize(colidx, N, colsize);
-        kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(B + rowidx * ldb + colidx, qB + rowidx * N + colidx,
-                                                            rowremain, colremain, ldb, N,
-                                                            scales + rowidx / blocksize * N + colidx, blocksize);
+        kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(
+            B + rowidx * ldb + colidx, qB + rowidx * N + colidx, rowremain, colremain, ldb, N,
+            scales + rowidx / blocksize * N + colidx, zero_points + rowidx / blocksize * N + colidx, blocksize);
       }
     }
   }
@@ -326,7 +380,7 @@ class WeightS8_KBlock {
 
   // from KxN int8 symmetric weight to packed N//NtilexKPadxNTile int4 weight
   PackedWeight* compressWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales,
-                               int blocksize, WeightCompType type) {
+                               const float* zero_points, int blocksize, WeightCompType type) {
     int KPad = utils::padto(K, _GemmCore_T::KTILE);
     int NPad = utils::padto(N, _GemmCore_T::NTILE);
     int nk_scale = utils::updiv(KPad, blocksize);
@@ -340,6 +394,7 @@ class WeightS8_KBlock {
 #pragma omp parallel for
       for (int i = 0; i < nk_scale; i++) {
         std::memcpy(tmp->mSPtr + i * NPad, scales + i * N, N * sizeof(scales[0]));
+        if (zero_points != nullptr) std::memcpy(tmp->mZPtr + i * NPad, zero_points + i * N, N * sizeof(zero_points[0]));
       }
     }
     if (ptr == NULL) {
@@ -375,19 +430,21 @@ class WeightS8_KBlock {
   }
 
   PackedWeight* compressWeightTranspose(const int N, const int K, const float* B, const int ldb, int blocksize,
-                                        WeightCompType type) {
+                                        WeightCompType type, bool is_symmetric = true) {
     utils::aligned_vector<float> B_NT(N * K);
     transposeWeight(N, K, B, ldb, B_NT.data(), N);
-    return compressWeight(N, K, B_NT.data(), N, blocksize, type);
+    return compressWeight(N, K, B_NT.data(), N, blocksize, type, is_symmetric);
   }
 
   PackedWeight* compressWeight(const int N, const int K, const float* B, const int ldb, int blocksize,
-                               WeightCompType type) {
+                               WeightCompType type, bool is_symmetric) {
     int nk_scale = utils::updiv(K, blocksize);
     utils::aligned_vector<int8_t> quanW(N * K);
     utils::aligned_vector<float> scales(nk_scale * N);
-    quantizeWeight(N, K, B, ldb, blocksize, quanW.data(), scales.data());
-    return compressWeight(N, K, quanW.data(), N, scales.data(), blocksize, type);
+    utils::aligned_vector<float> zero_points;
+    if (!is_symmetric) zero_points = utils::aligned_vector<float>(nk_scale * N, 0.f);
+    quantizeWeight(N, K, B, ldb, blocksize, quanW.data(), scales.data(), zero_points.data());
+    return compressWeight(N, K, quanW.data(), N, scales.data(), zero_points.data(), blocksize, type);
   }
 
   template <typename _T>
@@ -461,9 +518,9 @@ class WeightBit4_KBlock {
   };
 
   virtual void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                             float* scales, int blocksize) = 0;
-  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB,
-                      float* scales) {
+                             float* scales, float* zero_points, int blocksize) = 0;
+  void quantizeWeight(const int N, const int K, const float* B, const int ldb, int blocksize, int8_t* qB, float* scales,
+                      float* zero_points = nullptr) {
     utils::parallel::Parallel2DRowMajor _para;
     utils::CpuBase cb;
     _para.update(K, N, blocksize, 16, cb.mNumThreads);
@@ -477,8 +534,14 @@ class WeightBit4_KBlock {
         int rowremain = utils::remainsize(rowidx, K,
                                           rowsize);  // rowremain: src valid size. rowsize: padded size
         int colremain = utils::remainsize(colidx, N, colsize);
-        quantRowBlock(B + rowidx * ldb + colidx, qB + rowidx * N + colidx, rowremain, colremain, ldb, N,
-                      scales + rowidx / blocksize * N + colidx, blocksize);
+        if (zero_points == nullptr) {
+          quantRowBlock(B + rowidx * ldb + colidx, qB + rowidx * N + colidx, rowremain, colremain, ldb, N,
+                        scales + rowidx / blocksize * N + colidx, nullptr, blocksize);
+        } else {
+          quantRowBlock(B + rowidx * ldb + colidx, qB + rowidx * N + colidx, rowremain, colremain, ldb, N,
+                        scales + rowidx / blocksize * N + colidx, zero_points + rowidx / blocksize * N + colidx,
+                        blocksize);
+        }
       }
     }
   }
@@ -505,7 +568,7 @@ class WeightBit4_KBlock {
 
   // from KxN int8 symmetric weight to packed N//NtilexKPadxNTile int4 weight
   PackedWeight* compressWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales,
-                               int blocksize, WeightCompType type) {
+                               const float* zero_points, int blocksize, WeightCompType type) {
     int KPad = utils::padto(K, _GemmCore_T::KTILE);
     int NPad = utils::padto(N, _GemmCore_T::NTILE);
     int nk_scale = utils::updiv(KPad, blocksize);
@@ -519,6 +582,7 @@ class WeightBit4_KBlock {
 #pragma omp parallel for
       for (int i = 0; i < nk_scale; i++) {
         std::memcpy(tmp->mSPtr + i * NPad, scales + i * N, N * sizeof(scales[0]));
+        if (zero_points != nullptr) std::memcpy(tmp->mZPtr + i * NPad, zero_points + i * N, N * sizeof(zero_points[0]));
       }
     } else if (type == WeightCompType::S4_Bf16) {
       auto tmp = new PackedWeightS4Bf16(_GemmCore_T::TYPE);
@@ -529,6 +593,8 @@ class WeightBit4_KBlock {
       for (int i = 0; i < nk_scale; i++) {
         for (int j = 0; j < N; j++) {
           *(tmp->mSPtr + i * NPad + j) = utils::cast<float, utils::bf16>(*(scales + i * N + j));
+          if (zero_points != nullptr)
+            *(tmp->mZPtr + i * NPad + j) = utils::cast<float, utils::bf16>(*(zero_points + i * N + j));
         }
       }
     }
@@ -572,19 +638,21 @@ class WeightBit4_KBlock {
   }
 
   PackedWeight* compressWeightTranspose(const int N, const int K, const float* B, const int ldb, int blocksize,
-                                        WeightCompType type) {
+                                        WeightCompType type, bool is_symmetric = true) {
     utils::aligned_vector<float> B_NT(N * K);
     transposeWeight(N, K, B, ldb, B_NT.data(), N);
-    return compressWeight(N, K, B_NT.data(), N, blocksize, type);
+    return compressWeight(N, K, B_NT.data(), N, blocksize, type, is_symmetric);
   }
 
   PackedWeight* compressWeight(const int N, const int K, const float* B, const int ldb, int blocksize,
-                               WeightCompType type) {
+                               WeightCompType type, bool is_symmetric) {
     int nk_scale = utils::updiv(K, blocksize);
     utils::aligned_vector<int8_t> quanW(N * K);
     utils::aligned_vector<float> scales(nk_scale * N);
-    quantizeWeight(N, K, B, ldb, blocksize, quanW.data(), scales.data());
-    return compressWeight(N, K, quanW.data(), N, scales.data(), blocksize, type);
+    utils::aligned_vector<float> zero_points;
+    if (!is_symmetric) zero_points = utils::aligned_vector<float>(nk_scale * N, 0.f);
+    quantizeWeight(N, K, B, ldb, blocksize, quanW.data(), scales.data(), zero_points.data());
+    return compressWeight(N, K, quanW.data(), N, scales.data(), zero_points.data(), blocksize, type);
   }
 
   virtual void DecompressKblockF32DstF32Scale(utils::bit4x2* srcptr, float* dstptr, int row, int col, int ld_src,
@@ -741,6 +809,39 @@ class WeightBit4_KBlock {
     }
     return JblasInvalidParam;
   }
+  template <typename _T>
+  JBLAS_CODE getZeroPoint(_T** dstptr, int* dststep, int n_size, int k_size, int n_offset, int k_offset,
+                          const PackedWeight* ptr) {
+    return JblasNotSupport;
+  }
+
+  JBLAS_CODE getZeroPoint(float** dstptr, int* dststep, int n_size, int k_size, int n_offset, int k_offset,
+                          const PackedWeight* ptr) {
+    auto wptr = dynamic_cast<const PackedWeightS4F32*>(ptr);
+    if (wptr) {
+      if (wptr->isSymmetric) return JblasInvalidParam;
+      auto NPad = wptr->mNPad;
+      auto KPad = wptr->mKPad;
+      *dstptr = wptr->mZPtr + n_offset + k_offset / wptr->mBlockSize * NPad;
+      *dststep = NPad;
+      return JblasSuccess;
+    }
+    return JblasInvalidParam;
+  }
+
+  JBLAS_CODE geZeroPoint(utils::bf16** dstptr, int* dststep, int n_size, int k_size, int n_offset, int k_offset,
+                         const PackedWeight* ptr) {
+    auto wptr = dynamic_cast<const PackedWeightS4Bf16*>(ptr);
+    if (wptr) {
+      if (wptr->isSymmetric) return JblasInvalidParam;
+      auto NPad = wptr->mNPad;
+      auto KPad = wptr->mKPad;
+      *dstptr = wptr->mZPtr + n_offset + k_offset / wptr->mBlockSize * NPad;
+      *dststep = NPad;
+      return JblasSuccess;
+    }
+    return JblasInvalidParam;
+  }
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
@@ -754,8 +855,9 @@ class WeightS4_KBlock : public WeightBit4_KBlock<_GemmCore_T, ISA_T> {
   }
 
   void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst, float* scales,
-                     int blocksize) override {
-    kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+                     float* zero_points, int blocksize) override {
+    kernel::wrapper::QuantizeS8RowBlock::forward<ISA_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
+                                                        blocksize);
   }
 
   void DecompressKblockF32DstF32Scale(utils::bit4x2* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
@@ -787,8 +889,9 @@ template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class WeightFp4_KBlock : public WeightBit4_KBlock<_GemmCore_T, ISA_T> {
  public:
   void quantRowBlock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst, float* scales,
-                     int blocksize) override {
-    kernel::wrapper::QuantizeFp4RowBlock::forward<ISA_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+                     float* zero_points, int blocksize) override {
+    kernel::wrapper::QuantizeFp4RowBlock::forward<ISA_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
+                                                         blocksize);
   }
 
   JBLAS_CODE doCompress(int8_t* srcptr, jblas::utils::bit4x2* dstptr, int row, int col, int ld_src,

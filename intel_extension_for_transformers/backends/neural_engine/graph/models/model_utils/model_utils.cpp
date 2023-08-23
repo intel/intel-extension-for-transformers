@@ -790,17 +790,20 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
       static GemmKernel kernel;
       assert(cd->AVX512F());
-      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
+      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type,
+                                                               params.alg == quant_alg::sym);
     } else if (params.compute_type == quant_comp::fp32) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
       static GemmKernel kernel;
       assert(cd->AVX512F());
-      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
+      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type,
+                                                               params.alg == quant_alg::sym);
     } else if (params.compute_type == quant_comp::bf16) {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4KBlock;
       static GemmKernel kernel;
       assert(cd->AVX512F());
-      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
+      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type,
+                                                               params.alg == quant_alg::sym);
     }
   } else if (params.bits == quant_bits::q8) {
     // TODO add 8bit quantization

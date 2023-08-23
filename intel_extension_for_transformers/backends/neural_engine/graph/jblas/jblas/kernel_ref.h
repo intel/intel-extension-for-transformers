@@ -406,41 +406,56 @@ static inline JBLAS_CODE memcpy2d(void* srcptr, void* dstptr, int row, int col, 
   return JblasSuccess;
 }
 
-inline JBLAS_CODE quantize_f32_s8_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
-                                           int ld_dst, float* scales, int blocksize) {
-  for (int i = 0; i < col; i++) {
-    for (size_t j = 0; j < row; j += blocksize) {
-      float maxval = std::numeric_limits<float>::min();
-      for (size_t ij = 0; ij < blocksize; ij++) {
-        maxval = std::max(maxval, std::abs(srcptr[(j + ij) * ld_src + i]));
+template <typename T_src, typename T_dst, T_dst (*func)(T_src)>
+inline JBLAS_CODE quantize_f32_rowblock(const T_src* srcptr, T_dst* dstptr, int row, int col, int ld_src, int ld_dst,
+                                        float* scales, float* zero_points, int blocksize) {
+  if (zero_points == nullptr) {  // symmetric
+    for (int i = 0; i < col; i++) {
+      for (size_t j = 0; j < row; j += blocksize) {
+        float maxval = std::numeric_limits<float>::min();
+        for (size_t ij = 0; ij < blocksize; ij++) {
+          maxval = std::max(maxval, std::abs(srcptr[(j + ij) * ld_src + i]));
+        }
+        float scale = maxval / 127;
+        float rscale = 1.f / scale;
+        scales[j / blocksize * ld_dst + i] = scale;
+        for (size_t ij = 0; ij < blocksize; ij++) {
+          dstptr[(j + ij) * ld_dst + i] = func(srcptr[(j + ij) * ld_src + i] * rscale);
+        }
       }
-      float scale = maxval / 127;
-      float rscale = 1.f / scale;
-      scales[j / blocksize * ld_dst + i] = scale;
-      for (size_t ij = 0; ij < blocksize; ij++) {
-        dstptr[(j + ij) * ld_dst + i] = utils::cast<float, int8_t>(srcptr[(j + ij) * ld_src + i] * rscale);
+    }
+  } else {  // asymmetric
+    for (int i = 0; i < col; i++) {
+      for (size_t j = 0; j < row; j += blocksize) {
+        float maxval = std::numeric_limits<float>::min();
+        float minval = std::numeric_limits<float>::max();
+        for (size_t ij = 0; ij < blocksize; ij++) {
+          maxval = std::max(maxval, srcptr[(j + ij) * ld_src + i]);
+          minval = std::min(maxval, srcptr[(j + ij) * ld_src + i]);
+        }
+        float scale = (maxval - minval) / 255;
+        float rscale = 1.f / scale;
+        float zero_point = (maxval + minval) / 2;
+        scales[j / blocksize * ld_dst + i] = scale;
+        zero_points[j / blocksize * ld_dst + i] = zero_point;
+        for (size_t ij = 0; ij < blocksize; ij++) {
+          dstptr[(j + ij) * ld_dst + i] = func(srcptr[(j + ij) * ld_src + i] * rscale + zero_point);
+        }
       }
     }
   }
   return JblasSuccess;
 }
 
-inline JBLAS_CODE quantize_f32_fp4_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
-                                            int ld_dst, float* scales, int blocksize) {
-  for (int i = 0; i < col; i++) {
-    for (size_t j = 0; j < row; j += blocksize) {
-      float absmax = std::numeric_limits<float>::min();
-      for (size_t ij = 0; ij < blocksize; ij++) {
-        absmax = std::max(absmax, std::abs(srcptr[(j + ij) * ld_src + i]));
-      }
-      scales[j / blocksize * ld_dst + i] = absmax;
-      for (size_t ij = 0; ij < blocksize; ij++) {
-        dstptr[(j + ij) * ld_dst + i] = fp4_quantize(srcptr[(j + ij) * ld_src + i]);
-      }
-    }
-  }
-  return JblasSuccess;
-}
+static int8_t quant_f32_s8(float x) { return utils::cast<float, int8_t>(x); };
+static int8_t quant_f32_f4(float x) { return fp4_quantize(x); };
+
+const auto quantize_f32_s8_rowblock = []<typename... Args>(Args... args) {
+  return quantize_f32_rowblock<float, int8_t, &quant_f32_s8>(args...);
+};
+const auto quantize_f32_fp4_rowblock = []<typename... Args>(Args... args) {
+  return quantize_f32_rowblock<float, int8_t, &quant_f32_f4>(args...);
+};
 
 inline JBLAS_CODE quantize_f32_u8_colblock(int row, int col, const float* srcptr, int ld_src, uint8_t* dstptr,
                                            int ld_dst, float* scales, int ld_scale, uint8_t* zps, int blocksize) {

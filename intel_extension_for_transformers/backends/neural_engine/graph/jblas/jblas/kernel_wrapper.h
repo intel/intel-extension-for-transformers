@@ -482,16 +482,17 @@ class QuantizeS8RowBlock {
  public:
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                                   float* scales, int blocksize) {
+                                   float* scales, float* zero_points, int blocksize) {
     if (row % blocksize != 0) {
       return JblasNotSupport;
     }
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return avx512f::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+      return avx512f::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
+                                               blocksize);
     }
 #endif
-    return ref::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+    return ref::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, blocksize);
   }
 };
 
@@ -499,11 +500,11 @@ class QuantizeFp4RowBlock {
  public:
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
-                                   float* scales, int blocksize) {
+                                   float* scales, float* zero_points, int blocksize) {
     if (row % blocksize != 0) {
       return JblasNotSupport;
     }
-    return ref::quantize_f32_fp4_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+    return ref::quantize_f32_fp4_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, blocksize);
   }
 };
 class QuantizeU8ColBlock {
