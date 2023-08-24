@@ -836,7 +836,7 @@ struct quant_op_t<dtype_offset_scale_, gpu_arch::Xe> {
         offset_payload_t offset_payload(mem_desc_offset);
         tile_load<cache_hint::cached, cache_hint::cached>(
                 offset, offset_payload);
-        xettp_saturation_on_tag saturate_tag;
+        xetla_saturation_on_tag saturate_tag;
 
 #pragma unroll
         for (int i = 0; i < tile_size_y / block_size_y; i++) {

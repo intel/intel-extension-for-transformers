@@ -270,7 +270,7 @@ __XETLA_API xetla_tdescriptor xetla_get_tdesc(uint32_t base_address,
 }
 
 /// @brief Update the x coordinate in the given tensor descriptor.
-/// @param tdesc [in|our] is the reference of tensor descriptor.
+/// @param tdesc [in|out] is the reference of tensor descriptor.
 /// @param doffset_x [in] is the offset (in number of data elements) in x direction.
 __XETLA_API void xetla_update_tdesc_offsetx(
         xetla_tdescriptor_ref tdesc, int32_t doffset_x) {
@@ -279,7 +279,7 @@ __XETLA_API void xetla_update_tdesc_offsetx(
 }
 
 /// @brief Update the y coordinate in the given tensor descriptor.
-/// @param tdesc [in|our] is the reference of tensor descriptor.
+/// @param tdesc [in|out] is the reference of tensor descriptor.
 /// @param doffset_y [in] is the offset (in number of data elements) in y direction.
 __XETLA_API void xetla_update_tdesc_offsety(
         xetla_tdescriptor_ref tdesc, int32_t doffset_y) {

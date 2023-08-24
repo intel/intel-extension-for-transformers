@@ -72,6 +72,10 @@ class brgemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b,
                                  == 0)
                 && ((sizeof(dtype_b) * alignment_b) % detail::alignment_bytes_xe
                         == 0)>> {
+    static_assert(std::is_same<dtype_a, dtype_acc>::value
+                    && std::is_same<dtype_b, dtype_acc>::value,
+            "When use brgemm_selector, dtype_a and dtype_b in fpu based gemm"
+            "should be the same as dtype_acc");
     using mem_desc_a = mem_desc_t<dtype_a, mem_layout_a, mem_space_a>;
     using mem_desc_b = mem_desc_t<dtype_b, mem_layout_b, mem_space_b>;
     using compute_attr = compute_attr_t<dtype_a, dtype_b, dtype_acc>;

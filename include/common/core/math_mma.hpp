@@ -137,7 +137,7 @@ constexpr __ESIMD_NS::xmx::dpas_argument_type get_argument_type() {
 template <argument_type src1_precision, argument_type src2_precision,
         int systolic_depth, int repeat_count, typename T, typename T1,
         typename T2, int N, int N1, int N2,
-        typename Sat = xettp_saturation_off_tag>
+        typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, N> xetla_mma(xetla_vector<T, N> src0,
         xetla_vector<T1, N1> src1, xetla_vector<T2, N2> src2, Sat sat = {}) {
     return __ESIMD_NS::xmx::dpas<systolic_depth, repeat_count, T, T, T1, T2,

@@ -38,7 +38,7 @@ namespace gpu::xetla {
 /// values: saturation_on/saturation_off.
 /// @return vector of shifted left values.
 template <typename T0, typename T1, int SZ, typename U,
-        class Sat = xettp_saturation_off_tag>
+        class Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T0, SZ> xetla_shl(
         xetla_vector<T1, SZ> src0, U src1, Sat sat = {}) {
     return __ESIMD_ENS::shl<T0, T1, SZ, U, typename Sat::sat_tag>(
@@ -55,7 +55,7 @@ __XETLA_API xetla_vector<T0, SZ> xetla_shl(
 /// values: saturation_on/saturation_off.
 /// @return shifted left value.
 template <typename T0, typename T1, typename T2,
-        class Sat = xettp_saturation_off_tag>
+        class Sat = xetla_saturation_off_tag>
 typename std::remove_const<T0>::type xetla_shl(T1 src0, T2 src1, Sat sat = {}) {
     return __ESIMD_ENS::shl<T0, T1, T2, typename Sat::sat_tag>(
             src0, src1, Sat::value);
@@ -72,7 +72,7 @@ typename std::remove_const<T0>::type xetla_shl(T1 src0, T2 src1, Sat sat = {}) {
 /// values: saturation_on/saturation_off.
 /// @return vector of shifted right values.
 template <typename T0, typename T1, int SZ, typename U,
-        class Sat = xettp_saturation_off_tag>
+        class Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T0, SZ> xetla_shr(
         xetla_vector<T1, SZ> src0, U src1, Sat sat = {}) {
     return __ESIMD_ENS::shr<T0, T1, SZ, U, typename Sat::sat_tag>(
@@ -89,7 +89,7 @@ __XETLA_API xetla_vector<T0, SZ> xetla_shr(
 /// values: saturation_on/saturation_off.
 /// @return shifted right value.
 template <typename T0, typename T1, typename T2,
-        class Sat = xettp_saturation_off_tag>
+        class Sat = xetla_saturation_off_tag>
 __XETLA_API typename std::remove_const<T0>::type xetla_shr(
         T1 src0, T2 src1, Sat sat = {}) {
     return __ESIMD_ENS::shr<T0, T1, T2, typename Sat::sat_tag>(
@@ -199,7 +199,7 @@ xetla_ror(T1 src0, T2 src1) {
 /// values: saturation_on/saturation_off.
 /// @return vector of shifted elements.
 template <typename T0, typename T1, int SZ, typename U,
-        class Sat = xettp_saturation_off_tag>
+        class Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T0, SZ> xetla_lsr(
         xetla_vector<T1, SZ> src0, U src1, Sat sat = {}) {
     return __ESIMD_ENS::lsr<T0, T1, SZ, U, typename Sat::sat_tag>(
@@ -217,7 +217,7 @@ __XETLA_API xetla_vector<T0, SZ> xetla_lsr(
 /// values: saturation_on/saturation_off.
 /// @return shifted value.
 template <typename T0, typename T1, typename T2,
-        class Sat = xettp_saturation_off_tag>
+        class Sat = xetla_saturation_off_tag>
 __XETLA_API typename std::remove_const<T0>::type xetla_lsr(
         T1 src0, T2 src1, Sat sat = {}) {
     return __ESIMD_ENS::lsr<T0, T1, T2, typename Sat::sat_tag>(
@@ -235,7 +235,7 @@ __XETLA_API typename std::remove_const<T0>::type xetla_lsr(
 /// values: saturation_on/saturation_off.
 /// @return vector of shifted elements.
 template <typename T0, typename T1, int SZ, typename U,
-        class Sat = xettp_saturation_off_tag>
+        class Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T0, SZ> xetla_asr(
         xetla_vector<T1, SZ> src0, U src1, Sat sat = {}) {
     return __ESIMD_ENS::asr<T0, T1, SZ, U, typename Sat::sat_tag>(
@@ -253,7 +253,7 @@ __XETLA_API xetla_vector<T0, SZ> xetla_asr(
 /// values: saturation_on/saturation_off.
 /// @return shifted value.
 template <typename T0, typename T1, typename T2,
-        class Sat = xettp_saturation_off_tag>
+        class Sat = xetla_saturation_off_tag>
 __XETLA_API typename std::remove_const<T0>::type xetla_asr(
         T1 src0, T2 src1, Sat sat = {}) {
     return __ESIMD_ENS::asr<T0, T1, T2, typename Sat::sat_tag>(

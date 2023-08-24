@@ -39,7 +39,7 @@ struct shl_with_vector_input {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, T *a, T *b, T *c) {
         auto op = [](xetla_vector<T, SIMD> x, int bit) {
-            xettp_saturation_off_tag tag;
+            xetla_saturation_off_tag tag;
             return xetla_shl<T, T>(x, bit, tag);
         };
         run_bit_shift_op_common<T, SIMD>(ei, a, b, c, op);
@@ -51,7 +51,7 @@ struct shl_with_scalar_input {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, T *a, T *b, T *c) {
         auto op = [](xetla_vector<T, SIMD> x, int bit) {
-            xettp_saturation_off_tag tag;
+            xetla_saturation_off_tag tag;
             T x0 = x[0];
             T result = xetla_shl<T>(x0, bit, tag);
             return xetla_vector_gen<T, SIMD>(result, 0);
@@ -65,7 +65,7 @@ struct shr_with_vector_input {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, T *a, T *b, T *c) {
         auto op = [](xetla_vector<T, SIMD> x, int bit) {
-            xettp_saturation_off_tag tag;
+            xetla_saturation_off_tag tag;
             return xetla_shr<T, T>(x, bit, tag);
         };
         run_bit_shift_op_common<T, SIMD>(ei, a, b, c, op);
@@ -77,7 +77,7 @@ struct shr_with_scalar_input {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, T *a, T *b, T *c) {
         auto op = [](xetla_vector<T, SIMD> x, int bit) {
-            xettp_saturation_off_tag tag;
+            xetla_saturation_off_tag tag;
             T x0 = x[0];
             T result = xetla_shr<T>(x0, bit, tag);
             return xetla_vector_gen<T, SIMD>(result, 0);
@@ -159,7 +159,7 @@ struct lsr_with_vector_input {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, T *a, T *b, T *c) {
         auto op = [](xetla_vector<T, SIMD> x, int bit) {
-            xettp_saturation_off_tag tag;
+            xetla_saturation_off_tag tag;
             return xetla_lsr<T, T>(x, bit, tag);
         };
         run_bit_shift_op_common<T, SIMD>(ei, a, b, c, op);
@@ -171,7 +171,7 @@ struct lsr_with_scalar_input {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, T *a, T *b, T *c) {
         auto op = [](xetla_vector<T, SIMD> x, int bit) {
-            xettp_saturation_off_tag tag;
+            xetla_saturation_off_tag tag;
             T x0 = x[0];
             T result = xetla_lsr<T>(x0, bit, tag);
             return xetla_vector_gen<T, SIMD>(result, 0);
@@ -185,7 +185,7 @@ struct asr_with_vector_input {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, T *a, T *b, T *c) {
         auto op = [](xetla_vector<T, SIMD> x, int bit) {
-            xettp_saturation_off_tag tag;
+            xetla_saturation_off_tag tag;
             return xetla_asr<T, T>(x, bit, tag);
         };
         run_bit_shift_op_common<T, SIMD>(ei, a, b, c, op);
@@ -197,7 +197,7 @@ struct asr_with_scalar_input {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, T *a, T *b, T *c) {
         auto op = [](xetla_vector<T, SIMD> x, int bit) {
-            xettp_saturation_off_tag tag;
+            xetla_saturation_off_tag tag;
             T x0 = x[0];
             T result = xetla_asr<T>(x0, bit, tag);
             return xetla_vector_gen<T, SIMD>(result, 0);

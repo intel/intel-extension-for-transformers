@@ -415,8 +415,8 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
 
                 xetla_tatomic_store_global<dtype, payload_t::num_channel, L1,
-                        L3, op_kind>((uint64_t)payload.base_pointer
-                                + payload.address + address_offset,
+                        L3, op_kind>(payload.base_pointer + address_offset
+                                + payload.channel_offset,
                         reg_sub.xetla_select<payload_t::store_elems, 1>(
                                 sub_block_y * block_size_x),
                         pred_x & pred_y);
@@ -446,12 +446,12 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                                   + sub_block_y)
                                 < payload.height_in_elems
                         : 1;
-                uint32_t address_offset = offset_x * sizeof(dtype)
+                uint64_t address_offset = offset_x * sizeof(dtype)
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
 
                 xetla_tatomic_store_global<dtype, payload_t::num_channel, L1,
                         L3, op_kind>((uint64_t)payload.base_pointer
-                                + payload.address + address_offset,
+                                + address_offset + payload.channel_offset,
                         reg_sub.xetla_select<payload_t::store_elems, 1>(
                                 sub_block_y * block_size_x),
                         pred_x & pred_y);

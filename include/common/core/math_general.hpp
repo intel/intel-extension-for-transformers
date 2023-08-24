@@ -92,7 +92,7 @@ __XETLA_API typename std::remove_const<T1>::type xetla_abs(T1 src0) {
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise maximum elements.
 
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_max(
         xetla_vector<T, SZ> src0, xetla_vector<T, SZ> src1, Sat sat = {}) {
     static_assert(!(is_internal_type<T>::value),
@@ -110,7 +110,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_max(
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise maximum elements.
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_max(
         xetla_vector<T, SZ> src0, T src1, Sat sat = {}) {
     static_assert(!(is_internal_type<T>::value),
@@ -128,7 +128,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_max(
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise maximum elements.
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_max(
         T src0, xetla_vector<T, SZ> src1, Sat sat = {}) {
     static_assert(!(is_internal_type<T>::value),
@@ -144,7 +144,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_max(
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return maximum value between the two inputs.
-template <typename T, typename Sat = xettp_saturation_off_tag>
+template <typename T, typename Sat = xetla_saturation_off_tag>
 __XETLA_API T xetla_max(T src0, T src1, Sat sat = {}) {
     static_assert(!(is_internal_type<T>::value),
             "The internal types are not yet supported!");
@@ -161,7 +161,7 @@ __XETLA_API T xetla_max(T src0, T src1, Sat sat = {}) {
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise minimum elements.
 
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_min(
         xetla_vector<T, SZ> src0, xetla_vector<T, SZ> src1, Sat sat = {}) {
     static_assert(!(is_internal_type<T>::value),
@@ -179,7 +179,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_min(
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise minimum elements.
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_min(
         xetla_vector<T, SZ> src0, T src1, Sat sat = {}) {
     static_assert(!(is_internal_type<T>::value),
@@ -197,7 +197,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_min(
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise minimum elements.
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_min(
         T src0, xetla_vector<T, SZ> src1, Sat sat = {}) {
     static_assert(!(is_internal_type<T>::value),
@@ -213,7 +213,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_min(
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return minimum value between the two inputs.
-template <typename T, typename Sat = xettp_saturation_off_tag>
+template <typename T, typename Sat = xetla_saturation_off_tag>
 __XETLA_API T xetla_min(T src0, T src1, Sat sat = {}) {
     static_assert(!(is_internal_type<T>::value),
             "The internal types are not yet supported!");
@@ -227,7 +227,7 @@ __XETLA_API T xetla_min(T src0, T src1, Sat sat = {}) {
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise exponent elements.
-template <class T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <class T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_exp(
         xetla_vector<T, SZ> src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
@@ -242,7 +242,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_exp(
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return exponent value.
-template <class T, typename Sat = xettp_saturation_off_tag>
+template <class T, typename Sat = xetla_saturation_off_tag>
 __XETLA_API T xetla_exp(T src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
                     || (std::is_same<remove_const_t<T>, fp16>::value),
@@ -257,7 +257,7 @@ __XETLA_API T xetla_exp(T src, Sat sat = {}) {
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise exponent elements.
-template <class T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <class T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_exp2(
         xetla_vector<T, SZ> src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
@@ -272,7 +272,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_exp2(
 /// @param sat enables/disables the saturation (off by default). Possible
 /// values: saturation_on/saturation_off.
 /// @return exponent value.
-template <class T, typename Sat = xettp_saturation_off_tag>
+template <class T, typename Sat = xetla_saturation_off_tag>
 __XETLA_API T xetla_exp2(T src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
                     || (std::is_same<remove_const_t<T>, fp16>::value),
@@ -286,7 +286,7 @@ __XETLA_API T xetla_exp2(T src, Sat sat = {}) {
 /// @tparam Sat Is the saturation flag(off by default). Possible values: saturation_on/saturation_off.
 /// @param src Is the input vector.
 /// @return Returns the result of 1/x
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_inv(
         xetla_vector<T, SZ> src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
@@ -300,7 +300,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_inv(
 /// @tparam Sat Is the saturation flag(off by default). Possible values: saturation_on/saturation_off.
 /// @param src Is the input scalar.
 /// @return Returns the result of 1/x
-template <typename T, typename Sat = xettp_saturation_off_tag>
+template <typename T, typename Sat = xetla_saturation_off_tag>
 __XETLA_API T xetla_inv(T src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
                     || (std::is_same<remove_const_t<T>, fp16>::value),
@@ -314,7 +314,7 @@ __XETLA_API T xetla_inv(T src, Sat sat = {}) {
 /// @tparam Sat Is the saturation flag(off by default). Possible values: saturation_on/saturation_off.
 /// @param src Is the input vector.
 /// @return Returns the result of x^(1/2)
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_sqrt(
         xetla_vector<T, SZ> src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
@@ -328,7 +328,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_sqrt(
 /// @tparam Sat Is the saturation flag(off by default). Possible values: saturation_on/saturation_off.
 /// @param src Is the input vector.
 /// @return Returns the result of x^(1/2)
-template <typename T, typename Sat = xettp_saturation_off_tag>
+template <typename T, typename Sat = xetla_saturation_off_tag>
 __XETLA_API T xetla_sqrt(T src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
                     || (std::is_same<remove_const_t<T>, fp16>::value),
@@ -342,7 +342,7 @@ __XETLA_API T xetla_sqrt(T src, Sat sat = {}) {
 /// @tparam Sat Is the saturation flag(off by default). Possible values: saturation_on/saturation_off.
 /// @param src Is the input vector.
 /// @return Returns the result of x^(1/2)
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_sqrt_ieee(
         xetla_vector<T, SZ> src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
@@ -356,7 +356,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_sqrt_ieee(
 /// @tparam Sat Is the saturation flag(off by default). Possible values: saturation_on/saturation_off.
 /// @param src Is the input vector.
 /// @return Returns the result of x^(1/2)
-template <typename T, typename Sat = xettp_saturation_off_tag>
+template <typename T, typename Sat = xetla_saturation_off_tag>
 __XETLA_API T xetla_sqrt_ieee(T src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
                     || (std::is_same<remove_const_t<T>, double>::value),
@@ -370,7 +370,7 @@ __XETLA_API T xetla_sqrt_ieee(T src, Sat sat = {}) {
 /// @tparam Sat Is the saturation flag(off by default). Possible values: saturation_on/saturation_off.
 /// @param src Is the input vector.
 /// @return Returns the result of 1/sqrt(x)
-template <typename T, int SZ, typename Sat = xettp_saturation_off_tag>
+template <typename T, int SZ, typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T, SZ> xetla_rsqrt(
         xetla_vector<T, SZ> src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
@@ -384,7 +384,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_rsqrt(
 /// @tparam Sat Is the saturation flag(off by default). Possible values: saturation_on/saturation_off.
 /// @param src Is the input vector.
 /// @return Returns the result of 1/sqrt(x)
-template <typename T, typename Sat = xettp_saturation_off_tag>
+template <typename T, typename Sat = xetla_saturation_off_tag>
 __XETLA_API T xetla_rsqrt(T src, Sat sat = {}) {
     static_assert((std::is_same<remove_const_t<T>, float>::value)
                     || (std::is_same<remove_const_t<T>, fp16>::value),
@@ -548,7 +548,7 @@ __XETLA_API xetla_vector<T, SZ> xetla_rnde(xetla_vector<T, SZ> src0) {
 /// values: saturation_on/saturation_off.
 /// @return vector of component-wise additive elements.
 template <typename T1, typename T0, int SZ,
-        typename Sat = xettp_saturation_off_tag>
+        typename Sat = xetla_saturation_off_tag>
 __XETLA_API xetla_vector<T1, SZ> xetla_add(
         xetla_vector<T0, SZ> src0, xetla_vector<T0, SZ> src1, Sat sat = {}) {
     static_assert(
@@ -556,8 +556,10 @@ __XETLA_API xetla_vector<T1, SZ> xetla_add(
             "The internal types are not yet supported!");
     /// for esimd, current we don't have add with saturation, this is the emulation
     xetla_vector<T0, SZ> temp = src0 + src1;
-    xetla_vector<T1, SZ> result = __ESIMD_NS::saturate<T1, T0, SZ>(temp);
-    return result;
+    if constexpr (std::is_same_v<Sat, xetla_saturation_off_tag>)
+        return xetla_vector<T1, SZ>(temp);
+    else
+        return __ESIMD_NS::saturate<T1, T0, SZ>(temp);
 }
 
 /// @} xetla_core_math

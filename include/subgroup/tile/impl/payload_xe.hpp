@@ -310,6 +310,8 @@ struct mem_payload_t<dtype_, tile_desc_, msg_type::atomic_add,
     static constexpr mem_layout memory_layout = mem_layout::row_major;
     static constexpr msg_type message_type = msg_type::atomic_add;
     static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static_assert(
+            sizeof(dtype) >= 4, "for atomic add, we only support DW or QW");
 
 private:
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
@@ -338,7 +340,7 @@ public:
     static constexpr uint32_t num_channel_y = num_channel / num_channel_x;
     static constexpr uint32_t store_elems = num_channel_y * block_size_x;
 
-    xetla_vector<uint64_t, num_channel> address;
+    xetla_vector<uint32_t, num_channel> channel_offset;
     xetla_vector<uint32_t, num_channel> step_x;
     xetla_vector<uint32_t, num_channel> step_y;
     uint32_t pitch_in_bytes;
@@ -346,7 +348,7 @@ public:
     uint32_t height_in_elems;
     uint32_t base_x;
     uint32_t base_y;
-    dtype *base_pointer;
+    uint64_t base_pointer;
 
     inline mem_payload_t(
             mem_desc_t<dtype, memory_layout, memory_space> &mem_tdesc) {
@@ -355,15 +357,13 @@ public:
         base_y = mem_tdesc.coord.y;
         width_in_elems = mem_tdesc.shape.x;
         height_in_elems = mem_tdesc.shape.y;
-        base_pointer = (dtype *)mem_tdesc.base.base;
-        uint32_t start_address
-                = base_y * pitch_in_bytes + base_x * sizeof(dtype);
+        base_pointer = (uint64_t)mem_tdesc.base.base;
+        base_pointer += base_y * pitch_in_bytes + base_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
         step_x = channel_index % num_channel_x;
         step_y = channel_index / num_channel_x;
-        address = start_address + step_x * sizeof(dtype)
-                + step_y * pitch_in_bytes;
+        channel_offset = step_x * sizeof(dtype) + step_y * pitch_in_bytes;
     }
 
     inline mem_payload_t(dtype *p, int surface_width, int surface_height,
@@ -373,15 +373,13 @@ public:
         base_y = surface_offset_y;
         width_in_elems = surface_width;
         height_in_elems = surface_height;
-        base_pointer = p;
-        uint32_t start_address
-                = base_y * pitch_in_bytes + base_x * sizeof(dtype);
+        base_pointer = (uint64_t)p;
+        base_pointer += base_y * pitch_in_bytes + base_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
         step_x = channel_index % num_channel_x;
         step_y = channel_index / num_channel_x;
-        address = start_address + step_x * sizeof(dtype)
-                + step_y * pitch_in_bytes;
+        channel_offset = step_x * sizeof(dtype) + step_y * pitch_in_bytes;
     }
 
     __XETLA_API void init(dtype *p, int surface_width, int surface_height,
@@ -391,15 +389,13 @@ public:
         base_y = surface_offset_y;
         width_in_elems = surface_width;
         height_in_elems = surface_height;
-        base_pointer = p;
-        uint32_t start_address
-                = base_y * pitch_in_bytes + base_x * sizeof(dtype);
+        base_pointer = (uint64_t)p;
+        base_pointer += base_y * pitch_in_bytes + base_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
         step_x = channel_index % num_channel_x;
         step_y = channel_index / num_channel_x;
-        address = start_address + step_x * sizeof(dtype)
-                + step_y * pitch_in_bytes;
+        channel_offset = step_x * sizeof(dtype) + step_y * pitch_in_bytes;
     }
 
     __XETLA_API void init(
@@ -409,15 +405,13 @@ public:
         base_y = mem_tdesc.coord.y;
         width_in_elems = mem_tdesc.shape.x;
         height_in_elems = mem_tdesc.shape.y;
-        base_pointer = (dtype *)mem_tdesc.base.base;
-        uint32_t start_address
-                = base_y * pitch_in_bytes + base_x * sizeof(dtype);
+        base_pointer = (uint64_t)mem_tdesc.base.base;
+        base_pointer += base_y * pitch_in_bytes + base_x * sizeof(dtype);
         xetla_vector<uint32_t, num_channel> channel_index
                 = xetla_vector_gen<uint32_t, num_channel>(0, 1);
         step_x = channel_index % num_channel_x;
         step_y = channel_index / num_channel_x;
-        address = start_address + step_x * sizeof(dtype)
-                + step_y * pitch_in_bytes;
+        channel_offset = step_x * sizeof(dtype) + step_y * pitch_in_bytes;
     }
 
     inline mem_payload_t(const this_payload_t &rhs) {
@@ -427,7 +421,7 @@ public:
         this->base_x = rhs.base_x;
         this->base_y = rhs.base_y;
         this->base_pointer = rhs.base_pointer;
-        this->address = rhs.address;
+        this->channel_offset = rhs.channel_offset;
         this->step_x = rhs.step_x;
         this->step_y = rhs.step_y;
     }
@@ -440,7 +434,7 @@ public:
         this->base_x = rhs.base_x;
         this->base_y = rhs.base_y;
         this->base_pointer = rhs.base_pointer;
-        this->address = rhs.address;
+        this->channel_offset = rhs.channel_offset;
         this->step_x = rhs.step_x;
         this->step_y = rhs.step_y;
         return *this;
@@ -449,9 +443,11 @@ public:
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
     __XETLA_API void update_tdesc(int offset) {
         if constexpr (update_dir == tdesc_update_dir::x_dir) {
-            address += int64_t(offset) * sizeof(dtype);
+            base_pointer += int64_t(offset) * sizeof(dtype);
+            base_x += offset;
         } else {
-            address += int64_t(offset) * pitch_in_bytes;
+            base_pointer += int64_t(offset) * pitch_in_bytes;
+            base_y += offset;
         }
     }
 };

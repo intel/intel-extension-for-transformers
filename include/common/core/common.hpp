@@ -224,13 +224,13 @@ enum class argument_type : uint8_t {
 };
 
 // Saturation tag
-class xettp_saturation_on_tag {
+class xetla_saturation_on_tag {
 public:
     using sat_tag = typename __ESIMD_NS::saturation_on_tag;
     static constexpr sat_tag value = {};
 };
 
-class xettp_saturation_off_tag {
+class xetla_saturation_off_tag {
 public:
     using sat_tag = typename __ESIMD_NS::saturation_off_tag;
     static constexpr sat_tag value = {};

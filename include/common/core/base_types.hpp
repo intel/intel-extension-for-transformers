@@ -44,6 +44,7 @@ struct bf16 {
         temp = temp << 0x10;
         return *reinterpret_cast<float *>(&temp);
     }
+    bf16() = default;
     bf16(float val) { data = (*reinterpret_cast<uint32_t *>(&val)) >> 0x10; }
 
     bf16 &operator=(float val) {

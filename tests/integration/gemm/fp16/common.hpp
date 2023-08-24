@@ -374,6 +374,69 @@ public:
     using data_type_acc = float;
 };
 
+class Test17 : public TestBase {
+public:
+    static constexpr size_t mat_m = 128;
+    static constexpr size_t mat_n = 256;
+    static constexpr size_t mat_k = 64;
+    static constexpr size_t wg_m = 40;
+    static constexpr size_t wg_n = 80;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 32;
+    static constexpr size_t sg_k = 16;
+    static constexpr uint32_t l3_kslicing = 1;
+    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = fp16;
+    using data_type_b = fp16;
+    using data_type_c = fp16;
+    using data_type_acc = float;
+    static constexpr mma_engine engine = mma_engine::fpu;
+};
+
+class Test18 : public TestBase {
+public:
+    static constexpr size_t mat_m = 128;
+    static constexpr size_t mat_n = 256;
+    static constexpr size_t mat_k = 64;
+    static constexpr size_t wg_m = 64;
+    static constexpr size_t wg_n = 64;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 32;
+    static constexpr size_t sg_k = 16;
+    static constexpr uint32_t l3_kslicing = 1;
+    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr mem_layout layout_a = mem_layout::col_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = fp16;
+    using data_type_b = fp16;
+    using data_type_c = fp16;
+    using data_type_acc = float;
+    static constexpr mma_engine engine = mma_engine::fpu;
+};
+
+class Test19 : public TestBase {
+public:
+    static constexpr size_t mat_m = 128;
+    static constexpr size_t mat_n = 256;
+    static constexpr size_t mat_k = 64;
+    static constexpr size_t wg_m = 64;
+    static constexpr size_t wg_n = 64;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 32;
+    static constexpr size_t sg_k = 16;
+    static constexpr uint32_t l3_kslicing = 1;
+    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::col_major;
+    using data_type_a = fp16;
+    using data_type_b = fp16;
+    using data_type_c = fp16;
+    using data_type_acc = float;
+    static constexpr mma_engine engine = mma_engine::fpu;
+};
+
 template <class Test>
 class result_validate {
 
