@@ -104,13 +104,18 @@ struct model_hparams {
   float clip_qkv = 0;  // for mpt
   int32_t par_res = 1;  // for neox 1 = true, 0 = false
 
-  // for tokenizer
+  // for ChatGLM-1 & 2 tokenizer
   int32_t bos_token_id = 0;
   int32_t eos_token_id = 0;
   int32_t pad_token_id = 0;
   int32_t sep_token_id = 0;
+
+  // ChatGLM-2
   int32_t multi_query_group_num = 0;
   int32_t ffn_hidden_size = 0;
+
+  // ChatGLM-1
+  int32_t inner_hidden_size = 0;
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));

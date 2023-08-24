@@ -218,6 +218,8 @@ struct model_file_loader {
     hparams.sep_token_id = file.read_u32();
     hparams.multi_query_group_num = file.read_u32();
     hparams.ffn_hidden_size = file.read_u32();
+
+    hparams.inner_hidden_size = file.read_u32();
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
@@ -330,6 +332,7 @@ struct model_file_saver {
     file.write_u32(hparams.sep_token_id);
     file.write_u32(hparams.multi_query_group_num);
     file.write_u32(hparams.ffn_hidden_size);
+    file.write_u32(hparams.inner_hidden_size);
   }
   void write_vocab() {
     if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
@@ -421,10 +424,15 @@ struct model_model_loader {
         it = tensors_map.name_to_idx.find("gpt_neox.embed_in.weight");
         if (it == tensors_map.name_to_idx.end()) {
           it = tensors_map.name_to_idx.find("model/wte");
+          // ChatGLM-2
           if (it == tensors_map.name_to_idx.end()) {
             it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");
+            // ChatGLM-1
             if (it == tensors_map.name_to_idx.end()) {
-              throw std::string("missing tok_embeddings.weight");
+              it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");
+              if (it == tensors_map.name_to_idx.end()) {
+                throw std::string("missing tok_embeddings.weight");
+              }
             }
           }
         }

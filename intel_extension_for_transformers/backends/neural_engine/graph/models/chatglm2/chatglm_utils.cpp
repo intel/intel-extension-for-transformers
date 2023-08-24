@@ -31,7 +31,7 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
-#include "models/chatglm/chatglm.h"
+#include "models/chatglm2/chatglm.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"

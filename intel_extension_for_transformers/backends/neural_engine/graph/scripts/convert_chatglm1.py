@@ -19,7 +19,7 @@ from pathlib import Path
 import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
 import sentencepiece.sentencepiece_model_pb2 as model
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
@@ -106,9 +106,9 @@ def load_vocab(path: Path) -> SentencePieceVocab:
     # a directory, it might be the model directory, and tokenizer.model might
     # be in the parent of that.
     if path.is_dir():
-        path2 = path / "tokenizer.model"
+        path2 = path / "ice_text.model"
         # Use `.parent` instead of /.. to handle the symlink case better.
-        path3 = path.parent / "tokenizer.model"
+        path3 = path.parent / "ice_text.model"
         if path2.exists():
             path = path2
         elif path3.exists():
@@ -141,8 +141,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
         ftype = 1
 
 
+    # Here is different
     tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
+    model = AutoModel.from_pretrained(
         dir_model, low_cpu_mem_usage=True, trust_remote_code=True
     )
 
@@ -154,19 +155,18 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout = open(fname_out, "wb")
 
     print(hparams)
-    import pdb;pdb.set_trace()
 
     fout.write(struct.pack("i", 0x67676d66))
     fout.write(struct.pack("i", 1))
 
-    fout.write(struct.pack("i", hparams["padded_vocab_size"]))
+    fout.write(struct.pack("i", hparams["vocab_size"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["num_attention_heads"]))
     fout.write(struct.pack("i", hparams["num_layers"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", ftype))
-    fout.write(struct.pack("i", hparams["seq_length"]))
+    fout.write(struct.pack("i", hparams["max_sequence_length"]))
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("i", 0))
@@ -176,14 +176,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
 
-    fout.write(struct.pack("i", hparams["multi_query_group_num"]))
-    fout.write(struct.pack("i", hparams["ffn_hidden_size"]))
-    # fout.write(struct.pack("i", hparams["bos_token_id"]))
-    # fout.write(struct.pack("i", hparams["eos_token_id"]))
-    # fout.write(struct.pack("i", hparams["pad_token_id"]))
-    # fout.write(struct.pack("i", hparams["sep_token_id"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", hparams["inner_hidden_size"]))
 
-    vocab = load_vocab(Path("/home/tensorflow/zhenzhong/models/chatglm2-6b"))
+    vocab = load_vocab(Path("/home/tensorflow/zhenzhong/models/chatglm-6b"))
     counter = 0
     for text, score in vocab.all_tokens():
         fout.write(struct.pack("i", len(text)))
@@ -191,7 +188,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         fout.write(struct.pack("f", score))
         counter += 1
 
-    while counter < hparams["padded_vocab_size"]:
+    while counter < hparams["vocab_size"]:
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
         fout.write(struct.pack("f", 0))
@@ -211,7 +208,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
             if name[-7:] == ".weight" and n_dims == 2:
                 print("  Converting to float16")
                 data = data.astype(np.float16)
-                ftype_cur = 1
+                ftype_cur = 14
             else:
                 print("  Converting to float32")
                 data = data.astype(np.float32)
