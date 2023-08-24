@@ -27,6 +27,7 @@
 
 #include "core/data_types.h"
 #include "core/ne_layers.h"
+#include "models/model_utils/model_types.h"
 
 #if !defined(_WIN32)
 #include <stdio.h>
@@ -150,6 +151,9 @@ struct quant_params {
   int32_t block_size = 32;
   std::string scale_dtype = "fp32";
   std::string compute_type = "ggml";
+  std::string model_name = "unknown";
+  // set by model_name automatically
+  model_archs model_arch = MODEL_UNKNOWN;
 };
 
 ne_ftype quant_params_to_ftype(const quant_params& params);
