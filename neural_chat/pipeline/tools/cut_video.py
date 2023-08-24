@@ -95,8 +95,10 @@ def cut_video(args, outdir):
                                                 os.path.join(save_path, str(name))+'.wav')
                 print(start_hour, start_min, start_sec)
                 print(end_hour, end_min, end_sec)
-                os.system(command)
-              
+                try:
+                    subprocess.run(command, check=True)
+                except subprocess.CalledProcessError as e:
+                    print("Error while executing command:", e)
                 start_hour = int(end_hour)
                 start_min = int(end_min)
                 start_sec = int(end_sec)
