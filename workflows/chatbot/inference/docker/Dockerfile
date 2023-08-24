@@ -65,11 +65,10 @@ RUN source activate && conda activate chatbot-demo && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
     conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
-    pip install farm-haystack==1.14.0 && \
     pip install intel_extension_for_pytorch && \
     pip install optimum-intel && \
     pip install transformers diffusers accelerate SentencePiece peft evaluate nltk datasets && \
-    pip install fastapi uvicorn sse_starlette bottle gevent pymysql && \
+    pip install uvicorn sse_starlette bottle gevent pymysql && \
     pip install schema && \
     pip install datasets torch transformers sentencepiece peft evaluate nltk rouge_score && \
     cd /root/chatbot && git clone https://github.com/intel/intel-extension-for-transformers.git \

@@ -26,3 +26,32 @@ if(NOT WIN32)
   target_link_libraries(ne_layers PUBLIC rt)
 endif()
 
+add_compile_definitions(NE_USE_RN_BF16FP16=1)
+
+
+if (NE_BUILD_TESTS)
+
+function(add_test_target src)
+  get_filename_component(test_target ${src} NAME_WE)
+  get_filename_component(src_dir ${src} DIRECTORY)
+  string(REGEX REPLACE [/\\] "_" src_dir ${src_dir})
+  if(src_dir)
+    set (test_target "${src_dir}_${test_target}")
+  endif()
+  set (test_target "test_${test_target}")
+  add_executable_w_warning(${test_target} ${src})
+  target_compile_definitions(${test_target} PRIVATE NE_TESTS)
+  target_compile_options(${test_target} PRIVATE -fsanitize=address)
+  target_link_options(${test_target} PRIVATE -fsanitize=address)
+  target_include_directories(${test_target} PUBLIC .)
+  target_link_libraries(${test_target} PUBLIC Threads::Threads jblas::jblas ne_vec)
+  if(NOT WIN32)
+    target_link_libraries(${test_target} PUBLIC rt)
+  endif()
+  add_test(NAME ${test_target} COMMAND ${test_target})
+  set_tests_properties(${test_target} PROPERTIES LABELS "${src_dir}_test")
+endfunction()
+
+add_test_target(layers/mha_dense.cpp)
+
+endif()

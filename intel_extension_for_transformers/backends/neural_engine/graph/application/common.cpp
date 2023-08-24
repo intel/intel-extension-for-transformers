@@ -685,6 +685,9 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
   fprintf(stderr,
           "  --compute_type             Gemm computation data type: int8/fp32/ggml (default: "
           "ggml)\n");
+  fprintf(stderr,
+          "  --model_name               model name like falcon / llama (default: "
+          "unknown)\n");
   fprintf(stderr, "\n");
 }
 
@@ -709,6 +712,14 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       params.scale_dtype = argv[++i];
     } else if (arg == "--compute_type") {
       params.compute_type = argv[++i];
+    } else if (arg == "--model_name") {
+      params.model_name = argv[++i];
+      model_archs mt = model_name_to_arch::init().find(params.model_name);
+      if (mt == MODEL_UNKNOWN) {
+        exit(0);
+      } else {
+        params.model_arch = mt;
+      }
     } else if (arg == "-h" || arg == "--help") {
       quant_print_usage(argc, argv, params);
       exit(0);
@@ -786,21 +797,13 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params param
     if (params.compute_type == "int8") {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
       static GemmKernel kernel;
-      if (cd->AVX512F()) {
-        packedw =
-            kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n, k, f32ptr, k, params.block_size, type);
-      } else {
-        packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n, k, f32ptr, k, params.block_size, type);
-      }
+      assert(cd->AVX512F());
+      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
     } else if (params.compute_type == "fp32") {
       using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
       static GemmKernel kernel;
-      if (cd->AVX512F()) {
-        packedw =
-            kernel.getWeightPtr()->compressWeightTranspose<JblasAVX512F>(n, k, f32ptr, k, params.block_size, type);
-      } else {
-        packedw = kernel.getWeightPtr()->compressWeightTranspose<JblasNoSIMD>(n, k, f32ptr, k, params.block_size, type);
-      }
+      assert(cd->AVX512F());
+      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
     }
   } else if (params.bits == 8) {
     // TODO add 8bit quantization

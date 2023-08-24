@@ -20,11 +20,11 @@
 namespace jblas {
 namespace epilogue {
 namespace gemm {
-template <typename _T>
-class AccumulateWriteBack {
+template <typename _SRC_T, typename _DST_T>
+class AccumulatorWriteBack {
  public:
   struct Param {
-    _T* C;
+    _DST_T* C;
     int ldc;
   };
 
@@ -33,8 +33,38 @@ class AccumulateWriteBack {
                      const int N, const Param& _param) {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    return kernel::wrapper::Memcpy2D::template forward<ISA_T>((void*)cacheptr, (void*)cptr, M, N * sizeof(_T),
-                                                              cachestep * sizeof(float), _param.ldc * sizeof(_T));
+    static_assert(std::is_same<_SRC_T, float>::value,
+                  "src data type must be float in AccumulatorWriteBack epilogue now.");
+    if (std::is_same<_DST_T, jblas::utils::bf16>::value) {
+      return kernel::wrapper::Memcpy2DFp32CvtBf16::template forward<ISA_T>(
+          (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T));
+    } else if (sizeof(_SRC_T) == sizeof(_DST_T)) {
+      return kernel::wrapper::Memcpy2D::template forward<ISA_T>(
+          (void*)cacheptr, (void*)cptr, M, N * sizeof(_DST_T), cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T));
+    } else {
+      assert(false);
+    }
+  }
+};
+
+template <typename _SRC_T, typename _DST_T>
+class AccumulatorWriteBackWithGelu {
+ public:
+   struct Param {
+    _DST_T* C;
+    int ldc;
+  };
+
+  template <JBLAS_ISA ISA_T>
+  JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param) {
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto cptr = _param.C + COffset;
+    static_assert(std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value,
+                  "src/dst data type must be float in AccumulatorWriteBackWithGelu epilogue now.");
+
+    return kernel::wrapper::Memcpy2D::template forward_with_gelu<ISA_T>(
+        (void*)cacheptr, (void*)cptr, M, N * sizeof(_DST_T), cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T));
   }
 };
 

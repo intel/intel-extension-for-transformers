@@ -7,8 +7,10 @@ We provide the inference benchmarking script `run_generation.py` for Starcoder m
 Recommend python 3.7 or higher version is recommended. The dependent packages are listed in requirements, please install them as follows,
 
 ```shell
-git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit
-pip install frameworks.ai.nlp-toolkit.intel-nlp-toolkit/
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers
+pip install -r requirements.txt
+python setup.py install
 ```
 Here is how to install intel-extension-for-pytorch from source.
 ```shell
@@ -71,7 +73,6 @@ python run_generation.py \
     --int8 \
     --ipex \
     --benchmark \
-    --prompt_size 32 \
     --batch_size 1
 ```
 
@@ -124,7 +125,7 @@ python3 run_generation.py \
     --output_dir "$(CURDIR)/saved_results" \
     --int8 \
     --accuracy \
-    --tasks multiple-lua \
+    --tasks multiple-py \
     --batch_size 20 \
     --n_samples 20 \
     --allow_code_execution \
@@ -132,12 +133,14 @@ python3 run_generation.py \
     --temperature 0.2
 
 ```
+>Note: "mbpp" is Python programming datasets, please change the calibration dataset to get better results if you want to evaluate on other programing tasks (eg, multiple-lua).
+
 To run the container (here from image `evaluation-harness-multiple`) to quantize and evaluate on `CURDIR`, or another file mount it with -v, specify n_samples and allow code execution with --allow_code_execution (and add the number of problems --limit if it was used during generation):
 ```bash
 docker run -v $(CURDIR):$(CURDIR) \
     -it $(IMAGE_NAME) python3 run_generation.py --model $(CURDIR)/starcoder-3b --quantize   --sq --alpha 0.7 --ipex \
     --calib_iters 5 --calib_batch_size 1 --dataset "mbpp" --calib_split "test" --output_dir "$(CURDIR)/saved_results" \
-    --int8 --accuracy --tasks multiple-lua  --batch_size 20 --n_samples 20 --allow_code_execution \
+    --int8 --accuracy --tasks multiple-py  --batch_size 20 --n_samples 20 --allow_code_execution \
     --do_sample --temperature 0.2 --limit 2
 
 ```

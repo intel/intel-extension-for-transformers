@@ -39,7 +39,7 @@
 #include "models/model_utils/util.h"
 #include "models/models.h"
 
-void model_load_internal(const std::string& fname, model_name name, model_context& lctx, int n_ctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
                          ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
                          model_progress_callback progress_callback, void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
@@ -52,7 +52,7 @@ void model_load_internal(const std::string& fname, model_name name, model_contex
 }
 
 void GPTNEOX::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, ne_type memory_type_,
-                bool use_mmap_, bool use_mlock_, bool vocab_only_) {
+                   bool use_mmap_, bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
   memory_type = memory_type_;
@@ -131,7 +131,7 @@ void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callbac
     layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
     layer.norm[2] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
     layer.norm[3] = ml->get_tensor(layers_i + ".post_attention_layernorm.bias", {n_embd}, backend);
-  
+
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".attention.query_key_value.weight", {n_embd, 3 * n_embd}, backend);
     layer.attn[1] = ml->get_tensor(layers_i + ".attention.query_key_value.bias", {3 * n_embd}, backend);
@@ -145,12 +145,10 @@ void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callbac
     layer.ffn[3] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.bias", {n_embd}, backend);
 
     if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
-                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
-                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
-                    ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
+      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) + ne_nbytes(layer.norm[2]) +
+                    ne_nbytes(layer.norm[3]) + ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
+                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) + ne_nbytes(layer.ffn[0]) +
+                    ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
     }
   }
 
@@ -184,3 +182,22 @@ void GPTNEOX::load(model_context& lctx, model_progress_callback progress_callbac
 }
 
 #undef MODEL_BACKEND_OFFLOAD
+
+class gptneox_quant_layer : public quant_layer_base {
+ public:
+  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
+                                                 ne_type type) override {
+    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
+    if (layername == "gpt_neox.embed_in.weight") {
+      // special layer process, can be loaded by config file
+      return quant_params_internal();  // return q4_0 to cover the usage of getrow
+    }
+    quantize &= (ne.size() == 2);
+    if (quantize) {
+      return mGCfg;  // use global quant config
+    } else {
+      return quant_params_internal{quant_bits::count};  // non-quant
+    }
+  }
+};
+REGISTER_QUANT_LAYER_CLASS(gptneox);

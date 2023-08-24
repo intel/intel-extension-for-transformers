@@ -2,6 +2,7 @@ import argparse
 import copy, time
 from datetime import datetime
 import torch
+from queue import Queue
 import re, os, logging
 from threading import Thread
 import contextlib
@@ -32,7 +33,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PROMPT_DICT = {
+instruction_template = {
     "prompt_with_input": (
         "Below is an instruction that describes a task, paired with an input that provides further context. "
         "Write a response that appropriately completes the request.\n\n"
@@ -43,6 +44,24 @@ PROMPT_DICT = {
         "Write a response that appropriately completes the request.\n\n"
         "### Instruction:\n{instruction}\n\n### Response:\n"
     ),
+}
+
+chat_template = """### System:
+- You are a helpful assistant chatbot trained by Intel.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.{eos_token}
+### User:\n{instruction}{eos_token}
+### Assistant:
+"""
+
+summarization_template = "{instruction}\nSummarize the highlights of this article.\n"
+
+
+template_maps = {
+        "completion": instruction_template,
+        "chat": chat_template,
+        "summarization": summarization_template
 }
 
 
@@ -84,6 +103,12 @@ def parse_args():
         type=int,
         default=128,
         help="The maximum number of new tokens to generate.",
+    )
+    parser.add_argument(
+        "--hf_access_token",
+        type=str,
+        default=None,
+        help="Huggingface token to access model",
     )
     parser.add_argument(
         "--num_beams",
@@ -156,6 +181,10 @@ def parse_args():
     parser.add_argument(
         "--local_rank", type=int, default=-1, metavar="N", help="Local process rank."
     )
+    parser.add_argument(
+        "--task", type=str, default="", choices=["completion", "chat", "summarization"],
+        help="task name, different task means different templates."
+    )
     args = parser.parse_args()
     return args
 
@@ -186,17 +215,17 @@ def max_input_len(model, outlen=0):
     return 128
 
 
-def create_prompts(examples):
-    prompts = []
-    for example in examples:
+def add_template(example, template_name):
+    if "prompt_with_input" in template_name:
         prompt_template = (
-            PROMPT_DICT["prompt_with_input"]
-            if example["input"] != ""
-            else PROMPT_DICT["prompt_without_input"]
-        )
-        prompt = prompt_template.format_map(example)
-        prompts.append(prompt)
-    return prompts
+                template_name["prompt_with_input"]
+                if example["input"] != "" 
+                else template_name["prompt_without_input"]
+                )
+    else:
+        prompt_template = template_name
+    prompt = prompt_template.format_map(example)
+    return prompt
 
 
 def get_optimized_model_name(config):
@@ -308,6 +337,7 @@ def load_model(
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
+    hf_access_token=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -340,11 +370,12 @@ def load_model(
         tokenizer_name,
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+        use_auth_token=hf_access_token,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name, low_cpu_mem_usage=True
+                model_name, low_cpu_mem_usage=True, use_auth_token=hf_access_token
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
@@ -357,6 +388,7 @@ def load_model(
                 torch_dtype=torch.bfloat16,
                 low_cpu_mem_usage=True,
                 torchscript=cpu_jit,
+                use_auth_token=hf_access_token,
             )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
@@ -367,7 +399,7 @@ def load_model(
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
+                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, use_auth_token=hf_access_token
             )
     else:
         raise ValueError(
@@ -445,7 +477,7 @@ def load_model(
             from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
             model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, use_auth_token=hf_access_token)
             model = MPTTSModelForCausalLM(
                 model, config, use_cache=use_cache, model_dtype=torch.bfloat16
             )
@@ -517,9 +549,22 @@ def predict_stream(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
+    return_stats = params["return_stats"] if "return_stats" in params else False
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    errors_queue = Queue()
+    task = params.get("task", "")
+
+    if task != "":
+        # add template
+        if template_maps.get(task) is not None:
+            template_name = template_maps.get(task)
+        else:
+            NotImplementedError(f'task template is not exist.')
+        prompt = add_template({"instruction": prompt,
+            "input": "",
+            "eos_token": tokenizer.eos_token}, template_name)
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -553,25 +598,28 @@ def predict_stream(**params):
         )
 
         def generate_output():
-            with torch.no_grad():
-                with torch.cpu.amp.autocast(
-                    enabled=True, dtype=torch.bfloat16, cache_enabled=True
-                ):
-                    generation_kwargs = dict(
-                        streamer=streamer,
-                        generation_config=generation_config,
-                        return_dict_in_generate=True,
-                    )
-                    generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
-                        [
-                            StopOnTokens(
-                                min_length=max(max_new_tokens - 20, 0),
-                                start_length=input_token_len,
-                                stop_token_id=stop_token_ids,
-                            )
-                        ]
-                    )
-                    return model.generate(**input_tokens, **generation_kwargs)
+            try:
+                with torch.no_grad():
+                    with torch.cpu.amp.autocast(
+                        enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                    ):
+                        generation_kwargs = dict(
+                            streamer=streamer,
+                            generation_config=generation_config,
+                            return_dict_in_generate=True,
+                        )
+                        generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
+                            [
+                                StopOnTokens(
+                                    min_length=max(max_new_tokens - 20, 0),
+                                    start_length=input_token_len,
+                                    stop_token_id=stop_token_ids,
+                                )
+                            ]
+                        )
+                        return model.generate(**input_tokens, **generation_kwargs)
+            except Exception as e:
+                errors_queue.put(e)
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -622,21 +670,23 @@ def predict_stream(**params):
         # generation_config.top_p = top_p
         generation_config.temperature = temperature
         generation_config.repetition_penalty = repetition_penalty
-
         def generate_output():
-            with torch.no_grad():
-                return model.generate(
-                    **input_tokens,
-                    **generate_kwargs,
-                    streamer=streamer,
-                    generation_config=generation_config,
-                    return_dict_in_generate=True,
-                    output_scores=True,
-                    max_new_tokens=max_new_tokens,
-                    lazy_mode=True,
-                    hpu_graphs=use_hpu_graphs,
-                    ignore_eos=False,
-                )
+            try:
+                with torch.no_grad():
+                    return model.generate(
+                        **input_tokens,
+                        **generate_kwargs,
+                        streamer=streamer,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True,
+                        output_scores=True,
+                        max_new_tokens=max_new_tokens,
+                        lazy_mode=True,
+                        hpu_graphs=use_hpu_graphs,
+                        ignore_eos=False,
+                    )
+            except Exception as e:
+                errors_queue.put(e)
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -646,6 +696,14 @@ def predict_stream(**params):
         )
     output_word_len = 0
 
+    generation_thread.join(0.1)
+    if generation_thread.is_alive():
+        pass
+    else:
+        thread_exception = errors_queue.get()
+        raise thread_exception
+    # prevent crash if no words are coming out
+    first_token_output_time = datetime.now()
     for new_text in streamer:
         if len(new_text) == 0:
             continue
@@ -664,14 +722,15 @@ def predict_stream(**params):
         if output_word_len != 1
         else 0
     )
-    stats = {
-        "input_token_len": input_token_len,
-        "output_word_len": output_word_len,
-        "duration": duration,
-        "first_word_latency": first_word_latency,
-        "msecond_per_word": msecond_per_word,
-    }
-    yield "END_OF_STREAM_STATS={}".format(stats)
+    if return_stats:
+        stats = {
+            "input_token_len": input_token_len,
+            "output_word_len": output_word_len,
+            "duration": duration,
+            "first_word_latency": first_word_latency,
+            "msecond_per_word": msecond_per_word,
+        }
+        yield "END_OF_STREAM_STATS={}".format(stats)
 
 
 def predict(**params):
@@ -731,6 +790,19 @@ def predict(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+
+    task = params.get("task", "")
+
+    if task != "":
+        # add template
+        if template_maps.get(task) is not None:
+            template_name = template_maps.get(task)
+        else:
+            NotImplementedError(f'task template is not exist.')
+        prompt = add_template({"instruction": prompt,
+            "input": "",
+            "eos_token": tokenizer.eos_token}, template_name)
+
     if num_beams == 0:
         num_beams = 1
         do_sample = True
@@ -845,9 +917,6 @@ def predict(**params):
 def main():
     args = parse_args()
     base_model_path = args.base_model_path
-    prompts = create_prompts(
-        [{"instruction": instruction, "input": ""} for instruction in args.instructions]
-    )
 
     # Check the validity of the arguments
     if not 0 < args.temperature <= 1.0:
@@ -897,7 +966,9 @@ def main():
         use_cache=args.use_kv_cache,
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
+        hf_access_token=args.hf_access_token
     )
+
     if args.habana:
         from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
 
@@ -913,6 +984,7 @@ def main():
         model_name=base_model_path,
         device="hpu" if args.habana else "cpu",
         prompt="Tell me about Intel Xeon.",
+        task=args.task,
         temperature=args.temperature,
         top_p=args.top_p,
         top_k=args.top_k,
@@ -927,9 +999,8 @@ def main():
         if args.local_rank in [-1, 0]:
             print(new_text, end="", flush=True)
 
-    for idx, tp in enumerate(zip(prompts, args.instructions)):
+    for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
-        prompt, instruction = tp
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
@@ -938,7 +1009,8 @@ def main():
         for new_text in predict_stream(
             model_name=base_model_path,
             device="hpu" if args.habana else "cpu",
-            prompt=prompt,
+            prompt=instruction,
+            task=args.task,
             temperature=args.temperature,
             top_p=args.top_p,
             top_k=args.top_k,
@@ -955,9 +1027,8 @@ def main():
         if args.local_rank in [-1, 0]:
             logger.info("=" * (60 + len(idxs)))
 
-    for idx, tp in enumerate(zip(prompts, args.instructions)):
+    for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
-        prompt, instruction = tp
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
@@ -967,7 +1038,8 @@ def main():
         out = predict(
             model_name=base_model_path,
             device="hpu" if args.habana else "cpu",
-            prompt=prompt,
+            prompt=instruction,
+            task=args.task,
             temperature=args.temperature,
             top_p=args.top_p,
             top_k=args.top_k,

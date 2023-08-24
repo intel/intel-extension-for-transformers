@@ -31,7 +31,6 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
-#include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
@@ -43,7 +42,7 @@
 //   - n_threads: number of threads to use
 //
 static bool mpt_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                     const int n_past, const int n_threads) {
+                                    const int n_past, const int n_threads) {
   // // enforce that the first token is BOS
   // if (n_past == 0 && tokens[0] != model_token_bos()) {
   //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
@@ -101,10 +100,10 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
 
       cur = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur);
     }
-    
+
     {
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
-      
+
       if (model.hparams.clip_qkv > 0.0f) {
         cur = ne_clamp(ctx0, cur, -model.hparams.clip_qkv, model.hparams.clip_qkv);
       }
@@ -116,11 +115,11 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
       {
         struct ne_tensor* Vcur =
             ne_transpose(ctx0, ne_view_2d(ctx0, cur, n_embd, N, cur->nb[1], 2 * sizeof(float) * n_embd));
-        struct ne_tensor* k = ne_view_1d(ctx0, kv_self.k, N * n_embd,
-                                          (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
-        struct ne_tensor* v = ne_view_2d(
-            ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
-            (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
+        struct ne_tensor* k =
+            ne_view_1d(ctx0, kv_self.k, N * n_embd, (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
+        struct ne_tensor* v =
+            ne_view_2d(ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
+                       (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
         // important: storing RoPE-ed version of K in the KV cache!
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
@@ -135,11 +134,11 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
       // K = Kmem.view(n_embd/n_head, n_head, n_past + N).permute(0, 2, 1,
       // 3) [64, n_past + N, 12]
       struct ne_tensor* K = ne_permute(ctx0,
-                                        ne_reshape_3d(ctx0,
-                                                      ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_embd,
+                                       ne_reshape_3d(ctx0,
+                                                     ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_embd,
                                                                 il * n_ctx * ne_element_size(kv_self.k) * n_embd),
-                                                      n_embd / n_head, n_head, n_past + N),
-                                        0, 2, 1, 3);
+                                                     n_embd / n_head, n_head, n_past + N),
+                                       0, 2, 1, 3);
       // K * Q
       struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
 
@@ -156,10 +155,9 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
 
       // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1,
       // 2, 0, 3).contiguous() [n_past + N, 64, 12]
-      struct ne_tensor* V_trans =
-          ne_view_3d(ctx0, kv_self.v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
-                      n_ctx * ne_element_size(kv_self.v) * n_embd / n_head,
-                      il * n_ctx * ne_element_size(kv_self.v) * n_embd);
+      struct ne_tensor* V_trans = ne_view_3d(
+          ctx0, kv_self.v, n_past + N, n_embd / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
+          n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, il * n_ctx * ne_element_size(kv_self.v) * n_embd);
 
       // KQV = transpose(V) * KQ_soft_max
       struct ne_tensor* KQV = ne_mul_mat(ctx0, V_trans, KQ_soft_max);
@@ -289,47 +287,4 @@ int model_eval(struct model_context* ctx, const model_token* tokens, int n_token
   }
 
   return 0;
-}
-
-// TODO: not great allocating this every time
-std::vector<model_token> model_tokenize(struct model_context* ctx, const std::string& text, bool add_bos) {
-  // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
-  std::vector<model_token> res(text.size() + (int)add_bos);
-  const int n = model_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
-  assert(n >= 0);
-  res.resize(n);
-
-  return res;
-}
-
-struct model_context* model_init_from_gpt_params(const gpt_params& params) {
-  auto lparams = model_context_default_params();
-
-  lparams.name = params.name;
-  lparams.n_ctx = params.n_ctx;
-  lparams.n_gpu_layers = params.n_gpu_layers;
-  lparams.seed = params.seed;
-  lparams.f16_kv = params.memory_f16;
-  lparams.use_mmap = params.use_mmap;
-  lparams.use_mlock = params.use_mlock;
-  lparams.logits_all = params.perplexity;
-  lparams.embedding = params.embedding;
-
-  model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
-
-  if (lctx == NULL) {
-    fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model.c_str());
-    return NULL;
-  }
-
-  if (!params.lora_adapter.empty()) {
-    int err = model_apply_lora_from_file(lctx, params.lora_adapter.c_str(),
-                                         params.lora_base.empty() ? NULL : params.lora_base.c_str(), params.n_threads);
-    if (err != 0) {
-      fprintf(stderr, "%s: error: failed to apply lora adapter\n", __func__);
-      return NULL;
-    }
-  }
-
-  return lctx;
 }

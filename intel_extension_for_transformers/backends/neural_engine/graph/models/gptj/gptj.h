@@ -29,7 +29,7 @@ enum gptj_model {
 static const model_scratch gptj_mem_req(int n_layers) {
   switch (n_layers) {
     case 28:
-      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
+      return {4 * 2048ull * MB, 4 * 2048ull * MB, 4 * 4096ull * MB, 4 * 3072ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
@@ -38,7 +38,7 @@ static const model_scratch gptj_mem_req(int n_layers) {
 
 class GPTJ : public IModel {
  private:
-  model_name name = MODEL_GPTJ;
+  model_archs arch = MODEL_GPTJ;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;

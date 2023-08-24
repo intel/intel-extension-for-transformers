@@ -64,7 +64,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON,
+enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON,
                   MODEL_BLOOM };
 
 static const size_t MB = 1024 * 1024;
@@ -100,10 +100,10 @@ struct model_hparams {
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;
-  int32_t max_seq_len = 0;  // for mpt
-  float alibi_bias_max = 0; // for mpt
-  float clip_qkv = 0;  // for mpt
-  int32_t par_res = 1;  // for neox 1 = true, 0 = false
+  int32_t max_seq_len = 0;   // for mpt
+  float alibi_bias_max = 0;  // for mpt
+  float clip_qkv = 0;        // for mpt
+  int32_t par_res = 1;       // for neox 1 = true, 0 = false
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
@@ -139,7 +139,7 @@ struct model_kv_cache {
 };
 
 struct model_struct {
-  model_name name;
+  model_archs arch;
 
   model_hparams hparams;
   model_scratch scratchs;
@@ -205,11 +205,15 @@ struct model_context {
 
   model_struct model;
   model_vocab vocab;
+  int batch_size = 1;
+  bool beam_search = false;
+  int beam_size = 1;
+  int kv_n_ctx_block = 1;
   std::vector<std::vector<std::string>> tensors_name;
 
   size_t mem_per_token = 0;
 
-  // decode output (2-dimensional array: [n_tokens][n_vocab])
+  // decode output (3-dimensional array: [batch_size] [n_tokens] [n_vocab])
   std::vector<float> logits;
   bool logits_all = false;
 
@@ -264,7 +268,7 @@ struct model_context {
   }
 };
 
-typedef int model_token;
+typedef model_vocab::id model_token;
 
 typedef struct model_token_data {
   model_token id;  // token id
@@ -281,7 +285,7 @@ typedef struct model_token_data_array {
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
 struct model_context_params {
-  model_name name;   // name of models (GPT-J, LLAMA)
+  model_archs arch;   // arch of models (GPT-J, LLAMA)
   int n_ctx;         // text context
   int n_gpu_layers;  // number of layers to store in VRAM
   int seed;          // RNG seed, -1 for random
@@ -291,11 +295,48 @@ struct model_context_params {
   bool use_mmap;     // use mmap if possible
   bool use_mlock;    // force system to keep model in RAM
   bool embedding;    // embedding mode only
+  int batch_size;    // batch_size of prompt
+  bool beam_search;  // beam search or not
+  int beam_size;     // number of beams for beam search
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;
   // context pointer passed to the progress callback
   void* progress_callback_user_data;
+};
+
+class model_name_to_arch {
+ public:
+  static model_name_to_arch& init() {
+    static model_name_to_arch ins;
+    return ins;
+  }
+
+  void valid_options() {
+    for (auto pair : name2arch_) {
+      printf("%s, ", pair.first.c_str());
+    }
+    printf("\n");
+  }
+
+  model_archs find(const std::string& name) {
+    auto it = name2arch_.find(name);
+    if (it == name2arch_.end()) {
+      printf("%s is not a valid model name, supported model names are: ", name.c_str());
+      valid_options();
+      return MODEL_UNKNOWN;
+    } else {
+      return name2arch_.at(name);
+    }
+  }
+
+ private:
+  model_name_to_arch() {}
+  // update this table if has new cpp model
+  std::unordered_map<std::string, model_archs> name2arch_ = {
+      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ},           {"mpt", MODEL_MPT},
+      {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
+  };
 };
 
 #ifdef __cplusplus
