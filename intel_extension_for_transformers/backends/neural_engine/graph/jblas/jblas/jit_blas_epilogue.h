@@ -20,54 +20,69 @@
 namespace jblas {
 namespace epilogue {
 namespace gemm {
-template <typename _SRC_T, typename _DST_T>
+
+template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T>
 class AccumulatorWriteBack {
  public:
   struct Param {
     _DST_T* C;
     int ldc;
+    void* elt_const_v;
   };
 
-  template <JBLAS_ISA ISA_T>
-  JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
-                     const int N, const Param& _param) {
+  template <typename... Eltops>
+  JBLAS_CODE forward(const _SRC_T* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param, Eltops... ops) {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    static_assert(std::is_same<_SRC_T, float>::value,
-                  "src data type must be float in AccumulatorWriteBack epilogue now.");
+    bool constexpr Valid = !std::is_same<_DST_T, jblas::utils::bf16>::value ? true : std::is_same<_SRC_T, float>::value;
+    static_assert(Valid, "fp32 to bf16 conversion only.");
     if (std::is_same<_DST_T, jblas::utils::bf16>::value) {
       return kernel::wrapper::Memcpy2DFp32CvtBf16::template forward<ISA_T>(
           (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T));
     } else if (sizeof(_SRC_T) == sizeof(_DST_T)) {
-      return kernel::wrapper::Memcpy2D::template forward<ISA_T>(
-          (void*)cacheptr, (void*)cptr, M, N * sizeof(_DST_T), cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T));
+      return kernel::wrapper::Memcpy2D::template forward<ISA_T, _SRC_T, _DST_T>(
+          (void*)cacheptr, (void*)cptr, M, N * sizeof(_DST_T), cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T),
+          _param.elt_const_v, ops...);
     } else {
       assert(false);
     }
   }
 };
-
-template <typename _SRC_T, typename _DST_T>
-class AccumulatorWriteBackWithGelu {
+template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T, JBLAS_ELTWISEOP _OP>
+class CustomAccumulatorWriteBackWithEltop {
  public:
-   struct Param {
+  struct Param {
     _DST_T* C;
     int ldc;
+    void* elt_const_v;
   };
-
-  template <JBLAS_ISA ISA_T>
-  JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+  JBLAS_CODE forward(const _SRC_T* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    static_assert(std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value,
-                  "src/dst data type must be float in AccumulatorWriteBackWithGelu epilogue now.");
-
-    return kernel::wrapper::Memcpy2D::template forward_with_gelu<ISA_T>(
-        (void*)cacheptr, (void*)cptr, M, N * sizeof(_DST_T), cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T));
+    if (std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value) {
+      return kernel::jit::CustomMemCpy::template forward<_OP>(cacheptr, cptr, M, N * sizeof(_DST_T),
+                                                              cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T),
+                                                              _param.elt_const_v);
+    } else {
+      assert(false);
+    }
   }
 };
+template <JBLAS_ISA ISA_T>
+using AccumulatorWriteBackFp32 = AccumulatorWriteBack<ISA_T, float, float>;
+template <JBLAS_ISA ISA_T>
+using AccumulatorWriteBackBf16 = AccumulatorWriteBack<ISA_T, utils::bf16, utils::bf16>;
+template <JBLAS_ISA ISA_T>
+using AccumulatorWriteBackFp16 = AccumulatorWriteBack<ISA_T, utils::fp16, utils::fp16>;
+template <JBLAS_ISA ISA_T>
+using AccumulatorWriteBackFp32Bf16 = AccumulatorWriteBack<ISA_T, float, utils::bf16>;
 
+template <JBLAS_ISA ISA_T>
+using AccumulatorWriteBackWithGeluFp32 = CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, GELU>;
+
+template <JBLAS_ISA ISA_T>
 class AlphaBetaProcessFp32 {
  public:
   struct Param {
@@ -76,7 +91,6 @@ class AlphaBetaProcessFp32 {
     float alpha, beta;
   };
 
-  template <JBLAS_ISA ISA_T>
   JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
     auto DOffset = M_offset * _param.ldd + N_offset;
@@ -88,6 +102,56 @@ class AlphaBetaProcessFp32 {
   }
 };
 
+template <JBLAS_ISA ISA_T>
+class DequantInt32ToFp32 {
+ public:
+  struct Param {
+    float* C;
+    int ldc;
+    float* scalesA;
+    int ldsa;
+    float* scalesB;
+  };
+  JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param) {
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto cptr = _param.C + COffset;
+    return kernel::wrapper::DequanS32Fp32::template forward<ISA_T>(cacheptr, cachestep, cptr, _param.ldc, M, N,
+                                                                   _param.scalesA + M_offset * _param.ldsa, _param.ldsa,
+                                                                   _param.scalesB + N_offset);
+  }
+};
+
+template <JBLAS_ISA ISA_T>
+class ZpDequantInt32ToFp32 {
+ public:
+  struct Param {
+    float* C;
+    int ldc;
+    uint8_t* zpA;
+    float* scalesA;
+    int ldsa;
+    float* reduceB;
+    float* scalesB;
+  };
+  JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param) {
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto cptr = _param.C + COffset;
+    auto ret = kernel::wrapper::DequanS32Fp32::template forward<ISA_T>(cacheptr, cachestep, cptr, _param.ldc, M, N,
+                                                                       _param.scalesA + M_offset * _param.ldsa,
+                                                                       _param.ldsa, _param.scalesB + N_offset);
+    if (ret != JblasSuccess) {
+      return ret;
+    }
+    ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(
+        cptr, _param.ldc, M, N, _param.zpA + M_offset * _param.ldsa, _param.scalesA + M_offset * _param.ldsa,
+        _param.ldsa, _param.reduceB + N_offset);
+    return ret;
+  }
+};
+
+template <JBLAS_ISA ISA_T>
 class AlphaBetaProcessS32U8 {
  public:
   struct Param {
@@ -98,7 +162,6 @@ class AlphaBetaProcessS32U8 {
     int zpC;
   };
 
-  template <JBLAS_ISA ISA_T>
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
     auto COffset = M_offset * _param.ldc + N_offset;
