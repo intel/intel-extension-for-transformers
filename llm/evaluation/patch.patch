@@ -1,0 +1,600 @@
+diff --git a/intel_extension_for_transformers/evaluation/lm_eval/evaluator.py b/intel_extension_for_transformers/evaluation/lm_eval/evaluator.py
+index f4afcb7..34d982a 100644
+--- a/intel_extension_for_transformers/evaluation/lm_eval/evaluator.py
++++ b/intel_extension_for_transformers/evaluation/lm_eval/evaluator.py
+@@ -54,15 +54,17 @@ def get_model(model_name):
+ def evaluate(model,
+              model_args=None,
+              tasks=[],
+-             new_fewshot=0,
++             num_fewshot=0,
+              batch_size=None,
+              device="cpu",
+-             no_cache=True,
++             no_cache=False,
+              limit=None,
+              bootstrap_iters=100000,
+              description_dict=None,
+              check_integrity=False,
+              decontamination_ngrams_path=None,
++             write_out=False,
++             output_base_path=None,
+              seed=1234,
+              user_model=None,
+             ):
+@@ -74,8 +76,7 @@ def evaluate(model,
+         String arguments for each model class, see LM.create_from_arg_string.
+         Ignored if `model` argument is a LM object.
+     :param tasks: list[Union[str, Task]]
+-        List of task names or Task objects. Task objects will be taken to have name task.
+-        EVAL_HARNESS_NAME if defined and type(task).__name__ otherwise.
++        List of task names or Task objects. Task objects will be taken to have name task.EVAL_HARNESS_NAME if defined and type(task).__name__ otherwise.
+     :param num_fewshot: int
+         Number of examples in few-shot context
+     :param batch_size: int, optional
+@@ -84,8 +85,8 @@ def evaluate(model,
+         PyTorch device (e.g. "cpu" or "cuda:0") for running models
+     :param no_cache: bool
+         Whether or not to cache
+-    :param limit: int, optional
+-        Limit the number of examples per task (only use this for testing)
++    :param limit: int or float, optional
++        Limit the number of examples per task (only use this for testing), If <1, limit is a percentage of the total number of examples.
+     :param bootstrap_iters:
+         Number of iterations for bootstrap statistics
+     :param description_dict: dict[str, str]
+@@ -98,6 +99,12 @@ def evaluate(model,
+         Directory to which detailed eval info will be written. Defaults to present working dir.
+     :return
+         Dictionary of results
++    :param seed: Optional
++        Set seed
++    :param user_model: Optional[Object]
++        Model object user provided.
++    :return
++        Dictionary of results
+     """
+     random.seed(seed)
+     np.random.seed(seed)
+@@ -144,16 +151,29 @@ def evaluate(model,
+     
+     if user_model:
+         lm.model = user_model
+-    results = evaluate_func(
++    results = evaluate(
+         lm=lm,
+         task_dict=task_dict,
+-        provide_description=None,
+-        num_fewshot=new_fewshot,
+-        bootstrap_iters=bootstrap_iters,
++        num_fewshot=num_fewshot,
+         limit=limit,
++        bootstrap_iters=bootstrap_iters,
+         description_dict=description_dict,
+-        decontamination_ngrams_path=decontamination_ngrams_path
++        decontamination_ngrams_path=decontamination_ngrams_path,
++        write_out=write_out,
++        output_base_path=output_base_path,
+     )
+ 
++    # add info about the model and few shot config
++    results["config"] = {
++        "model": model,
++        "model_args": model_args,
++        "num_fewshot": num_fewshot,
++        "batch_size": batch_size,
++        "device": device,
++        "no_cache": no_cache,
++        "limit": limit,
++        "bootstrap_iters": bootstrap_iters,
++        "description_dict": description_dict,
++    }
+     print(make_table(results)) 
+     return results
+diff --git a/intel_extension_for_transformers/evaluation/lm_eval/models/huggingface.py b/intel_extension_for_transformers/evaluation/lm_eval/models/huggingface.py
+index 8fe7461..f11fa25 100644
+--- a/intel_extension_for_transformers/evaluation/lm_eval/models/huggingface.py
++++ b/intel_extension_for_transformers/evaluation/lm_eval/models/huggingface.py
+@@ -16,88 +16,30 @@
+ # limitations under the License.
+ import re
+ import math
++import peft
+ import torch
+ import torch.nn.functional as F
+ import transformers
++from pathlib import Path
+ from typing import List, Mapping, NewType, Optional, Tuple, Union
+ from tqdm import tqdm
+ 
+ from transformers import BatchEncoding
+ 
+ from lm_eval import utils
+-from lm_eval.base import BaseLM
++from lm_eval.models.huggingface import HuggingFaceAutoLM, stop_sequences_criteria
+ 
+ TokenSequence = Union[List[int], torch.LongTensor, torch.Tensor, BatchEncoding]
+ 
+ _DeviceMapping = NewType("DeviceMapping", Mapping[str, Union[int, str, torch.device]])
+ 
+ 
+-def _get_accelerate_args(
+-    device_map_option: Optional[str] = "auto",
+-    max_memory_per_gpu: Optional[Union[int, str]] = None,
+-    max_cpu_memory: Optional[Union[int, str]] = None,
+-    offload_folder: Optional[str] = "./offload",
+-) -> dict:
+-    """Returns the kwargs needed to apply `accelerate` in `AutoModel.from_pretrained`."""
+-    max_memory = {}
+-    if max_memory_per_gpu is not None:
+-        max_memory_per_gpu_map = {
+-            device_idx: max_memory_per_gpu
+-            for device_idx in range(torch.cuda.device_count())
+-        }
+-        max_memory.update(max_memory_per_gpu_map)
+-    if max_cpu_memory is not None:
+-        max_memory["cpu"] = max_cpu_memory
+-
+-    args = {}
+-    if max_memory:
+-        args["max_memory"] = max_memory
+-    args["device_map"] = device_map_option
+-    args["offload_folder"] = offload_folder
+-    return args
+-
+-
+-def _get_dtype(
+-    dtype: Union[str, torch.dtype], config: Optional[transformers.AutoConfig] = None
+-) -> torch.dtype:
+-    """Converts `dtype` from `str` to torch.dtype when possible."""
+-    if dtype is None and config is not None:
+-        _torch_dtype = config.torch_dtype
+-    elif isinstance(dtype, str) and dtype != "auto":
+-        # Convert `str` args torch dtype: `float16` -> `torch.float16`
+-        _torch_dtype = getattr(torch, dtype)
+-    else:
+-        _torch_dtype = dtype
+-    return _torch_dtype
+-
+-
+-class HuggingFaceAutoLM(BaseLM):
+-    AUTO_CONFIG_CLASS: transformers.AutoConfig = transformers.AutoConfig
+-    AUTO_TOKENIZER_CLASS: transformers.AutoTokenizer = transformers.AutoTokenizer
+-    AUTO_MODEL_CLASS: transformers.AutoModel = None
+-
+-    # Default max sequence length setting for when no `max_length` is provided
+-    # or no max length config setting is found in the model or tokenizer.
+-    _DEFAULT_MAX_LENGTH: int = 2048
+-
++class ItrexHuggingFaceAutoLM(HuggingFaceAutoLM):
+     def __init__(
+         self,
+         pretrained: str,
+-        tokenizer: Optional[str] = None,
+-        subfolder: Optional[str] = None,
+-        revision: Optional[str] = "main",
+-        batch_size: Optional[int] = 1,
+-        max_gen_toks: Optional[int] = 256,
+-        max_length: Optional[int] = None,
+-        add_special_tokens: Optional[bool] = None,
+-        use_accelerate: Optional[bool] = False,
+-        device_map_option: Optional[str] = "auto",
+-        max_memory_per_gpu: Optional[Union[int, str]] = None,
+-        max_cpu_memory: Optional[Union[int, str]] = None,
+-        offload_folder: Optional[str] = "./offload",
+-        dtype: Optional[Union[str, torch.dtype]] = None,
+-        device: Optional[Union[int, str]] = "cuda",
+         init_empty_weights: Optional[bool] = False,
++        **kwargs
+     ):
+         """Initializes a HuggingFace `AutoModel` and `AutoTokenizer` for evaluation.
+         Args:
+@@ -105,6 +47,9 @@ class HuggingFaceAutoLM(BaseLM):
+                 The HuggingFace Hub model ID name or the path to a pre-trained
+                 model to load. This is effectively the `pretrained_model_name_or_path`
+                 argument of `from_pretrained` in the HuggingFace `transformers` API.
++            quantized (str or bool, optional, defaults to False):
++                File name of a GPTQ quantized model to load. Set to `True` to use the
++                default name of the quantized model.
+             add_special_tokens (bool, optional, defaults to True):
+                 Whether to add special tokens to the input sequences. If `None`, the
+                 default value will be set to `True` for seq2seq models (e.g. T5) and
+@@ -121,20 +66,20 @@ class HuggingFaceAutoLM(BaseLM):
+                 Options:
+                     "auto", "balanced", "balanced_low_0", "sequential"
+                 See the `accelerate` docs for more details on these options:
+-                https://huggingface.co/docs/accelerate/v0.12.0/en/usage_guides/big_modeling#designing-a-device-map
++                https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained.device_map
+             max_memory_per_gpu (Union[int, str], optional, defaults to None):
+                 The maximum memory available for each GPU in bytes as `int` or in
+                 the format f"{significand}{unit_symbol}" where {unit_symbol} is
+                 any of ["GB", "MB", "GIB", "MIB"]. Refer to the `max_memory` arg in
+                 the "Parameters for big model inference" section of the following
+                 docs:
+-                https://huggingface.co/docs/transformers/v4.20.1/en/main_classes/model#large-model-loading
++                https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained.max_memory
+             max_cpu_memory (Union[int, str], optional, defaults to None):
+                 The maximum available CPU RAM in bytes as `int` or in the format
+                 f"{significand}{unit_symbol}" where {unit_symbol} is any of
+                 ["GB", "MB", "GIB", "MIB"]. Refer to the `max_memory` arg in the
+                 "Parameters for big model inference" section of the following docs:
+-                https://huggingface.co/docs/transformers/v4.20.1/en/main_classes/model#large-model-loading
++                https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained.max_memory
+             offload_folder (str, optional, defaults to "./offload"):
+                 The folder to offload weights into if `device_map` contains any
+                 "disk" value.
+@@ -142,71 +87,23 @@ class HuggingFaceAutoLM(BaseLM):
+                 Converts the model weights to `dtype`, if specified. Strings get
+                 converted to `torch.dtype` objects (e.g. `float16` -> `torch.float16`).
+                 Use `dtype="auto"` to derive the type from the model’s weights.
++            peft (str, optional, defaults to None):
++                Path of the adapter weights to load from Huggingface. This will usually
++                include a directory that includes the files `adapter_config.json` and
++                `adapter_model.bin`. Compatible with [PEFT](https://github.com/huggingface/peft)
++            load_in_8bit (bool, optional, defaults to False):
++                If True, will convert the loaded model into mixed-8bit quantized model. See:
++                https://huggingface.co/docs/transformers/main/en/main_classes/model#transformers.PreTrainedModel.from_pretrained.load_in_8bit
++            trust_remote_code (bool, optional, defaults to False):
++                If True, will trust the remote code when loading the model.
++            gptq_use_triton (bool, optional, defaults to False):
++                Use Triton for GPTQ inference.
+             init_empty_weights (bool, optional, defaults to False):):
+                 Initialize model with empty weights if model is not used for inference.
+         """
+-        super().__init__()
+-
+-        assert isinstance(pretrained, str)
+-        assert isinstance(device, str)
+-        assert isinstance(batch_size, int)
+-        if (
+-            add_special_tokens is not None
+-            and self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM
+-        ):
+-            # TODO: Support evaluating causal models with special tokens. Currently,
+-            # this is not possible because the `_loglikelihood_tokens()` method for
+-            # causal LMs makes a no-special-tokens assumption given that contexts
+-            # and labels/continuations are tokenized separately without special
+-            # tokens, concatenated, and then processed as inputs.
+-            assert (
+-                not add_special_tokens
+-            ), "Evaluating causal models with `add_special_tokens=True` is currently not supported."
+-
+         self.init_empty_weights = init_empty_weights
+-        self._batch_size = batch_size  # TODO: Adaptive batch size
+-        self._max_gen_toks = max_gen_toks
+-        self._max_length = max_length
+-        self._config = self.AUTO_CONFIG_CLASS.from_pretrained(
+-            pretrained,
+-            revision=revision + ("/" + subfolder if subfolder is not None else ""),
+-            trust_remote_code=True
+-        )
+-
+-        self._add_special_tokens = add_special_tokens
+-        if re.search("llama", pretrained):
+-            from transformers import LlamaTokenizer    # pylint: disable=E0611
+-            self.tokenizer = LlamaTokenizer.from_pretrained(
+-                    pretrained,
+-                    )
+-        else:
+-            self.tokenizer = self._create_auto_tokenizer(
+-                pretrained=pretrained,
+-                revision=revision,
+-                subfolder=subfolder,
+-                tokenizer=tokenizer,
+-            )
+-        self.tokenizer.model_max_length = self.max_length
+-
+-        accelerate_kwargs = {}
+-        if use_accelerate:
+-            accelerate_kwargs = _get_accelerate_args(
+-                device_map_option,
+-                max_memory_per_gpu,
+-                max_cpu_memory,
+-                offload_folder,
+-            )
+-        self.model = self._create_auto_model(
+-            pretrained=pretrained,
+-            revision=revision,
+-            subfolder=subfolder,
+-            torch_dtype=_get_dtype(dtype, self._config),
+-            **accelerate_kwargs,
+-        )
+-        self.model.eval()
+-        torch.set_grad_enabled(False)
++        super().__init__(pretrained=pretrained, **kwargs)
+ 
+-        self._device = device
+ 
+     def _create_auto_model(
+         self,
+@@ -214,182 +111,61 @@ class HuggingFaceAutoLM(BaseLM):
+         pretrained: str,
+         revision: str,
+         subfolder: str,
++        quantized: Optional[Union[bool, str]] = False,
+         device_map: Optional[Union[str, _DeviceMapping]] = None,
+         max_memory: Optional[dict] = None,
+         offload_folder: Optional[str] = None,
++        load_in_8bit: Optional[bool] = False,
++        trust_remote_code: Optional[bool] = False,
+         torch_dtype: Optional[Union[str, torch.dtype]] = None,
++        gptq_use_triton: Optional[bool] = False,
++        **kwargs
+     ) -> transformers.AutoModel:
+         """Returns a pre-trained pytorch model from a pre-trained model configuration."""
+-        if self.init_empty_weights:
+-            from accelerate import init_empty_weights
+-            with init_empty_weights():
+-                model = self.AUTO_MODEL_CLASS.from_config(self._config)
+-        else:
+-            model = self.AUTO_MODEL_CLASS.from_pretrained(
+-                pretrained,
+-                revision=revision + ("/" + subfolder if subfolder is not None else ""),
+-                device_map=device_map,
+-                max_memory=max_memory,
+-                offload_folder=offload_folder,
+-                torch_dtype=torch_dtype,
+-                trust_remote_code=True
+-            )
+-        return model
+-
+-    def _create_auto_tokenizer(
+-        self,
+-        *,
+-        pretrained: str,
+-        revision: str,
+-        subfolder: str,
+-        tokenizer: Optional[str] = None,
+-    ) -> transformers.PreTrainedTokenizer:
+-        """Returns a pre-trained tokenizer from a pre-trained tokenizer configuration."""
+-        tokenizer = self.AUTO_TOKENIZER_CLASS.from_pretrained(
+-            pretrained if tokenizer is None else tokenizer,
+-            revision=revision + ("/" + subfolder if subfolder is not None else ""),
+-        )
+-        tokenizer.pad_token = tokenizer.eos_token
+-        return tokenizer
+-
+-    @property
+-    def add_special_tokens(self) -> bool:
+-        """Whether to include special tokens in encoded text. This should be
+-        determined by whether or not the model was trained with special tokens.
+-        TODO: Remove these conditionals once HuggingFace supports a way to
+-        check whether or not an arbitrary model was trained with special tokens.
+-        """
+-        if self._add_special_tokens is not None:
+-            return self._add_special_tokens
+-        elif self.AUTO_MODEL_CLASS is transformers.AutoModelForCausalLM:
+-            return False
+-        elif self.AUTO_MODEL_CLASS is transformers.AutoModelForSeq2SeqLM:
+-            return True
+-        else:
+-            raise ValueError(
+-                "Could not determine `add_special_tokens` value from the model "
+-                "class. Set to `True` or `False` depending on whether the model "
+-                "was pre-trained with special tokens."
+-            )
+-
+-    @property
+-    def eot_token(self) -> str:
+-        return self.tokenizer.eos_token
+-
+-    @property
+-    def eot_token_id(self) -> int:
+-        return self.tokenizer.eos_token_id
+-
+-    @property
+-    def max_gen_toks(self) -> int:
+-        return self._max_gen_toks
+-
+-    @property
+-    def max_length(self) -> int:
+-        """Return the maximum sequence length of the model.
+-        NOTE: Different model configurations have different max sequence length
+-        attribute names.
+-            - n_positions: (CTRLConfig)
+-            - max_position_embeddings: (BartConfig, RoFormerConfig)
+-            - n_ctx: (GPT2Config)
+-        NOTE: For relative position encoded models you should specify the max
+-        sequence length of the model in the constructor via `max_length`.
+-        """
+-        if self._max_length is not None:
+-            return self._max_length
+-        # Try to get the sequence length from the model config.
+-        seqlen_config_attrs = ("n_positions", "max_position_embeddings", "n_ctx")
+-        for attr in seqlen_config_attrs:
+-            if hasattr(self._config, attr):
+-                return getattr(self._config, attr)
+-        if hasattr(self.tokenizer, "model_max_length"):
+-            return self.tokenizer.model_max_length
+-        return self._DEFAULT_MAX_LENGTH
+-
+-    @property
+-    def batch_size(self) -> int:
+-        # TODO: Add adaptive batch size.
+-        return self._batch_size  # * gpus
+-
+-    @property
+-    def device(self) -> Union[int, str, torch.device]:
+-        return self._device
+-
+-    def tok_encode(self, string: str) -> TokenSequence:
+-        # TODO: Merge `tok_encode_batch` here.
+-        return self.tokenizer.encode(string, add_special_tokens=self.add_special_tokens)
+-
+-    def tok_encode_batch(self, strings: List[str]) -> TokenSequence:
+-        return self.tokenizer(
+-            strings,
+-            padding=True,
+-            add_special_tokens=self.add_special_tokens,
+-            return_tensors="pt",
+-        )
+-
+-    def tok_decode(self, tokens: torch.LongTensor) -> List[str]:
+-        return self.tokenizer.batch_decode(tokens, skip_special_tokens=True)
+-
+-    def greedy_until(self, requests: List[Tuple[str, dict]]) -> List[str]:
+-        def _collate(x):
+-            tokens = self.tok_encode(x[0])
+-            return len(tokens), x[0]
+-
+-        results = []
+-        reorder = utils.Reorderer(requests, _collate)
+-        for chunk in utils.chunks(
+-            tqdm(reorder.get_reordered(), disable=False), self.batch_size
+-        ):
+-            context = [c[0] for c in chunk]
+-            request_args = chunk[0][1]
+-            stop_sequences = request_args["stop_sequences"]
+-            max_generation_length = request_args["max_generation_length"]
+-            num_fewshot = request_args["num_fewshot"]
+-
+-            assert (
+-                isinstance(max_generation_length, int) or max_generation_length is None
+-            )
+-            assert isinstance(stop_sequences, list) or stop_sequences is None
+-            assert isinstance(num_fewshot, int) or num_fewshot is None
+-
+-            # TODO: Find a better way to handle stop sequences for 0-shot.
+-            if stop_sequences is None or num_fewshot == 0:
+-                until = [self.eot_token]
++        if not quantized:
++            if self.init_empty_weights:
++                from accelerate import init_empty_weights
++                with init_empty_weights():
++                    model = self.AUTO_MODEL_CLASS.from_config(self._config)
+             else:
+-                until = stop_sequences + [self.eot_token]
+-
+-            if max_generation_length is None:
+-                max_tokens = self.max_gen_toks
++                model = self.AUTO_MODEL_CLASS.from_pretrained(
++                    pretrained,
++                    revision=revision + ("/" + subfolder if subfolder is not None else ""),
++                    device_map=device_map,
++                    max_memory=max_memory,
++                    offload_folder=offload_folder,
++                    load_in_8bit=load_in_8bit,
++                    trust_remote_code=trust_remote_code,
++                    torch_dtype=torch_dtype,
++                )
++        else:
++            from auto_gptq import AutoGPTQForCausalLM
++            if self.init_empty_weights:
++                from accelerate import init_empty_weights
++                with init_empty_weights():
++                    model = self.AutoGPTQForCausalLM.from_config(self._config)
+             else:
+-                max_tokens = max_generation_length
+-
+-            token_context = self.tok_encode_batch(context)
+-            # pylint: disable=E1123
+-            # pylint: disable=E1120
+-            responses = self._model_generate(
+-                inputs=token_context,
+-                max_tokens=max_tokens,
+-                stop=until,
+-            )
+-            responses = self.tok_decode(responses.tolist())
+-
+-            for response in responses:
+-                # Ensure the generated responses do not contain the stop sequences.
+-                for term in until:
+-                    response = response.split(term)[0]
+-                # partial caching
+-                self.cache_hook.add_partial("greedy_until", (context, until), response)
+-                results.append(response)
+-        return reorder.get_original(results)
++                model = AutoGPTQForCausalLM.from_quantized(
++                    pretrained,
++                    model_basename=None if quantized == True else Path(quantized).stem,
++                    device_map=device_map,
++                    max_memory=max_memory,
++                    trust_remote_code=trust_remote_code,
++                    use_safetensors=True if quantized == True else quantized.endswith('.safetensors'),
++                    use_triton=gptq_use_triton,
++                    warmup_triton=gptq_use_triton,
++                )
++        return model
+ 
+ 
+-class AutoCausalLM(HuggingFaceAutoLM):
++class AutoCausalLM(ItrexHuggingFaceAutoLM):
+     """Causal language modeling.
+     You can find a set of supported models in the HF documentation:
+     https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForCausalLM
+     """
+ 
+     AUTO_MODEL_CLASS = transformers.AutoModelForCausalLM
++    AUTO_PEFT_CLASS = peft.PeftModel
+ 
+     def _create_auto_tokenizer(
+         self,
+@@ -451,13 +227,14 @@ class AutoCausalLM(HuggingFaceAutoLM):
+         )
+ 
+ 
+-class AutoSeq2SeqLM(HuggingFaceAutoLM):
++class AutoSeq2SeqLM(ItrexHuggingFaceAutoLM):
+     """Seq2Seq language modeling.
+     You can find a set of supported models in the following documentation:
+     https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForSeq2SeqLM
+     """
+ 
+     AUTO_MODEL_CLASS = transformers.AutoModelForSeq2SeqLM
++    AUTO_PEFT_CLASS = peft.PeftModel
+ 
+     @property
+     def max_length(self) -> int:
+@@ -621,52 +398,3 @@ class AutoSeq2SeqLM(HuggingFaceAutoLM):
+             do_sample=False,
+         )
+         return generations
+-
+-
+-class MultiTokenEOSCriteria(transformers.StoppingCriteria):
+-    """Criteria to stop on the specified multi-token sequence."""
+-
+-    def __init__(
+-        self,
+-        sequence: str,
+-        tokenizer: transformers.PreTrainedTokenizer,
+-        initial_decoder_input_length: int,
+-        batch_size: int,
+-    ):
+-        self.initial_decoder_input_length = initial_decoder_input_length
+-        self.done_tracker = [False] * batch_size
+-        self.sequence = sequence
+-        self.sequence_ids = tokenizer.encode(sequence, add_special_tokens=False)
+-        self.sequence_id_len = len(self.sequence_ids)
+-        self.tokenizer = tokenizer
+-
+-    def __call__(self, input_ids, scores, **kwargs) -> bool:
+-        # For efficiency, we compare the last n tokens where n is the number of tokens in the stop_sequence
+-        lookback_ids_batch = input_ids[:, self.initial_decoder_input_length :][
+-            :, -self.sequence_id_len :
+-        ]
+-
+-        lookback_tokens_batch = self.tokenizer.batch_decode(lookback_ids_batch)
+-
+-        for i, done in enumerate(self.done_tracker):
+-            if not done:
+-                self.done_tracker[i] = self.sequence in lookback_tokens_batch[i]
+-        return False not in self.done_tracker
+-
+-
+-def stop_sequences_criteria(
+-    tokenizer: transformers.PreTrainedTokenizer,
+-    stop_sequences: List[str],
+-    initial_decoder_input_length: int,
+-    batch_size: int,
+-) -> transformers.StoppingCriteriaList:
+-    return transformers.StoppingCriteriaList(
+-        [
+-            *[
+-                MultiTokenEOSCriteria(
+-                    sequence, tokenizer, initial_decoder_input_length, batch_size
+-                )
+-                for sequence in stop_sequences
+-            ],
+-        ]
+-    )

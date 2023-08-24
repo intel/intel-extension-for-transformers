@@ -46,16 +46,8 @@ install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
 opt_install_requires_list = ['neural_compressor', 'transformers']
 project_name = "intel_extension_for_transformers"
 
-if BACKENDS_ONLY:
-    project_name += "_backends"
-    packages_list = find_packages(include=[
-        "intel_extension_for_transformers",
-        "intel_extension_for_transformers.backends",
-        "intel_extension_for_transformers.backends.*",
-    ])
-else:
-    packages_list = find_packages()
-    install_requires_list.extend(opt_install_requires_list)
+packages_list = find_packages()
+install_requires_list.extend(opt_install_requires_list)
 
 
 class CMakeExtension(Extension):
@@ -242,8 +234,6 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    check_submodules()
-
     setup(
         name=project_name,
         author="Intel AIA/AIPC Team",
@@ -254,8 +244,6 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/intel-extension-for-transformers",
-        ext_modules=[CMakeExtension(
-            "intel_extension_for_transformers.neural_engine_py", 'intel_extension_for_transformers/backends/neural_engine/')],
         packages=packages_list,
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
@@ -263,11 +251,9 @@ if __name__ == '__main__':
         package_data={
             '': ['*.yaml'],
         },
-        cmdclass={'build_ext': CMakeBuild},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [
-                'neural_engine = intel_extension_for_transformers.backends.neural_engine:neural_engine_bin',
                 'neuralchat = neural_chat.cli.cli_commands:neuralchat_execute',
                 'neuralchat_server = neural_chat.server.server_commands:neuralchat_server_execute',
                 'neuralchat_client = neural_chat.server.server_commands:neuralchat_client_execute'

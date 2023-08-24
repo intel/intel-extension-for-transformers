@@ -9,5 +9,5 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools_scm]
-write_to = "intel_extension_for_transformers/_version.py"
+# [tool.setuptools_scm]
+# write_to = "_version.py"
