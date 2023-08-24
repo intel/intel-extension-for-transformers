@@ -247,15 +247,14 @@ MODEL_API const char* model_print_system_info(void);
 struct beam {
   const model_context* ctx = nullptr;
   std::vector<model_token> token_ids;
-  // Cumulative beam probability (renormalized with each token)
-  float p;
+  // Cumulative beam score (renormalized with each token if multiply probability)
+  float score;
   // record inference batch indice
   int infer_bs_id;
-  // end-of-sentence
-  // TODO eos function for each model
-  const bool eos() const { return !token_ids.empty() && token_ids.back() == 50256; }
+  // end-of-text
+  const bool eos() const { return !token_ids.empty() && token_ids.back() == 50256; } // TODO ctx->vocab.eos_id
   void print() const {
-    printf("p: %0.6f, eos: %d, tokens: ", p, eos());
+    printf("score: %0.6f, eos: %d, tokens: ", score, eos());
     for (const auto& id : token_ids) {
       printf("%s", model_token_to_str(ctx, id));
     }
@@ -265,8 +264,9 @@ struct beam {
 
 // A struct for calculating logits-related info.
 struct logits_info {
+  const model_context* const ctx = nullptr;
   // (batch, seq_len * vocab_size)
-  const float* const logits;
+  const float* const logits = nullptr;
   const int batch_size;
   const int32_t n_vocab;
   // last seq_len indice
@@ -283,7 +283,8 @@ struct logits_info {
   };
 
   logits_info(struct model_context* lctx)
-      : logits(model_get_logits(lctx)),
+      : ctx(lctx),
+        logits(model_get_logits(lctx)),
         batch_size(lctx->batch_size),
         n_vocab(lctx->model.hparams.n_vocab),
         offset(lctx->logits.size() / lctx->batch_size - n_vocab),
@@ -332,7 +333,13 @@ struct logits_info {
   float probability_from_logit(const int& batch_idx, const float& logit) {
     return normalizers[batch_idx] * std::exp(logit - max_ls[batch_idx]);
   }
+
+  float log_probability_from_logit(const int& batch_idx, const float& logit) {
+    return std::log(probability_from_logit(batch_idx, logit));
+  }
 };
+
+MODEL_API void min_new_tokens_logits_process (model_context* lctx, uint32_t cur_len, model_vocab::id eos_token_id);
 
 MODEL_API void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const std::vector<beam>& cur_beams,
                                                     const int& beam_size, model_context* lctx, const int& n_threads,
@@ -343,6 +350,8 @@ MODEL_API std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vect
                                                                        const int& beam_size);
 
 MODEL_API void renormalize_beam_probabilities(std::vector<beam>& beams);
+
+MODEL_API void beam_score_length_penalize(std::vector<beam>& beams, const float& length_penalty);
 
 MODEL_API const beam& top_beam(std::vector<beam> const& beams);
 
