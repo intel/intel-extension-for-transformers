@@ -9,7 +9,6 @@ torchrun \
             --model_name_or_path "mosaicml/mpt-7b-chat" \
             --train_file "/root/chatbot/.github/workflows/sample_data/alpaca_data_sample_45.json" \
             --task completion \
-            --dataset_concatenation \
             --per_device_train_batch_size 2 \
             --per_device_eval_batch_size 2 \
             --gradient_accumulation_steps 4 \
