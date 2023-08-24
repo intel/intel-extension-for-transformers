@@ -69,7 +69,7 @@ add_bias = [False, True]
 for weight_type in configs:
     m = 255
     n = 1023
-    k = 256 # contain unalign calc error bug currently. 
+    k = 512 # contain unalign calc error bug currently. 
     for compute_type in configs[weight_type]:
         for blocksize in blocksizes:
             if compute_type == "int8" and blocksize % 8 != 0:

@@ -8,7 +8,7 @@ file(GLOB HEADERS
     ${PROJECT_SOURCE_DIR}/*.hpp
 )
 
-add_subdirectory(../jblas jblas_out)
+add_subdirectory(../../../intel_extension_for_transformers/backends/neural_engine/graph/jblas jblas_out)
 
 add_library(jblas_dispatcher STATIC ${HEADERS} ${SOURCES})
 
