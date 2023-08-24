@@ -23,429 +23,83 @@
 namespace jblas {
 namespace kernel {
 namespace wrapper {
-template <int NTile, int SrcBytes, int RowPack>
+template <int NTile, int RowPack>
 class PaddingInterleaveMN {
   // M x N ===> N/NTile x M/RowPack x NTile x RowPack (leading dim stride = NTile * dststride)
  public:
-  template <JBLAS_ISA ISA_T>
-  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int rowpad, int colpad, int srcstride,
-                            int dststride) {
-    return ref::padding_interleave(srcptr, dstptr, row, col, rowpad, colpad, srcstride, dststride, NTile, SrcBytes,
-                                   RowPack);
-  }
-#if CompileBF16()
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"  // https://stackoverflow.com/a/49216021
-#endif
-  static void interleave_word(std::array<__m512i, 2>& dst) {
-    static constexpr uint32_t perm_idx_a[16]{
-        0 | 0,  1 | 0,  2 | 0,  3 | 0,   //
-        0 | 16, 1 | 16, 2 | 16, 3 | 16,  //
-        4 | 0,  5 | 0,  6 | 0,  7 | 0,   //
-        4 | 16, 5 | 16, 6 | 16, 7 | 16,  //
-    };
-    static constexpr uint32_t perm_idx_b[16]{
-        8 | 0,   9 | 0,   10 | 0,  11 | 0,   //
-        8 | 16,  9 | 16,  10 | 16, 11 | 16,  //
-        12 | 0,  13 | 0,  14 | 0,  15 | 0,   //
-        12 | 16, 13 | 16, 14 | 16, 15 | 16,  //
-    };
-    static const auto v_perm_idx_a = _mm512_loadu_epi32(perm_idx_a);
-    static const auto v_perm_idx_b = _mm512_loadu_epi32(perm_idx_b);
-
-    __m512i tmp[2];
-    tmp[0] = _mm512_unpacklo_epi16(dst[0], dst[1]);
-    tmp[1] = _mm512_unpackhi_epi16(dst[0], dst[1]);
-    dst[0] = _mm512_permutex2var_epi32(tmp[0], v_perm_idx_a, tmp[1]);
-    dst[1] = _mm512_permutex2var_epi32(tmp[0], v_perm_idx_b, tmp[1]);
-  }
-  template <int tail>
-  static std::array<__m512i, 2> load_fp16_bf16_interleave_word(const utils::fp16* a, size_t lda) {
-    static_assert(tail > 0 && tail <= 2, "Unexpected tail value.");
-    std::array<__m512i, 2> dst;
-    for (int i = 0; i < tail; ++i) {
-      dst[i] = (__m512i)(_mm512_cvtne2ps_pbh(                     //
-          _mm512_cvtph_ps(_mm256_loadu_epi16(a + i * lda + 16)),  //
-          _mm512_cvtph_ps(_mm256_loadu_epi16(a + i * lda + 0))));
-    }
-    for (int i = tail; i < 2; ++i) dst[i] = _mm512_setzero_epi32();
-    interleave_word(dst);
-    return dst;
-  }
-  template <int tail>
-  static std::array<__m512i, 2> load_maskz_fp16_bf16_interleave_word(const utils::fp16* a, size_t lda, uint32_t mask) {
-    static_assert(tail > 0 && tail <= 2, "Unexpected tail value.");
-
-    const auto mask_lo = mask;
-    const auto mask_hi = mask >> 16;
-    std::array<__m512i, 2> dst;
-    for (int i = 0; i < tail; ++i) {
-      dst[i] = (__m512i)(_mm512_cvtne2ps_pbh(                                    //
-          _mm512_cvtph_ps(_mm256_maskz_loadu_epi16(mask_hi, a + i * lda + 16)),  //
-          _mm512_cvtph_ps(_mm256_maskz_loadu_epi16(mask_lo, a + i * lda + 0))));
-    }
-    for (int i = tail; i < 2; ++i) dst[i] = _mm512_setzero_epi32();
-    interleave_word(dst);
-    return dst;
-  }
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-#endif
   template <JBLAS_ISA ISA_T, typename T_SRC, typename T_DST = T_SRC>
-  static JBLAS_CODE forward_cvt(const T_SRC* src, T_DST* dst, int row, int col, int row_pad, int col_pad, int src_step,
-                                int dst_step) {
-    // TODO(Yi): can forward_cvt of same i/o replace forward?
-    static_assert(SrcBytes == sizeof(T_SRC), "SrcBytes should match T_SRC.");
-#if CompileBF16()   // && 0
-    if constexpr (  // TODO: avoid if constexpr
-        std::is_same<T_SRC, utils::fp16>::value && std::is_same<T_DST, utils::bf16>::value && SrcBytes * RowPack == 4 &&
-        RowPack == 2) {
-      int i = 0;
-      for (; i < row / RowPack * RowPack; i += RowPack) {
-        int j = 0;
-        for (; j < col / NTile * NTile; j += NTile) {
-          static_assert(NTile % 32 == 0);
-          for (int jj = 0; jj < NTile; jj += 32) {
-            const auto xss = load_fp16_bf16_interleave_word<2>(src + i * src_step + j + jj, src_step);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 0) * RowPack, xss[0]);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 16) * RowPack, xss[1]);
-          }
-        }
-        if (j < col) {  // j: tail processing
-          int jj = 0;
-          for (; j + jj < col / 32 * 32; jj += 32) {
-            const auto xss = load_fp16_bf16_interleave_word<2>(src + i * src_step + j + jj, src_step);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 0) * RowPack, xss[0]);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 16) * RowPack, xss[1]);
-          }
-          if (j + jj < col) {  // jj: tail processing
-            const uint32_t mask = (1U << (col - j - jj)) - 1;
-            const auto xss = load_maskz_fp16_bf16_interleave_word<2>(src + i * src_step + j + jj, src_step, mask);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 0) * RowPack, xss[0]);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 16) * RowPack, xss[1]);
-            jj += 32;
-          }
-          for (; jj < NTile; jj += 32) {  // jj: padding zero
-            memset(dst + i * NTile + j * dst_step + jj * RowPack, 0, sizeof(T_DST) * 32 * RowPack);
-          }
-          j += NTile;
-        }
-        for (; j < col_pad; j += NTile) {  // j: padding zero
-          memset(dst + i * NTile + j * dst_step, 0, sizeof(T_DST) * NTile * RowPack);
-        }
-      }
-      if (i < row) {                      // i: tail processing
-        static constexpr int tail_m = 1;  // must be 1
-        int j = 0;
-        for (; j < col / NTile * NTile; j += NTile) {
-          static_assert(NTile % 32 == 0);
-          for (int jj = 0; jj < NTile; jj += 32) {
-            const auto xss = load_fp16_bf16_interleave_word<tail_m>(src + i * src_step + j + jj, src_step);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 0) * RowPack, xss[0]);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 16) * RowPack, xss[1]);
-          }
-        }
-        if (j < col) {  // j: tail processing
-          int jj = 0;
-          for (; j + jj < col / 32 * 32; jj += 32) {
-            const auto xss = load_fp16_bf16_interleave_word<tail_m>(src + i * src_step + j + jj, src_step);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 0) * RowPack, xss[0]);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 16) * RowPack, xss[1]);
-          }
-          if (j + jj < col) {  // jj: tail processing
-            const uint32_t mask = (1U << (col - j - jj)) - 1;
-            const auto xss = load_maskz_fp16_bf16_interleave_word<tail_m>(src + i * src_step + j + jj, src_step, mask);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 0) * RowPack, xss[0]);
-            _mm512_storeu_si512(dst + i * NTile + j * dst_step + (jj + 16) * RowPack, xss[1]);
-            jj += 32;
-          }
-          for (; jj < NTile; jj += 32) {  // jj: padding zero
-            memset(dst + i * NTile + j * dst_step + jj * RowPack, 0, sizeof(T_DST) * 32 * RowPack);
-          }
-          j += NTile;
-        }
-        for (; j < col_pad; j += NTile) {  // j: padding zero
-          memset(dst + i * NTile + j * dst_step, 0, sizeof(T_DST) * NTile * RowPack);
-        }
-        i += RowPack;
-      }
-      for (; i < row_pad; i += RowPack) {  // i: padding zero
-        for (int j = 0; j < col_pad; j += NTile) {
-          memset(dst + i * NTile + j * dst_step, 0, sizeof(T_DST) * NTile * RowPack);
-        }
-      }
+  static JBLAS_CODE forward(const T_SRC* src, T_DST* dst, int row, int col, int row_pad, int col_pad, int src_step,
+                            int dst_step) {
+    if (utils::isa_base<ISA_T>::avx512f) {
+      const auto kern_ret = kernel::avx512f::padding_interleave_cvt<T_SRC, T_DST, RowPack>::forward(
+          src, dst, NTile, row, col, row_pad, col_pad, src_step, dst_step);
+      if (kern_ret != JblasNotSupport) return kern_ret;
     }
-    return JblasSuccess;
-#endif
     return ref::padding_interleave(src, dst, row, col, row_pad, col_pad, src_step, dst_step, NTile, RowPack);
   }
 };
-template <int MTile, int SrcBytes, int colPack>
+
+template <int NTile, int RowPack>
+class RevertPaddingInterleaveMN {
+  // M x N ===> N/NTile x M/RowPack x NTile x RowPack (leading dim stride = NTile * dststride)
+ public:
+  template <JBLAS_ISA ISA_T, typename T_SRC, typename T_DST = T_SRC>
+  static JBLAS_CODE forward(const T_SRC* src, T_DST* dst, int row, int col, int row_pad, int col_pad, int src_step,
+                            int dst_step) {
+    return ref::revert_padding_interleave(src, dst, row, col, row_pad, col_pad, src_step, dst_step, NTile, RowPack);
+  }
+};
+
+template <int MTile, int ColPack>
 class PaddingTransInterleaveMN {
   // row and cols are in terms of src
-  // M x N ===> M/MTile x N/colPack x MTile x colPack (leading dim stride = MTile * dststride)
+  // M x N ===> M/MTile x N/ColPack x MTile x ColPack (leading dim stride = MTile * dststride)
  public:
-  template <JBLAS_ISA ISA_T>
-  static JBLAS_CODE forward(void* src, void* dst, int row, int col, int row_pad, int col_pad, int src_stride,
-                            int dst_stride) {
-    return ref::padding_trans_interleave(src, dst, row, col, row_pad, col_pad, src_stride, dst_stride, MTile, SrcBytes,
-                                         colPack);
-  }
-
-#if CompileBF16()
-#ifdef __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wignored-attributes"  // https://stackoverflow.com/a/49216021
-#endif
-  static void tr_x16_dword(std::array<__m512i, 16>& dst) {
-    __m512i tmp[16];
-
-#pragma GCC unroll(8)
-    for (int i = 0; i < 8; ++i) {
-      tmp[2 * i] = _mm512_unpacklo_epi32(dst[2 * i], dst[2 * i + 1]);
-      tmp[2 * i + 1] = _mm512_unpackhi_epi32(dst[2 * i], dst[2 * i + 1]);
-    }
-
-#pragma GCC unroll(4)
-    for (int i = 0; i < 4; ++i) {
-      dst[4 * i] = _mm512_unpacklo_epi64(tmp[4 * i], tmp[4 * i + 2]);
-      dst[4 * i + 1] = _mm512_unpackhi_epi64(tmp[4 * i], tmp[4 * i + 2]);
-      dst[4 * i + 2] = _mm512_unpacklo_epi64(tmp[4 * i + 1], tmp[4 * i + 3]);
-      dst[4 * i + 3] = _mm512_unpackhi_epi64(tmp[4 * i + 1], tmp[4 * i + 3]);
-    }
-
-#pragma GCC unroll(2)
-    for (int i = 0; i < 2; ++i) {
-      tmp[8 * i + 0] = _mm512_shuffle_i32x4(dst[8 * i + 0], dst[8 * i + 4], 0x88);
-      tmp[8 * i + 1] = _mm512_shuffle_i32x4(dst[8 * i + 1], dst[8 * i + 5], 0x88);
-      tmp[8 * i + 2] = _mm512_shuffle_i32x4(dst[8 * i + 2], dst[8 * i + 6], 0x88);
-      tmp[8 * i + 3] = _mm512_shuffle_i32x4(dst[8 * i + 3], dst[8 * i + 7], 0x88);
-      tmp[8 * i + 4] = _mm512_shuffle_i32x4(dst[8 * i + 0], dst[8 * i + 4], 0xdd);
-      tmp[8 * i + 5] = _mm512_shuffle_i32x4(dst[8 * i + 1], dst[8 * i + 5], 0xdd);
-      tmp[8 * i + 6] = _mm512_shuffle_i32x4(dst[8 * i + 2], dst[8 * i + 6], 0xdd);
-      tmp[8 * i + 7] = _mm512_shuffle_i32x4(dst[8 * i + 3], dst[8 * i + 7], 0xdd);
-    }
-
-    dst[0] = _mm512_shuffle_i32x4(tmp[0], tmp[8], 0x88);
-    dst[1] = _mm512_shuffle_i32x4(tmp[1], tmp[9], 0x88);
-    dst[2] = _mm512_shuffle_i32x4(tmp[2], tmp[10], 0x88);
-    dst[3] = _mm512_shuffle_i32x4(tmp[3], tmp[11], 0x88);
-    dst[4] = _mm512_shuffle_i32x4(tmp[4], tmp[12], 0x88);
-    dst[5] = _mm512_shuffle_i32x4(tmp[5], tmp[13], 0x88);
-    dst[6] = _mm512_shuffle_i32x4(tmp[6], tmp[14], 0x88);
-    dst[7] = _mm512_shuffle_i32x4(tmp[7], tmp[15], 0x88);
-    dst[8] = _mm512_shuffle_i32x4(tmp[0], tmp[8], 0xdd);
-    dst[9] = _mm512_shuffle_i32x4(tmp[1], tmp[9], 0xdd);
-    dst[10] = _mm512_shuffle_i32x4(tmp[2], tmp[10], 0xdd);
-    dst[11] = _mm512_shuffle_i32x4(tmp[3], tmp[11], 0xdd);
-    dst[12] = _mm512_shuffle_i32x4(tmp[4], tmp[12], 0xdd);
-    dst[13] = _mm512_shuffle_i32x4(tmp[5], tmp[13], 0xdd);
-    dst[14] = _mm512_shuffle_i32x4(tmp[6], tmp[14], 0xdd);
-    dst[15] = _mm512_shuffle_i32x4(tmp[7], tmp[15], 0xdd);
-  }
-  template <int tail>
-  static std::array<__m512i, 16> load_fp16_bf16_tr_x16_dword(const utils::fp16* a, size_t lda) {
-    static_assert(tail > 0 && tail <= 16, "Unexpected tail value.");
-    std::array<__m512i, 16> dst;
-    for (int i = 0; i < tail; ++i) {
-      dst[i] = (__m512i)(_mm512_cvtne2ps_pbh(                     //
-          _mm512_cvtph_ps(_mm256_loadu_epi16(a + i * lda + 16)),  //
-          _mm512_cvtph_ps(_mm256_loadu_epi16(a + i * lda + 0))));
-    }
-    for (int i = tail; i < 16; ++i) dst[i] = _mm512_setzero_epi32();
-    tr_x16_dword(dst);
-    return dst;
-  }
-  static constexpr decltype(load_fp16_bf16_tr_x16_dword<1>)* load_fp16_bf16_tr_x16_dword_tbl[17]{
-      load_fp16_bf16_tr_x16_dword<1>,  load_fp16_bf16_tr_x16_dword<1>,  load_fp16_bf16_tr_x16_dword<2>,
-      load_fp16_bf16_tr_x16_dword<3>,  load_fp16_bf16_tr_x16_dword<4>,  load_fp16_bf16_tr_x16_dword<5>,
-      load_fp16_bf16_tr_x16_dword<6>,  load_fp16_bf16_tr_x16_dword<7>,  load_fp16_bf16_tr_x16_dword<8>,
-      load_fp16_bf16_tr_x16_dword<9>,  load_fp16_bf16_tr_x16_dword<10>, load_fp16_bf16_tr_x16_dword<11>,
-      load_fp16_bf16_tr_x16_dword<12>, load_fp16_bf16_tr_x16_dword<13>, load_fp16_bf16_tr_x16_dword<14>,
-      load_fp16_bf16_tr_x16_dword<15>, load_fp16_bf16_tr_x16_dword<16>,
-  };
-  template <int tail>
-  static std::array<__m512i, 16> load_maskz_fp16_bf16_tr_x16_dword(const utils::fp16* a, size_t lda, uint32_t mask) {
-    static_assert(tail > 0 && tail <= 16, "Unexpected tail value.");
-    std::array<__m512i, 16> dst;
-
-    const auto mask_lo = mask;
-    const auto mask_hi = mask >> 16;
-    for (int i = 0; i < tail; ++i) {
-      dst[i] = (__m512i)(_mm512_cvtne2ps_pbh(                                    //
-          _mm512_cvtph_ps(_mm256_maskz_loadu_epi16(mask_hi, a + i * lda + 16)),  //
-          _mm512_cvtph_ps(_mm256_maskz_loadu_epi16(mask_lo, a + i * lda + 0))));
-    }
-    for (int i = tail; i < 16; ++i) dst[i] = _mm512_setzero_epi32();
-    tr_x16_dword(dst);
-    return dst;
-  }
-  static constexpr decltype(load_maskz_fp16_bf16_tr_x16_dword<1>)* load_maskz_fp16_bf16_tr_x16_dword_tbl[17]{
-      load_maskz_fp16_bf16_tr_x16_dword<1>,  load_maskz_fp16_bf16_tr_x16_dword<1>,
-      load_maskz_fp16_bf16_tr_x16_dword<2>,  load_maskz_fp16_bf16_tr_x16_dword<3>,
-      load_maskz_fp16_bf16_tr_x16_dword<4>,  load_maskz_fp16_bf16_tr_x16_dword<5>,
-      load_maskz_fp16_bf16_tr_x16_dword<6>,  load_maskz_fp16_bf16_tr_x16_dword<7>,
-      load_maskz_fp16_bf16_tr_x16_dword<8>,  load_maskz_fp16_bf16_tr_x16_dword<9>,
-      load_maskz_fp16_bf16_tr_x16_dword<10>, load_maskz_fp16_bf16_tr_x16_dword<11>,
-      load_maskz_fp16_bf16_tr_x16_dword<12>, load_maskz_fp16_bf16_tr_x16_dword<13>,
-      load_maskz_fp16_bf16_tr_x16_dword<14>, load_maskz_fp16_bf16_tr_x16_dword<15>,
-      load_maskz_fp16_bf16_tr_x16_dword<16>,
-  };
-
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
-#endif
-
-  // Note: rows/cols and i/j are in terms of src
   template <JBLAS_ISA ISA_T, typename T_SRC, typename T_DST = T_SRC>
-  static JBLAS_CODE forward_cvt(const T_SRC* src, T_DST* dst, int row, int col, int row_pad, int col_pad, int src_step,
-                                int dst_step) {
-    // TODO(Yi): can forward_cvt of same i/o replace forward?
-    static_assert(SrcBytes == sizeof(T_SRC), "SrcBytes should match T_SRC.");
-#if CompileBF16()   // && 0
-    if constexpr (  // TODO: avoid if constexpr
-        std::is_same<T_SRC, utils::fp16>::value && std::is_same<T_DST, utils::bf16>::value && SrcBytes * colPack == 4) {
-      assert(row_pad % 16 == 0 && col_pad % 32 == 0);
-      int i = 0;
-      for (; i < row / MTile * MTile; i += MTile) {
-        assert(MTile % 16 == 0);
-        int j = 0;
-        for (; j < col / 32 * 32; j += 32) {
-          for (int ii = 0; ii < MTile; ii += 16) {
-            assert(MTile % 16 == 0);
-            const auto xss = load_fp16_bf16_tr_x16_dword<16>(src + (i + ii) * src_step + j, src_step);
-            for (int jj = 0; jj < 32; jj += 2) {
-              _mm512_storeu_si512(dst + i * dst_step + ii * colPack + (j + jj) * MTile, xss[jj / 2]);
-            }
-          }
-        }
-        if (j < col) {  // j: tail processing
-          for (int ii = 0; ii < MTile; ii += 16) {
-            assert(MTile % 16 == 0);
-            const uint32_t mask = (1U << (col - j)) - 1;
-            const auto xss = load_maskz_fp16_bf16_tr_x16_dword<16>(src + (i + ii) * src_step + j, src_step, mask);
-            for (int jj = 0; jj < 32; jj += 2) {
-              _mm512_storeu_si512(dst + i * dst_step + ii * colPack + (j + jj) * MTile, xss[jj / 2]);
-            }
-          }
-          j += 32;
-        }
-        for (; j < col_pad; j += 2) {  // j: padding zero
-          memset(dst + i * dst_step + j * MTile, 0, 2 * sizeof(T_DST) * MTile);
-        }
-      }
-      if (i < row) {  // i: tail processing
-        int ii = 0;
-        for (; i + ii < row / 16 * 16; ii += 16) {
-          int j = 0;
-          for (; j < col / 32 * 32; j += 32) {
-            assert(MTile % 16 == 0);
-            const auto xss = load_fp16_bf16_tr_x16_dword<16>(src + (i + ii) * src_step + j, src_step);
-            for (int jj = 0; jj < 32; jj += 2) {
-              _mm512_storeu_si512(dst + i * dst_step + ii * colPack + (j + jj) * MTile, xss[jj / 2]);
-            }
-          }
-          if (j < col) {  // j: tail processing
-            assert(MTile % 16 == 0);
-            const uint32_t mask = (1U << (col - j)) - 1;
-            const auto xss = load_maskz_fp16_bf16_tr_x16_dword<16>(src + (i + ii) * src_step + j, src_step, mask);
-            for (int jj = 0; jj < 32; jj += 2) {
-              _mm512_storeu_si512(dst + i * dst_step + ii * colPack + (j + jj) * MTile, xss[jj / 2]);
-            }
-            j += 32;
-          }
-          for (; j < col_pad; j += 2) {  // j: padding zero
-            memset(dst + i * dst_step + ii * colPack + j * MTile, 0, 2 * sizeof(T_DST) * 16);
-          }
-        }
-        if (i + ii < row) {  // ii: tail processing
-          const int tbl_idx = row - i - ii;
-          int j = 0;
-          for (; j < col / 32 * 32; j += 32) {
-            assert(MTile % 16 == 0);
-            const auto xss = load_fp16_bf16_tr_x16_dword_tbl[tbl_idx](src + (i + ii) * src_step + j, src_step);
-            for (int jj = 0; jj < 32; jj += 2) {
-              _mm512_storeu_si512(dst + i * dst_step + ii * colPack + (j + jj) * MTile, xss[jj / 2]);
-            }
-          }
-          if (j < col) {  // j: tail processing
-            assert(MTile % 16 == 0);
-            const uint32_t mask = (1U << (col - j)) - 1;
-            const auto xss =
-                load_maskz_fp16_bf16_tr_x16_dword_tbl[tbl_idx](src + (i + ii) * src_step + j, src_step, mask);
-            for (int jj = 0; jj < 32; jj += 2) {
-              _mm512_storeu_si512(dst + i * dst_step + ii * colPack + (j + jj) * MTile, xss[jj / 2]);
-            }
-            j += 32;
-          }
-          for (; j < col_pad; j += 2) {  // j: padding zero
-            memset(dst + i * dst_step + ii * colPack + j * MTile, 0, 2 * sizeof(T_DST) * 16);
-          }
-          ii += 16;
-        }
-        for (; ii < MTile; ii += 16) {  // ii: padding zero
-          for (int j = 0; j < col_pad; j += 2) {
-            memset(dst + i * dst_step + ii * colPack + j * MTile, 0, 2 * sizeof(T_DST) * 16);
-          }
-        }
-        assert(ii == MTile);
-        i += MTile;
-      }
-      assert(row_pad % MTile == 0);
-      for (; i < row_pad; i += MTile) {  // i: padding zero
-        for (int j = 0; j < col_pad; j += 2) {
-          memset(dst + i * dst_step + j * MTile, 0, 2 * sizeof(T_DST) * MTile);
-        }
-      }
-      return JblasSuccess;
+  static JBLAS_CODE forward(const T_SRC* src, T_DST* dst, int row, int col, int row_pad, int col_pad, int src_step,
+                            int dst_step) {
+    // Note: rows/cols and i/j are in terms of src
+    if (utils::isa_base<ISA_T>::avx512f) {
+      const auto kern_ret = kernel::avx512f::padding_trans_interleave_cvt<T_SRC, T_DST, ColPack>::forward(
+          src, dst, MTile, row, col, row_pad, col_pad, src_step, dst_step);
+      if (kern_ret != JblasNotSupport) return kern_ret;
     }
-#endif
-    return ref::padding_trans_interleave(src, dst, row, col, row_pad, col_pad, src_step, dst_step, MTile, colPack);
+    return ref::padding_trans_interleave(src, dst, row, col, row_pad, col_pad, src_step, dst_step, MTile, ColPack);
   }
 };
 
 class Memcpy2D {
  public:
-  template <JBLAS_ISA ISA_T>
-  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
+  template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T, typename... Eltops>
+  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
+                            void* const_elt_v = nullptr, Eltops... ops) {
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return kernel::jit::JitMemcpy2DAvx512f::forward(srcptr, dstptr, row, col, srcstride, dststride);
+      return kernel::jit::JitMemcpy2DAvx512f::forward<_SRC_T, _DST_T>(srcptr, dstptr, row, col, srcstride, dststride,
+                                                                      const_elt_v, ops...);
     }
 #endif
     return kernel::ref::memcpy2d(srcptr, dstptr, row, col, srcstride, dststride);
-  }
-
-  template <JBLAS_ISA ISA_T>
-  static JBLAS_CODE forward_with_gelu(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
-    if (utils::isa_base<ISA_T>::avx512f) {
-      return kernel::jit::JitMemcpy2DAvx512f::forward_with_gelu(srcptr, dstptr, row, col, srcstride, dststride);
-    }
   }
 };
 
 class Memcpy2DFp32CvtBf16 {
  public:
   template <JBLAS_ISA ISA_T>
-  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
-#if 0
-    for (int i = 0; i < row; i++) {
-      for (int j = 0; j < col; j++) {
-        ((utils::bf16*)((char*)dstptr + i * dststride))[j] =
-            static_cast<utils::bf16>(((float*)((char*)srcptr + i * srcstride))[j]);
-      }
-    }
-    return JblasSuccess;
-#elif CompileAVX512F()
+  static JBLAS_CODE forward(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
+#if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
       return kernel::avx512f::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride);
     }
-#else
-    return kernel::ref::memcpy2d_dw2highw(srcptr, dstptr, row, col, srcstride, dststride);
 #endif
+    for (int i = 0; i < row; i++) {
+      for (int j = 0; j < col; j++) {
+        const auto src = reinterpret_cast<const float*>(reinterpret_cast<const char*>(srcptr) + i * srcstride);
+        const auto dst = reinterpret_cast<utils::bf16*>(reinterpret_cast<char*>(dstptr) + i * dststride);
+        dst[j] = static_cast<utils::bf16>(src[j]);
+      }
+    }
+    return JblasSuccess;
   }
 };
 
@@ -453,7 +107,7 @@ template <int NTILE>
 class CompressS8S4 {
  public:
   template <JBLAS_ISA ISA_T>
-  static inline JBLAS_CODE forward(int8_t* srcptr, jblas::utils::int4x2* dstptr, int row, int col, int ld_src,
+  static inline JBLAS_CODE forward(const int8_t* srcptr, jblas::utils::int4x2* dstptr, int row, int col, int ld_src,
                                    int ld_dst) {
     return ref::compress_s8_s4<NTILE>(srcptr, dstptr, row, col, ld_src, ld_dst);
   }
@@ -463,9 +117,9 @@ template <int NTILE>
 class CompressFp4 {
  public:
   template <JBLAS_ISA ISA_T>
-  static inline JBLAS_CODE forward(int8_t* srcptr, jblas::utils::fp4x2* dstptr, int row, int col, int ld_src,
+  static inline JBLAS_CODE forward(const int8_t* srcptr, jblas::utils::f4x2* dstptr, int row, int col, int ld_src,
                                    int ld_dst) {
-    return ref::compress_fp4<NTILE>(srcptr, dstptr, row, col, ld_src, ld_dst);
+    return ref::compress_f4<NTILE>(srcptr, dstptr, row, col, ld_src, ld_dst);
   }
 };
 
@@ -478,32 +132,27 @@ class Transpose2D {
   }
 };
 
-class QuantizeS8RowBlock {
+class QuantizeSignIntRowBlock {
  public:
-  template <JBLAS_ISA ISA_T>
+  template <JBLAS_ISA ISA_T, JBLAS_SIGN_INT_TYPE S4_T>
   static inline JBLAS_CODE forward(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
                                    float* scales, int blocksize) {
-    if (row % blocksize != 0) {
-      return JblasNotSupport;
-    }
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
-      return avx512f::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+    if (utils::isa_base<ISA_T>::avx512f &&
+        S4_T != S4_FULLRANGE) {  // TODO(zhe): support simd version s4_fullrange quantization.
+      return avx512f::quantize_f32_sign_int_rowblock<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
     }
 #endif
-    return ref::quantize_f32_s8_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+    return ref::quantize_f32_sign_int_rowblock<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
   }
 };
 
-class QuantizeFp4RowBlock {
+class QuantizeF4RowBlock {
  public:
-  template <JBLAS_ISA ISA_T>
+  template <JBLAS_ISA ISA_T, JBLAS_F4_TYPE F4_T>
   static inline JBLAS_CODE forward(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
                                    float* scales, int blocksize) {
-    if (row % blocksize != 0) {
-      return JblasNotSupport;
-    }
-    return ref::quantize_f32_fp4_rowblock(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
+    return ref::quantize_f32_f4_rowblock<F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
   }
 };
 class QuantizeU8ColBlock {
@@ -567,47 +216,77 @@ class AccumulateDequantizeS32F32 {
 template <typename _DST_T>
 class DecompressKBlockS4FP {
  public:
-  template <JBLAS_ISA ISA_T, typename _T>
+  template <JBLAS_ISA ISA_T, typename _T, JBLAS_SIGN_INT_TYPE S4_T>
   static inline JBLAS_CODE forward(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
                                    _T* scales, int k_offset, int kblock, int NPad) {
+    JBLAS_CODE ret = JblasNotSupport;
+
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return avx512f::decompress_kblock_s4_fp(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+      ret = avx512f::decompress_kblock_s4_fp<_T, _DST_T, S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
+                                                               k_offset, kblock, NPad);
+      if (ret == JblasSuccess) {
+        return ret;
+      }
     }
 #endif
-    return ref::decompress_kblock_s4_fp(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+    return ref::decompress_kblock_s4_fp<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
   }
 };
 
 template <typename _DST_T>
-class DecompressKBlockFp4Fp {
+class DecompressKBlockS4FPPackRow {
  public:
-  template <JBLAS_ISA ISA_T, typename _T>
-  static inline JBLAS_CODE forward(utils::fp4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+  template <JBLAS_ISA ISA_T, typename _T, JBLAS_SIGN_INT_TYPE S4_T>
+  static inline JBLAS_CODE forward(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                   _T* scales, int k_offset, int kblock, int NPad, int packrow) {
+    JBLAS_CODE ret = JblasNotSupport;
+    return ref::decompress_kblock_s4_fp_packrow<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset,
+                                                      kblock, NPad, packrow);
+  }
+};
+
+template <typename _DST_T>
+class DecompressKBlockF4FPPackRow {
+ public:
+  template <JBLAS_ISA ISA_T, typename _T, JBLAS_F4_TYPE F4_T>
+  static inline JBLAS_CODE forward(utils::f4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                   _T* scales, int k_offset, int kblock, int NPad, int packrow) {
+    JBLAS_CODE ret = JblasNotSupport;
+    return ref::decompress_kblock_f4_fp_packrow<F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset,
+                                                      kblock, NPad, packrow);
+  }
+};
+
+template <typename _DST_T>
+class DecompressKBlockF4Fp {
+ public:
+  template <JBLAS_ISA ISA_T, typename _T, JBLAS_F4_TYPE F4_T>
+  static inline JBLAS_CODE forward(utils::f4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
                                    _T* scales, int k_offset, int kblock, int NPad) {
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return avx512f::decompress_kblock_fp4_fp(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock,
-                                               NPad);
+      return avx512f::decompress_kblock_f4_fp<_T, _DST_T, F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
+                                                                k_offset, kblock, NPad);
     }
 #endif
-    return ref::decompress_kblock_fp4_fp(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+    return ref::decompress_kblock_f4_fp<F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
   }
 };
 
 class DecompressKBlockS4S8 {
  public:
-  template <JBLAS_ISA ISA_T>
+  template <JBLAS_ISA ISA_T, JBLAS_SIGN_INT_TYPE S4_T>
   static inline JBLAS_CODE forward(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst) {
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if (utils::isa_base<ISA_T>::avx512f && S4_T == S4_CLIP) {
       return jit::decompress_s4_s8(srcptr, dstptr, row, col, ld_src, ld_dst);
     }
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return avx512f::decompress_s4_s8(srcptr, dstptr, row, col, ld_src, ld_dst);
+      return avx512f::decompress_s4_s8<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst);
     }
 #endif
-    return ref::decompress_s4_s8(srcptr, dstptr, row, col, ld_src, ld_dst);
+    return ref::decompress_s4_s8<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst);
   }
 };
 
@@ -623,6 +302,17 @@ class DecompressKBlockS8F32 {
     }
 #endif
     return ref::decompress_kblock_s8_f32(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock, NPad);
+  }
+};
+
+class DecompressKBlockS8FP32PackRow {
+ public:
+  template <JBLAS_ISA ISA_T, typename _T>
+  static inline JBLAS_CODE forward(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst, _T* scales,
+                                   int k_offset, int kblock, int NPad, int packrow) {
+    JBLAS_CODE ret = JblasNotSupport;
+    return ref::decompress_kblock_s8_f32_packrow(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock,
+                                                 NPad, packrow);
   }
 };
 
@@ -660,12 +350,40 @@ class QuanOutS32U32 {
   }
 };
 
+// scaleA ldsa==0 per tensor, ldsa!=0 per M
+// scaleB per channel(N)
+class DequanS32Fp32 {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static JBLAS_CODE forward(const int32_t* srcptr, const int srcstep, float* dstptr, const int dststep, const int M,
+                            const int N, const float* scaleA, const int ldsa, const float* scaleB) {
+#if CompileAVX512F()
+    if (utils::isa_base<ISA_T>::avx512f) {
+      return avx512f::dequant_s32_fp32(srcptr, srcstep, dstptr, dststep, M, N, scaleA, ldsa, scaleB);
+    }
+#endif
+    return ref::dequant_s32_fp32(srcptr, srcstep, dstptr, dststep, M, N, scaleA, ldsa, scaleB);
+  }
+};
+
 class MinMaxKBlock {
  public:
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(const float* srcptr, int row, int col, int ld_src, float* minmaxptr, int ld_minmax,
                                    int fsize_minmax, int blocksize) {
     return ref::minmax_f32_kblock(srcptr, row, col, ld_src, minmaxptr, ld_minmax, fsize_minmax, blocksize);
+  }
+};
+
+class RemoveZeroPointBias {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(float* accptr, int ldacc, int row, int col, uint8_t* zps, float* scales, int lds,
+                                   const float* reduce) {
+    if (utils::isa_base<ISA_T>::avx512f) {
+      return avx512f::remove_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
+    }
+    return ref::remove_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
   }
 };
 

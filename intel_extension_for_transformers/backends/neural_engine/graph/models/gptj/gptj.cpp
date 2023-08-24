@@ -32,15 +32,13 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
+#include "core/layers/inner_product.h"
+#include "core/layers/mha_dense.h"
+#include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
 #define MHA_FUSION 1
-#if MHA_FUSION
-#define MHA_V_ORIGIN_LAYOUT 0  // next token will use ggml kernel
-#else
-#define MHA_V_ORIGIN_LAYOUT 0
-#endif
 
 // evaluate the transformer
 //
@@ -115,9 +113,10 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
 
     ne_tensor *Qcur, *Kcur, *Vcur;
     int kv_n_ctx_block = lctx.kv_n_ctx_block;
-
-    if (model.layers[il].attn[0]->type == NE_TYPE_JBLAS) {  // fused execution of QKV
-                                                            // if (false) {
+    if (jblas_fusion_QKV_f32f32_support(model.layers[il].attn[0]->data, model.layers[il].attn[1]->data,
+                                        model.layers[il].attn[2]->data, N * batch_size, n_embd,
+                                        n_embd)) {  // fused execution of QKV
+                                                    // if (false) {
       struct ne_tensor* QKVcur =
           ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
       Qcur = ne_rope_inplace(ctx0,
@@ -166,16 +165,6 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                  i * n_ctx * n_embd * ne_element_size(kv_self.k));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
 
-#if MHA_V_ORIGIN_LAYOUT
-        // batch V
-        Vcur_bs[i] = ne_view_4d(ctx0, Vcur, n_embd / n_head, n_head, N, 1, ne_element_size(Vcur) * n_embd / n_head,
-                                ne_element_size(Vcur) * n_embd, ne_element_size(Vcur) * n_embd * N,
-                                i * ne_element_size(Vcur) * n_embd * N);
-        v_bs[i] = ne_view_1d(ctx0, kv_self.v, n_embd * N * 1,
-                             (ne_element_size(kv_self.v) * n_embd) * (il * n_ctx * kv_n_ctx_block + n_past) +
-                                 i * n_ctx * n_embd * ne_element_size(kv_self.v));
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
-#else
         // batch V
         Vcur_bs[i] = ne_permute(ctx0,
                                 ne_reshape_4d(ctx0,
@@ -189,7 +178,6 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                              ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block +
                               i * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
-#endif
       }
     }
 
@@ -205,25 +193,15 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                    0, 2, 1, 3);
     ne_set_name(K, "K");
 
-#if MHA_V_ORIGIN_LAYOUT
-    // split cached V into n_head heads
-    struct ne_tensor* V = ne_view_4d(ctx0, kv_self.v, n_embd / n_head, n_head, (n_past + N), batch_size,
-                                     n_embd / n_head * ne_element_size(kv_self.v), ne_element_size(kv_self.v) * n_embd,
-                                     n_ctx * ne_element_size(kv_self.v) * n_embd,
-                                     il * n_ctx * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block);
-    V = ne_permute(ctx0, V, 1, 2, 0, 3);
-    ne_set_name(V, "V");
-#else
     // split cached V into n_head heads
     struct ne_tensor* V = ne_view_4d(
         ctx0, kv_self.v, (n_past + N), n_embd / n_head, n_head, batch_size, n_ctx * ne_element_size(kv_self.v),
         n_ctx * ne_element_size(kv_self.v) * n_embd / n_head, n_ctx * ne_element_size(kv_self.v) * n_embd,
         il * n_ctx * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block);
     ne_set_name(V, "V");
-#endif
 #if MHA_FUSION
     struct ne_tensor* KQV_merged_contiguous;
-    if (n_past == 0) {
+    if (n_past == 0 && jblas_fusion_attn_fp32_fp16_fp16_fp32_support(NULL)) {
       auto vnele = ne_nelements(Vcur);
       struct ne_tensor* Vtmp = ne_new_tensor_1d(ctx0, NE_TYPE_F16, vnele, NE_SIZE_CALC);
       Vtmp = ne_cpy(ctx0, ne_view_1d(ctx0, Vcur, vnele, 0), Vtmp);
@@ -309,7 +287,9 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
 
     // feed-forward network
     // disable ffn fusion because fp32 support not ready
-    if (model.layers[il].ffn[0]->type == NE_TYPE_JBLAS && model.layers[il].ffn[2]->type == NE_TYPE_JBLAS && false) {
+    if (jblas_fusion_FFN_Add_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[2]->data,
+                                                 N * batch_size, inpSA->ne[0], model.layers[il].ffn[0]->ne[1],
+                                                 model.layers[il].ffn[2]->ne[1])) {
       cur = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2], model.layers[il].ffn[1],
                             model.layers[il].ffn[3], inpSA);
     } else {
@@ -345,7 +325,8 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   }
 
   // lm_head
-  if (model.others[3]->type == NE_TYPE_JBLAS) {
+  if (jblas_fusion_add_f32f32_support(model.others[3]->data, N * batch_size, model.others[3]->ne[1],
+                                      model.others[3]->ne[0])) {
     inpL = ne_mul_mat_with_bias(ctx0, model.others[3], model.others[4], inpL);
   } else {
     inpL = ne_mul_mat(ctx0, model.others[3], inpL);
