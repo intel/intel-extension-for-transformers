@@ -121,7 +121,6 @@ class QKVGemmInterfaceKBlockPackWeight {
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
-
     auto cb = utils::CpuBase();
     if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
       static bool dbgprint = false;
@@ -131,31 +130,27 @@ class QKVGemmInterfaceKBlockPackWeight {
       }
     }
     auto paraA = mLauncher.mProA.createParallel(_param.M, _param.K, bptr->mBlockSize);
-    auto quanA = mLauncher.mProA.createObj(_param.M, _param.K, bptr->mBlockSize);
-
     omp_set_num_threads(cb.mNumThreads);
 #pragma omp parallel
     {
       int tidx = omp_get_thread_num();
-      mLauncher.mProA.quantizeT(_param.paramA, tidx, quanA, paraA);
+      mLauncher.mProA.launch(_param.paramA, tidx, paraA);
 #pragma omp barrier
-      launchT(_param, tidx, _paral, quanA, cb.mL2Cache);
+      launchT(_param, tidx, _paral, cb.mL2Cache);
     }
     return JblasSuccess;
   }
 
  protected:
-  void launchT(const Arguments& _param, int tidx, Parallel& _paral, QuanParam& quanA, size_t l2cache) {
+  void launchT(const Arguments& _param, int tidx, Parallel& _paral, size_t l2cache) {
     int colidx, rowidx, rowsize, colsize;
     _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
     if (rowsize > 0 && colsize > 0) {
       Config _config{rowidx, colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
                      l2cache};
       for (size_t i = 0; i < _param.Batch; i++) {
-        mLauncher.launch(
-            _config,
-            {_param.M, _param.N, _param.K, _param.paramA, _param.paramsB[i], _param.paramsC[i], _param.workspace},
-            quanA);
+        mLauncher.launch(_config, {_param.M, _param.N, _param.K, _param.paramA, _param.paramsB[i], _param.paramsC[i],
+                                   _param.workspace});
       }
     }
   }
@@ -168,40 +163,43 @@ namespace transformer_default {
 namespace weight_comp {
 namespace avx512_vnni {
 static JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
-
-using QKVGemmSKernelDynamicS4KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
+using QKVGemmDynamicS4Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
-        jblas::prologue::gemm::ActivationF32U8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock,
+        jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
 }  // namespace avx512_vnni
 namespace amx_int8 {
 static JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
-using QKVGemmSKernelDynamicS4KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
+using QKVGemmDynamicS4Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK,
-        jblas::prologue::gemm::ActivationF32S8KBlockQuantize, jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock,
+        jblas::prologue::gemm::ActivationF32S8KBlockQuantize,
+        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 }  // namespace amx_int8
-namespace avx512_f {
+namespace avx512f {
 static JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
-using QKVGemm = jblas::wrapper::transformer::QKVGemmInterfacePackWeight<
+using QKVGemmS4Fp32Kblock = jblas::wrapper::transformer::QKVGemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F,
         jblas::prologue::gemm::ActivationBase,  // activation fp32->bf16
-        jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
+        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
-}  // namespace avx512_f
+}  // namespace avx512f
 namespace amx_bf16 {
 static JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
-using QKVGemm = jblas::wrapper::transformer::QKVGemmInterfacePackWeight<
+using QKVGemmS4Fp32Kblock = jblas::wrapper::transformer::QKVGemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
         jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
-        jblas::prologue::weight_comp::gemm::WeightS4_Clip_KBlock, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
+        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
 }  // namespace amx_bf16
 }  // namespace weight_comp

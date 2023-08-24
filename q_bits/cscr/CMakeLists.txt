@@ -19,11 +19,11 @@ endif()
 
 find_package(Torch REQUIRED
 PATHS ${torch_path}
-# PATHS /home/wangzhe/.local/envs/cuda/lib/python3.9/site-packages/torch
+# PATHS /home/wangzhe/anaconda3/envs/gcc12/lib/python3.10/site-packages/torch
 NO_DEFAULT_PATH)
 
 
-add_subdirectory(jblas)
+add_subdirectory(dispatcher)
 
 file(GLOB custom_jblasop_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 # Define our library target
@@ -32,6 +32,5 @@ add_library(weight_only_jblasop SHARED ${custom_jblasop_src})
 target_compile_features(weight_only_jblasop PRIVATE cxx_std_14)
 
 # Link against LibTorch
-target_link_libraries(weight_only_jblasop "${TORCH_LIBRARIES}" jblas::jblas)
-
-set_property(TARGET torch_cpu PROPERTY INTERFACE_COMPILE_OPTIONS "")
+target_link_libraries(weight_only_jblasop jblas_dispatcher)
+# set_property(TARGET torch_cpu PROPERTY INTERFACE_COMPILE_OPTIONS "")

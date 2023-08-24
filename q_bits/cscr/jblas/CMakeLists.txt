@@ -7,7 +7,7 @@ file(GLOB xbyak_headers ${PROJECT_NAME}/xbyak/*.h ${PROJECT_NAME}/xbyak/*.hpp)
 
 add_library(${PROJECT_NAME} INTERFACE)
 add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
-
+	
 target_include_directories(
 	${PROJECT_NAME} INTERFACE
 	"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
@@ -19,4 +19,4 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FindOpenMP)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)

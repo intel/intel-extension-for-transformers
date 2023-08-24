@@ -58,19 +58,18 @@ enum JBLAS_ELTWISEOP {
   RELU,
   LINEAR,
 };
-
 enum JBLAS_F4_TYPE {
+  F4_UNDEF,
   FP4_BNB,
   FP4_E2M1,
-  FP4_E3M0,
   NF4,
 };
-
-enum JBLAS_S4_TYPE {
+enum JBLAS_SIGN_INT_TYPE {
+  S8,
   S4_CLIP,
   S4_FULLRANGE,
+  S4_UNDEF,
 };
-
 void jblas_sgemm(const JBLAS_LAYOUT Layout, const JBLAS_TRANSPOSE TransA, const JBLAS_TRANSPOSE TransB, const int M,
                  const int N, const int K, const float alpha, const float* A, const int lda, const float* B,
                  const int ldb, float* C, const int ldc, const float beta, const float* D, const int ldd);

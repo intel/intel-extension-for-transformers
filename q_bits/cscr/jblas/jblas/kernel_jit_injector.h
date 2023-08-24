@@ -20,8 +20,10 @@
 #include <unordered_map>
 #include <map>
 #include <set>
+#include <array>
 
 #include "jit_blas.h"
+#include "jit_blas_utils.h"
 #include "xbyak/xbyak.h"
 using Zmm = Xbyak::Zmm;
 using Ymm = Xbyak::Ymm;
@@ -29,14 +31,6 @@ using Xmm = Xbyak::Xmm;
 namespace jblas {
 namespace kernel {
 namespace jit_injector {
-template <typename T2, typename T1>
-inline const T2 bit_cast(T1 i) {
-  static_assert(sizeof(T1) == sizeof(T2), "Bit-casting must preserve size.");
-  T2 o;
-  memcpy(&o, &i, sizeof(T2));
-  return o;
-}
-
 class eltwise_injector {
  public:
   eltwise_injector(JBLAS_ELTWISEOP eltwiseop) : elt_op(eltwiseop) { reigster_table_entries(); }
@@ -106,9 +100,9 @@ class eltwise_injector {
 
     static constexpr std::array<float, 3> exp_approx_f32_coeff{0.35815147f, 0.96963238f, 1.f};
     static const table_t low_precision_exp_consts{
-        {low_precision_exp_const_v0, {bit_cast<uint32_t>(exp_approx_f32_coeff[0]), true}},
-        {low_precision_exp_const_v1, {bit_cast<uint32_t>(exp_approx_f32_coeff[1]), true}},
-        {low_precision_exp_const_v2, {bit_cast<uint32_t>(exp_approx_f32_coeff[2]), true}},
+        {low_precision_exp_const_v0, {jblas::utils::bit_cast<uint32_t>(exp_approx_f32_coeff[0]), true}},
+        {low_precision_exp_const_v1, {jblas::utils::bit_cast<uint32_t>(exp_approx_f32_coeff[1]), true}},
+        {low_precision_exp_const_v2, {jblas::utils::bit_cast<uint32_t>(exp_approx_f32_coeff[2]), true}},
     };
 
     static const table_t exp_consts{{exp_log2ef, {0x3fb8aa3b, true}},
@@ -599,7 +593,7 @@ class eltwise_injector {
   void relu_compute_vector_fwd(const Xbyak::Zmm& zmm_src, int const_p_offset) {
     h->vmovups(zmm_aux1, zmm_src);
     h->vcmpps(k_mask, zmm_src, table_val(zero), _cmp_nle_us);
-    h->vmulps(zmm_src, zmm_src, h->zword_b[reg_rt_const_p + const_p_offset]);  // TODO(zhe): add rt_const_p comment.
+    h->vmulps(zmm_src, zmm_src, h->zword_b[reg_rt_const_p + const_p_offset]);
     h->vblendmps(zmm_src | k_mask, zmm_src, zmm_aux1);
   }
   void linear_compute_vector_fwd(const Xbyak::Zmm& zmm_src, int const_p_offset) {
@@ -619,8 +613,8 @@ class eltwise_injector {
   }
 
  private:
-  Xbyak::CodeGenerator* h = nullptr;
   JBLAS_ELTWISEOP elt_op;
+  Xbyak::CodeGenerator* h = nullptr;
 
   /*labels*/
   Xbyak::Label l_table;
