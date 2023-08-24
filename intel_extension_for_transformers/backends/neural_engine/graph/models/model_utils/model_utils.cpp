@@ -83,7 +83,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
 
 struct model_context_params model_context_default_params() {
   struct model_context_params result = {
-      /*name                         =*/MODEL_LLAMA,
+      /*arch                         =*/MODEL_LLAMA,
       /*.n_ctx                       =*/512,
       /*.gpu_layers                  =*/0,
       /*.seed                        =*/-1,
@@ -124,11 +124,11 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_name name, model_context& lctx, int n_ctx, int n_gpu_layers,
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
                        ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
                        model_progress_callback progress_callback, void* progress_callback_user_data) {
   try {
-    model_load_internal(fname, name, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
+    model_load_internal(fname, arch, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
                         progress_callback, progress_callback_user_data);
     return true;
   } catch (const std::string& err) {
@@ -905,7 +905,7 @@ __WRITE_FILE:
   printf("\n");
 }
 
-static void model_quantize_internal(const quant_params& params, quant_layer_base* quant_layer) {
+static void model_quantize_internal(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   auto ftype = quant_params_to_ftype(params);
   quant_layer->set_global_config(params.nthread, quant_params_to_internal(params));
   int nthread = params.nthread;
@@ -981,9 +981,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->batch_size = params.batch_size;
 
   ne_type memory_type = params.f16_kv ? NE_TYPE_F16 : NE_TYPE_F32;
-  model_name name = params.name;
+  model_archs arch = params.arch;
 
-  if (!model_load(path_model, name, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
+  if (!model_load(path_model, arch, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
                   params.use_mlock, params.vocab_only, params.progress_callback, params.progress_callback_user_data)) {
     fprintf(stderr, "%s: failed to load model\n", __func__);
     model_free(ctx);
@@ -1034,7 +1034,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-int model_quantize(const quant_params& params, quant_layer_base* quant_layer) {
+int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   try {
     model_quantize_internal(params, quant_layer);
     return 0;
@@ -1300,6 +1300,45 @@ int model_apply_lora_from_file(struct model_context* ctx, const char* path_lora,
     fprintf(stderr, "%s: failed to apply lora adapter: %s\n", __func__, err.c_str());
     return 1;
   }
+}
+
+struct model_context* model_init_from_gpt_params(const gpt_params& params) {
+  if (params.model_arch == MODEL_UNKNOWN) {
+    fprintf(stderr, "error, please set model_name \n");
+    exit(0);
+  }
+  auto lparams = model_context_default_params();
+
+  lparams.arch = params.model_arch;
+  lparams.n_ctx = params.n_ctx;
+  lparams.n_gpu_layers = params.n_gpu_layers;
+  lparams.seed = params.seed;
+  lparams.f16_kv = params.memory_f16;
+  lparams.use_mmap = params.use_mmap;
+  lparams.use_mlock = params.use_mlock;
+  lparams.logits_all = params.perplexity;
+  lparams.embedding = params.embedding;
+  lparams.batch_size = params.batch_size;
+  lparams.beam_search = params.beam_search;
+  lparams.beam_size = params.beam_size;
+
+  model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
+
+  if (lctx == NULL) {
+    fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model.c_str());
+    return NULL;
+  }
+
+  if (!params.lora_adapter.empty()) {
+    int err = model_apply_lora_from_file(lctx, params.lora_adapter.c_str(),
+                                         params.lora_base.empty() ? NULL : params.lora_base.c_str(), params.n_threads);
+    if (err != 0) {
+      fprintf(stderr, "%s: error: failed to apply lora adapter\n", __func__);
+      return NULL;
+    }
+  }
+
+  return lctx;
 }
 
 int model_get_kv_cache_token_count(const struct model_context* ctx) { return ctx->model.kv_self.n; }
@@ -1651,6 +1690,16 @@ int model_tokenize(struct model_context* ctx, const char* text, model_token* tok
   }
 
   return res.size();
+}
+
+std::vector<model_token> model_tokenize(struct model_context* ctx, const std::string& text, bool add_bos) {
+  // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
+  std::vector<model_token> res(text.size() + (int)add_bos);
+  const int n = model_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
+  assert(n >= 0);
+  res.resize(n);
+
+  return res;
 }
 
 int model_n_vocab(const struct model_context* ctx) { return ctx->vocab.id_to_token.size(); }
