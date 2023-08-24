@@ -138,7 +138,7 @@ struct mask_gen_t {
                     1, 0, mask_flag.xetla_select<remain_len, 1>(0));
         }
         mask_out.reg = mask;
-        tile_store<cache_hint::uncached>(mask_out, mask_out_payload);
+        subgroup::tile_store<cache_hint::uncached>(mask_out, mask_out_payload);
     }
 };
 } // namespace gpu::xetla::group
