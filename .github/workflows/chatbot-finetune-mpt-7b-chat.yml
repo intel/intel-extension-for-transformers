@@ -46,34 +46,39 @@ jobs:
         run: |
           pid0=$(cat ./pid0.txt)
           pid1=$(cat ./pid1.txt)
+          ret_status=0
           if [ -z "$pid0" ] || [ -z "$pid1" ]; then
-            echo "Error: failed to create finetuning processes. Master pid is $pid0. Slave pid is $pid1"
-            exit 1
+            ret_status=1
           else
             # query finetuning process status
             pid0_s=$(docker exec chatbotfinetune-s0 bash -c "ps -p $pid0 -o pid=")
             pid1_s=$(docker exec chatbotfinetune-s1 bash -c "ps -p $pid1 -o pid=")
             while [ ! -z "$pid0_s" ] || [ ! -z "$pid1_s" ]; do
-              if [ -f "./error0.txt" ] && [ -s "./error0.txt" ]; then
-                echo "Error from master ft process:"
-                cat ./error0.txt
-                exit 1
-              fi
-              if [ -f "./error1.txt" ] && [ -s "./error1.txt" ]; then
-                echo "Error from slave ft process:"
-                cat ./error1.txt
-                exit 1
-              fi
               sleep 30
               pid0_s=$(docker exec "chatbotfinetune-s0" bash -c "ps -p $pid0 -o pid=")
               pid1_s=$(docker exec "chatbotfinetune-s1" bash -c "ps -p $pid1 -o pid=")
             done
           fi
           # output logs
-          echo "Log from master ft process:"
+          echo "Stdout from master ft process:"
           cat ./log0.txt
-          echo "Log from master slave process:"
+          echo "Stderror from master ft process:"
+          cat ./error0.txt
+          echo "Stdout from slave process:"
           cat ./log1.txt
+          echo "Stderror from slave ft process:"
+          cat ./error1.txt
+          if [ "$ret_status" -eq 1 ]; then
+            echo "Error: failed to create finetuning processes. Master pid is $pid0. Slave pid is $pid1"
+            exit 1
+          fi
+          # check if ft failed by searching stderror
+          search0=$(grep "finetune_clm.py FAILED" ./error0.txt)
+          search1=$(grep "finetune_clm.py FAILED" ./error1.txt)
+          if [ ! -z "$search0" ] || [ ! -z "$search1" ]; then
+            echo "Error: finetuning failed"
+            exit 1
+          fi
 
       - name: Stop Container
         if: success() || failure()

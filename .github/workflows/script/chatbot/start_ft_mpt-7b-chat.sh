@@ -6,8 +6,8 @@ torchrun \
             --nnodes=2 \
             --node_rank=$rank \
             ./workflows/chatbot/fine_tuning/instruction_tuning_pipeline/finetune_clm.py \
-            --model_name_or_path "mosaicml/mpt-7b-chat" \
-            --train_file ".github/workflows/sample_data/alpaca_data_sample_45.json" \
+            --model_name_or_path "mosaicml/mpt-7b" \
+            --train_file "/root/chatbot/.github/workflows/sample_data/alpaca_data_sample_45.json" \
             --task completion \
             --dataset_concatenation \
             --per_device_train_batch_size 2 \
