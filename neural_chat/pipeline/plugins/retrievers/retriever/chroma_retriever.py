@@ -3,7 +3,6 @@
 from langchain.vectorstores import Chroma
 from neural_chat.plugins import register_plugin
 
-@register_plugin('chroma_retriever')
 class ChromaRetriever():
     """Retrieve the document database with Chroma database using dense retrieval."""
     
