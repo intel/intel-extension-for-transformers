@@ -22,7 +22,7 @@ class UnitTest(unittest.TestCase):
                 "voice": (None, "pat"),
                 "audio_output_path": (None, " ")
             }
-            response = requests.post(self.host+API_AUDIO, files=files, verify=False)
+            response = requests.post(self.host+API_AUDIO, files=files)
 
             logger.info('Response status code: {}'.format(response.status_code))
             logger.info('Response text: {}'.format(response.text))
@@ -38,7 +38,7 @@ class UnitTest(unittest.TestCase):
                 "voice": (None, "pat"),
                 "audio_output_path": (None, "./response.wav")
             }
-            response = requests.post(self.host+API_AUDIO, files=files, verify=False)
+            response = requests.post(self.host+API_AUDIO, files=files)
 
             logger.info('Response status code: {}'.format(response.status_code))
             logger.info('Response text: {}'.format(response.text))
