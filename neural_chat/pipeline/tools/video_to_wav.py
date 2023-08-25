@@ -17,6 +17,7 @@
 
 import os
 import argparse
+import subprocess
 
 from pydub import AudioSegment
 
@@ -52,7 +53,10 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
                 cmd = "ffmpeg -i {} -ac 1 -ar {} -f wav {}".format(input_file_path, output_sample_rate, output_file_path)
             else:
                 cmd = "ffmpeg -i {} -ac 2 -ar {} -f wav {}".format(input_file_path, output_sample_rate, output_file_path)
-            os.system(cmd)
+            try:
+                subprocess.run(cmd, check=True)
+            except subprocess.CalledProcessError as e:
+                print("Error while executing command:", e)
         else:
             print("file ", filename, " format not supported!")
             continue

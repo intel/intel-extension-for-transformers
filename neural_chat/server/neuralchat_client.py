@@ -198,7 +198,7 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
                 "voice": (None, "pat"),
                 "audio_output_path": (None, outpath)
             }
-            res = requests.post(url, files=files, verify=False)
+            res = requests.post(url, files=files)
             return res
 
 
