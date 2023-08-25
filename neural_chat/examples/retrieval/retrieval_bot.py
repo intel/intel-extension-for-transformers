@@ -33,14 +33,14 @@ def main():
     # See all possible arguments in config.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
-    parser = HfArgumentParser(PipelineConfig)
+    # parser = HfArgumentParser(PipelineConfig)
     
-    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
-        # If we pass only one argument to the script and it's the path to a json file,
-        # let's parse it to get our arguments.
-        pipeline_args = parser.parse_json_file(json_file = os.path.abspath(sys.argv[1]))
-    else:
-        pipeline_args = parser.parse_args_into_dataclasses()
+    # if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+    #     # If we pass only one argument to the script and it's the path to a json file,
+    #     # let's parse it to get our arguments.
+    #     pipeline_args = parser.parse_json_file(json_file = os.path.abspath(sys.argv[1]))
+    # else:
+    #     pipeline_args = parser.parse_args_into_dataclasses()
 
     chatbot = build_chatbot(pipeline_args)
 

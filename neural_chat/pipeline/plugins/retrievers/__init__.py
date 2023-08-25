@@ -7,7 +7,7 @@ import torch
 from neural_chat.plugins import register_plugin
 from neural_chat.pipeline.plugins.prompts.prompt import generate_qa_prompt, generate_prompt
 
-@register_plugin("qa_client")
+@register_plugin("retriever")
 class QA_Client():
     def __int__(self, persist_dir="./output", process=False, input_path=None, embedding_model="hkunlp/instructor-large", max_length=512, retrieval_type="dense", document_store=None, top_k=1, search_type="mmr",
                 search_kwargs={"k": 1, "fetch_k": 5}):
