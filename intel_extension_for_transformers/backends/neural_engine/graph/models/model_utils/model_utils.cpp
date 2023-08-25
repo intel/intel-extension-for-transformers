@@ -83,7 +83,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
 
 struct model_context_params model_context_default_params() {
   struct model_context_params result = {
-      /*name                         =*/MODEL_LLAMA,
+      /*arch                         =*/MODEL_LLAMA,
       /*.n_ctx                       =*/512,
       /*.gpu_layers                  =*/0,
       /*.seed                        =*/-1,
@@ -124,11 +124,11 @@ int64_t model_time_us() { return ne_time_us(); }
 // model loading
 //
 
-static bool model_load(const std::string& fname, model_name name, model_context& lctx, int n_ctx, int n_gpu_layers,
+static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
                        ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
                        model_progress_callback progress_callback, void* progress_callback_user_data) {
   try {
-    model_load_internal(fname, name, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
+    model_load_internal(fname, arch, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
                         progress_callback, progress_callback_user_data);
     return true;
   } catch (const std::string& err) {
@@ -767,43 +767,99 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
   return quant_params_internal{parse_bits(params.bits), parse_alg(params.alg), params.block_size,
                                parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_type)};
 }
+template <class T, JBLAS_ISA ISA>
+using WeiS4Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32<T, ISA>;
+
+template <class T, JBLAS_ISA ISA>
+using WeiS8Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32<T, ISA>;
+
+using CompFp32 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512F;
+using CompInt8 = jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK;
+using CompBf16 = jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16;
+using CompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
-  using CompType = jblas::prologue::weight_comp::gemm::WeightCompType;
+  using CompType = jblas::prologue::weight_comp::gemm_kblcok::WeightCompType;
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
   jblas::prologue::PackedWeight* packedw = NULL;
-  auto type = CompType::S4_F32;
-  if (params.bits == quant_bits::q4) {
-    if (params.scale_dtype == quant_sdtype::bf16) {
-      type = CompType::S4_Bf16;
-    } else {
-      type = CompType::S4_F32;
-    }
-  } else if (params.bits == quant_bits::q8) {
-    type = CompType::S8_F32;
-  } else {
-    return 0;
-  }
+
   cd->setThreads(nthread);
   if (params.bits == quant_bits::q4) {
-    if (params.compute_type == quant_comp::int8) {
-      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512_vnni::GemmKernelDynamicQuantS4KBlock;
-      static GemmKernel kernel;
-      assert(cd->AVX512F());
-      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
-    } else if (params.compute_type == quant_comp::fp32) {
-      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::avx512f::GemmKernelS4KBlock;
-      static GemmKernel kernel;
-      assert(cd->AVX512F());
-      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
-    } else if (params.compute_type == quant_comp::bf16) {
-      using GemmKernel = jblas::wrapper::gemm_default::weight_comp::amx_bf16::GemmKernelS4KBlock;
-      static GemmKernel kernel;
-      assert(cd->AVX512F());
-      packedw = kernel.getWeightPtr()->compressWeightTranspose(n, k, f32ptr, k, params.block_size, type);
+    if (params.scale_dtype == quant_sdtype::fp32) {
+      if (params.compute_type == quant_comp::int8) {
+        using Kernel = WeiS4Fp32<CompInt8, JblasAVX512F>;
+        using KernelRef = WeiS4Fp32<CompInt8, JblasNoSIMD>;
+        static Kernel kernel;
+        static Kernel kernelref;
+        packedw = kernel.createStorage(n, k, params.block_size);
+        if (cd->AVX512F()) {
+          kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+        } else {
+          kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+        }
+      } else if (params.compute_type == quant_comp::fp32) {
+        using Kernel = WeiS4Fp32<CompFp32, JblasAVX512_FP16>;
+        using KernelRef = WeiS4Fp32<CompFp32, JblasNoSIMD>;
+        static Kernel kernel;
+        static Kernel kernelref;
+        packedw = kernel.createStorage(n, k, params.block_size);
+        if (cd->AVX512_FP16()) {
+          kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+        } else {
+          kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+        }
+      } else if (params.compute_type == quant_comp::bf16) {
+        using Kernel = WeiS4Fp32<CompBf16, JblasAMX_BF16>;
+        using KernelRef = WeiS4Fp32<CompBf16, JblasNoSIMD>;
+        static Kernel kernel;
+        static Kernel kernelref;
+        packedw = kernel.createStorage(n, k, params.block_size);
+        if (cd->AMX_BF16()) {
+          kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+        } else {
+          kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+        }
+      }
     }
+
   } else if (params.bits == quant_bits::q8) {
     // TODO add 8bit quantization
+    if (params.scale_dtype == quant_sdtype::fp32) {
+      if (params.compute_type == quant_comp::int8) {
+        using Kernel = WeiS8Fp32<CompInt8, JblasAVX512F>;
+        using KernelRef = WeiS8Fp32<CompInt8, JblasNoSIMD>;
+        static Kernel kernel;
+        static Kernel kernelref;
+        packedw = kernel.createStorage(n, k, params.block_size);
+        if (cd->AVX512F()) {
+          kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+        } else {
+          kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+        }
+      } else if (params.compute_type == quant_comp::fp32) {
+        using Kernel = WeiS8Fp32<CompFp32, JblasAVX512_FP16>;
+        using KernelRef = WeiS8Fp32<CompFp32, JblasNoSIMD>;
+        static Kernel kernel;
+        static Kernel kernelref;
+        packedw = kernel.createStorage(n, k, params.block_size);
+        if (cd->AVX512_FP16()) {
+          kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+        } else {
+          kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+        }
+      } else if (params.compute_type == quant_comp::bf16) {
+        using Kernel = WeiS8Fp32<CompBf16, JblasAMX_BF16>;
+        using KernelRef = WeiS8Fp32<CompBf16, JblasNoSIMD>;
+        static Kernel kernel;
+        static Kernel kernelref;
+        packedw = kernel.createStorage(n, k, params.block_size);
+        if (cd->AMX_BF16()) {
+          kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+        } else {
+          kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+        }
+      }
+    }
   }
   assert(packedw != 0);
   auto size = packedw->getSerializedSize();
@@ -890,10 +946,10 @@ void ne_common_quantize(const int nthread, const quant_params_internal& params, 
   if (new_type == NE_TYPE_JBLAS) {
     int k_ = tensor.ne.at(0);
     int n_ = tensor.ne.at(1);
-    new_size = jblas_quantize((float*)tensor.data, work.addr, params, nthread, n_, k_);
+    new_size = jblas_quantize(f32_data, work.addr, params, nthread, n_, k_);
     printf("JBLAS ");
   } else if (new_type >= NE_TYPE_Q4_0 && new_type < NE_TYPE_JBLAS) {
-    new_size = ggml_quantize((float*)tensor.data, work.addr, new_type, nthread, nelements);
+    new_size = ggml_quantize(f32_data, work.addr, new_type, nthread, nelements);
     printf("GGML ");
   }
   printf("size = %8.2f MB -> %8.2f MB\n", tensor.size / 1024.0 / 1024.0, new_size / 1024.0 / 1024.0);
@@ -905,7 +961,7 @@ __WRITE_FILE:
   printf("\n");
 }
 
-static void model_quantize_internal(const quant_params& params, quant_layer_base* quant_layer) {
+static void model_quantize_internal(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   auto ftype = quant_params_to_ftype(params);
   quant_layer->set_global_config(params.nthread, quant_params_to_internal(params));
   int nthread = params.nthread;
@@ -981,9 +1037,9 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->batch_size = params.batch_size;
 
   ne_type memory_type = params.f16_kv ? NE_TYPE_F16 : NE_TYPE_F32;
-  model_name name = params.name;
+  model_archs arch = params.arch;
 
-  if (!model_load(path_model, name, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
+  if (!model_load(path_model, arch, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
                   params.use_mlock, params.vocab_only, params.progress_callback, params.progress_callback_user_data)) {
     fprintf(stderr, "%s: failed to load model\n", __func__);
     model_free(ctx);
@@ -1034,7 +1090,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
 void model_free(struct model_context* ctx) { delete ctx; }
 
-int model_quantize(const quant_params& params, quant_layer_base* quant_layer) {
+int model_quantize(const quant_params& params, std::shared_ptr<quant_layer_base> quant_layer) {
   try {
     model_quantize_internal(params, quant_layer);
     return 0;
@@ -1300,6 +1356,45 @@ int model_apply_lora_from_file(struct model_context* ctx, const char* path_lora,
     fprintf(stderr, "%s: failed to apply lora adapter: %s\n", __func__, err.c_str());
     return 1;
   }
+}
+
+struct model_context* model_init_from_gpt_params(const gpt_params& params) {
+  if (params.model_arch == MODEL_UNKNOWN) {
+    fprintf(stderr, "error, please set model_name \n");
+    exit(0);
+  }
+  auto lparams = model_context_default_params();
+
+  lparams.arch = params.model_arch;
+  lparams.n_ctx = params.n_ctx;
+  lparams.n_gpu_layers = params.n_gpu_layers;
+  lparams.seed = params.seed;
+  lparams.f16_kv = params.memory_f16;
+  lparams.use_mmap = params.use_mmap;
+  lparams.use_mlock = params.use_mlock;
+  lparams.logits_all = params.perplexity;
+  lparams.embedding = params.embedding;
+  lparams.batch_size = params.batch_size;
+  lparams.beam_search = params.beam_search;
+  lparams.beam_size = params.beam_size;
+
+  model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
+
+  if (lctx == NULL) {
+    fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model.c_str());
+    return NULL;
+  }
+
+  if (!params.lora_adapter.empty()) {
+    int err = model_apply_lora_from_file(lctx, params.lora_adapter.c_str(),
+                                         params.lora_base.empty() ? NULL : params.lora_base.c_str(), params.n_threads);
+    if (err != 0) {
+      fprintf(stderr, "%s: error: failed to apply lora adapter\n", __func__);
+      return NULL;
+    }
+  }
+
+  return lctx;
 }
 
 int model_get_kv_cache_token_count(const struct model_context* ctx) { return ctx->model.kv_self.n; }
@@ -1651,6 +1746,16 @@ int model_tokenize(struct model_context* ctx, const char* text, model_token* tok
   }
 
   return res.size();
+}
+
+std::vector<model_token> model_tokenize(struct model_context* ctx, const std::string& text, bool add_bos) {
+  // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
+  std::vector<model_token> res(text.size() + (int)add_bos);
+  const int n = model_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
+  assert(n >= 0);
+  res.resize(n);
+
+  return res;
 }
 
 int model_n_vocab(const struct model_context* ctx) { return ctx->vocab.id_to_token.size(); }

@@ -66,10 +66,18 @@ void sigint_handler(int signo) {
 
 int main(int argc, char** argv) {
   gpt_params params;
-  params.name = MODEL_GPTNEOX;
+#ifdef MODEL_NAME
+  params.model_name = MODEL_NAME;
+#endif
   if (gpt_params_parse(argc, argv, params) == false) {
     return 1;
   }
+  model_archs mt = model_name_to_arch::init().find(params.model_name);
+  if (mt == MODEL_UNKNOWN) {
+    fprintf(stderr, "error, please set model_name \n");
+    exit(0);
+  }
+  params.model_arch = mt;
 
   // save choice to use color for later
   // (note for later: this is a slightly awkward choice)
@@ -132,7 +140,7 @@ int main(int argc, char** argv) {
   }
 
   // determine the maximum memory usage needed to do inference for the given n_batch and n_predict parameters
-  // uncomment the "used_mem" line in gptj.cpp to see the results
+  // uncomment the "used_mem" line in graph to see the results
   if (params.mem_test) {
     {
       const std::vector<model_token> tmp(params.n_batch, model_token_bos());
@@ -152,8 +160,10 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  // Add a space in front of the first character to match OG gptj tokenizer behavior
-  // params.prompt.insert(0, 1, ' ');
+  // Add a space in front of the first character to match OG llama tokenizer behavior
+  if (params.model_arch == MODEL_LLAMA) {
+    params.prompt.insert(0, 1, ' ');
+  }
 
   std::string path_session = params.path_prompt_cache;
   std::vector<model_token> session_tokens;
@@ -182,7 +192,11 @@ int main(int argc, char** argv) {
   }
 
   // tokenize the prompt
-  std::vector<int> embd_inp = ::model_tokenize(ctx, params.prompt, false);
+  bool add_bos = false;
+  if (params.model_arch == MODEL_LLAMA) {
+    add_bos = true;
+  }
+  auto embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
 
   const int n_ctx = model_n_ctx(ctx);
 

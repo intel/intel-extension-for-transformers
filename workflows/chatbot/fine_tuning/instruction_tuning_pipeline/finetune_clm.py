@@ -21,7 +21,6 @@ import datasets
 import logging
 import os
 import sys
-sys.path.append("/data2/lkk/llama/test_pr/intel-extension-for-transformers")
 import transformers
 from transformers.modeling_utils import unwrap_model
 from dataclasses import dataclass, field
@@ -505,6 +504,7 @@ def main():
                 torch_dtype=model_dtype,
                 low_cpu_mem_usage=True,
             )
+            tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
     else:
         raise ValueError(
             "Must provide model_name_or_path to load a pretrained CausalLM model."
@@ -546,7 +546,6 @@ def main():
 
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
-    tokenizer.padding_side = "left"  # Allow batched inference
 
     raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
     column_names = list(raw_datasets["train"].features)
@@ -575,11 +574,8 @@ def main():
                 concatenated_dataset[column] = reshaped_data
             return datasets.Dataset.from_dict(concatenated_dataset)
 
-        tokenized_datasets_ = tokenized_datasets["train"].remove_columns(
-            ["prompt_sources", "prompt_targets"]
-        )
         tokenized_datasets["train"] = concatenate_data(
-            tokenized_datasets_, data_args.max_seq_length
+            tokenized_datasets["train"], data_args.max_seq_length
         )
 
     if training_args.do_eval:
