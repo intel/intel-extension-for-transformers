@@ -274,11 +274,11 @@ def main():
 
         worker_list = distributed_args.worker.split(",")
 
-        from intel_extension_for_transformers.optimization.utils.utility_tf import distributed_init
+        from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
         distributed_init(worker_list, "worker", distributed_args.task_index)
 
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
-        from intel_extension_for_transformers.optimization.utils.utility_tf import get_filepath
+        from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
         training_args.output_dir = get_filepath(training_args.output_dir, strategy.cluster_resolver.task_type, strategy.cluster_resolver.task_id)
     else:
         strategy = training_args.strategy
@@ -547,7 +547,7 @@ def main():
         # endregion
 
     if optim_args.tune:
-        from intel_extension_for_transformers.optimization import metrics, objectives, QuantizationConfig, TFOptimization
+        from intel_extension_for_transformers.transformers import metrics, objectives, QuantizationConfig, TFOptimization
         optimization = TFOptimization(
             model=model,
             args=training_args,
@@ -611,7 +611,7 @@ def main():
         if optim_args.int8:
             model = tf.saved_model.load(training_args.output_dir)
         else:
-            from intel_extension_for_transformers.optimization.utils.utility_tf import keras2SavedModel
+            from intel_extension_for_transformers.transformers.utils.utility_tf import keras2SavedModel
             model = keras2SavedModel(model)
         for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
             num_examples += sum(

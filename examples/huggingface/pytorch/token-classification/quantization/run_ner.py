@@ -27,12 +27,12 @@ import sys
 import transformers
 from dataclasses import dataclass, field
 from datasets import ClassLabel, load_dataset, load_metric
-from intel_extension_for_transformers.optimization import(
+from intel_extension_for_transformers.transformers import(
     metrics,
     OptimizedModel,
     QuantizationConfig,
 )
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from transformers import (
     AutoConfig,
     AutoModelForTokenClassification,

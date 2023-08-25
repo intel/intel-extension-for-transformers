@@ -22,7 +22,7 @@ import os
 import transformers
 from .config import WEIGHTS_NAME
 from neural_compressor.utils import logger
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from packaging.version import Version
 from transformers import AutoConfig
 from transformers.file_utils import WEIGHTS_NAME

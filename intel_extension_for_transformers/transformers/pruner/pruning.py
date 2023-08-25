@@ -22,7 +22,7 @@ from neural_compressor.compression.pruner.utils import process_config, parse_to_
     check_config, update_params
 from neural_compressor.compression.pruner.pruners import get_pruner
 
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
 LazyImport('torch.nn')
 torch = LazyImport('torch')

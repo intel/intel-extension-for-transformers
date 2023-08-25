@@ -34,8 +34,8 @@ from neural_compressor.experimental.nas.search_algorithms import \
     BayesianOptimizationSearcher, GridSearcher, RandomSearcher
 from neural_compressor.strategy.bayesian import BayesianOptimization
 from neural_compressor.utils import logger
-from intel_extension_for_transformers.optimization.config import AutoDistillationConfig
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
+from intel_extension_for_transformers.transformers.config import AutoDistillationConfig
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 
 torch = LazyImport("torch")
 

@@ -27,14 +27,14 @@ from neural_compressor.experimental import(
     Pruning,
 )
 from neural_compressor.experimental.scheduler import Scheduler
-from intel_extension_for_transformers.optimization import(
+from intel_extension_for_transformers.transformers import(
     DistillationConfig,
     Provider,
     QuantizationConfig,
     PruningConfig
 )
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
-from intel_extension_for_transformers.optimization.quantization import QuantizationMode
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
+from intel_extension_for_transformers.transformers.quantization import QuantizationMode
 from transformers import PreTrainedModel, PretrainedConfig
 from transformers.file_utils import WEIGHTS_NAME
 from typing import Callable, Optional, Union, List

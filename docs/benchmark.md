@@ -39,8 +39,8 @@ def get_example_inputs(model_name, dataset_name='sst2'):
 ```
 ### Stock Pytorch Model
 ```py
-from intel_extension_for_transformers.optimization import BenchmarkConfig
-from intel_extension_for_transformers.optimization.benchmark import benchmark
+from intel_extension_for_transformers.transformers import BenchmarkConfig
+from intel_extension_for_transformers.transformers.benchmark import benchmark
 
 config = BenchmarkConfig(
     batch_size=16,
@@ -52,8 +52,8 @@ benchmark(model_name_or_path, config, example_inputs=example_inputs)
 ```
 ### IPEX Model
 ```py
-from intel_extension_for_transformers.optimization import BenchmarkConfig
-from intel_extension_for_transformers.optimization.benchmark import benchmark
+from intel_extension_for_transformers.transformers import BenchmarkConfig
+from intel_extension_for_transformers.transformers.benchmark import benchmark
 
 config = BenchmarkConfig(
     backend='ipex',

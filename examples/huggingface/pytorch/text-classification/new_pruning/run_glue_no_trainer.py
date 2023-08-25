@@ -22,7 +22,7 @@ from pathlib import Path
 import sys
 sys.path.insert(0, './')
 
-from intel_extension_for_transformers.optimization.pruner import WeightPruningConfig, Pruning
+from intel_extension_for_transformers.transformers.pruner import WeightPruningConfig, Pruning
 
 import datasets
 from datasets import load_dataset, load_metric

@@ -19,7 +19,7 @@
 
 import os
 
-from intel_extension_for_transformers.optimization.config import NASConfig
+from intel_extension_for_transformers.transformers.config import NASConfig
 from neural_compressor.conf.config import Conf
 from neural_compressor.experimental.nas.nas import NASBase
 from neural_compressor.experimental.nas.nas_utils import nas_registry

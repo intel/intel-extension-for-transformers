@@ -41,7 +41,7 @@ def set_log_file(log, log_file):
 def load_graph(model_path):
     if os.path.exists(model_path):
         if os.path.isdir(model_path):
-            from intel_extension_for_transformers.optimization import OptimizedModel
+            from intel_extension_for_transformers.transformers import OptimizedModel
             graph = OptimizedModel.from_pretrained(model_path)
         else:
             graph = compile(model_path)

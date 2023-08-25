@@ -3,7 +3,7 @@ import sys
 import torch
 import unittest
 from unittest.mock import patch
-from intel_extension_for_transformers.optimization.model import OptimizedModel
+from intel_extension_for_transformers.transformers.model import OptimizedModel
 
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 

@@ -21,7 +21,7 @@ import time
 import torch
 from collections import UserDict
 from neural_compressor.utils import logger
-from intel_extension_for_transformers.optimization import OptimizedModel
+from intel_extension_for_transformers.transformers import OptimizedModel
 
 
 def torch_inference(model, data):

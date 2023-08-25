@@ -29,7 +29,7 @@ from functools import partial
 from neural_compressor import __version__ as nc_version
 from neural_compressor.experimental import Component
 from neural_compressor.utils import logger
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     AutoDistillation,
     DistillationConfig,
     Provider,
@@ -41,9 +41,9 @@ from intel_extension_for_transformers.optimization import (
     BenchmarkConfig,
     NAS,
 )
-from intel_extension_for_transformers.optimization.benchmark import benchmark
-from intel_extension_for_transformers.optimization.utils.metrics import Metric
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
+from intel_extension_for_transformers.transformers.benchmark import benchmark
+from intel_extension_for_transformers.transformers.utils.metrics import Metric
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from packaging import version
 from tqdm.auto import tqdm
 from transformers import __version__, Seq2SeqTrainer, Trainer, PreTrainedModel
@@ -565,7 +565,7 @@ class BaseTrainer():
             eval_func (:obj:`Callable`, optional): Evaluation function to evaluate the tuning objective.
             train_func (:obj:`Callable`, optional): Training function which will be combined with pruning.
         """
-        from intel_extension_for_transformers.optimization.optimizer import Orchestrate_optimizer
+        from intel_extension_for_transformers.transformers.optimizer import Orchestrate_optimizer
         self.orchestrate_opt = True
         self._eval_func = self.builtin_eval_func if eval_func is None else eval_func
         self._train_func = self.builtin_train_func if train_func is None else train_func

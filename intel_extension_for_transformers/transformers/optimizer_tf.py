@@ -26,13 +26,13 @@ try:
     from neural_compressor.model.model import saved_model_session, get_model_type
 except ImportError:
     from neural_compressor.model.tensorflow_model import saved_model_session, get_model_type
-from intel_extension_for_transformers.optimization import (DistillationConfig,
+from intel_extension_for_transformers.transformers import (DistillationConfig,
                                                            QuantizationConfig,
                                                            PruningConfig,
                                                            AutoDistillation)
-from intel_extension_for_transformers.optimization.quantization import QuantizationMode
-from intel_extension_for_transformers.optimization.utils.metrics import Metric
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
+from intel_extension_for_transformers.transformers.quantization import QuantizationMode
+from intel_extension_for_transformers.transformers.utils.metrics import Metric
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from packaging import version
 from transformers import PreTrainedModel
 from transformers.training_args_tf import TFTrainingArguments

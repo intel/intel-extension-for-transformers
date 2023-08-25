@@ -23,14 +23,14 @@ from transformers import (
     DataCollatorWithPadding,
     Trainer,
 )
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     QuantizationConfig,
     PruningConfig,
     PrunerConfig,
     metrics,
     objectives,
 )
-from intel_extension_for_transformers.optimization.trainer import (
+from intel_extension_for_transformers.transformers.trainer import (
     NLPTrainer,
 )
 from finetune import DlsaFinetune

@@ -30,8 +30,8 @@ from torch.utils.data import DataLoader, Dataset
 
 from accelerate.utils import set_seed
 from diffusers import StableDiffusionPipeline
-from intel_extension_for_transformers.optimization import metrics , NoTrainerOptimizer, OptimizedModel, QuantizationConfig
-from intel_extension_for_transformers.optimization.config import WEIGHTS_NAME
+from intel_extension_for_transformers.transformers import metrics , NoTrainerOptimizer, OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.transformers.config import WEIGHTS_NAME
 from pytorch_fid import fid_score
 
 

@@ -8,15 +8,15 @@ import transformers
 import logging
 import numpy as np
 
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
-from intel_extension_for_transformers.optimization.utils.models.modeling_roberta_dynamic import RobertaForQuestionAnswering
-from intel_extension_for_transformers.optimization.utils.models.modeling_bert_dynamic import BertForQuestionAnswering
-from intel_extension_for_transformers.optimization.dynamic.drop_and_restore_utils import (
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.utils.models.modeling_roberta_dynamic import RobertaForQuestionAnswering
+from intel_extension_for_transformers.transformers.utils.models.modeling_bert_dynamic import BertForQuestionAnswering
+from intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils import (
     sample_length_configuration,
     sample_layer_configuration
 )
 
-from intel_extension_for_transformers.optimization.dynamic.evolution import (
+from intel_extension_for_transformers.transformers.dynamic.evolution import (
     approx_ratio, inverse, store2str, Evolution
 )
 
@@ -30,7 +30,7 @@ from transformers import (
     TrainingArguments,
 )
 
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     DynamicLengthConfig,
 )
 

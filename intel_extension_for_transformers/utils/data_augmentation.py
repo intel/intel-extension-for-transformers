@@ -26,7 +26,7 @@ import math
 import numpy as np
 import os
 from datasets import load_dataset
-from intel_extension_for_transformers.optimization.utils.utility import LazyImport
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from operator import methodcaller
 from tqdm import tqdm
 from .utils import AugmenterType, get_augmenter_from_type

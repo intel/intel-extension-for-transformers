@@ -26,7 +26,7 @@ import os
 import shutil
 
 from collections.abc import Iterable
-from intel_extension_for_transformers.optimization.config import NASConfig
+from intel_extension_for_transformers.transformers.config import NASConfig
 from neural_compressor.conf.config import Conf
 from neural_compressor.experimental.nas.nas_utils import find_pareto_front, NASMethods
 from neural_compressor.experimental.nas.search_algorithms import \

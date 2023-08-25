@@ -47,7 +47,7 @@ def infer_framework_load_model(
         Tuple: A tuple framework, model.
     """
     logger.warning("Function transformers.pipelines.base.infer_framework_load_model is replaced "
-                    "by intel_extension_for_transformers.optimization.pipeline.")
+                    "by intel_extension_for_transformers.transformers.pipeline.")
 
     backend = model_kwargs['backend'] if 'backend' in model_kwargs else None
     if isinstance(model, str):
