@@ -87,7 +87,6 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
-    parameters["dtype"] = config.optimization_config.amp_config.dtype
     parameters["optimization_config"] = config.optimization_config
     adapter.load_model(parameters)
 

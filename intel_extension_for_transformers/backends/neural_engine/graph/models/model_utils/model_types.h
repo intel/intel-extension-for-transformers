@@ -64,7 +64,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_name { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON };
+enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON };
 
 static const size_t MB = 1024 * 1024;
 
@@ -138,7 +138,7 @@ struct model_kv_cache {
 };
 
 struct model_struct {
-  model_name name;
+  model_archs arch;
 
   model_hparams hparams;
   model_scratch scratchs;
@@ -284,7 +284,7 @@ typedef struct model_token_data_array {
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
 struct model_context_params {
-  model_name name;   // name of models (GPT-J, LLAMA)
+  model_archs arch;   // arch of models (GPT-J, LLAMA)
   int n_ctx;         // text context
   int n_gpu_layers;  // number of layers to store in VRAM
   int seed;          // RNG seed, -1 for random
@@ -302,6 +302,40 @@ struct model_context_params {
   model_progress_callback progress_callback;
   // context pointer passed to the progress callback
   void* progress_callback_user_data;
+};
+
+class model_name_to_arch {
+ public:
+  static model_name_to_arch& init() {
+    static model_name_to_arch ins;
+    return ins;
+  }
+
+  void valid_options() {
+    for (auto pair : name2arch_) {
+      printf("%s, ", pair.first.c_str());
+    }
+    printf("\n");
+  }
+
+  model_archs find(const std::string& name) {
+    auto it = name2arch_.find(name);
+    if (it == name2arch_.end()) {
+      printf("%s is not a valid model name, supported model names are: ", name.c_str());
+      valid_options();
+      return MODEL_UNKNOWN;
+    } else {
+      return name2arch_.at(name);
+    }
+  }
+
+ private:
+  model_name_to_arch() {}
+  // update this table if has new cpp model
+  std::unordered_map<std::string, model_archs> name2arch_ = {
+      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ},           {"mpt", MODEL_MPT},
+      {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
+  };
 };
 
 #ifdef __cplusplus

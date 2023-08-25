@@ -29,7 +29,8 @@
 #endif
 
 struct gpt_params {
-  model_name name;
+  std::string model_name;
+  model_archs model_arch = MODEL_UNKNOWN;
   int n_layers;
   int32_t seed = -1;  // RNG seed
   int32_t n_threads = get_num_physical_cores();

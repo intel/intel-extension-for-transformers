@@ -18,7 +18,7 @@
 
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
-from transformers import TrainingArguments
+from transformers import TrainingArguments, BitsAndBytesConfig
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
 
@@ -368,6 +368,7 @@ class SafetyConfig:
 class OptimizationConfig:
     amp_config: AMPConfig = AMPConfig()
     weight_only_quant_config: WeightOnlyQuantizationConfig = None
+    bitsandbytes_config: BitsAndBytesConfig = None
     
 @dataclass
 class IntentConfig:

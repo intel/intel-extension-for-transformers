@@ -16,6 +16,11 @@ target_include_directories(
 
 if(WIN32)
 	target_compile_definitions(${PROJECT_NAME} INTERFACE _CRT_SECURE_NO_WARNINGS NOMINMAX)
+	target_compile_options(${PROJECT_NAME} INTERFACE /wd4068 /wd4849 /wd6262) 
+	#4068 ignore unroll and GCC flags
+	#4849 ignore collapse
+	#6262 ignore stack too large
+
 	target_link_options(${PROJECT_NAME} INTERFACE /STACK:3145728) #Stack require up to L2 cache size
 endif(WIN32)
 
@@ -24,5 +29,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FindOpenMP)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX OpenMP::OpenMP_C)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 

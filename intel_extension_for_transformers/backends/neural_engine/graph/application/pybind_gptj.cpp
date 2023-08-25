@@ -24,7 +24,6 @@
 
 #include "common.h"
 #include "models/model_utils/model_types.h"
-#include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 
 #if defined(_MSC_VER)
@@ -55,7 +54,7 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   gpt_params params;
   params.n_threads = n_threads;
   params.seed = seed;
-  params.name = MODEL_GPTJ;
+  params.model_arch = MODEL_GPTJ;
   params.n_ctx = n_ctx;
   params.n_predict = n_predict;
   params.n_batch = n_batch;

@@ -42,7 +42,7 @@ static const model_scratch starcoder_mem_req(int n_layers) {
 
 class STARCODER : public IModel {
  private:
-  model_name name = MODEL_STARCODER;
+  model_archs arch = MODEL_STARCODER;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;

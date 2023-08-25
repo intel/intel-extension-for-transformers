@@ -2985,7 +2985,7 @@ struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, str
   bool is_node = true;
   struct ne_tensor* result = ne_new_tensor_4d(ctx, NE_TYPE_F32, headsize, headnum, seq_cur, batch, NE_SIZE_CALC);
   attn_shape_t atte_shape = {batch, headnum, headsize, seq_cur, seq_all};
-  size_t tmpsize = jblas_attn_bf16_workspace_size(&atte_shape);
+  size_t tmpsize = jblas_fusion_attn_bf16_workspace_size(&atte_shape);
   struct ne_tensor* tmp_t = ne_new_tensor_1d(ctx, NE_TYPE_I8, tmpsize, NE_SIZE_CALC);
   result->op = NE_OP_FLASH_ATTN;
   result->grad = NULL;
@@ -6141,7 +6141,7 @@ static void ne_compute_forward_mul_mat_q_f32_jblas(const struct ne_compute_param
   if (params->type == NE_TASK_FINALIZE) {
     return;
   }
-  jblas_weights4block_f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, ne10, ne0);
+  jblas_f32f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, ne10, ne0);
 }
 
 static void ne_compute_forward_mul_mat(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6245,7 +6245,7 @@ static void ne_compute_forward_mul_mat_bias_q_f32_jblas(const struct ne_compute_
     return;
   }
   const bool boardcast_bias = bias->ne[1] == 1;
-  jblas_weights4block_add_f32_forward((float*)src1->data, src0->data, (float*)bias->data, (float*)dst->data, ne1, ne0,
+  jblas_fusion_add_f32f32_forward((float*)src1->data, src0->data, (float*)bias->data, (float*)dst->data, ne1, ne0,
                                       ne10, ne10, ne0, boardcast_bias);
 }
 
@@ -6275,7 +6275,7 @@ static void ne_compute_forward_mul_qkv(const struct ne_compute_params* params, c
   const int n = dst->ne[0];
   const int m = dst->ne[1];
   const int k = src->ne[0];
-  jblas_weightcomp_QKV_f32_forward((float*)src->data, qw->data, kw->data, vw->data, (float*)dst->data, m, n, k, k, n);
+  jblas_fusion_QKV_f32f32_forward((float*)src->data, qw->data, kw->data, vw->data, (float*)dst->data, m, n, k, k, n);
 }
 
 static void ne_compute_forward_ffn_silu(const struct ne_compute_params* params, const struct ne_tensor* src,
@@ -6292,7 +6292,7 @@ static void ne_compute_forward_ffn_silu(const struct ne_compute_params* params, 
   const int fout = dst->ne[0];
   const int fmid = w1->ne[1];
   const int seq = dst->ne[1];
-  jblas_weightcomp_FFN_SiLu_f32_forward((float*)src->data, w1->data, w2->data, w3->data, (float*)tmp->data,
+  jblas_fusion_FFN_SiLu_f32f32_forward((float*)src->data, w1->data, w2->data, w3->data, (float*)tmp->data,
                                         (float*)tmp1->data, (float*)dst->data, seq, fin, fmid, fout);
 }
 
@@ -6312,7 +6312,7 @@ static void ne_compute_forward_ffn_add_gelu(const struct ne_compute_params* para
   const int fmid = w1->ne[1];
   const int seq = dst->ne[1];
   const bool boardcast_bias = b1->ne[1] == 1 || b2->ne[1] == 1;
-  jblas_weightcomp_FFN_Add_GeLu_f32_forward((float*)src->data, w1->data, w2->data, (float*)b1->data, (float*)b2->data,
+  jblas_fusion_FFN_Add_GeLu_f32f32_forward((float*)src->data, w1->data, w2->data, (float*)b1->data, (float*)b2->data,
                                             (float*)tmp->data, (float*)dst->data, seq, fin, fmid, fout, boardcast_bias);
 }
 
@@ -6330,7 +6330,7 @@ static void ne_compute_forward_ffn_gelu(const struct ne_compute_params* params, 
   const int fout = dst->ne[0];
   const int fmid = w1->ne[1];
   const int seq = dst->ne[1];
-  jblas_weightcomp_FFN_GeLu_f32_forward((float*)src->data, w1->data, w2->data, (float*)tmp->data, (float*)dst->data,
+  jblas_fusion_FFN_GeLu_f32f32_forward((float*)src->data, w1->data, w2->data, (float*)tmp->data, (float*)dst->data,
                                         seq, fin, fmid, fout);
 }
 
@@ -8433,7 +8433,7 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
       .step_dst_sl = embedsize,
       .tmp = tmp->data,
   };
-  jblas_attn_fp32_fp16_fp16_fp32_forward(&args);
+  jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(&args);
 }
 
 static void ne_compute_forward_flash_attn_f16(const struct ne_compute_params* params, const struct ne_tensor* q,
