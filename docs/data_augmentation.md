@@ -42,7 +42,7 @@ pip install -v .
 ### Script
 Please refer to [example](tests/test_data_augmentation.py).
 ```python
-from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
+from intel_extension_for_transformers.utils.data_augmentation import DataAugmentation
 aug = DataAugmentation(augmenter_type="TextGenerationAug")
 aug.input_dataset = "dev.csv"
 aug.output_path = os.path.join(self.result_path, "test1.cvs")
@@ -82,7 +82,7 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
     - Prepare datasets:
         ```python
         from datasets import load_dataset
-        from intel_extension_for_transformers.preprocessing.utils import EOS
+        from intel_extension_for_transformers.utils.utils import EOS
         for split in {'train', 'validation'}:
             dataset = load_dataset('glue', 'sst2', split=split)
             with open('SST-2/' + split + '.txt', 'w') as fw:
@@ -113,7 +113,7 @@ Our approach follows algorithms described by [Not Enough Data? Deep Learning to 
 
 - Secondly, we generate labeled data. Given class labels sampled from the training set, we use the fine-tuned language model to predict sentences with below script:
     ```python
-    from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
+    from intel_extension_for_transformers.utils.data_augmentation import DataAugmentation
     aug = DataAugmentation(augmenter_type="TextGenerationAug")
     aug.input_dataset = "/your/original/training_set.csv"
     aug.output_path = os.path.join(self.result_path, "/your/augmented/dataset.cvs")

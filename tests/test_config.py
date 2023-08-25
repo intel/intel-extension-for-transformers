@@ -19,7 +19,7 @@ from intel_extension_for_transformers.transformers.distillation import Distillat
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from intel_extension_for_transformers.transformers.utils.objectives import Objective
 from intel_extension_for_transformers.transformers.utils.utility_tf import TFDataloader
-from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
+from intel_extension_for_transformers.utils.data_augmentation import DataAugmentation
 
 from transformers import (
     AutoModelForPreTraining,

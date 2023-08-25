@@ -9,8 +9,8 @@ import logging
 import numpy as np
 
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-from intel_extension_for_transformers.transformers.utils.models.modeling_roberta_dynamic import RobertaForQuestionAnswering
-from intel_extension_for_transformers.transformers.utils.models.modeling_bert_dynamic import BertForQuestionAnswering
+from intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic import RobertaForQuestionAnswering
+from intel_extension_for_transformers.transformers.modeling.modeling_bert_dynamic import BertForQuestionAnswering
 from intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils import (
     sample_length_configuration,
     sample_layer_configuration
