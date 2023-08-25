@@ -23,10 +23,10 @@ from neural_compressor.conf.config import (
     Distillation_Conf, Pruner, Pruning_Conf, Quantization_Conf
 )
 from neural_compressor.conf.dotdict import DotDict, deep_set
-from intel_extension_for_transformers.utils.metrics import Metric
-from intel_extension_for_transformers.utils.objectives import Objective, performance
-from intel_extension_for_transformers.quantization import QuantizationMode, SUPPORTED_QUANT_MODE
-from intel_extension_for_transformers.distillation import (
+from .utils.metrics import Metric
+from .utils.objectives import Objective, performance
+from .quantization import QuantizationMode, SUPPORTED_QUANT_MODE
+from .distillation import (
     Criterion, DistillationCriterionMode, SUPPORTED_DISTILLATION_CRITERION_MODE
 )
 from typing import List, Union
