@@ -1,7 +1,6 @@
 from haystack.nodes import BM25Retriever
 from neural_chat.plugins import register_plugin
 
-@register_plugin('bm25_retriever')
 class BM25Retriever():
     """Retrieve the document database with BM25 sparse algorithm."""
     
