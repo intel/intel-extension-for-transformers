@@ -93,3 +93,6 @@
 [submodule "oneDNN"]
 	path = intel_extension_for_transformers/backends/neural_engine/third_party/oneDNN
 	url = https://github.com/oneapi-src/oneDNN.git
+[submodule "intel_extension_for_transformers/llm/library/xbyak"]
+	path = intel_extension_for_transformers/llm/library/xbyak
+	url = https://github.com/herumi/xbyak.git
