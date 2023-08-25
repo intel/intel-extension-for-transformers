@@ -121,7 +121,7 @@ class BaseModel(ABC):
             config = GenerationConfig()
         return predict_stream(**construct_parameters(query, self.model_name, self.device, config))
 
-    def predict(self, query, config=None, input_path=None):
+    def predict(self, query, config=None):
         """
         Predict using a non-streaming approach.
 
@@ -150,7 +150,7 @@ class BaseModel(ABC):
                                 return "Your query contains sensitive words, please try another query."
                         if plugin_name == "qa_client":
                             response = plugin_instance.pre_llm_inference_actions(query,
-                                    MODELS[self.model_name]["model"], MODELS[self.model_name]["tokenizer"], input_path)
+                                    MODELS[self.model_name]["model"], MODELS[self.model_name]["tokenizer"])
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
         query = response
