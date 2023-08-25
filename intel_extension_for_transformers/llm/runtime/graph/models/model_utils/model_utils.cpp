@@ -2164,6 +2164,8 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
       for (auto it : kv_reorder_indices) {
         if (it.first != it.second) {
           int len = next_beams[it.first].token_ids.size() - 1;
+          // last token in beam is for next step inference
+          MODEL_ASSERT(len == n_past - n_tokens);
           size_t input_token_offset_k = n_tokens * ne_element_size(lctx->model.kv_self.k) * n_embd;
           size_t input_token_offset_v = n_tokens * ne_element_size(lctx->model.kv_self.v);
 
@@ -2184,28 +2186,28 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
                    static_cast<char*>(lctx->model.kv_self.k->data) +
                        i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
                        it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset_k,
-                   ne_element_size(lctx->model.kv_self.k) * n_embd * (n_past - n_tokens));
+                   ne_element_size(lctx->model.kv_self.k) * n_embd * len);
             // [N, n_embd]
-            memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd) +
-                       input_token_offset_k,
-                   static_cast<char*>(lctx->model.kv_self.v->data) +
-                       i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                       it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset_k,
-                   ne_element_size(lctx->model.kv_self.v) * n_embd * (n_past - n_tokens));
+            // memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+            //            (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+            //             it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd) +
+            //            input_token_offset_k,
+            //        static_cast<char*>(lctx->model.kv_self.v->data) +
+            //            i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+            //            it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset_k,
+            //        ne_element_size(lctx->model.kv_self.v) * n_embd * (n_past - n_tokens));
 
-            // for (int k = 0; k < n_embd; ++k) {
-            //   memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-            //               it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd +
-            //               n_ctx * ne_element_size(lctx->model.kv_self.v) * k + input_token_offset_v),
-            //          static_cast<char*>(lctx->model.kv_self.v->data) +
-            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-            //               it.second * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd +
-            //               n_ctx * ne_element_size(lctx->model.kv_self.v) + input_token_offset_v),
-            //          ne_element_size(lctx->model.kv_self.v) * len);
-            // }
+            for (int k = 0; k < n_embd; ++k) {
+              memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
+                         (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                          it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd +
+                          n_ctx * ne_element_size(lctx->model.kv_self.v) * k + input_token_offset_v),
+                     static_cast<char*>(lctx->model.kv_self.v->data) +
+                         (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                          it.second * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd +
+                          n_ctx * ne_element_size(lctx->model.kv_self.v) + input_token_offset_v),
+                     ne_element_size(lctx->model.kv_self.v) * len);
+            }
             // memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
             //            (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
             //             it.first * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd)

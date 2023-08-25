@@ -38,7 +38,7 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-#define MHA_FUSION 1
+#define MHA_FUSION 0
 
 // evaluate the transformer
 //
