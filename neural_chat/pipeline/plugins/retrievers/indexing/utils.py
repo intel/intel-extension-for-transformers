@@ -84,11 +84,11 @@ def load_json(input, process, max_length):
                 split_sen = re.split(r'[.?!]', sub['doc'])
                 for num in range(len(split_sen)):
                     split_sen[num] = re.sub(r'\s+', ' ', split_sen[num])
-                    if nu m +1 < len(split_sen):
-                        if len(split_sen[num] ) >max_length:
+                    if num +1 < len(split_sen):
+                        if len(split_sen[num]) >max_length:
                             new_sens.append(split_sen[num].strip())
                         else:
-                            split_sen[nu m +1 ] =split_sen[num ] +split_sen[nu m +1]
+                            split_sen[num +1] =split_sen[num] +split_sen[num+1]
                     else:
                         new_sens.append(split_sen[num])
 
@@ -155,7 +155,7 @@ def get_chuck_data(content, max_length, input):
     count = 0
     current_paragraph = ""
     for sub_sen in sentences:
-        count + =1
+        count +=1
         sentence_length = len(sub_sen)
         if current_length + sentence_length <= max_length:
             current_paragraph += sub_sen
