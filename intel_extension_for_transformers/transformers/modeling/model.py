@@ -20,7 +20,7 @@
 import copy
 import os
 import transformers
-from .config import WEIGHTS_NAME
+from ..config import WEIGHTS_NAME
 from neural_compressor.utils import logger
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from packaging.version import Version
