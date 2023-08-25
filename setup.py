@@ -244,7 +244,7 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/intel-extension-for-transformers",
-        packages=packages_list,
+        packages=find_packages(),
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
         include_package_data=False,
