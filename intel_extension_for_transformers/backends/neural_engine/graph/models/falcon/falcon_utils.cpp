@@ -79,6 +79,7 @@ void FALCON::init(const char* path_model, model_context& lctx, int n_ctx_, int n
   n_embd = hparams.n_embd;
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
+  n_head_kv = hparams.n_head_kv;
   scratch = falcon_mem_req(n_layer);
   model.scratchs = scratch;
 }
@@ -131,7 +132,7 @@ void FALCON::load(model_context& lctx, model_progress_callback progress_callback
     layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
   
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head)}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * n_head_kv * (n_embd / model.hparams.n_head)}, backend);
     layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
 
     // ffn GEMM

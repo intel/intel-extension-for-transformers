@@ -89,6 +89,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         hparams["n_embd"],
         hparams["n_embd"] // hparams["n_head"],
         hparams["n_head"],
+        hparams.get("n_head_kv", 0),  # multi-query attention
         hparams["n_layer"],
         hparams["rotary_dim"],
         ftype
