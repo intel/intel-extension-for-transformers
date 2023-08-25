@@ -20,14 +20,14 @@
 import os
 import sys
 from transformers import TrainingArguments, HfArgumentParser
-from neural_chat.config import (
+from intel_extension_for_transformers.neural_chat.config import (
     ModelArguments,
     DataArguments,
     FinetuningArguments,
     FinetuningConfig,
 )
-from neural_chat.chatbot import finetune_model
-from neural_chat.pipeline.finetuning.finetuning import is_optimum_habana_available
+from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
+from intel_extension_for_transformers.neural_chat.pipeline.finetuning.finetuning import is_optimum_habana_available
 
 def main():
     # See all possible arguments in src/transformers/training_args.py

@@ -22,10 +22,10 @@ from transformers import TrainingArguments, BitsAndBytesConfig
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
 
-from neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
-from neural_chat.pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
-from neural_chat.pipeline.plugins.audio.tts import TextToSpeech
-from neural_chat.pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
+from .pipeline.plugins.audio.asr import AudioSpeechRecognition
+from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
+from .pipeline.plugins.audio.tts import TextToSpeech
+from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 from .plugins import plugins
 
 from enum import Enum, auto

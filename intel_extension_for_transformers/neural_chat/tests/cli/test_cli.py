@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os
 import unittest
-from neural_chat.cli.log import logger
+from intel_extension_for_transformers.neural_chat.cli.log import logger
 import subprocess
 
 class UnitTest(unittest.TestCase):

@@ -1,5 +1,5 @@
-from neural_chat.pipeline.plugins.audio.tts import TextToSpeech
-from neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts import TextToSpeech
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 import unittest
 import shutil
 import os

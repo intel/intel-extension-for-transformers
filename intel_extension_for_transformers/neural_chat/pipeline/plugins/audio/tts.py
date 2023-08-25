@@ -27,7 +27,7 @@ import numpy as np
 import contextlib
 
 from .utils.english_normalizer import EnglishNormalizer
-from neural_chat.plugins import register_plugin
+from ....plugins import register_plugin
 
 @register_plugin('tts')
 class TextToSpeech():

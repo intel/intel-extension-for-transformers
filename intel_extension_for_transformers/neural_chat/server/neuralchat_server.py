@@ -32,10 +32,10 @@ from starlette.middleware.cors import CORSMiddleware
 from .base_executor import BaseCommandExecutor
 from .server_commands import cli_server_register
 
-from neural_chat.cli.log import logger
+from ..cli.log import logger
 from .restful.api import setup_router
-from neural_chat.config import PipelineConfig
-from neural_chat.chatbot import build_chatbot
+from ..config import PipelineConfig
+from ..chatbot import build_chatbot
 
 
 __all__ = ['NeuralChatServerExecutor']

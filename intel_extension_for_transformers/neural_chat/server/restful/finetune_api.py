@@ -18,16 +18,16 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
-from neural_chat.cli.log import logger
-from neural_chat.chatbot import finetune_model
+from ...cli.log import logger
+from ...chatbot import finetune_model
 from transformers import TrainingArguments
-from neural_chat.config import (
+from ...config import (
     ModelArguments,
     DataArguments,
     FinetuningArguments,
     FinetuningConfig,
 )
-from neural_chat.server.restful.request import FinetuneRequest
+from ...server.restful.request import FinetuneRequest
 
 
 def check_finetune_request(request: BaseModel) -> Optional[str]:

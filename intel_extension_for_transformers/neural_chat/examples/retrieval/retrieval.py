@@ -20,13 +20,13 @@
 import os
 import sys
 from transformers import TrainingArguments, HfArgumentParser
-from neural_chat.config import (
+from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig,
     RetrieverConfig,
     SafetyConfig,
     GenerationConfig
 )
-from neural_chat.chatbot import build_chatbot
+from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 
 
 def main():

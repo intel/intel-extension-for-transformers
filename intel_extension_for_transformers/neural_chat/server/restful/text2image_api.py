@@ -17,8 +17,8 @@
 
 from fastapi import APIRouter
 from typing import ByteString
-from neural_chat.cli.log import logger
-from neural_chat.server.restful.response import ImageResponse
+from ...cli.log import logger
+from ...server.restful.response import ImageResponse
 
 
 class Text2ImageAPIRouter(APIRouter):

@@ -36,7 +36,7 @@ from typing import List
 # limitations under the License.
 
 from fastapi import APIRouter
-from neural_chat.cli.log import logger
+from ...cli.log import logger
 import sys
 
 from .textchat_api import router as textchat_router

@@ -21,13 +21,13 @@ import unittest
 import shutil
 import os
 from transformers import TrainingArguments, Seq2SeqTrainingArguments
-from neural_chat.config import (
+from intel_extension_for_transformers.neural_chat.config import (
     ModelArguments,
     DataArguments,
     FinetuningArguments,
     FinetuningConfig,
 )
-from neural_chat.chatbot import finetune_model
+from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
 
 json_data = \
 """

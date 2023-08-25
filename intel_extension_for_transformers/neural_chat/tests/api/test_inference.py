@@ -17,8 +17,8 @@
 
 import os
 import unittest
-from neural_chat.chatbot import build_chatbot, finetune_model, optimize_model
-from neural_chat.config import (
+from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot, finetune_model, optimize_model
+from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig, GenerationConfig, FinetuningConfig, OptimizationConfig,
     ModelArguments, DataArguments, TrainingArguments, FinetuningArguments
 )

@@ -19,8 +19,8 @@
 
 
 import argparse
-from neural_chat import GenerationConfig
-from neural_chat.chatbot import build_chatbot
+from intel_extension_for_transformers.neural_chat import GenerationConfig
+from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 
 def main():
 

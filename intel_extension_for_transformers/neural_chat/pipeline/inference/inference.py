@@ -395,7 +395,7 @@ def load_model(
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-        from neural_chat.models.mpt.modeling_mpt import MPTForCausalLM
+        from ...models.mpt.modeling_mpt import MPTForCausalLM
 
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = MPTForCausalLM.from_pretrained(
@@ -456,7 +456,7 @@ def load_model(
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
     if optimization_config:
-        from neural_chat.chatbot import optimize_model
+        from ...chatbot import optimize_model
         model = optimize_model(model, optimization_config)
 
     if device == "hpu":

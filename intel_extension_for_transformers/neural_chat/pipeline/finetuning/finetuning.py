@@ -56,7 +56,7 @@ import torch
 import importlib.util
 from transformers.utils.import_utils import is_optimum_available
 from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
-from neural_chat.config import FinetuningConfig
+from ...config import FinetuningConfig
 
 
 def is_optimum_habana_available():

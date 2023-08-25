@@ -18,7 +18,7 @@
 """Function to check the intent of the input user query with LLM."""
 from __future__ import division
 import os
-from neural_chat.plugins import register_plugin
+from ....plugins import register_plugin
 
 def convert_fullwidth_to_halfwidth(query):
     """Converting Full-width Characters to Half-width Characters."""

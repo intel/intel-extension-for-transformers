@@ -1,7 +1,7 @@
 from locust import HttpUser, task, between
-from neural_chat.tests.restful.config import API_COMPLETION, API_CHAT_COMPLETION, API_ASR, API_TTS, API_FINETUNE, API_TEXT2IMAGE
+from intel_extension_for_transformers.neural_chat.tests.restful.config import API_COMPLETION, API_CHAT_COMPLETION, API_ASR, API_TTS, API_FINETUNE, API_TEXT2IMAGE
 import time
-from neural_chat.server.restful.openai_protocol import CompletionRequest, ChatCompletionRequest
+from intel_extension_for_transformers.neural_chat.server.restful.openai_protocol import CompletionRequest, ChatCompletionRequest
 from datasets import Dataset, Audio
 
 

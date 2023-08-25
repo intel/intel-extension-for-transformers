@@ -19,9 +19,9 @@ from fastapi.routing import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import APIRouter
-from neural_chat.cli.log import logger
-from neural_chat.config import GenerationConfig
-from neural_chat.server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
+from ...cli.log import logger
+from ...config import GenerationConfig
+from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 
 
 def check_completion_request(request: BaseModel) -> Optional[str]:

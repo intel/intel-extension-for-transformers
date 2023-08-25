@@ -2,8 +2,8 @@
 import json
 import requests
 import unittest
-from neural_chat.tests.restful.config import HOST, API_COMPLETION, API_CHAT_COMPLETION
-from neural_chat.cli.log import logger
+from intel_extension_for_transformers.neural_chat.tests.restful.config import HOST, API_COMPLETION, API_CHAT_COMPLETION
+from intel_extension_for_transformers.neural_chat.cli.log import logger
 
 
 class UnitTest(unittest.TestCase):

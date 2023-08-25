@@ -19,7 +19,7 @@
 import transformers
 import torch
 from ..prompts.prompt import generate_intent_prompt
-from neural_chat.plugins import register_plugin
+from ....plugins import register_plugin
 
 @register_plugin("intent_detection")
 class IntentDetector:

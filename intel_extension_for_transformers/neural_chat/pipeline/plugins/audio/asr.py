@@ -22,7 +22,7 @@ import time
 import contextlib
 from pydub import AudioSegment
 
-from neural_chat.plugins import register_plugin
+from ....plugins import register_plugin
 
 @register_plugin('asr')
 class AudioSpeechRecognition():

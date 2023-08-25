@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from paddlespeech.server.bin.paddlespeech_client import TTSOnlineClientExecutor
-from neural_chat.plugins import register_plugin
+from ....plugins import register_plugin
 
 @register_plugin('tts_chinese')
 class ChineseTextToSpeech():  # pragma: no cover

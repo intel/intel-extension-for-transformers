@@ -4,8 +4,8 @@ import unittest
 import shutil
 import os
 import json
-from neural_chat.tests.restful.config import HOST, API_FINETUNE
-from neural_chat.cli.log import logger
+from intel_extension_for_transformers.neural_chat.tests.restful.config import HOST, API_FINETUNE
+from intel_extension_for_transformers.neural_chat.cli.log import logger
 
 
 json_data = \

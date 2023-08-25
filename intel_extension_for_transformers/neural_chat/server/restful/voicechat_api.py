@@ -17,10 +17,10 @@
 
 from fastapi import APIRouter
 from typing import Optional
-from neural_chat.cli.log import logger
+from ...cli.log import logger
 from fastapi import File, UploadFile, Form
 from pydub import AudioSegment
-from neural_chat.config import GenerationConfig
+from ...config import GenerationConfig
 
 class VoiceChatAPIRouter(APIRouter):
 

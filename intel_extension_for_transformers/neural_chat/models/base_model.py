@@ -19,11 +19,11 @@ from abc import ABC
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
-from neural_chat.pipeline.inference.inference import load_model, predict, predict_stream, MODELS
-from neural_chat.config import GenerationConfig
-from neural_chat.plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
-from neural_chat.utils.common import is_audio_file
-from neural_chat.pipeline.plugins.prompts.prompt import generate_qa_prompt, generate_prompt
+from ..pipeline.inference.inference import load_model, predict, predict_stream, MODELS
+from ..config import GenerationConfig
+from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
+from ..utils.common import is_audio_file
+from ..pipeline.plugins.prompts.prompt import generate_qa_prompt, generate_prompt
 
 
 def construct_parameters(query, model_name, device, config):

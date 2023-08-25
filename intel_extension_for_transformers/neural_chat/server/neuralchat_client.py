@@ -25,7 +25,7 @@ import requests
 
 from .base_executor import BaseCommandExecutor
 from .server_commands import cli_client_command_register
-from neural_chat.cli.log import logger
+from ..cli.log import logger
 
 
 __all__ = [

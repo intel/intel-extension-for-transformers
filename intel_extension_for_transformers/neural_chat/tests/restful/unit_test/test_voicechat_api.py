@@ -2,8 +2,8 @@
 import requests
 import unittest
 from datasets import Dataset, Audio
-from neural_chat.tests.restful.config import HOST, API_AUDIO
-from neural_chat.cli.log import logger
+from intel_extension_for_transformers.neural_chat.tests.restful.config import HOST, API_AUDIO
+from intel_extension_for_transformers.neural_chat.cli.log import logger
 
 
 class UnitTest(unittest.TestCase):

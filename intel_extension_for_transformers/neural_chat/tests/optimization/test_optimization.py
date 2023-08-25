@@ -19,8 +19,8 @@ import unittest
 import torch
 from transformers import BitsAndBytesConfig
 from transformers.utils.bitsandbytes import is_bitsandbytes_available
-from neural_chat.chatbot import build_chatbot
-from neural_chat.config import PipelineConfig, OptimizationConfig, WeightOnlyQuantizationConfig
+from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
+from intel_extension_for_transformers.neural_chat.config import PipelineConfig, OptimizationConfig, WeightOnlyQuantizationConfig
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):

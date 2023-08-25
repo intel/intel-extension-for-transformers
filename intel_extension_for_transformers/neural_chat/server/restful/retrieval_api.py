@@ -18,9 +18,9 @@
 import traceback
 from typing import Optional, Dict
 from fastapi import APIRouter
-from neural_chat.cli.log import logger
-from neural_chat.server.restful.request import RetrievalRequest
-from neural_chat.server.restful.response import RetrievalResponse
+from ...cli.log import logger
+from ...server.restful.request import RetrievalRequest
+from ...server.restful.response import RetrievalResponse
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:

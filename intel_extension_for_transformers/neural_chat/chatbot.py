@@ -51,7 +51,7 @@ def build_chatbot(config: PipelineConfig=None):
         adapter: The chatbot model adapter.
 
     Example:
-        from neural_chat import build_chatbot
+        from intel_extension_for_transformers.neural_chat import build_chatbot
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """

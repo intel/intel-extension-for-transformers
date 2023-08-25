@@ -17,9 +17,9 @@
 
 import unittest
 import os
-from neural_chat import build_chatbot
-from neural_chat import PipelineConfig, GenerationConfig
-from neural_chat import plugins
+from intel_extension_for_transformers.neural_chat import build_chatbot
+from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
+from intel_extension_for_transformers.neural_chat import plugins
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
