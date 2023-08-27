@@ -332,6 +332,7 @@ class GenerationConfig:
     max_gpu_memory: int = None
     use_fp16: bool = False
     ipex_int8: bool = False
+    task: str = ""
 
 @dataclass
 class LoadingModelConfig:

@@ -1,4 +1,4 @@
-from ...config import OptimizationConfig
+from intel_extension_for_transformers.neural_chat.config import OptimizationConfig
 
 class Optimization:
     def __init__(self, optimization_config: OptimizationConfig):

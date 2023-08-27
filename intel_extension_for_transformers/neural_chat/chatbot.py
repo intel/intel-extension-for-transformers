@@ -16,13 +16,12 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
-import os
+from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
+from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import OptimizationConfig
 from .config import FinetuningConfig
 from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
-from .pipeline.finetuning.finetuning import Finetuning
-from .pipeline.optimization.optimization import Optimization
 from .config import DeviceOptions
 from .models.base_model import get_model_adapter
 from .utils.common import get_device_type

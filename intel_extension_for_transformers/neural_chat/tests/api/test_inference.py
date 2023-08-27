@@ -22,6 +22,7 @@ from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig, GenerationConfig, FinetuningConfig, OptimizationConfig,
     ModelArguments, DataArguments, TrainingArguments, FinetuningArguments
 )
+from intel_extension_for_transformers.neural_chat import plugins
 
 class UnitTest(unittest.TestCase):
     def setUp(self):
@@ -31,31 +32,33 @@ class UnitTest(unittest.TestCase):
         return super().tearDown()
 
     def test_text_chat(self):
-        config = PipelineConfig(model_name_or_path='./Llama-2-7b-chat-hf')
+        config = PipelineConfig()
         chatbot = build_chatbot(config)
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
 
     def test_retrieval(self):
-        config = PipelineConfig(model_name_or_path='./Llama-2-7b-chat-hf', retrieval_type="sparse", retrieval_document_path="../../assets/docs/")
+        config = PipelineConfig(retrieval_type="sparse", retrieval_document_path="../../assets/docs/")
         chatbot = build_chatbot(config)
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
 
     def test_voice_chat(self):
-        config = PipelineConfig(model_name_or_path='./Llama-2-7b-chat-hf', audio_output=True)
-        chatbot = build_chatbot(config)
-        gen_config = GenerationConfig(max_new_tokens=64, audio_output_path='./response.wav')
+        plugins.tts.enable = True
+        plugins.tts.args["output_audio_path"] = "./response.wav"
+        pipeline_config = PipelineConfig(plugins=plugins)
+        chatbot = build_chatbot(config=pipeline_config)
+        gen_config = GenerationConfig(max_new_tokens=64)
         response = chatbot.predict(query="Nice to meet you!", config=gen_config)
         print(response)
         self.assertIsNotNone(response)
         print("output audio path: ", response)
-        self.assertTrue(os.path.exists(gen_config.audio_output_path))
+        self.assertTrue(os.path.exists("./response.wav"))
 
     def test_finetuning(self):
-        model_args = ModelArguments(model_name_or_path='./Llama-2-7b-chat-hf', use_fast_tokenizer=False)
+        model_args = ModelArguments(model_name_or_path="meta-llama/Llama-2-7b-chat-hf", use_fast_tokenizer=False)
         data_args = DataArguments(train_file='./alpaca_data.json', dataset_concatenation=True)
         training_args = TrainingArguments(gradient_accumulation_steps=1,
                                           do_train=True, learning_rate=1e-4, num_train_epochs=1,
@@ -66,13 +69,9 @@ class UnitTest(unittest.TestCase):
         config = FinetuningConfig(model_args, data_args, training_args, finetune_args)
         finetune_model(config)
 
-
     def test_quantization(self):
         config = OptimizationConfig()
         optimize_model(config)
-
-    
-
 
 if __name__ == '__main__':
     unittest.main()

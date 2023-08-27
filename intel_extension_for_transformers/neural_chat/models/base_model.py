@@ -19,7 +19,7 @@ from abc import ABC
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
-from ..pipeline.inference.inference import load_model, predict, predict_stream, MODELS
+from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream, MODELS
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
 from ..utils.common import is_audio_file
@@ -43,6 +43,7 @@ def construct_parameters(query, model_name, device, config):
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
     params["device"] = device
+    params["task"] = config.task
     return params
 
 
@@ -179,7 +180,7 @@ class BaseModel(ABC):
         assert query is not None, "Query cannot be None."
 
         # LLM inference
-        response = predict(**construct_parameters(query, self.model_name, config))
+        response = predict(**construct_parameters(query, self.model_name, self.device, config))
 
         # plugin post actions
         for plugin_name in get_registered_plugins():

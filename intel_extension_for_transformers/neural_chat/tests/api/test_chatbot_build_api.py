@@ -29,15 +29,14 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().tearDown()
 
     def test_build_chatbot_with_default_config(self):
-        config = PipelineConfig()
-        chatbot = build_chatbot(config)
+        chatbot = build_chatbot()
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_customized_pipelinecfg(self):
-        config = PipelineConfig(model_name_or_path="mosaicml/mpt-7b-chat", use_cache=True)
+        config = PipelineConfig(model_name_or_path="mosaicml/mpt-7b-chat")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
@@ -45,8 +44,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_customized_generationcfg(self):
-        config = PipelineConfig()
-        chatbot = build_chatbot(config)
+        chatbot = build_chatbot()
         self.assertIsNotNone(chatbot)
         config = GenerationConfig(max_new_tokens=512, temperature=0.1)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)

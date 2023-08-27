@@ -18,7 +18,6 @@
 from .base_model import BaseModel, register_model_adapter
 import logging
 from fastchat.conversation import get_conv_template, Conversation
-from ..pipeline.inference.inference import load_model, predict, predict_stream
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",

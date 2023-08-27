@@ -25,6 +25,7 @@ from transformers import SpeechT5HifiGan
 import soundfile as sf
 import numpy as np
 import contextlib
+import intel_extension_for_pytorch as ipex
 
 from .utils.english_normalizer import EnglishNormalizer
 from ....plugins import register_plugin
