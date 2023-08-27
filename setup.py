@@ -244,6 +244,7 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/intel-extension-for-transformers",
+        ext_modules=[CMakeExtension("intel_extension_for_transformers.neural_engine_py", 'intel_extension_for_transformers/llm/runtime/')],
         packages=find_packages(),
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
@@ -251,6 +252,7 @@ if __name__ == '__main__':
         package_data={
             '': ['*.yaml'],
         },
+        cmdclass={'build_ext': CMakeBuild},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [
