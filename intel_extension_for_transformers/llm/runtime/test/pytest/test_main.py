@@ -16,8 +16,8 @@
 # limitations under the License.
 
 import unittest
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
 import numpy as np
 import os
 import shutil

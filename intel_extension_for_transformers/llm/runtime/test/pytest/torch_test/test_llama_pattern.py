@@ -20,8 +20,8 @@ import sys
 import numpy as np
 import os
 import shutil
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
-from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern import PATTERNS
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile.sub_graph.pattern import PATTERNS
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
 

@@ -25,7 +25,7 @@ import platform
 import torch
 from datasets import load_dataset
 from transformers import BertForSequenceClassification
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 
 
 class TestWeightSharingDispatcherTuningThroughput(unittest.TestCase):
@@ -43,7 +43,7 @@ import sys
 import random
 import numpy as np
 import intel_extension_for_transformers.neural_engine_py as dp
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
 
 
 class MRPCDataSet():

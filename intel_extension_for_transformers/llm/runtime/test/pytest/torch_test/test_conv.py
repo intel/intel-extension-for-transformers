@@ -22,8 +22,8 @@ import torch.nn as nn
 import numpy as np
 import os
 import shutil
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
 
 file_name = os.path.splitext(os.path.basename(__file__))[0]
 

@@ -16,8 +16,8 @@
 # limitations under the License.
 
 import unittest
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
 import sys
 import os
 

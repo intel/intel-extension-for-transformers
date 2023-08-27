@@ -24,7 +24,7 @@ Neural Engine support model optimizer, model executor and high performance kerne
 Only support TensorFlow and ONNX models for now.
 
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 model = compile('/path/to/your/model')
 model.save('/ir/path')   # Engine graph could be saved to path
 ```
@@ -96,7 +96,7 @@ All input tensors are in an operator typed Input. But slightly difference is som
 Parse the yaml and weight bin to Engine Graph throught Python API
 
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
 model = Graph()
 model.graph_init('./ir/conf.yaml', './ir/model.bin')
 input_data = [input_0, input_1, input_2]

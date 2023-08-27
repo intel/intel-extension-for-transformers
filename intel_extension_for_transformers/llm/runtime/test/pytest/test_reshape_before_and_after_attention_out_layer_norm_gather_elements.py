@@ -17,10 +17,10 @@
 
 import unittest
 from collections import OrderedDict
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
-from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements import ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements
+from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS, Operator
+from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements import ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements
 import numpy as np
 
 

@@ -17,10 +17,10 @@
 
 import unittest
 from collections import OrderedDict
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
-from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.layer_norm_with_reduce_mean import LayerNormWithReduceMean
+from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS, Operator
+from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile.sub_graph.layer_norm_with_reduce_mean import LayerNormWithReduceMean
 
 
 class TestLayerNormWithReduceMean(unittest.TestCase):

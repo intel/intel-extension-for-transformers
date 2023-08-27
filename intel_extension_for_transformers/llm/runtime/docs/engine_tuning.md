@@ -14,9 +14,9 @@ Just like the picture shown. ONNX model will be compiled to Neural Engine IR fir
 ## Pattern Tuning for Dispatching Best Pattern
 For pattern tuning, it is mainly for two big patterns (Super Bert/ Merge QKV). The algorithm will automatically determine the pattern should be off or on according to the performance. You just set tune = True in subgraph_match():
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile.loaders.loader import Loader
-from intel_extension_for_transformers.backends.neural_engine.compile.extractors.extractor import Extractor
-from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.subgraph_matcher import SubGraphMatcher
+from intel_extension_for_transformers.llm.runtime.compile.loaders.loader import Loader
+from intel_extension_for_transformers.llm.runtime.compile.extractors.extractor import Extractor
+from intel_extension_for_transformers.llm.runtime.compile.sub_graph.subgraph_matcher import SubGraphMatcher
 load = Loader()
 extract = Extractor()
 subgraph_match = SubGraphMatcher()
@@ -29,7 +29,7 @@ output = graph.inference([data])
 ## Graph Tuning for Dispatching Best Graph
 For graph tuning, it is mainly for the sparse graphs or dense graphs. In some cases such as small shapes or devices with ISA, the performance of dense ops maybe perform better than sparse ops. And sparse op will bring other transpose ops. We have an easy-to-use API to tune sparse graphs, dense graphs or mix graphs automatically. You just need add graph_dispatch after `compile`:
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 model = compile(int8_model_path)
 # set shape for graph tuning
 model.graph_dispatch(inputs_shape = [shape_0, shape_1, shape_2])
@@ -54,11 +54,11 @@ output = model.inference([input_0, input_1, input_2])
 
 ```python
 # load model from disk
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
 model = Graph()
 model.graph_init(conf.yaml, model.bin)
 # or get model from compile
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 model = compile(model.onnx)
 options = {'enable_op_tuning': True}
 model.execution_options = options

@@ -18,10 +18,10 @@
 import os
 import unittest
 import numpy as np
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 import sys
 import copy
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
 
 def is_win():
     return sys.platform.startswith('win')

@@ -24,7 +24,7 @@ import torch
 from transformers import AutoTokenizer
 from datasets import load_dataset, load_metric
 from transformers import BertForSequenceClassification
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 
 
 class MRPCDataSet():

@@ -60,8 +60,8 @@ ret = [[A_node_name_1, B_node_name_1, C_node_name_1, [A, B, C]], [A_node_name_2,
 Assume you want to find the match results of pattern `['MatMul', 'BiasAdd', ['Add', 'AddV2']]` in bert_large TensorFlow model.
 
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import COMPILES
-from intel_extension_for_transformers.backends.neural_engine.compile.graph_utils import search_straight_pattern
+from intel_extension_for_transformers.llm.runtime.compile import COMPILES
+from intel_extension_for_transformers.llm.runtime.compile.graph_utils import search_straight_pattern
 graph = COMPILES['loader']()(bert_large_model_path)
 graph = COMPILES['extractor']()(graph)
 input_pattern = ['MatMul', 'BiasAdd', ['Add', 'AddV2']]
@@ -84,8 +84,8 @@ Each sub-chain pattern matched results would find their attached main chain by c
 In the end, here is the example shows how to get the `LayerNorm` pattern matched results in bert_large TensorFlow model.
 
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import COMPILES
-from intel_extension_for_transformers.backends.neural_engine.compile.graph_utils import search_pattern
+from intel_extension_for_transformers.llm.runtime.compile import COMPILES
+from intel_extension_for_transformers.llm.runtime.compile.graph_utils import search_pattern
 graph = COMPILES['loader']()(bert_large_model_path)
 graph = COMPILES['extractor']()(graph)
 ln_pattern = [[(0, 'Mean'), (1, 'SquaredDifference'), (2, 'Mean'), (3, ['Add', 'AddV2']), (4, 'Rsqrt'), (5, 'Mul'), (7, 'Mul'), (8, 'Sub'), (9, ['Add', 'AddV2'])], [(5, 'Mul'), (6, 'Mul'), (9, ['Add', 'AddV2'])]]

@@ -12,7 +12,7 @@ We recommend you to turn on this memory management tool if you want to do some o
 ## How to Turn on `Static Compressed Buffer`
 ```python
 # step 1. load an IR or convert a model from other frameworks
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 model = compile(model_path)
 # setp 2. turn on the related option in graph
 options = {'activation_mem_compression' : True}

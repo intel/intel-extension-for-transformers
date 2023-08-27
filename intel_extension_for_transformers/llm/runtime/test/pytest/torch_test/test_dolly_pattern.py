@@ -18,9 +18,9 @@
 import unittest
 import os
 import numpy as np
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
-from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern import PATTERNS
-import intel_extension_for_transformers.backends.neural_engine.compile.graph_utils as util
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile.sub_graph.pattern import PATTERNS
+import intel_extension_for_transformers.llm.runtime.compile.graph_utils as util
 util.autocast_init()
 util.set_autocast('cast_type','bf16')
 util.quant_info_init()

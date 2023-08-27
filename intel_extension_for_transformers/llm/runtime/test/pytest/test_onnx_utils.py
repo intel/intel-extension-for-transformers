@@ -16,11 +16,11 @@
 # limitations under the License.
 
 import unittest
-import intel_extension_for_transformers.backends.neural_engine.compile as compile
+import intel_extension_for_transformers.llm.runtime.compile as compile
 import numpy as np
 import onnx
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS, Operator
+from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
 
 
 class TestOnnxUtils(unittest.TestCase):

@@ -19,7 +19,7 @@ First, you should check whether the nodes' op_types in the pattern are registere
 
 ```python
 # make sure you have cloned intel_extension_for_transformers repo and installed intel_extension_for_transformers
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS
+from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS
 # All the op_type names and objects are stored in `OPERATORS`
 print(OPERATORS)
 ```
@@ -27,7 +27,7 @@ print(OPERATORS)
 The print result will show all registered ops, for example:
 
 ```shell
-{'Gelu': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.gelu.Gelu'>, 'Unsqueeze': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.unsqueeze.Unsqueeze'>, 'OptimizeDataset': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.optimize_dataset.OptimizeDataset'>, 'IteratorV2': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.iterator_v2.IteratorV2'>, 'QuantizeLinear': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.quantize_linear.QuantizeLinear'>, 'Gather': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.gather.Gather'>, 'GatherV2': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.gather.GatherV2'>, 'GatherElements': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.gather_elements.GatherElements'>, 'Unpack': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.unpack.Unpack'>, 'MapAndBatchDataset': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.map_and_batch_dataset.MapAndBatchDataset'>, 'Concat': <class 'intel_extension_for_transformers.backends.neural_engine.compile.ops.concat.Concat'>, ...}
+{'Gelu': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.gelu.Gelu'>, 'Unsqueeze': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.unsqueeze.Unsqueeze'>, 'OptimizeDataset': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.optimize_dataset.OptimizeDataset'>, 'IteratorV2': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.iterator_v2.IteratorV2'>, 'QuantizeLinear': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.quantize_linear.QuantizeLinear'>, 'Gather': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.gather.Gather'>, 'GatherV2': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.gather.GatherV2'>, 'GatherElements': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.gather_elements.GatherElements'>, 'Unpack': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.unpack.Unpack'>, 'MapAndBatchDataset': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.map_and_batch_dataset.MapAndBatchDataset'>, 'Concat': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.concat.Concat'>, ...}
 ```
 
 These ops can be roughly divided into two categories, the one is without attributes, like `Mul`, the other one is with attributes, for example, `Reshape` has the attributes `dst_shape`. You can look through the [`executor`](/intel_extension_for_transformers/backends/neural_engine/executor) for more info about the `Neural Engine` ops' attribute settings.
@@ -91,7 +91,7 @@ pip install -v .
 
 ```python
 # check your code changes
-from intel_extension_for_transformers.backends.neural_engine.compile.ops.op import OPERATORS
+from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS
 'Sqrt' and 'ReduceMean' in OPERATORS
 ```
 
@@ -146,14 +146,14 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
   Like the node op_type, the new pattern also need to be registered. You can check the existing pattern classes by the commands below.
 
   ```python
-  from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern import PATTERNS
+  from intel_extension_for_transformers.llm.runtime.compile.sub_graph.pattern import PATTERNS
   print(PATTERNS)
   ```
 
   The print result will show all registered patterns, for example:
 
   ```shell
-  {'Gelu': <class 'intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.gelu.Gelu'>, 'TokenTypeEmbeddings': <class 'intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.token_type_embeddings.TokenTypeEmbeddings'>, 'TransposeBatchMatMul': <class 'intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.transpose_batch_matmul.TransposeBatchMatMul'>, 'TokenTypeEmbeddingsV1': <class 'intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.token_type_embeddings_v1.TokenTypeEmbeddingsV1'>, 'LayerNormWithReduceMean': <class 'intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.layer_norm_with_reduce_mean.LayerNormWithReduceMean'>, ...}
+  {'Gelu': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.gelu.Gelu'>, 'TokenTypeEmbeddings': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.token_type_embeddings.TokenTypeEmbeddings'>, 'TransposeBatchMatMul': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.transpose_batch_matmul.TransposeBatchMatMul'>, 'TokenTypeEmbeddingsV1': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.token_type_embeddings_v1.TokenTypeEmbeddingsV1'>, 'LayerNormWithReduceMean': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.layer_norm_with_reduce_mean.LayerNormWithReduceMean'>, ...}
   ```
 
   In order to complete the `LayerNorm` pattern registration, write a related classes in the python file you created before and put the pattern mapping config in.
@@ -203,7 +203,7 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
   After save this python file, you can check it by retrieving the `PATTERNS`
 
   ```python
-  from intel_extension_for_transformers.backends.neural_engine.compile.sub_graph.pattern import PATTERNS
+  from intel_extension_for_transformers.llm.runtime.compile.sub_graph.pattern import PATTERNS
   'LayerNorm' in PATTERNS
   ```
 
