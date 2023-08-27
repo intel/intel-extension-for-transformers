@@ -1,0 +1,3 @@
+### ncores_per_inst operator M K N src1_type alpha beta
+4 avx512f_fp8 4 4096 4096 0 1 1
+4 avx512f_fp8 4 4096 4096 2 1 1

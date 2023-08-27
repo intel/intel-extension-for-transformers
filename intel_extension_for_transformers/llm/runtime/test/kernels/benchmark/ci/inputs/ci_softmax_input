@@ -1,0 +1,3 @@
+### ncores_per_inst operator input_shape input_dt output_dt
+4 spec_type:lut shape:256x256 in_dt:u8 out_dt:bf16
+16 spec_type:lut shape:1024x1024 in_dt:s8 out_dt:bf16

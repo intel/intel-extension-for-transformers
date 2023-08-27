@@ -1,0 +1,22 @@
+### ncores_per_inst operator M K N bs0 bs1
+
+# c4 seq = 32
+4 vnni_noperm_p2031_p1302 32 32 64 1 12
+4 vnni_noperm_p2031_p1302 32 32 64 6 12
+4 vnni_noperm_p2031_p1302 32 32 64 8 12
+
+# c1 seq = 32
+1 vnni_noperm_p2031_p1302 32 32 64 3 12
+1 vnni_noperm_p2031_p1302 32 32 64 6 12
+1 vnni_noperm_p2031_p1302 32 32 64 8 12
+
+# c4 seq = 384
+4 vnni_noperm_p2031_p1302 384 384 64 1 12
+4 vnni_noperm_p2031_p1302 384 384 64 2 12
+4 vnni_noperm_p2031_p1302 384 384 64 4 12
+
+# c1 bs1
+1 vnni_noperm_p2031_p1302 32 32 64 1 12
+1 vnni_noperm_p2031_p1302 64 64 64 1 12
+1 vnni_noperm_p2031_p1302 128 128 64 1 12
+1 vnni_noperm_p2031_p1302 256 256 64 1 12

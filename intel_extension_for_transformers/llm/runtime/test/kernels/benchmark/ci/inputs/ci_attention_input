@@ -1,0 +1,13 @@
+### ncores_per_inst head_num head_size batch_size seq_len sparsity dst_type
+4 1 64 8 128 0.9 1
+4 16 64 8 128 0.9 1
+
+# distilbert
+1 4 64 8 128 0.9 1
+4 4 64 8 128 0.9 1
+8 4 64 8 128 0.9 1
+
+# bertmini
+1 12 64 8 128 0.9 1
+4 12 64 8 128 0.9 1
+8 12 64 8 128 0.9 1

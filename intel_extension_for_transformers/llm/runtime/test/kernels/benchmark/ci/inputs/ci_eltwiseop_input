@@ -1,0 +1,7 @@
+### ncores_per_inst output_channel bsxseq eltops ranges
+
+# 8 1024 1024 dequantize+fp32_relu+quantize -10.0,10.0
+# 8 256 128 dequantize+fp32_relu+quantize -10.0,10.0
+8 1024 1024 fp32_exp -10.0,10.0
+$it_per_core=10000
+8 256 128 fp32_exp -10.0,10.0

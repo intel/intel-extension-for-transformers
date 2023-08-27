@@ -1,0 +1,47 @@
+### ncores_per_inst kern batch_size head_num sl_M head_size sl_N
+
+$it_per_core=5
+1 dynamic 2 8 4096 40 4096
+4 dynamic 2 8 4096 40 4096
+8 dynamic 2 8 4096 40 4096
+48 dynamic 2 8 4096 40 4096
+
+$it_per_core=50
+1 dynamic 2 8 1024 80 1024
+4 dynamic 2 8 1024 80 1024
+8 dynamic 2 8 1024 80 1024
+48 dynamic 2 8 1024 80 1024
+
+$it_per_core=500
+1 dynamic 2 8 256 160 256
+4 dynamic 2 8 256 160 256
+8 dynamic 2 8 256 160 256
+48 dynamic 2 8 256 160 256
+
+1 dynamic 2 8 64 160 64
+4 dynamic 2 8 64 160 64
+8 dynamic 2 8 64 160 64
+48 dynamic 2 8 64 160 64
+
+$it_per_core=100
+1 dynamic 2 8 4096 40 77
+4 dynamic 2 8 4096 40 77
+8 dynamic 2 8 4096 40 77
+48 dynamic 2 8 4096 40 77
+
+$it_per_core=500
+1 dynamic 2 8 1024 80 77
+4 dynamic 2 8 1024 80 77
+8 dynamic 2 8 1024 80 77
+48 dynamic 2 8 1024 80 77
+
+1 dynamic 2 8 256 160 77
+4 dynamic 2 8 256 160 77
+8 dynamic 2 8 256 160 77
+48 dynamic 2 8 256 160 77
+
+$it_per_core=1000
+1 dynamic 2 8 64 160 77
+4 dynamic 2 8 64 160 77
+8 dynamic 2 8 64 160 77
+48 dynamic 2 8 64 160 77

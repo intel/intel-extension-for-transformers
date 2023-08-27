@@ -1,0 +1,115 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "linux-debug",
+      "displayName": "Linux Debug",
+      "description": "WSL",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "NE_WITH_TESTS": "ON",
+        "NE_WITH_SPARSELIB": "ON"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "vendor": { "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}/intel_extension_for_transformers/backends/neural_engine" } }
+    },
+    {
+      "name": "linux-debug-kernels",
+      "displayName": "Linux Debuge Kernels",
+      "inherits": "linux-debug",
+      "cacheVariables": { "NE_WITH_SPARSELIB_ONLY": "ON" }
+    },
+    {
+      "name": "linux-release",
+      "displayName": "Linux Release",
+      "inherits": "linux-debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+
+    },
+    {
+      "name": "macos-debug",
+      "displayName": "macOS Debug",
+      "description": "macOS",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "vendor": { "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}" } }
+    },
+    {
+      "name": "windows-base",
+      "description": "Windows",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "x64-debug",
+      "displayName": "x64 Debug",
+      "description": "Windows x64",
+      "inherits": "windows-base",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "NE_WITH_TESTS": "ON",
+        "NE_WITH_SPARSELIB": "ON",
+        "NE_WITH_SPARSELIB_ONLY": "OFF",
+        "NE_WITH_ONEDNN_GRAPH": "ON",
+        "NE_WITH_SPARSELIB_BENCHMARK": "ON"
+      }
+    },
+    {
+      "name": "x64-debug-avx2",
+      "displayName": "x64 Debug AVX2",
+      "description": "Windows x64 Debug AVX2",
+      "inherits": "x64-debug",
+      "cacheVariables": { "NE_WITH_AVX2": "ON" }
+    },
+    {
+      "name": "x64-debug-kernels",
+      "displayName": "x64 Debug Kernels",
+      "description": "Windows x64 Debug Kernels",
+      "inherits": "x64-debug",
+      "cacheVariables": { "NE_WITH_SPARSELIB_ONLY": "ON" }
+    },
+    {
+      "name": "x64-release",
+      "displayName": "x64 Release",
+      "description": "Windows x64 Release",
+      "inherits": "x64-debug",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "x64-release-avx2",
+      "displayName": "x64 Release AVX2",
+      "description": "Windows x64 Release AVX2",
+      "inherits": "x64-release",
+      "cacheVariables": { "NE_WITH_AVX2": "ON" }
+    }
+  ]
+}

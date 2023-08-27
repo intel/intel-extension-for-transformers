@@ -1,0 +1,62 @@
+### ncores_per_inst kern batch_size seq_len head_num head_size dt_dst dt_src mask badd_dim sl_n ft_kv
+$it_per_core=300
+48 static 4 1 16 256 u8 s8 -1 2 33
+48 static 4 1 16 256 u8 s8 -1 2 33 acbd
+48 static 4 1 16 256 u8 s8 -1 2 34
+48 static 4 1 16 256 u8 s8 -1 2 34 acbd
+48 static 4 1 16 256 u8 s8 -1 2 48
+48 static 4 1 16 256 u8 s8 -1 2 48 acbd
+48 static 4 1 16 256 u8 s8 -1 2 63
+48 static 4 1 16 256 u8 s8 -1 2 63 acbd
+48 static 4 1 16 256 u8 s8 -1 2 64
+48 static 4 1 16 256 u8 s8 -1 2 64 acbd
+48 static 4 1 16 256 bf16 s8 -1 2 32
+48 static 4 1 16 256 bf16 s8 -1 2 32 acbd
+48 static 4 1 16 256 bf16 s8 -1 2 64
+48 static 4 1 16 256 bf16 s8 -1 2 64 acbd
+$it_per_core=100
+56 static 1 1 16 256 u8 s8 -1 2 1500
+56 static 1 1 16 256 u8 s8 -1 2 1500 acbd
+56 static 1 1 16 256 u8 s8 -1 2 1600
+56 static 1 1 16 256 u8 s8 -1 2 1600 acbd
+56 static 1 1 16 256 u8 s8 -1 2 1700
+56 static 1 1 16 256 u8 s8 -1 2 1700 acbd
+56 static 1 1 16 256 u8 s8 -1 2 1800
+56 static 1 1 16 256 u8 s8 -1 2 1800 acbd
+56 static 1 1 16 256 u8 s8 -1 2 1900
+56 static 1 1 16 256 u8 s8 -1 2 1900 acbd
+56 static 1 1 16 256 u8 s8 -1 2 2000
+56 static 1 1 16 256 u8 s8 -1 2 2000 acbd
+
+$it_per_core=100
+4 static 4 384 16 64 u8 s8
+4 static 4 384 16 64 u8 s8 177
+
+8 static 4 384 16 64 u8 s8
+8 static 4 384 16 64 u8 s8 177
+
+16 static 4 384 16 64 u8 s8
+16 static 4 384 16 64 u8 s8 177
+
+48 static 4 384 16 64 u8 s8
+48 static 4 384 16 64 u8 s8 177
+
+$it_per_core=1000
+16 static 1 32 16 256 u8 s8
+16 static 1 32 16 256 u8 s8 -1 1
+16 static 1 32 16 256 u8 s8 -1 2
+16 static 1 32 16 256 u8 s8 -1 3
+16 static 1 32 16 256 u8 s8 -1 4
+$it_per_core=200
+48 static 1 32 16 256 u8 s8
+48 static 1 32 16 256 u8 s8 -1 1
+48 static 1 32 16 256 u8 s8 -1 2
+48 static 1 32 16 256 u8 s8 -1 3
+48 static 1 32 16 256 u8 s8 -1 4
+
+$it_per_core=10
+48 static 1 2048 16 256 u8 s8
+48 static 1 2048 16 256 u8 s8 -1 1
+48 static 1 2048 16 256 u8 s8 -1 2
+48 static 1 2048 16 256 u8 s8 -1 3
+48 static 1 2048 16 256 u8 s8 -1 4
