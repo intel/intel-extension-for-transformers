@@ -66,7 +66,9 @@ def _build_inc_dataloader(dataloader):
     # after DataLoaderShard is initialized
     class INCDataLoader:
         __iter__ = dataloader.__iter__
+        __len__ = dataloader.__len__
         def __init__(self) -> None:
             self.dataloader = dataloader
             self.batch_size = dataloader.total_batch_size
+            self.dataset = dataloader.dataset
     return INCDataLoader()
