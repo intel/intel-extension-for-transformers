@@ -39,7 +39,7 @@ jobs:
           slave=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-mpi-s1")
           echo "slave_node=$slave" >> $GITHUB_OUTPUT
 
-      - name: Run Finetuning in Background
+      - name: Run Finetuning
         run: |
           sh .github/workflows/script/chatbot/prepare_ft_mpt-7b-chat_mpi.sh ${{ steps.master_container.outputs.master_node }} ${{ steps.slave_container.outputs.slave_node }}
           docker exec "chatbotfinetune-mpi-s0" bash -c "mpirun -f ./hosts2 -n 2 -ppn 1 -genv OMP_NUM_THREADS=48 sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat_mpi.sh"
