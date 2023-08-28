@@ -39,7 +39,7 @@ class AccumulatorWriteBack {
     static_assert(Valid, "fp32 to bf16 conversion only.");
     if (std::is_same<_DST_T, jblas::utils::bf16>::value) {
       return kernel::wrapper::Memcpy2DFp32CvtBf16::template forward<ISA_T>(
-          (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T));
+          (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T), false);
     } else if (sizeof(_SRC_T) == sizeof(_DST_T)) {
       return kernel::wrapper::Memcpy2D::template forward<ISA_T, _SRC_T, _DST_T>(
           (void*)cacheptr, (void*)cptr, M, N * sizeof(_DST_T), cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T),

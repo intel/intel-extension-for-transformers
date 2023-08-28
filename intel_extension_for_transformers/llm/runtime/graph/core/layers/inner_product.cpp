@@ -49,6 +49,7 @@ using WeightCompType = prologue::weight_comp::gemm_kblcok::WeightCompType;
 
 using SS4Fp32 = prologue::weight_comp::gemm_kblcok::StorageWeightS4ScaleFp32;
 using SS8Fp32 = prologue::weight_comp::gemm_kblcok::StorageWeightS8ScaleFp32;
+using SS8Fp32PerN = prologue::weight_comp::gemm_kblcok::StorageWeightS8ScaleFp32PerChannelN;
 
 template <class GC, JBLAS_ISA ISA>
 using WS4Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32<GC, ISA>;
@@ -59,6 +60,9 @@ using WS4Bf16 = jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleBf16
 template <class GC, JBLAS_ISA ISA>
 using WS8Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32<GC, ISA>;
 
+template <class GC, JBLAS_ISA ISA>
+using WS8Fp32PerN = jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN<GC, ISA>;
+
 template <template <class GC, JBLAS_ISA ISA> class ProB>
 using AMX_INT8_KBLOCK_Fp32Fp32 = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
@@ -67,11 +71,25 @@ using AMX_INT8_KBLOCK_Fp32Fp32 = jblas::wrapper::gemm_kblock::GemmInterfaceKBloc
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
 template <template <class GC, JBLAS_ISA ISA> class ProB>
+using AMX_INT8_PerN_Fp32Fp32 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        JblasAMX_INT8, jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8_ss,
+        jblas::prologue::gemm::ActivationFp32SymS8Quantize, ProB, jblas::epilogue::gemm::DequantInt32ToFp32>,
+    jblas::utils::parallel::Parallel2DGemm>;
+
+template <template <class GC, JBLAS_ISA ISA> class ProB>
 using AVX512_VNNI_KBLOCK_Fp32Fp32 = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
         JblasAVX512_VNNI, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
         jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+
+template <template <class GC, JBLAS_ISA ISA> class ProB>
+using AVX512_VNNI_PerN_Fp32Fp32 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        JblasAVX512_VNNI, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI,
+        jblas::prologue::gemm::ActivationFp32AsymU8Quantize, ProB, jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
+    jblas::utils::parallel::Parallel2DGemm>;
 
 }  // namespace
 
@@ -121,6 +139,32 @@ static JBLAS_CODE jblas_s8fp32kblock_f32f32_forward(float* activation, SS8Fp32* 
   return ret;
 }
 
+static JBLAS_CODE jblas_s8fp32perN_f32f32_forward(float* activation, SS8Fp32PerN* weiptr, float* output, int _m, int _n,
+                                                  int _k, int lda, int ldo) {
+  GetCPUDevice();
+  auto ret = JblasRuntimeError;
+  assert(weiptr->mBlockSize == _k);
+  if (weiptr->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
+      weiptr->mCoreType == jblas::gemm::GemmCoreType::AMX_INT8_16x48_SS) {
+    if (_cd->AMX_INT8()) {
+      using GemmKernel = AMX_INT8_PerN_Fp32Fp32<WS8Fp32PerN>;
+      static GemmKernel kernel;
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, NULL);
+      ret = kernel.compute<true, false>(
+          {_m, _n, _k, activation, lda, quanA, weiptr, output, ldo, quanA->mSPtr, quanA->lds, weiptr->mSPtr});
+      delete quanA;
+    } else if (_cd->AVX512_VNNI()) {
+      assert(false);
+      /*using GemmKernel = AVX512_VNNI_PerN_Fp32Fp32<WS8Fp32>;
+      static GemmKernel kernel;
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, NULL);
+      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo});
+      delete quanA;*/
+    }
+  }
+  return ret;
+}
+
 // f32f32: activation & output dtype
 void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m, int _n, int _k, int lda, int ldo) {
   GetCPUDevice();
@@ -131,6 +175,8 @@ void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m
       ret = jblas_s4fp32kblock_f32f32_forward(activation, dynamic_cast<SS4Fp32*>(wtmp), output, _m, _n, _k, lda, ldo);
     } else if (wtmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
       ret = jblas_s8fp32kblock_f32f32_forward(activation, dynamic_cast<SS8Fp32*>(wtmp), output, _m, _n, _k, lda, ldo);
+    } else if (wtmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
+      ret = jblas_s8fp32perN_f32f32_forward(activation, dynamic_cast<SS8Fp32PerN*>(wtmp), output, _m, _n, _k, lda, ldo);
     }
   }
   assert(ret == JblasSuccess);

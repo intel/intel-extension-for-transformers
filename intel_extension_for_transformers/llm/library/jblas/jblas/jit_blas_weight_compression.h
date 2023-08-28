@@ -1119,30 +1119,21 @@ class GemmInterfaceKBlockPackWeight {
   using WeightType = typename _Launcher_T::PrologueB;
   using GemmCore = typename _Launcher_T::GemmCore;
   using Parallel = _Parallel_T<GemmCore>;
-  Parallel createParallel(int M = 0, int N = 0, int K = 0, int KBlock = 0) {
-    Parallel _paral;
-    auto cb = utils::CpuBase();
-    _paral.update(M, N, K, KBlock, cb.mNumThreads);
-    return _paral;
-  }
+
   ActivationType* getActivationPtr() { return &mLauncher.mProA; }
+
   WeightType* getWeightPtr() { return &mLauncher.mProB; }
-  // forward=packB+compute
+
   template <typename... Eltops>
-  JBLAS_CODE compute(const Arguments& _param, Parallel _paral = Parallel(), Eltops... ops) {
+  JBLAS_CODE compute(const Arguments& _param, Eltops... ops) {
     auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramB.packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
-    auto paraA = mLauncher.mProA.createParallel(_param.M, _param.K, bptr->mBlockSize);
     auto cb = utils::CpuBase();
-    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
-      static bool dbgprint = false;
-      if (dbgprint) {
-        _paral.print();
-        dbgprint = false;
-      }
-    }
+    auto para = Parallel();
+    para.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads);
+    auto paraA = mLauncher.mProA.createParallel(_param.M, _param.K, bptr->mBlockSize);
     omp_set_num_threads(cb.mNumThreads);
 #pragma omp parallel
     {
@@ -1150,10 +1141,10 @@ class GemmInterfaceKBlockPackWeight {
       mLauncher.mProA.launch(_param.paramA, tidx, paraA);
 #pragma omp barrier
       int colidx, rowidx, rowsize, colsize;
-      _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+      para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        Config _config{rowidx,     colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
-                       cb.mL2Cache};
+        Config _config{rowidx,          colidx,          rowsize,         colsize,
+                       para.getMStep(), para.getNStep(), para.getKStep(), cb.mL2Cache};
         mLauncher.launch(_config, _param, ops...);
       }
     }
@@ -1164,8 +1155,8 @@ class GemmInterfaceKBlockPackWeight {
   _Launcher_T mLauncher;
 };
 
-template <class _Launcher_T, template <class _T> class _Parallel_T, bool _LaunchA, bool _LaunchB>
-class GemmInterfaceKblockAB {
+template <class _Launcher_T, template <class _T> class _Parallel_T>
+class GemmInterfaceKblockParallelAB {
  public:
   using Arguments = typename _Launcher_T::Param;
   using Config = typename _Launcher_T::ParallelConfig;
@@ -1177,7 +1168,8 @@ class GemmInterfaceKblockAB {
   ActivationType* getActivationPtr() { return &mLauncher.mProA; }
 
   WeightType* getWeightPtr() { return &mLauncher.mProB; }
-  // forward=packB+compute
+
+  template <bool _LaunchA, bool _LaunchB>
   JBLAS_CODE compute(const Arguments& _param) {
     auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramB.packedW);
     if (bptr == nullptr) {
@@ -1185,12 +1177,12 @@ class GemmInterfaceKblockAB {
     }
     auto paraA = getActivationPtr()->createParallel(_param.M, _param.K, _param.KBlock);
     auto paraB = getWeightPtr()->createParallel(_param.K, _param.N, _param.KBlock);
-    auto _paral = Parallel();
+    auto para = Parallel();
     auto cb = utils::CpuBase();
-    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
+    if (para.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
       static bool dbgprint = false;
       if (dbgprint) {
-        _paral.print();
+        para.print();
         dbgprint = false;
       }
     }
@@ -1208,10 +1200,10 @@ class GemmInterfaceKblockAB {
 #pragma omp barrier
       }
       int colidx, rowidx, rowsize, colsize;
-      _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+      para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        Config _config{rowidx,     colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
-                       cb.mL2Cache};
+        Config _config{rowidx,          colidx,          rowsize,         colsize,
+                       para.getMStep(), para.getNStep(), para.getKStep(), cb.mL2Cache};
         mLauncher.launch(_config, _param);
       }
     }
@@ -1292,13 +1284,13 @@ using GemmSKernelDynamicS4FullRangeFp32KBlock = jblas::wrapper::gemm_kblock::Gem
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
-using GemmDynamicS4Fp32PerChannelN = jblas::wrapper::gemm_pack_weight::GemmInterfaceAB<
+using GemmDynamicS8Fp32PerChannelN = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8_ss,
         jblas::prologue::gemm::ActivationF32S8KBlockQuantize,
         jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
         jblas::epilogue::gemm::DequantInt32ToFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed, true, false>;
+    jblas::utils::parallel::Parallel2DGemm>;
 }  // namespace amx_int8
 }  // namespace weight_comp
 }  // namespace gemm_default

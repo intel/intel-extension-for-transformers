@@ -86,20 +86,13 @@ class Memcpy2D {
 class Memcpy2DFp32CvtBf16 {
  public:
   template <JBLAS_ISA ISA_T>
-  static JBLAS_CODE forward(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
+  static JBLAS_CODE forward(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,bool zeropadding) {
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return kernel::avx512f::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride);
+      return kernel::avx512f::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride, zeropadding);
     }
 #endif
-    for (int i = 0; i < row; i++) {
-      for (int j = 0; j < col; j++) {
-        const auto src = reinterpret_cast<const float*>(reinterpret_cast<const char*>(srcptr) + i * srcstride);
-        const auto dst = reinterpret_cast<utils::bf16*>(reinterpret_cast<char*>(dstptr) + i * dststride);
-        dst[j] = static_cast<utils::bf16>(src[j]);
-      }
-    }
-    return JblasSuccess;
+    return kernel::ref::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride, zeropadding);
   }
 };
 
