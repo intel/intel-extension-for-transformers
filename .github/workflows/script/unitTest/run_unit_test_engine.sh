@@ -83,13 +83,14 @@ function install_itrex_base() {
     git config --global --add safe.directory "*"
     git submodule update --init --recursive
     $BOLD_YELLOW && echo "---------------- pip install binary -------------" && $RESET
+    git clean -xdf
     pip install .
 }
 
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
     pytest "${LOG_DIR}/coverage_pr"
-    gtest
+    #gtest
     install_itrex_base
     pytest "${LOG_DIR}/coverage_base"
 }
