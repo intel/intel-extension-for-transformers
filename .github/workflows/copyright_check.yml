@@ -38,6 +38,9 @@ jobs:
           git --no-pager diff --name-only remotes/origin/${{ github.base_ref }} ${{ github.workspace }}/intel_extension_for_transformers> ${{ env.CODE_SCAN_LOG_PATH }}/diff.log
           files=$(cat ${{ env.CODE_SCAN_LOG_PATH }}/diff.log | awk '!a[$0]++')
           $LIGHT_PURPLE && echo " ----------------- checking ... --------------------------" && $RESET
+          if [[ -f ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log ]]; then 
+            rm -f ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log
+          fi
           for file in ${files}
           do
               if [[ "${supported_extensions[@]}" =~ "${file##*.}" ]]; then
@@ -52,8 +55,11 @@ jobs:
                   $LIGHT_PURPLE && echo "Skipping ${file}"  && $RESET
               fi
           done
-          if [[ -n ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log ]]; then 
-            exit 1
+          if [[ -f ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log ]]; then 
+            $BOLD_YELLOW && echo " -----------------  Current log file output start --------------------------"
+            cat ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log
+            $BOLD_YELLOW && echo " -----------------  Current log file output end --------------------------" && $RESET
+            $BOLD_RED && echo "CopyRight has something wrong! Please click on the artifact button to download and view the error log!" && $RESET && exit 1
           fi
 
       - name: Publish pipeline artifact
