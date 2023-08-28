@@ -35,6 +35,7 @@ from .distillation import (
     DistillationCriterionMode,
     SUPPORTED_DISTILLATION_CRITERION_MODE,
 )
+from .modeling import OptimizedModel
 from .mixture.auto_distillation import AutoDistillation
 from .nas import NAS
 from .optimizer import NoTrainerOptimizer, Orchestrate_optimizer
@@ -44,4 +45,4 @@ from .quantization import QuantizationMode, SUPPORTED_QUANT_MODE
 from .utils import metrics
 from .utils import objectives
 from .utils.utility import LazyImport
-OptimizedModel = LazyImport(".modeling.OptimizedModel")
+

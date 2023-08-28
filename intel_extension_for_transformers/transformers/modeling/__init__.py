@@ -18,6 +18,4 @@
 """Modeling class."""
 
 
-from .modeling_base_seq2seq import INCBaseModelForSeq2SeqLM
-from .modeling_seq2seq import INCModelForSeq2SeqLM
 from .model import OptimizedModel
