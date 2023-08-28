@@ -72,12 +72,13 @@ class TestChatbotBuilder(unittest.TestCase):
         print("response: ", response)
         self.assertTrue(response, "Your query contains sensitive words, please try another query.")
 
-    def test_build_chatbot_with_intent_detection_plugin(self):
-        plugins.intent_detection.enable = True
+    def test_build_chatbot_with_retrieval_plugin(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../assets/docs/"
         pipeline_config = PipelineConfig(plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
-        response = chatbot.predict(query="hi")
+        response = chatbot.predict(query="What are total cores of Intel® Xeon® Platinum 8480+ Processor?")
         print("response: ", response)
 
 if __name__ == '__main__':

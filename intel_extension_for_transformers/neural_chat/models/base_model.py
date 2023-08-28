@@ -23,7 +23,6 @@ from intel_extension_for_transformers.llm.inference import load_model, predict, 
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
 from ..utils.common import is_audio_file
-from ..pipeline.plugins.prompts.prompt import generate_qa_prompt, generate_prompt
 
 
 def construct_parameters(query, model_name, device, config):
@@ -45,24 +44,6 @@ def construct_parameters(query, model_name, device, config):
     params["device"] = device
     params["task"] = config.task
     return params
-
-
-def construct_prompt(query, retriever, retrieval_type):
-    if retrieval_type == "dense":
-        documents = retriever.get_relevant_documents(query)
-        context = ""
-        for doc in documents: context = context + doc.page_content + " "
-    else:
-        documents = retriever.retrieve(query)
-        context = ""
-        for doc in documents: context = context + doc.content + " "
-    context = context.strip()
-    
-    if context != "":
-        return generate_qa_prompt(query, context)
-    else:
-        return generate_prompt(query)
-
 
 class BaseModel(ABC):
     """
@@ -163,18 +144,12 @@ class BaseModel(ABC):
                     if hasattr(plugin_instance, 'pre_llm_inference_actions'):
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
-                        if plugin_name == "intent_detection":
-                            response = plugin_instance.pre_llm_inference_actions(query,
-                                MODELS[self.model_name]["model"], MODELS[self.model_name]["tokenizer"])
+                        if plugin_name == "retrieval":
+                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
                             return "Your query contains sensitive words, please try another query."
-                        elif plugin_name == "intent_detection":
-                            if 'qa' not in response.lower():
-                                query = generate_prompt(query)
-                            else:
-                                query = generate_qa_prompt(query)
                         else:
                             query = response
         assert query is not None, "Query cannot be None."

@@ -26,6 +26,10 @@ from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
+from .pipeline.plugins.retrievals.indexing import DocumentIndexing
+from .pipeline.plugins.retrievals.retrieval import BM25Retriever, ChromaRetriever
+from .pipeline.plugins.intent_detector import IntentDetector
+from .pipeline.plugins.security import SafetyChecker
 from .plugins import plugins
 
 from enum import Enum, auto
@@ -355,41 +359,10 @@ class AMPConfig:
     dtype: str = 'bfloat16'
 
 @dataclass
-class RetrieverConfig:
-    search_type: str = "mmr"
-    search_kwargs: Dict[str, int] = field(default=lambda: {"k": 1, "fetch_k": 5})
-    retrieval_topk: int = 1
-    
-@dataclass
-class SafetyConfig:
-    dict_path: str = None
-    matchType: int = 2
-
-@dataclass
 class OptimizationConfig:
     amp_config: AMPConfig = AMPConfig()
     weight_only_quant_config: WeightOnlyQuantizationConfig = None
     bitsandbytes_config: BitsAndBytesConfig = None
-    
-@dataclass
-class IntentConfig:
-    max_new_tokens: int = 5
-    temperature: float = 0.6
-    do_sample: bool = True
-    top_k: int = 1
-    repetition_penalty:float = 1.0
-    num_return_sequences: int = 1
-    bad_words_ids: List[int] = None
-    force_words_ids: List[int] = None
-    use_hpu_graphs: bool = False
-    use_cache: bool = False
-    audio_output_path: str = None
-    cpu_jit: bool = False
-    num_gpus: int = 0
-    max_gpu_memory: int = None
-    use_fp16: bool = False
-    ipex_int8: bool = False
-
 
 class PipelineConfig:
     def __init__(self,
@@ -410,6 +383,3 @@ class PipelineConfig:
                 print(f"create {plugin_name} plugin instance...")
                 print(f"plugin parameters: ", plugin_value['args'])
                 plugins[plugin_name]["instance"] = plugin_value['class'](**plugin_value['args'])
-
-
-

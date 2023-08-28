@@ -12,9 +12,14 @@ gptcache
 evaluate
 fschat
 pydub
-librosa>=0.10.0
 python-multipart
 PyPDF2
 langchain
 python-docx
-pip install farm-haystack
+farm-haystack
+numpy==1.23.5
+librosa=0.10.0
+docx
+beautifulsoup4
+InstructorEmbedding
+chromadb

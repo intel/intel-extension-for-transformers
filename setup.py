@@ -258,9 +258,9 @@ if __name__ == '__main__':
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [
-                'neuralchat = neural_chat.cli.cli_commands:neuralchat_execute',
-                'neuralchat_server = neural_chat.server.server_commands:neuralchat_server_execute',
-                'neuralchat_client = neural_chat.server.server_commands:neuralchat_client_execute'
+                'neuralchat = intel_extension_for_transformers.neural_chat.cli.cli_commands:neuralchat_execute',
+                'neuralchat_server = intel_extension_for_transformers.neural_chat.server.server_commands:neuralchat_server_execute',
+                'neuralchat_client = intel_extension_for_transformers.neural_chat.server.server_commands:neuralchat_client_execute'
             ]
         },
         python_requires='>=3.7.0',

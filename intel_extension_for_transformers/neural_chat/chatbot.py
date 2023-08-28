@@ -30,9 +30,7 @@ from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-from .pipeline.plugins.retrievers.indexing.document_parser import DocumentIndexing
-from .pipeline.plugins.retrievers.retriever.langchain import ChromaRetriever
-from .pipeline.plugins.retrievers.retriever import BM25Retriever
+from .pipeline.plugins.retrievals import QA_Client
 from .pipeline.plugins.security.safety_checker import SafetyChecker
 from .pipeline.plugins.intent_detector import IntentDetector
 from .models.llama_model import LlamaModel
