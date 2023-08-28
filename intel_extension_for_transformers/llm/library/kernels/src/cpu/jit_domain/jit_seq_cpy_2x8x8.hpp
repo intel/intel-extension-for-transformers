@@ -15,27 +15,27 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SEQ_CPY_2x8x8_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SEQ_CPY_2x8x8_HPP_
 
+#include "jit_generator.hpp"
+#include "src/utils.hpp"
 #include <glog/logging.h>
 #include <vector>
-#include "src/utils.hpp"
-#include "jit_generator.hpp"
 
 namespace jd {
 class jit_seq_cpy_2x8x8 : public jit_generator {
- public:
+public:
   // calculate ld_dst from the M dim (outer dim of src)
   static inline int dst_step(const int M) { return 8 * (ceil_div(M, 8) * 8); }
 
   struct param_t {
-    uint8_t val_offset;  // add an offset to every elements
+    uint8_t val_offset; // add an offset to every elements
   };
 
   struct rt_data_t {
-    const void* src;
-    void* dst;
-    int N;       // inner dim of src: loop dimention
-    int ld_src;  // leading dim / bytes of src
-    int ld_dst;  // leading dim / bytes of dst
+    const void *src;
+    void *dst;
+    int N;      // inner dim of src: loop dimention
+    int ld_src; // leading dim / bytes of src
+    int ld_dst; // leading dim / bytes of dst
   };
   /**
    * jit_seq_cpy_2x8x8 reorders matrix in the following way:
@@ -64,36 +64,37 @@ class jit_seq_cpy_2x8x8 : public jit_generator {
    * | 7 f n v |
    * +---------+
    */
-  explicit jit_seq_cpy_2x8x8(const jit_seq_cpy_2x8x8::param_t& param) : jit_generator(), val_offset(param.val_offset) {}
+  explicit jit_seq_cpy_2x8x8(const jit_seq_cpy_2x8x8::param_t &param)
+      : jit_generator(), val_offset(param.val_offset) {}
   virtual ~jit_seq_cpy_2x8x8() {}
 
- private:
+private:
   void generate() override;
 
   const uint8_t val_offset;
 
 #ifdef _WIN32
-  const Xbyak::Reg64& parambase = rcx;
-  const Xbyak::Reg64& reg_nsize = rdi;
+  const Xbyak::Reg64 &parambase = rcx;
+  const Xbyak::Reg64 &reg_nsize = rdi;
 #else
-  const Xbyak::Reg64& parambase = rdi;
-  const Xbyak::Reg64& reg_nsize = rcx;
+  const Xbyak::Reg64 &parambase = rdi;
+  const Xbyak::Reg64 &reg_nsize = rcx;
 #endif
-  const Xbyak::Reg64& reg_src = rsi;
-  const Xbyak::Reg64& reg_dst = rdx;
-  const Xbyak::Reg64& reg_itern = r8;
-  const Xbyak::Reg64& reg_tmp = r9;
-  const Xbyak::Reg64& reg_ld_dst = r10;
-  const Xbyak::Reg64& reg_ld_src = r11;
-  const Xbyak::Reg64& reg_3ld_src = r12;
+  const Xbyak::Reg64 &reg_src = rsi;
+  const Xbyak::Reg64 &reg_dst = rdx;
+  const Xbyak::Reg64 &reg_itern = r8;
+  const Xbyak::Reg64 &reg_tmp = r9;
+  const Xbyak::Reg64 &reg_ld_dst = r10;
+  const Xbyak::Reg64 &reg_ld_src = r11;
+  const Xbyak::Reg64 &reg_3ld_src = r12;
 
-  const Xbyak::Zmm& vpermt2d_arg_idx = zmm31;
-  const Xbyak::Zmm& vpshufb_arg_b = zmm30;
-  const Xbyak::Zmm& vreg_val_offset = zmm29;
-  const Xbyak::Zmm& vreg_t1 = zmm28;
-  const Xbyak::Zmm& vreg_t2 = zmm27;
-  const Xbyak::Opmask& reg_k = k1;
-  const Xbyak::Opmask& reg_k_tail = k2;
+  const Xbyak::Zmm &vpermt2d_arg_idx = zmm31;
+  const Xbyak::Zmm &vpshufb_arg_b = zmm30;
+  const Xbyak::Zmm &vreg_val_offset = zmm29;
+  const Xbyak::Zmm &vreg_t1 = zmm28;
+  const Xbyak::Zmm &vreg_t2 = zmm27;
+  const Xbyak::Opmask &reg_k = k1;
+  const Xbyak::Opmask &reg_k_tail = k2;
 
   Xbyak::Label k_loop;
   Xbyak::Label l_vpermt2d_control;
@@ -103,5 +104,5 @@ class jit_seq_cpy_2x8x8 : public jit_generator {
   Xbyak::Label l_ntail_end;
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SEQ_CPY_2x8x8_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SEQ_CPY_2x8x8_HPP_

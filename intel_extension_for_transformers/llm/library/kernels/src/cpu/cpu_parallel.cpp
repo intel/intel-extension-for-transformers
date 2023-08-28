@@ -21,7 +21,7 @@
 
 namespace jd {
 CpuDevice::CpuDevice() {
-  Xbyak::util::Cpu* cpu = Singleton<Xbyak::util::Cpu>::GetInstance();
+  Xbyak::util::Cpu *cpu = Singleton<Xbyak::util::Cpu>::GetInstance();
   numcores = cpu->getNumCores(Xbyak::util::IntelCpuTopologyLevel::CoreLevel);
   ompthreads = omp_get_max_threads();
   numthreads = std::min(numcores, ompthreads);
@@ -33,4 +33,4 @@ CpuDevice::CpuDevice() {
   mHasAMXBF16 = cpu->has(cpu->tAMX_BF16);
   mHasAMXINT8 = cpu->has(cpu->tAMX_INT8);
 }
-}  // namespace jd
+} // namespace jd

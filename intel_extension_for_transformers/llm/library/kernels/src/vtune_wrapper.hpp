@@ -15,9 +15,9 @@
 #ifndef ENGINE_SPARSELIB_SRC_VTUNE_WRAPPER_HPP_
 #define ENGINE_SPARSELIB_SRC_VTUNE_WRAPPER_HPP_
 
+#include <cstring>
 #include <stdlib.h>
 #include <string>
-#include <cstring>
 
 #ifdef SPARSE_LIB_USE_VTUNE
 #include <ittnotify.h>
@@ -28,16 +28,16 @@
  */
 class vtune_wrapper_t {
 #ifdef SPARSE_LIB_USE_VTUNE
- private:
-  __itt_domain* domain_;
-  __itt_string_handle* handle_main_;
+private:
+  __itt_domain *domain_;
+  __itt_string_handle *handle_main_;
 
- public:
+public:
   vtune_wrapper_t();
   explicit vtune_wrapper_t(std::string domain_name);
   ~vtune_wrapper_t() {}
 
- public:
+public:
   void profiling_begin(std::string task_name);
   void profiling_end();
 #endif
@@ -45,4 +45,4 @@ class vtune_wrapper_t {
 
 bool get_vtune();
 
-#endif  // ENGINE_SPARSELIB_SRC_VTUNE_WRAPPER_HPP_
+#endif // ENGINE_SPARSELIB_SRC_VTUNE_WRAPPER_HPP_

@@ -13,32 +13,36 @@
 //  limitations under the License.
 
 #include "interface.hpp"
-#include "singleton.hpp"
 #include "engine_factory.hpp"
+#include "singleton.hpp"
 #include "src/utils.hpp"
 
 namespace jd {
-kernel_desc_proxy::kernel_desc_proxy(const operator_desc& op_desc) {
+kernel_desc_proxy::kernel_desc_proxy(const operator_desc &op_desc) {
   std::shared_ptr<const kernel_desc_t> result = nullptr;
   auto status = create_proxy_object(result, op_desc);
-  if (!status) SPARSE_LOG(ERROR) << "Found no kernel_desc supported" << std::endl;
+  if (!status)
+    SPARSE_LOG(ERROR) << "Found no kernel_desc supported" << std::endl;
   reset_sp(result);
 }
 
-bool kernel_desc_proxy::create_proxy_object(std::shared_ptr<const kernel_desc_t>& result_ref,
-                                            const operator_desc& op_desc) {
+bool kernel_desc_proxy::create_proxy_object(
+    std::shared_ptr<const kernel_desc_t> &result_ref,
+    const operator_desc &op_desc) {
   // Step 1: Get the pd (or kernel_desc_t) if it's in the cache.
-  kernel_cache* global_primitive_cache = Singleton<kernel_cache>::GetInstance();
-  std::shared_ptr<const kernel_desc_t> candidate_kd = global_primitive_cache->get_kd(op_desc);
+  kernel_cache *global_primitive_cache = Singleton<kernel_cache>::GetInstance();
+  std::shared_ptr<const kernel_desc_t> candidate_kd =
+      global_primitive_cache->get_kd(op_desc);
   if (candidate_kd != nullptr) {
     result_ref = candidate_kd;
     return true;
   }
 
   // Step 2.1: get impl_list_
-  const auto& eng_kind = op_desc.engine_kind();
-  const auto& runtime_kind = op_desc.runtime_kind();
-  const engine_t* eng = Singleton<engine_factory>::GetInstance()->create(eng_kind, runtime_kind);
+  const auto &eng_kind = op_desc.engine_kind();
+  const auto &runtime_kind = op_desc.runtime_kind();
+  const engine_t *eng =
+      Singleton<engine_factory>::GetInstance()->create(eng_kind, runtime_kind);
   if (eng == nullptr) {
     SPARSE_LOG(ERROR) << "Found no engine_t supported" << std::endl;
     return false;
@@ -48,10 +52,10 @@ bool kernel_desc_proxy::create_proxy_object(std::shared_ptr<const kernel_desc_t>
     return false;
   }
   // Step 2.2: Get the first && success object in impl_list_.
-  auto& impl_list = (*impl_list_);
-  for (auto& impl : impl_list) {
+  auto &impl_list = (*impl_list_);
+  for (auto &impl : impl_list) {
     candidate_kd = nullptr;
-    auto status = impl(candidate_kd, op_desc);  // kd->create() + kd->init()
+    auto status = impl(candidate_kd, op_desc); // kd->create() + kd->init()
     if (status) {
       result_ref = candidate_kd;
       return true;
@@ -60,19 +64,24 @@ bool kernel_desc_proxy::create_proxy_object(std::shared_ptr<const kernel_desc_t>
   return false;
 }
 
-kernel_proxy::kernel_proxy(const kernel_desc_proxy& kdp) {
+kernel_proxy::kernel_proxy(const kernel_desc_proxy &kdp) {
   std::shared_ptr<const kernel_t> result = nullptr;
   auto status = create_proxy_object(result, kdp.get_sp());
-  if (!status) SPARSE_LOG(ERROR) << "Found no kernel supported" << std::endl;
+  if (!status)
+    SPARSE_LOG(ERROR) << "Found no kernel supported" << std::endl;
   reset_sp(result);
 }
 
-bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_ref,
-                                       const std::shared_ptr<const kernel_desc_t>& kd) {
-  kernel_cache* global_primitive_cache = Singleton<kernel_cache>::GetInstance();
-  const auto& callback = std::bind(&kernel_desc_t::create_primitive, kd, std::placeholders::_1,
-                                   kd);  // k_t->create() + k_t->init()
-  std::shared_ptr<const kernel_t> value = global_primitive_cache->find_or_construct(kd->get_operator_desc(), callback);
+bool kernel_proxy::create_proxy_object(
+    std::shared_ptr<const kernel_t> &result_ref,
+    const std::shared_ptr<const kernel_desc_t> &kd) {
+  kernel_cache *global_primitive_cache = Singleton<kernel_cache>::GetInstance();
+  const auto &callback =
+      std::bind(&kernel_desc_t::create_primitive, kd, std::placeholders::_1,
+                kd); // k_t->create() + k_t->init()
+  std::shared_ptr<const kernel_t> value =
+      global_primitive_cache->find_or_construct(kd->get_operator_desc(),
+                                                callback);
   if (value == nullptr) {
     return false;
   }
@@ -80,12 +89,15 @@ bool kernel_proxy::create_proxy_object(std::shared_ptr<const kernel_t>& result_r
   return true;
 }
 
-size_t kernel_proxy::get_workspace_size() const { return get_sp()->get_workspace_size(); }
+size_t kernel_proxy::get_workspace_size() const {
+  return get_sp()->get_workspace_size();
+}
 
 namespace {
 // Helper function to implement execute with rt_data & ctx at the same time
 template <typename T>
-inline void execute_(const std::shared_ptr<const jd::kernel_t> sp, const T& data) {
+inline void execute_(const std::shared_ptr<const jd::kernel_t> sp,
+                     const T &data) {
   bool status = false;
 #ifdef SPARSE_LIB_USE_VTUNE
   auto vtune_wrapper = vtune_wrapper_t();
@@ -98,9 +110,11 @@ inline void execute_(const std::shared_ptr<const jd::kernel_t> sp, const T& data
     status = sp->execute(data);
     double duration_ms = get_msec() - start_ms;
     std::string stamp;
-    if (get_verbose_timestamp()) stamp = "," + std::to_string(start_ms);
+    if (get_verbose_timestamp())
+      stamp = "," + std::to_string(start_ms);
 
-    printf("sparselib_verbose%s,exec,%s,%g\n", stamp.c_str(), sp->kd()->info(), duration_ms);
+    printf("sparselib_verbose%s,exec,%s,%g\n", stamp.c_str(), sp->kd()->info(),
+           duration_ms);
     fflush(stdout);
   } else {
     status = sp->execute(data);
@@ -110,11 +124,16 @@ inline void execute_(const std::shared_ptr<const jd::kernel_t> sp, const T& data
     vtune_wrapper.profiling_end();
   }
 #endif
-  if (!status) SPARSE_LOG(ERROR) << "Execution failed" << std::endl;
+  if (!status)
+    SPARSE_LOG(ERROR) << "Execution failed" << std::endl;
   return;
 }
-}  // namespace
+} // namespace
 
-void kernel_proxy::execute(const std::vector<const void*>& rt_data) const { execute_(get_sp(), rt_data); }
-void kernel_proxy::execute(const exec_context_t& ctx) const { execute_(get_sp(), ctx); }
-}  // namespace jd
+void kernel_proxy::execute(const std::vector<const void *> &rt_data) const {
+  execute_(get_sp(), rt_data);
+}
+void kernel_proxy::execute(const exec_context_t &ctx) const {
+  execute_(get_sp(), ctx);
+}
+} // namespace jd

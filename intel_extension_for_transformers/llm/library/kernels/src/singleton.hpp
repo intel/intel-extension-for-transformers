@@ -14,12 +14,11 @@
 
 #ifndef ENGINE_SPARSELIB_SRC_SINGLETON_H_
 #define ENGINE_SPARSELIB_SRC_SINGLETON_H_
-#include <mutex>  // NOLINT
+#include <mutex> // NOLINT
 
-template <typename T>
-class Singleton {
- public:
-  static T* GetInstance() {
+template <typename T> class Singleton {
+public:
+  static T *GetInstance() {
     if (instance_ == nullptr) {
       std::lock_guard<std::mutex> guard(mutex_);
       if (instance_ == nullptr) {
@@ -39,20 +38,18 @@ class Singleton {
     return false;
   }
 
- private:
+private:
   Singleton() = default;
   ~Singleton() = default;
-  Singleton(const Singleton&) = delete;
-  Singleton& operator=(const Singleton&) = delete;
+  Singleton(const Singleton &) = delete;
+  Singleton &operator=(const Singleton &) = delete;
 
- private:
-  static T* instance_;
+private:
+  static T *instance_;
   static std::mutex mutex_;
 };
 
-template <typename T>
-T* Singleton<T>::instance_ = nullptr;
+template <typename T> T *Singleton<T>::instance_ = nullptr;
 
-template <typename T>
-std::mutex Singleton<T>::mutex_;
-#endif  // ENGINE_SPARSELIB_SRC_SINGLETON_H_
+template <typename T> std::mutex Singleton<T>::mutex_;
+#endif // ENGINE_SPARSELIB_SRC_SINGLETON_H_

@@ -26,25 +26,26 @@ struct dynamic_quant_matmul_reduce_scale_quant_param_t {
 };
 
 struct dynamic_quant_matmul_reduce_scale_quant_data_t {
-  void* mat_src;
-  void* mat_dst;
-  void* dst_scale;
-  void* reduce_scale;
+  void *mat_src;
+  void *mat_dst;
+  void *dst_scale;
+  void *reduce_scale;
 };
 
 class jit_dynamic_quant_matmul_reduce_scale_quant_t : public jit_generator {
- public:
-  explicit jit_dynamic_quant_matmul_reduce_scale_quant_t(const dynamic_quant_matmul_reduce_scale_quant_param_t& param)
+public:
+  explicit jit_dynamic_quant_matmul_reduce_scale_quant_t(
+      const dynamic_quant_matmul_reduce_scale_quant_param_t &param)
       : jit_generator(), param_(param) {}
   virtual ~jit_dynamic_quant_matmul_reduce_scale_quant_t() {}
 
- private:
+private:
   dynamic_quant_matmul_reduce_scale_quant_param_t param_;
 
- private:
+private:
   void generate() override;
 };
 
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_DYNAMIC_QUANT_MATMUL_REDUCE_SCALE_QUANT_HPP_
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_DYNAMIC_QUANT_MATMUL_REDUCE_SCALE_QUANT_HPP_

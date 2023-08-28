@@ -37,7 +37,8 @@ void jit_spmm_amx_bf16_x16_t::handle_postop_escape_vmms() {
   for (int i = 0; i < TILE_N; ++i) {
     eltwise_injector.escape_regs(reg_type::zmm, Xbyak::Zmm(i).getIdx());
     for (int j = 0; j < NUM_M * TILE_M; j += TILE_M) {
-      eltwise_injector.escape_regs(reg_type::zmm, Xbyak::Zmm(j / TILE_M + TILE_N).getIdx());
+      eltwise_injector.escape_regs(reg_type::zmm,
+                                   Xbyak::Zmm(j / TILE_M + TILE_N).getIdx());
     }
   }
   eltwise_injector.escape_regs(reg_type::zmm, reg_mask.getIdx());
@@ -57,12 +58,15 @@ void jit_spmm_amx_bf16_x16_t::handle_postop_escape_regs() {
 
 void jit_spmm_amx_bf16_x16_t::postop_and_store_dst(int i, int j) {
   if (bf16_out) {
-    eltwise_injector.vector_compute(Xbyak::Zmm(j / TILE_M + TILE_N), param_.postop_attrs);
+    eltwise_injector.vector_compute(Xbyak::Zmm(j / TILE_M + TILE_N),
+                                    param_.postop_attrs);
     vcvtneps2bf16(reg_bf16, Xbyak::Zmm(j / TILE_M + TILE_N));
     vmovdqu16(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], reg_bf16);
   } else {
-    eltwise_injector.vector_compute(Xbyak::Zmm(j / TILE_M + TILE_N), param_.postop_attrs);
-    vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t], Xbyak::Zmm(j / TILE_M + TILE_N));
+    eltwise_injector.vector_compute(Xbyak::Zmm(j / TILE_M + TILE_N),
+                                    param_.postop_attrs);
+    vmovdqu32(ptr[reg_dst + (j + i * tileM) * size_of_dst_t],
+              Xbyak::Zmm(j / TILE_M + TILE_N));
   }
 }
 
@@ -70,7 +74,7 @@ void jit_spmm_amx_bf16_x16_t::handle_dst_offset(int b_row) {
   mov(r12, b_row * 16 * tileM * size_of_dst_t);
   mov(reg_temp, reg_mstart);
   if (!bf16_out) {
-    add(reg_temp, reg_temp);  // sizeof(dst_t) = sizeof(src_t) + sizeof(src_t)
+    add(reg_temp, reg_temp); // sizeof(dst_t) = sizeof(src_t) + sizeof(src_t)
   }
   add(r12, reg_temp);
   add(reg_dst, r12);
@@ -78,11 +82,13 @@ void jit_spmm_amx_bf16_x16_t::handle_dst_offset(int b_row) {
 
 void jit_spmm_amx_bf16_x16_t::main_compute() {
   for (int b_row = 0; b_row < nrowptr - 1; ++b_row) {
-    if (group_rowptr[b_row] == group_rowptr[b_row + 1]) {  // the row is all zeros
+    if (group_rowptr[b_row] ==
+        group_rowptr[b_row + 1]) { // the row is all zeros
       handle_dst_offset(b_row);
       for (int i = 0; i < TILE_N; ++i) {
         for (int j = 0; j < NUM_M * TILE_M; j += TILE_M) {
-          vpbroadcastd(Xbyak::Zmm(j / TILE_M + TILE_N), ptr[reg_bia + (b_row * TILE_N + i) * sizeof(dst_t)]);
+          vpbroadcastd(Xbyak::Zmm(j / TILE_M + TILE_N),
+                       ptr[reg_bia + (b_row * TILE_N + i) * sizeof(dst_t)]);
           postop_and_store_dst(i, j);
         }
       }
@@ -95,19 +101,26 @@ void jit_spmm_amx_bf16_x16_t::main_compute() {
     tilezero(tmm2);
     tilezero(tmm3);
 
-    for (int group = group_rowptr[b_row]; group < group_rowptr[b_row + 1]; ++group) {
-      dim_t* my_rows = colidxs + group * TILE_K;
+    for (int group = group_rowptr[b_row]; group < group_rowptr[b_row + 1];
+         ++group) {
+      dim_t *my_rows = colidxs + group * TILE_K;
 
-      tileloadd(tmm6, ptr[reg_weight + reg_stride + group * 512 * size_of_src_t]);
+      tileloadd(tmm6,
+                ptr[reg_weight + reg_stride + group * 512 * size_of_src_t]);
 
       add(reg_m, reg_mstart);
       for (int m = 0; m < NUM_M * TILE_M; m += TILE_M) {
         for (int k = 0; k < TILE_K; k += 2) {
-          vmovdqu(Xbyak::Ymm(k % 16), ptr[reg_m + (m + my_rows[k] * tileM) * size_of_src_t]);
-          vmovdqu(Xbyak::Ymm(k % 16 + 1), ptr[reg_m + (m + my_rows[k + 1] * tileM) * size_of_src_t]);
-          vinserti32x8(Xbyak::Zmm(k % 16), Xbyak::Zmm(k % 16), Xbyak::Ymm(k % 16 + 1), 1);
+          vmovdqu(Xbyak::Ymm(k % 16),
+                  ptr[reg_m + (m + my_rows[k] * tileM) * size_of_src_t]);
+          vmovdqu(Xbyak::Ymm(k % 16 + 1),
+                  ptr[reg_m + (m + my_rows[k + 1] * tileM) * size_of_src_t]);
+          vinserti32x8(Xbyak::Zmm(k % 16), Xbyak::Zmm(k % 16),
+                       Xbyak::Ymm(k % 16 + 1), 1);
           vpermw(Xbyak::Zmm(k % 16), reg_mask, Xbyak::Zmm(k % 16));
-          vmovdqu32(qword[rsp + 0x40 + (m / TILE_M * TILE_N * TILE_K + k / 2 * TILE_K) * 2], Xbyak::Zmm(k % 16));
+          vmovdqu32(qword[rsp + 0x40 +
+                          (m / TILE_M * TILE_N * TILE_K + k / 2 * TILE_K) * 2],
+                    Xbyak::Zmm(k % 16));
         }
       }
       sub(reg_m, reg_mstart);
@@ -117,28 +130,44 @@ void jit_spmm_amx_bf16_x16_t::main_compute() {
       if (group == group_rowptr[b_row + 1] - 1) {
         tilestored(ptr[rsp + reg_stride + (0x40)], tmm0);
       }
-      tileloaddt1(tmm4, ptr[rsp + reg_stride + (TILE_M * TILE_N * size_of_out_t + 0x40)]);
+      tileloaddt1(
+          tmm4,
+          ptr[rsp + reg_stride + (TILE_M * TILE_N * size_of_out_t + 0x40)]);
       tdpbf16ps(tmm1, tmm6, tmm4);
       if (group == group_rowptr[b_row + 1] - 1) {
-        tilestored(ptr[rsp + reg_stride + (0x40 + TILE_M * TILE_N * size_of_out_t)], tmm1);
+        tilestored(
+            ptr[rsp + reg_stride + (0x40 + TILE_M * TILE_N * size_of_out_t)],
+            tmm1);
       }
-      tileloaddt1(tmm4, ptr[rsp + reg_stride + (TILE_M * TILE_N * size_of_out_t * 2 + 0x40)]);
+      tileloaddt1(
+          tmm4,
+          ptr[rsp + reg_stride + (TILE_M * TILE_N * size_of_out_t * 2 + 0x40)]);
       tdpbf16ps(tmm2, tmm6, tmm4);
       if (group == group_rowptr[b_row + 1] - 1) {
-        tilestored(ptr[rsp + reg_stride + (0x40 + TILE_M * TILE_N * size_of_out_t * 2)], tmm2);
+        tilestored(ptr[rsp + reg_stride +
+                       (0x40 + TILE_M * TILE_N * size_of_out_t * 2)],
+                   tmm2);
       }
-      tileloaddt1(tmm4, ptr[rsp + reg_stride + (TILE_M * TILE_N * size_of_out_t * 3 + 0x40)]);
+      tileloaddt1(
+          tmm4,
+          ptr[rsp + reg_stride + (TILE_M * TILE_N * size_of_out_t * 3 + 0x40)]);
       tdpbf16ps(tmm3, tmm6, tmm4);
       if (group == group_rowptr[b_row + 1] - 1) {
-        tilestored(ptr[rsp + reg_stride + (0x40 + TILE_M * TILE_N * size_of_out_t * 3)], tmm3);
+        tilestored(ptr[rsp + reg_stride +
+                       (0x40 + TILE_M * TILE_N * size_of_out_t * 3)],
+                   tmm3);
       }
     }
     handle_dst_offset(b_row);
     for (int i = 0; i < TILE_N; ++i) {
-      vpbroadcastd(Xbyak::Zmm(i), ptr[reg_bia + (b_row * TILE_N + i) * size_of_out_t]);
+      vpbroadcastd(Xbyak::Zmm(i),
+                   ptr[reg_bia + (b_row * TILE_N + i) * size_of_out_t]);
       for (int j = 0; j < NUM_M * TILE_M; j += TILE_M) {
-        vmovdqu32(Xbyak::Zmm(j / TILE_M + TILE_N), ptr[rsp + (0x40) + (j * TILE_N + i * TILE_M) * size_of_out_t]);
-        vaddps(Xbyak::Zmm(j / TILE_M + TILE_N), Xbyak::Zmm(j / TILE_M + TILE_N), Xbyak::Zmm(i));
+        vmovdqu32(
+            Xbyak::Zmm(j / TILE_M + TILE_N),
+            ptr[rsp + (0x40) + (j * TILE_N + i * TILE_M) * size_of_out_t]);
+        vaddps(Xbyak::Zmm(j / TILE_M + TILE_N), Xbyak::Zmm(j / TILE_M + TILE_N),
+               Xbyak::Zmm(i));
         postop_and_store_dst(i, j);
       }
     }
@@ -198,12 +227,13 @@ void jit_spmm_amx_bf16_x16_t::generate() {
   L(loopMask);
   int num = 32;
   int wordlen = 2;
-  const src_t mask[32] = {0, 16, 1, 17, 2,  18, 3,  19, 4,  20, 5,  21, 6,  22, 7,  23,
-                          8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31};
+  const src_t mask[32] = {0,  16, 1,  17, 2,  18, 3,  19, 4,  20, 5,
+                          21, 6,  22, 7,  23, 8,  24, 9,  25, 10, 26,
+                          11, 27, 12, 28, 13, 29, 14, 30, 15, 31};
   for (int i = 0; i < num; ++i) {
     db(mask[i], wordlen);
   }
   eltwise_injector.prepare_table();
 }
 
-}  // namespace jd
+} // namespace jd

@@ -15,36 +15,43 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_BINARY_INJECTOR_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_BINARY_INJECTOR_HPP_
 
-#include <vector>
 #include "jit_generator.hpp"
-#include "src/utils.hpp"
 #include "param_types.hpp"
+#include "src/utils.hpp"
+#include <vector>
 
 namespace jd {
 class jit_binary_injector {
- public:
+public:
   enum addr_type { normal, scale, zp };
   jit_binary_injector() {}
   virtual ~jit_binary_injector() {}
-  void binary_injector_init(jit_generator* ptr);
+  void binary_injector_init(jit_generator *ptr);
   void set_mask(Opmask mask);
-  void init_quantization(const Xmm& zmm, const Reg64& reg);
-  void get_addr(const Reg64& reg, binaryop_attr op_attr,
-                addr_type type = addr_type::normal);  // mov addr_ptr from op_attr to reg64.
-  void compute_vector(const Xmm& zmm_src1, const RegExp& src2, const binaryop_attr& op_attr, bool enable_mask = false,
+  void init_quantization(const Xmm &zmm, const Reg64 &reg);
+  void get_addr(const Reg64 &reg, binaryop_attr op_attr,
+                addr_type type =
+                    addr_type::normal); // mov addr_ptr from op_attr to reg64.
+  void compute_vector(const Xmm &zmm_src1, const RegExp &src2,
+                      const binaryop_attr &op_attr, bool enable_mask = false,
                       bool broadcast = false);
-  void add(const Xmm& src1, const RegExp& src2, data_type op_dt, bool enable_mask, bool broadcast);
-  void sub(const Xmm& src1, const RegExp& src2, data_type op_dt, bool enable_mask, bool broadcast);
-  void mul(const Xmm& src1, const RegExp& src2, data_type op_dt, bool enable_mask, bool broadcast);
+  void add(const Xmm &src1, const RegExp &src2, data_type op_dt,
+           bool enable_mask, bool broadcast);
+  void sub(const Xmm &src1, const RegExp &src2, data_type op_dt,
+           bool enable_mask, bool broadcast);
+  void mul(const Xmm &src1, const RegExp &src2, data_type op_dt,
+           bool enable_mask, bool broadcast);
 
- private:
-  jit_generator* h = nullptr;
+private:
+  jit_generator *h = nullptr;
   Opmask mask;
   Xmm zmm_tmp;
   Reg64 reg_tmp;
 
-  void per_channel_quant(const Xmm& src1, const RegExp& src2, const binaryop_attr& op_attr);
-  void per_channel_dequant(const Xmm& src1, const RegExp& src2, const binaryop_attr& op_attr);
+  void per_channel_quant(const Xmm &src1, const RegExp &src2,
+                         const binaryop_attr &op_attr);
+  void per_channel_dequant(const Xmm &src1, const RegExp &src2,
+                           const binaryop_attr &op_attr);
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_BINARY_INJECTOR_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_BINARY_INJECTOR_HPP_

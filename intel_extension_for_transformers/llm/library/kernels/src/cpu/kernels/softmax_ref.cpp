@@ -22,24 +22,30 @@ bool softmax_ref_kd_t::init() {
     // assert int8 dt as input.
     auto tensor_desc = op_desc_.tensor_descs();
     if (tensor_desc.size() != 2)
-      SPARSE_LOG(ERROR) << "softmax lut kernel need 2 tensor descriptor:src & dst." << std::endl;
+      SPARSE_LOG(ERROR)
+          << "softmax lut kernel need 2 tensor descriptor:src & dst."
+          << std::endl;
     auto input_dt = tensor_desc[0].dtype();
     if (get_data_size(input_dt) != 1)
-      SPARSE_LOG(ERROR) << "softmax lut kernel only support int8 dtype as input currently." << std::endl;
+      SPARSE_LOG(ERROR)
+          << "softmax lut kernel only support int8 dtype as input currently."
+          << std::endl;
   } else {
-    SPARSE_LOG(ERROR) << "do not supported specialization softmax type" << std::endl;
+    SPARSE_LOG(ERROR) << "do not supported specialization softmax type"
+                      << std::endl;
   }
   return true;
 }
 
-bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool softmax_ref_k_t::execute(const std::vector<const void *> &rt_data) const {
   auto op_desc = derived_kd()->get_operator_desc();
-  auto src_s8 = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[0]));
-  auto src_u8 = reinterpret_cast<uint8_t*>(const_cast<void*>(rt_data[0]));
+  auto src_s8 = reinterpret_cast<int8_t *>(const_cast<void *>(rt_data[0]));
+  auto src_u8 = reinterpret_cast<uint8_t *>(const_cast<void *>(rt_data[0]));
   auto dst_dt = op_desc.tensor_descs()[1].dtype();
-  void* dst = const_cast<void*>(rt_data[1]);
+  void *dst = const_cast<void *>(rt_data[1]);
 
-  std::vector<postop_attr> dequant_list = {op_desc.apply_postops_list().front()};
+  std::vector<postop_attr> dequant_list = {
+      op_desc.apply_postops_list().front()};
   std::vector<postop_attr> quant_list;
   if (op_desc.apply_postops_list().back().op_alg == postop_alg::quantize)
     quant_list.push_back(op_desc.apply_postops_list().back());
@@ -55,9 +61,13 @@ bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
     for (int j = 0; j < col; j++) {
       int src_idx = i * col + j;
       if (src_dt == data_type::s8) {
-        max = static_cast<float>(src_s8[src_idx]) > max ? static_cast<float>(src_s8[src_idx]) : max;
+        max = static_cast<float>(src_s8[src_idx]) > max
+                  ? static_cast<float>(src_s8[src_idx])
+                  : max;
       } else {
-        max = static_cast<float>(src_u8[src_idx]) > max ? static_cast<float>(src_u8[src_idx]) : max;
+        max = static_cast<float>(src_u8[src_idx]) > max
+                  ? static_cast<float>(src_u8[src_idx])
+                  : max;
       }
     }
     // get e^M
@@ -67,9 +77,11 @@ bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
     for (int j = 0; j < col; j++) {
       float value = 0;
       if (src_dt == data_type::s8) {
-        value = apply_postop_list(static_cast<float>(src_s8[i * col + j]), dequant_list);
+        value = apply_postop_list(static_cast<float>(src_s8[i * col + j]),
+                                  dequant_list);
       } else {
-        value = apply_postop_list(static_cast<float>(src_u8[i * col + j]), dequant_list);
+        value = apply_postop_list(static_cast<float>(src_u8[i * col + j]),
+                                  dequant_list);
       }
       value = get_exp(value - max);
       float_dst_data[i * col + j] = value;
@@ -83,20 +95,25 @@ bool softmax_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
     // step3. compute softmax
     if (dst_dt == data_type::bf16) {
       for (int j = 0; j < col; j++)
-        reinterpret_cast<bfloat16_t*>(dst)[i * col + j] = float_dst_data[i * col + j] * scale;
+        reinterpret_cast<bfloat16_t *>(dst)[i * col + j] =
+            float_dst_data[i * col + j] * scale;
     } else if (dst_dt == data_type::u8) {
       for (int j = 0; j < col; j++) {
-        reinterpret_cast<uint8_t*>(dst)[i * col + j] =
-            (uint8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
+        reinterpret_cast<uint8_t *>(dst)[i * col + j] =
+            (uint8_t)apply_postop_list(float_dst_data[i * col + j] * scale,
+                                       quant_list);
       }
     } else if (dst_dt == data_type::s8) {
       for (int j = 0; j < col; j++)
-        reinterpret_cast<int8_t*>(dst)[i * col + j] =
-            (int8_t)apply_postop_list(float_dst_data[i * col + j] * scale, quant_list);
+        reinterpret_cast<int8_t *>(dst)[i * col + j] =
+            (int8_t)apply_postop_list(float_dst_data[i * col + j] * scale,
+                                      quant_list);
     } else {
-      for (int j = 0; j < col; j++) reinterpret_cast<float*>(dst)[i * col + j] = float_dst_data[i * col + j] * scale;
+      for (int j = 0; j < col; j++)
+        reinterpret_cast<float *>(dst)[i * col + j] =
+            float_dst_data[i * col + j] * scale;
     }
   }
   return true;
 }
-}  // namespace jd
+} // namespace jd

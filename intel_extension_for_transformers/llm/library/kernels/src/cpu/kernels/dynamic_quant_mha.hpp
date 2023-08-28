@@ -54,49 +54,52 @@ namespace jd {
 class dynamic_quant_mha_k_t;
 
 class dynamic_quant_mha_kd_t : public kernel_desc_t {
- public:
+public:
   using io = exposed_enum::mha_dense::io;
-  explicit dynamic_quant_mha_kd_t(const operator_desc& op_desc)
+  explicit dynamic_quant_mha_kd_t(const operator_desc &op_desc)
       : kernel_desc_t(kernel_kind::mha_dense), op_desc_(op_desc) {}
   virtual ~dynamic_quant_mha_kd_t() {}
 
   bool init() override;
   DECLARE_COMMON_PD_T(dynamic_quant_mha_k_t, dynamic_quant_mha_kd_t);
 
-  const operator_desc& get_operator_desc() const override { return op_desc_; }
+  const operator_desc &get_operator_desc() const override { return op_desc_; }
   inline std::vector<dim_t> shape() const override {
     return {
-        op_desc_.tensor_descs()[io::SRC_Q].shape()[0],  // batch_size
-        op_desc_.tensor_descs()[io::SRC_Q].shape()[2],  // head_num
-        op_desc_.tensor_descs()[io::SRC_Q].shape()[1],  // M
-        op_desc_.tensor_descs()[io::SRC_Q].shape()[3],  // head_size
-        op_desc_.tensor_descs()[io::SRC_K].shape()[1],  // N
+        op_desc_.tensor_descs()[io::SRC_Q].shape()[0], // batch_size
+        op_desc_.tensor_descs()[io::SRC_Q].shape()[2], // head_num
+        op_desc_.tensor_descs()[io::SRC_Q].shape()[1], // M
+        op_desc_.tensor_descs()[io::SRC_Q].shape()[3], // head_size
+        op_desc_.tensor_descs()[io::SRC_K].shape()[1], // N
     };
   }
 
- private:
+private:
   operator_desc op_desc_;
 };
 
 class dynamic_quant_mha_k_t : public kernel_t {
- public:
+public:
   using io = exposed_enum::mha_dense::io;
   using kd_t = dynamic_quant_mha_kd_t;
-  explicit dynamic_quant_mha_k_t(const std::shared_ptr<const kernel_desc_t>& kd);
+  explicit dynamic_quant_mha_k_t(
+      const std::shared_ptr<const kernel_desc_t> &kd);
   virtual ~dynamic_quant_mha_k_t() {}
   // Delete move constructor and move operator
-  dynamic_quant_mha_k_t(dynamic_quant_mha_k_t&&) = delete;
-  dynamic_quant_mha_k_t& operator=(dynamic_quant_mha_k_t&&) = delete;
+  dynamic_quant_mha_k_t(dynamic_quant_mha_k_t &&) = delete;
+  dynamic_quant_mha_k_t &operator=(dynamic_quant_mha_k_t &&) = delete;
   // Delete copy constructor and copy operator
-  dynamic_quant_mha_k_t(const dynamic_quant_mha_k_t&) = delete;
-  dynamic_quant_mha_k_t& operator=(const dynamic_quant_mha_k_t&) = delete;
+  dynamic_quant_mha_k_t(const dynamic_quant_mha_k_t &) = delete;
+  dynamic_quant_mha_k_t &operator=(const dynamic_quant_mha_k_t &) = delete;
 
   bool init() override;
-  bool execute(const std::vector<const void*>& rt_data) const override;
-  const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
+  bool execute(const std::vector<const void *> &rt_data) const override;
+  const std::shared_ptr<const kd_t> derived_kd() const {
+    return std::static_pointer_cast<const kd_t>(kd_);
+  }
   size_t get_workspace_size() const override;
 
- private:
+private:
   const std::vector<std::vector<dim_t>> t_shapes_;
   const int32_t batch_size_, head_num_, M_, head_size_, N_;
   const bool has_attscale;
@@ -114,5 +117,5 @@ class dynamic_quant_mha_k_t : public kernel_t {
   const tileconfig_t amx_full_tile_cfg_;
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_KERNELS_DYNAMIC_QUANT_MHA_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_KERNELS_DYNAMIC_QUANT_MHA_HPP_

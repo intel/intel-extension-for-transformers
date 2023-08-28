@@ -18,13 +18,16 @@
 
 #include "regs_pool.hpp"
 
-#define GET_OFF(field) offsetof(jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::rt_data_t, field)
+#define GET_OFF(field)                                                         \
+  offsetof(jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::rt_data_t, field)
 
 namespace jd {
 void jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::generate() {
   const auto tmp_dst_size = TH_ * TW_ * BYTES_TMM;
-  regs_pool rp(this, 1, {9, 19, 0}, tmp_dst_size + 64);  // 64 extra for alignment
-  std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
+  regs_pool rp(this, 1, {9, 19, 0},
+               tmp_dst_size + 64); // 64 extra for alignment
+  std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr),
+                                           [&](...) { outLocalLabel(); }};
 
   const auto reg_src0 = rp.reg<Reg64>();
   const auto reg_src1 = rp.reg<Reg64>();
@@ -40,7 +43,7 @@ void jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::generate() {
   const auto vreg_zp = rp.reg<Zmm>();
   const auto reg_tmp32 = reg_tmp.cvt32();
   if (dt_dst == data_type::u8) {
-    mov(reg_tmp32, 0);  // 0L is same as 0.f in binary
+    mov(reg_tmp32, 0); // 0L is same as 0.f in binary
     vpbroadcastd(vreg_0f, reg_tmp32);
   }
 
@@ -77,21 +80,26 @@ void jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::generate() {
       {
         // load src0
         imul(reg_tmp, reg_iterk, 16);
-        lea(reg_tmp, ptr[reg_src0 + reg_tmp + idx_m * K_pad]);  // reg_src0 with src0_offset
+        lea(reg_tmp, ptr[reg_src0 + reg_tmp +
+                         idx_m * K_pad]); // reg_src0 with src0_offset
         for (int i = 0; i < TH_; ++i) {
           if (idx_m + i * 16 < M) {
-            tileloadd(tmm_src0[i], ptr[reg_tmp + reg_stride64 + i * 16 * K_pad]);
+            tileloadd(tmm_src0[i],
+                      ptr[reg_tmp + reg_stride64 + i * 16 * K_pad]);
           }
         }
 
         // load src1 && dot prod
         imul(reg_tmp, reg_iterk, 16);
-        lea(reg_tmp, ptr[reg_src1 + reg_tmp + idx_n * K_pad]);  // reg_src0 with src0_offset
+        lea(reg_tmp, ptr[reg_src1 + reg_tmp +
+                         idx_n * K_pad]); // reg_src0 with src0_offset
         for (int i = 0; i < TH_; ++i)
           for (int j = 0; j < TW_; ++j) {
             if (idx_m + i * 16 < M && idx_n + j * 16 < N) {
               const auto TI = i * TW_ + j;
-              if (i == 0) tileloadd(tmm_src1[j], ptr[reg_tmp + reg_stride64 + j * 16 * K_pad]);
+              if (i == 0)
+                tileloadd(tmm_src1[j],
+                          ptr[reg_tmp + reg_stride64 + j * 16 * K_pad]);
               tdpbusd(tmm_dst[TI], tmm_src0[i], tmm_src1[j]);
             }
           }
@@ -108,36 +116,40 @@ void jit_matmul_amx_u8AB16a64b_s8BA16b4a_ab::generate() {
             const auto TI = i * TW_ + j;
             const auto dst_tmp_offset = TI * BYTES_TMM;
 
-            tilestored(ptr[reg_dst_tmp + reg_stride64 + dst_tmp_offset], tmm_dst[TI]);
+            tilestored(ptr[reg_dst_tmp + reg_stride64 + dst_tmp_offset],
+                       tmm_dst[TI]);
             for (int ii = 0; ii < 16; ++ii) {
-              vmovdqa32(vreg_post[ii], zword[reg_dst_tmp + dst_tmp_offset + ii * BYTES_ZMM]);
+              vmovdqa32(vreg_post[ii],
+                        zword[reg_dst_tmp + dst_tmp_offset + ii * BYTES_ZMM]);
               vcvtdq2ps(vreg_post[ii] | T_rn_sae, vreg_post[ii]);
               vfmadd213ps(vreg_post[ii], vreg_scale, vreg_zp);
-              const auto dst_disp = (idx_m + i * 16 + ii) * lb_dst + (idx_n + j * 16) * type_size.at(dt_dst);
-              switch (dt_dst) {  // move out
-                case data_type::u8:
-                  vmaxps(vreg_post[ii], vreg_post[ii], vreg_0f);
-                  vcvtps2udq(vreg_post[ii], vreg_post[ii]);
-                  vpmovusdb(ptr[reg_dst + dst_disp], vreg_post[ii]);
-                  break;
-                case data_type::s8:
-                  vcvtps2dq(vreg_post[ii], vreg_post[ii]);
-                  vpmovsdb(ptr[reg_dst + dst_disp], vreg_post[ii]);
-                  break;
-                case data_type::fp32:
-                  vmovups(ptr[reg_dst + dst_disp], vreg_post[ii]);
-                  break;
-                case data_type::bf16:
-                  vcvtneps2bf16(Ymm(vreg_post[ii].getIdx()), vreg_post[ii]);
-                  vmovdqu16(yword[reg_dst + dst_disp], Ymm(vreg_post[ii].getIdx()));
-                  break;
-                default:
-                  SPARSE_LOG(FATAL) << "Unexpected dst type";
-                  break;
+              const auto dst_disp = (idx_m + i * 16 + ii) * lb_dst +
+                                    (idx_n + j * 16) * type_size.at(dt_dst);
+              switch (dt_dst) { // move out
+              case data_type::u8:
+                vmaxps(vreg_post[ii], vreg_post[ii], vreg_0f);
+                vcvtps2udq(vreg_post[ii], vreg_post[ii]);
+                vpmovusdb(ptr[reg_dst + dst_disp], vreg_post[ii]);
+                break;
+              case data_type::s8:
+                vcvtps2dq(vreg_post[ii], vreg_post[ii]);
+                vpmovsdb(ptr[reg_dst + dst_disp], vreg_post[ii]);
+                break;
+              case data_type::fp32:
+                vmovups(ptr[reg_dst + dst_disp], vreg_post[ii]);
+                break;
+              case data_type::bf16:
+                vcvtneps2bf16(Ymm(vreg_post[ii].getIdx()), vreg_post[ii]);
+                vmovdqu16(yword[reg_dst + dst_disp],
+                          Ymm(vreg_post[ii].getIdx()));
+                break;
+              default:
+                SPARSE_LOG(FATAL) << "Unexpected dst type";
+                break;
               }
             }
           }
     }
   }
 }
-}  // namespace jd
+} // namespace jd

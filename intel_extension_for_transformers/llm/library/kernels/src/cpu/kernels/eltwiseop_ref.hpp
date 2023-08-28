@@ -15,56 +15,61 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_KERNELS_ELTWISEOP_REF_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_KERNELS_ELTWISEOP_REF_HPP_
 
+#include "kernel.hpp"
+#include "kernel_desc.hpp"
+#include "operator_desc.hpp"
+#include "src/cpu/cpu_isa.hpp"
+#include "src/utils.hpp"
 #include <glog/logging.h>
 #include <memory>
 #include <vector>
-#include "src/cpu/cpu_isa.hpp"
-#include "operator_desc.hpp"
-#include "kernel.hpp"
-#include "kernel_desc.hpp"
-#include "src/utils.hpp"
 
 namespace jd {
 class eltwiseop_ref_k_t;
 
 class eltwiseop_ref_kd_t : public kernel_desc_t {
- public:
-  explicit eltwiseop_ref_kd_t(const operator_desc& op_desc)
+public:
+  explicit eltwiseop_ref_kd_t(const operator_desc &op_desc)
       : kernel_desc_t(kernel_kind::eltwiseop), op_desc_(op_desc) {}
   virtual ~eltwiseop_ref_kd_t() {}
 
- public:
+public:
   bool init() override { return true; }
   DECLARE_COMMON_PD_T(eltwiseop_ref_k_t, eltwiseop_ref_kd_t);
 
- public:
-  inline std::vector<dim_t> shape() const { return op_desc_.tensor_descs()[0].shape(); }
-  const operator_desc& get_operator_desc() const override { return op_desc_; }
+public:
+  inline std::vector<dim_t> shape() const {
+    return op_desc_.tensor_descs()[0].shape();
+  }
+  const operator_desc &get_operator_desc() const override { return op_desc_; }
 
- private:
+private:
   operator_desc op_desc_;
 };
 
 class eltwiseop_ref_k_t : public kernel_t {
- public:
+public:
   using kd_t = eltwiseop_ref_kd_t;
-  explicit eltwiseop_ref_k_t(const std::shared_ptr<const kd_t>& kd) : kernel_t(kd) {}
+  explicit eltwiseop_ref_k_t(const std::shared_ptr<const kd_t> &kd)
+      : kernel_t(kd) {}
   virtual ~eltwiseop_ref_k_t() {}
   // Delete move constructor and move operator
-  eltwiseop_ref_k_t(eltwiseop_ref_k_t&& other) = delete;
-  eltwiseop_ref_k_t& operator=(eltwiseop_ref_k_t&& other) = delete;
+  eltwiseop_ref_k_t(eltwiseop_ref_k_t &&other) = delete;
+  eltwiseop_ref_k_t &operator=(eltwiseop_ref_k_t &&other) = delete;
   // Delete copy constructor and copy operator
-  eltwiseop_ref_k_t(const eltwiseop_ref_k_t& other) = delete;
-  eltwiseop_ref_k_t& operator=(const eltwiseop_ref_k_t& other) = delete;
+  eltwiseop_ref_k_t(const eltwiseop_ref_k_t &other) = delete;
+  eltwiseop_ref_k_t &operator=(const eltwiseop_ref_k_t &other) = delete;
 
- public:
+public:
   bool init() override { return true; }
 
-  bool execute(const std::vector<const void*>& rt_data) const override;
+  bool execute(const std::vector<const void *> &rt_data) const override;
 
- public:
-  const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
+public:
+  const std::shared_ptr<const kd_t> derived_kd() const {
+    return std::static_pointer_cast<const kd_t>(kd_);
+  }
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_KERNELS_ELTWISEOP_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_KERNELS_ELTWISEOP_HPP_

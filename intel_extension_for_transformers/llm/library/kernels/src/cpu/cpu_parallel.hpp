@@ -15,9 +15,9 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_CPU_PARALLEL_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_CPU_PARALLEL_HPP_
 
+#include "src/utils.hpp"
 #include <algorithm>
 #include <limits>
-#include "src/utils.hpp"
 
 namespace jd {
 struct CpuDevice {
@@ -31,9 +31,9 @@ struct CpuDevice {
   int ompthreads;
 };
 
-template <typename _T>
-struct GemmCacheAdpter {
-  void update(int m, int n, int k, int cachesize, int minN, int preferedN, float cacheratio = 0.8f) {
+template <typename _T> struct GemmCacheAdpter {
+  void update(int m, int n, int k, int cachesize, int minN, int preferedN,
+              float cacheratio = 0.8f) {
     (void)m;
     mKTotal = k;
     int constexpr EleSize = sizeof(_T);
@@ -46,7 +46,7 @@ struct GemmCacheAdpter {
     }
     int k_min = mElesize / preferedN;
     float c_acccess_ratio = static_cast<float>(k) / k_min;
-    float c_threshold = 1.5;  // merge C access by using small N
+    float c_threshold = 1.5; // merge C access by using small N
     if (c_acccess_ratio <= c_threshold) {
       mNMax = pad_to_le(n_start, minN);
       mKBatch = k;
@@ -67,7 +67,8 @@ struct GemmCacheAdpter {
 };
 
 struct Parallel2D {
-  void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize) const {
+  void getIndex(int threadIdx, int *row, int *col, int *rowsize,
+                int *colsize) const {
     if (threadIdx >= mValidThreads) {
       *rowsize = 0;
       *colsize = 0;
@@ -81,11 +82,15 @@ struct Parallel2D {
     *rowsize = remainsize(*row, mRows, mThdRow);
   }
 
-  void calc_valid_threads() { mValidThreads = mColThreads * std::ceil(static_cast<float>(mRows) / mThdRow); }
+  void calc_valid_threads() {
+    mValidThreads =
+        mColThreads * std::ceil(static_cast<float>(mRows) / mThdRow);
+  }
 
   void print() {
     printf("Thread Block:(%d,%d)\n", mThdRow, mThdCol);
-    printf("Thread in use:%d of %d, Nx%d\n", mValidThreads, mThreadsCount, mColThreads);
+    printf("Thread in use:%d of %d, Nx%d\n", mValidThreads, mThreadsCount,
+           mColThreads);
   }
   int mThdRow, mThdCol;
   int mColThreads;
@@ -110,15 +115,15 @@ struct Parallel2DRowMajor : Parallel2D {
     float colratio = ratio > colnum ? colnum : ceil(ratio);
     mThdCol = colratio * mincol;
     mColThreads = ceil(static_cast<float>(colnum) / colratio);
-    mThdRow = ceil(rownum / (static_cast<float>(ncores) / mColThreads)) * minrow;
+    mThdRow =
+        ceil(rownum / (static_cast<float>(ncores) / mColThreads)) * minrow;
     calc_valid_threads();
   }
 };
 
-template <typename _T>
-struct Parallel2DGemmV2 : Parallel2D {
+template <typename _T> struct Parallel2DGemmV2 : Parallel2D {
   void update(int row, int col, int minrow, int mincol, int ncores,
-              GemmCacheAdpter<_T>& _adapter) {  // NOLINT
+              GemmCacheAdpter<_T> &_adapter) { // NOLINT
     mRows = row;
     mCols = col;
     mMinRow = minrow;
@@ -152,7 +157,8 @@ struct Parallel2DGemmV2 : Parallel2D {
     int tmpnstep = mThdCol < mNStep ? mThdCol : mNStep;
     float threadratio = static_cast<float>(mValidThreads) / mThreadsCount;
     float tileratio = static_cast<float>(mThdCol) / pad_to(mThdCol, tmpnstep);
-    float density = static_cast<float>(tmpnstep) * mThdRow / (tmpnstep + mThdRow);
+    float density =
+        static_cast<float>(tmpnstep) * mThdRow / (tmpnstep + mThdRow);
     density /= tmpnstep;
     return threadratio * 4.f + density * tileratio * 0.2f;
   }
@@ -171,6 +177,6 @@ struct Parallel2DGemmV2 : Parallel2D {
   int mNStep;
   int mMinCol, mMinRow;
 };
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_SRC_CPU_CPU_PARALLEL_HPP_
+#endif // ENGINE_SPARSELIB_SRC_CPU_CPU_PARALLEL_HPP_

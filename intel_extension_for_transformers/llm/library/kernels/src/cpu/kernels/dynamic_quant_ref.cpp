@@ -18,22 +18,26 @@ namespace jd {
 
 using io = exposed_enum::dynamic_quant::io;
 
-void get_dynamic_quant_scale(float* mat, float* scale, int channel_num, int quantized_dim_elt_num) {
+void get_dynamic_quant_scale(float *mat, float *scale, int channel_num,
+                             int quantized_dim_elt_num) {
 #pragma omp parallel for
   for (int channel = 0; channel < channel_num; channel++) {
     float max = 0.f;
     for (int j = 0; j < quantized_dim_elt_num; j++)
-      max = max < abs(mat[channel * quantized_dim_elt_num + j]) ? abs(mat[channel * quantized_dim_elt_num + j]) : max;
+      max = max < abs(mat[channel * quantized_dim_elt_num + j])
+                ? abs(mat[channel * quantized_dim_elt_num + j])
+                : max;
     scale[channel] = max / 127.f;
   }
 }
 
-void s8_quant_mat(int8_t* dst_mat, const std::vector<float>& src_mat, float* scale, int channel_num,
-                  int quantized_dim_elt_num) {
+void s8_quant_mat(int8_t *dst_mat, const std::vector<float> &src_mat,
+                  float *scale, int channel_num, int quantized_dim_elt_num) {
 #pragma omp parallel for
   for (int channel = 0; channel < channel_num; channel++) {
     for (int j = 0; j < quantized_dim_elt_num; j++) {
-      int ans = nearbyint(src_mat[channel * quantized_dim_elt_num + j] / scale[channel]);
+      int ans = nearbyint(src_mat[channel * quantized_dim_elt_num + j] /
+                          scale[channel]);
       ans = ans > 127 ? 127 : ans;
       ans = ans < -128 ? -128 : ans;
       dst_mat[channel * quantized_dim_elt_num + j] = ans;
@@ -41,24 +45,31 @@ void s8_quant_mat(int8_t* dst_mat, const std::vector<float>& src_mat, float* sca
   }
 }
 
-bool dynamic_quant_ref_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool dynamic_quant_ref_k_t::execute(
+    const std::vector<const void *> &rt_data) const {
   auto op_desc = derived_kd()->get_operator_desc();
   auto ts_desc = op_desc.tensor_descs();
   auto src_desc = ts_desc[0];
   int quantized_dim_elt_num = src_desc.shape().back();
   int channel_num =
-      std::accumulate(src_desc.shape().begin(), src_desc.shape().end() - 1, size_t{1}, std::multiplies<size_t>());
+      std::accumulate(src_desc.shape().begin(), src_desc.shape().end() - 1,
+                      size_t{1}, std::multiplies<size_t>());
   std::vector<float> fp32_src(src_desc.size(), 0);
   if (src_desc.dtype() == data_type::fp32) {
     cast_to_float_array<float>(rt_data[io::SRC], &fp32_src, src_desc.size());
   } else {
-    cast_to_float_array<bfloat16_t>(rt_data[io::SRC], &fp32_src, src_desc.size());
+    cast_to_float_array<bfloat16_t>(rt_data[io::SRC], &fp32_src,
+                                    src_desc.size());
   }
-  auto mat_dst = reinterpret_cast<int8_t*>(const_cast<void*>(rt_data[io::MAT_DST]));
-  auto scale_dst = reinterpret_cast<float*>(const_cast<void*>(rt_data[io::SCALE_DST]));
-  get_dynamic_quant_scale(fp32_src.data(), scale_dst, channel_num, quantized_dim_elt_num);
-  s8_quant_mat(mat_dst, fp32_src, scale_dst, channel_num, quantized_dim_elt_num);
+  auto mat_dst =
+      reinterpret_cast<int8_t *>(const_cast<void *>(rt_data[io::MAT_DST]));
+  auto scale_dst =
+      reinterpret_cast<float *>(const_cast<void *>(rt_data[io::SCALE_DST]));
+  get_dynamic_quant_scale(fp32_src.data(), scale_dst, channel_num,
+                          quantized_dim_elt_num);
+  s8_quant_mat(mat_dst, fp32_src, scale_dst, channel_num,
+               quantized_dim_elt_num);
   return true;
 }
 
-}  // namespace jd
+} // namespace jd

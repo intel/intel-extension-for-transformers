@@ -17,12 +17,15 @@ namespace jd {
 #define OFFSET(field) offsetof(ssd::matmul_fp8_data_t, field)
 
 void jit_gemm_avx512f_8bit_t::generate() {
-  inLocalLabel();  // use local label for multiple instance
+  inLocalLabel(); // use local label for multiple instance
   {
 #ifdef _WIN32
-    regs_pool rp(this, 1, {11, ARegCount + BRegCount + CRegCount + TmpRegCount, 0}, 16 * 10);
+    regs_pool rp(this, 1,
+                 {11, ARegCount + BRegCount + CRegCount + TmpRegCount, 0},
+                 16 * 10);
 #else
-    regs_pool rp(this, 1, {11, ARegCount + BRegCount + CRegCount + TmpRegCount, 0}, 0);
+    regs_pool rp(this, 1,
+                 {11, ARegCount + BRegCount + CRegCount + TmpRegCount, 0}, 0);
 #endif
     auto parambase = rp.p[0];
 
@@ -37,7 +40,7 @@ void jit_gemm_avx512f_8bit_t::generate() {
     auto reg_tmp1 = rp.reg<Reg64>();
     auto reg_tmp2 = rp.reg<Reg64>();
     auto reg_nsize = rp.reg<Reg64>();
-    auto& reg_ret = rax;
+    auto &reg_ret = rax;
 
     injector_.escape_regs(reg_type::reg64, reg_tmp.getIdx());
     injector_.escape_regs(reg_type::reg64, reg_tmp1.getIdx());
@@ -82,22 +85,24 @@ void jit_gemm_avx512f_8bit_t::generate() {
     cmp(reg_nsize, NTile);
     jb(".lastloop", T_NEAR);
     L(".kloop");
-    generate_fma(MTile, NRegs, KTile, reg_matAptr, reg_matBptr, reg_astep, reg_bstep, reg_tmp, reg_tmp1);
+    generate_fma(MTile, NRegs, KTile, reg_matAptr, reg_matBptr, reg_astep,
+                 reg_bstep, reg_tmp, reg_tmp1);
     add(reg_matAptr, KTile * 2);
     add(reg_matBptr, KTile * 16);
     add(reg_iterk, KTile);
-    cmp(reg_iterk, reg_ksize);  // k iteration variable
+    cmp(reg_iterk, reg_ksize); // k iteration variable
     jb(".kloop");
     alphabeta_process(MTile, NRegs, parambase, reg_tmp, reg_tmp1, reg_tmp2);
     jmp(".retl", T_NEAR);
 
     L(".lastloop");
     L(".k1loop");
-    generate_fma(MTile, 1, KTile, reg_matAptr, reg_matBptr, reg_astep, reg_bstep, reg_tmp, reg_tmp1);
+    generate_fma(MTile, 1, KTile, reg_matAptr, reg_matBptr, reg_astep,
+                 reg_bstep, reg_tmp, reg_tmp1);
     add(reg_matAptr, KTile * 2);
     add(reg_matBptr, KTile * 16);
     add(reg_iterk, KTile);
-    cmp(reg_iterk, reg_ksize);  // k iteration variable
+    cmp(reg_iterk, reg_ksize); // k iteration variable
     jb(".k1loop");
     alphabeta_process(MTile, 1, parambase, reg_tmp, reg_tmp1, reg_tmp2);
 
@@ -105,17 +110,19 @@ void jit_gemm_avx512f_8bit_t::generate() {
     vreg_pop(rsp);
     mov(reg_ret, 0);
   }
-  outLocalLabel();  // end of local label
+  outLocalLabel(); // end of local label
   injector_.prepare_table();
 }
 
-void jit_gemm_avx512f_8bit_t::load_int8_fp32(const Xbyak::Zmm& tar, const Xbyak::Address& addr) {
+void jit_gemm_avx512f_8bit_t::load_int8_fp32(const Xbyak::Zmm &tar,
+                                             const Xbyak::Address &addr) {
   vpmovsxbd(tar, addr);
   vcvtdq2ps(tar | T_rn_sae, tar);
 }
 
-void jit_gemm_avx512f_8bit_t::load_fp8_fp32(const Xbyak::Zmm& tar, const Xbyak::Address& addr) {
-  auto& exp = zmms_tmp_[0];
+void jit_gemm_avx512f_8bit_t::load_fp8_fp32(const Xbyak::Zmm &tar,
+                                            const Xbyak::Address &addr) {
+  auto &exp = zmms_tmp_[0];
   vpmovsxbd(tar, addr);
   vpslld(exp, tar, 25);
   if (param_.weight_type == data_type::f8_e4m3) {
@@ -128,10 +135,13 @@ void jit_gemm_avx512f_8bit_t::load_fp8_fp32(const Xbyak::Zmm& tar, const Xbyak::
   vorps(tar, exp);
 }
 
-void jit_gemm_avx512f_8bit_t::generate_fma(int MTile, int _NRegs, int KTile, const Xbyak::Reg64& aptr,
-                                           const Xbyak::Reg64& bptr, const Xbyak::Reg64& reg_astep,
-                                           const Xbyak::Reg64& reg_bstep, const Xbyak::Reg64& reg_tmp,
-                                           const Xbyak::Reg64& reg_tmp1) {
+void jit_gemm_avx512f_8bit_t::generate_fma(int MTile, int _NRegs, int KTile,
+                                           const Xbyak::Reg64 &aptr,
+                                           const Xbyak::Reg64 &bptr,
+                                           const Xbyak::Reg64 &reg_astep,
+                                           const Xbyak::Reg64 &reg_bstep,
+                                           const Xbyak::Reg64 &reg_tmp,
+                                           const Xbyak::Reg64 &reg_tmp1) {
   int kk = 0;
   for (; kk < KTile; kk++) {
     int mm = 0;
@@ -140,7 +150,8 @@ void jit_gemm_avx512f_8bit_t::generate_fma(int MTile, int _NRegs, int KTile, con
     for (int nn = 0; nn < _NRegs; nn++) {
       if (param_.weight_type == data_type::s8) {
         load_int8_fp32(zmms_b_[nn], ptr[reg_tmp1 + kk * 16]);
-      } else if (param_.weight_type == data_type::f8_e4m3 || param_.weight_type == data_type::f8_e5m2) {
+      } else if (param_.weight_type == data_type::f8_e4m3 ||
+                 param_.weight_type == data_type::f8_e5m2) {
         load_fp8_fp32(zmms_b_[nn], ptr[reg_tmp1 + kk * 16]);
       }
       add(reg_tmp1, reg_bstep);
@@ -154,9 +165,11 @@ void jit_gemm_avx512f_8bit_t::generate_fma(int MTile, int _NRegs, int KTile, con
     }
   }
 }
-void jit_gemm_avx512f_8bit_t::alphabeta_process(int MTile, int _NRegs, const Xbyak::Reg64& parambase,
-                                                const Xbyak::Reg64& reg_tmp, const Xbyak::Reg64& reg_tmp1,
-                                                const Xbyak::Reg64& reg_tmp2) {
+void jit_gemm_avx512f_8bit_t::alphabeta_process(int MTile, int _NRegs,
+                                                const Xbyak::Reg64 &parambase,
+                                                const Xbyak::Reg64 &reg_tmp,
+                                                const Xbyak::Reg64 &reg_tmp1,
+                                                const Xbyak::Reg64 &reg_tmp2) {
   inLocalLabel();
   // load scale
   if (param_.has_scale0) {
@@ -165,7 +178,7 @@ void jit_gemm_avx512f_8bit_t::alphabeta_process(int MTile, int _NRegs, const Xby
       vmovups(zmms_b_[nn], ptr[reg_tmp + nn * 64]);
     }
   }
-  cmp(dword[parambase + OFFSET(alpha)], 0x3F800000);  // 1.f
+  cmp(dword[parambase + OFFSET(alpha)], 0x3F800000); // 1.f
   je(".afteralpha", T_NEAR);
   vbroadcastss(zmms_a_[0], zword[parambase + OFFSET(alpha)]);
   if (param_.has_scale0) {
@@ -242,4 +255,4 @@ void jit_gemm_avx512f_8bit_t::alphabeta_process(int MTile, int _NRegs, const Xby
   outLocalLabel();
 }
 
-}  // namespace jd
+} // namespace jd

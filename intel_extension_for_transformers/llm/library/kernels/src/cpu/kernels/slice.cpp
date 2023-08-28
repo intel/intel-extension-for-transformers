@@ -16,16 +16,16 @@
 
 #include <functional>
 
-#define KERNEL_INIT_CHECK(f)                                         \
-  if (!(f)) {                                                        \
-    SPARSE_LOG(ERROR) << "MHA dense kernel requires `" << #f << "`"; \
-    return false;                                                    \
+#define KERNEL_INIT_CHECK(f)                                                   \
+  if (!(f)) {                                                                  \
+    SPARSE_LOG(ERROR) << "MHA dense kernel requires `" << #f << "`";           \
+    return false;                                                              \
   }
 
 namespace jd {
 
 bool slice_kd_t::init() {
-  const auto& attrs = op_desc_.attrs();
+  const auto &attrs = op_desc_.attrs();
   KERNEL_INIT_CHECK(attrs.find("step") != attrs.end());
   KERNEL_INIT_CHECK(attrs.find("begin") != attrs.end());
   KERNEL_INIT_CHECK(attrs.find("axis") != attrs.end());
@@ -39,26 +39,24 @@ bool slice_kd_t::init() {
   return true;
 }
 
-slice_k_t::slice_k_t(const std::shared_ptr<const kd_t>& kd)
-    : kernel_t(kd),
-      ts_descs(derived_kd()->get_operator_desc().tensor_descs()),
-      src_shape(ts_descs[0].shape()),
-      dst_shape(ts_descs[1].shape()),
-      axis(derived_kd()->axis()),
-      begin(derived_kd()->begin()),
-      step(derived_kd()->step()),
-      dt_size(get_data_size(ts_descs[0].dtype())),
-      outer_size(std::accumulate(src_shape.cbegin(), src_shape.cbegin() + axis, 1, std::multiplies<int>())),
-      src_axis_size(src_shape[axis]),
-      dst_axis_size(dst_shape[axis]),
-      inner_size(std::accumulate(src_shape.cbegin() + axis + 1, src_shape.cend(), 1, std::multiplies<int>())) {
+slice_k_t::slice_k_t(const std::shared_ptr<const kd_t> &kd)
+    : kernel_t(kd), ts_descs(derived_kd()->get_operator_desc().tensor_descs()),
+      src_shape(ts_descs[0].shape()), dst_shape(ts_descs[1].shape()),
+      axis(derived_kd()->axis()), begin(derived_kd()->begin()),
+      step(derived_kd()->step()), dt_size(get_data_size(ts_descs[0].dtype())),
+      outer_size(std::accumulate(src_shape.cbegin(), src_shape.cbegin() + axis,
+                                 1, std::multiplies<int>())),
+      src_axis_size(src_shape[axis]), dst_axis_size(dst_shape[axis]),
+      inner_size(std::accumulate(src_shape.cbegin() + axis + 1,
+                                 src_shape.cend(), 1, std::multiplies<int>())) {
   const auto src_axis_size = src_shape[axis];
   SPARSE_LOG_IF(FATAL, begin + (dst_axis_size - 1) * step + 1 > src_axis_size)
-      << "slice out of range. Please check begin, step and length(the axis of dst tensor)";
+      << "slice out of range. Please check begin, step and length(the axis of "
+         "dst tensor)";
 }
 
 bool slice_k_t::init() {
-  const auto copy_size = (step == 1)        ? dst_axis_size * inner_size * dt_size
+  const auto copy_size = (step == 1) ? dst_axis_size * inner_size * dt_size
                          : (inner_size > 1) ? inner_size * dt_size
                                             : dst_axis_size * dt_size * step;
 
@@ -70,13 +68,14 @@ bool slice_k_t::init() {
       /* .copy_size = */ copy_size,
       /* .dt_size = */ dt_size,
   }));
-  if (!jit_kern_->create_kernel()) return false;
+  if (!jit_kern_->create_kernel())
+    return false;
   return true;
 }
 
-bool slice_k_t::execute(const std::vector<const void*>& rt_data) const {
-  const auto src = reinterpret_cast<const char*>(rt_data[0]);
-  const auto dst = reinterpret_cast<char*>(const_cast<void*>(rt_data[1]));
+bool slice_k_t::execute(const std::vector<const void *> &rt_data) const {
+  const auto src = reinterpret_cast<const char *>(rt_data[0]);
+  const auto dst = reinterpret_cast<char *>(const_cast<void *>(rt_data[1]));
   if (inner_size > 1 && step > 1) {
 #pragma omp parallel for collapse(2)
     for (int i = 0; i < outer_size; i++)
@@ -100,4 +99,4 @@ bool slice_k_t::execute(const std::vector<const void*>& rt_data) const {
   return true;
 }
 
-}  // namespace jd
+} // namespace jd

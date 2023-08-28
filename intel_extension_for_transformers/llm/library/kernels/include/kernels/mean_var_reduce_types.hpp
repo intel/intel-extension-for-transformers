@@ -15,8 +15,8 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_MEAN_VAR_REDUCE_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_MEAN_VAR_REDUCE_TYPES_HPP_
 
-#include <vector>
 #include "param_types.hpp"
+#include <vector>
 
 namespace jd {
 namespace ssd {
@@ -30,12 +30,12 @@ struct mean_var_reduce_param_t {
 };
 
 struct mean_var_reduce_data_t {
-  float* mean_in;
-  float* var_in;
-  float* mean_out;
-  float* var_out;
+  float *mean_in;
+  float *var_in;
+  float *mean_out;
+  float *var_out;
 };
 
-}  // namespace ssd
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_
+} // namespace ssd
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_

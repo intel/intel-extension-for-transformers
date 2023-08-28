@@ -16,11 +16,13 @@
 #include "src/gpu/kernels/opencl/common.hpp"
 
 namespace jd {
-gpu_ocl_stream_t::gpu_ocl_stream_t(const engine_t* engine) : stream_t(engine) {
-  const gpu_ocl_engine_t* gpu_ocl_engine = dynamic_cast<const gpu_ocl_engine_t*>(stream_t::get_engine());
+gpu_ocl_stream_t::gpu_ocl_stream_t(const engine_t *engine) : stream_t(engine) {
+  const gpu_ocl_engine_t *gpu_ocl_engine =
+      dynamic_cast<const gpu_ocl_engine_t *>(stream_t::get_engine());
   cl_int err;
-  queue_ =
-      clCreateCommandQueueWithProperties(gpu_ocl_engine->get_context(), gpu_ocl_engine->get_device(), nullptr, &err);
+  queue_ = clCreateCommandQueueWithProperties(gpu_ocl_engine->get_context(),
+                                              gpu_ocl_engine->get_device(),
+                                              nullptr, &err);
 
   checkError(err, __LINE__);
 }
@@ -31,4 +33,4 @@ bool gpu_ocl_stream_t::wait() {
   clFinish(queue_);
   return true;
 }
-}  // namespace jd
+} // namespace jd

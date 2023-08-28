@@ -23,7 +23,7 @@ int get_verbose() {
   if (!verbose.initialized()) {
     // Assumes that all threads see the same environment
     int sparselib_verbose_level = 0;
-    const char* val = std::getenv("SPARSE_LIB_VERBOSE");
+    const char *val = std::getenv("SPARSE_LIB_VERBOSE");
     if (val != nullptr) {
       if (strcmp(val, "1") == 0) {
         sparselib_verbose_level = 1;
@@ -33,18 +33,20 @@ int get_verbose() {
   }
 
   if (verbose.get() > 0) {
-    printf("sparselib_verbose,info,cpu,runtime:CPU,nthr:%d\n", omp_get_max_threads());
+    printf("sparselib_verbose,info,cpu,runtime:CPU,nthr:%d\n",
+           omp_get_max_threads());
   }
   return verbose.get();
 }
 
 bool get_verbose_timestamp() {
-  if (verbose.get() == 0) return false;
+  if (verbose.get() == 0)
+    return false;
 
   if (!verbose_timestamp.initialized()) {
     // Assumes that all threads see the same environment
     bool sparselib_verbose_timestamp = false;
-    const char* val = std::getenv("VERBOSE_TIMESTAMP");
+    const char *val = std::getenv("VERBOSE_TIMESTAMP");
     if (val != nullptr) {
       if (strcmp(val, "1") == 0) {
         sparselib_verbose_timestamp = true;
@@ -56,18 +58,20 @@ bool get_verbose_timestamp() {
 }
 
 double get_msec() {
-  return std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now())
+  return std::chrono::time_point_cast<std::chrono::microseconds>(
+             std::chrono::high_resolution_clock::now())
              .time_since_epoch()
              .count() /
          1e3;
 }
 
-#define DEFINE_DEFAULT_INIT_INFO(primitive)                            \
-  static std::string init_info_##primitive(std::vector<dim_t> shape) { \
-    std::stringstream ss;                                              \
-    ss << "cpu," << #primitive << ",shape";                            \
-    for (auto& dim : shape) ss << "_" << std::to_string(dim);          \
-    return ss.str();                                                   \
+#define DEFINE_DEFAULT_INIT_INFO(primitive)                                    \
+  static std::string init_info_##primitive(std::vector<dim_t> shape) {         \
+    std::stringstream ss;                                                      \
+    ss << "cpu," << #primitive << ",shape";                                    \
+    for (auto &dim : shape)                                                    \
+      ss << "_" << std::to_string(dim);                                        \
+    return ss.str();                                                           \
   }
 DEFINE_DEFAULT_INIT_INFO(attention)
 DEFINE_DEFAULT_INIT_INFO(layernorm_ba)
@@ -87,12 +91,13 @@ DEFINE_DEFAULT_INIT_INFO(groupnorm)
 #undef DEFINE_DEFAULT_INIT_INFO
 
 void kd_info_t::init(kernel_kind kind, std::vector<dim_t> shape) {
-  if (is_initialized_) return;
+  if (is_initialized_)
+    return;
 
   std::call_once(initialization_flag_, [&] {
-#define CASE(kind)                  \
-  case kernel_kind::kind:           \
-    str_ = init_info_##kind(shape); \
+#define CASE(kind)                                                             \
+  case kernel_kind::kind:                                                      \
+    str_ = init_info_##kind(shape);                                            \
     break
     switch (kind) {
       CASE(attention);
@@ -110,10 +115,11 @@ void kd_info_t::init(kernel_kind kind, std::vector<dim_t> shape) {
       CASE(dynamic_quant);
       CASE(matmul);
       CASE(groupnorm);
-      case kernel_kind::undef:
-        SPARSE_LOG(FATAL) << "unknown primitive kind";
-        break;
-        // deliberately avoid default case so that the compiler gives waring of missing cases
+    case kernel_kind::undef:
+      SPARSE_LOG(FATAL) << "unknown primitive kind";
+      break;
+      // deliberately avoid default case so that the compiler gives waring of
+      // missing cases
     }
 #undef CASE
 
@@ -121,4 +127,4 @@ void kd_info_t::init(kernel_kind kind, std::vector<dim_t> shape) {
   });
 }
 
-}  // namespace jd
+} // namespace jd

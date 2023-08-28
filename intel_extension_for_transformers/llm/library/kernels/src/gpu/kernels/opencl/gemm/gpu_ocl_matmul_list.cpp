@@ -12,26 +12,30 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#include "gpu_ocl_matmul_ref.hpp"
+#include "impl_list_item.hpp"
+#include "param_types.hpp"
+#include "src/gpu/engine/gpu_ocl_engine.hpp"
 #include <map>
 #include <tuple>
-#include "src/gpu/engine/gpu_ocl_engine.hpp"
-#include "param_types.hpp"
-#include "impl_list_item.hpp"
-#include "gpu_ocl_matmul_ref.hpp"
 
 namespace jd {
-static const std::map<kernel_prop, std::vector<impl_list_item_t>> matmul_impl_list_map = {
-    {kernel_prop::forward_inference, {GPU_INSTANCE(gpu_ocl_matmul_ref_k_t), NULL_INSTANCE()}},
+static const std::map<kernel_prop, std::vector<impl_list_item_t>>
+    matmul_impl_list_map = {
+        {kernel_prop::forward_inference,
+         {GPU_INSTANCE(gpu_ocl_matmul_ref_k_t), NULL_INSTANCE()}},
 };
 
-const std::vector<impl_list_item_t>* get_gpu_matmul_impl_list(const operator_desc& op_desc) {
+const std::vector<impl_list_item_t> *
+get_gpu_matmul_impl_list(const operator_desc &op_desc) {
   const auto impl_list_it = matmul_impl_list_map.find(op_desc.kernel_prop());
 
-  // return (impl_list_it != matmul_impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine_t::empty_list;
+  // return (impl_list_it != matmul_impl_list_map.end()) ?
+  // &(impl_list_it->second) : &cpu_engine_t::empty_list;
   if (impl_list_it != matmul_impl_list_map.end()) {
     return &(impl_list_it->second);
   } else {
     return &gpu_ocl_engine_t::empty_list;
   }
 }
-}  // namespace jd
+} // namespace jd

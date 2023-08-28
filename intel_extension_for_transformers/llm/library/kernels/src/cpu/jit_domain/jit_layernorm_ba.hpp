@@ -15,15 +15,15 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_
 
-#include <utility>
-#include <vector>
+#include "jit_binary_injector.hpp"
+#include "jit_eltwise_injector.hpp"
+#include "jit_generator.hpp"
+#include "kernels/layernorm_ba_types.hpp"
+#include "src/utils.hpp"
 #include <map>
 #include <set>
-#include "jit_generator.hpp"
-#include "src/utils.hpp"
-#include "kernels/layernorm_ba_types.hpp"
-#include "jit_eltwise_injector.hpp"
-#include "jit_binary_injector.hpp"
+#include <utility>
+#include <vector>
 
 #define LNBA_GET_OFF(field) offsetof(ssd::layernorm_ba_data_t, field)
 
@@ -33,19 +33,21 @@ class jit_layernorm_ba_t : public jit_generator {
   using Reg64 = Xbyak::Reg64;
   using Opmask = Xbyak::Opmask;
 
- public:
-  explicit jit_layernorm_ba_t(const ssd::layernorm_ba_param_t& param) : jit_generator(), param_(param) {
+public:
+  explicit jit_layernorm_ba_t(const ssd::layernorm_ba_param_t &param)
+      : jit_generator(), param_(param) {
     eltwise_injector.init_tb_allocate_set(param_.postop_attrs);
     // xmm max num=16
     unroll_degree = 16;
-    while (param_.row_num % unroll_degree != 0) unroll_degree -= 1;
+    while (param_.row_num % unroll_degree != 0)
+      unroll_degree -= 1;
     assign_regs();
     eltwise_injector.eltwise_injector_init(this, param_.postop_attrs);
     binary_injector.binary_injector_init(this);
   }
   virtual ~jit_layernorm_ba_t() {}
 
- private:
+private:
   void generate() override;
   void normal_gen();
   void normal_reset_unroll_reg_idxs(int degree);
@@ -53,7 +55,8 @@ class jit_layernorm_ba_t : public jit_generator {
   bool normal_check_unroll_add_done();
   void normal_binary_add(int degree, Zmm dst);
   void direct_handel_var(int degree, Reg64 reg_var);
-  void direct_handel_norm(int degree, Reg64 src_addr, Reg64 dst_addr, Reg64 reg_mean, bool tail = false);
+  void direct_handel_norm(int degree, Reg64 src_addr, Reg64 dst_addr,
+                          Reg64 reg_mean, bool tail = false);
   void assign_regs();
   void escape_regs(int degree);
   void normal_gen_load_offset();
@@ -71,7 +74,8 @@ class jit_layernorm_ba_t : public jit_generator {
     mov(dst_addr, ptr[reg_param + LNBA_GET_OFF(dst)]);
     mov(reg_alpha, ptr[reg_param + LNBA_GET_OFF(alpha)]);
     mov(reg_beta, ptr[reg_param + LNBA_GET_OFF(beta)]);
-    if (param_.split_output) mov(dst2_addr, ptr[reg_param + LNBA_GET_OFF(dst2)]);
+    if (param_.split_output)
+      mov(dst2_addr, ptr[reg_param + LNBA_GET_OFF(dst2)]);
     // reg alisa
     Reg64 reg_mean = reg_src_offset;
     Reg64 reg_var = reg_dst_offset;
@@ -79,7 +83,7 @@ class jit_layernorm_ba_t : public jit_generator {
     mov(reg_var, ptr[reg_param + LNBA_GET_OFF(var)]);
   }
 
- private:
+private:
   ssd::layernorm_ba_param_t param_;
   jit_eltwise_injector eltwise_injector;
   jit_binary_injector binary_injector;
@@ -120,5 +124,5 @@ class jit_layernorm_ba_t : public jit_generator {
   Xbyak::Label batch_loop_start;
   Xbyak::Label tail_loop_start;
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_LAYERNORM_BA_HPP_

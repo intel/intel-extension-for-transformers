@@ -15,9 +15,9 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_F8_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_F8_HPP_
 
-#include <cmath>
-#include "param_types.hpp"
 #include "common.h"
+#include "param_types.hpp"
+#include <cmath>
 
 namespace jd {
 struct SPARSE_API_ float8_e4m3_t {
@@ -25,7 +25,7 @@ struct SPARSE_API_ float8_e4m3_t {
   float8_e4m3_t();
   explicit float8_e4m3_t(int32_t val);
   explicit float8_e4m3_t(float val);
-  float8_e4m3_t& operator=(float val);
+  float8_e4m3_t &operator=(float val);
   operator float() const;
 };
 
@@ -35,12 +35,12 @@ struct SPARSE_API_ float8_e5m2_t {
   float8_e5m2_t();
   explicit float8_e5m2_t(int32_t val);
   explicit float8_e5m2_t(float val);
-  float8_e5m2_t& operator=(float val);
+  float8_e5m2_t &operator=(float val);
   operator float() const;
 };
 
 static_assert(sizeof(float8_e4m3_t) == 1, "float8_e4m3_t must be 1 bytes");
 static_assert(sizeof(float8_e5m2_t) == 1, "float8_e5m2_t must be 1 bytes");
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_F8_HPP_
+#endif // ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_F8_HPP_

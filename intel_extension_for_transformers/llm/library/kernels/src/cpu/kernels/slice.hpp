@@ -18,30 +18,33 @@
 #include <memory>
 #include <vector>
 
-#include "src/cpu/jit_domain/jit_slice.hpp"
 #include "kernel.hpp"
 #include "kernel_desc.hpp"
 #include "operator_desc.hpp"
+#include "src/cpu/jit_domain/jit_slice.hpp"
 
 namespace jd {
 class slice_k_t;
 
 class slice_kd_t : public kernel_desc_t {
- public:
-  explicit slice_kd_t(const jd::operator_desc& op_desc) : kernel_desc_t(kernel_kind::slice), op_desc_(op_desc) {}
+public:
+  explicit slice_kd_t(const jd::operator_desc &op_desc)
+      : kernel_desc_t(kernel_kind::slice), op_desc_(op_desc) {}
   virtual ~slice_kd_t() {}
 
   bool init() override;
   DECLARE_COMMON_PD_T(slice_k_t, slice_kd_t);
 
-  inline std::vector<dim_t> shape() const override { return op_desc_.tensor_descs()[1].shape(); }
-  const operator_desc& get_operator_desc() const override { return op_desc_; }
+  inline std::vector<dim_t> shape() const override {
+    return op_desc_.tensor_descs()[1].shape();
+  }
+  const operator_desc &get_operator_desc() const override { return op_desc_; }
 
   int axis() const { return axis_; }
   int begin() const { return begin_; }
   int step() const { return step_; }
 
- private:
+private:
   jd::operator_desc op_desc_;
   int axis_;
   int begin_;
@@ -49,27 +52,29 @@ class slice_kd_t : public kernel_desc_t {
 };
 
 class slice_k_t : public kernel_t {
- public:
+public:
   using kd_t = slice_kd_t;
-  explicit slice_k_t(const std::shared_ptr<const kd_t>& kd);
+  explicit slice_k_t(const std::shared_ptr<const kd_t> &kd);
   virtual ~slice_k_t() {}
   // Delete move constructor and move operator
-  slice_k_t(slice_k_t&&) = delete;
-  slice_k_t& operator=(slice_k_t&&) = delete;
+  slice_k_t(slice_k_t &&) = delete;
+  slice_k_t &operator=(slice_k_t &&) = delete;
   // Delete copy constructor and copy operator
-  slice_k_t(const slice_k_t&) = delete;
-  slice_k_t& operator=(const slice_k_t&) = delete;
+  slice_k_t(const slice_k_t &) = delete;
+  slice_k_t &operator=(const slice_k_t &) = delete;
 
   bool init() override;
-  bool execute(const std::vector<const void*>& rt_data) const override;
+  bool execute(const std::vector<const void *> &rt_data) const override;
 
-  const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
+  const std::shared_ptr<const kd_t> derived_kd() const {
+    return std::static_pointer_cast<const kd_t>(kd_);
+  }
 
- private:
+private:
   std::unique_ptr<jit_slice_t> jit_kern_ = nullptr;
   const std::vector<tensor_desc> ts_descs;
-  const std::vector<dim_t>& src_shape;
-  const std::vector<dim_t>& dst_shape;
+  const std::vector<dim_t> &src_shape;
+  const std::vector<dim_t> &dst_shape;
 
   const int axis;
   const int begin;
@@ -81,5 +86,5 @@ class slice_k_t : public kernel_t {
   const int inner_size;
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_KERNELS_SLICE_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_KERNELS_SLICE_HPP_

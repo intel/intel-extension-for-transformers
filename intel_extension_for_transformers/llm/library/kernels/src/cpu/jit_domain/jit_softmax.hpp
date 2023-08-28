@@ -15,40 +15,43 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SOFTMAX_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SOTFMAX_HPP_
 
-#include <utility>
-#include <vector>
+#include "jit_eltwise_injector.hpp"
+#include "jit_generator.hpp"
+#include "kernels/softmax_types.hpp"
+#include "src/cpu/cpu_isa.hpp"
+#include "src/utils.hpp"
 #include <map>
 #include <set>
-#include "src/cpu/cpu_isa.hpp"
-#include "jit_generator.hpp"
-#include "src/utils.hpp"
-#include "kernels/softmax_types.hpp"
-#include "jit_eltwise_injector.hpp"
+#include <utility>
+#include <vector>
 
 #define CUSTSM_GET_OFF(field) offsetof(ssd::softmax_data_t, field)
 
 namespace jd {
 class jit_softmax_t : public jit_generator {
- public:
-  explicit jit_softmax_t(const ssd::softmax_param_t& param) : jit_generator(), param_(param) {
+public:
+  explicit jit_softmax_t(const ssd::softmax_param_t &param)
+      : jit_generator(), param_(param) {
     assign_regs();
     eltwise_injector.eltwise_injector_init(this, param_.postop_attrs);
     if (param_.sepc_type == ssd::spec_softmax_type::lut)
-      get_lut_exp_injector.eltwise_injector_init(this, param_.get_lut_exp_attrs);
+      get_lut_exp_injector.eltwise_injector_init(this,
+                                                 param_.get_lut_exp_attrs);
   }
   virtual ~jit_softmax_t() {}
 
- private:
+private:
   void generate() override;
   void assign_regs();
   void prepare_mask();
   void get_unroll();
   void lut_softmax_kernel_gen();
   void lut_int8_cvt_int16(Zmm dst, Reg64 src);
-  void lut_store_data(int simd_idx, Reg64 dst, int offset = 0, bool mask = false);
+  void lut_store_data(int simd_idx, Reg64 dst, int offset = 0,
+                      bool mask = false);
   void lut_handle_exp(bool tail = false);
 
- private:
+private:
   ssd::softmax_param_t param_;
   jit_eltwise_injector eltwise_injector;
   jit_eltwise_injector get_lut_exp_injector;
@@ -66,8 +69,8 @@ class jit_softmax_t : public jit_generator {
   Reg64 dst_addr;
   Reg64 dst_addr_volatile;
   Reg64 vec_num;
-  Reg64 vec_offset;  // load/sotre offset
-  Reg64 reg_tmp;     // store max/sum
+  Reg64 vec_offset; // load/sotre offset
+  Reg64 reg_tmp;    // store max/sum
   Opmask bit16_mask;
   Opmask bit32_mask;
   Zmm zmm_vec;
@@ -78,7 +81,7 @@ class jit_softmax_t : public jit_generator {
   Zmm zmm_one_fp32;
   Ymm ymm_exp_neg_max;
   Xmm xmm_exp_neg_max;
-  Zmm zmm_denominator;  // broadcast sum to this zmm reg and then mul e^-M.
+  Zmm zmm_denominator; // broadcast sum to this zmm reg and then mul e^-M.
 
   Xbyak::Label process_vec_loop;
   Xbyak::Label max_reduction_loop;
@@ -87,6 +90,6 @@ class jit_softmax_t : public jit_generator {
   Xbyak::Label sum_reduction_end;
   Xbyak::Label softmax_loop;
   Xbyak::Label softmax_end;
-};  // namespace jd
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SOFTMAX_HPP_
+}; // namespace jd
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SOFTMAX_HPP_

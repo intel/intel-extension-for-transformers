@@ -32,43 +32,50 @@ class gather_k_t;
 class gather_kd_t : public kernel_desc_t {
   using io = exposed_enum::gather::io;
 
- public:
-  explicit gather_kd_t(const operator_desc& op_desc) : kernel_desc_t(kernel_kind::gather), op_desc_(op_desc) {}
+public:
+  explicit gather_kd_t(const operator_desc &op_desc)
+      : kernel_desc_t(kernel_kind::gather), op_desc_(op_desc) {}
 
   virtual ~gather_kd_t() {}
 
- public:
+public:
   bool init() override;
   DECLARE_COMMON_PD_T(gather_k_t, gather_kd_t);
 
- public:
-  inline std::vector<dim_t> shape() const override { return op_desc_.tensor_descs()[io::DST].shape(); }
-  const jd::operator_desc& get_operator_desc() const override { return op_desc_; }
+public:
+  inline std::vector<dim_t> shape() const override {
+    return op_desc_.tensor_descs()[io::DST].shape();
+  }
+  const jd::operator_desc &get_operator_desc() const override {
+    return op_desc_;
+  }
 
- private:
+private:
   jd::operator_desc op_desc_;
 };
 
 class gather_k_t : public kernel_t {
   using io = exposed_enum::gather::io;
 
- public:
+public:
   using kd_t = gather_kd_t;
-  explicit gather_k_t(const std::shared_ptr<const kd_t>& kd);
+  explicit gather_k_t(const std::shared_ptr<const kd_t> &kd);
   virtual ~gather_k_t() {}
   // Delete move constructor and move operator
-  gather_k_t(gather_k_t&&) = delete;
-  gather_k_t& operator=(gather_k_t&&) = delete;
+  gather_k_t(gather_k_t &&) = delete;
+  gather_k_t &operator=(gather_k_t &&) = delete;
   // Delete copy constructor and copy operator
-  gather_k_t(const gather_k_t&) = delete;
-  gather_k_t& operator=(const gather_k_t&) = delete;
+  gather_k_t(const gather_k_t &) = delete;
+  gather_k_t &operator=(const gather_k_t &) = delete;
 
   bool init() override;
-  bool execute(const std::vector<const void*>& rt_data) const override;
+  bool execute(const std::vector<const void *> &rt_data) const override;
 
-  const std::shared_ptr<const kd_t> derived_kd() const { return std::static_pointer_cast<const kd_t>(kd_); }
+  const std::shared_ptr<const kd_t> derived_kd() const {
+    return std::static_pointer_cast<const kd_t>(kd_);
+  }
 
- private:
+private:
   std::unique_ptr<jit_generator> jit_kern_ = nullptr;
   const std::vector<tensor_desc> ts_descs;
 
@@ -83,5 +90,5 @@ class gather_k_t : public kernel_t {
   const bool has_avx512;
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_KERNELS_GATHER_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_KERNELS_GATHER_HPP_

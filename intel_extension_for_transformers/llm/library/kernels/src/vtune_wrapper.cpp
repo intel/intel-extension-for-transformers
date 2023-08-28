@@ -16,10 +16,12 @@
 
 #ifdef SPARSE_LIB_USE_VTUNE
 vtune_wrapper_t::vtune_wrapper_t() {
-  domain_ = __itt_domain_create("SparseLib.VTune");  //  default name
+  domain_ = __itt_domain_create("SparseLib.VTune"); //  default name
 }
 
-vtune_wrapper_t::vtune_wrapper_t(std::string domain_name) { domain_ = __itt_domain_create(domain_name.c_str()); }
+vtune_wrapper_t::vtune_wrapper_t(std::string domain_name) {
+  domain_ = __itt_domain_create(domain_name.c_str());
+}
 
 void vtune_wrapper_t::profiling_begin(std::string task_name) {
   handle_main_ = __itt_string_handle_create(task_name.c_str());
@@ -30,7 +32,7 @@ void vtune_wrapper_t::profiling_end() { __itt_task_end(domain_); }
 
 bool get_vtune() {
   bool run_time_use_vtune = false;
-  const char* val = std::getenv("SPARSE_LIB_VTUNE");
+  const char *val = std::getenv("SPARSE_LIB_VTUNE");
   if (val != nullptr) {
     if (strcmp(val, "1") == 0) {
       run_time_use_vtune = true;

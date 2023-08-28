@@ -23,19 +23,20 @@
 namespace jd {
 class engine_t;
 class SPARSE_API_ engine_factory {
- public:
+public:
   engine_factory();
-  const engine_t* create(const engine_kind& engine_kind, const runtime_kind& runtime_kind);
+  const engine_t *create(const engine_kind &engine_kind,
+                         const runtime_kind &runtime_kind);
 
- private:
+private:
   void register_class();
-  static const engine_t* create_cpu_engine(const runtime_kind& runtime_kind);
-  static const engine_t* create_gpu_engine(const runtime_kind& runtime_kind);
+  static const engine_t *create_cpu_engine(const runtime_kind &runtime_kind);
+  static const engine_t *create_gpu_engine(const runtime_kind &runtime_kind);
 
- private:
-  using create_fptr = const engine_t* (*)(const runtime_kind&);
+private:
+  using create_fptr = const engine_t *(*)(const runtime_kind &);
   std::unordered_map<engine_kind, create_fptr> mp_;
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_ENGINE_FACTORY_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_ENGINE_FACTORY_HPP_

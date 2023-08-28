@@ -18,14 +18,14 @@
 #include <omp.h>
 #endif
 
-#include <mutex>  // NOLINT
-#include <string>
-#include <cstring>
 #include <cassert>
+#include <cstring>
+#include <mutex> // NOLINT
+#include <string>
 #include <vector>
 
-#include "param_types.hpp"
 #include "data_type/data_types.hpp"
+#include "param_types.hpp"
 
 namespace jd {
 int get_verbose();
@@ -34,42 +34,43 @@ bool get_verbose_timestamp();
 
 double get_msec();
 
-template <typename T>
-struct setting_t {
- private:
+template <typename T> struct setting_t {
+private:
   T value_;
   bool initialized_;
 
- public:
+public:
   constexpr setting_t() : value_(), initialized_(false) {}
-  constexpr explicit setting_t(const T init) : value_(init), initialized_(false) {}
+  constexpr explicit setting_t(const T init)
+      : value_(init), initialized_(false) {}
   bool initialized() { return initialized_; }
   T get() { return value_; }
   void set(T new_value) {
     value_ = new_value;
     initialized_ = true;
   }
-  setting_t(const setting_t&) = delete;
-  setting_t& operator=(const setting_t&) = delete;
+  setting_t(const setting_t &) = delete;
+  setting_t &operator=(const setting_t &) = delete;
 };
 
 //  A container for primitive desc verbose string.
 class kd_info_t {
- public:
+public:
   kd_info_t() = default;
-  kd_info_t(const kd_info_t& rhs) : str_(rhs.str_), is_initialized_(rhs.is_initialized_) {}
-  kd_info_t& operator=(const kd_info_t& rhs) {
+  kd_info_t(const kd_info_t &rhs)
+      : str_(rhs.str_), is_initialized_(rhs.is_initialized_) {}
+  kd_info_t &operator=(const kd_info_t &rhs) {
     is_initialized_ = rhs.is_initialized_;
     str_ = rhs.str_;
     return *this;
   }
 
-  const char* c_str() const { return str_.c_str(); }
+  const char *c_str() const { return str_.c_str(); }
   bool is_initialized() const { return is_initialized_; }
 
   void init(kernel_kind kind, std::vector<dim_t> shape);
 
- private:
+private:
   std::string str_;
 
   bool is_initialized_ = false;
@@ -81,5 +82,5 @@ class kd_info_t {
   std::once_flag initialization_flag_;
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_VERBOSE_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_VERBOSE_HPP_

@@ -16,7 +16,8 @@
 #include "src/utils.hpp"
 
 namespace jd {
-const std::shared_ptr<const kernel_t>& kernel_cache::get(const operator_desc& op_desc) {
+const std::shared_ptr<const kernel_t> &
+kernel_cache::get(const operator_desc &op_desc) {
   auto it = cache_.find(op_desc);
   if (it == cache_.end()) {
     static const std::shared_ptr<const kernel_t> empty_ptr(nullptr);
@@ -25,7 +26,8 @@ const std::shared_ptr<const kernel_t>& kernel_cache::get(const operator_desc& op
   return it->second;
 }
 
-const std::shared_ptr<const kernel_desc_t>& kernel_cache::get_kd(const operator_desc& op_desc) {
+const std::shared_ptr<const kernel_desc_t> &
+kernel_cache::get_kd(const operator_desc &op_desc) {
   auto e = get(op_desc);
   if (e == nullptr) {
     static const std::shared_ptr<const kernel_desc_t> empty_ptr(nullptr);
@@ -34,20 +36,22 @@ const std::shared_ptr<const kernel_desc_t>& kernel_cache::get_kd(const operator_
   return e->kd();
 }
 
-const std::shared_ptr<const kernel_t>& kernel_cache::find_or_construct(
-    const operator_desc& op_desc, const std::function<bool(std::shared_ptr<const kernel_t>&)>& callback) {
+const std::shared_ptr<const kernel_t> &kernel_cache::find_or_construct(
+    const operator_desc &op_desc,
+    const std::function<bool(std::shared_ptr<const kernel_t> &)> &callback) {
   // For elements with the same key, allow the first element, block the rest
   // elements. Mark "cache_[key] = nullptr" as the first element, and
   // "cache_[key] = BLOCK_REST" as the rests
   static bool BLOCK_REST = false;
   std::unique_lock<std::mutex> lk(mtx_);
   cv_.wait(lk, [&]() {
-    bool can_pass = (cache_[op_desc] != nullptr) || ((cache_[op_desc] == nullptr) && !BLOCK_REST);
+    bool can_pass = (cache_[op_desc] != nullptr) ||
+                    ((cache_[op_desc] == nullptr) && !BLOCK_REST);
     return can_pass;
   });
 
   if (cache_[op_desc] != nullptr) {
-    const auto& value = get(op_desc);
+    const auto &value = get(op_desc);
     if (value != nullptr) {
       return value;
     }
@@ -55,15 +59,16 @@ const std::shared_ptr<const kernel_t>& kernel_cache::find_or_construct(
   BLOCK_REST = true;
   std::shared_ptr<const kernel_t> derived_prim = nullptr;
   auto status = callback(derived_prim);
-  if (!status) SPARSE_LOG(ERROR) << "Found no cache for this operator_desc" << std::endl;
+  if (!status)
+    SPARSE_LOG(ERROR) << "Found no cache for this operator_desc" << std::endl;
   set(derived_prim);
   BLOCK_REST = false;
   cv_.notify_all();
   return get(op_desc);
 }
 
-void kernel_cache::set(const std::shared_ptr<const kernel_t>& kernel) {
-  const auto& key = kernel->kd()->get_operator_desc();
+void kernel_cache::set(const std::shared_ptr<const kernel_t> &kernel) {
+  const auto &key = kernel->kd()->get_operator_desc();
   cache_[key] = kernel;
 }
-}  // namespace jd
+} // namespace jd

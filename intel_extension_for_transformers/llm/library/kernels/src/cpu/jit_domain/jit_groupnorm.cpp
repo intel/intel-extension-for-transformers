@@ -17,40 +17,43 @@ namespace jd {
 
 #define GET_OFF(field) offsetof(groupnorm_data_t, field)
 
-#define DEF_AND_LOAD_ALL_PARAM                                 \
-  const auto reg_param = rp.p[0];                              \
-  const auto reg_src = rp.reg<Reg64>();                        \
-  const auto reg_dst = rp.reg<Reg64>();                        \
-  const auto reg_sum_x = rp.reg<Reg64>();                      \
-  const auto reg_sum_powx = rp.reg<Reg64>();                   \
-  const auto reg_gamma = rp.reg<Reg64>();                      \
-  const auto reg_beta = rp.reg<Reg64>();                       \
-  auto load_params = [&] {                                     \
-    mov(reg_src, ptr[reg_param + GET_OFF(src)]);               \
-    mov(reg_dst, ptr[reg_param + GET_OFF(dst)]);               \
-    mov(reg_sum_x, ptr[reg_param + GET_OFF(sum_x_ptr)]);       \
-    mov(reg_sum_powx, ptr[reg_param + GET_OFF(sum_powx_ptr)]); \
-    mov(reg_gamma, ptr[reg_param + GET_OFF(gamma)]);           \
-    mov(reg_beta, ptr[reg_param + GET_OFF(beta)]);             \
+#define DEF_AND_LOAD_ALL_PARAM                                                 \
+  const auto reg_param = rp.p[0];                                              \
+  const auto reg_src = rp.reg<Reg64>();                                        \
+  const auto reg_dst = rp.reg<Reg64>();                                        \
+  const auto reg_sum_x = rp.reg<Reg64>();                                      \
+  const auto reg_sum_powx = rp.reg<Reg64>();                                   \
+  const auto reg_gamma = rp.reg<Reg64>();                                      \
+  const auto reg_beta = rp.reg<Reg64>();                                       \
+  auto load_params = [&] {                                                     \
+    mov(reg_src, ptr[reg_param + GET_OFF(src)]);                               \
+    mov(reg_dst, ptr[reg_param + GET_OFF(dst)]);                               \
+    mov(reg_sum_x, ptr[reg_param + GET_OFF(sum_x_ptr)]);                       \
+    mov(reg_sum_powx, ptr[reg_param + GET_OFF(sum_powx_ptr)]);                 \
+    mov(reg_gamma, ptr[reg_param + GET_OFF(gamma)]);                           \
+    mov(reg_beta, ptr[reg_param + GET_OFF(beta)]);                             \
   };
 
-#define DEF_BF16_ONE_CONST(label)            \
-  L(label);                                  \
-  bfloat16_t bf16_one[] = {bfloat16_t(1.f)}; \
-  db(reinterpret_cast<uint8_t*>(bf16_one), sizeof(bf16_one));
+#define DEF_BF16_ONE_CONST(label)                                              \
+  L(label);                                                                    \
+  bfloat16_t bf16_one[] = {bfloat16_t(1.f)};                                   \
+  db(reinterpret_cast<uint8_t *>(bf16_one), sizeof(bf16_one));
 
-#define DEF_DIV_COSNT(label, norm_dim)   \
-  L(label);                              \
-  float div_const[] = {1.0f / norm_dim}; \
-  db(reinterpret_cast<uint8_t*>(div_const), sizeof(div_const));
+#define DEF_DIV_COSNT(label, norm_dim)                                         \
+  L(label);                                                                    \
+  float div_const[] = {1.0f / norm_dim};                                       \
+  db(reinterpret_cast<uint8_t *>(div_const), sizeof(div_const));
 
-#define DEF_EPS_CONST(label, eps) \
-  L(label);                       \
-  float eps_const[] = {eps};      \
-  db(reinterpret_cast<uint8_t*>(eps_const), sizeof(eps_const));
+#define DEF_EPS_CONST(label, eps)                                              \
+  L(label);                                                                    \
+  float eps_const[] = {eps};                                                   \
+  db(reinterpret_cast<uint8_t *>(eps_const), sizeof(eps_const));
 
-void jit_groupnorm_t::sum_code_gen(regs_pool* rp, Reg64 reg_src, Reg64 reg_sum_x, Reg64 reg_sum_powx,
-                                   Opmask sum_write_mask, const Xbyak::Label& data_label, size_t sum_dim) {
+void jit_groupnorm_t::sum_code_gen(regs_pool *rp, Reg64 reg_src,
+                                   Reg64 reg_sum_x, Reg64 reg_sum_powx,
+                                   Opmask sum_write_mask,
+                                   const Xbyak::Label &data_label,
+                                   size_t sum_dim) {
   const auto reg_loop = rp->reg<Reg64>();
   auto zmm_sum_x = rp->regs<Zmm, 8>();
   auto zmm_sum_powx = rp->regs<Zmm, 8>();
@@ -66,17 +69,20 @@ void jit_groupnorm_t::sum_code_gen(regs_pool* rp, Reg64 reg_src, Reg64 reg_sum_x
       vxorps(zmm_sum_x[i], zmm_sum_x[i], zmm_sum_x[i]);
     }
     int process_simd_byte = jit_generator::BYTES_ZMM;
-    if (!isa_available(avx512_core_bf16) && param_.dt == data_type::bf16) process_simd_byte = jit_generator::BYTES_YMM;
+    if (!isa_available(avx512_core_bf16) && param_.dt == data_type::bf16)
+      process_simd_byte = jit_generator::BYTES_YMM;
     auto elt_num_per_zmm = process_simd_byte / get_data_size(param_.dt);
     auto tail_dim = sum_dim % (elt_num_per_zmm);
     auto sum_tail_mask = rp->reg<Opmask>();
     auto align_dim = sum_dim - tail_dim;
-    while (align_dim % (unroll * elt_num_per_zmm) != 0) unroll /= 2;
+    while (align_dim % (unroll * elt_num_per_zmm) != 0)
+      unroll /= 2;
     auto loop_num = align_dim / (unroll * elt_num_per_zmm);
     xor_(reg_loop, reg_loop);
     vpbroadcastw(zmm_bf16_one, ptr[rip + data_label]);
     L(".sum_loop");
-    for (int i = 0; i < unroll; i++) sum(i, process_simd_byte, Opmask(0), false);
+    for (int i = 0; i < unroll; i++)
+      sum(i, process_simd_byte, Opmask(0), false);
     add(reg_src, unroll * process_simd_byte);
     inc(reg_loop);
     cmp(reg_loop, loop_num);
@@ -105,43 +111,49 @@ void jit_groupnorm_t::sum_code_gen(regs_pool* rp, Reg64 reg_src, Reg64 reg_sum_x
     vmovups(ptr[reg_sum_powx] | sum_write_mask, zmm_sum_powx[0]);
   };
 
-  std::function<void(int, int, Opmask, bool)> bf16_sum = [&](int i, int process_simd_byte, Opmask mask, bool tail) {
-    if (isa_available(avx512_core_bf16) && !tail) {
-      vmovups(zmm_x[i] | mask, ptr[reg_src + (i * process_simd_byte)]);
-      vdpbf16ps(zmm_sum_x[i] | mask, zmm_x[i], zmm_bf16_one);
-      vdpbf16ps(zmm_sum_powx[i] | mask, zmm_x[i], zmm_x[i]);
-    } else {
-      vmovups(Ymm(zmm_x[i].getIdx()), ptr[reg_src + (i * process_simd_byte)]);
-      bf16_cvt_fp32(zmm_x[i]);
-      vaddps(zmm_sum_x[i] | mask, zmm_sum_x[i], zmm_x[i]);
-      vmulps(zmm_x[i] | mask, zmm_x[i], zmm_x[i]);
-      vaddps(zmm_sum_powx[i] | mask, zmm_sum_powx[i], zmm_x[i]);
-    }
-  };
+  std::function<void(int, int, Opmask, bool)> bf16_sum =
+      [&](int i, int process_simd_byte, Opmask mask, bool tail) {
+        if (isa_available(avx512_core_bf16) && !tail) {
+          vmovups(zmm_x[i] | mask, ptr[reg_src + (i * process_simd_byte)]);
+          vdpbf16ps(zmm_sum_x[i] | mask, zmm_x[i], zmm_bf16_one);
+          vdpbf16ps(zmm_sum_powx[i] | mask, zmm_x[i], zmm_x[i]);
+        } else {
+          vmovups(Ymm(zmm_x[i].getIdx()),
+                  ptr[reg_src + (i * process_simd_byte)]);
+          bf16_cvt_fp32(zmm_x[i]);
+          vaddps(zmm_sum_x[i] | mask, zmm_sum_x[i], zmm_x[i]);
+          vmulps(zmm_x[i] | mask, zmm_x[i], zmm_x[i]);
+          vaddps(zmm_sum_powx[i] | mask, zmm_sum_powx[i], zmm_x[i]);
+        }
+      };
 
-  std::function<void(int, int, Opmask, bool)> fp32_sum = [&](int i, int process_simd_byte, Opmask mask, bool) {
-    vmovups(zmm_x[i], ptr[reg_src + (i * process_simd_byte)]);
-    vaddps(zmm_sum_x[i] | mask, zmm_sum_x[i], zmm_x[i]);
-    vmulps(zmm_x[i] | mask, zmm_x[i], zmm_x[i]);
-    vaddps(zmm_sum_powx[i] | mask, zmm_sum_powx[i], zmm_x[i]);
-  };
+  std::function<void(int, int, Opmask, bool)> fp32_sum =
+      [&](int i, int process_simd_byte, Opmask mask, bool) {
+        vmovups(zmm_x[i], ptr[reg_src + (i * process_simd_byte)]);
+        vaddps(zmm_sum_x[i] | mask, zmm_sum_x[i], zmm_x[i]);
+        vmulps(zmm_x[i] | mask, zmm_x[i], zmm_x[i]);
+        vaddps(zmm_sum_powx[i] | mask, zmm_sum_powx[i], zmm_x[i]);
+      };
 
   switch (param_.dt) {
-    case data_type::bf16:
-      sum_func(bf16_sum);
-      break;
-    case data_type::fp32:
-      sum_func(fp32_sum);
-      break;
-    default:
-      SPARSE_LOG(FATAL) << "unsupported src data type.";
-      break;
+  case data_type::bf16:
+    sum_func(bf16_sum);
+    break;
+  case data_type::fp32:
+    sum_func(fp32_sum);
+    break;
+  default:
+    SPARSE_LOG(FATAL) << "unsupported src data type.";
+    break;
   }
 }
 
-void jit_groupnorm_t::calc_scale_and_norm(regs_pool* rp, Reg64 reg_src, Reg64 reg_dst, Reg64 reg_sum_x,
-                                          Reg64 reg_sum_powx, Reg64 reg_gamma, Reg64 reg_beta,
-                                          const Xbyak::Label& div_const_label, const Xbyak::Label& eps_label,
+void jit_groupnorm_t::calc_scale_and_norm(regs_pool *rp, Reg64 reg_src,
+                                          Reg64 reg_dst, Reg64 reg_sum_x,
+                                          Reg64 reg_sum_powx, Reg64 reg_gamma,
+                                          Reg64 reg_beta,
+                                          const Xbyak::Label &div_const_label,
+                                          const Xbyak::Label &eps_label,
                                           size_t channels_per_group) {
   const auto reg_norm_loop = rp->reg<Reg64>();
   const auto reg_channel_loop = rp->reg<Reg64>();
@@ -163,7 +175,8 @@ void jit_groupnorm_t::calc_scale_and_norm(regs_pool* rp, Reg64 reg_src, Reg64 re
   int unroll = 16;
   auto tail_elt_num = param_.HW % 16;
   auto align_elt_num = param_.HW - tail_elt_num;
-  while (align_elt_num % (unroll * 16) != 0) unroll -= 1;
+  while (align_elt_num % (unroll * 16) != 0)
+    unroll -= 1;
   auto zmms = rp->regs<Zmm, 16>();
   auto loop_num = align_elt_num / (unroll * 16);
 
@@ -243,7 +256,8 @@ void jit_channelwise_sum_t::generate() {
 
     prepare_mask(reg_tmp, sum_write_mask);
     load_params();
-    sum_code_gen(&rp, reg_src, reg_sum_x, reg_sum_powx, sum_write_mask, data_label, param_.HW);
+    sum_code_gen(&rp, reg_src, reg_sum_x, reg_sum_powx, sum_write_mask,
+                 data_label, param_.HW);
   }
   outLocalLabel();
   DEF_BF16_ONE_CONST(data_label)
@@ -258,8 +272,8 @@ void jit_channelwise_norm_t::generate() {
     reg_tmp_idx = reg_tmp.getIdx();
     DEF_AND_LOAD_ALL_PARAM
     load_params();
-    calc_scale_and_norm(&rp, reg_src, reg_dst, reg_sum_x, reg_sum_powx, reg_gamma, reg_beta, div_const_label,
-                        eps_label);
+    calc_scale_and_norm(&rp, reg_src, reg_dst, reg_sum_x, reg_sum_powx,
+                        reg_gamma, reg_beta, div_const_label, eps_label);
   }
   outLocalLabel();
   auto norm_elt = param_.HW * (param_.channels / param_.groups);
@@ -280,9 +294,11 @@ void jit_groupnorm_t::generate() {
     DEF_AND_LOAD_ALL_PARAM
     load_params();
     prepare_mask(reg_tmp, sum_write_mask);
-    sum_code_gen(&rp, reg_src, reg_sum_x, reg_sum_powx, sum_write_mask, bf16_one_label, norm_elt);
+    sum_code_gen(&rp, reg_src, reg_sum_x, reg_sum_powx, sum_write_mask,
+                 bf16_one_label, norm_elt);
     mov(reg_src, ptr[reg_param + GET_OFF(src)]);
-    calc_scale_and_norm(&rp, reg_src, reg_dst, reg_sum_x, reg_sum_powx, reg_gamma, reg_beta, div_const_label, eps_label,
+    calc_scale_and_norm(&rp, reg_src, reg_dst, reg_sum_x, reg_sum_powx,
+                        reg_gamma, reg_beta, div_const_label, eps_label,
                         param_.channels / param_.groups);
   }
   outLocalLabel();
@@ -292,4 +308,4 @@ void jit_groupnorm_t::generate() {
   eltwise_injector_.prepare_table();
 }
 
-}  // namespace jd
+} // namespace jd

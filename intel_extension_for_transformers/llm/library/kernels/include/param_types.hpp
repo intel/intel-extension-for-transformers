@@ -53,15 +53,26 @@ enum class postop_alg : uint8_t {
   eltop_int_lut
 };
 
-enum class binaryop_alg : uint8_t { undef, add, sub, mul, per_channel_quant, per_channel_dequant };
+enum class binaryop_alg : uint8_t {
+  undef,
+  add,
+  sub,
+  mul,
+  per_channel_quant,
+  per_channel_dequant
+};
 
 enum class postop_type : uint8_t { eltwise };
 
-static std::unordered_map<postop_alg, const char*> postop_alg_name = {
-    {postop_alg::exp, "exp"},           {postop_alg::tanh, "tanh"},
-    {postop_alg::gelu, "gelu"},         {postop_alg::relu, "relu"},
-    {postop_alg::quantize, "quantize"}, {postop_alg::dequantize, "dequantize"},
-    {postop_alg::linear, "linear"},     {postop_alg::eltop_int_lut, "eltop_int_lut"},
+static std::unordered_map<postop_alg, const char *> postop_alg_name = {
+    {postop_alg::exp, "exp"},
+    {postop_alg::tanh, "tanh"},
+    {postop_alg::gelu, "gelu"},
+    {postop_alg::relu, "relu"},
+    {postop_alg::quantize, "quantize"},
+    {postop_alg::dequantize, "dequantize"},
+    {postop_alg::linear, "linear"},
+    {postop_alg::eltop_int_lut, "eltop_int_lut"},
     {postop_alg::swish, "swish"}};
 
 enum class reg_type : uint8_t { mask, zmm, reg64 };
@@ -89,19 +100,20 @@ enum class data_type : uint8_t {
   fp32,
   s32,
 };
-const std::unordered_map<data_type, const char*> data_type_name{
-    {data_type::u8, "u8"},           {data_type::s8, "s8"},     {data_type::f8_e4m3, "f8_e4m3"},
-    {data_type::f8_e5m2, "f8_e5m2"}, {data_type::u16, "u16"},   {data_type::s16, "s16"},
-    {data_type::fp16, "fp16"},       {data_type::bf16, "bf16"}, {data_type::fp32, "fp32"},
-    {data_type::s32, "s32"},
+const std::unordered_map<data_type, const char *> data_type_name{
+    {data_type::u8, "u8"},           {data_type::s8, "s8"},
+    {data_type::f8_e4m3, "f8_e4m3"}, {data_type::f8_e5m2, "f8_e5m2"},
+    {data_type::u16, "u16"},         {data_type::s16, "s16"},
+    {data_type::fp16, "fp16"},       {data_type::bf16, "bf16"},
+    {data_type::fp32, "fp32"},       {data_type::s32, "s32"},
 };
 
 // Format type.
 enum class format_type : uint8_t {
   undef,
   a,
-  ab,  // shape permutation = {0, 1}
-  ba,  // shape permutation = {1, 0}
+  ab, // shape permutation = {0, 1}
+  ba, // shape permutation = {1, 0}
   abc,
   abcd,
   acbd,
@@ -122,10 +134,13 @@ constexpr format_type plain_format(const int n) {
                   : (assert(false), format_type::undef);
 }
 
-static const std::unordered_map<format_type, const char*> format_type_name = {
-    {format_type::a, "a"},       {format_type::ab, "ab"},     {format_type::ba, "ba"},     {format_type::abc, "abc"},
-    {format_type::abcd, "abcd"}, {format_type::acbd, "acbd"}, {format_type::csr, "csr"},   {format_type::csc, "csc"},
-    {format_type::bsr, "bsr"},   {format_type::bsc, "bsc"},   {format_type::csrp, "csrp"},
+static const std::unordered_map<format_type, const char *> format_type_name = {
+    {format_type::a, "a"},       {format_type::ab, "ab"},
+    {format_type::ba, "ba"},     {format_type::abc, "abc"},
+    {format_type::abcd, "abcd"}, {format_type::acbd, "acbd"},
+    {format_type::csr, "csr"},   {format_type::csc, "csc"},
+    {format_type::bsr, "bsr"},   {format_type::bsc, "bsc"},
+    {format_type::csrp, "csrp"},
 };
 
 // Engine kind.
@@ -140,7 +155,7 @@ enum class runtime_kind : uint8_t { undef, opencl, sycl, thread_pool };
 
 // postop attribute for op-fusion
 class postop_attr {
- public:
+public:
   data_type dt = data_type::undef;
   postop_type op_type = postop_type::eltwise;
   postop_alg op_alg = postop_alg::undef;
@@ -150,16 +165,18 @@ class postop_attr {
 
   postop_attr() {}
 
-  postop_attr(const data_type& dt, const postop_type& op_type, const postop_alg& op_alg, float alpha = 0.0,
-              float beta = 0.0, float scale = 0.0)
-      : dt(dt), op_type(op_type), op_alg(op_alg), alpha(alpha), beta(beta), scale(scale) {}
+  postop_attr(const data_type &dt, const postop_type &op_type,
+              const postop_alg &op_alg, float alpha = 0.0, float beta = 0.0,
+              float scale = 0.0)
+      : dt(dt), op_type(op_type), op_alg(op_alg), alpha(alpha), beta(beta),
+        scale(scale) {}
 };
 
 class binaryop_attr {
- public:
-  void* static_addr;
-  float* scale;
-  float* zp;
+public:
+  void *static_addr;
+  float *scale;
+  float *zp;
   binaryop_alg op_alg = binaryop_alg::undef;
   data_type op_dt = data_type::undef;
 
@@ -168,13 +185,14 @@ class binaryop_attr {
     scale = nullptr;
     zp = nullptr;
   }
-  binaryop_attr(void* ptr, binaryop_alg alg, data_type dt) : static_addr(ptr), op_alg(alg), op_dt(dt) {
+  binaryop_attr(void *ptr, binaryop_alg alg, data_type dt)
+      : static_addr(ptr), op_alg(alg), op_dt(dt) {
     scale = nullptr;
     zp = nullptr;
   }
-  void set_scale(float* scale) { this->scale = scale; }
-  void set_zp(float* zp) { this->zp = zp; }
+  void set_scale(float *scale) { this->scale = scale; }
+  void set_zp(float *zp) { this->zp = zp; }
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_PARAM_TYPES_HPP_

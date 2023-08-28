@@ -17,18 +17,22 @@
 #include "utils.hpp"
 
 namespace jd {
-tensor_desc::tensor_desc(const std::vector<int64_t>& shape, const data_type& dtype, const format_type& ftype)
+tensor_desc::tensor_desc(const std::vector<int64_t> &shape,
+                         const data_type &dtype, const format_type &ftype)
     : shape_(shape), dtype_(dtype), ftype_(ftype) {
   if (shape_.size() != 0) {
-    SPARSE_DLOG_IF(WARNING, dtype_ == data_type::undef) << "Non-empty tensor with undefined data type";
-    SPARSE_DLOG_IF(WARNING, ftype_ == format_type::undef) << "Non-empty tensor with undefined format type";
+    SPARSE_DLOG_IF(WARNING, dtype_ == data_type::undef)
+        << "Non-empty tensor with undefined data type";
+    SPARSE_DLOG_IF(WARNING, ftype_ == format_type::undef)
+        << "Non-empty tensor with undefined format type";
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const tensor_desc& td) {
+std::ostream &operator<<(std::ostream &os, const tensor_desc &td) {
   os << "tensor_desc [";
   for (size_t i = 0; i < td.shape().size(); ++i) {
-    if (i != 0) os << ' ';
+    if (i != 0)
+      os << ' ';
     os << td.shape()[i];
   }
   os << ", data_type=";
@@ -38,4 +42,4 @@ std::ostream& operator<<(std::ostream& os, const tensor_desc& td) {
   os << ']';
   return os;
 }
-}  // namespace jd
+} // namespace jd

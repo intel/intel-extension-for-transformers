@@ -14,32 +14,35 @@
 
 #include "gpu_ocl_matmul_ref.hpp"
 #include "src/gpu/engine/gpu_ocl_engine.hpp"
-#include "src/gpu/stream/gpu_ocl_stream.hpp"
 #include "src/gpu/kernels/opencl/common.hpp"
+#include "src/gpu/stream/gpu_ocl_stream.hpp"
 
 namespace jd {
-inline const char* get_kernels() {
-  static const char* kernels =
+inline const char *get_kernels() {
+  static const char *kernels =
 #include "gpu_ocl_matmul_ref.cl"
-      ;  // NOLINT
+      ; // NOLINT
   return kernels;
 }
 
 bool gpu_ocl_matmul_ref_k_t::init() { return true; }
-bool gpu_ocl_matmul_ref_k_t::init(const exec_context_t& context) {
+bool gpu_ocl_matmul_ref_k_t::init(const exec_context_t &context) {
   cl_int err;
-  gpu_ocl_stream_t* stream = dynamic_cast<gpu_ocl_stream_t*>(context.get_stream());
+  gpu_ocl_stream_t *stream =
+      dynamic_cast<gpu_ocl_stream_t *>(context.get_stream());
   cl_queue_ = stream->get_queue();
-  const gpu_ocl_engine_t* engine = dynamic_cast<const gpu_ocl_engine_t*>(stream->get_engine());
-  const char* constCode = get_kernels();
-  cl_program program = clCreateProgramWithSource(engine->get_context(), 1, &constCode, nullptr, &err);
+  const gpu_ocl_engine_t *engine =
+      dynamic_cast<const gpu_ocl_engine_t *>(stream->get_engine());
+  const char *constCode = get_kernels();
+  cl_program program = clCreateProgramWithSource(engine->get_context(), 1,
+                                                 &constCode, nullptr, &err);
   checkError(err, __LINE__);
   err = clBuildProgram(program, 0, nullptr, nullptr, nullptr, nullptr);
   checkError(err, __LINE__);
   cl_kernel_ = clCreateKernel(program, "matmul", &err);
   checkError(err, __LINE__);
   int index = 0;
-  for (const auto& arg : context.inputs()) {
+  for (const auto &arg : context.inputs()) {
     handle_.emplace_back();
     arg->get_handle(&handle_.back());
     if (index < 3) {
@@ -51,7 +54,7 @@ bool gpu_ocl_matmul_ref_k_t::init(const exec_context_t& context) {
     }
     index++;
   }
-  for (const auto& arg : context.outputs()) {
+  for (const auto &arg : context.outputs()) {
     handle_.emplace_back();
     arg->get_handle(&handle_.back());
     clSetKernelArg(cl_kernel_, index, arg->get_ptr_size(), &handle_.back());
@@ -62,8 +65,9 @@ bool gpu_ocl_matmul_ref_k_t::init(const exec_context_t& context) {
 
 bool gpu_ocl_matmul_ref_k_t::execute() const {
   cl_int err;
-  err = clEnqueueNDRangeKernel(cl_queue_, cl_kernel_, 2, nullptr, global_, local_, 0, nullptr, nullptr);
+  err = clEnqueueNDRangeKernel(cl_queue_, cl_kernel_, 2, nullptr, global_,
+                               local_, 0, nullptr, nullptr);
   checkError(err, __LINE__);
   return err == CL_SUCCESS;
 }
-}  // namespace jd
+} // namespace jd

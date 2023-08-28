@@ -15,6 +15,6 @@
 #include "kernel.hpp"
 
 namespace jd {
-kernel_t::kernel_t(const std::shared_ptr<const kernel_desc_t>& kd) : kd_(kd) {}
+kernel_t::kernel_t(const std::shared_ptr<const kernel_desc_t> &kd) : kd_(kd) {}
 
-}  // namespace jd
+} // namespace jd

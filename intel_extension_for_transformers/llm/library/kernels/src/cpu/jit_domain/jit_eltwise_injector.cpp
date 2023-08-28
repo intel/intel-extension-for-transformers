@@ -16,7 +16,8 @@
 
 namespace jd {
 
-void jit_eltwise_injector::eltwise_injector_init(jit_generator* ptr, const std::vector<postop_attr>& postop_attrs) {
+void jit_eltwise_injector::eltwise_injector_init(
+    jit_generator *ptr, const std::vector<postop_attr> &postop_attrs) {
   h = ptr;
   register_table_entries(postop_attrs);
 }
@@ -24,17 +25,19 @@ void jit_eltwise_injector::eltwise_injector_init(jit_generator* ptr, const std::
 size_t jit_eltwise_injector::table_off(key_t key, size_t key_off_val_shift) {
   const auto it = entry_map.find(key);
   SPARSE_LOG_IF(FATAL, it == entry_map.end()) << "key is not in entry_map";
-  const auto& te = (*it).second;
+  const auto &te = (*it).second;
   const auto scale = te.bcast ? 64u : sizeof(table_entry_val_t);
   return te.off + key_off_val_shift * scale;
 }
 
-Xbyak::Address jit_eltwise_injector::table_val(key_t key, size_t key_off_val_shift) {
+Xbyak::Address jit_eltwise_injector::table_val(key_t key,
+                                               size_t key_off_val_shift) {
   auto off = table_off(key, key_off_val_shift);
   return h->ptr[p_table + off];
 }
 
-void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_attrs) {
+void jit_eltwise_injector::assert_check(
+    const std::vector<postop_attr> &postop_attrs) {
   bool quant_flag = false;
   bool int_lut_flag = false;
   int chain_len = postop_attrs.size();
@@ -42,38 +45,51 @@ void jit_eltwise_injector::assert_check(const std::vector<postop_attr>& postop_a
     auto cur_attr = postop_attrs[i];
     auto cur_alg = cur_attr.op_alg;
     auto cur_dt = cur_attr.dt;
-    if (i != chain_len - 1) SPARSE_LOG_IF(FATAL, cur_alg == postop_alg::quantize) << "quantize should be last op";
-    if (i != 0) SPARSE_LOG_IF(FATAL, cur_alg == postop_alg::dequantize) << "Dequantize should be first op";
+    if (i != chain_len - 1)
+      SPARSE_LOG_IF(FATAL, cur_alg == postop_alg::quantize)
+          << "quantize should be last op";
+    if (i != 0)
+      SPARSE_LOG_IF(FATAL, cur_alg == postop_alg::dequantize)
+          << "Dequantize should be first op";
     // bit8-lut algo must be the fist op in the postop-chain.
     if (cur_alg == postop_alg::eltop_int_lut) {
       SPARSE_LOG_IF(FATAL, i != 0) << "eltop_int_lut should be first op";
       int_lut_flag = true;
     }
 
-    if (cur_alg == postop_alg::quantize || cur_attr.op_alg == postop_alg::dequantize) {
+    if (cur_alg == postop_alg::quantize ||
+        cur_attr.op_alg == postop_alg::dequantize) {
       quant_flag = true;
-      SPARSE_LOG_IF(FATAL, !(cur_dt == data_type::s8 || cur_dt == data_type::u8)) << "should quantize to s8/u8";
+      SPARSE_LOG_IF(FATAL,
+                    !(cur_dt == data_type::s8 || cur_dt == data_type::u8))
+          << "should quantize to s8/u8";
     }
 
     // we do not need to assert other affairs
     // because the remain ops's kernel version will not execute..
-    if (int_lut_flag) return;
+    if (int_lut_flag)
+      return;
 
-    // normal op only support fp32/bf16,once contain quant related operator,only support fp32.
+    // normal op only support fp32/bf16,once contain quant related operator,only
+    // support fp32.
     if (!quant_flag) {
-      SPARSE_LOG_IF(FATAL, !(cur_dt == data_type::fp32 || cur_dt == data_type::bf16))
+      SPARSE_LOG_IF(FATAL,
+                    !(cur_dt == data_type::fp32 || cur_dt == data_type::bf16))
           << "normal op only support fp32/bf16";
     } else {
       if (cur_alg != postop_alg::dequantize && cur_alg != postop_alg::quantize)
-        SPARSE_LOG_IF(FATAL, cur_dt != data_type::fp32) << "once contain quant related operator,only support fp32.";
+        SPARSE_LOG_IF(FATAL, cur_dt != data_type::fp32)
+            << "once contain quant related operator,only support fp32.";
     }
   }
 }
 
-void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::vector<postop_attr>& postop_attrs,
-                                          std::vector<int> postop_idxs) {
+void jit_eltwise_injector::vector_compute(
+    const Xbyak::Zmm &zmm_src, const std::vector<postop_attr> &postop_attrs,
+    std::vector<int> postop_idxs) {
   if (postop_idxs.size() == 0) {
-    for (std::size_t i = 0; i < postop_attrs.size(); i++) postop_idxs.push_back(i);
+    for (std::size_t i = 0; i < postop_attrs.size(); i++)
+      postop_idxs.push_back(i);
   }
 
   assert_check(postop_attrs);
@@ -81,46 +97,48 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
   assign_regs();
   load_table_addr();
 
-  auto task_dispatch = [&](const Xbyak::Zmm& zmm_src) {
+  auto task_dispatch = [&](const Xbyak::Zmm &zmm_src) {
     switch (cur_postop_attr_.op_alg) {
-      case postop_alg::exp:
-        exp_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::tanh:
-        tanh_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::gelu:
-        gelu_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::relu:
-        relu_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::quantize:
-        quantize_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::dequantize:
-        dequantize_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::linear:
-        linear_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::low_precision_exp:
-        low_precision_exp_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::swish:
-        swish_compute_vector_fwd(zmm_src);
-        break;
-      case postop_alg::eltop_int_lut:
-        if (cur_postop_attr_.alpha == 8) bit8_lut_compute_vector_fwd(zmm_src);
-        if (cur_postop_attr_.alpha == 16) bit16_lut_compute_vector_fwd(zmm_src);
-        break;
-      default:
-        SPARSE_LOG(FATAL) << "unsupported op in eltwise_injector";
-        break;
+    case postop_alg::exp:
+      exp_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::tanh:
+      tanh_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::gelu:
+      gelu_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::relu:
+      relu_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::quantize:
+      quantize_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::dequantize:
+      dequantize_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::linear:
+      linear_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::low_precision_exp:
+      low_precision_exp_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::swish:
+      swish_compute_vector_fwd(zmm_src);
+      break;
+    case postop_alg::eltop_int_lut:
+      if (cur_postop_attr_.alpha == 8)
+        bit8_lut_compute_vector_fwd(zmm_src);
+      if (cur_postop_attr_.alpha == 16)
+        bit16_lut_compute_vector_fwd(zmm_src);
+      break;
+    default:
+      SPARSE_LOG(FATAL) << "unsupported op in eltwise_injector";
+      break;
     }
   };
 
-  for (auto&& i : postop_idxs) {
+  for (auto &&i : postop_idxs) {
     cur_postop_attr_ = postop_attrs[i];
     if (cur_postop_attr_.dt == data_type::bf16) {
       h->vmovups(zmm_tmp, zmm_src);
@@ -129,14 +147,19 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
       h->vpmovzxwd(zmm_src, ymm_src);
       h->vpslld(zmm_src, zmm_src, 16);
       task_dispatch(zmm_src);
-      h->vcvtneps2bf16(ymm_src, zmm_src);  // 0-255bit of zmm_src compute ans store in ymm_src.
+      h->vcvtneps2bf16(
+          ymm_src,
+          zmm_src); // 0-255bit of zmm_src compute ans store in ymm_src.
 
       ymm_tmp = Ymm(zmm_tmp.getIdx());
-      h->vextractf32x8(ymm_tmp, zmm_tmp, 1);  // shuffle the high 256bit to the low 256 bit.
+      h->vextractf32x8(ymm_tmp, zmm_tmp,
+                       1); // shuffle the high 256bit to the low 256 bit.
       h->vpmovzxwd(zmm_tmp, ymm_tmp);
       h->vpslld(zmm_tmp, zmm_tmp, 16);
       task_dispatch(zmm_tmp);
-      h->vcvtneps2bf16(ymm_tmp, zmm_tmp);  // 256-511bit of zmm_src compute ans store in ymm_tmp.
+      h->vcvtneps2bf16(
+          ymm_tmp,
+          zmm_tmp); // 256-511bit of zmm_src compute ans store in ymm_tmp.
 
       // permute
       h->mov(reg64_tmp, 0xff00);
@@ -146,16 +169,17 @@ void jit_eltwise_injector::vector_compute(const Xbyak::Zmm& zmm_src, const std::
     } else {
       task_dispatch(zmm_src);
     }
-    if (cur_postop_attr_.op_alg == postop_alg::eltop_int_lut) return;
+    if (cur_postop_attr_.op_alg == postop_alg::eltop_int_lut)
+      return;
   }
 }
 
-void jit_eltwise_injector::bit8_lut_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::bit8_lut_compute_vector_fwd(const Zmm &zmm_src) {
   // regs renaming.
   Zmm zmm_bk = zmm_aux0;
   h->vmovups(zmm_bk, zmm_src);
-  // zmm can store 64 byte data, the size of our bit8-lut is 256 byte, so we need to loop 4 times so that we can search
-  // all terms
+  // zmm can store 64 byte data, the size of our bit8-lut is 256 byte, so we
+  // need to loop 4 times so that we can search all terms
   for (int i = 0; i < 4; i++) {
     h->vmovups(zmm_tmp, zmm_bk);
     h->vpcmpub(k_mask, zmm_tmp, table_val(bit8_64), _cmp_lt_os);
@@ -165,13 +189,15 @@ void jit_eltwise_injector::bit8_lut_compute_vector_fwd(const Zmm& zmm_src) {
   }
 }
 
-void jit_eltwise_injector::bit16_lut_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::bit16_lut_compute_vector_fwd(const Zmm &zmm_src) {
   // regs renaming.
   Zmm zmm_bk = zmm_aux0;
-  if (cur_postop_attr_.dt == data_type::u8 || cur_postop_attr_.dt == data_type::s8)
-    h->vpmovzxbw(zmm_src, Ymm(zmm_src.getIdx()));  // zeropadding
+  if (cur_postop_attr_.dt == data_type::u8 ||
+      cur_postop_attr_.dt == data_type::s8)
+    h->vpmovzxbw(zmm_src, Ymm(zmm_src.getIdx())); // zeropadding
   h->vmovups(zmm_bk, zmm_src);
-  // calculate look-up times, each zmm reg can store 32 terms, so we will execute 8 time lookup operate.
+  // calculate look-up times, each zmm reg can store 32 terms, so we will
+  // execute 8 time lookup operate.
   for (int i = 0; i < 8; i++) {
     h->vmovups(zmm_tmp, zmm_bk);
     h->vpcmpuw(k_mask, zmm_tmp, table_val(bit16_32), _cmp_lt_os);
@@ -184,19 +210,22 @@ void jit_eltwise_injector::bit16_lut_compute_vector_fwd(const Zmm& zmm_src) {
   }
 }
 
-void jit_eltwise_injector::linear_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::linear_compute_vector_fwd(const Zmm &zmm_src) {
   auto key = get_attr_idx_key(cur_postop_attr_);
   h->vmovups(zmm_aux0, table_val(alpha, alpha_idx_map[key]));
   h->vfmadd213ps(zmm_src, zmm_aux0, table_val(beta, beta_idx_map[key]));
 }
 
-void jit_eltwise_injector::low_precision_exp_compute_vector_fwd(const Zmm& zmm_src) {
-  h->exp_approx_f32(zmm_src, zmm_src, table_val(exp_log2ef), table_val(ln2f),  //
-                    table_val(low_precision_exp_const_v0), table_val(low_precision_exp_const_v1),
-                    table_val(low_precision_exp_const_v2), {zmm_aux1, zmm_aux2});
+void jit_eltwise_injector::low_precision_exp_compute_vector_fwd(
+    const Zmm &zmm_src) {
+  h->exp_approx_f32(zmm_src, zmm_src, table_val(exp_log2ef), table_val(ln2f), //
+                    table_val(low_precision_exp_const_v0),
+                    table_val(low_precision_exp_const_v1),
+                    table_val(low_precision_exp_const_v2),
+                    {zmm_aux1, zmm_aux2});
 }
 
-void jit_eltwise_injector::swish_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::swish_compute_vector_fwd(const Zmm &zmm_src) {
   auto key = get_attr_idx_key(cur_postop_attr_);
   h->vmovups(zmm_aux0, zmm_src);
   h->vmulps(zmm_aux0, zmm_aux0, table_val(alpha, alpha_idx_map[key]));
@@ -206,35 +235,36 @@ void jit_eltwise_injector::swish_compute_vector_fwd(const Zmm& zmm_src) {
   h->vmulps(zmm_src, zmm_src, zmm_aux0);
 }
 
-void jit_eltwise_injector::quantize_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::quantize_compute_vector_fwd(const Zmm &zmm_src) {
   auto key = get_attr_idx_key(cur_postop_attr_);
   h->vmovups(zmm_aux0, table_val(scale, scale_idx_map[key]));
   h->vfmadd213ps(zmm_src, zmm_aux0, table_val(alpha, alpha_idx_map[key]));
   if (cur_postop_attr_.dt == data_type::u8) {
-    h->vcvtps2udq(zmm_src, zmm_src);  // fp32->u32
+    h->vcvtps2udq(zmm_src, zmm_src); // fp32->u32
     h->vpmaxsd(zmm_src, zmm_src, table_val(zero));
   } else if (cur_postop_attr_.dt == data_type::s8) {
-    h->vcvtps2dq(zmm_src, zmm_src);  // fp32->s32
+    h->vcvtps2dq(zmm_src, zmm_src); // fp32->s32
   } else {
     SPARSE_LOG(FATAL) << "quant op only support s8/u8 dt";
   }
 }
 
-void jit_eltwise_injector::dequantize_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::dequantize_compute_vector_fwd(const Zmm &zmm_src) {
   if (cur_postop_attr_.dt == data_type::u8)
-    h->vpmovzxbd(zmm_src, Xmm(zmm_src.getIdx()));  // u8->s32
+    h->vpmovzxbd(zmm_src, Xmm(zmm_src.getIdx())); // u8->s32
   else
-    h->vpmovsxbd(zmm_src, Xmm(zmm_src.getIdx()));  // s8->s32
+    h->vpmovsxbd(zmm_src, Xmm(zmm_src.getIdx())); // s8->s32
   h->vcvtdq2ps(zmm_src, zmm_src);
-  auto key = get_attr_idx_key(cur_postop_attr_);  // s32->f32
+  auto key = get_attr_idx_key(cur_postop_attr_); // s32->f32
   h->vsubps(zmm_src, zmm_src, table_val(alpha, alpha_idx_map[key]));
   h->vmulps(zmm_src, zmm_src, table_val(scale, scale_idx_map[key]));
 }
 
-void jit_eltwise_injector::tanh_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::tanh_compute_vector_fwd(const Zmm &zmm_src) {
   // register mapping
-  Zmm zmm_dst = zmm_aux1, zmm_src_shift = zmm_aux1, zmm_coeff = zmm_aux1, zmm_pol = zmm_aux2, zmm_indices = zmm_aux3,
-      zmm_src_original = zmm_aux4, zmm_sign = zmm_aux4;
+  Zmm zmm_dst = zmm_aux1, zmm_src_shift = zmm_aux1, zmm_coeff = zmm_aux1,
+      zmm_pol = zmm_aux2, zmm_indices = zmm_aux3, zmm_src_original = zmm_aux4,
+      zmm_sign = zmm_aux4;
 
   const int tanh_n_polynomials = 32;
 
@@ -304,7 +334,7 @@ void jit_eltwise_injector::tanh_compute_vector_fwd(const Zmm& zmm_src) {
   h->vmovups(zmm_src, zmm_dst);
 }
 
-void jit_eltwise_injector::gelu_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::gelu_compute_vector_fwd(const Zmm &zmm_src) {
   h->vmovups(zmm_aux0, zmm_src);
 
   // compute G(x) = sqrt_root_two_over_pi * x * (1 + fitting_const * x * x)
@@ -323,7 +353,7 @@ void jit_eltwise_injector::gelu_compute_vector_fwd(const Zmm& zmm_src) {
   h->vmulps(zmm_src, zmm_src, zmm_aux0);
 }
 
-void jit_eltwise_injector::exp_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::exp_compute_vector_fwd(const Zmm &zmm_src) {
   /* exp code */
   h->vcmpps(k_mask, zmm_src, table_val(exp_ln_flt_min_f), _cmp_lt_os);
   h->vminps(zmm_src, zmm_src, table_val(exp_ln_flt_max_f));
@@ -370,11 +400,12 @@ void jit_eltwise_injector::exp_compute_vector_fwd(const Zmm& zmm_src) {
   h->vmulps(zmm_src, zmm_src, table_val(two));
 }
 
-void jit_eltwise_injector::relu_compute_vector_fwd(const Zmm& zmm_src) {
+void jit_eltwise_injector::relu_compute_vector_fwd(const Zmm &zmm_src) {
   auto key = get_attr_idx_key(cur_postop_attr_);
   h->vmovups(zmm_aux1, zmm_src);
   h->vcmpps(k_mask, zmm_src, table_val(zero), _cmp_nle_us);
-  h->vmulps(zmm_src, zmm_src, table_val(alpha, alpha_idx_map[key]));  // alpha=0 by default.
+  h->vmulps(zmm_src, zmm_src,
+            table_val(alpha, alpha_idx_map[key])); // alpha=0 by default.
   h->vblendmps(zmm_src | k_mask, zmm_src, zmm_aux1);
 }
 
@@ -397,9 +428,10 @@ void jit_eltwise_injector::escape_erase(reg_type type, int reg_idx) {
   }
 }
 
-void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& postop_attrs) {
+void jit_eltwise_injector::init_tb_allocate_set(
+    const std::vector<postop_attr> &postop_attrs) {
   reg64_tb_allocate.insert(&p_table);
-  for (auto&& i : postop_attrs) {
+  for (auto &&i : postop_attrs) {
     if (i.dt == data_type::bf16) {
       reg64_tb_allocate.insert(&reg64_tmp);
       zmm_tb_allocate.insert(&zmm_tmp);
@@ -460,89 +492,102 @@ void jit_eltwise_injector::init_tb_allocate_set(const std::vector<postop_attr>& 
       zmm_tb_allocate.insert(&zmm_aux0);
       zmm_tb_allocate.insert(&zmm_tmp);
       mask_tb_allocate.insert(&k_mask);
-      // return directly,the reason is same as the comment in compute_vector func,bit8-lut case
+      // return directly,the reason is same as the comment in compute_vector
+      // func,bit8-lut case
       return;
     }
   }
 }
 
 template <typename REG_TYPE>
-void jit_eltwise_injector::escape_from_rp(reg_type type, regs_pool* rp) {
+void jit_eltwise_injector::escape_from_rp(reg_type type, regs_pool *rp) {
   auto idx = rp->get_next<REG_TYPE>();
-  for (int i = 0; i < idx; i++) this->escape_regs(type, rp->map_reg_idx<REG_TYPE>(i));
+  for (int i = 0; i < idx; i++)
+    this->escape_regs(type, rp->map_reg_idx<REG_TYPE>(i));
 }
 
-void jit_eltwise_injector::escape_rp_all_type(regs_pool* rp) {
+void jit_eltwise_injector::escape_rp_all_type(regs_pool *rp) {
   escape_from_rp<Reg64>(reg_type::reg64, rp);
   escape_from_rp<Opmask>(reg_type::mask, rp);
   escape_from_rp<Zmm>(reg_type::zmm, rp);
 }
 
 void jit_eltwise_injector::assign_regs() {
-  std::vector<Xbyak::Reg*> reg64_allocate_vec;
-  std::vector<Xbyak::Reg*> mask_allocate_vec;
-  std::vector<Xbyak::Reg*> zmm_allocate_vec;
+  std::vector<Xbyak::Reg *> reg64_allocate_vec;
+  std::vector<Xbyak::Reg *> mask_allocate_vec;
+  std::vector<Xbyak::Reg *> zmm_allocate_vec;
   reg64_allocate_vec.assign(reg64_tb_allocate.begin(), reg64_tb_allocate.end());
   mask_allocate_vec.assign(mask_tb_allocate.begin(), mask_tb_allocate.end());
   zmm_allocate_vec.assign(zmm_tb_allocate.begin(), zmm_tb_allocate.end());
 
-  auto allocate_regs = [&](reg_type reg_type, int max_reg_idx,
-                           std::unordered_map<enum reg_type, std::set<int>>::const_iterator iter,
-                           std::vector<Xbyak::Reg*> tb_allocate_regs) {
-    int allocate_idx = 0;
-    std::set<int> used_reg_idxs = {};
-    if (iter != used_regs.end()) used_reg_idxs = iter->second;
-    while (tb_allocate_regs.size() != 0) {
-      while (used_reg_idxs.count(allocate_idx) != 0) allocate_idx++;
-      if (allocate_idx > max_reg_idx)
-        SPARSE_LOG(FATAL) << "jit_eltwise allocate_regs error:too many registers be used in front op.";
+  auto allocate_regs =
+      [&](reg_type reg_type, int max_reg_idx,
+          std::unordered_map<enum reg_type, std::set<int>>::const_iterator iter,
+          std::vector<Xbyak::Reg *> tb_allocate_regs) {
+        int allocate_idx = 0;
+        std::set<int> used_reg_idxs = {};
+        if (iter != used_regs.end())
+          used_reg_idxs = iter->second;
+        while (tb_allocate_regs.size() != 0) {
+          while (used_reg_idxs.count(allocate_idx) != 0)
+            allocate_idx++;
+          if (allocate_idx > max_reg_idx)
+            SPARSE_LOG(FATAL) << "jit_eltwise allocate_regs error:too many "
+                                 "registers be used in front op.";
 
-      Xbyak::Reg* reg = tb_allocate_regs.back();
-      if (reg_type == reg_type::mask) {
-        if (allocate_idx == 0) {
+          Xbyak::Reg *reg = tb_allocate_regs.back();
+          if (reg_type == reg_type::mask) {
+            if (allocate_idx == 0) {
+              allocate_idx++;
+              continue;
+            }
+            *reg = Xbyak::Opmask(allocate_idx);
+          } else if (reg_type == reg_type::zmm) {
+            *reg = Zmm(allocate_idx);
+          } else if (reg_type == reg_type::reg64) {
+            // avoid allocate special usage registers such as rsp.front op dose
+            // not need to tell injector the usage information of these regs.
+            using Operand = Xbyak::Operand;
+            if (allocate_idx == Operand::RCX || allocate_idx == Operand::RDX ||
+                allocate_idx == Operand::RSI || allocate_idx == Operand::RDI ||
+                allocate_idx == Operand::RSP) {
+              allocate_idx++;
+              continue;
+            }
+            *reg = Xbyak::Reg64(allocate_idx);
+          }
+          tb_allocate_regs.pop_back();
           allocate_idx++;
-          continue;
         }
-        *reg = Xbyak::Opmask(allocate_idx);
-      } else if (reg_type == reg_type::zmm) {
-        *reg = Zmm(allocate_idx);
-      } else if (reg_type == reg_type::reg64) {
-        // avoid allocate special usage registers such as rsp.front op dose not need to tell injector the usage
-        // information of these regs.
-        using Operand = Xbyak::Operand;
-        if (allocate_idx == Operand::RCX || allocate_idx == Operand::RDX || allocate_idx == Operand::RSI ||
-            allocate_idx == Operand::RDI || allocate_idx == Operand::RSP) {
-          allocate_idx++;
-          continue;
-        }
-        *reg = Xbyak::Reg64(allocate_idx);
-      }
-      tb_allocate_regs.pop_back();
-      allocate_idx++;
-    }
-  };
-  allocate_regs(reg_type::reg64, max_reg64_idx, used_regs.find(reg_type::reg64), reg64_allocate_vec);
-  allocate_regs(reg_type::mask, max_mask_idx, used_regs.find(reg_type::mask), mask_allocate_vec);
-  allocate_regs(reg_type::zmm, max_zmm_idx, used_regs.find(reg_type::zmm), zmm_allocate_vec);
+      };
+  allocate_regs(reg_type::reg64, max_reg64_idx, used_regs.find(reg_type::reg64),
+                reg64_allocate_vec);
+  allocate_regs(reg_type::mask, max_mask_idx, used_regs.find(reg_type::mask),
+                mask_allocate_vec);
+  allocate_regs(reg_type::zmm, max_zmm_idx, used_regs.find(reg_type::zmm),
+                zmm_allocate_vec);
 }
 
 void jit_eltwise_injector::prepare_table() {
   h->align(64);
   h->L(l_table);
-  SPARSE_LOG_IF(FATAL, sizeof(table_entry_val_t) != 4) << "sizeof(table_entry_val_t) should be 4";
+  SPARSE_LOG_IF(FATAL, sizeof(table_entry_val_t) != 4)
+      << "sizeof(table_entry_val_t) should be 4";
 
   for (auto it = entry_map.begin(); it != entry_map.end(); it++) {
-    const auto& te = (*it).second;
+    const auto &te = (*it).second;
     const auto len = te.bcast ? 64u : sizeof(table_entry_val_t);
-    for (size_t d = 0; d < len; d += sizeof(table_entry_val_t)) h->dd(te.val);
+    for (size_t d = 0; d < len; d += sizeof(table_entry_val_t))
+      h->dd(te.val);
   }
 }
 
-uint32_t jit_eltwise_injector::get_bit16_lut_term(int integer, const std::vector<postop_attr>& postop_attrs,
-                                                  data_type output_dt) {
+uint32_t jit_eltwise_injector::get_bit16_lut_term(
+    int integer, const std::vector<postop_attr> &postop_attrs,
+    data_type output_dt) {
   SPARSE_LOG_IF(FATAL, output_dt != data_type::bf16) << "only support bf16 now";
   uint32_t ans = 0;
-  bfloat16_t* u16 = new bfloat16_t;
+  bfloat16_t *u16 = new bfloat16_t;
   for (int i = 0; i < 2; i++) {
     *u16 = apply_postop_list(integer + i, postop_attrs);
     ans |= (u16->data) << (i * 16);
@@ -551,16 +596,17 @@ uint32_t jit_eltwise_injector::get_bit16_lut_term(int integer, const std::vector
   return ans;
 }
 
-uint32_t jit_eltwise_injector::get_bit8_lut_term(int integer, const std::vector<postop_attr>& postop_attrs,
-                                                 data_type output_dt) {
+uint32_t jit_eltwise_injector::get_bit8_lut_term(
+    int integer, const std::vector<postop_attr> &postop_attrs,
+    data_type output_dt) {
   uint32_t ans = 0;
-  uint8_t* u8 = new uint8_t(0);
-  int8_t* s8 = new int8_t(0);
-  uint8_t* cvt = nullptr;
+  uint8_t *u8 = new uint8_t(0);
+  int8_t *s8 = new int8_t(0);
+  uint8_t *cvt = nullptr;
   for (int i = 0; i < 4; i++) {
     if (output_dt == data_type::s8) {
       *s8 = apply_postop_list(integer + i, postop_attrs);
-      cvt = reinterpret_cast<uint8_t*>(s8);
+      cvt = reinterpret_cast<uint8_t *>(s8);
       ans |= *cvt << (i * 8);
     } else {
       *u8 = apply_postop_list(integer + i, postop_attrs);
@@ -572,26 +618,26 @@ uint32_t jit_eltwise_injector::get_bit8_lut_term(int integer, const std::vector<
   return ans;
 }
 
-std::string jit_eltwise_injector::get_attr_idx_key(const postop_attr& attr) {
+std::string jit_eltwise_injector::get_attr_idx_key(const postop_attr &attr) {
   std::string result;
   switch (attr.op_alg) {
-    case postop_alg::quantize:
-      result += "quantize";
-      break;
-    case postop_alg::dequantize:
-      result += "dequantize";
-      break;
-    case postop_alg::linear:
-      result += "linear";
-      break;
-    case postop_alg::relu:
-      result += "relu";
-      break;
-    case postop_alg::swish:
-      result += "swish";
-      break;
-    default:
-      std::runtime_error("this alg_type do not need alpha/beta/scale.");
+  case postop_alg::quantize:
+    result += "quantize";
+    break;
+  case postop_alg::dequantize:
+    result += "dequantize";
+    break;
+  case postop_alg::linear:
+    result += "linear";
+    break;
+  case postop_alg::relu:
+    result += "relu";
+    break;
+  case postop_alg::swish:
+    result += "swish";
+    break;
+  default:
+    std::runtime_error("this alg_type do not need alpha/beta/scale.");
   }
   result += "+" + std::to_string(attr.alpha);
   result += "+" + std::to_string(attr.beta);
@@ -599,56 +645,74 @@ std::string jit_eltwise_injector::get_attr_idx_key(const postop_attr& attr) {
   return result;
 }
 
-void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>& postop_attrs) {
-  static const table_t common_values{{zero, {0x00000000, true}},      {half, {0x3f000000, true}},
-                                     {one, {0x3f800000, true}},       {two, {0x40000000, true}},
-                                     {minus_one, {0xbf800000, true}}, {minus_two, {0xc0000000, true}},
-                                     {ln2f, {0x3f317218, true}},      {positive_mask, {0x7fffffff, true}},
-                                     {sign_mask, {0x80000000, true}}, {exponent_bias, {0x0000007f, true}}};
+void jit_eltwise_injector::register_table_entries(
+    const std::vector<postop_attr> &postop_attrs) {
+  static const table_t common_values{
+      {zero, {0x00000000, true}},      {half, {0x3f000000, true}},
+      {one, {0x3f800000, true}},       {two, {0x40000000, true}},
+      {minus_one, {0xbf800000, true}}, {minus_two, {0xc0000000, true}},
+      {ln2f, {0x3f317218, true}},      {positive_mask, {0x7fffffff, true}},
+      {sign_mask, {0x80000000, true}}, {exponent_bias, {0x0000007f, true}}};
 
   static const table_t low_precision_exp_consts{
-      {low_precision_exp_const_v0, {bit_cast<uint32_t>(exp_approx_f32_coeff[0]), true}},
-      {low_precision_exp_const_v1, {bit_cast<uint32_t>(exp_approx_f32_coeff[1]), true}},
-      {low_precision_exp_const_v2, {bit_cast<uint32_t>(exp_approx_f32_coeff[2]), true}},
+      {low_precision_exp_const_v0,
+       {bit_cast<uint32_t>(exp_approx_f32_coeff[0]), true}},
+      {low_precision_exp_const_v1,
+       {bit_cast<uint32_t>(exp_approx_f32_coeff[1]), true}},
+      {low_precision_exp_const_v2,
+       {bit_cast<uint32_t>(exp_approx_f32_coeff[2]), true}},
   };
 
-  static const table_t bit8_lut_consts{{bit8_64, {0x40404040, true}}, {bit8_255, {0xffffffff, true}}};
+  static const table_t bit8_lut_consts{{bit8_64, {0x40404040, true}},
+                                       {bit8_255, {0xffffffff, true}}};
 
-  static const table_t bit16_lut_consts{{bit16_32, {0x00200020, true}}, {bit16_255, {0x00ff00ff, true}}};
+  static const table_t bit16_lut_consts{{bit16_32, {0x00200020, true}},
+                                        {bit16_255, {0x00ff00ff, true}}};
 
   static const table_t exchange_zmm_low256_high256_const{
-      {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
-      {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
-      {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
-      {exchange_zmm_low256_high256, {0x00000000, false}}, {exchange_zmm_low256_high256, {0x00000000, false}},
-      {exchange_zmm_low256_high256, {0x00000010, false}}, {exchange_zmm_low256_high256, {0x00000011, false}},
-      {exchange_zmm_low256_high256, {0x00000012, false}}, {exchange_zmm_low256_high256, {0x00000013, false}},
-      {exchange_zmm_low256_high256, {0x00000014, false}}, {exchange_zmm_low256_high256, {0x00000015, false}},
-      {exchange_zmm_low256_high256, {0x00000016, false}}, {exchange_zmm_low256_high256, {0x00000017, false}}};
+      {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000000, false}},
+      {exchange_zmm_low256_high256, {0x00000010, false}},
+      {exchange_zmm_low256_high256, {0x00000011, false}},
+      {exchange_zmm_low256_high256, {0x00000012, false}},
+      {exchange_zmm_low256_high256, {0x00000013, false}},
+      {exchange_zmm_low256_high256, {0x00000014, false}},
+      {exchange_zmm_low256_high256, {0x00000015, false}},
+      {exchange_zmm_low256_high256, {0x00000016, false}},
+      {exchange_zmm_low256_high256, {0x00000017, false}}};
 
-  static const table_t exp_consts{
-      {exp_log2ef, {0x3fb8aa3b, true}}, {exp_ln_flt_max_f, {0x42b17218, true}}, {exp_ln_flt_min_f, {0xc2aeac50, true}}};
+  static const table_t exp_consts{{exp_log2ef, {0x3fb8aa3b, true}},
+                                  {exp_ln_flt_max_f, {0x42b17218, true}},
+                                  {exp_ln_flt_min_f, {0xc2aeac50, true}}};
 
   static const table_t exp_polynomial{
       // p0 = 1.0f
-      {exp_pol, {0x3f7ffffb, true}},  // p1 = 0.999999701f
-      {exp_pol, {0x3efffee3, true}},  // p2 = 0.499991506f
-      {exp_pol, {0x3e2aad40, true}},  // p3 = 0.166676521f
-      {exp_pol, {0x3d2b9d0d, true}},  // p4 = 0.0418978221f
-      {exp_pol, {0x3c07cfce, true}}   // p5 = 0.00828929059f
+      {exp_pol, {0x3f7ffffb, true}}, // p1 = 0.999999701f
+      {exp_pol, {0x3efffee3, true}}, // p2 = 0.499991506f
+      {exp_pol, {0x3e2aad40, true}}, // p3 = 0.166676521f
+      {exp_pol, {0x3d2b9d0d, true}}, // p4 = 0.0418978221f
+      {exp_pol, {0x3c07cfce, true}}  // p5 = 0.00828929059f
   };
 
-  static const table_t gelu_tanh_const{{gelu_tanh_fitting_const, {0x3d372713, true}},
-                                       {gelu_tanh_fitting_const_times_three, {0x3e095d4f, true}},
-                                       {gelu_tanh_sqrt_two_over_pi, {0x3f4c422a, true}},
-                                       {gelu_tanh_flt_max_x, {0x4154C480, true}},
-                                       {gelu_tanh_flt_min_x, {0xC154C480, true}}};
+  static const table_t gelu_tanh_const{
+      {gelu_tanh_fitting_const, {0x3d372713, true}},
+      {gelu_tanh_fitting_const_times_three, {0x3e095d4f, true}},
+      {gelu_tanh_sqrt_two_over_pi, {0x3f4c422a, true}},
+      {gelu_tanh_flt_max_x, {0x4154C480, true}},
+      {gelu_tanh_flt_min_x, {0xC154C480, true}}};
 
   // tanh(x) constants for four interval approximation
-  static const table_t tanh_consts{{tanh_idx_bias, {0x39800000, true}},
-                                   {tanh_idx_mask, {0xffc00000, true}},
-                                   {tanh_linear_ubound, {0x39ddb3d7, true}},
-                                   {tanh_saturation_lbound, {0x41102cb3, true}}};
+  static const table_t tanh_consts{
+      {tanh_idx_bias, {0x39800000, true}},
+      {tanh_idx_mask, {0xffc00000, true}},
+      {tanh_linear_ubound, {0x39ddb3d7, true}},
+      {tanh_saturation_lbound, {0x41102cb3, true}}};
 
   // tanh(x) polynomial approximation
   // For each coefficient, there is 32 entries
@@ -886,12 +950,13 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
       {tanh_pol_table, {0x00000000, false}},
   };
 
-  auto push_arg_entry_of = [&](const key_t key, const table_entry_val_t val, const bool broadcast) {
+  auto push_arg_entry_of = [&](const key_t key, const table_entry_val_t val,
+                               const bool broadcast) {
     mapped_table_entry_t te{0, val, broadcast};
     entry_map.insert(std::make_pair(key, te));
   };
 
-  auto push_entries_of = [&](const table_t& t) {
+  auto push_entries_of = [&](const table_t &t) {
     for (auto it = t.begin(); it != t.end(); it++) {
       auto key = it->first;
       auto te = it->second;
@@ -902,21 +967,27 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
   auto set_table_term_offset = [&]() {
     size_t off = 0;
     for (auto it = entry_map.begin(); it != entry_map.end(); it++) {
-      auto& te = (*it).second;
+      auto &te = (*it).second;
       te.off = off;
       off += te.bcast ? 64u : sizeof(table_entry_val_t);
     }
   };
 
   struct need_t {
-    explicit need_t(const std::vector<postop_attr>& postop_attrs) {
-      for (auto&& attr : postop_attrs) {
-        if (attr.dt == data_type::bf16) bf16_ = true;
-        if (attr.op_alg == postop_alg::exp) exp_ = true;
-        if (attr.op_alg == postop_alg::tanh) tanh_ = true;
-        if (attr.op_alg == postop_alg::gelu) gelu_ = true;
-        if (attr.op_alg == postop_alg::swish) swish_ = true;
-        if (attr.op_alg == postop_alg::low_precision_exp) low_precision_exp_ = true;
+    explicit need_t(const std::vector<postop_attr> &postop_attrs) {
+      for (auto &&attr : postop_attrs) {
+        if (attr.dt == data_type::bf16)
+          bf16_ = true;
+        if (attr.op_alg == postop_alg::exp)
+          exp_ = true;
+        if (attr.op_alg == postop_alg::tanh)
+          tanh_ = true;
+        if (attr.op_alg == postop_alg::gelu)
+          gelu_ = true;
+        if (attr.op_alg == postop_alg::swish)
+          swish_ = true;
+        if (attr.op_alg == postop_alg::low_precision_exp)
+          low_precision_exp_ = true;
       }
     }
     bool bf16_ = false;
@@ -939,15 +1010,18 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
   push_entries_of(common_values);
 
   // eltop_int_lut's alpha means the bitwidth
-  if (postop_attrs.size() > 0 && postop_attrs[0].op_alg == postop_alg::eltop_int_lut) {
+  if (postop_attrs.size() > 0 &&
+      postop_attrs[0].op_alg == postop_alg::eltop_int_lut) {
     // lut kernel first op must be dequantize
     SPARSE_LOG_IF(FATAL, postop_attrs.size() < 2) << "postop_attrs.size() < 2";
-    SPARSE_LOG_IF(FATAL, postop_attrs[1].op_alg != postop_alg::dequantize) << "First op should not be dequantize";
+    SPARSE_LOG_IF(FATAL, postop_attrs[1].op_alg != postop_alg::dequantize)
+        << "First op should not be dequantize";
     auto input_dt = postop_attrs[0].dt;
     auto output_dt = postop_attrs.back().dt;
     int table_bitwidth = postop_attrs[0].alpha;
     if (table_bitwidth == 8) {
-      SPARSE_LOG_IF(FATAL, postop_attrs.size() < 3) << "postop_attrs.size() < 3";
+      SPARSE_LOG_IF(FATAL, postop_attrs.size() < 3)
+          << "postop_attrs.size() < 3";
       // if first op is bit8-lut,the last op must be quantize
       SPARSE_LOG_IF(FATAL, postop_attrs.back().op_alg != postop_alg::quantize)
           << "if first op is bit8-lut,the last op must be quantize";
@@ -960,68 +1034,78 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
     auto register_bit_lut_entries = [&](int integer, int bitwidth) {
       uint32_t term = 0;
       switch (bitwidth) {
-        case 8:
-          term = get_bit8_lut_term(integer, postop_attrs, output_dt);
-          break;
-        case 16:
-          term = get_bit16_lut_term(integer, postop_attrs, output_dt);
-          break;
-        default:
-          SPARSE_LOG(ERROR) << "Unexpected bit width for LUT: " << bitwidth;
-          break;
+      case 8:
+        term = get_bit8_lut_term(integer, postop_attrs, output_dt);
+        break;
+      case 16:
+        term = get_bit16_lut_term(integer, postop_attrs, output_dt);
+        break;
+      default:
+        SPARSE_LOG(ERROR) << "Unexpected bit width for LUT: " << bitwidth;
+        break;
       }
       table_entry_t tmp = {term, false};
       switch (bitwidth) {
-        case 8:
-          bit_lut.insert(std::make_pair(bit8_lut_term, tmp));
-          break;
-        case 16:
-          bit_lut.insert(std::make_pair(bit16_lut_term, tmp));
-          break;
-        default:
-          SPARSE_LOG(ERROR) << "Unexpected bit width for LUT: " << bitwidth;
-          break;
+      case 8:
+        bit_lut.insert(std::make_pair(bit8_lut_term, tmp));
+        break;
+      case 16:
+        bit_lut.insert(std::make_pair(bit16_lut_term, tmp));
+        break;
+      default:
+        SPARSE_LOG(ERROR) << "Unexpected bit width for LUT: " << bitwidth;
+        break;
       }
     };
 
     if (input_dt == data_type::u8) {
-      for (int i = 0; i < 256; i += 32 / table_bitwidth) register_bit_lut_entries(i, table_bitwidth);
+      for (int i = 0; i < 256; i += 32 / table_bitwidth)
+        register_bit_lut_entries(i, table_bitwidth);
     } else if (input_dt == data_type::s8) {
-      for (int i = 0; i < 128; i += 32 / table_bitwidth) register_bit_lut_entries(i, table_bitwidth);
-      for (int i = -128; i < 0; i += 32 / table_bitwidth) register_bit_lut_entries(i, table_bitwidth);
+      for (int i = 0; i < 128; i += 32 / table_bitwidth)
+        register_bit_lut_entries(i, table_bitwidth);
+      for (int i = -128; i < 0; i += 32 / table_bitwidth)
+        register_bit_lut_entries(i, table_bitwidth);
     } else {
-      SPARSE_LOG(FATAL) << "eltop_int_lut algo only support s8/u8 data_type as input.";
+      SPARSE_LOG(FATAL)
+          << "eltop_int_lut algo only support s8/u8 data_type as input.";
     }
     push_entries_of(bit_lut);
 
     set_table_term_offset();
-    // once the head of postop-chain is bit8-lut, then the remain ops do not need to compute so we do not need to
-    // prepare LUT entries.
+    // once the head of postop-chain is bit8-lut, then the remain ops do not
+    // need to compute so we do not need to prepare LUT entries.
     return;
   }
 
-  auto gain_fin_const = [&](float alpha, float beta, float scale, postop_alg alg) {
+  auto gain_fin_const = [&](float alpha, float beta, float scale,
+                            postop_alg alg) {
     switch (alg) {
-      case postop_alg::swish:
-        alpha *= -1;
-        break;
-      case postop_alg::quantize:
-        scale = 1.f / scale;
-        break;
-      default:
-        break;
+    case postop_alg::swish:
+      alpha *= -1;
+      break;
+    case postop_alg::quantize:
+      scale = 1.f / scale;
+      break;
+    default:
+      break;
     }
     return std::vector<float>({alpha, beta, scale});
   };
 
   size_t alpha_idx = 0, beta_idx = 0, scale_idx = 0;
-  for (auto&& attr : postop_attrs) {
-    auto fin_const = gain_fin_const(attr.alpha, attr.beta, attr.scale, attr.op_alg);
-    mapped_table_entry_t alpha_entry{alpha_idx, bit_cast<uint32_t, float>(fin_const[0]), true};
-    mapped_table_entry_t beta_entry{beta_idx, bit_cast<uint32_t, float>(fin_const[1]), true};
-    mapped_table_entry_t scale_entry{scale_idx, bit_cast<uint32_t, float>(fin_const[2]), true};
+  for (auto &&attr : postop_attrs) {
+    auto fin_const =
+        gain_fin_const(attr.alpha, attr.beta, attr.scale, attr.op_alg);
+    mapped_table_entry_t alpha_entry{
+        alpha_idx, bit_cast<uint32_t, float>(fin_const[0]), true};
+    mapped_table_entry_t beta_entry{
+        beta_idx, bit_cast<uint32_t, float>(fin_const[1]), true};
+    mapped_table_entry_t scale_entry{
+        scale_idx, bit_cast<uint32_t, float>(fin_const[2]), true};
     auto key = get_attr_idx_key(attr);
-    if (attr.op_alg == postop_alg::quantize || attr.op_alg == postop_alg::dequantize) {
+    if (attr.op_alg == postop_alg::quantize ||
+        attr.op_alg == postop_alg::dequantize) {
       alpha_idx_map[key] = alpha_idx++;
       scale_idx_map[key] = scale_idx++;
       entry_map.insert(std::make_pair(alpha, alpha_entry));
@@ -1039,7 +1123,8 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
     }
   }
 
-  if (need.bf16()) push_entries_of(exchange_zmm_low256_high256_const);
+  if (need.bf16())
+    push_entries_of(exchange_zmm_low256_high256_const);
   if (need.exp()) {
     push_entries_of(exp_consts);
     push_entries_of(exp_polynomial);
@@ -1052,8 +1137,9 @@ void jit_eltwise_injector::register_table_entries(const std::vector<postop_attr>
     push_entries_of(tanh_consts);
     push_entries_of(tanh_polynomial_table);
   }
-  if (need.gelu()) push_entries_of(gelu_tanh_const);
+  if (need.gelu())
+    push_entries_of(gelu_tanh_const);
 
   set_table_term_offset();
 }
-}  // namespace jd
+} // namespace jd

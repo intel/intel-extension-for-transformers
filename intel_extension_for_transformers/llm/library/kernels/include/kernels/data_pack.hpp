@@ -14,15 +14,17 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_DATA_PACK_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_DATA_PACK_HPP_
 
-#include <functional>
-#include "param_types.hpp"
-#include "data_type/data_types.hpp"
 #include "common.h"
+#include "data_type/data_types.hpp"
+#include "param_types.hpp"
+#include <functional>
 
 namespace jd {
 template <typename dst_t, typename src_t>
 SPARSE_API_ void pack(
-    dst_t* output, src_t* input, dim_t N, dim_t K,
-    std::function<dst_t(src_t)> cast_func = [](src_t x) -> dst_t { return static_cast<dst_t>(x); });
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_DATA_PACK_HPP_
+    dst_t *output, src_t *input, dim_t N, dim_t K,
+    std::function<dst_t(src_t)> cast_func = [](src_t x) -> dst_t {
+      return static_cast<dst_t>(x);
+    });
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_KERNELS_DATA_PACK_HPP_

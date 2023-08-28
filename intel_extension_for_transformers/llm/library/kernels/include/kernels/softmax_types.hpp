@@ -15,9 +15,9 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_
 
-#include <vector>
-#include "param_types.hpp"
 #include "data_type/bf16.hpp"
+#include "param_types.hpp"
+#include <vector>
 
 namespace jd {
 namespace ssd {
@@ -38,13 +38,13 @@ struct softmax_param_t {
 };
 
 struct softmax_data_t {
-  void* src;
-  void* dst;
-  void* tmp;
+  void *src;
+  void *dst;
+  void *tmp;
   size_t process_vec_num;
   bfloat16_t one;
 };
 
-}  // namespace ssd
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_
+} // namespace ssd
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_KERNELS_SOFTMAX_TYPES_HPP_

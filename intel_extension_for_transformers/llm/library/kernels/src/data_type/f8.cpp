@@ -12,18 +12,17 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#include "data_type/f8.hpp"
+#include "param_types.hpp"
 #include <cmath>
 #include <cstring>
-#include "param_types.hpp"
-#include "data_type/f8.hpp"
 
 namespace jd {
-template <data_type type>
-struct float8_t {
+template <data_type type> struct float8_t {
   static float fp8_to_fp32(uint8_t data) {
     uint32_t constexpr kF32_NaN = 0x7fffffff;
 
-    uint8_t const& f8 = data;
+    uint8_t const &f8 = data;
     int sign = (f8 >> (FP8_NUM_BITS - 1)) & 1;
     int exp = (f8 >> FP8_NUM_MANTISSA_BITS) & FP8_EXPONENT_MASK;
     int mantissa = f8 & FP8_MANTISSA_MASK;
@@ -31,10 +30,12 @@ struct float8_t {
 
     if ((type == data_type::f8_e4m3) && exp == 15 && mantissa == 0x7) {
       f = kF32_NaN;
-    } else if (exp > 0 && ((type == data_type::f8_e4m3) || exp < (FP8_MAX_EXPONENT + FP8_EXPONENT_BIAS + 1))) {
+    } else if (exp > 0 && ((type == data_type::f8_e4m3) ||
+                           exp < (FP8_MAX_EXPONENT + FP8_EXPONENT_BIAS + 1))) {
       // normal
       exp += (FP32_EXPONENT_BIAS - FP8_EXPONENT_BIAS);
-      f = f | (exp << FP32_NUM_MANTISSA_BITS) | (mantissa << (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS));
+      f = f | (exp << FP32_NUM_MANTISSA_BITS) |
+          (mantissa << (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS));
     } else if (exp == 0) {
       if (mantissa) {
         // subnormal
@@ -44,7 +45,8 @@ struct float8_t {
           exp--;
         }
         mantissa &= FP8_MANTISSA_MASK;
-        f = f | (exp << FP32_NUM_MANTISSA_BITS) | (mantissa << (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS));
+        f = f | (exp << FP32_NUM_MANTISSA_BITS) |
+            (mantissa << (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS));
       } else {
         // sign-preserving zero
       }
@@ -71,7 +73,8 @@ struct float8_t {
 
     // Extract the bits in the FP32 type
     uint8_t sign = uint8_t((s >> 24 & 0x80));
-    int8_t exp = uint8_t(((s >> FP32_NUM_MANTISSA_BITS) & 0xff) - FP32_EXPONENT_BIAS);
+    int8_t exp =
+        uint8_t(((s >> FP32_NUM_MANTISSA_BITS) & 0xff) - FP32_EXPONENT_BIAS);
     int mantissa = s & 0x7fffff;
     uint8_t u = 0;
 
@@ -105,7 +108,8 @@ struct float8_t {
       // normal fp32 to normal fp8
       exp = uint8_t(exp + uint8_t(FP8_EXPONENT_BIAS));
       u = uint8_t(((exp & FP8_EXPONENT_MASK) << FP8_NUM_MANTISSA_BITS));
-      u = uint8_t(u | (mantissa >> (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS)));
+      u = uint8_t(
+          u | (mantissa >> (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS)));
     } else if (exp < FP8_MIN_EXPONENT) {
       // normal single-precision to subnormal float8-precision representation
       int rshift = (FP8_MIN_EXPONENT - exp);
@@ -115,7 +119,9 @@ struct float8_t {
         sticky_bit = ((mantissa & ((1 << rshift) - 1)) != 0);
 
         mantissa = (mantissa >> rshift);
-        u = (uint8_t(mantissa >> (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS)) & FP8_MANTISSA_MASK);
+        u = (uint8_t(mantissa >>
+                     (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS)) &
+             FP8_MANTISSA_MASK);
       } else {
         mantissa = 0;
         u = 0;
@@ -125,7 +131,8 @@ struct float8_t {
       // saturate / inf.
     } else {
       if (exp == (FP8_MAX_EXPONENT + 1)) {
-        uint8_t mantissa_tmp = uint8_t(mantissa >> (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS));
+        uint8_t mantissa_tmp = uint8_t(
+            mantissa >> (FP32_NUM_MANTISSA_BITS - FP8_NUM_MANTISSA_BITS));
         if (mantissa_tmp < FP8_MANTISSA_MASK) {
           exp = uint8_t(exp + uint8_t(FP8_EXPONENT_BIAS));
           u = uint8_t(exp << FP8_NUM_MANTISSA_BITS) | mantissa_tmp;
@@ -183,18 +190,24 @@ struct float8_t {
   static constexpr int FP16_EXPONENT_BIAS = 15;
 
   static constexpr int FP8_NUM_BITS = 8;
-  static constexpr int FP8_NUM_EXPONENT_BITS = (type == data_type::f8_e4m3) ? 4 : 5;
-  static constexpr int FP8_NUM_MANTISSA_BITS = (type == data_type::f8_e4m3) ? 3 : 2;
-  static constexpr uint8_t FP8_NAN = 0x7f;  // Also F8_INF
-  static constexpr uint8_t FP8_INFINITY_MASK = (type == data_type::f8_e4m3) ? 0x78 : 0x7c;
+  static constexpr int FP8_NUM_EXPONENT_BITS =
+      (type == data_type::f8_e4m3) ? 4 : 5;
+  static constexpr int FP8_NUM_MANTISSA_BITS =
+      (type == data_type::f8_e4m3) ? 3 : 2;
+  static constexpr uint8_t FP8_NAN = 0x7f; // Also F8_INF
+  static constexpr uint8_t FP8_INFINITY_MASK =
+      (type == data_type::f8_e4m3) ? 0x78 : 0x7c;
   static constexpr int FP8_MAX_EXPONENT = (type == data_type::f8_e4m3) ? 7 : 15;
-  static constexpr int FP8_MIN_EXPONENT = (type == data_type::f8_e4m3) ? -6 : -14;
-  static constexpr int FP8_EXPONENT_BIAS = (type == data_type::f8_e4m3) ? 7 : 15;
+  static constexpr int FP8_MIN_EXPONENT =
+      (type == data_type::f8_e4m3) ? -6 : -14;
+  static constexpr int FP8_EXPONENT_BIAS =
+      (type == data_type::f8_e4m3) ? 7 : 15;
 
   static constexpr uint8_t FP8_EXPONENT_MASK = (1 << FP8_NUM_EXPONENT_BITS) - 1;
   static constexpr uint8_t FP8_MANTISSA_MASK = (1 << FP8_NUM_MANTISSA_BITS) - 1;
 
-  static constexpr uint8_t FP8_MAX_FLT = ((type == data_type::f8_e4m3) ? 0x7e : 0x7b);
+  static constexpr uint8_t FP8_MAX_FLT =
+      ((type == data_type::f8_e4m3) ? 0x7e : 0x7b);
 
   // 256 in float
   static constexpr uint32_t FP8_SAT_VAL_FP32 = 0x43800000;
@@ -203,19 +216,23 @@ struct float8_t {
 float8_e4m3_t::float8_e4m3_t() { (*this) = 0.f; }
 float8_e4m3_t::float8_e4m3_t(int32_t val) { (*this) = static_cast<float>(val); }
 float8_e4m3_t::float8_e4m3_t(float val) { (*this) = val; }
-float8_e4m3_t& float8_e4m3_t::operator=(float val) {
+float8_e4m3_t &float8_e4m3_t::operator=(float val) {
   data = float8_t<data_type::f8_e4m3>::fp32_to_fp8(val);
   return *this;
 }
-float8_e4m3_t::operator float() const { return float8_t<data_type::f8_e4m3>::fp8_to_fp32(data); }
+float8_e4m3_t::operator float() const {
+  return float8_t<data_type::f8_e4m3>::fp8_to_fp32(data);
+}
 
 float8_e5m2_t::float8_e5m2_t() { (*this) = 0.f; }
 float8_e5m2_t::float8_e5m2_t(int32_t val) { (*this) = static_cast<float>(val); }
 float8_e5m2_t::float8_e5m2_t(float val) { (*this) = val; }
-float8_e5m2_t& float8_e5m2_t::operator=(float val) {
+float8_e5m2_t &float8_e5m2_t::operator=(float val) {
   data = float8_t<data_type::f8_e5m2>::fp32_to_fp8(val);
   return *this;
 }
-float8_e5m2_t::operator float() const { return float8_t<data_type::f8_e5m2>::fp8_to_fp32(data); }
+float8_e5m2_t::operator float() const {
+  return float8_t<data_type::f8_e5m2>::fp8_to_fp32(data);
+}
 
-}  // namespace jd
+} // namespace jd

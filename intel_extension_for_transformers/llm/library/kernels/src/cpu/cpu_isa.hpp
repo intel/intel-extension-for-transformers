@@ -26,7 +26,8 @@ static constexpr int cpu_isa_total_bits = sizeof(unsigned) * 8;
 enum cpu_isa_bit_t : unsigned {
   // Fill in features from least significant bit to most significant bit
   // begin from avx512, isa < avx512 will be dsiptached to reference
-  // for more details abount AVX512-ISA supported status in different architectures, pls refer to this
+  // for more details abount AVX512-ISA supported status in different
+  // architectures, pls refer to this
   // page:https://en.wikipedia.org/wiki/AVX-512#CPUs_with_AVX-512
   avx512_vbmi = 1u << 5,
   avx512_core_bit = 1u << 6,
@@ -56,48 +57,50 @@ enum cpu_isa_t : unsigned {
 
 bool init_amx();
 
-inline const Xbyak::util::Cpu& cpu() {
+inline const Xbyak::util::Cpu &cpu() {
   static const Xbyak::util::Cpu cpu_;
   return cpu_;
 }
 
-set_once_before_first_get_setting_t<bool>& amx_setting();
+set_once_before_first_get_setting_t<bool> &amx_setting();
 
 static inline bool isa_available(const cpu_isa_t cpu_isa) {
   using Cpu = Xbyak::util::Cpu;
 
   switch (cpu_isa) {
-    case avx512_core:
-      return cpu().has(Cpu::tAVX512F) && cpu().has(Cpu::tAVX512BW) && cpu().has(Cpu::tAVX512VL) &&
-             cpu().has(Cpu::tAVX512DQ);
-    case avx512_vbmi:
-      return cpu().has(Cpu::tAVX512_VBMI);
-    case avx512_core_vnni:
-      return cpu().has(Cpu::tAVX512F) && cpu().has(Cpu::tAVX512BW) && cpu().has(Cpu::tAVX512VL) &&
-             cpu().has(Cpu::tAVX512DQ) && cpu().has(Cpu::tAVX512_VNNI);
-    case avx512_core_bf16:
-      return cpu().has(Cpu::tAVX512_BF16);
-    case amx_tile:
-      return cpu().has(Cpu::tAMX_TILE) && amx_setting().get();
-    case amx_int8:
-      return isa_available(amx_tile) && cpu().has(Cpu::tAMX_INT8);
-    case amx_bf16:
-      return isa_available(amx_tile) && cpu().has(Cpu::tAMX_BF16);
-    case avx512_core_bf16_amx_int8:
-      return isa_available(avx512_core_bf16) && isa_available(amx_int8);
-    case avx512_core_bf16_amx_bf16:
-      return isa_available(avx512_core_bf16) && isa_available(amx_bf16);
-    case avx512_core_amx:
-      return isa_available(avx512_core_bf16_amx_int8) && isa_available(avx512_core_bf16_amx_bf16) &&
-             cpu().has(Cpu::tAVX512_FP16);
-    case avx512_core_fp16:
-      return cpu().has(Cpu::tAVX512_FP16);
-    case isa_any:
-      return true;
+  case avx512_core:
+    return cpu().has(Cpu::tAVX512F) && cpu().has(Cpu::tAVX512BW) &&
+           cpu().has(Cpu::tAVX512VL) && cpu().has(Cpu::tAVX512DQ);
+  case avx512_vbmi:
+    return cpu().has(Cpu::tAVX512_VBMI);
+  case avx512_core_vnni:
+    return cpu().has(Cpu::tAVX512F) && cpu().has(Cpu::tAVX512BW) &&
+           cpu().has(Cpu::tAVX512VL) && cpu().has(Cpu::tAVX512DQ) &&
+           cpu().has(Cpu::tAVX512_VNNI);
+  case avx512_core_bf16:
+    return cpu().has(Cpu::tAVX512_BF16);
+  case amx_tile:
+    return cpu().has(Cpu::tAMX_TILE) && amx_setting().get();
+  case amx_int8:
+    return isa_available(amx_tile) && cpu().has(Cpu::tAMX_INT8);
+  case amx_bf16:
+    return isa_available(amx_tile) && cpu().has(Cpu::tAMX_BF16);
+  case avx512_core_bf16_amx_int8:
+    return isa_available(avx512_core_bf16) && isa_available(amx_int8);
+  case avx512_core_bf16_amx_bf16:
+    return isa_available(avx512_core_bf16) && isa_available(amx_bf16);
+  case avx512_core_amx:
+    return isa_available(avx512_core_bf16_amx_int8) &&
+           isa_available(avx512_core_bf16_amx_bf16) &&
+           cpu().has(Cpu::tAVX512_FP16);
+  case avx512_core_fp16:
+    return cpu().has(Cpu::tAVX512_FP16);
+  case isa_any:
+    return true;
   }
   return false;
 }
 
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_SRC_CPU_CPU_ISA_HPP_
+#endif // ENGINE_SPARSELIB_SRC_CPU_CPU_ISA_HPP_

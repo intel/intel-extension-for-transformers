@@ -14,7 +14,7 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNEL_CACHE_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNEL_CACHE_HPP_
-#include <condition_variable>  // NOLINT
+#include <condition_variable> // NOLINT
 #include <memory>
 #include <unordered_map>
 
@@ -24,25 +24,29 @@
 
 namespace jd {
 class kernel_cache {
- public:
-  explicit kernel_cache(int64_t capacity = 1024) : capacity_(capacity), cv_(), mtx_() {}
+public:
+  explicit kernel_cache(int64_t capacity = 1024)
+      : capacity_(capacity), cv_(), mtx_() {}
   virtual ~kernel_cache() {}
 
- public:
-  const std::shared_ptr<const kernel_t>& find_or_construct(
-      const operator_desc& op_desc, const std::function<bool(std::shared_ptr<const kernel_t>&)>& callback);
-  const std::shared_ptr<const kernel_desc_t>& get_kd(const operator_desc& op_desc);
+public:
+  const std::shared_ptr<const kernel_t> &find_or_construct(
+      const operator_desc &op_desc,
+      const std::function<bool(std::shared_ptr<const kernel_t> &)> &callback);
+  const std::shared_ptr<const kernel_desc_t> &
+  get_kd(const operator_desc &op_desc);
 
- private:
-  const std::shared_ptr<const kernel_t>& get(const operator_desc& op_desc);
-  void set(const std::shared_ptr<const kernel_t>& kernel);
+private:
+  const std::shared_ptr<const kernel_t> &get(const operator_desc &op_desc);
+  void set(const std::shared_ptr<const kernel_t> &kernel);
 
- private:
+private:
   uint64_t capacity_;
-  std::unordered_map<operator_desc, std::shared_ptr<const kernel_t>, hash_t> cache_ = {};
+  std::unordered_map<operator_desc, std::shared_ptr<const kernel_t>, hash_t>
+      cache_ = {};
 
   std::condition_variable cv_;
   std::mutex mtx_;
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNEL_CACHE_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_KERNEL_CACHE_HPP_

@@ -18,18 +18,23 @@
 
 #include "regs_pool.hpp"
 
-#define GET_OFF(field) offsetof(jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::rt_data_t, field)
+#define GET_OFF(field)                                                         \
+  offsetof(jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::rt_data_t, field)
 
 namespace jd {
 void jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::generate() {
-  bool need_cfg_amx = pre_amx_cfg_ != nullptr && *pre_amx_cfg_ != required_amx_cfg_;
+  bool need_cfg_amx =
+      pre_amx_cfg_ != nullptr && *pre_amx_cfg_ != required_amx_cfg_;
 
-  std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
+  std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr),
+                                           [&](...) { outLocalLabel(); }};
   {
     regs_pool rp(this, 1, {5, 0, 0}, need_cfg_amx ? sizeof(tileconfig_t) : 0);
     std::shared_ptr<void> local_cfg;
-    if (need_cfg_amx) {  // create a local amx config environment
-      local_cfg = {(sttilecfg(ptr[rsp]), ldtilecfg(ptr[rip + L_amx_cfg]), nullptr), [&](...) { ldtilecfg(ptr[rsp]); }};
+    if (need_cfg_amx) { // create a local amx config environment
+      local_cfg = {
+          (sttilecfg(ptr[rsp]), ldtilecfg(ptr[rip + L_amx_cfg]), nullptr),
+          [&](...) { ldtilecfg(ptr[rsp]); }};
     }
 
     const auto reg_src0 = rp.reg<Reg64>();
@@ -52,7 +57,8 @@ void jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::generate() {
         // clear
         for (int i = 0; i < TH_; ++i)
           for (int j = 0; j < TW_; ++j)
-            if (idx_m + i * 16 < M && idx_n + j * 16 < N) tilezero(tmm_dst[i * TW_ + j]);
+            if (idx_m + i * 16 < M && idx_n + j * 16 < N)
+              tilezero(tmm_dst[i * TW_ + j]);
 
         // dp (loop k)
         for (int k = 0; k < K; k += 64)
@@ -60,27 +66,35 @@ void jit_matmul_amx_s8ab_s8Ab4a_s32AB16a16b::generate() {
             for (int j = 0; j < TW_; ++j)
               if (idx_m + i * 16 < M && idx_n + j * 16 < N) {
                 const auto src0_offset = (idx_m + i * 16) * ld_src0 + k;
-                if (j == 0) tileloadd(tmm_src0[i], ptr[reg_src0 + reg_ld_src0 + src0_offset]);
+                if (j == 0)
+                  tileloadd(tmm_src0[i],
+                            ptr[reg_src0 + reg_ld_src0 + src0_offset]);
 
                 const auto src1_offset = (idx_n + j * 16) * K + k * 16;
-                if (i == 0) tileloadd(tmm_src1[j], ptr[reg_src1 + reg_stride64 + src1_offset]);
+                if (i == 0)
+                  tileloadd(tmm_src1[j],
+                            ptr[reg_src1 + reg_stride64 + src1_offset]);
 
                 tdpbssd(tmm_dst[i * TW_ + j], tmm_src0[i], tmm_src1[j]);
 
                 // store
-                const auto dst_offset = (idx_m + i * 16) * N + (idx_n + j * 16) * 16;
+                const auto dst_offset =
+                    (idx_m + i * 16) * N + (idx_n + j * 16) * 16;
                 if (k + 64 >= K)
-                  tilestored(ptr[reg_dst + reg_stride64 + dst_offset * sizeof(int32_t)], tmm_dst[i * TW_ + j]);
+                  tilestored(ptr[reg_dst + reg_stride64 +
+                                 dst_offset * sizeof(int32_t)],
+                             tmm_dst[i * TW_ + j]);
               }
       }
     }
-  }  // end of call stack
+  } // end of call stack
 
   if (need_cfg_amx) {
     configure_tiles(required_amx_cfg_, &reqired_tile_cfg_);
     align(sizeof(tileconfig_t));
     L(L_amx_cfg);
-    db(reinterpret_cast<const uint8_t*>(&reqired_tile_cfg_), sizeof(tileconfig_t));
+    db(reinterpret_cast<const uint8_t *>(&reqired_tile_cfg_),
+       sizeof(tileconfig_t));
   }
 }
-}  // namespace jd
+} // namespace jd

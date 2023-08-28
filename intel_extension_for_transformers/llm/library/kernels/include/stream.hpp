@@ -18,15 +18,15 @@
 namespace jd {
 class engine_t;
 class stream_t {
- public:
-  explicit stream_t(const engine_t* engine) : engine_(engine) {}
+public:
+  explicit stream_t(const engine_t *engine) : engine_(engine) {}
   virtual ~stream_t() {}
   virtual bool wait() { return true; }
-  const engine_t* get_engine() const { return engine_; }
+  const engine_t *get_engine() const { return engine_; }
 
- protected:
-  const engine_t* engine_;
+protected:
+  const engine_t *engine_;
 };
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_INCLUDE_STREAM_HPP_
+#endif // ENGINE_SPARSELIB_INCLUDE_STREAM_HPP_

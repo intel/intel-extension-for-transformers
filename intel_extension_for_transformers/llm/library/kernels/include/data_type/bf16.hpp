@@ -15,8 +15,8 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_BF16_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_BF16_HPP_
 
-#include <cstdint>
 #include "common.h"
+#include <cstdint>
 
 namespace jd {
 struct SPARSE_API_ bfloat16_t {
@@ -26,12 +26,12 @@ struct SPARSE_API_ bfloat16_t {
   explicit bfloat16_t(int32_t val);
   explicit bfloat16_t(uint16_t val);
   explicit bfloat16_t(float val);
-  bfloat16_t& operator=(float val);
+  bfloat16_t &operator=(float val);
   operator float() const;
 };
 
 static_assert(sizeof(bfloat16_t) == 2, "bfloat16_t must be 2 bytes");
 
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_BF16_HPP_
+#endif // ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_BF16_HPP_

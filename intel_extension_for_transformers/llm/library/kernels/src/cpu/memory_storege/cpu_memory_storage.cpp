@@ -24,27 +24,31 @@ bool cpu_memory_storage_t::allocate(size_t size) {
   data_ = malloc(size);
   return true;
 }
-bool cpu_memory_storage_t::mmap(void** map_ptr, size_t size, const stream_t*) {
+bool cpu_memory_storage_t::mmap(void **map_ptr, size_t size, const stream_t *) {
   *map_ptr = data_;
   size_ = size;
   return true;
 }
 
-bool cpu_memory_storage_t::unmmap(void*, size_t, const stream_t*) { return true; }
+bool cpu_memory_storage_t::unmmap(void *, size_t, const stream_t *) {
+  return true;
+}
 
-bool cpu_memory_storage_t::copy(void* ptr, size_t size, copy_direction_t direction, const stream_t*) {  // NOLINT
+bool cpu_memory_storage_t::copy(void *ptr, size_t size,
+                                copy_direction_t direction,
+                                const stream_t *) { // NOLINT
   switch (direction) {
-    case copy_direction_t::host_to_host:
-      if (size_ == 0) {
-        allocate(size);
-      }
-      memcpy(data_, ptr, size);
-      break;
+  case copy_direction_t::host_to_host:
+    if (size_ == 0) {
+      allocate(size);
+    }
+    memcpy(data_, ptr, size);
+    break;
 
-    default:
-      return false;
-      // break;
+  default:
+    return false;
+    // break;
   }
   return true;
 }
-}  // namespace jd
+} // namespace jd

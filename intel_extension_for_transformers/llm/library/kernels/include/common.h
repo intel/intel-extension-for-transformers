@@ -24,15 +24,15 @@
 #endif
 #elif __GNUC__ >= 4 || defined(__clang__)
 #define SPARSE_API_ __attribute__((visibility("default")))
-#endif  // _MSC_VER
-#endif  // SPARSE_API_
+#endif // _MSC_VER
+#endif // SPARSE_API_
 
 #ifndef SPARSE_TEST_API_
 #ifdef SPARSE_TEST
 #define SPARSE_TEST_API_ SPARSE_API_
 #else
 #define SPARSE_TEST_API_
-#endif  // SPARSE_TEST_API_
-#endif  // SPARSE_TEST
+#endif // SPARSE_TEST_API_
+#endif // SPARSE_TEST
 
-#endif  // ENGINE_SPARSELIB_INCLUDE_COMMON_H_
+#endif // ENGINE_SPARSELIB_INCLUDE_COMMON_H_

@@ -25,25 +25,26 @@ void jit_mean_var_reduce_t::load_params() {
 }
 
 void jit_mean_var_reduce_t::calc_mean_var() {
-  vmovups(avg_a, ptr[reg_mean_in]);  // zmm0
-  vmovups(M_a, ptr[reg_var_in]);     // zmm2
+  vmovups(avg_a, ptr[reg_mean_in]); // zmm0
+  vmovups(M_a, ptr[reg_var_in]);    // zmm2
   mov(num_tmp, 0);
-  vpbroadcastd(n_a, num_tmp.cvt32());  // zmm5
+  vpbroadcastd(n_a, num_tmp.cvt32()); // zmm5
   mov(num_tmp, param_.BM);
-  vpbroadcastd(n_b, num_tmp.cvt32());  // zmm6
+  vpbroadcastd(n_b, num_tmp.cvt32()); // zmm6
   mov(num_tmp.cvt32(), bit_cast<int, float>(reciprocal_M_));
-  vpbroadcastd(reciprocal_M, num_tmp.cvt32());  // zmm11
+  vpbroadcastd(reciprocal_M, num_tmp.cvt32()); // zmm11
   for (int i = 0; i < param_.element_num - 1; i++) {
-    vmovups(avg_b, ptr[reg_mean_in + (i + 1) * param_.BN * sizeof(float)]);  // zmm1
-    vmovups(M_b, ptr[reg_var_in + (i + 1) * param_.BN * sizeof(float)]);     // zmm3
-    vaddps(M_a, M_a, M_b);                                                   // zmm2
+    vmovups(avg_b,
+            ptr[reg_mean_in + (i + 1) * param_.BN * sizeof(float)]);     // zmm1
+    vmovups(M_b, ptr[reg_var_in + (i + 1) * param_.BN * sizeof(float)]); // zmm3
+    vaddps(M_a, M_a, M_b);                                               // zmm2
     if (i == param_.element_num - 2 && tail_BM_ != 0) {
       mov(num_tmp, tail_BM_);
-      vpbroadcastd(n_b, num_tmp.cvt32());  // zmm5
+      vpbroadcastd(n_b, num_tmp.cvt32()); // zmm5
     }
-    vpaddd(n_a, n_a, n_b);             // zmm4
-    vsubps(delta, avg_b, avg_a);       // zmm7
-    vmulps(pow2_delta, delta, delta);  // zmm8
+    vpaddd(n_a, n_a, n_b);            // zmm4
+    vsubps(delta, avg_b, avg_a);      // zmm7
+    vmulps(pow2_delta, delta, delta); // zmm8
     float scale_tmp;
     if (i != param_.element_num - 2 || tail_BM_ == 0) {
       scale_tmp = 1.f / (i + 2);
@@ -51,16 +52,16 @@ void jit_mean_var_reduce_t::calc_mean_var() {
       scale_tmp = tail_BM_ * 1.f / ((i + 1) * param_.BM + tail_BM_);
     }
     mov(num_tmp, bit_cast<int, float>(scale_tmp));
-    vpbroadcastd(scale, num_tmp.cvt32());  // zmm9
-    vcvtdq2ps(n_a_float, n_a);             // zmm5
-    vmulps(scalee, scale, n_a_float);      // zmm10
+    vpbroadcastd(scale, num_tmp.cvt32()); // zmm9
+    vcvtdq2ps(n_a_float, n_a);            // zmm5
+    vmulps(scalee, scale, n_a_float);     // zmm10
 
-    vfmadd231ps(M_a, pow2_delta, scalee);  // zmm3
-    vfmadd231ps(avg_a, delta, scale);      // zmm0
+    vfmadd231ps(M_a, pow2_delta, scalee); // zmm3
+    vfmadd231ps(avg_a, delta, scale);     // zmm0
   }
-  vmovups(ptr[reg_mean_out], avg_a);  // zmm0
-  vmulps(M_a, M_a, reciprocal_M);     // zmm2
-  vmovups(ptr[reg_var_out], M_a);     // zmm2
+  vmovups(ptr[reg_mean_out], avg_a); // zmm0
+  vmulps(M_a, M_a, reciprocal_M);    // zmm2
+  vmovups(ptr[reg_var_out], M_a);    // zmm2
 }
 void jit_mean_var_reduce_t::generate() {
   this->preamble();
@@ -69,4 +70,4 @@ void jit_mean_var_reduce_t::generate() {
   this->postamble();
 }
 
-}  // namespace jd
+} // namespace jd

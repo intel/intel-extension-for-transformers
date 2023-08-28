@@ -26,7 +26,8 @@ void jit_dynamic_quant_t::generate() {
     constexpr int SIMD_SIZE = 16;
     constexpr auto AVX512_ALIGNMENT = BYTES_ZMM;
 
-    regs_pool rp(this, 1, {5, 32, 2}, BYTES_ZMM, regs_pool::IgnoreWaste, AVX512_ALIGNMENT);
+    regs_pool rp(this, 1, {5, 32, 2}, BYTES_ZMM, regs_pool::IgnoreWaste,
+                 AVX512_ALIGNMENT);
     const auto reg_src = rp.reg<Reg64>();
     const auto reg_scale = rp.reg<Reg64>();
     const auto reg_dst = rp.reg<Reg64>();
@@ -35,14 +36,16 @@ void jit_dynamic_quant_t::generate() {
 
     const auto srcdt_size = get_data_size(param_.input_dt);
     const auto dstdt_size = get_data_size(param_.output_dt);
-    const int body_quantdim = pad_to_le(param_.quantized_dim_elt_num, SIMD_SIZE);
+    const int body_quantdim =
+        pad_to_le(param_.quantized_dim_elt_num, SIMD_SIZE);
     const int tail_quantdim = param_.quantized_dim_elt_num % SIMD_SIZE;
 
-    auto get_Nx16_fp32 = [&](const Reg64& offset, const int n) {
+    auto get_Nx16_fp32 = [&](const Reg64 &offset, const int n) {
       const auto fp32_zmms = rp.regs<Zmm, 16>();
       // load bf16 and cvt to fp32 or load fp32 directly.
       for (int i = 0; i < n; i++) {
-        const RegExp src_addr = reg_src + offset * srcdt_size + i * param_.ld_src * srcdt_size;
+        const RegExp src_addr =
+            reg_src + offset * srcdt_size + i * param_.ld_src * srcdt_size;
         if (param_.input_dt == data_type::bf16) {
           vpmovzxwd(fp32_zmms[i], yword[src_addr]);
           vpslld(fp32_zmms[i], fp32_zmms[i], 0x10);
@@ -53,26 +56,33 @@ void jit_dynamic_quant_t::generate() {
       return fp32_zmms;
     };
 
-    auto get_N_abs_max_zmm = [&](const std::array<Zmm, 16>& zmms, const Reg64& reg_offset, const int n,
+    auto get_N_abs_max_zmm = [&](const std::array<Zmm, 16> &zmms,
+                                 const Reg64 &reg_offset, const int n,
                                  const bool need_mask = false) {
       auto fp32_zmms = get_Nx16_fp32(reg_offset, n);
-      for (int i = 0; i < n; i++) vrangeps(need_mask ? zmms[i] | dim_tail_mask : zmms[i], zmms[i], fp32_zmms[i], 11U);
+      for (int i = 0; i < n; i++)
+        vrangeps(need_mask ? zmms[i] | dim_tail_mask : zmms[i], zmms[i],
+                 fp32_zmms[i], 11U);
     };
 
-    auto write_back_scale = [&](const Zmm& scale, const int n) {
+    auto write_back_scale = [&](const Zmm &scale, const int n) {
       vmulps(scale, scale, zword_b[rip + l_rcp127]);
       vmovups(zword[reg_scale] | (n == 16 ? k0 : channel_tail_mask), scale);
       vrcp14ps(scale, scale);
       vmovaps(ptr[rsp], scale);
     };
 
-    auto quant_write_back_Nx16 = [&](const Reg64& reg_offset, const int n, const bool need_mask = false) {
+    auto quant_write_back_Nx16 = [&](const Reg64 &reg_offset, const int n,
+                                     const bool need_mask = false) {
       const auto fp32_zmms = get_Nx16_fp32(reg_offset, n);
       for (int i = 0; i < n; i++) {
-        const RegExp write_back_addr = reg_dst + reg_offset * dstdt_size + i * param_.ld_dst * dstdt_size;
+        const RegExp write_back_addr =
+            reg_dst + reg_offset * dstdt_size + i * param_.ld_dst * dstdt_size;
         vmulps(fp32_zmms[i], fp32_zmms[i], zword_b[rsp + i * sizeof(float)]);
         vcvtps2dq(fp32_zmms[i], fp32_zmms[i]);
-        vpmovsdb(need_mask ? ptr[write_back_addr] | dim_tail_mask : ptr[write_back_addr], fp32_zmms[i]);
+        vpmovsdb(need_mask ? ptr[write_back_addr] | dim_tail_mask
+                           : ptr[write_back_addr],
+                 fp32_zmms[i]);
       }
     };
 
@@ -80,7 +90,8 @@ void jit_dynamic_quant_t::generate() {
       if (!scale_input_) {
         // calculate n row abs max in n zmms
         const auto zmms = rp.regs<Zmm, 16>();
-        for (int i = 0; i < 16; i++) vxorps(zmms[i], zmms[i], zmms[i]);
+        for (int i = 0; i < 16; i++)
+          vxorps(zmms[i], zmms[i], zmms[i]);
         const auto reg_max_abs_offset = rp.reg<Reg64>();
         xor_(reg_max_abs_offset, reg_max_abs_offset);
         if (body_quantdim > 0) {
@@ -91,16 +102,18 @@ void jit_dynamic_quant_t::generate() {
           cmp(reg_max_abs_offset, body_quantdim);
           jl(l_max_abs);
         }
-        if (tail_quantdim != 0) get_N_abs_max_zmm(zmms, reg_max_abs_offset, n, true);
+        if (tail_quantdim != 0)
+          get_N_abs_max_zmm(zmms, reg_max_abs_offset, n, true);
 
         // get scale.
         transpose_16x16_ps(zmms, rp.regs<Zmm, 16>());
         reduce_vmms(zmms, &CodeGenerator::vmaxps);
         write_back_scale(zmms[0], n);
       }
-      if (scale_input_) {  // copy scale to the stack
+      if (scale_input_) { // copy scale to the stack
         const auto vreg_scale = rp.reg<Zmm>();
-        vmovaps(vreg_scale | (n == 16 ? k0 : channel_tail_mask) | T_z, ptr[reg_scale]);
+        vmovaps(vreg_scale | (n == 16 ? k0 : channel_tail_mask) | T_z,
+                ptr[reg_scale]);
         vmovaps(zword[rsp], vreg_scale);
       }
 
@@ -116,7 +129,8 @@ void jit_dynamic_quant_t::generate() {
           cmp(reg_quantize_offset, body_quantdim);
           jl(l_quant);
         }
-        if (tail_quantdim != 0) quant_write_back_Nx16(reg_quantize_offset, n, true);
+        if (tail_quantdim != 0)
+          quant_write_back_Nx16(reg_quantize_offset, n, true);
       }
     };
 
@@ -135,7 +149,7 @@ void jit_dynamic_quant_t::generate() {
     mov(reg_scale, ptr[rp.p[0] + GET_OFF(scale)]);
     mov(reg_dst, ptr[rp.p[0] + GET_OFF(mat_dst)]);
 
-    constexpr int TILE_CH = 16;  // Tile size on the channel dim
+    constexpr int TILE_CH = 16; // Tile size on the channel dim
     const int body_channel = pad_to_le(process_channel_, SIMD_SIZE);
     const int tail_channel = process_channel_ % SIMD_SIZE;
     if (body_channel > 0) {
@@ -149,10 +163,11 @@ void jit_dynamic_quant_t::generate() {
       cmp(channel_loop, body_channel);
       jl(body_channel_loop);
     }
-    if (tail_channel > 0) s8quantize_N_channel(tail_channel);
+    if (tail_channel > 0)
+      s8quantize_N_channel(tail_channel);
   }
   outLocalLabel();
   L(l_rcp127);
   db(bit_cast<uint32_t>(1.f / 127.f), sizeof(float));
 }
-}  // namespace jd
+} // namespace jd

@@ -12,9 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <string>
 #include "jit_dynamic_quant_matmul_reduce_scale_quant.hpp"
 #include "regs_pool.hpp"
+#include <string>
 
 namespace jd {
 #define PARAM_OFF(x) offsetof(dynamic_quant_matmul_reduce_scale_quant_data_t, x)
@@ -36,13 +36,15 @@ void jit_dynamic_quant_matmul_reduce_scale_quant_t::generate() {
 
     bool scale_need_mask = (param_.quant_m % 16) != 0;
     bool n_need_mask = (param_.quant_n % 16) != 0;
-    auto set_mask = [&](const Xbyak::Opmask& mask, int tail_num) {
+    auto set_mask = [&](const Xbyak::Opmask &mask, int tail_num) {
       mov(reg_tmp.cvt32(), 0xffff >> (16 - tail_num));
       kmovd(mask, reg_tmp.cvt32());
     };
 
-    if (scale_need_mask) set_mask(scale_mask, param_.quant_m % 16);
-    if (n_need_mask) set_mask(n_mask, param_.quant_n % 16);
+    if (scale_need_mask)
+      set_mask(scale_mask, param_.quant_m % 16);
+    if (n_need_mask)
+      set_mask(n_mask, param_.quant_n % 16);
 
     mov(reg_reduce_scale, ptr[rp.p[0] + PARAM_OFF(reduce_scale)]);
     mov(reg_dst_scale, ptr[rp.p[0] + PARAM_OFF(dst_scale)]);
@@ -55,9 +57,13 @@ void jit_dynamic_quant_matmul_reduce_scale_quant_t::generate() {
       auto scale_zmm = rp.reg<Zmm>();
       vxorps(scale_zmm, scale_zmm, scale_zmm);
       for (int i = 0; i < param_.n_block_num; i++)
-        vmaxps(scale_zmm, scale_zmm, ptr[reg_reduce_scale + reg_tmp + i * param_.quant_m * sizeof(float)]);
+        vmaxps(scale_zmm, scale_zmm,
+               ptr[reg_reduce_scale + reg_tmp +
+                   i * param_.quant_m * sizeof(float)]);
       vmulps(scale_zmm, scale_zmm, zword_b[rip + data_label]);
-      vmovups(scale_need_mask ? ptr[reg_dst_scale + reg_tmp] | scale_mask : ptr[reg_dst_scale + reg_tmp], scale_zmm);
+      vmovups(scale_need_mask ? ptr[reg_dst_scale + reg_tmp] | scale_mask
+                              : ptr[reg_dst_scale + reg_tmp],
+              scale_zmm);
       vrcp14ps(scale_zmm, scale_zmm);
       vmovups(ptr[rsp], scale_zmm);
     };
@@ -67,11 +73,14 @@ void jit_dynamic_quant_matmul_reduce_scale_quant_t::generate() {
 
     auto quant_Mx16 = [&](int M, bool n_dim_mask) {
       for (int i = 0; i < M; i++) {
-        vmovups(Ymm(zmms[i].getIdx()), ptr[reg_mat_src + i * sizeof(bfloat16_t) * param_.n]);
+        vmovups(Ymm(zmms[i].getIdx()),
+                ptr[reg_mat_src + i * sizeof(bfloat16_t) * param_.n]);
         bf16_cvt_fp32(zmms[i]);
         vmulps(zmms[i], zmms[i], zword_b[rsp + i * sizeof(float)]);
         vcvtps2dq(zmms[i], zmms[i]);
-        vpmovsdb(n_dim_mask ? ptr[reg_mat_dst + i * param_.n] | n_mask : ptr[reg_mat_dst + i * param_.n], zmms[i]);
+        vpmovsdb(n_dim_mask ? ptr[reg_mat_dst + i * param_.n] | n_mask
+                            : ptr[reg_mat_dst + i * param_.n],
+                 zmms[i]);
       }
     };
 
@@ -84,7 +93,8 @@ void jit_dynamic_quant_matmul_reduce_scale_quant_t::generate() {
       inc(reg_n_loop);
       cmp(reg_n_loop, n_loop_num);
       jl(label);
-      if (n_need_mask) quant_Mx16(M, true);
+      if (n_need_mask)
+        quant_Mx16(M, true);
     };
 
     xor_(reg_m_loop, reg_m_loop);
@@ -111,4 +121,4 @@ void jit_dynamic_quant_matmul_reduce_scale_quant_t::generate() {
   L(data_label);
   db(bit_cast<uint32_t>(1.f / 127.f), sizeof(float));
 }
-}  // namespace jd
+} // namespace jd

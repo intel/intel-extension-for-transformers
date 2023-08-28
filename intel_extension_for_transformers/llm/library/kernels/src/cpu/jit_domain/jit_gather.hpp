@@ -25,7 +25,7 @@
 namespace jd {
 
 class jit_gather_t : public jit_generator {
- public:
+public:
   struct param_t {
     bool use_avx512;
     data_type dt;
@@ -36,28 +36,28 @@ class jit_gather_t : public jit_generator {
   };
 
   struct rt_data_t {
-    const void* src;
-    const void* idx;
-    void* dst;
-    const void* binaryop_addrs[16];
+    const void *src;
+    const void *idx;
+    void *dst;
+    const void *binaryop_addrs[16];
 
-   public:
-    rt_data_t(const void* a, const void* b, void* c) : src(a), idx(b), dst(c) {}
+  public:
+    rt_data_t(const void *a, const void *b, void *c) : src(a), idx(b), dst(c) {}
   };
 
-  explicit jit_gather_t(const param_t& param) : jit_generator(), param_(param), binaryop_attrs_(param.binary_ops) {
+  explicit jit_gather_t(const param_t &param)
+      : jit_generator(), param_(param), binaryop_attrs_(param.binary_ops) {
     binary_injector.binary_injector_init(this);
   }
   virtual ~jit_gather_t() {}
 
- private:
+private:
   void generate() override;
-  template <bool USE_AVX512>
-  void generate_();
+  template <bool USE_AVX512> void generate_();
 
   param_t param_;
   jit_binary_injector binary_injector;
   const std::vector<jd::binaryop_attr> binaryop_attrs_;
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_GATHER_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_GATHER_HPP_

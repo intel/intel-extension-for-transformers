@@ -45,9 +45,11 @@ bool softmax_k_t::init() {
       td[i]->one = bfloat16_t(1.0f);
     }
   }
-  jit_softmax_t* ker = new jit_softmax_t(derived_kd()->param());
-  if (ker == nullptr) return false;
-  if (!(ker->create_kernel())) return false;
+  jit_softmax_t *ker = new jit_softmax_t(derived_kd()->param());
+  if (ker == nullptr)
+    return false;
+  if (!(ker->create_kernel()))
+    return false;
   jit_ker_ = ker;
   return true;
 }
@@ -55,18 +57,26 @@ bool softmax_k_t::init() {
 void softmax_kd_t::prepare_lut_softmax_params() {
   // assert int8 dt as input.
   auto tensor_desc = op_desc_.tensor_descs();
-  if (tensor_desc.size() != 2) SPARSE_LOG(ERROR) << "softmax lut kernel need 2 tensor descriptor:src & dst.";
+  if (tensor_desc.size() != 2)
+    SPARSE_LOG(ERROR)
+        << "softmax lut kernel need 2 tensor descriptor:src & dst.";
   auto input_dt = tensor_desc[0].dtype();
   auto output_dt = tensor_desc[1].dtype();
-  if (get_data_size(input_dt) != 1) LOG(ERROR) << "softmax lut kernel only support int8 dtype as input." << std::endl;
-  if (get_data_size(output_dt) == 1 && op_desc_.apply_postops_list().back().op_alg != postop_alg::quantize)
-    LOG(WARNING) << "The result of softmax lut kernel need to be quantized when output_dt is int8." << std::endl;
+  if (get_data_size(input_dt) != 1)
+    LOG(ERROR) << "softmax lut kernel only support int8 dtype as input."
+               << std::endl;
+  if (get_data_size(output_dt) == 1 &&
+      op_desc_.apply_postops_list().back().op_alg != postop_alg::quantize)
+    LOG(WARNING) << "The result of softmax lut kernel need to be quantized "
+                    "when output_dt is int8."
+                 << std::endl;
   auto input_shape = tensor_desc[0].shape();
 
   // init param
   int vec_len = input_shape.back();
   int total_vec_num = 1;
-  for (size_t i = 0; i < input_shape.size() - 1; i++) total_vec_num *= input_shape[i];
+  for (size_t i = 0; i < input_shape.size() - 1; i++)
+    total_vec_num *= input_shape[i];
   param_.scalar_num = total_vec_num * vec_len;
   int thr_num = omp_get_max_threads();
   int vec_num_per_thr = total_vec_num / thr_num;
@@ -76,13 +86,16 @@ void softmax_kd_t::prepare_lut_softmax_params() {
   param_.postop_attrs = op_desc_.apply_postops_list();
   if (param_.postop_attrs.front().op_alg != postop_alg::dequantize)
     LOG(ERROR) << "lut softmax must append dequantize postop.";
-  param_.postop_attrs.front().alpha = 0;  // (x-zp)*scale-(max-zp)*scale=(x-max)*scale,so we don't need zp
+  param_.postop_attrs.front().alpha =
+      0; // (x-zp)*scale-(max-zp)*scale=(x-max)*scale,so we don't need zp
   param_.get_lut_exp_attrs.push_back(param_.postop_attrs.front());
   param_.postop_attrs.erase(param_.postop_attrs.begin());
   postop_attr exp_attr{data_type::bf16, postop_type::eltwise, postop_alg::exp};
-  postop_attr etlop_lut_attr{input_dt, postop_type::eltwise, postop_alg::eltop_int_lut, 16, 256};
+  postop_attr etlop_lut_attr{input_dt, postop_type::eltwise,
+                             postop_alg::eltop_int_lut, 16, 256};
   param_.get_lut_exp_attrs.push_back(exp_attr);
-  param_.get_lut_exp_attrs.insert(param_.get_lut_exp_attrs.begin(), etlop_lut_attr);
+  param_.get_lut_exp_attrs.insert(param_.get_lut_exp_attrs.begin(),
+                                  etlop_lut_attr);
   param_.vec_align_len = vec_len / 32 * 32;
   param_.vec_num_per_thr = vec_num_per_thr;
   param_.vec_num_tail_thr = vec_num_tail_thr;
@@ -90,19 +103,21 @@ void softmax_kd_t::prepare_lut_softmax_params() {
   param_.sepc_type = ssd::spec_softmax_type::lut;
 }
 
-bool softmax_k_t::execute(const std::vector<const void*>& rt_data) const {
+bool softmax_k_t::execute(const std::vector<const void *> &rt_data) const {
   auto param = derived_kd()->param();
-  const jit_softmax_t* jit_impl = jit_ker_;
+  const jit_softmax_t *jit_impl = jit_ker_;
 
 #pragma omp parallel for
   for (int i = 0; i < nthr_; i++) {
     auto data_param = td[i];
-    data_param->src = const_cast<char*>(reinterpret_cast<const char*>(rt_data[0]) +
-                                        i * param.vec_num_per_thr * (param.vec_align_len + param.vec_tail_len) *
-                                            get_data_size(param.input_dt));
-    data_param->dst = const_cast<char*>(reinterpret_cast<const char*>(rt_data[1]) +
-                                        i * param.vec_num_per_thr * (param.vec_align_len + param.vec_tail_len) *
-                                            get_data_size(param.output_dt));
+    data_param->src = const_cast<char *>(
+        reinterpret_cast<const char *>(rt_data[0]) +
+        i * param.vec_num_per_thr * (param.vec_align_len + param.vec_tail_len) *
+            get_data_size(param.input_dt));
+    data_param->dst = const_cast<char *>(
+        reinterpret_cast<const char *>(rt_data[1]) +
+        i * param.vec_num_per_thr * (param.vec_align_len + param.vec_tail_len) *
+            get_data_size(param.output_dt));
     if (i != nthr_ - 1)
       data_param->process_vec_num = param.vec_num_per_thr;
     else
@@ -113,4 +128,4 @@ bool softmax_k_t::execute(const std::vector<const void*>& rt_data) const {
   return true;
 }
 
-}  // namespace jd
+} // namespace jd

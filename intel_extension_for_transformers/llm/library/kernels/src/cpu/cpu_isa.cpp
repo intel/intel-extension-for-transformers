@@ -15,7 +15,7 @@
 #include "src/cpu/cpu_isa.hpp"
 #ifdef __linux__
 #include <sys/syscall.h>
-#endif  // __linux__
+#endif // __linux__
 
 namespace jd {
 bool init_amx() {
@@ -29,19 +29,23 @@ bool init_amx() {
 #define ARCH_GET_XCOMP_PERM 0x1022
 #define ARCH_REQ_XCOMP_PERM 0x1023
 
-  unsigned long bitmask = 0;                                             // NOLINT
-  long status = syscall(SYS_arch_prctl, ARCH_GET_XCOMP_PERM, &bitmask);  // NOLINT
-  if (0 != status) return false;
-  if (bitmask & XFEATURE_MASK_XTILEDATA) return true;
+  unsigned long bitmask = 0; // NOLINT
+  long status =
+      syscall(SYS_arch_prctl, ARCH_GET_XCOMP_PERM, &bitmask); // NOLINT
+  if (0 != status)
+    return false;
+  if (bitmask & XFEATURE_MASK_XTILEDATA)
+    return true;
 
   status = syscall(SYS_arch_prctl, ARCH_REQ_XCOMP_PERM, XFEATURE_XTILEDATA);
   if (0 != status)
-    return false;  // XFEATURE_XTILEDATA setup is failed, TMUL usage is not
-                   // allowed
+    return false; // XFEATURE_XTILEDATA setup is failed, TMUL usage is not
+                  // allowed
   status = syscall(SYS_arch_prctl, ARCH_GET_XCOMP_PERM, &bitmask);
 
   // XFEATURE_XTILEDATA setup is failed, can't use TMUL
-  if (0 != status || !(bitmask & XFEATURE_MASK_XTILEDATA)) return false;
+  if (0 != status || !(bitmask & XFEATURE_MASK_XTILEDATA))
+    return false;
 
   // XFEATURE_XTILEDATA set successfully, TMUL usage is allowed
 
@@ -51,9 +55,9 @@ bool init_amx() {
 #endif
 }
 
-set_once_before_first_get_setting_t<bool>& amx_setting() {
+set_once_before_first_get_setting_t<bool> &amx_setting() {
   static set_once_before_first_get_setting_t<bool> setting(init_amx());
   return setting;
 }
 
-}  // namespace jd
+} // namespace jd

@@ -15,22 +15,23 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_DATA_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_DATA_TYPES_HPP_
 
-#include <unordered_map>
-#include "param_types.hpp"
 #include "bf16.hpp"
-#include "fp16.hpp"
 #include "f8.hpp"
+#include "fp16.hpp"
+#include "param_types.hpp"
+#include <unordered_map>
 
 typedef int64_t dim_t;
 namespace jd {
-static std::unordered_map<data_type, const int> type_size = {{data_type::fp32, sizeof(float)},
-                                                             {data_type::s32, sizeof(int32_t)},
-                                                             {data_type::fp16, sizeof(float16_t)},
-                                                             {data_type::bf16, sizeof(bfloat16_t)},
-                                                             {data_type::u8, sizeof(uint8_t)},
-                                                             {data_type::s8, sizeof(int8_t)},
-                                                             {data_type::f8_e4m3, sizeof(float8_e4m3_t)},
-                                                             {data_type::f8_e5m2, sizeof(float8_e5m2_t)}};
-}  // namespace jd
+static std::unordered_map<data_type, const int> type_size = {
+    {data_type::fp32, sizeof(float)},
+    {data_type::s32, sizeof(int32_t)},
+    {data_type::fp16, sizeof(float16_t)},
+    {data_type::bf16, sizeof(bfloat16_t)},
+    {data_type::u8, sizeof(uint8_t)},
+    {data_type::s8, sizeof(int8_t)},
+    {data_type::f8_e4m3, sizeof(float8_e4m3_t)},
+    {data_type::f8_e5m2, sizeof(float8_e5m2_t)}};
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_DATA_TYPES_HPP_
+#endif // ENGINE_SPARSELIB_INCLUDE_DATA_TYPE_DATA_TYPES_HPP_

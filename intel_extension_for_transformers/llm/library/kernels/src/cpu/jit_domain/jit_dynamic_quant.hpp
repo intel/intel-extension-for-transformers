@@ -15,10 +15,10 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_DYNAMIC_QUANT_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_DYNAMIC_QUANT_HPP_
 
-#include <memory>
-#include <string>
 #include "jit_generator.hpp"
 #include "src/utils.hpp"
+#include <memory>
+#include <string>
 
 namespace jd {
 
@@ -26,31 +26,33 @@ struct dynamic_quant_param_t {
   data_type input_dt;
   data_type output_dt;
   size_t quantized_dim_elt_num;
-  size_t ld_src;  // src leading dimension in terms of #elements
-  size_t ld_dst;  // dst leading dimension in terms of #elements
+  size_t ld_src; // src leading dimension in terms of #elements
+  size_t ld_dst; // dst leading dimension in terms of #elements
 };
 
 struct dynamic_quant_data_t {
-  void* src;
-  void* mat_dst;
-  void* scale;  // use as rcp input if scale_input_ is true
+  void *src;
+  void *mat_dst;
+  void *scale; // use as rcp input if scale_input_ is true
   // int process_channel;
 };
 
 class jit_dynamic_quant_t : public jit_generator {
- public:
-  explicit jit_dynamic_quant_t(const dynamic_quant_param_t& param, int process_channel, bool scale_input = false)
-      : jit_generator(), param_(param), process_channel_(process_channel), scale_input_(scale_input) {}
+public:
+  explicit jit_dynamic_quant_t(const dynamic_quant_param_t &param,
+                               int process_channel, bool scale_input = false)
+      : jit_generator(), param_(param), process_channel_(process_channel),
+        scale_input_(scale_input) {}
   virtual ~jit_dynamic_quant_t() {}
 
- private:
+private:
   dynamic_quant_param_t param_;
   int process_channel_;
-  bool scale_input_;  // whether use scales input or dynamically calculate scales
+  bool scale_input_; // whether use scales input or dynamically calculate scales
 
- private:
+private:
   void generate() override;
 };
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_DYNAMIC_QUANT_HPP_
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_DYNAMIC_QUANT_HPP_

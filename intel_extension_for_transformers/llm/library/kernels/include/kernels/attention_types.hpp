@@ -29,12 +29,12 @@ enum attention_io {
   Q_SCALES = 8,
   K_SCALES = 9,
   V_SCALES = 10,
-  RESHAPE_INPUT = 11,           // bs * seq_len
-  Q_K_SRC2 = 12,                // q X k output scale(to
-  Q_K_SCALES = 13,              // q X k output scale(to
-  QK_V_OUTPUT_ZERO_POINT = 14,  // qk X v output zero poi
-  QK_V_OUTPUT_SCALES = 15       // qk X v output scale
+  RESHAPE_INPUT = 11,          // bs * seq_len
+  Q_K_SRC2 = 12,               // q X k output scale(to
+  Q_K_SCALES = 13,             // q X k output scale(to
+  QK_V_OUTPUT_ZERO_POINT = 14, // qk X v output zero poi
+  QK_V_OUTPUT_SCALES = 15      // qk X v output scale
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_ATTENTION_TYPES_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_KERNELS_ATTENTION_TYPES_HPP_

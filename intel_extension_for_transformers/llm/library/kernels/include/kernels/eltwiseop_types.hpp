@@ -15,10 +15,10 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_TYPES_HPP_
 
-#include <vector>
+#include "param_types.hpp"
 #include <map>
 #include <set>
-#include "param_types.hpp"
+#include <vector>
 
 namespace jd {
 namespace ssd {
@@ -32,11 +32,11 @@ struct eltwiseop_param_t {
 };
 
 struct eltwiseop_data_t {
-  void* src;
-  void* dst;
+  void *src;
+  void *dst;
   size_t element_num;
 };
 
-}  // namespace ssd
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_TYPES_HPP_
+} // namespace ssd
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_KERNELS_ELTWISEOP_TYPES_HPP_

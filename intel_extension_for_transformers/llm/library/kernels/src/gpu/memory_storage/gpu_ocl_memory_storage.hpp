@@ -15,33 +15,35 @@
 #ifndef ENGINE_SPARSELIB_SRC_GPU_OCL_MEMORY_STORAGE_HPP_
 #define ENGINE_SPARSELIB_SRC_GPU_OCL_MEMORY_STORAGE_HPP_
 
-#include <CL/cl.h>
 #include "memory_storage.hpp"
+#include <CL/cl.h>
 
 namespace jd {
 class gpu_ocl_memory_storage_t : public memory_storage_t {
- public:
-  explicit gpu_ocl_memory_storage_t(const engine_t* engine) : memory_storage_t(engine) {}
+public:
+  explicit gpu_ocl_memory_storage_t(const engine_t *engine)
+      : memory_storage_t(engine) {}
   ~gpu_ocl_memory_storage_t() {}
 
   bool allocate(size_t size) override;
 
-  bool get_handle(void** handle) const override {
-    *handle = static_cast<void*>(data_);
+  bool get_handle(void **handle) const override {
+    *handle = static_cast<void *>(data_);
     return true;
   }
-  bool set_handle(void* handle) override {
+  bool set_handle(void *handle) override {
     data_ = static_cast<cl_mem>(handle);
     return true;
   }
-  bool mmap(void** map_ptr, size_t size, const stream_t* stream) override;
-  bool unmmap(void* map_ptr, size_t, const stream_t* stream) override;
-  bool copy(void* ptr, size_t size, copy_direction_t direction, const stream_t* stream) override;  // NOLINT
+  bool mmap(void **map_ptr, size_t size, const stream_t *stream) override;
+  bool unmmap(void *map_ptr, size_t, const stream_t *stream) override;
+  bool copy(void *ptr, size_t size, copy_direction_t direction,
+            const stream_t *stream) override; // NOLINT
   bool is_null() const override { return data_ == nullptr; }
   size_t get_ptr_size() const override { return sizeof(cl_mem); }
 
- private:
+private:
   cl_mem data_;
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_GPU_OCL_MEMORY_MANAGER_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_GPU_OCL_MEMORY_MANAGER_HPP_

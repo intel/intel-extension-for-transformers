@@ -14,34 +14,34 @@
 
 #ifndef ENGINE_SPARSELIB_INCLUDE_IMPL_LIST_ITEM_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_IMPL_LIST_ITEM_HPP_
-#include <memory>
-#include "param_types.hpp"
-#include "operator_desc.hpp"
 #include "kernel_desc.hpp"
+#include "operator_desc.hpp"
+#include "param_types.hpp"
+#include <memory>
 
 namespace jd {
-template <typename T>
-struct type_deduction_helper_t {
+template <typename T> struct type_deduction_helper_t {
   type_deduction_helper_t() {}
   ~type_deduction_helper_t() {}
   using type = T;
 };
 
 class impl_list_item_t {
- public:
+public:
   impl_list_item_t() {}
   explicit impl_list_item_t(std::nullptr_t) {}
   virtual ~impl_list_item_t() {}
 
- public:
+public:
   template <typename derived_kd_t>
   explicit impl_list_item_t(const type_deduction_helper_t<derived_kd_t>) {
     using deduced_t = typename type_deduction_helper_t<derived_kd_t>::type;
     create_kd_func_ = &kernel_desc_t::create<deduced_t>;
   }
 
- public:
-  bool operator()(std::shared_ptr<const kernel_desc_t>& kd_ref, const operator_desc& op_desc) const {  // NOLINT
+public:
+  bool operator()(std::shared_ptr<const kernel_desc_t> &kd_ref,
+                  const operator_desc &op_desc) const { // NOLINT
     if (create_kd_func_ == nullptr) {
       return false;
     }
@@ -49,9 +49,10 @@ class impl_list_item_t {
     return status;
   }
 
- private:
-  using create_kd_func_t = bool (*)(std::shared_ptr<const kernel_desc_t>&, const operator_desc&);
+private:
+  using create_kd_func_t = bool (*)(std::shared_ptr<const kernel_desc_t> &,
+                                    const operator_desc &);
   create_kd_func_t create_kd_func_ = nullptr;
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_IMPL_LIST_ITEM_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_IMPL_LIST_ITEM_HPP_

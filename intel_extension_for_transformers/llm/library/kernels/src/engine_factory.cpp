@@ -20,8 +20,9 @@
 #endif
 
 namespace jd {
-const engine_t* engine_factory::create(const engine_kind& engine_kind, const runtime_kind& runtime_kind) {
-  const auto& it = mp_.find(engine_kind);
+const engine_t *engine_factory::create(const engine_kind &engine_kind,
+                                       const runtime_kind &runtime_kind) {
+  const auto &it = mp_.find(engine_kind);
   if (it != mp_.end()) {
     return (*(it->second))(runtime_kind);
   } else {
@@ -38,24 +39,26 @@ void engine_factory::register_class() {
   }
 }
 
-const engine_t* engine_factory::create_cpu_engine(const runtime_kind&) {
+const engine_t *engine_factory::create_cpu_engine(const runtime_kind &) {
   static std::shared_ptr<cpu_engine_t> obj = std::make_shared<cpu_engine_t>();
-  return reinterpret_cast<engine_t*>(obj.get());
+  return reinterpret_cast<engine_t *>(obj.get());
 }
 
-const engine_t* engine_factory::create_gpu_engine(const runtime_kind& runtime_kind) {
+const engine_t *
+engine_factory::create_gpu_engine(const runtime_kind &runtime_kind) {
   switch (runtime_kind) {
-    case runtime_kind::opencl:
+  case runtime_kind::opencl:
 #ifdef SPARSELIB_GPU
-      static std::shared_ptr<const gpu_ocl_engine_t> obj = std::make_shared<const gpu_ocl_engine_t>();
-      return reinterpret_cast<const engine_t*>(obj.get());
+    static std::shared_ptr<const gpu_ocl_engine_t> obj =
+        std::make_shared<const gpu_ocl_engine_t>();
+    return reinterpret_cast<const engine_t *>(obj.get());
 #endif
-    case runtime_kind::sycl:
+  case runtime_kind::sycl:
 
-    default:
-      SPARSE_LOG(FATAL) << "Create engine error";
-      return nullptr;
+  default:
+    SPARSE_LOG(FATAL) << "Create engine error";
+    return nullptr;
   }
 }
 engine_factory::engine_factory() { register_class(); }
-}  // namespace jd
+} // namespace jd

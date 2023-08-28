@@ -33,7 +33,8 @@ using io = ssd::matmul_io::io;
 // Part1: class matmul_avx512f_p2031_p2013_kd_t
 
 bool matmul_avx512f_p2031_p2013_kd_t::init() {
-  if (!isa_available(avx512_core)) return false;
+  if (!isa_available(avx512_core))
+    return false;
   const auto shapes = op_desc_.tensor_shapes();
   const auto dtypes = op_desc_.tensor_dtypes();
 
@@ -61,24 +62,34 @@ bool matmul_avx512f_p2031_p2013_kd_t::init() {
 
   bool is_supported =
       (op_desc_.kernel_prop() == kernel_prop::forward_inference) &&
-      is_any_of({data_type::fp32}, [&](const data_type& a) { return dtypes[io::SRC0] == a; }) &&
-      is_any_of({data_type::fp32}, [&](const data_type& a) { return dtypes[io::SRC1] == a; }) &&
-      is_any_of({data_type::fp32}, [&](const data_type& a) { return dtypes[io::DST0] == a; }) &&
-      (!has_binary_add || is_any_of({data_type::fp32}, [&](const data_type& a) { return dtypes[io::SRC2] == a; }));
+      is_any_of({data_type::fp32},
+                [&](const data_type &a) { return dtypes[io::SRC0] == a; }) &&
+      is_any_of({data_type::fp32},
+                [&](const data_type &a) { return dtypes[io::SRC1] == a; }) &&
+      is_any_of({data_type::fp32},
+                [&](const data_type &a) { return dtypes[io::DST0] == a; }) &&
+      (!has_binary_add || is_any_of({data_type::fp32}, [&](const data_type &a) {
+        return dtypes[io::SRC2] == a;
+      }));
 
-  if (!is_supported) return false;
+  if (!is_supported)
+    return false;
 
   if (src0_perm_shape[3] != src1_perm_shape[2]) {
-    SPARSE_LOG(WARNING) << "Skip as src0 k-dim (" << src0_perm_shape[3] << ") and src1 k-dim (" << src1_perm_shape[2]
+    SPARSE_LOG(WARNING) << "Skip as src0 k-dim (" << src0_perm_shape[3]
+                        << ") and src1 k-dim (" << src1_perm_shape[2]
                         << ") don't match!";
     return false;
   }
 
   for (auto idx : {0, 1}) {
-    for (auto shape_perm : {src0_perm_shape, src1_perm_shape, shapes[io::SRC2]}) {
-      if (shape_perm.empty()) continue;
+    for (auto shape_perm :
+         {src0_perm_shape, src1_perm_shape, shapes[io::SRC2]}) {
+      if (shape_perm.empty())
+        continue;
       if (shape_perm[idx] != shapes[io::DST0][idx]) {
-        SPARSE_LOG(WARNING) << "First 2 dimensions of all tensors after permutation should be the same";
+        SPARSE_LOG(WARNING) << "First 2 dimensions of all tensors after "
+                               "permutation should be the same";
         return false;
       }
     }
@@ -92,9 +103,9 @@ bool matmul_avx512f_p2031_p2013_kd_t::matmul_params_init() {
   const auto shapes = op_desc_.tensor_shapes();
   auto attrs = op_desc_.attrs();
 
-  dim_t M = shapes[io::SRC0][3];  // aka src0_perm_shape[2]
-  dim_t K = shapes[io::SRC0][1];  // aka src0_perm_shape[3]
-  dim_t N = shapes[io::SRC1][3];  // aka src1_perm_shape[3]
+  dim_t M = shapes[io::SRC0][3]; // aka src0_perm_shape[2]
+  dim_t K = shapes[io::SRC0][1]; // aka src0_perm_shape[3]
+  dim_t N = shapes[io::SRC1][3]; // aka src1_perm_shape[3]
   dim_t bs0 = shapes[io::DST0][0];
   jit_param_.M = M;
   jit_param_.K = K;
@@ -103,31 +114,37 @@ bool matmul_avx512f_p2031_p2013_kd_t::matmul_params_init() {
 
   bool has_binary_add = !shapes[io::SRC2].empty();
 
-  if (attrs["alpha"] != "") jit_param_.alpha = str_to_num<float>(attrs["alpha"]);
+  if (attrs["alpha"] != "")
+    jit_param_.alpha = str_to_num<float>(attrs["alpha"]);
   SPARSE_LOG_IF(WARNING, jit_param_.alpha == 0.f)
-      << "Alpha for matmul is set to 0 meaning that the base result will be discarded";
+      << "Alpha for matmul is set to 0 meaning that the base result will be "
+         "discarded";
 
   if (has_binary_add) {
-    if (attrs["beta"] != "") jit_param_.beta = str_to_num<float>(attrs["beta"]);
+    if (attrs["beta"] != "")
+      jit_param_.beta = str_to_num<float>(attrs["beta"]);
     SPARSE_LOG_IF(WARNING, has_binary_add && jit_param_.beta == 0.f)
         << "Beta for matmul is set to 0 meaning the binary-add does nothing";
   } else {
-    jit_param_.beta = 0;  // set beta to 0 to avoid generate unnecessary asm ascode
+    jit_param_.beta =
+        0; // set beta to 0 to avoid generate unnecessary asm ascode
   }
 
   int m_tile = str_to_num<int>(attrs["m_tile"]);
   int n_tile = str_to_num<int>(attrs["n_tile"]);
-  if (m_tile > 0) jit_param_.m_tile = m_tile;
-  if (n_tile > 0) jit_param_.n_tile = n_tile;
+  if (m_tile > 0)
+    jit_param_.m_tile = m_tile;
+  if (n_tile > 0)
+    jit_param_.n_tile = n_tile;
 
   return true;
 }
 
 // Part2: class matmul_avx512f_p2031_p2013_k_t
 
-matmul_avx512f_p2031_p2013_k_t::matmul_avx512f_p2031_p2013_k_t(const std::shared_ptr<const kd_t>& kd)
-    : kernel_t(kd),
-      t_shapes_(kd->get_operator_desc().tensor_shapes()),
+matmul_avx512f_p2031_p2013_k_t::matmul_avx512f_p2031_p2013_k_t(
+    const std::shared_ptr<const kd_t> &kd)
+    : kernel_t(kd), t_shapes_(kd->get_operator_desc().tensor_shapes()),
       src0_perm_shape_({
           t_shapes_[io::SRC0][2],
           t_shapes_[io::SRC0][0],
@@ -140,26 +157,27 @@ matmul_avx512f_p2031_p2013_k_t::matmul_avx512f_p2031_p2013_k_t(const std::shared
           t_shapes_[io::SRC1][1],
           t_shapes_[io::SRC1][3],
       }),
-      M_(src0_perm_shape_[2]),
-      K_(src0_perm_shape_[3]),
-      N_(src1_perm_shape_[3]),
-      bs0_(t_shapes_[io::DST0][0]),
-      bs1_(t_shapes_[io::DST0][1]) {}
+      M_(src0_perm_shape_[2]), K_(src0_perm_shape_[3]), N_(src1_perm_shape_[3]),
+      bs0_(t_shapes_[io::DST0][0]), bs1_(t_shapes_[io::DST0][1]) {}
 
 bool matmul_avx512f_p2031_p2013_k_t::init() {
-  auto& ker_param = derived_kd()->jit_param();
+  auto &ker_param = derived_kd()->jit_param();
   auto ker = new jit_matmul_avx512f_p2031_p2013_t(ker_param);
-  if (ker == nullptr) return false;
-  if (!ker->create_kernel()) return false;
+  if (ker == nullptr)
+    return false;
+  if (!ker->create_kernel())
+    return false;
   jit_ker_ = ker;
   return true;
 }
 
-bool matmul_avx512f_p2031_p2013_k_t::execute(const std::vector<const void*>& rt_data) const {
-  auto base_src0 = static_cast<const float*>(rt_data[io::SRC0]);
-  auto base_src1 = static_cast<const float*>(rt_data[io::SRC1]);
-  auto base_dst = const_cast<float*>(static_cast<const float*>(rt_data[io::DST0]));
-  auto base_src2 = static_cast<const float*>(rt_data[io::SRC2]);
+bool matmul_avx512f_p2031_p2013_k_t::execute(
+    const std::vector<const void *> &rt_data) const {
+  auto base_src0 = static_cast<const float *>(rt_data[io::SRC0]);
+  auto base_src1 = static_cast<const float *>(rt_data[io::SRC1]);
+  auto base_dst =
+      const_cast<float *>(static_cast<const float *>(rt_data[io::DST0]));
+  auto base_src2 = static_cast<const float *>(rt_data[io::SRC2]);
 
 #pragma omp parallel for collapse(2)
   for (dim_t ibs1 = 0; ibs1 < bs1_; ++ibs1)
@@ -176,4 +194,4 @@ bool matmul_avx512f_p2031_p2013_k_t::execute(const std::vector<const void*>& rt_
 
   return true;
 }
-}  // namespace jd
+} // namespace jd

@@ -19,8 +19,11 @@
 
 namespace jd {
 
-void jit_trans_AB16a4b::mem_trans_16x16_ps(regs_pool* const rp, const Xbyak::Reg64& src, const Xbyak::Reg64& dst,
-                                           const Xbyak::Opmask& mask, bool is_tail) {
+void jit_trans_AB16a4b::mem_trans_16x16_ps(regs_pool *const rp,
+                                           const Xbyak::Reg64 &src,
+                                           const Xbyak::Reg64 &dst,
+                                           const Xbyak::Opmask &mask,
+                                           bool is_tail) {
   const auto mat = rp->regs<Zmm, 16>();
   const auto tmp = rp->regs<Zmm, 16>();
   const auto tail_len = M % 16;
@@ -42,14 +45,16 @@ void jit_trans_AB16a4b::mem_trans_16x16_ps(regs_pool* const rp, const Xbyak::Reg
 
   // last step and move out
   for (int i = 0; i < pad_n / 4; ++i) {
-    if (i >= N / 4) vpxord(Xbyak::Xmm(mat[i]), Xbyak::Xmm(mat[i]), Xbyak::Xmm(mat[i]));
+    if (i >= N / 4)
+      vpxord(Xbyak::Xmm(mat[i]), Xbyak::Xmm(mat[i]), Xbyak::Xmm(mat[i]));
     // move out
     vmovdqa32(ptr[dst + i * BYTES_ZMM], mat[i]);
   }
 }
 
 void jit_trans_AB16a4b::generate() {
-  std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr), [&](...) { outLocalLabel(); }};
+  std::shared_ptr<void> use_loacl_label = {(inLocalLabel(), nullptr),
+                                           [&](...) { outLocalLabel(); }};
   const auto m_tiles = M / 16;
   regs_pool rp(this, 1, {m_tiles <= 1 ? 3 : 5, 32, 1});
 
@@ -86,7 +91,8 @@ void jit_trans_AB16a4b::generate() {
   }
 
   const auto m_tail = M % 16;
-  if (m_tail > 0) mem_trans_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n, true);
+  if (m_tail > 0)
+    mem_trans_16x16_ps(&rp, reg_src, reg_dst, N == 64 ? k0 : mask_n, true);
 }
 
-}  // namespace jd
+} // namespace jd

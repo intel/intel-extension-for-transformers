@@ -13,12 +13,14 @@
 //  limitations under the License.
 #include "jit_trans_cpy_nx8_4b.hpp"
 
-#define GET_OFF(tparam, field) offsetof(jit_transpose_nx8_4b<tparam>::rt_data_t, field)
+#define GET_OFF(tparam, field)                                                 \
+  offsetof(jit_transpose_nx8_4b<tparam>::rt_data_t, field)
 
 namespace jd {
 
 template <int tile_m>
-inline std::vector<Xbyak::Ymm> jit_transpose_nx8_4b<tile_m>::get_Ymm(int start, int num) const {
+inline std::vector<Xbyak::Ymm>
+jit_transpose_nx8_4b<tile_m>::get_Ymm(int start, int num) const {
   std::vector<Xbyak::Ymm> result(num);
   for (int i = 0; i < num; ++i) {
     result[i] = Xbyak::Ymm(start + i);
@@ -27,7 +29,8 @@ inline std::vector<Xbyak::Ymm> jit_transpose_nx8_4b<tile_m>::get_Ymm(int start, 
 }
 
 template <int tile_m>
-void jit_transpose_nx8_4b<tile_m>::transpose8_ps(const Xbyak::Ymm mat[8], const Xbyak::Ymm tmp[8]) {
+void jit_transpose_nx8_4b<tile_m>::transpose8_ps(const Xbyak::Ymm mat[8],
+                                                 const Xbyak::Ymm tmp[8]) {
   vunpcklps(tmp[0], mat[0], mat[1]);
   vunpcklps(tmp[1], mat[2], mat[3]);
   vunpckhps(tmp[2], mat[0], mat[1]);
@@ -81,10 +84,9 @@ void jit_transpose_nx8_4b<tile_m>::transpose8_ps(const Xbyak::Ymm mat[8], const 
   vmovaps(mat[0], tmp[4]);
 }
 
-template <int tile_m>
-void jit_transpose_nx8_4b<tile_m>::generate() {
+template <int tile_m> void jit_transpose_nx8_4b<tile_m>::generate() {
   preamble();
-  inLocalLabel();  // use local label for multiple instance
+  inLocalLabel(); // use local label for multiple instance
 
   mov(reg_src, ptr[parambase + GET_OFF(tile_m, src)]);
   mov(reg_dst, ptr[parambase + GET_OFF(tile_m, dst)]);
@@ -99,7 +101,8 @@ void jit_transpose_nx8_4b<tile_m>::generate() {
     }
     transpose8_ps(src_Ymm.data(), tmp_Ymm.data());
     for (int ii = 0; ii < 8; ii++) {
-      vmovdqu8(ptr[reg_dst + ii * tile_m * VNNI_ADJ + j * VNNI_ADJ], src_Ymm[ii]);
+      vmovdqu8(ptr[reg_dst + ii * tile_m * VNNI_ADJ + j * VNNI_ADJ],
+               src_Ymm[ii]);
     }
   }
   add(reg_dst, VNNI_ADJ * dim_transpose * tile_m);
@@ -108,10 +111,10 @@ void jit_transpose_nx8_4b<tile_m>::generate() {
   cmp(reg_iterk, reg_ksize);
   jb(k_loop);
 
-  outLocalLabel();  // end of local label
+  outLocalLabel(); // end of local label
   postamble();
 }
 
 template class jit_transpose_nx8_4b<8>;
 template class jit_transpose_nx8_4b<32>;
-}  // namespace jd
+} // namespace jd

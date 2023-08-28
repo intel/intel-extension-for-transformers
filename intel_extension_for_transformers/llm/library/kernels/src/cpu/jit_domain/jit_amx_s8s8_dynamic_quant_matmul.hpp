@@ -15,29 +15,30 @@
 #ifndef ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_AMX_S8S8_DYNAMIC_QUANT_MATMUL_HPP_
 #define ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_AMX_S8S8_DYNAMIC_QUANT_MATMUL_HPP_
 
+#include "jit_eltwise_injector.hpp"
+#include "jit_generator.hpp"
+#include "kernels/dynamic_quant_matmul_types.hpp"
+#include "src/utils.hpp"
 #include <memory>
 #include <string>
-#include "jit_generator.hpp"
-#include "src/utils.hpp"
-#include "kernels/dynamic_quant_matmul_types.hpp"
-#include "jit_eltwise_injector.hpp"
 namespace jd {
 class jit_amx_s8s8_dynamic_quant_matmul_t : public jit_generator {
- public:
-  explicit jit_amx_s8s8_dynamic_quant_matmul_t(const ssd::dynamic_quant_matmul_param_t& param)
+public:
+  explicit jit_amx_s8s8_dynamic_quant_matmul_t(
+      const ssd::dynamic_quant_matmul_param_t &param)
       : jit_generator(), param_(param) {
     eltwise_injector_.eltwise_injector_init(this, param_.postop_attrs);
   }
   virtual ~jit_amx_s8s8_dynamic_quant_matmul_t() {}
 
- private:
+private:
   ssd::dynamic_quant_matmul_param_t param_;
   jit_eltwise_injector eltwise_injector_;
 
- private:
+private:
   void generate() override;
   Opmask matC_n_mask = Opmask(2);
   Opmask scaleC_mask = Opmask(3);
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_AMX_S8S8_DYNAMIC_QUANT_MATMUL_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_AMX_S8S8_DYNAMIC_QUANT_MATMUL_HPP_

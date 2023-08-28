@@ -20,27 +20,27 @@
 namespace jd {
 
 class jit_amx_config_t : public jit_generator {
- public:
+public:
   jit_amx_config_t() : jit_generator() {}
   virtual ~jit_amx_config_t() {}
 
-  void tile_configure(const void* palette) const { (*this)(palette); }
+  void tile_configure(const void *palette) const { (*this)(palette); }
 
- private:
+private:
   void generate() override;
 };
 
 class jit_amx_release_t : public jit_generator {
- public:
+public:
   jit_amx_release_t() : jit_generator() {}
   virtual ~jit_amx_release_t() {}
 
   void tile_release() const { (*this)(); }
 
- private:
+private:
   void generate() override;
 };
 
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_AMX_CONFIGURE_HPP_
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_AMX_CONFIGURE_HPP_

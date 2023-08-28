@@ -22,5 +22,5 @@
 namespace jd {
 // Print an error message to screen (only if it occurs)
 void checkError(cl_int error, int line);
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_OPENCL_COMMON_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_OPENCL_COMMON_HPP_

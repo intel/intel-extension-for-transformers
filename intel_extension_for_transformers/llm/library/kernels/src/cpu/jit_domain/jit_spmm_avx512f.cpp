@@ -28,9 +28,9 @@ void jit_spmm_avx512f_t::generate() {
 #else
   const int nonvolatile_reg_size = 8 * 6;
 #endif
-  const auto& sparse_indptr = param_.sparse_ptr->indptr();
-  const auto& sparse_indices = param_.sparse_ptr->indices();
-  inLocalLabel();  // use local label for multiple instance
+  const auto &sparse_indptr = param_.sparse_ptr->indptr();
+  const auto &sparse_indices = param_.sparse_ptr->indices();
+  inLocalLabel(); // use local label for multiple instance
   // TODO(yi1ding): sub_function
   {
     sub(rsp, nonvolatile_reg_size);
@@ -70,11 +70,13 @@ void jit_spmm_avx512f_t::generate() {
         }
       }
       // Loop-k: CPP loop over K
-      for (int k_idx = sparse_indptr[j]; k_idx < sparse_indptr[j + 1]; ++k_idx) {
+      for (int k_idx = sparse_indptr[j]; k_idx < sparse_indptr[j + 1];
+           ++k_idx) {
         dim_t k = sparse_indices[k_idx];
         // Load dense
         for (int ti = 0; ti < TH_; ++ti) {
-          vpbroadcastd(TH_Vmm(ti), dword[reg_dense + (param_.K * ti + k) * F32_BYTES]);
+          vpbroadcastd(TH_Vmm(ti),
+                       dword[reg_dense + (param_.K * ti + k) * F32_BYTES]);
         }
         // Load sparse
         vmovups(TW_Vmm, dword[reg_sparse + (seq_data_tidx++) * ZMM_BYTES]);
@@ -94,14 +96,17 @@ void jit_spmm_avx512f_t::generate() {
       // storeu
       for (int ti = 0; ti < TH_; ++ti) {
         eltwise_injector.vector_compute(dst_tile_Vmm(ti), param_.postop_attrs);
-        vmovups(dword[reg_dst + (param_.N * ti) * F32_BYTES + j * ZMM_BYTES], dst_tile_Vmm(ti));
+        vmovups(dword[reg_dst + (param_.N * ti) * F32_BYTES + j * ZMM_BYTES],
+                dst_tile_Vmm(ti));
       }
     }
 
-    add(reg_dense, TH_ * param_.K * F32_BYTES);  // TODO(yi1ding): handel edge cases where desc is not a multiple of TH_
+    add(reg_dense,
+        TH_ * param_.K * F32_BYTES); // TODO(yi1ding): handel edge cases where
+                                     // desc is not a multiple of TH_
     add(reg_dst, TH_ * param_.N * F32_BYTES);
     cmp(reg_dense, reg_dense_end);
-    jl(L_m_loop, T_NEAR);  // End of loop-m: asm loop
+    jl(L_m_loop, T_NEAR); // End of loop-m: asm loop
 
     mov(rbx, ptr[rsp + 0x00]);
     mov(rbp, ptr[rsp + 0x08]);
@@ -116,7 +121,7 @@ void jit_spmm_avx512f_t::generate() {
     add(rsp, nonvolatile_reg_size);
     ret();
   }
-  outLocalLabel();  // end of local label
+  outLocalLabel(); // end of local label
   eltwise_injector.prepare_table();
 }
-}  // namespace jd
+} // namespace jd

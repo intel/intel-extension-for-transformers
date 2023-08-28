@@ -23,7 +23,7 @@
 
 namespace jd {
 class jit_slice_t : public jit_generator {
- public:
+public:
   struct param_t {
     bool use_avx512;
     int step;
@@ -33,31 +33,29 @@ class jit_slice_t : public jit_generator {
     int dt_size;
   };
   struct rt_data_t {
-    const void* src;
-    void* dst;
+    const void *src;
+    void *dst;
   };
 
-  explicit jit_slice_t(const param_t& param)
-      : jit_generator(),
-        use_avx512(param.use_avx512),
-        step(param.step),
-        src_axis_size(param.src_axis_size),
-        inner_size(param.inner_size),
-        copy_size(param.copy_size),
-        dt_size(param.dt_size) {
-    SPARSE_LOG_IF(FATAL, dt_size != 1 && dt_size != 2 && dt_size != 4) << "Unexpected dt_size: " << dt_size;
+  explicit jit_slice_t(const param_t &param)
+      : jit_generator(), use_avx512(param.use_avx512), step(param.step),
+        src_axis_size(param.src_axis_size), inner_size(param.inner_size),
+        copy_size(param.copy_size), dt_size(param.dt_size) {
+    SPARSE_LOG_IF(FATAL, dt_size != 1 && dt_size != 2 && dt_size != 4)
+        << "Unexpected dt_size: " << dt_size;
   }
   virtual ~jit_slice_t() {}
 
- private:
+private:
   void generate() override;
 
+  template <bool USE_AVX512> void generate_();
   template <bool USE_AVX512>
-  void generate_();
+  inline void copy_by_step(regs_pool *const rp, const Reg64 dst,
+                           const Reg64 src);
   template <bool USE_AVX512>
-  inline void copy_by_step(regs_pool* const rp, const Reg64 dst, const Reg64 src);
-  template <bool USE_AVX512>
-  inline void copy_continuously(regs_pool* const rp, const Reg64 dst, const Reg64 src);
+  inline void copy_continuously(regs_pool *const rp, const Reg64 dst,
+                                const Reg64 src);
 
   const bool use_avx512;
   const int step;
@@ -66,5 +64,5 @@ class jit_slice_t : public jit_generator {
   const int copy_size;
   const int dt_size;
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SLICE_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_SLICE_HPP_

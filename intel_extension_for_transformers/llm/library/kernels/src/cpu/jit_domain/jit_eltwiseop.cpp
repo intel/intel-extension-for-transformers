@@ -72,7 +72,8 @@ void jit_eltwiseop_t::store_dst(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst) {
   auto last_attr = param_.postop_attrs.back();
   auto first_attr = param_.postop_attrs.front();
   if (last_attr.op_alg == postop_alg::quantize &&
-      !(first_attr.op_alg == postop_alg::eltop_int_lut && first_attr.alpha == 8)) {
+      !(first_attr.op_alg == postop_alg::eltop_int_lut &&
+        first_attr.alpha == 8)) {
     if (last_attr.dt == data_type::s8)
       vpmovsdb(ptr[addr_dst], reg_src);
     else
@@ -86,8 +87,10 @@ void jit_eltwiseop_t::load_src(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_src) {
   auto first_attr = param_.postop_attrs.front();
   if (first_attr.op_alg == postop_alg::dequantize) {
     vmovups(Xmm(reg_src.getIdx()), ptr[addr_src]);
-  } else if (first_attr.op_alg == postop_alg::eltop_int_lut && first_attr.alpha == 16) {
-    vmovups(Ymm(reg_src.getIdx()), ptr[addr_src]);  // we will process 32 element in int16_lut ker.
+  } else if (first_attr.op_alg == postop_alg::eltop_int_lut &&
+             first_attr.alpha == 16) {
+    vmovups(Ymm(reg_src.getIdx()),
+            ptr[addr_src]); // we will process 32 element in int16_lut ker.
   } else {
     vmovups(reg_src, ptr[addr_src]);
   }
@@ -107,7 +110,8 @@ void jit_eltwiseop_t::store_tail(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst) {
   auto last_attr = param_.postop_attrs.back();
   auto first_attr = param_.postop_attrs.front();
   if (param_.out_dt == data_type::u8 || param_.out_dt == data_type::s8) {
-    if (last_attr.op_alg == postop_alg::quantize && !(first_attr.op_alg == postop_alg::eltop_int_lut)) {
+    if (last_attr.op_alg == postop_alg::quantize &&
+        !(first_attr.op_alg == postop_alg::eltop_int_lut)) {
       if (last_attr.dt == data_type::s8)
         vpmovsdb(Xmm(reg_src.getIdx()), reg_src);
       else
@@ -121,4 +125,4 @@ void jit_eltwiseop_t::store_tail(Xbyak::Zmm reg_src, Xbyak::Reg64 addr_dst) {
     vmovdqu16(ptr[addr_dst] | remain_task_mask, ymm_bf16);
   }
 }
-}  // namespace jd
+} // namespace jd

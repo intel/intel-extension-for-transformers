@@ -12,23 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#include <map>
-#include <tuple>
-#include "src/cpu/engine/cpu_engine.hpp"
-#include "param_types.hpp"
-#include "impl_list_item.hpp"
 #include "dynamic_quant.hpp"
 #include "dynamic_quant_ref.hpp"
+#include "impl_list_item.hpp"
+#include "param_types.hpp"
+#include "src/cpu/engine/cpu_engine.hpp"
+#include <map>
+#include <tuple>
 
 namespace jd {
-static const std::map<kernel_prop, std::vector<impl_list_item_t>> dynamic_quant_impl_list_map = {
-    {kernel_prop::forward_inference,
-     {CPU_INSTANCE(dynamic_quant_k_t), CPU_INSTANCE(dynamic_quant_ref_k_t), NULL_INSTANCE()}},
+static const std::map<kernel_prop, std::vector<impl_list_item_t>>
+    dynamic_quant_impl_list_map = {
+        {kernel_prop::forward_inference,
+         {CPU_INSTANCE(dynamic_quant_k_t), CPU_INSTANCE(dynamic_quant_ref_k_t),
+          NULL_INSTANCE()}},
 };
 
-const std::vector<impl_list_item_t>* get_dynamic_quant_impl_list(const operator_desc& op_desc) {
-  const auto impl_list_it = dynamic_quant_impl_list_map.find(op_desc.kernel_prop());
-  return (impl_list_it != dynamic_quant_impl_list_map.end()) ? &(impl_list_it->second) : &cpu_engine_t::empty_list;
+const std::vector<impl_list_item_t> *
+get_dynamic_quant_impl_list(const operator_desc &op_desc) {
+  const auto impl_list_it =
+      dynamic_quant_impl_list_map.find(op_desc.kernel_prop());
+  return (impl_list_it != dynamic_quant_impl_list_map.end())
+             ? &(impl_list_it->second)
+             : &cpu_engine_t::empty_list;
 }
 
-}  // namespace jd
+} // namespace jd

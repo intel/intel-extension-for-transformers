@@ -28,7 +28,7 @@ enum io {
   MASK,
   SRC_V,
   DST,
-  TMP2M,  // 2M per thread of extra engine managed memory
+  TMP2M, // 2M per thread of extra engine managed memory
   SL_PAD,
   BATCH,
   HEAD_NUM,
@@ -41,48 +41,48 @@ enum io {
   ZP_DST,
   transpose_mha_io_MAX = ZP_DST
 };
-}  // namespace transpose_mha_io
+} // namespace transpose_mha_io
 
 struct transpose_copy_params {
-  const void* srcptr;
-  void* dstptr;
+  const void *srcptr;
+  void *dstptr;
   int srcstride, dststride, k;
 };
 
 struct seq_vnni_copy_params {
-  const void* srcptr;
-  void* dstptr;
+  const void *srcptr;
+  void *dstptr;
   int srcstride, dststride, k;
 };
 
 struct transpose_mha_step1_params {
-  int8_t* matA;
-  int8_t* matB;
-  void* matC;  // store the exp(out1), data type can be bf16/f8
-  const float* matD;
-  void* expsum;  // store the sum(exp(out1)), data type can be fp32/f8
-  void* cfg;
+  int8_t *matA;
+  int8_t *matB;
+  void *matC; // store the exp(out1), data type can be bf16/f8
+  const float *matD;
+  void *expsum; // store the sum(exp(out1)), data type can be fp32/f8
+  void *cfg;
   int m, k, batchk, astep, cstep, sumstep, cbatchstep;
   float scaleAB;
 };
 
 struct transpose_mha_step2_params {
   void *srcptr, *dstptr;
-  void* sumptr;
+  void *sumptr;
   int srcstride;
   int dststride, k;
 };
 
 struct transpose_mha_step3_params {
-  const int8_t* matA;
-  const uint8_t* matB;
-  uint8_t* matC;
-  const void* cfg;
+  const int8_t *matA;
+  const uint8_t *matB;
+  uint8_t *matC;
+  const void *cfg;
   int k, astep, cstep;
   float scaleAB, scaleC;
   int zeropointC;
 };
 
-}  // namespace ssd
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_TRANSPOSE_MHA_TYPES_HPP_
+} // namespace ssd
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_KERNELS_TRANSPOSE_MHA_TYPES_HPP_

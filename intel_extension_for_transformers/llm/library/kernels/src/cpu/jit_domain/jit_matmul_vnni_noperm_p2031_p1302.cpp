@@ -17,7 +17,8 @@
 #define GET_OFF(field) offsetof(ssd::matmul_u8_data_t, field)
 
 namespace jd {
-inline std::vector<Xbyak::Ymm> jit_matmul_vnni_noperm_p2031_p1302_t::get_Ymm(int start, int num) const {
+inline std::vector<Xbyak::Ymm>
+jit_matmul_vnni_noperm_p2031_p1302_t::get_Ymm(int start, int num) const {
   std::vector<Xbyak::Ymm> result(num);
   for (int i = 0; i < num; ++i) {
     result[i] = Xbyak::Ymm(start + i);
@@ -26,12 +27,13 @@ inline std::vector<Xbyak::Ymm> jit_matmul_vnni_noperm_p2031_p1302_t::get_Ymm(int
 }
 
 Xbyak::Zmm jit_matmul_vnni_noperm_p2031_p1302_t::dst_tile_Vmm(int j) {
-  const int& alloc_start = VREG_NUMS - 1 - USED_VREGS;
-  const int& alloc_idx = alloc_start - j;
+  const int &alloc_start = VREG_NUMS - 1 - USED_VREGS;
+  const int &alloc_idx = alloc_start - j;
   return Xbyak::Zmm(alloc_idx);
 }
 
-void jit_matmul_vnni_noperm_p2031_p1302_t::transpose8_ps(const Xbyak::Ymm mat[8], const Xbyak::Ymm tmp[8]) {
+void jit_matmul_vnni_noperm_p2031_p1302_t::transpose8_ps(
+    const Xbyak::Ymm mat[8], const Xbyak::Ymm tmp[8]) {
   vunpcklps(tmp[0], mat[0], mat[1]);
   vunpcklps(tmp[1], mat[2], mat[3]);
   vunpckhps(tmp[2], mat[0], mat[1]);
@@ -96,7 +98,8 @@ void jit_matmul_vnni_noperm_p2031_p1302_t::calc_THxTKxTW() {
       }
       transpose8_ps(src_Ymm.data(), tmp_Ymm.data());
       for (int ii = 0; ii < dim_transpose; ii++) {
-        vmovups(ptr[rsp + start_transpose_src0 + (j / 4 + ii) * 64 + i * 4], src_Ymm[ii]);
+        vmovups(ptr[rsp + start_transpose_src0 + (j / 4 + ii) * 64 + i * 4],
+                src_Ymm[ii]);
       }
     }
     for (int i = 0; i < TW_; i += dim_transpose) {
@@ -105,23 +108,27 @@ void jit_matmul_vnni_noperm_p2031_p1302_t::calc_THxTKxTW() {
       }
       transpose8_ps(src_Ymm.data(), tmp_Ymm.data());
       for (int ii = 0; ii < dim_transpose; ii++) {
-        vmovups(ptr[rsp + start_transpose_src1 + (j / 4 + ii) * 64 + i * 4], src_Ymm[ii]);
+        vmovups(ptr[rsp + start_transpose_src1 + (j / 4 + ii) * 64 + i * 4],
+                src_Ymm[ii]);
       }
     }
 
     // Tile product (output in col-major)
     const auto vreg_src0_col = zmm0;
     for (int ik = 0; ik < dim_transpose; ik++) {
-      vmovups(vreg_src0_col, ptr[rsp + start_transpose_src0 + (j / 4 + ik) * 64]);
+      vmovups(vreg_src0_col,
+              ptr[rsp + start_transpose_src0 + (j / 4 + ik) * 64]);
       for (int in = 0; in < TW_; in++) {
-        vpdpbusds(dst_tile_Vmm(in), vreg_src0_col, zword_b[rsp + start_transpose_src1 + in * 4 + (j / 4 + ik) * 64]);
+        vpdpbusds(
+            dst_tile_Vmm(in), vreg_src0_col,
+            zword_b[rsp + start_transpose_src1 + in * 4 + (j / 4 + ik) * 64]);
       }
     }
   }
 }
 
 void jit_matmul_vnni_noperm_p2031_p1302_t::generate() {
-  inLocalLabel();  // use local label for multiple instance
+  inLocalLabel(); // use local label for multiple instance
   preamble();
   sub(rsp, stack_size);
 
@@ -142,33 +149,35 @@ void jit_matmul_vnni_noperm_p2031_p1302_t::generate() {
   add(reg_src0, TK_ * VNNI_ADJ * dsize_src0);
   add(reg_src1, TK_ * VNNI_ADJ * dsize_src1);
   add(reg_iterk, TK_ * VNNI_ADJ);
-  cmp(reg_iterk, reg_ksize);  // k iteration variable
+  cmp(reg_iterk, reg_ksize); // k iteration variable
   jb(kloop);
 
   // postop & store results
-  const Xbyak::Zmm& vreg_scale = zmm0;
-  const Xbyak::Zmm& vreg_zp = zmm1;
-  const Xbyak::Zmm& vreg_zero = zmm2;
+  const Xbyak::Zmm &vreg_scale = zmm0;
+  const Xbyak::Zmm &vreg_zp = zmm1;
+  const Xbyak::Zmm &vreg_zero = zmm2;
   mov(reg_tmp, qword[parambase + GET_OFF(scale)]);
-  vbroadcastss(vreg_scale, dword[reg_tmp]);  // move in scale.
+  vbroadcastss(vreg_scale, dword[reg_tmp]); // move in scale.
   mov(reg_tmp, qword[parambase + GET_OFF(zp)]);
-  vbroadcastss(vreg_zp, dword[reg_tmp]);    // move in zp.
-  vpxord(vreg_zero, vreg_zero, vreg_zero);  // 0 in fp32 is 0x0
-  auto& reg_ld_dst = reg_tmp;
+  vbroadcastss(vreg_zp, dword[reg_tmp]);   // move in zp.
+  vpxord(vreg_zero, vreg_zero, vreg_zero); // 0 in fp32 is 0x0
+  auto &reg_ld_dst = reg_tmp;
   mov(reg_dst, ptr[parambase + GET_OFF(dst)]);
   mov(reg_ld_dst, ld_dst);
 
   for (int j = 0; j < TW_; ++j) {
     // TODO(zhe1wang): replace with eltwise injector supporting runtime args
-    vcvtdq2ps(dst_tile_Vmm(j) | T_rn_sae, dst_tile_Vmm(j));       // s32->fp32
-    vfmadd132ps(dst_tile_Vmm(j), vreg_zp, vreg_scale);            // multiplies scaler and add zp
-    vcmpleps(reg_k1, vreg_zero, dst_tile_Vmm(j));                 // mask of everything greater than 0
-    vcvtps2udq(dst_tile_Vmm(j) | T_z | reg_k1, dst_tile_Vmm(j));  // fp32->u32
-    vpmovusdb(ptr[reg_dst + ld_dst * j], dst_tile_Vmm(j));        // store result
+    vcvtdq2ps(dst_tile_Vmm(j) | T_rn_sae, dst_tile_Vmm(j)); // s32->fp32
+    vfmadd132ps(dst_tile_Vmm(j), vreg_zp,
+                vreg_scale); // multiplies scaler and add zp
+    vcmpleps(reg_k1, vreg_zero,
+             dst_tile_Vmm(j)); // mask of everything greater than 0
+    vcvtps2udq(dst_tile_Vmm(j) | T_z | reg_k1, dst_tile_Vmm(j)); // fp32->u32
+    vpmovusdb(ptr[reg_dst + ld_dst * j], dst_tile_Vmm(j));       // store result
   }
   add(rsp, stack_size);
 
   postamble();
-  outLocalLabel();  // end of local label
+  outLocalLabel(); // end of local label
 }
-}  // namespace jd
+} // namespace jd

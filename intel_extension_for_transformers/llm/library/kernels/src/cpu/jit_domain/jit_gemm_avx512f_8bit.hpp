@@ -23,8 +23,9 @@
 
 namespace jd {
 class jit_gemm_avx512f_8bit_t : public jit_generator {
- public:
-  explicit jit_gemm_avx512f_8bit_t(const ssd::matmul_fp8_param_t& param) : jit_generator(), param_(param) {
+public:
+  explicit jit_gemm_avx512f_8bit_t(const ssd::matmul_fp8_param_t &param)
+      : jit_generator(), param_(param) {
     NRegs = NTile / 16;
     CRegCount = NRegs * MTile;
     BRegCount = NRegs;
@@ -34,10 +35,10 @@ class jit_gemm_avx512f_8bit_t : public jit_generator {
   }
   void generate();
 
- public:
+public:
   static int constexpr MTile = 4, NTile = 32, KTile = 2;
 
- private:
+private:
   std::vector<Xbyak::Zmm> zmms_a_;
   std::vector<Xbyak::Zmm> zmms_b_;
   std::vector<Xbyak::Zmm> zmms_c_;
@@ -51,30 +52,34 @@ class jit_gemm_avx512f_8bit_t : public jit_generator {
   int CRegCount;
   int TmpRegCount;
 
- private:
-  void broadcast_bf16_fp32(const Xbyak::Zmm& _fp32, const Xbyak::Opmask& _mask, const Xbyak::Address& _add) {
+private:
+  void broadcast_bf16_fp32(const Xbyak::Zmm &_fp32, const Xbyak::Opmask &_mask,
+                           const Xbyak::Address &_add) {
     vpbroadcastw(_fp32 | _mask | T_z, _add);
   }
-  void load_bf16_fp32(const Xbyak::Zmm& _fp32, const Xbyak::Address& _add) {
+  void load_bf16_fp32(const Xbyak::Zmm &_fp32, const Xbyak::Address &_add) {
     vpmovzxwd(_fp32, _add);
     vpslld(_fp32, _fp32, 16);
   }
-  void store_fp32_bf16(const Xbyak::Zmm& _fp32, const Xbyak::Address& _add) {
+  void store_fp32_bf16(const Xbyak::Zmm &_fp32, const Xbyak::Address &_add) {
     // post op
     injector_.vector_compute(_fp32, param_.postop_attrs);
     vcvtneps2bf16(Xbyak::Ymm(_fp32.getIdx()), _fp32);
     vmovups(_add, Xbyak::Ymm(_fp32.getIdx()));
   }
 
-  void load_int8_fp32(const Xbyak::Zmm& tar, const Xbyak::Address& addr);
-  void load_fp8_fp32(const Xbyak::Zmm& tar, const Xbyak::Address& addr);
+  void load_int8_fp32(const Xbyak::Zmm &tar, const Xbyak::Address &addr);
+  void load_fp8_fp32(const Xbyak::Zmm &tar, const Xbyak::Address &addr);
 
-  void generate_fma(int MTile, int _NRegs, int KTile, const Xbyak::Reg64& aptr, const Xbyak::Reg64& bptr,
-                    const Xbyak::Reg64& reg_astep, const Xbyak::Reg64& reg_bstep, const Xbyak::Reg64& reg_tmp,
-                    const Xbyak::Reg64& reg_tmp1);
-  void alphabeta_process(int MTile, int _NRegs, const Xbyak::Reg64& parambase, const Xbyak::Reg64& reg_tmp,
-                         const Xbyak::Reg64& reg_tmp1, const Xbyak::Reg64& reg_tmp2);
-  void vreg_push(const Xbyak::Reg64& baseaddr) {
+  void generate_fma(int MTile, int _NRegs, int KTile, const Xbyak::Reg64 &aptr,
+                    const Xbyak::Reg64 &bptr, const Xbyak::Reg64 &reg_astep,
+                    const Xbyak::Reg64 &reg_bstep, const Xbyak::Reg64 &reg_tmp,
+                    const Xbyak::Reg64 &reg_tmp1);
+  void alphabeta_process(int MTile, int _NRegs, const Xbyak::Reg64 &parambase,
+                         const Xbyak::Reg64 &reg_tmp,
+                         const Xbyak::Reg64 &reg_tmp1,
+                         const Xbyak::Reg64 &reg_tmp2);
+  void vreg_push(const Xbyak::Reg64 &baseaddr) {
 #ifdef _WIN32
     for (int i = 0; i < 10; i++) {
       movaps(xword[baseaddr + i * 16], Xbyak::Xmm(6 + i));
@@ -84,7 +89,7 @@ class jit_gemm_avx512f_8bit_t : public jit_generator {
 #endif
   }
 
-  void vreg_pop(const Xbyak::Reg64& baseaddr) {
+  void vreg_pop(const Xbyak::Reg64 &baseaddr) {
 #ifdef _WIN32
     for (int i = 0; i < 10; i++) {
       movaps(Xbyak::Xmm(6 + i), xword[baseaddr + i * 16]);
@@ -94,12 +99,12 @@ class jit_gemm_avx512f_8bit_t : public jit_generator {
 #endif
   }
 
-  void load32(const Xbyak::Reg64& reg, const Xbyak::Address& addr) {
+  void load32(const Xbyak::Reg64 &reg, const Xbyak::Address &addr) {
     xor_(reg, reg);
     mov(reg.cvt32(), addr);
   }
 };
 
-}  // namespace jd
+} // namespace jd
 
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_GEMM_AVX512F_8BIT_HPP_
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_GEMM_AVX512F_8BIT_HPP_

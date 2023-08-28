@@ -15,9 +15,9 @@
 #ifndef ENGINE_SPARSELIB_INCLUDE_KERNELS_DYNAMIC_QUANT_MATMUL_TYPES_HPP_
 #define ENGINE_SPARSELIB_INCLUDE_KERNELS_DYNAMIC_QUANT_MATMUL_TYPES_HPP_
 
-#include <vector>
-#include "param_types.hpp"
 #include "kernels/amx_utils.hpp"
+#include "param_types.hpp"
+#include <vector>
 
 namespace jd {
 namespace ssd {
@@ -25,7 +25,8 @@ struct dynamic_quant_matmul_param_t {
   bool add_bias;
   int m, n, k;
   int pad_n;
-  int align_build_block_num;  // num of Tmm which store the dst in row-majot-align-building-block loop.
+  int align_build_block_num; // num of Tmm which store the dst in
+                             // row-majot-align-building-block loop.
   int align_m_loop;
   int align_n_loop;
   int tail_m = 0;
@@ -40,16 +41,16 @@ struct dynamic_quant_matmul_param_t {
 };
 
 struct dynamic_quant_matmul_data_t {
-  void* activation;
-  void* reordered_weight;
-  void* dst;
-  void* scale_a;
-  void* scale_w;
-  void* scale_dst;
-  void* bias;
-  void* tmp_buf;
+  void *activation;
+  void *reordered_weight;
+  void *dst;
+  void *scale_a;
+  void *scale_w;
+  void *scale_dst;
+  void *bias;
+  void *tmp_buf;
 };
 
-}  // namespace ssd
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_INCLUDE_KERNELS_DYNAMIC_QUANT_MATMUL_TYPES_HPP_
+} // namespace ssd
+} // namespace jd
+#endif // ENGINE_SPARSELIB_INCLUDE_KERNELS_DYNAMIC_QUANT_MATMUL_TYPES_HPP_

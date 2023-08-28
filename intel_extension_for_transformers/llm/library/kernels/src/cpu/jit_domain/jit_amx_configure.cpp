@@ -26,4 +26,4 @@ void jit_amx_release_t::generate() {
   ret();
 }
 
-}  // namespace jd
+} // namespace jd

@@ -19,16 +19,19 @@
 #define GET_OFF(field) offsetof(rt_data_t, field)
 
 namespace jd {
-void jit_gather_t::generate() { param_.use_avx512 ? generate_<true>() : generate_<false>(); }
+void jit_gather_t::generate() {
+  param_.use_avx512 ? generate_<true>() : generate_<false>();
+}
 
-template <bool USE_AVX512>
-void jit_gather_t::generate_() {
+template <bool USE_AVX512> void jit_gather_t::generate_() {
   using VMM = std::conditional_t<USE_AVX512, Zmm, Ymm>;
   constexpr auto BYTES_VMM = USE_AVX512 ? BYTES_ZMM : BYTES_YMM;
   constexpr auto stack_size = USE_AVX512 ? 0 : BYTES_VMM;
-  const auto rp_flags = USE_AVX512 ? regs_pool::DefaultFlags : regs_pool::DisableEvex;
+  const auto rp_flags =
+      USE_AVX512 ? regs_pool::DefaultFlags : regs_pool::DisableEvex;
 
-  regs_pool rp(this, 1, {3 + static_cast<int>(binaryop_attrs_.size()), 1, 2}, stack_size, rp_flags, BYTES_VMM);
+  regs_pool rp(this, 1, {3 + static_cast<int>(binaryop_attrs_.size()), 1, 2},
+               stack_size, rp_flags, BYTES_VMM);
   const auto src_addr = rp.reg<Reg64>();
   mov(src_addr, ptr[rp.p[0] + GET_OFF(src)]);
   {
@@ -47,7 +50,8 @@ void jit_gather_t::generate_() {
   const auto dst_addr = rp.reg<Reg64>();
   mov(dst_addr, ptr[rp.p[0] + GET_OFF(dst)]);
   const auto binaryop_addr = rp.regs<Reg64>(binaryop_attrs_.size());
-  for (size_t i = 0; i < binaryop_attrs_.size(); i++) mov(binaryop_addr[i], ptr[rp.p[0] + GET_OFF(binaryop_addrs)]);
+  for (size_t i = 0; i < binaryop_attrs_.size(); i++)
+    mov(binaryop_addr[i], ptr[rp.p[0] + GET_OFF(binaryop_addrs)]);
 
   const auto vmm_elements = BYTES_VMM / param_.dt_size;
   const auto loops = param_.inner_size / vmm_elements;
@@ -56,7 +60,8 @@ void jit_gather_t::generate_() {
     const auto xs = rp.reg<VMM>();
     vmovups(xs, ptr[src_addr + offset]);
     for (size_t i = 0; i < binaryop_attrs_.size(); i++)
-      binary_injector.compute_vector(xs, binaryop_addr[i] + offset, binaryop_attrs_[i]);
+      binary_injector.compute_vector(xs, binaryop_addr[i] + offset,
+                                     binaryop_attrs_[i]);
     vmovups(ptr[dst_addr + offset], xs);
   }
   // tail
@@ -65,7 +70,8 @@ void jit_gather_t::generate_() {
   const auto tail_mask = rp.reg<Opmask>();
   const auto extend_tail_mask = rp.reg<Opmask>();
   if (tail_size) {
-    if (binaryop_attrs_.size() > 0 && USE_AVX512) {  // TODO(Zhe): binary injector without EVEX
+    if (binaryop_attrs_.size() > 0 &&
+        USE_AVX512) { // TODO(Zhe): binary injector without EVEX
       mov(reg_tmp, (1ULL << tail_size) - 1);
       kmovq(tail_mask, reg_tmp);
       binary_injector.set_mask(tail_mask);
@@ -81,13 +87,16 @@ void jit_gather_t::generate_() {
     const auto xs = rp.reg<VMM>();
     if (USE_AVX512) {
       vmovdqu8(xs | extend_tail_mask, ptr[src_addr + offset]);
-    } else {  // mask is available only with EVEX encoding
-      vmov_avx2((has_binary ? rsp : dst_addr + offset), src_addr + offset, tail_bytes, Xmm(xs.getIdx()), reg_tmp);
-      if (has_binary) vmovaps(xs, ptr[rsp]);
+    } else { // mask is available only with EVEX encoding
+      vmov_avx2((has_binary ? rsp : dst_addr + offset), src_addr + offset,
+                tail_bytes, Xmm(xs.getIdx()), reg_tmp);
+      if (has_binary)
+        vmovaps(xs, ptr[rsp]);
     }
 
     for (size_t i = 0; i < binaryop_attrs_.size(); i++)
-      binary_injector.compute_vector(xs, binaryop_addr[i] + offset, binaryop_attrs_[i], true);
+      binary_injector.compute_vector(xs, binaryop_addr[i] + offset,
+                                     binaryop_attrs_[i], true);
 
     if (USE_AVX512) {
       vmovdqu8(ptr[dst_addr + offset] | extend_tail_mask, xs);
@@ -97,4 +106,4 @@ void jit_gather_t::generate_() {
     }
   }
 }
-}  // namespace jd
+} // namespace jd

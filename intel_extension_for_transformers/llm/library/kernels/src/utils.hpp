@@ -20,15 +20,15 @@
 
 #include <algorithm>
 #include <atomic>
-#include <chrono>  // NOLINT
+#include <chrono> // NOLINT
 #include <limits>
 #include <random>
 #include <sstream>
 #include <string>
 #include <vector>
 
-#include "param_types.hpp"
 #include "data_type/data_types.hpp"
+#include "param_types.hpp"
 
 #ifdef SPARSE_LIB_USE_VTUNE
 #include <ittnotify.h>
@@ -49,7 +49,7 @@
 #else
 #define aligned_free free
 
-#endif  // _WIN32
+#endif // _WIN32
 
 #if __has_cpp_attribute(fallthrough)
 #elif defined(WITH_GCC_FLAGS)
@@ -61,31 +61,33 @@
 #define SPARSE_DLOG(level) DLOG(level) << "Sparselib] "
 #define SPARSE_DLOG_IF(level, f) DLOG_IF(level, f) << "Sparselib] "
 namespace jd {
-int8_t fp32_to_int8(const float fp32, const float scale = 1.f, const float zp = 0.f);
-float int8_to_fp32(const int8_t int8, const float scale = 1.f, const float zp = 0.f);
+int8_t fp32_to_int8(const float fp32, const float scale = 1.f,
+                    const float zp = 0.f);
+float int8_to_fp32(const int8_t int8, const float scale = 1.f,
+                   const float zp = 0.f);
 
-template <typename dst_t, typename src_t>
-dst_t cast_to(const src_t x) {
+template <typename dst_t, typename src_t> dst_t cast_to(const src_t x) {
   return static_cast<dst_t>(x);
 }
 
-template <typename T2, typename T1>
-inline const T2 bit_cast(T1 i) {
+template <typename T2, typename T1> inline const T2 bit_cast(T1 i) {
   static_assert(sizeof(T1) == sizeof(T2), "Bit-casting must preserve size.");
   T2 o;
   memcpy(&o, &i, sizeof(T2));
   return o;
 }
 
-float time(const std::string& state);
+float time(const std::string &state);
 
 template <typename value_type, typename predicate_type>
-inline bool is_any_of(std::initializer_list<value_type> il, predicate_type pred) {
+inline bool is_any_of(std::initializer_list<value_type> il,
+                      predicate_type pred) {
   return std::any_of(il.begin(), il.end(), pred);
 }
 
 template <typename value_type, typename predicate_type>
-inline bool is_all_of(std::initializer_list<value_type> il, predicate_type pred) {
+inline bool is_all_of(std::initializer_list<value_type> il,
+                      predicate_type pred) {
   return std::all_of(il.begin(), il.end(), pred);
 }
 
@@ -94,11 +96,11 @@ inline bool is_all_of(std::initializer_list<value_type> il, predicate_type pred)
 #define pad_to_le(x, n) (x / n * (n))
 #define is_nonzero(x) (fabs((x)) > (1e-3))
 #define remainsize(x, size, n) (((x) + (n)) <= (size) ? (n) : ((size) - (x)))
-template <typename T>
-T str_to_num(const std::string& s);
+template <typename T> T str_to_num(const std::string &s);
 
 #ifdef _WIN32
-#define DECLARE_STR_TO_NUM(type) template type str_to_num<type>(const std::string& s);
+#define DECLARE_STR_TO_NUM(type)                                               \
+  template type str_to_num<type>(const std::string &s);
 
 DECLARE_STR_TO_NUM(uint64_t)
 DECLARE_STR_TO_NUM(int64_t)
@@ -109,10 +111,12 @@ DECLARE_STR_TO_NUM(float)
 #endif
 
 template <typename T>
-std::vector<T> split_str(const std::string& s, const char& delim = ',');
+std::vector<T> split_str(const std::string &s, const char &delim = ',');
 
 #ifdef _WIN32
-#define DECLARE_SPLIT_STR(type) template std::vector<type> split_str<type>(const std::string& s, const char& delim);
+#define DECLARE_SPLIT_STR(type)                                                \
+  template std::vector<type> split_str<type>(const std::string &s,             \
+                                             const char &delim);
 
 DECLARE_SPLIT_STR(int)
 
@@ -129,7 +133,7 @@ DECLARE_SPLIT_STR(int)
  * @param nd2 size in another dimension
  */
 template <typename T>
-bool all_zeros(const T* data, dim_t ld, dim_t nd1, dim_t nd2);
+bool all_zeros(const T *data, dim_t ld, dim_t nd1, dim_t nd2);
 
 int get_data_size(data_type dt);
 
@@ -139,7 +143,7 @@ float get_gelu(float x);
 float get_relu(float x, float alpha);
 int get_quantize(float x, float alpha, float scale, data_type dt);
 float get_dequantize(float x, float alpha, float scale);
-float apply_postop_list(float value, const std::vector<postop_attr>& attrs);
+float apply_postop_list(float value, const std::vector<postop_attr> &attrs);
 
 // A setting (basically a value) that can be set() multiple times until the
 // time first time the get() method is called. The set() method is expected to
@@ -147,15 +151,15 @@ float apply_postop_list(float value, const std::vector<postop_attr>& attrs);
 // be asymptotically as expensive as a single lock-prefixed memory read. The
 // get() method also has a 'soft' mode when the setting is not locked for
 // re-setting. This is used for testing purposes.
-template <typename T>
-struct set_once_before_first_get_setting_t {
- private:
+template <typename T> struct set_once_before_first_get_setting_t {
+private:
   T value_;
   std::atomic<unsigned> state_;
   enum : unsigned { idle = 0, busy_setting = 1, locked = 2 };
 
- public:
-  explicit set_once_before_first_get_setting_t(T init) : value_{init}, state_{idle} {}
+public:
+  explicit set_once_before_first_get_setting_t(T init)
+      : value_{init}, state_{idle} {}
 
   bool set(T new_value);
 
@@ -163,8 +167,10 @@ struct set_once_before_first_get_setting_t {
     if (!soft && state_.load() != locked) {
       while (true) {
         unsigned expected = idle;
-        if (state_.compare_exchange_weak(expected, locked)) break;
-        if (expected == locked) break;
+        if (state_.compare_exchange_weak(expected, locked))
+          break;
+        if (expected == locked)
+          break;
       }
     }
     return value_;
@@ -172,43 +178,43 @@ struct set_once_before_first_get_setting_t {
 };
 
 template <typename T>
-void cast_to_float_array(const void* src, std::vector<float>* dst, int size);
+void cast_to_float_array(const void *src, std::vector<float> *dst, int size);
 
 template <typename T>
-void cast_from_float_array(const std::vector<float>& src, void* dst, int size);
+void cast_from_float_array(const std::vector<float> &src, void *dst, int size);
 
 template <class T>
-inline void safe_delete(T*& ptr) {  // NOLINT(runtime/references)
+inline void safe_delete(T *&ptr) { // NOLINT(runtime/references)
   if (ptr != nullptr) {
     delete ptr;
     ptr = nullptr;
   }
 }
 
-template <typename T, std::size_t N = 64>
-class aligned_allocator_t {
- public:
+template <typename T, std::size_t N = 64> class aligned_allocator_t {
+public:
   typedef T value_type;
   typedef std::size_t size_type;
   typedef std::ptrdiff_t difference_type;
 
-  typedef T* pointer;
-  typedef const T* const_pointer;
+  typedef T *pointer;
+  typedef const T *const_pointer;
 
-  typedef T& reference;
-  typedef const T& const_reference;
+  typedef T &reference;
+  typedef const T &const_reference;
 
- public:
+public:
   static inline pointer allocate(size_type n, bool zero = false) {
 #ifdef _WIN32
     auto ptr = static_cast<pointer>(_aligned_malloc(n * sizeof(value_type), N));
 #else
     auto ptr = static_cast<pointer>(::aligned_alloc(N, n * sizeof(value_type)));
 #endif
-    if (zero) memset(ptr, 0, n * sizeof(value_type));
+    if (zero)
+      memset(ptr, 0, n * sizeof(value_type));
     return ptr;
   }
-  static inline void deallocate(void* p, size_type = 0) {
+  static inline void deallocate(void *p, size_type = 0) {
 #ifdef _WIN32
     _aligned_free(p);
 #else
@@ -219,7 +225,7 @@ class aligned_allocator_t {
   inline aligned_allocator_t() throw() {}
 
   template <typename T2>
-  inline aligned_allocator_t(const aligned_allocator_t<T2, N>&) throw() {}
+  inline aligned_allocator_t(const aligned_allocator_t<T2, N> &) throw() {}
 
   inline ~aligned_allocator_t() throw() {}
 
@@ -227,22 +233,27 @@ class aligned_allocator_t {
 
   inline const_pointer adress(const_reference r) const { return &r; }
 
-  inline void construct(pointer p, const value_type& wert) { new (p) value_type(wert); }
+  inline void construct(pointer p, const value_type &wert) {
+    new (p) value_type(wert);
+  }
 
   inline void destroy(pointer p) { p->~value_type(); }
 
-  inline size_type max_size() const throw() { return size_type(-1) / sizeof(value_type); }
+  inline size_type max_size() const throw() {
+    return size_type(-1) / sizeof(value_type);
+  }
 
-  template <typename T2>
-  struct rebind {
+  template <typename T2> struct rebind {
     typedef aligned_allocator_t<T2, N> other;
   };
 
-  bool operator!=(const aligned_allocator_t<T, N>& other) const { return !(*this == other); }
+  bool operator!=(const aligned_allocator_t<T, N> &other) const {
+    return !(*this == other);
+  }
 
-  // Returns true if and only if storage allocated from *this can be deallocated from other, and vice versa.
-  // Always returns true for stateless allocators.
-  bool operator==(const aligned_allocator_t<T, N>& other) const { return true; }
+  // Returns true if and only if storage allocated from *this can be deallocated
+  // from other, and vice versa. Always returns true for stateless allocators.
+  bool operator==(const aligned_allocator_t<T, N> &other) const { return true; }
 };
 
 /* Prepend ones to vec until the vector length reaches `n`. */
@@ -258,7 +269,8 @@ template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 inline std::vector<T> dim2stride(const std::vector<T> dim) {
   std::vector<T> out(dim.size());
   out[dim.size() - 1] = 1;
-  for (int i = dim.size() - 2; i >= 0; --i) out[i] = out[i + 1] * dim[i + 1];
+  for (int i = dim.size() - 2; i >= 0; --i)
+    out[i] = out[i + 1] * dim[i + 1];
   return out;
 }
 
@@ -266,26 +278,33 @@ template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
 inline std::vector<T> dim2step(const std::vector<T> dim) {
   auto out = dim2stride(dim);
   for (size_t i = 0; i < dim.size(); ++i)
-    if (dim[i] <= 1) out[i] = 0;
+    if (dim[i] <= 1)
+      out[i] = 0;
   return out;
 }
 
-template <typename T, typename = typename std::enable_if<std::is_integral<T>::value>::type>
-inline std::vector<T> perm_inv(const std::vector<T>& perm) {
+template <typename T,
+          typename = typename std::enable_if<std::is_integral<T>::value>::type>
+inline std::vector<T> perm_inv(const std::vector<T> &perm) {
   std::vector<T> ret(perm.size());
-  for (size_t i = 0; i < perm.size(); ++i) ret[perm[i]] = i;
+  for (size_t i = 0; i < perm.size(); ++i)
+    ret[perm[i]] = i;
   return ret;
 }
 
-template <typename T, typename U, typename = typename std::enable_if<std::is_integral<U>::value>::type>
-std::vector<T> apply_perm(const std::vector<T>& vec, const std::vector<U>& perm) {
-  SPARSE_LOG_IF(FATAL, vec.size() != perm.size()) << "Vector must be the same size as perm!";
+template <typename T, typename U,
+          typename = typename std::enable_if<std::is_integral<U>::value>::type>
+std::vector<T> apply_perm(const std::vector<T> &vec,
+                          const std::vector<U> &perm) {
+  SPARSE_LOG_IF(FATAL, vec.size() != perm.size())
+      << "Vector must be the same size as perm!";
   std::vector<T> ret(vec.size());
-  for (size_t i = 0; i < vec.size(); ++i) ret[perm[i]] = vec[i];
+  for (size_t i = 0; i < vec.size(); ++i)
+    ret[perm[i]] = vec[i];
   return ret;
 }
 
-inline std::vector<dim_t> dim2stride(const std::vector<dim_t>& dim) {
+inline std::vector<dim_t> dim2stride(const std::vector<dim_t> &dim) {
   std::vector<dim_t> stride(dim.size());
   stride[stride.size() - 1] = 1;
   for (auto i = stride.size() - 1; i > 0; --i) {
@@ -295,14 +314,16 @@ inline std::vector<dim_t> dim2stride(const std::vector<dim_t>& dim) {
 }
 
 class n_thread_t {
- public:
-  explicit n_thread_t(int nthr, bool cap = false) : prev_nthr(omp_get_max_threads()) {
-    if (nthr > 0 && nthr != prev_nthr && (!cap || nthr < prev_nthr)) omp_set_num_threads(nthr);
+public:
+  explicit n_thread_t(int nthr, bool cap = false)
+      : prev_nthr(omp_get_max_threads()) {
+    if (nthr > 0 && nthr != prev_nthr && (!cap || nthr < prev_nthr))
+      omp_set_num_threads(nthr);
   }
   ~n_thread_t() { omp_set_num_threads(prev_nthr); }
 
- private:
+private:
   int prev_nthr;
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_UTILS_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_UTILS_HPP_

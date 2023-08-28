@@ -22,22 +22,25 @@
 #include "param_types.hpp"
 
 namespace jd {
-#define CPU_INSTANCE(...) impl_list_item_t(type_deduction_helper_t<__VA_ARGS__::kd_t>())
+#define CPU_INSTANCE(...)                                                      \
+  impl_list_item_t(type_deduction_helper_t<__VA_ARGS__::kd_t>())
 #define NULL_INSTANCE(...) impl_list_item_t(nullptr)
 
 class cpu_engine_t : public engine_t {
- public:
+public:
   cpu_engine_t() : engine_t(engine_kind::cpu, runtime_kind::undef) {}
   virtual ~cpu_engine_t() {}
 
- public:
-  bool create_memory_storage(memory_storage_t** storage) const override;
-  bool create_stream(stream_t**) const override { return false; }
-  const std::vector<impl_list_item_t>* get_implementation_list(const operator_desc& op_desc) const override;
-  bool create_kernel(const operator_desc&, std::shared_ptr<kernel_t>&, const stream_t*) const override;
+public:
+  bool create_memory_storage(memory_storage_t **storage) const override;
+  bool create_stream(stream_t **) const override { return false; }
+  const std::vector<impl_list_item_t> *
+  get_implementation_list(const operator_desc &op_desc) const override;
+  bool create_kernel(const operator_desc &, std::shared_ptr<kernel_t> &,
+                     const stream_t *) const override;
 
- public:
+public:
   static const std::vector<impl_list_item_t> empty_list;
 };
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_CPU_ENGINE_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_CPU_ENGINE_HPP_

@@ -21,25 +21,26 @@
 namespace jd {
 
 /**
- * @brief jit_trans_BA16b4a_trq10n_x16 transpose a matrix of bytes of size mx16 (ab) to (1)x(m/4)x16x4 (BA16b4a) while
- * performing de-q10n and re-q10n in along "transpsoed channels"(dst_scale size: 1x16). Paddings are set to zero.
+ * @brief jit_trans_BA16b4a_trq10n_x16 transpose a matrix of bytes of size mx16
+ * (ab) to (1)x(m/4)x16x4 (BA16b4a) while performing de-q10n and re-q10n in
+ * along "transpsoed channels"(dst_scale size: 1x16). Paddings are set to zero.
  */
 class jit_trans_BA16b4a_trq10n_x16 : public jit_generator {
- public:
+public:
   struct rt_data_t {
-    const int8_t* src;
-    int8_t* dst;
-    const float* src_scale;
-    float* dst_scale;
+    const int8_t *src;
+    int8_t *dst;
+    const float *src_scale;
+    float *dst_scale;
     int ld_src;
     int M;
-    int N;  // less or equal to 16, will be padded with 0
+    int N; // less or equal to 16, will be padded with 0
   };
 
   jit_trans_BA16b4a_trq10n_x16() : jit_generator() {}
   virtual ~jit_trans_BA16b4a_trq10n_x16() {}
 
- private:
+private:
   void generate() override;
 
   static constexpr uint64_t vpshufb_mask_bw = 0x2222222222222222;
@@ -49,5 +50,5 @@ class jit_trans_BA16b4a_trq10n_x16 : public jit_generator {
   Xbyak::Label l_nsize_tbl, l_nsize_case[17];
 };
 
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_TRANS_BA16B4A_TRQ10N_X16_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_JIT_DOMAIN_JIT_TRANS_BA16B4A_TRQ10N_X16_HPP_

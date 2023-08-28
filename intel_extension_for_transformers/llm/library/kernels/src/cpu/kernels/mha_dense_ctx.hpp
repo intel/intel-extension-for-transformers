@@ -26,31 +26,34 @@
 
 namespace jd {
 // Convert rt_data to exec_ctx for old implementation.
-inline std::unique_ptr<exec_context_t, void (*)(exec_context_t*)> get_mha_dense_ctx(
-    const std::vector<const void*>& rt_data) {
+inline std::unique_ptr<exec_context_t, void (*)(exec_context_t *)>
+get_mha_dense_ctx(const std::vector<const void *> &rt_data) {
   using io = exposed_enum::mha_dense::io;
   using io_src = exposed_enum::mha_dense_src::src;
   using io_dst = exposed_enum::mha_dense_dst::dst;
   using io_shape = exposed_enum::mha_dense_shape::shape;
 
   static engine_factory factory;
-  static const engine_t* cpu_engine = factory.create(engine_kind::cpu, runtime_kind::undef);
-  static const stream_t* stream = []() {
-    stream_t* s = nullptr;
+  static const engine_t *cpu_engine =
+      factory.create(engine_kind::cpu, runtime_kind::undef);
+  static const stream_t *stream = []() {
+    stream_t *s = nullptr;
     cpu_engine->create_stream(&s);
     return s;
   }();
   const auto ctx = new exec_context_t(stream);
 
-  const auto ptr2mem = [](const void* ptr) {
-    memory_storage_t* mem;
+  const auto ptr2mem = [](const void *ptr) {
+    memory_storage_t *mem;
     cpu_engine->create_memory_storage(&mem);
-    mem->set_handle(const_cast<void*>(ptr));
+    mem->set_handle(const_cast<void *>(ptr));
     return mem;
   };
-  const auto ptr2shape = [](const void* ptr) { return ptr ? reinterpret_cast<const int32_t*>(ptr)[0] : 0; };
+  const auto ptr2shape = [](const void *ptr) {
+    return ptr ? reinterpret_cast<const int32_t *>(ptr)[0] : 0;
+  };
 
-  std::vector<memory_storage_t*> mem_src(io_src::SIZE), mem_dst(io_dst::SIZE);
+  std::vector<memory_storage_t *> mem_src(io_src::SIZE), mem_dst(io_dst::SIZE);
   std::vector<dim_t> dynamic_shapes(io_shape::SIZE);
   mem_src[io_src::SRC_Q] = ptr2mem(rt_data[io::SRC_Q]);
   mem_src[io_src::SRC_K] = ptr2mem(rt_data[io::SRC_K]);
@@ -69,11 +72,16 @@ inline std::unique_ptr<exec_context_t, void (*)(exec_context_t*)> get_mha_dense_
   mem_dst[io_dst::DST] = ptr2mem(rt_data[io::DST]);
   mem_dst[io_dst::DST_SCALE] = ptr2mem(rt_data[io::DST_SCALE]);
   mem_dst[io_dst::DST_ZP] = ptr2mem(rt_data[io::DST_ZP]);
-  dynamic_shapes[io_shape::BATCH_SIZE] = rt_data.size() > io::BATCH_SIZE ? ptr2shape(rt_data[io::BATCH_SIZE]) : 0;
-  dynamic_shapes[io_shape::HEAD_NUM] = rt_data.size() > io::HEAD_NUM ? ptr2shape(rt_data[io::HEAD_NUM]) : 0;
-  dynamic_shapes[io_shape::HEAD_SIZE] = rt_data.size() > io::HEAD_SIZE ? ptr2shape(rt_data[io::HEAD_SIZE]) : 0;
-  dynamic_shapes[io_shape::M] = rt_data.size() > io::M ? ptr2shape(rt_data[io::M]) : 0;
-  dynamic_shapes[io_shape::N] = rt_data.size() > io::N ? ptr2shape(rt_data[io::N]) : 0;
+  dynamic_shapes[io_shape::BATCH_SIZE] =
+      rt_data.size() > io::BATCH_SIZE ? ptr2shape(rt_data[io::BATCH_SIZE]) : 0;
+  dynamic_shapes[io_shape::HEAD_NUM] =
+      rt_data.size() > io::HEAD_NUM ? ptr2shape(rt_data[io::HEAD_NUM]) : 0;
+  dynamic_shapes[io_shape::HEAD_SIZE] =
+      rt_data.size() > io::HEAD_SIZE ? ptr2shape(rt_data[io::HEAD_SIZE]) : 0;
+  dynamic_shapes[io_shape::M] =
+      rt_data.size() > io::M ? ptr2shape(rt_data[io::M]) : 0;
+  dynamic_shapes[io_shape::N] =
+      rt_data.size() > io::N ? ptr2shape(rt_data[io::N]) : 0;
 
   ctx->set_outputs(mem_dst);
   ctx->set_inputs(mem_src);
@@ -81,13 +89,15 @@ inline std::unique_ptr<exec_context_t, void (*)(exec_context_t*)> get_mha_dense_
   ctx->set_workspace(ptr2mem(rt_data[io::WORKSPACE]));
   return {
       ctx,
-      [](exec_context_t* p) {
-        for (auto mem : p->inputs()) delete mem;
-        for (auto mem : p->outputs()) delete mem;
+      [](exec_context_t *p) {
+        for (auto mem : p->inputs())
+          delete mem;
+        for (auto mem : p->outputs())
+          delete mem;
         delete p->workspace();
         delete p;
       },
   };
 }
-}  // namespace jd
-#endif  // ENGINE_SPARSELIB_SRC_CPU_KERNELS_MHA_DENSE_CTX_HPP_
+} // namespace jd
+#endif // ENGINE_SPARSELIB_SRC_CPU_KERNELS_MHA_DENSE_CTX_HPP_
