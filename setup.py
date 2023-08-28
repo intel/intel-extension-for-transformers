@@ -234,6 +234,8 @@ def check_submodules():
 
 
 if __name__ == '__main__':
+    check_submodules()
+    
     setup(
         name=project_name,
         author="Intel AIA/AIPC Team",
