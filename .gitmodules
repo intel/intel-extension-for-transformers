@@ -79,6 +79,3 @@
 [submodule "intel_extension_for_transformers/llm/runtime/third_party/xbyak"]
 	path = intel_extension_for_transformers/llm/runtime/third_party/xbyak
 	url = https://github.com/herumi/xbyak.git
-[submodule "itrex"]
-	path = itrex
-	url = https://github.com/intel/intel-extension-for-transformers
