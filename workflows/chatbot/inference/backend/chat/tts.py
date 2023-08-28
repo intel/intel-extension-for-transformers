@@ -35,7 +35,7 @@ class TextToSpeech:
         )
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
         self.vocoder.eval()
-        self.default_speaker_embedding = torch.load('speaker_embeddings/spk_embed_default.pt') # load the default speaker embedding
+        self.default_speaker_embedding = torch.load('backend/chat/speaker_embeddings/spk_embed_default.pt') # load the default speaker embedding
 
         # specific parameters for Pat Gelsinger
         # preload the model in case of time-consuming runtime loading
@@ -46,8 +46,8 @@ class TextToSpeech:
         # self.pat_model = ipex.optimize(self.pat_model, torch.bfloat16)
         # self.speaker_embeddings = self.create_speaker_embedding(driven_audio_path)
         self.pat_speaker_embeddings = None
-        if os.path.exists('speaker_embeddings/spk_embed_pat.pt'):
-            self.pat_speaker_embeddings = torch.load('speaker_embeddings/spk_embed_pat.pt')
+        if os.path.exists('backend/chat/speaker_embeddings/spk_embed_pat.pt'):
+            self.pat_speaker_embeddings = torch.load('backend/chat/speaker_embeddings/spk_embed_pat.pt')
 
         # ipex IOMP hardware resources
         self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
