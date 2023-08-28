@@ -128,8 +128,17 @@ void FALCON::load(model_context& lctx, model_progress_callback progress_callback
     std::string layers_i = "transformer.h." + std::to_string(i);
 
     // norm: cur = ln_1_g*cur + ln_1_b
-    layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
-    layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
+    if (n_head_kv == 1) {  //  7B
+      layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
+      layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
+    } else if (n_head_kv == 8) {  // 7B
+      layer.norm[0] = ml->get_tensor(layers_i + ".ln_mlp.weight", {n_embd}, backend);
+      layer.norm[1] = ml->get_tensor(layers_i + ".ln_mlp.bias", {n_embd}, backend);
+      layer.norm[2] = ml->get_tensor(layers_i + ".ln_attn.weight", {n_embd}, backend);
+      layer.norm[3] = ml->get_tensor(layers_i + ".ln_attn.bias", {n_embd}, backend);
+    } else {
+      fprintf(stderr, "n_head_kv should be 1 (7B) or 8 (40B) in Falcon model, rather %d \n", n_head_kv);
+    }
   
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * n_head_kv * (n_embd / model.hparams.n_head)}, backend);
