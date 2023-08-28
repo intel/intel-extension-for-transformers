@@ -45,7 +45,7 @@ function gtest() {
     pip install cmake
     cmake_path=$(which cmake)
     ln -s ${cmake_path} ${cmake_path}3 || true
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/
 
     mkdir build && cd build && cmake .. -DNE_WITH_SPARSELIB=ON -DNE_WITH_TESTS=ON -DPYTHON_EXECUTABLE=$(which python) && make -j 2>&1 |
         tee -a ${LOG_DIR}/gtest_cmake_build.log
