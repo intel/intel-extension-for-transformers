@@ -18,7 +18,7 @@ langchain
 python-docx
 farm-haystack
 numpy==1.23.5
-librosa==0.10.0
+librosa
 docx
 beautifulsoup4
 InstructorEmbedding
