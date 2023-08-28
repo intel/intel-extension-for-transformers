@@ -19,39 +19,41 @@ jobs:
         run: cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
 
       - name: Build Docker Image
-        run: docker build ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f workflows/chatbot/fine_tuning/docker/Dockerfile -t chatbotfinetune:latest && yes | docker container prune && yes | docker image prune
+        run: docker build ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f workflows/chatbot/fine_tuning/docker/Dockerfile -t chatbotfinetune-mpi:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container on socket 0
         id: master_container
         run: |
-          cid=$(docker ps -q --filter "name=chatbotfinetune-s0")
+          cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s0")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          numactl --cpunodebind=0 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-s0" --hostname="chatbotfinetune-container-s0" chatbotfinetune:latest
-          master=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-s0")
+          numactl --cpunodebind=0 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-mpi-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-mpi:latest
+          master=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-mpi-s0")
           echo "master_node=$master" >> $GITHUB_OUTPUT
 
       - name: Start Docker Container on socket 1
+        id: slave_container
         run: |
-          cid=$(docker ps -q --filter "name=chatbotfinetune-s1")
+          cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s1")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          numactl --cpunodebind=1 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-s1" --hostname="chatbotfinetune-container-s1" chatbotfinetune:latest
+          numactl --cpunodebind=1 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-mpi-s1" --hostname="chatbotfinetune-container-mpi-s1" chatbotfinetune-mpi:latest
+          slave=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-mpi-s1")
+          echo "slave_node=$slave" >> $GITHUB_OUTPUT
 
       - name: Run Finetuning in Background
         run: |
-          master_node=${{ steps.master_container.outputs.master_node }}
-          docker exec "chatbotfinetune-s0" bash -c "cd /root/chatbot && source activate && conda activate chatbot-finetuning; sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat.sh $master_node 0"
-          docker exec "chatbotfinetune-s1" bash -c "cd /root/chatbot && source activate && conda activate chatbot-finetuning; sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat.sh $master_node 1"
+          sh .github/workflows/script/chatbot/prepare_ft_mpt-7b-chat_mpi.sh ${{ steps.master_container.outputs.master_node }} ${{ steps.slave_container.outputs.slave_node }}
+          docker exec "chatbotfinetune-mpi-s0" bash -c "mpirun -f ./hosts2 -n 2 -ppn 1 -genv OMP_NUM_THREADS=48 sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat_mpi.sh"
 
-      - name: Wait for Finetuning Completion
+      - name: Print Logs and Check Finetuning Status
         run: |
-          sh .github/workflows/script/chatbot/wait_for_ft_mpt-7b-chat.sh
+          sh .github/workflows/script/chatbot/finish_ft_mpt-7b-chat_mpi.sh          
 
       - name: Stop Container
         if: success() || failure()
         run: |
-          cid=$(docker ps -q --filter "name=chatbotfinetune-s0")
+          cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s0")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          cid=$(docker ps -q --filter "name=chatbotfinetune-s1")
+          cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s1")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
 
       - name: Test Summary
