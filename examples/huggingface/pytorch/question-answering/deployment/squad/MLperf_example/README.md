@@ -33,7 +33,7 @@ gdown --no-check-certificate --folder https://drive.google.com/drive/folders/1nX
 ```
 git clone --recursive https://github.com/intel/intel-extension-for-transformers.git
 cp -r intel-extension-for-transformers/intel_extension_for_transformers/ ./ 
-pushd intel_extension_for_transformers/backends/neural_engine/
+pushd intel_extension_for_transformers/llm/runtime/
 mkdir build && cd build
 cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DNE_WITH_SPARSELIB=True && make -j
 popd

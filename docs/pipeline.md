@@ -8,7 +8,7 @@
     2.2. [Pipeline Inference for Executor Backend](#pipeline-inference-for-executor-backend)
 
 ## Introduction
-The pipeline is inherited from [huggingface/transformers pipeline](https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.mdx), it is simple to use any model from [Hub](https://huggingface.co/models) for inference on any language, computer vision, speech, and multimodal tasks. Two features for int8 model inference and model inference on [executor backend](../intel_extension_for_transformers/backends/neural_engine/) have been added to the extension.
+The pipeline is inherited from [huggingface/transformers pipeline](https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.mdx), it is simple to use any model from [Hub](https://huggingface.co/models) for inference on any language, computer vision, speech, and multimodal tasks. Two features for int8 model inference and model inference on [executor backend](../intel_extension_for_transformers/llm/runtime/) have been added to the extension.
 
 
 ## Examples

@@ -8,7 +8,7 @@ log_path=${log_dir}/clangformat.log
 cd /intel-extension-for-transformers
 git config --global --add safe.directory "*"
 
-cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/kernels
+cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/kernels
 clang-format --style=file -i include/**/*.hpp
 clang-format --style=file -i src/**/*.hpp
 clang-format --style=file -i src/**/*.cpp
