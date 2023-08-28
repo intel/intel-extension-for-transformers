@@ -40,7 +40,8 @@ class ChineseTextToSpeech():  # pragma: no cover
     def stream_text2speech(self, generator):
         """Stream the generation of audios with an LLM text generator."""
         for idx, response in enumerate(generator):
-            yield self.text2speech(response, f"{self.output_audio_path}_{idx}.wav", spk_id=self.spk_id)
+            self.output_audio_path = f"{self.output_audio_path}_{idx}.wav"
+            yield self.text2speech(response)
 
     def post_llm_inference_actions(self, text_or_generator):
         if self.stream_mode:

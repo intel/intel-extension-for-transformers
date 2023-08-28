@@ -55,7 +55,8 @@ class AudioSpeechRecognition():
             raise Exception("[ASR ERROR] Audio format not supported!")
         audio_dataset = Dataset.from_dict({"audio": [audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
         waveform = audio_dataset[0]["audio"]['array']
-        inputs = self.processor.feature_extractor(waveform, return_tensors="pt", sampling_rate=16_000).input_features.to(self.device)
+        inputs = self.processor.feature_extractor(waveform, return_tensors="pt",
+                                                  sampling_rate=16_000).input_features.to(self.device)
         with torch.cpu.amp.autocast() if self.bf16 else contextlib.nullcontext():
             predicted_ids = self.model.generate(inputs)
         result = self.processor.tokenizer.batch_decode(predicted_ids, skip_special_tokens=True, normalize=True)[0]

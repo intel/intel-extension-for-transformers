@@ -1,4 +1,4 @@
-transformers>=4.31.0
+transformers>=4.32.0
 peft
 fastchat
 torch
@@ -18,7 +18,7 @@ langchain
 python-docx
 farm-haystack
 numpy==1.23.5
-librosa=0.10.0
+librosa==0.10.0
 docx
 beautifulsoup4
 InstructorEmbedding

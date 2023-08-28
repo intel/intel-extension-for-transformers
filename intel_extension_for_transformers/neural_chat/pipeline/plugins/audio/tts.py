@@ -56,8 +56,10 @@ class TextToSpeech():
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        default_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')
-        self.default_speaker_embedding = torch.load(default_speaker_embedding_path) # load the default speaker embedding
+        default_speaker_embedding_path = os.path.join(script_dir,
+                                                      '../../../assets/speaker_embeddings/spk_embed_default.pt')
+        # load the default speaker embedding
+        self.default_speaker_embedding = torch.load(default_speaker_embedding_path)
 
         # preload the demo model in case of time-consuming runtime loading
         self.pat_model = None
@@ -85,7 +87,8 @@ class TextToSpeech():
 
         driven_audio_path: the driven audio of that speaker
         """
-        audio_dataset = Dataset.from_dict({"audio": [driven_audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
+        audio_dataset = Dataset.from_dict({"audio":
+            [driven_audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
         waveform = audio_dataset[0]["audio"]['array']
         with torch.no_grad():
             speaker_embeddings = self.speaker_model.encode_batch(torch.tensor(waveform))

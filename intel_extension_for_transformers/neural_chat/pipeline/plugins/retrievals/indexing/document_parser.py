@@ -18,6 +18,7 @@
 
 import os
 import re, json
+from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings
@@ -27,7 +28,8 @@ from .utils import load_unstructured_data, laod_structured_data, get_chuck_data
 
 
 class DocumentIndexing:
-    def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output", process=False, embedding_model="hkunlp/instructor-large", max_length=512):
+    def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
+                 process=False, embedding_model="hkunlp/instructor-large", max_length=512):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
         """
@@ -43,7 +45,8 @@ class DocumentIndexing:
         """
         Parse the uploaded file.
         """
-        if input.endswith("pdf") or input.endswith("docx") or input.endswith("html") or input.endswith("txt") or input.endswith("md"):
+        if input.endswith("pdf") or input.endswith("docx") or input.endswith("html") \
+           or input.endswith("txt") or input.endswith("md"):
             content = load_unstructured_data(input)
             if self.process:
                 chuck = get_chuck_data(content, self.max_length, input)
@@ -54,8 +57,8 @@ class DocumentIndexing:
         else:
             print("This file is ignored. Will support this file format soon.")
         return chuck
-        
-    
+
+
     def batch_parse_document(self, input):
         """
         Parse the uploaded batch files in the input folder.
@@ -63,8 +66,8 @@ class DocumentIndexing:
         paragraphs = []
         for dirpath, dirnames, filenames in os.walk(input):
             for filename in filenames:
-                if filename.endswith("pdf") or filename.endswith("docx") or filename.endswith("html") or filename.endswith(
-                        "txt") or filename.endswith("md"):
+                if filename.endswith("pdf") or filename.endswith("docx") or filename.endswith("html") \
+                    or filename.endswith("txt") or filename.endswith("md"):
                     content = load_unstructured_data(os.path.join(dirpath, filename))
                     if self.process:
                         chuck = get_chuck_data(content, self.max_length, input)

@@ -19,7 +19,7 @@ import importlib
 from transformers import AutoConfig, pipeline
 from transformers.pipelines import *
 from typing import Dict, Optional, Tuple
-from .model import OptimizedModel
+from .modeling.model import OptimizedModel
 
 
 origin_forward = Pipeline.forward

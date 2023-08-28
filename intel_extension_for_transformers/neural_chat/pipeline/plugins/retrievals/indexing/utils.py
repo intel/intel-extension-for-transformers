@@ -87,7 +87,7 @@ def load_json(input, process, max_length):
             data.append(json_obj)
 
     new_sens = []
-    new_collec = []
+    new_collect = []
     paragraphs = []
     for sub in data:
         sub['doc'].replace('#', " ")

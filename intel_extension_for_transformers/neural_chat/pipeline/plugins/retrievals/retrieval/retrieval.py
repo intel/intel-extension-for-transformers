@@ -23,12 +23,15 @@ from .chroma_retrieval import ChromaRetriever
 class Retriever():
     """Retrieve the document database with BM25 sparse algorithm."""
 
-    def __init__(self, retrieval_type="dense", document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}):
+    def __init__(self, retrieval_type="dense", document_store=None,
+                 top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}):
         self.retrieval_type = retrieval_type
         if not document_store:
             raise ValueError(f"Please give a knowledge base for retrieval.")
         if retrieval_type == "dense":
-            self.retriever = ChromaRetriever(database=document_store, search_type=search_type, search_kwargs=search_kwargs)
+            self.retriever = ChromaRetriever(database=document_store,
+                                             search_type=search_type,
+                                             search_kwargs=search_kwargs)
         else:
             self.retriever = BM25Retriever(document_store=document_store, top_k=top_k)
 

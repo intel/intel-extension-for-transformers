@@ -2,6 +2,14 @@
 
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 
+cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
+if [ -f "requirements.txt" ]; then
+    python -m pip install --default-timeout=100 -r requirements.txt
+    pip list
+else
+    echo "Not found requirements.txt file."
+fi
+
 cd /intel-extension-for-transformers
 log_dir=/intel-extension-for-transformers/.github/workflows/script/formatScan
 if [ -f "requirements.txt" ]; then

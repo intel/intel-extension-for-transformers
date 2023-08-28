@@ -47,6 +47,7 @@ from transformers import (
     Seq2SeqTrainingArguments,
     AutoModelForSeq2SeqLM,
     set_seed,
+    MPTForCausalLM
 )
 from transformers.trainer_utils import is_main_process, get_last_checkpoint
 import re
@@ -115,15 +116,18 @@ class Finetuning:
         transformers.utils.logging.enable_explicit_format()
 
     def load_dataset(self, data_args, model_args, training_args):
-        # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
-        # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
+        # Get the datasets: you can either provide your own CSV/JSON/TXT
+        # training and evaluation files (see below)
+        # or just provide the name of one of the public datasets available
+        # on the hub at https://huggingface.co/datasets/
         # (the dataset will be downloaded automatically from the datasets Hub).
         #
-        # For CSV/JSON files, this script will use the column called 'text' or the first column if no column called
+        # For CSV/JSON files, this script will use the column called 'text' or
+        # the first column if no column called
         # 'text' is found. You can easily tweak this behavior (see below).
         #
-        # In distributed training, the load_dataset function guarantee that only one local process can concurrently
-        # download the dataset.
+        # In distributed training, the load_dataset function guarantee
+        # that only one local process can concurrently download the dataset.
         if data_args.dataset_name is not None:
             # Downloading and loading a dataset from the hub.
             raw_datasets = load_dataset(
@@ -241,7 +245,8 @@ class Finetuning:
             self.finetune_seq2seq()
         else:
             raise NotImplementedError(
-                "Unsupported architecture {}, only support CausalLM (CLM) and ConditionalGeneration (Seq2seq) now.".format(
+                "Unsupported architecture {}, only support CausalLM (CLM) \
+                    and ConditionalGeneration (Seq2seq) now.".format(
                     config.architectures[0]
                 )
             )
@@ -287,8 +292,6 @@ class Finetuning:
         if model_args.model_name_or_path:
             model_dtype = torch.bfloat16 if training_args.bf16 else None
             if re.search("mpt", model_args.model_name_or_path, re.IGNORECASE):
-                from models.mpt.modeling_mpt import MPTForCausalLM
-
                 model = MPTForCausalLM.from_pretrained(
                     model_args.model_name_or_path,
                     from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -493,7 +496,8 @@ class Finetuning:
 
         # Detecting last checkpoint.
         last_checkpoint = None
-        if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
+        if os.path.isdir(training_args.output_dir) \
+           and training_args.do_train and not training_args.overwrite_output_dir:
             last_checkpoint = get_last_checkpoint(training_args.output_dir)
             if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
                 raise ValueError(
@@ -718,7 +722,8 @@ class Finetuning:
             self.logger.info("*** Evaluate ***")
             metrics = trainer.evaluate()
 
-            max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
+            max_eval_samples = data_args.max_eval_samples \
+                        if data_args.max_eval_samples is not None else len(eval_dataset)
             metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
 
             trainer.log_metrics("eval", metrics)

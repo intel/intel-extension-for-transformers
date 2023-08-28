@@ -21,6 +21,8 @@ from typing import List
 from ..utils.command import NeuralChatCommandDict
 from .base_executor import BaseCommandExecutor
 from ..config import PipelineConfig, FinetuningConfig, GenerationConfig
+from ..config import ModelArguments, DataArguments, FinetuningArguments
+from transformers import TrainingArguments
 from ..chatbot import build_chatbot, finetune_model
 from ..pipeline.plugins.audio.asr import AudioSpeechRecognition
 from ..pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
@@ -303,7 +305,12 @@ class FinetuingExecutor(BaseCommandExecutor):
         base_model = parser_args.base_model
         config = parser_args.config
 
-        self.finetuneCfg = FinetuningConfig()
+        model_args = ModelArguments()
+        data_args = DataArguments()
+        training_args = TrainingArguments()
+        finetune_args= FinetuningArguments()
+
+        self.finetuneCfg = FinetuningConfig(model_args, data_args, training_args, finetune_args)
         try:
             res = self()
             print(res)
@@ -316,8 +323,7 @@ class FinetuingExecutor(BaseCommandExecutor):
         """
             Python API to call an executor.
         """
-        finetuned_model = finetune_model(self.finetuneCfg)
-        return finetuned_model
+        finetune_model(self.finetuneCfg)
 
 specific_commands = {
     'textchat': ['neuralchat text chat command', 'TextChatExecutor'],

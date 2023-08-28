@@ -26,8 +26,9 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompts impor
 
 @register_plugin("retrieval")
 class QA_Client():
-    def __init__(self, persist_dir="./output", process=False, input_path=None, embedding_model="hkunlp/instructor-large", max_length=512, retrieval_type="dense", document_store=None, top_k=1, search_type="mmr",
-                search_kwargs={"k": 1, "fetch_k": 5}):
+    def __init__(self, persist_dir="./output", process=False, input_path=None,
+                 embedding_model="hkunlp/instructor-large", max_length=512, retrieval_type="dense",
+                 document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}):
         self.model = None
         self.tokenizer = None
         self.retrieval_type = retrieval_type
@@ -38,7 +39,8 @@ class QA_Client():
                                                persist_dir=persist_dir, process=process,
                                                embedding_model=embedding_model, max_length=max_length)
             self.db = self.doc_parser.KB_construct(input_path)
-            self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k, search_type=search_type, search_kwargs=search_kwargs)
+            self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
+                                       search_type=search_type, search_kwargs=search_kwargs)
 
 
 
