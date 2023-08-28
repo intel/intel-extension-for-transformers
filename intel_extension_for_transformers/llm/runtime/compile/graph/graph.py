@@ -587,7 +587,7 @@ class Graph(object):
 
         Example::
 
-            from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+            from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
             newgraph = Graph()
             newgraph.graph_init('./ir/conf.yaml', './ir/model.bin')
             out = newgraph.inference([input_0, input_1, input_2])

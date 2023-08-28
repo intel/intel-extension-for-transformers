@@ -99,7 +99,7 @@ model = trainer.quantize(quant_config=q_config)
 Transformers-accelerated Neural Engine is one of reference deployments that Intel® Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
 
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 # /path/to/your/model is a TensorFlow pb model or ONNX model
 model = compile('/path/to/your/model')
 inputs = ... # [input_ids, segment_ids, input_mask]
