@@ -19,3 +19,4 @@
 
 
 from .model import OptimizedModel
+from .modeling_causal import AutoModelForCausalLM

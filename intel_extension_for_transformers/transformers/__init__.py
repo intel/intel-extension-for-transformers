@@ -35,7 +35,7 @@ from .distillation import (
     DistillationCriterionMode,
     SUPPORTED_DISTILLATION_CRITERION_MODE,
 )
-from .modeling import OptimizedModel
+from .modeling import OptimizedModel, AutoModelForCausalLM
 from .mixture.auto_distillation import AutoDistillation
 from .nas import NAS
 from .optimizer import NoTrainerOptimizer, Orchestrate_optimizer

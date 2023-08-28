@@ -1047,7 +1047,7 @@ def main():
     )
 
     if args.habana:
-        from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+        from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=import-error
 
         world_size, rank, args.local_rank = initialize_distributed_hpu()
     if args.habana and rank in [-1, 0]:

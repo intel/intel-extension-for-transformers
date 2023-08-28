@@ -31,3 +31,4 @@ yacs
 uvicorn
 optimum
 optimum[habana]
+deepspeed
