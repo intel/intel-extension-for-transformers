@@ -19,8 +19,8 @@ import numpy as np
 import requests
 import uvicorn
 
-from constants import CONTROLLER_HEART_BEAT_EXPIRATION
-from utils import build_logger, server_error_msg
+from .constants import CONTROLLER_HEART_BEAT_EXPIRATION
+from .utils import build_logger, server_error_msg
 
 from sse_starlette.sse import EventSourceResponse
 from starlette.responses import RedirectResponse
