@@ -31,10 +31,10 @@
 #include <vector>
 
 #include "core/data_types.h"
-#include "core/ne.h"
-#include "core/ne_layers.h"
-#include "core/ne_jblas.h"
 #include "core/layers/mha_dense.h"
+#include "core/ne.h"
+#include "core/ne_jblas.h"
+#include "core/ne_layers.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
@@ -91,6 +91,28 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   ne_cgraph gf = {};
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
+  const bool kv_mem_jblas = kv_self.k->type == NE_TYPE_JBLAS;
+  kv_cache_info_t kv_cache_info = {0, 0};
+  if (kv_mem_jblas) {
+    NE_ASSERT(kv_self.v->type == NE_TYPE_JBLAS);  // kv type should be the same
+    attn_shape_t attn_shape = {
+        /* .batch_size = */ 1,
+        /* .head_num = */ n_head,
+        /* .head_size = */ n_embd / n_head,
+        /* .sl_q = */ N,  // Note: make sure that jblas reordered attn supports next token inferencing
+        /* .sl_kv = */ n_past + N,
+    };
+
+    NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
+               jblas_reordered_attn_fp32_support(&attn_shape)));
+    kv_shape_t kv_shape{
+        /* .head_num = */ static_cast<uint32_t>(n_head),
+        /* .head_size = */ static_cast<uint32_t>(n_embd / n_head),
+        /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
+    };
+    jblas_reordered_attn_fp32_batch_kv_info(&kv_shape, &kv_cache_info);
+  }
+
   struct ne_tensor* embd = ne_new_tensor_1d(ctx0, NE_TYPE_I32, N, NE_SIZE_CALC);
   ne_set_name(embd, "embd");
   memcpy(embd->data, tokens, N * ne_element_size(embd));
@@ -127,9 +149,14 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
           ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 1 * N * n_embd * ne_element_size(QKVcur)),
                         n_embd / n_head, n_head, N),
           n_past, n_rot, 0);
-      Vcur = ne_transpose(
-          ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
-                              n_embd, N));
+      if (!kv_mem_jblas) {
+        Vcur = ne_transpose(
+            ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
+                                n_embd, N));
+      } else {
+        Vcur = ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
+                             n_embd / n_head, n_head, N);
+      }
 
     } else {
       Qcur = ne_rope_inplace(
@@ -138,13 +165,19 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       Kcur = ne_rope_inplace(
           ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N),
           n_past, n_rot, 0);
-      Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd, N));
+      if (!kv_mem_jblas) {
+        Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd, N));
+      } else {
+        Vcur = ne_rope_inplace(
+            ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd / n_head, n_head, N),
+            n_past, n_rot, 0);
+      }
     }
     ne_set_name(Qcur, "Qcur");
     ne_set_name(Kcur, "Kcur");
     ne_set_name(Vcur, "Vcur");
     // self-attention
-    {
+    if (!kv_mem_jblas) {
       // store key and value to memory
       {
         struct ne_tensor* k =
@@ -208,6 +241,51 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 
       // projection (no bias)
       cur = ne_mul_mat(ctx0, model.layers[il].attn[3], cur);
+    } else {
+      const auto head_size = n_embd / n_head;
+      const auto seq_kv = n_past + N;
+
+      const auto k_size = kv_cache_info.k_bytes;
+      const auto v_size = kv_cache_info.v_bytes;
+      // store key and value to memory
+      {
+        const auto k_cache = ne_view_3d(ctx0, kv_self.k,           // tensor
+                                        head_size, n_ctx, n_head,  // ne
+                                        0, 0,                      // nb (jblas managed)
+                                        il * k_size);              // offset
+        ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, Kcur, n_past));
+        const auto v_cache = ne_view_3d(ctx0, kv_self.v,           // tensor
+                                        head_size, n_ctx, n_head,  // ne
+                                        0, 0,                      // nb (jblas managed)
+                                        il * v_size);              // offset
+        ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past));
+      }
+
+      struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
+      ne_set_name(Q, "Q");
+
+      struct ne_tensor* K =
+          ne_view_3d(ctx0, kv_self.k,                                             // tensor
+                     head_size, seq_kv, n_head,                                   // ne
+                     kv_cache_info.stride_k_sl, kv_cache_info.stride_k_head_num,  // nb (jblas managed)
+                     il * k_size);                                                // offset
+      *reinterpret_cast<ATTN_FWD_LAYOUT*>(&K->nb[0]) = kv_cache_info.k_layout;    // us nb0 for layout
+      ne_set_name(K, "K");
+      struct ne_tensor* V =
+          ne_view_3d(ctx0, kv_self.v,                                                    // tensor
+                     seq_kv, head_size, n_head,                                          // ne
+                     kv_cache_info.stride_v_head_size, kv_cache_info.stride_v_head_num,  // nb (jblas managed)
+                     il * v_size);                                                       // offset
+      *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;           // us nb0 for layout
+      ne_set_name(V, "V");
+
+      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head), true);
+      struct ne_tensor* KQV_merged_contiguous =
+          ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
+      ne_set_name(KQV_merged_contiguous, "KQV_merged_contiguous");
+
+      // projection (no bias)
+      cur = ne_mul_mat(ctx0, model.layers[il].attn[3], KQV_merged_contiguous);
     }
 
     lctx.use_buf(ctx0, 1);

@@ -70,11 +70,11 @@ struct gpt_params {
   std::string lora_adapter = "";  // lora adapter path
   std::string lora_base = "";     // base model path for the lora adapter
 
-  bool memory_f16 = true;         // use f16 instead of f32 for memory kv
-  bool random_prompt = false;     // do not randomize prompt if none provided
-  bool use_color = false;         // use color to distinguish generations and inputs
-  bool interactive = false;       // interactive mode
-  bool prompt_cache_all = false;  // save user input and generations to prompt cache
+  KV_MEM_TYPE memory_type = KV_MEM_TYPE_F16;  // Memory kv data type
+  bool random_prompt = false;                 // do not randomize prompt if none provided
+  bool use_color = false;                     // use color to distinguish generations and inputs
+  bool interactive = false;                   // interactive mode
+  bool prompt_cache_all = false;              // save user input and generations to prompt cache
 
   bool embedding = false;          // get only sentence embedding
   bool interactive_first = false;  // wait for user input immediately
@@ -107,3 +107,7 @@ std::vector<model_token> model_tokenize(struct model_context* ctx, const std::st
 //
 
 struct model_context* model_init_from_gpt_params(const gpt_params& params);
+
+// KV cache elements per layer per batch per beam
+void get_batch_kv_elements_from_gpt_params(const struct model_hparams& hparams, ne_type wtype, int32_t* k_size,
+                                           int32_t* v_size);

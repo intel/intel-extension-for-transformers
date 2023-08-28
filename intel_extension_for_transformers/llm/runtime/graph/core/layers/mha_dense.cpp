@@ -811,7 +811,6 @@ class ScaleTrackMax {
   using DType = T_DST;
   using SType = T_SRC;
   struct Param;
-  static_assert(false);
 
   JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
@@ -884,9 +883,75 @@ class ScaleTrackMax<ISA_T, fp16, float> {
 #endif
   }
 };
-
 template <JBLAS_ISA ISA_T>
 using ScaleTrackMaxFp16Fp32 = ScaleTrackMax<ISA_T, fp16, float>;
+
+template <JBLAS_ISA ISA_T>
+class ScaleTrackMax<ISA_T, float, float> {
+ public:
+  using DType = float;
+  using SType = float;
+  struct Param {
+    DType* dst;
+    DType* dst_max;
+    int ld_dst;  // #elements
+    float scale;
+    int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+  };
+
+  JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& p) const {
+    const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
+    const auto dst_max = p.dst_max + M_offset;
+#if CompileFP16()
+#if MHA_2ND_EXP
+    const auto v_scale = _mm512_set1_ps(p.scale);
+
+    for (int i = 0; i < M; ++i) {
+      const auto N_unmasked =
+          std::min(N, p.causal_offset < 0 ? INT32_MAX : i + M_offset - N_offset + p.causal_offset + 1);
+
+      const auto v_mask = _cvtu32_mask16((1U << (N_unmasked % 16)) - 1);
+      int j = 0;
+      auto v_max = _mm512_set1_ps(-INFINITY);
+      for (; j < N_unmasked - 15; j += 16) {
+        const auto xs = _mm512_mul_ps(v_scale, _mm512_loadu_ps(src + i * src_step + j));
+        v_max = _mm512_max_ps(v_max, xs);
+        _mm512_storeu_ps(dst + i * p.ld_dst + j, xs);
+      }
+      if (j < N_unmasked) {
+        const auto xs = _mm512_mul_ps(v_scale, _mm512_maskz_loadu_ps(v_mask, src + i * src_step + j));
+        v_max = _mm512_mask_max_ps(v_max, v_mask, v_max, xs);
+        _mm512_storeu_ps(dst + i * p.ld_dst + j, xs);
+        j += 16;
+      }
+      dst_max[i] = std::max(dst_max[i], _mm512_reduce_max_ps(v_max));
+
+      // if (j < jblas::utils::padto(N, 64))
+      //   memset(dst + i * p.ld_dst + j, 0, sizeof(*dst) * (jblas::utils::padto(N, 64) - j));
+    }
+#else
+    for (int i = 0; i < M; ++i) {
+      const auto N_unmasked =
+          std::min(N, p.causal_offset < 0 ? INT32_MAX : i + M_offset - N_offset + p.causal_offset + 1);
+      for (int j = 0; j < N_unmasked; ++j) {
+        const auto val_ = src[i * src_step + j] * p.scale;
+        dst[i * p.ld_dst + j] = static_cast<T_DST>();
+        dst_max[i] = std::max(dst_max[i], val_);
+      }
+      if (N_unmasked < jblas::utils::padto(N, 64))
+        memset(dst + i * p.ld_dst + N_unmasked, 0, sizeof(*dst) * (jblas::utils::padto(N, 64) - N_unmasked));
+    }
+#endif
+
+    return JblasSuccess;
+#else
+    return JblasNotSupport;
+#endif
+  }
+};
+template <JBLAS_ISA ISA_T>
+using ScaleTrackMaxFp32Fp32 = ScaleTrackMax<ISA_T, float, float>;
 
 template <JBLAS_ISA ISA_T>
 class ScaleTrackMax<ISA_T, int32_t, float> {
@@ -916,7 +981,7 @@ class ScaleTrackMax<ISA_T, int32_t, float> {
       int j = 0;
       auto v_max = _mm512_set1_ps(-INFINITY);
       for (; j < N_unmasked - 15; j += 16) {
-        const auto xs = _mm512_mul_ps(v_scale, _mm512_cvtepi32_ps(_mm512_loadu_epi32(src + i * src_step + j)));
+        const auto xs = _mm512_mul_ps(v_scale, _mm512_cvtepi32_ps(_mm512_loadu_si512(src + i * src_step + j)));
         v_max = _mm512_max_ps(v_max, xs);
         _mm512_storeu_ps(dst + i * p.ld_dst + j, xs);
       }
@@ -1002,6 +1067,7 @@ struct InplacePrecomputeMaxSoftmax {
     assert(false);
   }
 };
+#if CompileFP16()
 template <>
 struct InplacePrecomputeMaxSoftmax<float, fp16> {
   static void forward(int m_size, int n_size, int n_pad_size, bool is_causal, float* src, fp16* dst, const float* s_max,
@@ -1049,6 +1115,66 @@ struct InplacePrecomputeMaxSoftmax<float, fp16> {
     }
   }
 };
+#endif
+
+#if CompileBF16()
+template <>
+struct InplacePrecomputeMaxSoftmax<float, bf16> {
+  static void forward(int m_size, int n_size, int n_pad_size, bool is_causal, float* src, bf16* dst, const float* s_max,
+                      float* expsum, int ld_src, int ld_dst) {
+    for (int ii = 0; ii < m_size; ++ii) {
+      const auto i_src = src + ii * ld_src;
+      const auto i_dst = dst + ii * ld_dst;
+      const auto curr_n_size = n_size + (is_causal ? ii : 0);
+      const auto v_mask = _cvtu32_mask16((1U << (curr_n_size % 16)) - 1);
+      const auto v_mask32 = _cvtu32_mask32((1U << (curr_n_size % 32)) - 1);
+      {  // subtract max
+        const auto row_max = _mm512_set1_ps(s_max[ii]);
+        for (int jj = 0; jj < curr_n_size; jj += 16) {  // should be fine to do extra work on idx >= curr_n_size
+          _mm512_storeu_ps(i_src + jj, _mm512_sub_ps(_mm512_loadu_ps(i_src + jj), row_max));
+        }
+      }
+      auto v_sum = _mm512_setzero_ps();
+      {  // exp & sum
+        int jj = 0;
+        for (; jj < curr_n_size / 16 * 16; jj += 16) {
+          const auto v_exp = exp_ps_0_1(_mm512_loadu_ps(i_src + jj));
+          v_sum = _mm512_add_ps(v_sum, v_exp);
+          _mm512_storeu_ps(i_src + jj, v_exp);
+        }
+        if (jj < curr_n_size) {
+          const auto v_exp = exp_ps_0_1(_mm512_loadu_ps(i_src + jj));  // should be fine to load some extra
+          v_sum = _mm512_mask_add_ps(v_sum, v_mask, v_sum, v_exp);
+          _mm512_storeu_ps(i_src + jj, v_exp);  // should be fine to store some extra
+        }
+        expsum[ii] = _mm512_reduce_add_ps(v_sum);
+        v_sum = _mm512_set1_ps(expsum[ii]);
+      }
+      {  // scale & bf16
+        int jj = 0;
+        for (; jj < curr_n_size / 32 * 32; jj += 32) {
+          const auto v_softmax0 = _mm512_div_ps(_mm512_loadu_ps(i_src + jj), v_sum);
+          const auto v_softmax1 = _mm512_div_ps(_mm512_loadu_ps(i_src + jj + 16), v_sum);
+          _mm512_storeu_epi16(i_dst + jj, (__m512i)_mm512_cvtne2ps_pbh(v_softmax1, v_softmax0));
+        }
+        if (jj < curr_n_size) {
+          const auto v_softmax0 = _mm512_div_ps(_mm512_loadu_ps(i_src + jj), v_sum);
+          const auto v_softmax1 = _mm512_div_ps(_mm512_loadu_ps(i_src + jj + 16), v_sum);
+#if defined(__GNUC__) && (__GNUC__ == 13) && (__GNUC_MINOR__ <= 2)
+          // There is a bug on gcc 13.1/13.2 what reverse the parameter order;
+          // A GUN team member said that it will befixed in GCC 13.3
+          _mm512_storeu_epi16(i_dst + jj, (__m512i)_mm512_maskz_cvtne2ps_pbh(v_mask32, v_softmax0, v_softmax1));
+#else
+          _mm512_storeu_epi16(i_dst + jj, (__m512i)_mm512_maskz_cvtne2ps_pbh(v_mask32, v_softmax1, v_softmax0));
+#endif
+          jj += 32;
+        }
+        if (jj < n_pad_size) memset(i_dst + jj, 0, sizeof(bf16) * (n_pad_size - jj));
+      }
+    }
+  }
+};
+#endif
 
 template <>
 struct InplacePrecomputeMaxSoftmax<float, uint8_t> {
@@ -1085,11 +1211,13 @@ struct InplacePrecomputeMaxSoftmax<float, uint8_t> {
         int jj = 0;
         for (; jj < curr_n_size / 16 * 16; jj += 16) {
           const auto v_softmax = _mm512_mul_ps(_mm512_loadu_ps(i_src + jj), v_scale);
-          _mm_storeu_epi8(i_dst + jj, _mm512_cvtusepi32_epi8(_mm512_cvtps_epu32(v_softmax)));
+          _mm_storeu_si128(reinterpret_cast<__m128i*>(i_dst + jj),
+                           _mm512_cvtusepi32_epi8(_mm512_cvtps_epu32(v_softmax)));
         }
         if (jj < curr_n_size) {
           const auto v_softmax = _mm512_mul_ps(_mm512_loadu_ps(i_src + jj), v_scale);
-          _mm_storeu_epi8(i_dst + jj, _mm512_maskz_cvtusepi32_epi8(v_mask, _mm512_cvtps_epu32(v_softmax)));
+          _mm_storeu_si128(reinterpret_cast<__m128i*>(i_dst + jj),
+                           _mm512_maskz_cvtusepi32_epi8(v_mask, _mm512_cvtps_epu32(v_softmax)));
           jj += 16;
         }
         if (jj < n_pad_size) memset(i_dst + jj, 0, sizeof(uint8_t) * (n_pad_size - jj));
@@ -1151,16 +1279,22 @@ class MHAStableInterface {
     assert((std::is_same<DST_T, int8_t>::value || p.dst_sc == 1));
 
     assert((p.Q_layout == ATTN_FWD_LAYOUT_PLAIN && p.dst_layout == ATTN_FWD_LAYOUT_PLAIN));
-    assert((std::is_same<K_T, int8_t>::value || p.K_layout == ATTN_FWD_LAYOUT_PLAIN));
-    assert((std::is_same<V_T, int8_t>::value || p.V_layout == ATTN_FWD_LAYOUT_PLAIN));
+    assert((p.K_layout == ATTN_FWD_LAYOUT_PLAIN ||
+            (std::is_same<K_T, int8_t>::value && p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4) ||
+            (std::is_same<K_T, bf16>::value && p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2)));
+    assert((p.V_layout == ATTN_FWD_LAYOUT_PLAIN ||
+            (std::is_same<V_T, int8_t>::value && p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4) ||
+            (std::is_same<V_T, bf16>::value && p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2)));
 
     assert((!std::is_same<PrologueK, ::WeightForwardNTile48<typename L_Max::GemmCore, L_Max::RT_ISA>>::value) ||
-           p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4);  // WeightForward can only be used with preprocessed layout
+           p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4 ||
+           p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2);  // WeightForward can only be used with preprocessed layout
     assert((!std::is_same<PrologueV, ::WeightForwardNTile48<typename L_Scale::GemmCore, L_Scale::RT_ISA>>::value) ||
-           p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4);  // WeightForward can only be used with preprocessed layout
+           p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4 ||
+           p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2);  // WeightForward can only be used with preprocessed layout
 
-    assert((std::is_same<V_T, int8_t>::value || p.step_v_head_size == 1));
-    assert((std::is_same<K_T, int8_t>::value || p.step_k_sl == 1));
+    assert((p.K_layout != ATTN_FWD_LAYOUT_PLAIN || p.step_v_head_size == 1));
+    assert((p.V_layout != ATTN_FWD_LAYOUT_PLAIN || p.step_k_sl == 1));
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     omp_set_num_threads(cb.mNumThreads);
     assert(!p.is_causal || p.sl_q <= p.sl_kv);
@@ -1213,6 +1347,7 @@ class MHAStableInterface {
           const int ld_tmp_p = ld_tmp_s * sizeof(float) / sizeof(PType);
           const auto qk_prok_ldb = p.step_k_sl == 1                                 ? p.step_k_head_size
                                    : p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4 ? p.step_k_sl
+                                   : p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? p.step_k_sl
                                                                                     : (assert(0), 0);
           l_qk.launch(  // QxK => S ==exp==> P
               PC_QK{
@@ -1253,9 +1388,10 @@ class MHAStableInterface {
 
           // softmax (with pre-computed row_max)
           const auto unmasked_size_start = p.is_causal ? std::min(sl_diff + i_m + 1, p.sl_kv) : p.sl_kv;
-          float expsum[M_TILE]{};                                             // maximum for each row of the S matrix
+          float expsum[M_TILE]{};  // maximum for each row of the S matrix
+          const auto softmax_npad_size = padto(unmasked_size_pad_pv, GemmPV::KTILE);
           InplacePrecomputeMaxSoftmax<float, PType>::forward(                 //
-              m_size, unmasked_size_start, unmasked_size_pad_pv,              // m / n
+              m_size, unmasked_size_start, softmax_npad_size,                 // m / n
               p.is_causal, tmp_s, tmp_p, s_max, expsum, ld_tmp_s, ld_tmp_p);  //
 
           const auto pv_scale = expsum;
@@ -1263,6 +1399,7 @@ class MHAStableInterface {
 
           const auto pv_prov_ldb = p.step_v_head_size == 1                          ? p.step_v_sl
                                    : p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4 ? p.step_v_head_size
+                                   : p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? p.step_v_head_size
                                                                                     : (assert(0), 0);
           l_pv.launch(  // PxV => O
               PC_PV{
@@ -1307,14 +1444,14 @@ class MHAStableInterface {
 };
 
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
-void jblas_fusion_attn_forward(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params) = delete;
+void jblas_fusion_attn_forward(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& params) = delete;
 
 template <class GEMM_T, JBLAS_ISA ISA_T>
 using WeightPackBatchBf16Bf16NonTr = WeightPackBatchBf16NonTr<GEMM_T, ISA_T, bf16>;
 template <class GEMM_T, JBLAS_ISA ISA_T>
 using WeightPackBatchBf16Bf16Trans = WeightPackBatchBf16Trans<GEMM_T, ISA_T, bf16>;
 template <>
-void jblas_fusion_attn_forward<bf16, bf16, bf16, bf16>(const attn_fwd_args_t<bf16, bf16, bf16, bf16>* params) {
+void jblas_fusion_attn_forward<bf16, bf16, bf16, bf16>(const attn_fwd_args_t<bf16, bf16, bf16, bf16>& p) {
   using GemmKernelBF16ExpSum = ::GemmLauncherPackWeightOff<  //
       JblasAMX_BF16,                                         //
       jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,           //
@@ -1328,7 +1465,7 @@ void jblas_fusion_attn_forward<bf16, bf16, bf16, bf16>(const attn_fwd_args_t<bf1
       WeightPackBatchBf16Bf16NonTr,                          //
       ::ScaleWriteBackFp32Bf16>;
   static MHAInterface<GemmKernelBF16ExpSum, GemmKernelBF16> kernel;
-  kernel.compute(*params);
+  kernel.compute(p);
 }
 
 template <class GEMM_T, JBLAS_ISA ISA_T>
@@ -1336,9 +1473,9 @@ using WeightPackBatchFp16Bf16NonTr = WeightPackBatchBf16NonTr<GEMM_T, ISA_T, fp1
 template <class GEMM_T, JBLAS_ISA ISA_T>
 using WeightPackBatchFp16Bf16Trans = WeightPackBatchBf16Trans<GEMM_T, ISA_T, fp16>;
 template <>
-void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, fp16, fp16, float>* params) {
+void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<float, fp16, fp16, float>& params) {
   GetCPUDevice();
-  if (MHA_PREFER_AVX512FP16 && _cd->AVX512_FP16() && params->step_k_sl == 1) {
+  if (MHA_PREFER_AVX512FP16 && _cd->AVX512_FP16() && params.step_k_sl == 1) {
     using GemmKernelFP16TrackMax = ::GemmLauncherBaseWeight<  //
         JblasAVX512_FP16,                                     //
         jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16,        //
@@ -1352,11 +1489,11 @@ void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<f
         ::WeightBase,                                         //
         jblas::epilogue::gemm::AccumulatorWriteBackFp16Fp32>;
     static MHAStableInterface<GemmKernelFP16TrackMax, GemmKernelFP16> kernel;
-    kernel.compute(*params);
+    kernel.compute(params);
     return;
   }
   if (_cd->AMX_BF16()) {
-    if (params->step_k_head_size == 1) {
+    if (params.step_k_head_size == 1) {
       using GemmKernelFP32FP16BF16ExpSum = ::GemmLauncherPackWeightOff<  //
           JblasAMX_BF16,                                                 //
           jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
@@ -1370,9 +1507,9 @@ void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<f
           WeightPackBatchFp16Bf16NonTr,                                  //
           ::ScaleWriteBackFp32Fp32>;
       static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
-      kernel.compute(*params);
+      kernel.compute(params);
       return;
-    } else if (params->step_k_sl == 1) {
+    } else if (params.step_k_sl == 1) {
       using GemmKernelFP32FP16BF16ExpSum = ::GemmLauncherPackWeightOff<  //
           JblasAMX_BF16,                                                 //
           jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,                   //
@@ -1386,7 +1523,7 @@ void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<f
           WeightPackBatchFp16Bf16NonTr,                                  //
           ::ScaleWriteBackFp32Fp32>;
       static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
-      kernel.compute(*params);
+      kernel.compute(params);
       return;
     }
   }
@@ -1394,7 +1531,7 @@ void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<f
 }
 
 template <>
-void jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(const attn_fwd_args_t<fp16, fp16, fp16, fp16>* params) {
+void jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(const attn_fwd_args_t<fp16, fp16, fp16, fp16>& params) {
   GetCPUDevice();
   if (_cd->AMX_BF16()) {
     using GemmKernelFP16TrackMax = ::GemmLauncherBaseWeight<  //
@@ -1410,16 +1547,17 @@ void jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(const attn_fwd_args_t<fp1
         ::WeightBase,                                         //
         jblas::epilogue::gemm::AccumulatorWriteBackFp16>;
     static MHAStableInterface<GemmKernelFP16TrackMax, GemmKernelFP16> kernel;
-    kernel.compute(*params);
+    kernel.compute(params);
   } else {
     assert(0);
   }
 }
 
 template <>
-void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(const attn_fwd_args_t<int8_t, int8_t, int8_t, int8_t>* params) {
+void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(
+    const attn_fwd_args_t<int8_t, int8_t, int8_t, int8_t>& params) {
   GetCPUDevice();
-  if (/* params->sl_q > 4 &&  */ _cd->AMX_INT8()) {            // TODO(Yi): add vnni impl
+  if (/* params.sl_q > 4 &&  */ _cd->AMX_INT8()) {             // TODO(Yi): add vnni impl
     using GemmKernelInt32TrackMax = ::GemmLauncherBaseWeight<  //
         JblasAMX_INT8,                                         //
         jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8,           //
@@ -1433,7 +1571,7 @@ void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(const attn_fwd_ar
         ::WeightForwardNTile48,                                //
         ::ScaleWriteBackS32S8>;                                //
     static MHAStableInterface<GemmKernelInt32TrackMax, GemmKernelInt32> mha;
-    mha.compute(*params);
+    mha.compute(params);
   } else if (_cd->AVX512_VNNI()) {
     // using GemmKernelInt32TrackMax = ::GemmLauncherBaseWeight<  //
     //     JblasAMX_INT8,                                         // TODO(Yi): s8s8 vnni kernel?
@@ -1448,16 +1586,38 @@ void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(const attn_fwd_ar
     //     ::WeightForwardNTile48,                                          //
     //     ::ScaleWriteBackS32S8>;                                //
     // static MHAStableInterface<GemmKernelInt32TrackMax, GemmKernelInt32> mha;
-    // mha.compute(*params);
+    // mha.compute(params);
     assert(0);
   } else {
     assert(0);
   }
 }
 
+template <>
+void jblas_fusion_attn_forward<float, bf16, bf16, float>(const attn_fwd_args_t<float, bf16, bf16, float>& params) {
+  GetCPUDevice();
+  if (/* params.sl_q > 4 &&  */ _cd->AMX_BF16()) {            // TODO(Yi): add vdpbf16ps impl
+    using GemmKernelBF16TrackMax = ::GemmLauncherBaseWeight<  //
+        JblasAMX_BF16,                                        //
+        jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16,          //
+        jblas::prologue::gemm::ActivationConverterFp32,       //
+        ::WeightForwardNTile48,                               //
+        ::ScaleTrackMaxFp32Fp32>;                             //
+    using GemmKernelBF16 = ::GemmLauncherBaseWeight<          //
+        JblasAMX_BF16,                                        //
+        jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16,          //
+        jblas::prologue::gemm::ActivationBase,                //
+        ::WeightForwardNTile48,                               //
+        jblas::epilogue::gemm::AccumulatorWriteBackFp32>;     //
+    static MHAStableInterface<GemmKernelBF16TrackMax, GemmKernelBF16> mha;
+    mha.compute(params);
+  } else {
+    assert(0);
+  }
+}
+
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
-void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* params) {
-  const auto p = *params;
+void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
   assert(!p.is_causal || p.sl_q <= p.sl_kv);
   attn_shape_t attn_shape{
       p.batch_size, p.head_num, p.head_size, p.sl_q, p.sl_kv,
@@ -1465,15 +1625,27 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* 
   const auto workspace_size = jblas_fusion_attn_workspace_size(&attn_shape);
   static std::mt19937 rng;
   static std::uniform_int_distribution<> dist;
-  init_vector(params->tmp, workspace_size, INT8_MIN - 1, INT8_MAX + 1, dist(rng));
-  std::fill_n(params->tmp, workspace_size, 'f');
-  const bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
-                            std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
-                            (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1));
+  init_vector(p.tmp, workspace_size, INT8_MIN - 1, INT8_MAX + 1, dist(rng));
+  std::fill_n(p.tmp, workspace_size, 'f');
+  const bool IS_FP16BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
+                                std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
+                                (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1));
   assert(p.Q_layout == ATTN_FWD_LAYOUT_PLAIN);
   assert(p.dst_layout == ATTN_FWD_LAYOUT_PLAIN);
-  assert((p.K_layout == ATTN_FWD_LAYOUT_PLAIN || std::is_same<K_T, int8_t>::value));
-  assert((p.V_layout == ATTN_FWD_LAYOUT_PLAIN || std::is_same<V_T, int8_t>::value));
+  assert((p.K_layout == ATTN_FWD_LAYOUT_PLAIN ||
+          (std::is_same<K_T, int8_t>::value && p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4) ||
+          (std::is_same<K_T, bf16>::value && p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2)));
+  assert((p.V_layout == ATTN_FWD_LAYOUT_PLAIN ||
+          (std::is_same<V_T, int8_t>::value && p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4) ||
+          (std::is_same<V_T, bf16>::value && p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2)));
+
+  const auto NTILE = p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 48
+                     : p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 48
+                                                                      : 0;
+  const auto ROWPACK = p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 4
+                       : p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 2
+                                                                        : 0;
+
 #pragma omp parallel for collapse(3)
   for (int ibs = 0; ibs < p.batch_size; ++ibs)
     for (int ihn = 0; ihn < p.head_num; ++ihn)
@@ -1493,15 +1665,15 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* 
         for (int j = 0; j < unmasked; ++j) {
           curr_row[j] = 0.f;
           for (int k = 0; k < p.head_size; ++k) {
-            if (p.K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4) {
-              const auto j_remain = j % 48;
+            if (p.K_layout != ATTN_FWD_LAYOUT_PLAIN) {
+              const auto j_remain = j % NTILE;
               const auto j_block = j - j_remain;
-              const auto k_remain = k % 4;
+              const auto k_remain = k % ROWPACK;
               const auto k_block = k - k_remain;
               const auto k_value =
-                  static_cast<float>(k_curr[j_block * p.step_k_sl + k_block * 48 + j_remain * 4 + k_remain]);
+                  static_cast<float>(k_curr[j_block * p.step_k_sl + k_block * NTILE + j_remain * ROWPACK + k_remain]);
               curr_row[j] += k_value * static_cast<float>(q_curr[k]);
-            } else if (IS_BF16_GEMM) {
+            } else if (IS_FP16BF16_GEMM) {
               curr_row[j] += static_cast<float>(static_cast<bf16>(q_curr[k])) *  // TODO(Yi) fp16 acc
                              static_cast<float>(static_cast<bf16>(k_curr[j * p.step_k_sl + k * p.step_k_head_size]));
             } else {
@@ -1531,15 +1703,15 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* 
         for (int j = 0; j < p.head_size; ++j) {
           float dst_f32_val = 0.f;
           for (int k = 0; k < unmasked; ++k) {
-            if (p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4) {
-              const auto j_remain = j % 48;
+            if (p.V_layout != ATTN_FWD_LAYOUT_PLAIN) {
+              const auto j_remain = j % NTILE;
               const auto j_block = j - j_remain;
-              const auto k_remain = k % 4;
+              const auto k_remain = k % ROWPACK;
               const auto k_block = k - k_remain;
-              const auto v_value =
-                  static_cast<float>(v_curr[j_block * p.step_v_head_size + k_block * 48 + j_remain * 4 + k_remain]);
+              const auto v_value = static_cast<float>(
+                  v_curr[j_block * p.step_v_head_size + k_block * NTILE + j_remain * ROWPACK + k_remain]);
               dst_f32_val += curr_row[k] * v_value;
-            } else if (IS_BF16_GEMM) {
+            } else if (IS_FP16BF16_GEMM) {
               dst_f32_val += curr_row[k] * static_cast<float>(static_cast<bf16>(v_curr[k * p.step_v_sl + j]));
             } else {
               dst_f32_val += curr_row[k] * static_cast<float>(v_curr[k * p.step_v_sl + j]);
@@ -1552,32 +1724,151 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>* 
 }  // namespace
 
 void jblas_fusion_attn_bf16_forward(const attn_bf16_fwd_args_t* params) {
-  return jblas_fusion_attn_forward(reinterpret_cast<const attn_fwd_args_t<bf16, bf16, bf16, bf16>*>(params));
+  return jblas_fusion_attn_forward(*reinterpret_cast<const attn_fwd_args_t<bf16, bf16, bf16, bf16>*>(params));
 }
+
 bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params) {
   GetCPUDevice();
   // TODO check K V's layout
   return _cd->AMX_BF16();
 }
-
 void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params) {
-  return jblas_fusion_attn_forward(reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
-  // return jblas_fusion_attn_forward_ref(reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
+  return jblas_fusion_attn_forward(*reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
+  // return jblas_fusion_attn_forward_ref(*reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
 }
 
 void jblas_fusion_attn_fp16_forward(const attn_fp16_fwd_args_t* params) {
   return jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(
-      reinterpret_cast<const attn_fwd_args_t<fp16, fp16, fp16, fp16>*>(params));
+      *reinterpret_cast<const attn_fwd_args_t<fp16, fp16, fp16, fp16>*>(params));
 }
 void jblas_fusion_attn_int8_forward(const attn_int8_fwd_args_t* params) {
   return jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(
-      reinterpret_cast<const attn_fwd_args_t<int8_t, int8_t, int8_t, int8_t>*>(params));
+      *reinterpret_cast<const attn_fwd_args_t<int8_t, int8_t, int8_t, int8_t>*>(params));
 }
-
 size_t jblas_fusion_attn_workspace_size(const attn_shape_t* params) {
   const auto& p = *params;  // TODO(Yi): Better way to get tmp size?
   return size_t(omp_get_max_threads() * sizeof(float) * 16) * padto(padto(p.sl_kv, 48), 64);
 }
+
+bool jblas_reordered_attn_fp32_support(const attn_shape_t* params) {
+  GetCPUDevice();
+  // TODO check K V's layout
+  return _cd->AMX_BF16();
+}
+// kv cache sizes in bytes per layer per batch per beam for;
+void jblas_reordered_attn_fp32_batch_kv_info(const kv_shape_t* params, kv_cache_info_t* out) {
+  // use bf16 for kv-cache
+  const auto p = *params;
+  out->k_layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK2;
+  out->v_layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK2;
+
+  out->stride_k_head_size = sizeof(bf16) * 48;
+  out->stride_k_sl = sizeof(bf16) * padto(static_cast<int>(p.head_size), 32);
+  out->stride_k_head_num = out->stride_k_sl * padto(static_cast<int>(p.sl_kv_max), 48);
+  out->k_bytes = out->stride_k_head_num * p.head_num;
+
+  out->stride_v_sl = sizeof(bf16) * 48;
+  out->stride_v_head_size = sizeof(bf16) * padto(static_cast<int>(p.sl_kv_max), 32);
+  out->stride_v_head_num = out->stride_v_head_size * padto(static_cast<int>(p.head_size), 48);
+  out->v_bytes = out->stride_v_head_num * p.head_num;
+}
+
+void jblas_reordered_attn_fp32_forward(const jblas_reordered_attn_fp32_fp32_fwd_args_t* params) {
+  assert(params->K_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2);
+  assert(params->V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2);
+
+  const attn_fwd_args_t<float, bf16, bf16, float> jblas_params = {
+      /* .Q = */ params->Q,
+      /* .K = */ reinterpret_cast<bf16*>(params->K),
+      /* .V = */ reinterpret_cast<bf16*>(params->V),
+      /* .dst = */ params->dst,
+      /* .Q_sc = */ params->Q_sc,
+      /* .K_sc = */ params->K_sc,
+      /* .V_sc = */ params->V_sc,
+      /* .dst_sc = */ params->dst_sc,
+      /* .tmp = */ params->tmp,
+      /* .QK_scale = */ params->QK_scale,
+      /* .is_causal = */ params->is_causal,
+      /* .batch_size = */ params->batch_size,
+      /* .head_num = */ params->head_num,
+      /* .head_size = */ params->head_size,
+      /* .sl_q = */ params->sl_q,
+      /* .sl_kv = */ params->sl_kv,
+      /* .Q_layout = */ params->Q_layout,
+      /* .K_layout = */ params->K_layout,
+      /* .V_layout = */ params->V_layout,
+      /* .dst_layout = */ params->dst_layout,
+      /* .step_q_bs = */ params->step_q_bs,
+      /* .step_q_head_num = */ params->step_q_head_num,
+      /* .step_q_sl = */ params->step_q_sl,
+      /* .step_k_bs = */ static_cast<int>(params->stride_k_bs / sizeof(bf16)),
+      /* .step_k_head_num = */ static_cast<int>(params->stride_k_head_num / sizeof(bf16)),
+      /* .step_k_sl = */ static_cast<int>(params->stride_k_sl / sizeof(bf16)),
+      /* .step_k_head_size = */ 48,
+      /* .step_v_bs = */ static_cast<int>(params->stride_v_bs / sizeof(bf16)),
+      /* .step_v_head_num = */ static_cast<int>(params->stride_v_head_num / sizeof(bf16)),
+      /* .step_v_sl = */ 48,
+      /* .step_v_head_size = */ static_cast<int>(params->stride_v_head_size / sizeof(bf16)),
+      /* .step_dst_bs = */ params->step_dst_bs,
+      /* .step_dst_head_num = */ params->step_dst_head_num,
+      /* .step_dst_sl = */ params->step_dst_sl,
+  };
+  return jblas_fusion_attn_forward<float, bf16, bf16, float>(jblas_params);
+}
+
+void jblas_reordered_attn_fp32_update_k(const jblas_fusion_attn_fp32_update_kv_args_t* params) {
+  const auto p = *params;
+  NE_ASSERT(p.step_head_size == 1);
+  const auto pad_headsize = padto(p.head_size, 32);
+  const auto pad_seq_max = padto(p.seq_max, 48);
+  const auto cache_step_head_num = pad_headsize * pad_seq_max;
+  const auto cache_step_bs = p.head_num * cache_step_head_num;
+#pragma omp parallel for collapse(2)
+  for (int ibs = 0; ibs < p.batch_size; ++ibs) {
+    for (int ihn = 0; ihn < p.head_num; ++ihn) {
+      const auto dst = reinterpret_cast<bf16*>(p.cache) + ibs * cache_step_bs + ihn * cache_step_head_num;
+      const auto src = p.src + ibs * p.step_bs + ihn * p.step_head_num;
+      for (int i = 0; i < p.seq_size; ++i) {      // QK_GEMM should not require 0-padding on seq_kv (i.e. N-dim)
+        for (int j = 0; j < pad_headsize; ++j) {  // K-dim padding for QK_GEMM
+          const auto i_dst = p.seq_off + i;
+          const auto ii = i_dst % 48;
+          const auto i_blk = i_dst - ii;
+          const auto jj = j % 2;
+          const auto j_blk = j - jj;
+          dst[i_blk * pad_headsize + ii * 2 + j_blk * 48 + jj] =
+              j < p.head_size ? static_cast<bf16>(src[i * p.step_seq + j]) : bf16(0);
+        }
+      }
+    }
+  }
+};
+void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_args_t* params) {
+  const auto p = *params;
+  NE_ASSERT(p.step_head_size == 1);
+  const auto pad_headsize = padto(p.head_size, 48);
+  const auto pad_seq_max = padto(p.seq_max, 32);
+  const auto step_cache_head_num = pad_headsize * pad_seq_max;
+  const auto step_cache_bs = p.head_num * step_cache_head_num;
+
+#pragma omp parallel for collapse(2)
+  for (int ibs = 0; ibs < p.batch_size; ++ibs) {
+    for (int ihn = 0; ihn < p.head_num; ++ihn) {
+      const auto dst = reinterpret_cast<bf16*>(p.cache) + ibs * step_cache_bs + ihn * step_cache_head_num;
+      const auto src = p.src + ibs * p.step_bs + ihn * p.step_head_num;
+      for (int i = 0; i < padto(p.seq_off + p.seq_size, 32) - p.seq_off; ++i) {  // K-dim padding for PV_GEMM
+        for (int j = 0; j < p.head_size; ++j) {  // PV_GEMM should't require 0-padding on head_size (i.e. N-dim)
+          const auto i_dst = p.seq_off + i;
+          const auto ii = i_dst % 2;
+          const auto i_blk = i_dst - ii;
+          const auto jj = j % 48;
+          const auto j_blk = j - jj;
+          dst[i_blk * 48 + ii + j_blk * pad_seq_max + jj * 2] =
+              i < p.seq_size ? static_cast<bf16>(src[i * p.step_seq + j]) : bf16(0);
+        }
+      }
+    }
+  }
+};
 
 #ifdef __GNUC__
 #pragma GCC pop_options
@@ -1619,8 +1910,23 @@ class TestMhaDese {
     return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 32, 64, 128}, false, false, s8layout);
     return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 80, 128, 77}, false, false, s8layout);
     return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 256, 63, 63}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 256, 1, 384}, false, false, s8layout);  // TODO
+    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 256, 1, 384}, false, false, s8layout);
     return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 64, 64, 64}, true, false, s8layout);
+
+    const auto bf16layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK2;
+    return_success &= test_case<float, bf16, bf16, float>({1, 1, 32, 128, 64}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({2, 5, 32, 64, 128}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({2, 5, 80, 128, 77}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({1, 1, 256, 63, 63}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({3, 4, 256, 1, 384}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({1, 1, 64, 64, 64}, true, false, bf16layout);
+
+    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 32, 128, 64}, 64, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 32, 64, 128}, 256, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 80, 128, 77}, 256, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 256, 63, 63}, 256, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({3, 4, 256, 1, 384}, 384, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 64, 64, 64}, 128, true);
     printf("Test suit done: %s\n", __FUNCTION__);
   }
 
@@ -1634,6 +1940,10 @@ class TestMhaDese {
                                                                           : 1.f;
   template <class T>
   static constexpr float init_scale_val = 1.f / init_max_val<T>;
+
+#ifdef _MSC_VER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
 
   template <class Q_T, class K_T, class V_T, class DST_T>
   bool test_case(const attn_shape_t& s, bool is_causal, bool k_trans = false,
@@ -1649,17 +1959,22 @@ class TestMhaDese {
     printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
     printf("bs_%d hn_%d hs_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, head_size, sl_q, sl_kv,
            is_causal ? "maksed" : "unmask");
-    const auto src_k_size = batch_size * head_num *
-                            (kv_layout == ATTN_FWD_LAYOUT_PLAIN              ? sl_kv * head_size
-                             : kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4 ? padto(head_size, 64) * padto(sl_kv, 48)
-                                                                             : (assert(false), 0));
-    const auto src_v_size = batch_size * head_num *
-                            (kv_layout == ATTN_FWD_LAYOUT_PLAIN              ? sl_kv * head_size
-                             : kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4 ? padto(sl_kv, 64) * padto(head_size, 48)
-                                                                             : (assert(false), 0));
+
+    const auto NTILE = kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 48
+                       : kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 48
+                                                                       : 0;
+    const auto ROWPACK = kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 4
+                         : kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 2
+                                                                         : 0;
+    const auto ROWPAD = ROWPACK * 16;
+    const auto k_rows_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(head_size, ROWPAD) : head_size;
+    const auto k_cols_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(sl_kv, NTILE) : sl_kv;
+    const auto v_rows_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(sl_kv, ROWPAD) : sl_kv;
+    const auto v_cols_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(head_size, NTILE) : head_size;
+
     std::vector<Q_T> src_q(batch_size * head_num * sl_q * head_size);
-    std::vector<K_T> src_k(src_k_size);
-    std::vector<V_T> src_v(src_v_size);
+    std::vector<K_T> src_k(batch_size * head_num * k_rows_pad * k_cols_pad);
+    std::vector<V_T> src_v(batch_size * head_num * v_rows_pad * v_cols_pad);
     std::vector<DST_T> dst(batch_size * head_num * sl_q * head_size);
     std::vector<DST_T> ref(batch_size * head_num * sl_q * head_size);  // reference result
     std::vector<char> tmp(jblas_fusion_attn_workspace_size(&s));
@@ -1671,34 +1986,35 @@ class TestMhaDese {
     init_vector(&src_k, init_min_val<K_T>, init_max_val<K_T>, dist(rng));
     init_vector(&src_v, init_min_val<V_T>, init_max_val<V_T>, dist(rng));
 
-    if (kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4) {
+    // pad0 for padded layouts
+    if (kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4 || kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2) {
 #pragma omp parallel for collapse(2)
       for (int ibs = 0; ibs < batch_size; ++ibs) {
         for (int ihn = 0; ihn < head_num; ++ihn) {
           // K
-          const auto k_off = (ibs * head_num + ihn) * padto(head_size, 64) * padto(sl_kv, 48);
-          for (int i = 0; i < padto(head_size, 64); ++i) {
-            for (int j = 0; j < padto(sl_kv, 48); ++j) {
+          const auto k_off = (ibs * head_num + ihn) * k_rows_pad * k_cols_pad;
+          for (int i = 0; i < k_rows_pad; ++i) {
+            for (int j = 0; j < k_cols_pad; ++j) {
               if (i < head_size && j < sl_kv) continue;
 
-              const auto j_remain = j % 48;
+              const auto j_remain = j % NTILE;
               const auto j_block = j - j_remain;
-              const auto i_remain = i % 4;
+              const auto i_remain = i % ROWPACK;
               const auto i_block = i - i_remain;
-              src_k[k_off + j_block * padto(head_size, 64) + i_block * 48 + j_remain * 4 + i_remain] = 0;
+              src_k[k_off + j_block * k_rows_pad + i_block * NTILE + j_remain * ROWPACK + i_remain] = K_T(0);
             }
           }
           // V
-          const auto v_off = (ibs * head_num + ihn) * padto(sl_kv, 64) * padto(head_size, 48);
-          for (int i = 0; i < padto(sl_kv, 64); ++i) {
-            for (int j = 0; j < padto(head_size, 48); ++j) {
+          const auto v_off = (ibs * head_num + ihn) * v_rows_pad * v_cols_pad;
+          for (int i = 0; i < v_rows_pad; ++i) {
+            for (int j = 0; j < v_cols_pad; ++j) {
               if (i < sl_kv && j < head_size) continue;
 
-              const auto j_remain = j % 48;
+              const auto j_remain = j % NTILE;
               const auto j_block = j - j_remain;
-              const auto i_remain = i % 4;
+              const auto i_remain = i % ROWPACK;
               const auto i_block = i - i_remain;
-              src_v[v_off + j_block * padto(sl_kv, 64) + i_block * 48 + j_remain * 4 + i_remain] = 0;
+              src_v[v_off + j_block * v_rows_pad + i_block * NTILE + j_remain * ROWPACK + i_remain] = V_T(0);
             }
           }
         }
@@ -1736,26 +2052,222 @@ class TestMhaDese {
         /* .step_v_bs = */ sl_kv * head_num * head_size,
         /* .step_v_head_num = */ head_size,
         /* .step_v_sl = */ head_num * head_size,
-        /* .step_v_head_num = */ 1,
+        /* .step_v_head_size = */ 1,
         /* .step_dst_bs = */ sl_q * head_num * head_size,
         /* .step_dst_head_num = */ head_size,
         /* .step_dst_sl = */ head_num * head_size,
     };
-    if (kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4) {
-      args.step_k_bs = head_num * padto(head_size, 64) * padto(sl_kv, 48);
-      args.step_k_head_num = padto(head_size, 64) * padto(sl_kv, 48);
-      args.step_k_sl = padto(head_size, 64);
-      args.step_k_head_size = 48;
-      args.step_v_bs = head_num * padto(sl_kv, 64) * padto(head_size, 48);
-      args.step_v_head_num = padto(sl_kv, 64) * padto(head_size, 48);
-      args.step_v_sl = 48;
-      args.step_v_head_size = padto(sl_kv, 64);
+    if (kv_layout != ATTN_FWD_LAYOUT_PLAIN) {
+      args.step_k_bs = head_num * k_rows_pad * k_cols_pad;
+      args.step_k_head_num = k_rows_pad * k_cols_pad;
+      args.step_k_sl = k_rows_pad;
+      args.step_k_head_size = NTILE;
+      args.step_v_bs = head_num * v_rows_pad * v_cols_pad;
+      args.step_v_head_num = v_rows_pad * v_cols_pad;
+      args.step_v_sl = NTILE;
+      args.step_v_head_size = v_rows_pad;
     }
 
-    jblas_fusion_attn_forward_ref(&args);
+    jblas_fusion_attn_forward_ref(args);
 
     args.dst = dst.data();
-    jblas_fusion_attn_forward(&args);
+    jblas_fusion_attn_forward(args);
+
+    // Check result
+    return compare_data(dst.data(), ref.data(), dst.size(), 1e-2f);
+  }
+
+  template <class Q_T, class K_T, class V_T, class DST_T>
+  bool test_reorder_pipe(const attn_shape_t& s, int sl_kv_max, bool is_causal) {
+    using namespace jblas::utils;
+    const auto batch_size = s.batch_size;
+    const auto head_num = s.head_num;
+    const auto head_size = s.head_size;
+    const auto sl_q = s.sl_q;
+    const auto sl_kv = s.sl_kv;
+
+    printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
+    printf("bs_%d hn_%d hs_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, head_size, sl_q, sl_kv,
+           is_causal ? "maksed" : "unmask");
+
+    assert(sl_kv_max >= sl_kv);
+
+    kv_shape_t kv_shape = {
+        /* .head_num */ static_cast<uint32_t>(head_num),
+        /* .head_size */ static_cast<uint32_t>(head_size),
+        /* .sl_kv_max */ static_cast<uint32_t>(sl_kv_max),
+    };
+    kv_cache_info_t kv_cache_info;
+    jblas_reordered_attn_fp32_batch_kv_info(&kv_shape, &kv_cache_info);
+    assert(kv_cache_info.k_layout >= kv_cache_info.v_layout);
+    const auto kv_layout = kv_cache_info.k_layout;
+    const auto NTILE = kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 48
+                       : kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 48
+                                                                       : 0;
+    const auto ROWPACK = kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 4
+                         : kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 2
+                                                                         : 0;
+    const auto ROWPAD = ROWPACK * 16;
+    const auto k_rows_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(head_size, ROWPAD) : head_size;
+    const auto k_cols_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(sl_kv, NTILE) : sl_kv;
+    const auto v_rows_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(sl_kv, ROWPAD) : sl_kv;
+    const auto v_cols_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(head_size, NTILE) : head_size;
+
+    std::vector<Q_T> src_q(batch_size * head_num * sl_q * head_size);
+    std::vector<K_T> src_k(batch_size * head_num * sl_kv * head_size);
+    std::vector<V_T> src_v(batch_size * head_num * sl_kv * head_size);
+    std::vector<char> k_cache(batch_size * kv_cache_info.k_bytes);
+    std::vector<char> v_cache(batch_size * kv_cache_info.v_bytes);
+    std::vector<DST_T> dst(batch_size * head_num * sl_q * head_size);
+    std::vector<DST_T> ref(batch_size * head_num * sl_q * head_size);  // reference result
+    std::vector<char> tmp(jblas_fusion_attn_workspace_size(&s));
+
+    // init vector
+    static std::mt19937 rng(1);
+    std::uniform_int_distribution<> dist;
+    init_vector(&src_q, init_min_val<Q_T>, init_max_val<Q_T>, dist(rng));
+    init_vector(&src_k, init_min_val<K_T>, init_max_val<K_T>, dist(rng));
+    init_vector(&src_v, init_min_val<V_T>, init_max_val<V_T>, dist(rng));
+
+    // undefined values
+    init_vector(&k_cache, INT8_MIN, INT8_MAX, dist(rng));
+    init_vector(&v_cache, INT8_MIN, INT8_MAX, dist(rng));
+
+    int step_src_k_bs = sl_kv * head_num * head_size;
+    int step_src_k_head_num = head_size;
+    int step_src_k_sl = head_num * head_size;
+    int step_src_k_head_size = 1;
+    int step_src_v_bs = sl_kv * head_num * head_size;
+    int step_src_v_head_num = head_size;
+    int step_src_v_sl = head_num * head_size;
+    int step_src_v_head_size = 1;
+    attn_fwd_args_t<Q_T, K_T, V_T, DST_T> ref_args{
+        /* .Q = */ src_q.data(),
+        /* .K = */ src_k.data(),
+        /* .V = */ src_v.data(),
+        /* .dst = */ ref.data(),
+        /* .Q_sc = */ init_scale_val<Q_T>,
+        /* .K_sc = */ init_scale_val<K_T>,
+        /* .V_sc = */ init_scale_val<V_T>,
+        /* .dst_sc = */ init_scale_val<V_T>,
+        /* .tmp = */ tmp.data(),
+        /* .QK_scale = */ 1.f / sqrtf(static_cast<float>(head_size)),
+        /* .is_causal = */ is_causal,
+        /* .batch_size = */ batch_size,
+        /* .head_num = */ head_num,
+        /* .head_size = */ head_size,
+        /* .sl_q = */ sl_q,
+        /* .sl_kv = */ sl_kv,
+        /* .Q_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+        /* .K_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+        /* .V_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+        /* .dst_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+        /* .step_q_bs = */ sl_q * head_num * head_size,
+        /* .step_q_head_num = */ head_size,
+        /* .step_q_sl = */ head_num * head_size,
+
+        /* .step_k_bs = */ step_src_k_bs,
+        /* .step_k_head_num = */ step_src_k_head_num,
+        /* .step_k_sl = */ step_src_k_sl,
+        /* .step_k_head_size = */ step_src_k_head_size,
+        /* .step_v_bs = */ step_src_v_bs,
+        /* .step_v_head_num = */ step_src_v_head_num,
+        /* .step_v_sl = */ step_src_v_sl,
+        /* .step_v_head_size = */ step_src_v_head_size,
+
+        /* .step_dst_bs = */ sl_q * head_num * head_size,
+        /* .step_dst_head_num = */ head_size,
+        /* .step_dst_sl = */ head_num * head_size,
+    };
+    jblas_fusion_attn_forward_ref(ref_args);
+
+    if (std::is_same<std::tuple<Q_T, K_T, V_T, DST_T>, std::tuple<float, float, float, float>>::value) {
+      assert(kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2);
+      // for testing, first reorder sl_kv - 1 and than concat the last 1 line
+      const auto seq_size_first = sl_kv - 1;
+      const auto seq_size_next = 1;
+      jblas_fusion_attn_fp32_update_kv_args_t update_k_args = {
+          /* .src = */ src_k.data(),
+          /* .cache = */ k_cache.data(),
+          /* .batch_size = */ batch_size,
+          /* .head_num = */ head_num,
+          /* .head_size = */ head_size,
+          /* .seq_off = */ 0,
+          /* .seq_size = */ seq_size_first,
+          /* .seq_max = */ sl_kv_max,
+          /* .step_bs = */ step_src_k_bs,
+          /* .step_head_num = */ step_src_k_head_num,
+          /* .step_seq = */ step_src_k_sl,
+          /* .step_head_size = */ step_src_k_head_size,
+      };
+      jblas_reordered_attn_fp32_update_k(&update_k_args);
+
+      jblas_fusion_attn_fp32_update_kv_args_t update_v_args = {
+          /* .src = */ src_v.data(),
+          /* .cache = */ v_cache.data(),
+          /* .batch_size = */ batch_size,
+          /* .head_num = */ head_num,
+          /* .head_size = */ head_size,
+          /* .seq_off = */ 0,
+          /* .seq_size = */ seq_size_first,
+          /* .seq_max = */ sl_kv_max,
+          /* .step_bs = */ step_src_v_bs,
+          /* .step_head_num = */ step_src_v_head_num,
+          /* .step_seq = */ step_src_v_sl,
+          /* .step_head_size = */ step_src_v_head_size,
+      };
+      jblas_reordered_attn_fp32_update_v(&update_v_args);
+
+      update_k_args.seq_off = seq_size_first;
+      update_k_args.seq_size = seq_size_next;
+      update_k_args.src = src_k.data() + seq_size_first * step_src_k_sl;
+      jblas_reordered_attn_fp32_update_k(&update_k_args);
+
+      update_v_args.seq_off = seq_size_first;
+      update_v_args.seq_size = seq_size_next;
+      update_v_args.src = src_v.data() + seq_size_first * step_src_v_sl;
+      jblas_reordered_attn_fp32_update_v(&update_v_args);
+
+      jblas_reordered_attn_fp32_fp32_fwd_args_t kern_args{
+          /* .Q = */ (float*)src_q.data(),
+          /* .K = */ k_cache.data(),
+          /* .V = */ v_cache.data(),
+          /* .dst = */ (float*)dst.data(),
+          /* .Q_sc = */ init_scale_val<Q_T>,
+          /* .K_sc = */ init_scale_val<K_T>,
+          /* .V_sc = */ init_scale_val<V_T>,
+          /* .dst_sc = */ init_scale_val<V_T>,
+          /* .tmp = */ tmp.data(),
+          /* .QK_scale = */ 1.f / sqrtf(static_cast<float>(head_size)),
+          /* .is_causal = */ is_causal,
+          /* .batch_size = */ batch_size,
+          /* .head_num = */ head_num,
+          /* .head_size = */ head_size,
+          /* .sl_q = */ sl_q,
+          /* .sl_kv = */ sl_kv,
+          /* .Q_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+          /* .K_layout = */ ATTN_FWD_LAYOUT_NTILE48_ROWPACK2,
+          /* .V_layout = */ ATTN_FWD_LAYOUT_NTILE48_ROWPACK2,
+          /* .dst_layout = */ ATTN_FWD_LAYOUT_PLAIN,
+          /* .step_q_bs = */ sl_q * head_num * head_size,
+          /* .step_q_head_num = */ head_size,
+          /* .step_q_sl = */ head_num * head_size,
+
+          /* .stride_k_bs = */ static_cast<int>(kv_cache_info.k_bytes),
+          /* .stride_k_head_num = */ kv_cache_info.stride_k_head_num,
+          /* .stride_k_sl = */ kv_cache_info.stride_k_sl,
+          /* .stride_k_head_size = */ kv_cache_info.stride_k_head_size,
+          /* .stride_v_bs = */ static_cast<int>(kv_cache_info.v_bytes),
+          /* .stride_v_head_num = */ kv_cache_info.stride_v_head_num,
+          /* .stride_v_sl = */ kv_cache_info.stride_v_sl,
+          /* .stride_v_head_size = */ kv_cache_info.stride_v_head_size,
+
+          /* .step_dst_bs = */ sl_q * head_num * head_size,
+          /* .step_dst_head_num = */ head_size,
+          /* .step_dst_sl = */ head_num * head_size,
+      };
+      jblas_reordered_attn_fp32_forward(&kern_args);
+    }
 
     // Check result
     return compare_data(dst.data(), ref.data(), dst.size(), 1e-2f);

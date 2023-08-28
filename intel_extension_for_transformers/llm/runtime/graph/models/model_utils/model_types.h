@@ -71,6 +71,12 @@ enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTN
 
 static const size_t MB = 1024 * 1024;
 
+typedef enum KV_MEM_TYPE {  // Memory kv data type
+  KV_MEM_TYPE_AUTO,         // Try with jblas flash attn managed format; fall back to fp16 if failed
+  KV_MEM_TYPE_F16,          // Use F16 for memory kv
+  KV_MEM_TYPE_F32,          // Use F32 for memory kv
+} KV_MEM_TYPE;
+
 struct model_scratch {
   size_t scratch0;
   size_t scratch1;
@@ -307,19 +313,19 @@ typedef struct model_token_data_array {
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
 struct model_context_params {
-  model_archs arch;   // arch of models (GPT-J, LLAMA)
-  int n_ctx;         // text context
-  int n_gpu_layers;  // number of layers to store in VRAM
-  int seed;          // RNG seed, -1 for random
-  bool f16_kv;       // use fp16 for KV cache
-  bool logits_all;   // the model_eval() call computes all logits, not just the last one
-  bool vocab_only;   // only load the vocabulary, no weights
-  bool use_mmap;     // use mmap if possible
-  bool use_mlock;    // force system to keep model in RAM
-  bool embedding;    // embedding mode only
-  int batch_size;    // batch_size of prompt
-  bool beam_search;  // beam search or not
-  int beam_size;     // number of beams for beam search
+  model_archs arch;     // arch of models (GPT-J, LLAMA)
+  int n_ctx;            // text context
+  int n_gpu_layers;     // number of layers to store in VRAM
+  int seed;             // RNG seed, -1 for random
+  KV_MEM_TYPE kv_type;  // KV cache type specification
+  bool logits_all;      // the model_eval() call computes all logits, not just the last one
+  bool vocab_only;      // only load the vocabulary, no weights
+  bool use_mmap;        // use mmap if possible
+  bool use_mlock;       // force system to keep model in RAM
+  bool embedding;       // embedding mode only
+  int batch_size;       // batch_size of prompt
+  bool beam_search;     // beam search or not
+  int beam_size;        // number of beams for beam search
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;
