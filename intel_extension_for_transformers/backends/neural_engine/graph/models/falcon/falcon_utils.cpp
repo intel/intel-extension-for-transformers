@@ -131,7 +131,7 @@ void FALCON::load(model_context& lctx, model_progress_callback progress_callback
     if (n_head_kv == 1) {  //  7B
       layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
       layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
-    } else if (n_head_kv == 8) {  // 7B
+    } else if (n_head_kv == 8) {  // 40B
       layer.norm[0] = ml->get_tensor(layers_i + ".ln_mlp.weight", {n_embd}, backend);
       layer.norm[1] = ml->get_tensor(layers_i + ".ln_mlp.bias", {n_embd}, backend);
       layer.norm[2] = ml->get_tensor(layers_i + ".ln_attn.weight", {n_embd}, backend);
@@ -152,6 +152,9 @@ void FALCON::load(model_context& lctx, model_progress_callback progress_callback
       vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
                     ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
                     ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]);
+      if (n_head_kv == 8) {
+        vram_total += ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]);
+      }
     }
   }
 
