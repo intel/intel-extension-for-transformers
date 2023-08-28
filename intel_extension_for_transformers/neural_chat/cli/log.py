@@ -17,6 +17,7 @@
 
 import functools
 import logging
+from typing import Callable
 
 __all__ = [
     'logger',
@@ -58,6 +59,16 @@ class Logger(object):
 
     def __call__(self, log_level: str, msg: str):
         self.logger.log(log_level, msg)
+
+    # just for pylint check
+    debug: Callable[[str], None]
+    info: Callable[[str], None]
+    train: Callable[[str], None]
+    eval: Callable[[str], None]
+    warning: Callable[[str], None]
+    error: Callable[[str], None]
+    critical: Callable[[str], None]
+    exception: Callable[[str], None]
 
 
 logger = Logger()
