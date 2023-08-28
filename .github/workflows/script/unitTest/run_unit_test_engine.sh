@@ -90,7 +90,7 @@ function install_itrex_base() {
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
     pytest "${LOG_DIR}/coverage_pr"
-    #gtest
+    gtest
     install_itrex_base
     pytest "${LOG_DIR}/coverage_base"
 }

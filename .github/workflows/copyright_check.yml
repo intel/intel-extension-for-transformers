@@ -46,12 +46,15 @@ jobs:
                       $BOLD_YELLOW && echo " -----------------  Current log file output start --------------------------"
                       cat ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log
                       $BOLD_YELLOW && echo " -----------------  Current log file output end --------------------------" && $RESET
-                      $BOLD_RED && echo "CopyRight has something wrong! Please click on the artifact button to download and view the error log!" && $RESET; exit 1
+                      $BOLD_RED && echo "CopyRight has something wrong! Please click on the artifact button to download and view the error log!" && $RESET
                   fi
               else
                   $LIGHT_PURPLE && echo "Skipping ${file}"  && $RESET
               fi
           done
+          if [[ -n ${{ env.CODE_SCAN_LOG_PATH }}/copyright_issue_summary.log ]]; then 
+            exit 1
+          fi
 
       - name: Publish pipeline artifact
         if: ${{ failure() }}
