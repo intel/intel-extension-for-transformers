@@ -3,8 +3,8 @@ import abc
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel, AutoConfig
 
-from conversation import conv_templates, get_default_conv_template, SeparatorStyle
-from compression import compress_module
+from .conversation import conv_templates, get_default_conv_template, SeparatorStyle
+from .compression import compress_module
 
 import time
 import psutil
