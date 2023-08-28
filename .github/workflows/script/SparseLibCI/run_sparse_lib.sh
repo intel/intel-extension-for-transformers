@@ -16,7 +16,7 @@ cd /intel-extension-for-transformers
 git config --global --add safe.directory "*"
 git fetch
 git submodule update --init --recursive
-cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine
+cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime
 mkdir build && cd build
 
 CC=gcc CXX=g++ cmake .. -DNE_WITH_SPARSELIB=ON -DNE_WITH_TESTS=ON -DNE_WITH_SPARSELIB_BENCHMARK=ON -DPYTHON_EXECUTABLE=$(which python)
@@ -30,7 +30,7 @@ for caselog in $(find $cur_dir/*); do
     bash /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/test/kernels/benchmark/ci/to_summary.sh $caselog | tee -a "${case_name}_summary.log"
 done
 
-cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine
+cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime
 mkdir refer && cd refer
 git checkout -b refer origin/main
 git pull
