@@ -23,16 +23,31 @@ Install the following Python dependencies using Conda:
 ```shell
 conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y
 conda install jemalloc gperftools -c conda-forge -y
-conda install pytorch torchvision cpuonly -c pytorch
+conda install numpy
+conda install filelock
+conda install sympy==1.12
 ```
 
 Install other dependencies using pip:
 
 ```bash
+pip install fastapi
 pip install intel_extension_for_pytorch
 pip install SentencePiece peft evaluate nltk datasets
-pip install transformers diffusers accelerate intel_extension_for_transformers
+pip install transformers
+pip install diffusers accelerate
 pip install fastapi uvicorn sse_starlette einops
+pip install python-multipart
+pip install gptcache
+pip install intel_extension_for_transformers
+pip install speechbrain
+pip3 install torch torchvision torchaudio
+pip install soundfile
+pip install sentence-transformers
+pip install --no-cache-dir -U chardet
+pip install requests
+pip install --no-cache-dir -U urllib3
+pip install --force-reinstall charset-normalizer==3.2.0
 ```
 
 # Install git-lfs
@@ -61,18 +76,25 @@ or
 git clone https://huggingface.co/EleutherAI/gpt-j-6b
 ```
 
+```shell
+cd intel-extension-for-transformers/workflows/chatbot/inference/backend/llmcache
+git clone https://huggingface.co/hkunlp/instructor-large
+```
+
 # Modify run_ipex.sh/run_itrex.sh
 Modify the model path in run scripts.
 
 # Run the Chat server
 ```shell
-nohup bash run_ipex.sh &
+cd intel-extension-for-transformers/workflows/chatbot/inference
+nohup bash backend/chat/run_ipex.sh &
 ```
 
 or 
 
 ```shell
-nohup bash run_itrex.sh &
+cd intel-extension-for-transformers/workflows/chatbot/inference
+nohup bash backend/chat/run_itrex.sh &
 ```
 
 # Install dependencies for TalkingBot
