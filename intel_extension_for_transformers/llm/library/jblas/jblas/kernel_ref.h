@@ -85,17 +85,18 @@ static inline JBLAS_CODE padding_trans_interleave(const T_SRC* src, T_DST* dst, 
   return JblasSuccess;
 }
 
-static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, void* raw_dstptr, int row, int col,
-                                                     int srcstride, int dststride, bool zeropadding) {
+template <typename SRC_DT, typename DST_DT>
+static inline JBLAS_CODE dt_cvt_2D_write_back(const void* raw_srcptr, void* raw_dstptr, int row, int col, int srcstride,
+                                          int dststride, bool zeropadding) {
   for (int i = 0; i < row; i++) {
     int j = 0;
     for (; j < col; j++) {
-      const auto src = reinterpret_cast<const float*>(reinterpret_cast<const char*>(raw_srcptr) + i * srcstride);
-      const auto dst = reinterpret_cast<utils::bf16*>(reinterpret_cast<char*>(raw_dstptr) + i * dststride);
-      dst[j] = static_cast<utils::bf16>(src[j]);
+      const auto src = reinterpret_cast<const SRC_DT*>(reinterpret_cast<const char*>(raw_srcptr) + i * srcstride);
+      const auto dst = reinterpret_cast<DST_DT*>(reinterpret_cast<char*>(raw_dstptr) + i * dststride);
+      dst[j] = static_cast<DST_DT>(src[j]);
     }
     if (zeropadding) {
-      for (int bj = j * sizeof(utils::bf16); bj < dststride; bj++) {
+      for (int bj = j * sizeof(DST_DT); bj < dststride; bj++) {
         (reinterpret_cast<char*>(raw_dstptr) + i * dststride)[bj] = 0;
       }
     }
@@ -192,22 +193,6 @@ inline int8_t get_s8(int8_t v) {
 }
 
 template <JBLAS_SIGN_INT_TYPE S4_T>
-inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, float* dstptr, int row, int col, int ld_src,
-                                          int ld_dst, float* scales, int k_offset, int kblock, int NPad) {
-  // float fixed rowpack==1
-  for (int i = 0; i < row; i++) {
-    int kpos = (k_offset + i) / kblock;
-    auto sptr = scales + kpos * NPad;
-    for (int j = 0; j < col; j += 2) {
-      auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      dstptr[i * ld_dst + j + 0] = float(get_s8<S4_T>(tmp.x)) * sptr[j + 0];
-      dstptr[i * ld_dst + j + 1] = float(get_s8<S4_T>(tmp.y)) * sptr[j + 1];
-    }
-  }
-  return JblasSuccess;
-}
-
-template <JBLAS_SIGN_INT_TYPE S4_T>
 inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst) {
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j += 2) {
@@ -220,27 +205,29 @@ inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int ro
 }
 
 inline JBLAS_CODE decompress_kblock_s8_f32(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
-                                           float* scales, int k_offset, int kblock, int NPad) {
+                                           float* scales, int8_t* zero_points, int k_offset, int kblock, int NPad) {
   for (int i = 0; i < row; i++) {
     int kpos = (k_offset + i) / kblock;
     auto sptr = scales + kpos * NPad;
     for (int j = 0; j < col; j += 1) {
-      auto tmp = srcptr[i * ld_src + j];
-      dstptr[i * ld_dst + j] = float(tmp) * sptr[j + 0];
+      float tmp = (float)(srcptr[i * ld_src + j]);
+      if (zero_points != nullptr) tmp -= (float)(zero_points[kpos * NPad + j]);
+      dstptr[i * ld_dst + j] = tmp * sptr[j + 0];
     }
   }
   return JblasSuccess;
 }
 
 inline JBLAS_CODE decompress_kblock_s8_f32_packrow(int8_t* srcptr, float* dstptr, int row, int col, int ld_src,
-                                                   int ld_dst, float* scales, int k_offset, int kblock, int NPad,
-                                                   int packrow) {
+                                                   int ld_dst, float* scales, int8_t* zero_points, int k_offset,
+                                                   int kblock, int NPad, int packrow) {
   for (int i = 0; i < row; i += packrow) {
     if (packrow == 1) {
       int kpos = (k_offset + i) / kblock;
       auto sptr = scales + kpos * NPad;
       for (int j = 0; j < col; j += 1) {
-        auto tmp = srcptr[i * ld_src + j];
+        float tmp = (float)(srcptr[i * ld_src + j]);
+        if (zero_points != nullptr) tmp -= (float)(zero_points[kpos * NPad + j]);
         dstptr[i * ld_dst + j + 0] = tmp * sptr[j];
       }
     } else {
@@ -248,9 +235,14 @@ inline JBLAS_CODE decompress_kblock_s8_f32_packrow(int8_t* srcptr, float* dstptr
         for (int k = 0; k < packrow; k += 2) {
           int kpos = (k_offset + i + k) / kblock;
           auto sptr = scales + kpos * NPad + j;
-          auto tmp = srcptr + i * ld_src + j * packrow + k;
-          dstptr[i * ld_dst + j * packrow + k + 0] = tmp[0] * sptr[0];
-          dstptr[i * ld_dst + j * packrow + k + 1] = tmp[1] * sptr[0];
+          auto tmp = (srcptr + i * ld_src + j * packrow + k);
+          if (zero_points != nullptr) {
+            dstptr[i * ld_dst + j * packrow + k + 0] = ((float)tmp[0] - (float)zero_points[kpos * NPad + j]) * sptr[0];
+            dstptr[i * ld_dst + j * packrow + k + 1] = ((float)tmp[1] - (float)zero_points[kpos * NPad + j]) * sptr[0];
+          } else {
+            dstptr[i * ld_dst + j * packrow + k + 0] = (float)tmp[0] * sptr[0];
+            dstptr[i * ld_dst + j * packrow + k + 1] = (float)tmp[1] * sptr[0];
+          }
         }
       }
     }
@@ -258,55 +250,48 @@ inline JBLAS_CODE decompress_kblock_s8_f32_packrow(int8_t* srcptr, float* dstptr
   return JblasSuccess;
 }
 
-template <JBLAS_SIGN_INT_TYPE S4_T>
-inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, float* dstptr, int row, int col, int ld_src,
-                                          int ld_dst, utils::bf16* scales, int k_offset, int kblock, int NPad) {
-  // float fixed rowpack==1
+template <JBLAS_SIGN_INT_TYPE S4_T, typename _DST_T, typename _S_T>
+inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src,
+                                          int ld_dst, _S_T* scales, int8_t* zero_points, int k_offset, int kblock,
+                                          int NPad) {
   for (int i = 0; i < row; i++) {
     int kpos = (k_offset + i) / kblock;
     auto sptr = scales + kpos * NPad;
     for (int j = 0; j < col; j += 2) {
       auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      dstptr[i * ld_dst + j + 0] = float(get_s8<S4_T>(tmp.x)) * sptr[j + 0].tofloat();
-      dstptr[i * ld_dst + j + 1] = float(get_s8<S4_T>(tmp.y)) * sptr[j + 1].tofloat();
-    }
-  }
-  return JblasSuccess;
-}
-
-template <JBLAS_SIGN_INT_TYPE S4_T>
-inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
-                                          int ld_dst, utils::bf16* scales, int k_offset, int kblock, int NPad) {
-  // bf16 fixed rowpack==2
-  for (int i = 0; i < row; i++) {
-    int kpos = (k_offset + i) / kblock;
-    auto sptr = scales + kpos * NPad;
-    for (int j = 0; j < col; j += 2) {
-      auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      utils::bf16 bf16_ret1, bf16_ret2;
-      bf16_ret1.fromfloat(float(get_s8<S4_T>(tmp.x)) * sptr[j / 2].tofloat());  // interleave with the same scale
-      bf16_ret2.fromfloat(float(get_s8<S4_T>(tmp.y)) * sptr[j / 2].tofloat());
-      dstptr[i * ld_dst + j + 0] = bf16_ret1;
-      dstptr[i * ld_dst + j + 1] = bf16_ret2;
-    }
-  }
-  return JblasSuccess;
-}
-
-template <JBLAS_SIGN_INT_TYPE S4_T>
-inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
-                                          int ld_dst, float* scales, int k_offset, int kblock, int NPad) {
-  // bf16 fixed rowpack==2
-  for (int i = 0; i < row; i++) {
-    int kpos = (k_offset + i) / kblock;
-    auto sptr = scales + kpos * NPad;
-    for (int j = 0; j < col; j += 2) {
-      auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      utils::bf16 bf16_ret1, bf16_ret2;
-      bf16_ret1.fromfloat(float(get_s8<S4_T>(tmp.x)) * sptr[j / 2]);  // interleave with the same scale
-      bf16_ret2.fromfloat(float(get_s8<S4_T>(tmp.y)) * sptr[j / 2]);
-      dstptr[i * ld_dst + j + 0] = bf16_ret1;
-      dstptr[i * ld_dst + j + 1] = bf16_ret2;
+      float scale0, scale1, dst0, dst1;
+      int s0_idx, s1_idx;
+      if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
+        s0_idx = j / 2;
+        s1_idx = j / 2;
+      } else {
+        s0_idx = j;
+        s1_idx = j + 1;
+      }
+      if constexpr (std::is_same<_S_T, utils::bf16>::value) {
+        scale0 = sptr[s0_idx].tofloat();
+        scale1 = sptr[s1_idx].tofloat();
+      } else {
+        scale0 = sptr[s0_idx];
+        scale1 = sptr[s1_idx];
+      }
+      if (zero_points != nullptr) {
+        dst0 = (float(get_s8<S4_T>(tmp.x)) - float((zero_points + kpos * NPad)[i * ld_dst + j + 0])) * scale0;
+        dst1 = (float(get_s8<S4_T>(tmp.y)) - float((zero_points + kpos * NPad)[i * ld_dst + j + 1])) * scale1;
+      } else {
+        dst0 = float(get_s8<S4_T>(tmp.x)) * scale0;
+        dst1 = float(get_s8<S4_T>(tmp.y)) * scale1;
+      }
+      if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
+        utils::bf16 bf16_ret0, bf16_ret1;
+        bf16_ret0.fromfloat(dst0);
+        bf16_ret1.fromfloat(dst1);
+        dstptr[i * ld_dst + j + 0] = bf16_ret0;
+        dstptr[i * ld_dst + j + 1] = bf16_ret1;
+      } else {
+        dstptr[i * ld_dst + j + 0] = dst0;
+        dstptr[i * ld_dst + j + 1] = dst1;
+      }
     }
   }
   return JblasSuccess;
@@ -314,16 +299,23 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, utils::bf16* ds
 
 template <JBLAS_SIGN_INT_TYPE S4_T>
 inline JBLAS_CODE decompress_kblock_s4_fp_packrow(utils::int4x2* srcptr, float* dstptr, int row, int col, int ld_src,
-                                                  int ld_dst, float* scales, int k_offset, int kblock, int NPad,
-                                                  int packrow) {
+                                                  int ld_dst, float* scales, int8_t* zero_points, int k_offset,
+                                                  int kblock, int NPad, int packrow) {
   for (int i = 0; i < row; i += packrow) {
     if (packrow == 1) {
       int kpos = (k_offset + i) / kblock;
       auto sptr = scales + kpos * NPad;
       for (int j = 0; j < col; j += 2) {
         auto tmp = srcptr[i * ld_src / 2 + j / 2];
-        dstptr[i * ld_dst + j + 0] = float(get_s8<S4_T>(tmp.x)) * sptr[j + 0];
-        dstptr[i * ld_dst + j + 1] = float(get_s8<S4_T>(tmp.y)) * sptr[j + 1];
+        if (zero_points == nullptr) {
+          dstptr[i * ld_dst + j + 0] = float(get_s8<S4_T>(tmp.x)) * sptr[j + 0];
+          dstptr[i * ld_dst + j + 1] = float(get_s8<S4_T>(tmp.y)) * sptr[j + 1];
+        } else {
+          dstptr[i * ld_dst + j + 0] =
+              (float(get_s8<S4_T>(tmp.x)) - float((zero_points + kpos * NPad)[i * ld_dst + j + 0])) * sptr[j + 0];
+          dstptr[i * ld_dst + j + 1] =
+              (float(get_s8<S4_T>(tmp.y)) - float((zero_points + kpos * NPad)[i * ld_dst + j + 0])) * sptr[j + 1];
+        }
       }
     } else {
       for (int j = 0; j < col; j++) {
@@ -331,8 +323,15 @@ inline JBLAS_CODE decompress_kblock_s4_fp_packrow(utils::int4x2* srcptr, float* 
           int kpos = (k_offset + i + k) / kblock;
           auto sptr = scales + kpos * NPad + j;
           auto tmp = srcptr[(i * ld_src + j * packrow + k) / 2];
-          dstptr[i * ld_dst + j * packrow + k + 0] = float(get_s8<S4_T>(tmp.x)) * sptr[0];
-          dstptr[i * ld_dst + j * packrow + k + 1] = float(get_s8<S4_T>(tmp.y)) * sptr[0];
+          if (zero_points == nullptr) {
+            dstptr[i * ld_dst + j + 0] = float(get_s8<S4_T>(tmp.x)) * sptr[0];
+            dstptr[i * ld_dst + j + 1] = float(get_s8<S4_T>(tmp.y)) * sptr[1];
+          } else {
+            dstptr[i * ld_dst + j + 0] =
+                (float(get_s8<S4_T>(tmp.x)) - float((zero_points + kpos * NPad)[i * ld_dst + j + 0])) * sptr[0];
+            dstptr[i * ld_dst + j + 1] =
+                (float(get_s8<S4_T>(tmp.y)) - float((zero_points + kpos * NPad)[i * ld_dst + j + 0])) * sptr[1];
+          }
         }
       }
     }
@@ -496,7 +495,8 @@ inline float nf4_dequantize(int8_t val, float absmax) {
 }
 
 // Note: In the BNB Nf4 definition, 0 has a non-zero value after dequantization, but Jblas uses 0 for padding, which
-// leads to calculation errors. We ultimately choose to swap the binary bits of -1 and 0 in Nf4 to avoid this conflict.
+// leads to calculation errors. We ultimately choose to swap the binary bits of -1 and 0 in Nf4 to avoid this
+// conflict.
 inline int8_t nf4_quantize(float x) {
   if (x > 0.03979014977812767f)
     if (x > 0.3893125355243683f)      // 1
@@ -571,6 +571,47 @@ inline int8_t f4_quantize(float x) {
   return int8_t(0);
 }
 
+template <JBLAS_F4_TYPE F4_T, typename _DST_T, typename _S_T>
+inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                          _S_T* scales, int k_offset, int kblock, int NPad) {
+  for (int i = 0; i < row; i++) {
+    int kpos = (k_offset + i) / kblock;
+    auto sptr = scales + kpos * NPad;
+    for (int j = 0; j < col; j += 2) {
+      auto tmp = srcptr[i * ld_src / 2 + j / 2];
+      float scale0, scale1, dst0, dst1;
+      int s0_idx, s1_idx;
+      if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
+        s0_idx = j / 2;
+        s1_idx = j / 2;
+      } else {
+        s0_idx = j;
+        s1_idx = j + 1;
+      }
+      if constexpr (std::is_same<_S_T, utils::bf16>::value) {
+        scale0 = sptr[s0_idx].tofloat();
+        scale1 = sptr[s1_idx].tofloat();
+      } else {
+        scale0 = sptr[s0_idx];
+        scale1 = sptr[s1_idx];
+      }
+      dst0 = f4_dequantize<F4_T>(tmp.x, scale0);
+      dst1 = f4_dequantize<F4_T>(tmp.y, scale1);
+      if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
+        utils::bf16 bf16_ret0, bf16_ret1;
+        bf16_ret0.fromfloat(dst0);
+        bf16_ret1.fromfloat(dst1);
+        dstptr[i * ld_dst + j + 0] = bf16_ret0;
+        dstptr[i * ld_dst + j + 1] = bf16_ret1;
+      } else {
+        dstptr[i * ld_dst + j + 0] = dst0;
+        dstptr[i * ld_dst + j + 1] = dst1;
+      }
+    }
+  }
+  return JblasSuccess;
+}
+
 template <JBLAS_F4_TYPE F4_T>
 inline JBLAS_CODE decompress_kblock_f4_fp_packrow(utils::f4x2* srcptr, float* dstptr, int row, int col, int ld_src,
                                                   int ld_dst, float* scales, int k_offset, int kblock, int NPad,
@@ -594,71 +635,6 @@ inline JBLAS_CODE decompress_kblock_f4_fp_packrow(utils::f4x2* srcptr, float* ds
           dstptr[i * ld_dst + j * packrow + k + 1] = f4_dequantize<F4_T>(tmp.y, sptr[0]);
         }
       }
-    }
-  }
-  return JblasSuccess;
-}
-
-template <JBLAS_F4_TYPE F4_T>
-inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
-                                          float* scales, int k_offset, int kblock, int NPad) {
-  for (int i = 0; i < row; i++) {
-    int kpos = (k_offset + i) / kblock;
-    auto sptr = scales + kpos * NPad;
-    for (int j = 0; j < col; j += 2) {
-      auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      dstptr[i * ld_dst + j + 0] = f4_dequantize<F4_T>(tmp.x, sptr[j + 0]);
-      dstptr[i * ld_dst + j + 1] = f4_dequantize<F4_T>(tmp.y, sptr[j + 1]);
-    }
-  }
-  return JblasSuccess;
-}
-template <JBLAS_F4_TYPE F4_T>
-inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
-                                          int ld_dst, float* scales, int k_offset, int kblock, int NPad) {
-  for (int i = 0; i < row; i++) {
-    int kpos = (k_offset + i) / kblock;
-    auto sptr = scales + kpos * NPad;
-    for (int j = 0; j < col; j += 2) {
-      auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      utils::bf16 bf16_ret1, bf16_ret2;
-      bf16_ret1.fromfloat(f4_dequantize<F4_T>(tmp.x, sptr[j / 2]));  // interleave with the same scale
-      bf16_ret2.fromfloat(f4_dequantize<F4_T>(tmp.y, sptr[j / 2]));
-      dstptr[i * ld_dst + j + 0] = bf16_ret1;
-      dstptr[i * ld_dst + j + 1] = bf16_ret2;
-    }
-  }
-  return JblasSuccess;
-}
-template <JBLAS_F4_TYPE F4_T>
-inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
-                                          utils::bf16* scales, int k_offset, int kblock, int NPad) {
-  // float fixed rowpack==1
-  for (int i = 0; i < row; i++) {
-    int kpos = (k_offset + i) / kblock;
-    auto sptr = scales + kpos * NPad;
-    for (int j = 0; j < col; j += 2) {
-      auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      dstptr[i * ld_dst + j + 0] = f4_dequantize<F4_T>(tmp.x, sptr[j + 0].tofloat());
-      dstptr[i * ld_dst + j + 1] = f4_dequantize<F4_T>(tmp.y, sptr[j + 1].tofloat());
-    }
-  }
-  return JblasSuccess;
-}
-template <JBLAS_F4_TYPE F4_T>
-inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, utils::bf16* dstptr, int row, int col, int ld_src,
-                                          int ld_dst, utils::bf16* scales, int k_offset, int kblock, int NPad) {
-  // bf16 fixed rowpack==2
-  for (int i = 0; i < row; i++) {
-    int kpos = (k_offset + i) / kblock;
-    auto sptr = scales + kpos * NPad;
-    for (int j = 0; j < col; j += 2) {
-      auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      utils::bf16 bf16_ret1, bf16_ret2;
-      bf16_ret1.fromfloat(f4_dequantize<F4_T>(tmp.x, sptr[j / 2].tofloat()));
-      bf16_ret2.fromfloat(f4_dequantize<F4_T>(tmp.y, sptr[j / 2].tofloat()));
-      dstptr[i * ld_dst + j + 0] = bf16_ret1;
-      dstptr[i * ld_dst + j + 1] = bf16_ret2;
     }
   }
   return JblasSuccess;
@@ -688,12 +664,12 @@ static inline JBLAS_CODE memcpy2d(void* srcptr, void* dstptr, int row, int col, 
 
 template <JBLAS_SIGN_INT_TYPE S4_T>
 inline JBLAS_CODE quantize_f32_sign_int_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
-                                                 int ld_dst, float* scales, int blocksize) {
+                                                 int ld_dst, float* scales, int8_t* zero_points, int blocksize) {
   int raw_blocksize = blocksize;
   for (int i = 0; i < col; i++) {
     int align_row_loop = row / blocksize * blocksize;
     int j = 0;
-    auto s8_calc_store_scale_and_quantv = [&](int blocksize) {
+    auto s8_calc_store_scale_and_quantv_sym = [&](int blocksize) {
       float maxval = std::numeric_limits<float>::min();
       for (size_t ij = 0; ij < blocksize; ij++) {
         maxval = std::max(maxval, std::abs(srcptr[(j + ij) * ld_src + i]));
@@ -705,7 +681,7 @@ inline JBLAS_CODE quantize_f32_sign_int_rowblock(const float* srcptr, int8_t* ds
         dstptr[(j + ij) * ld_dst + i] = utils::cast<float, int8_t>(srcptr[(j + ij) * ld_src + i] * rscale);
       }
     };
-    auto s4_fullrange_calc_store_scale_and_quantv = [&](int blocksize) {
+    auto s4_fullrange_calc_store_scale_and_quantv_sym = [&](int blocksize) {
       float amax = 0.f, max = 0.f;
       for (size_t ij = 0; ij < blocksize; ij++) {
         auto v = srcptr[(j + ij) * ld_src + i];
@@ -723,15 +699,62 @@ inline JBLAS_CODE quantize_f32_sign_int_rowblock(const float* srcptr, int8_t* ds
         dstptr[(j + ij) * ld_dst + i] = x << 4;
       }
     };
+    auto s8_calc_store_scale_and_quantv_asym = [&](int blocksize) {
+      float maxval = 0.f;
+      float minval = 0.f;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        maxval = std::max(maxval, srcptr[(j + ij) * ld_src + i]);
+        minval = std::min(maxval, srcptr[(j + ij) * ld_src + i]);
+      }
+      float scale = (maxval - minval) / 255;
+      float rscale = 1.f / scale;
+      scales[j / raw_blocksize * ld_dst + i] = scale;
+      float fmedium = (maxval + minval) / 2;
+      int8_t bzp = utils::cast<float, int8_t>((0 - fmedium) * rscale);
+      zero_points[j / raw_blocksize * ld_dst + i] = bzp;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        dstptr[(j + ij) * ld_dst + i] = utils::cast<float, int8_t>((srcptr[(j + ij) * ld_src + i] - fmedium) * rscale);
+      }
+    };
+    auto s4_fullrange_calc_store_scale_and_quantv_asym = [&](int blocksize) {
+      float maxval = 0.f;
+      float minval = 0.f;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        auto v = srcptr[(j + ij) * ld_src + i];
+        maxval = std::max(maxval, v);
+        minval = std::min(minval, v);
+      }
+      float max = std::abs(maxval) < std::abs(minval) ? minval - maxval : maxval - minval;
+      float scale = max / -16.f;
+      float rscale = scale != 0.f ? 1.f / scale : 0.f;
+      scales[j / raw_blocksize * ld_dst + i] = scale;
+      float fmedium = (maxval + minval) / 2;
+      ;
+      int8_t bzp = utils::cast<float, int8_t>((0.f - fmedium) * rscale);
+      zero_points[j / raw_blocksize * ld_dst + i] = bzp;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        auto quant_v = (srcptr[(j + ij) * ld_src + i] - fmedium) * rscale;
+        int8_t x = MIN(15, (int8_t)(quant_v + 8.5f));
+        dstptr[(j + ij) * ld_dst + i] = x << 4;
+      }
+    };
 
     auto dispatch_calc = [&](int blocksize) {
       switch (S4_T) {
         case S8:
         case S4_CLIP:
-          s8_calc_store_scale_and_quantv(blocksize);
+          if (zero_points == nullptr) {
+            s8_calc_store_scale_and_quantv_sym(blocksize);
+          } else {
+            s8_calc_store_scale_and_quantv_asym(blocksize);
+          }
           break;
         case S4_FULLRANGE:
-          s4_fullrange_calc_store_scale_and_quantv(blocksize);
+          if (zero_points == nullptr) {
+            s4_fullrange_calc_store_scale_and_quantv_sym(blocksize);
+          } else {
+            s4_fullrange_calc_store_scale_and_quantv_asym(blocksize);
+          }
           break;
         default:
           assert(false);
@@ -746,12 +769,12 @@ inline JBLAS_CODE quantize_f32_sign_int_rowblock(const float* srcptr, int8_t* ds
 }
 template <JBLAS_F4_TYPE F4_T>
 inline JBLAS_CODE quantize_f32_f4_rowblock(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src,
-                                           int ld_dst, float* scales, int blocksize) {
+                                           int ld_dst, float* scales, int8_t* zero_points, int blocksize) {
   int raw_blocksize = blocksize;
   for (int i = 0; i < col; i++) {
     int align_row_loop = row / blocksize * blocksize;
     int j = 0;
-    auto calc_store_scale_and_quantv = [&](int blocksize) {
+    auto calc_store_scale_and_quantv_sym = [&](int blocksize) {
       float absmax = std::numeric_limits<float>::min();
       for (size_t ij = 0; ij < blocksize; ij++) {
         absmax = std::max(absmax, std::abs(srcptr[(j + ij) * ld_src + i]));
@@ -761,9 +784,30 @@ inline JBLAS_CODE quantize_f32_f4_rowblock(const float* srcptr, int8_t* dstptr, 
         dstptr[(j + ij) * ld_dst + i] = f4_quantize<F4_T>(srcptr[(j + ij) * ld_src + i] * (1.f / absmax));
       }
     };
-    for (; j < align_row_loop; j += blocksize) calc_store_scale_and_quantv(blocksize);
-
-    if (j < row) calc_store_scale_and_quantv(row - align_row_loop);
+    auto calc_store_scale_and_quantv_asym = [&](int blocksize) {
+      float amax = 0;
+      float amin = 0;
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        amax = std::max(amax, srcptr[(j + ij) * ld_src + i]);
+        amin = std::max(amax, srcptr[(j + ij) * ld_src + i]);
+      }
+      float scale = (amax - amin) / 2;
+      scales[j / raw_blocksize * ld_dst + i] = scale;
+      float fmedium = (amax + amin) / 2;
+      zero_points[j / raw_blocksize * ld_dst + i] = f4_quantize<F4_T>((0 - fmedium) * (1.f / scale));
+      for (size_t ij = 0; ij < blocksize; ij++) {
+        dstptr[(j + ij) * ld_dst + i] = f4_quantize<F4_T>((srcptr[(j + ij) * ld_src + i] - fmedium) * (1.f / scale));
+      }
+    };
+    auto dispatch_calc = [&](int blocksize) {
+      if (zero_points == nullptr) {
+        calc_store_scale_and_quantv_sym(blocksize);
+      } else {
+        calc_store_scale_and_quantv_asym(blocksize);
+      }
+    };
+    for (; j < align_row_loop; j += blocksize) dispatch_calc(blocksize);
+    if (j < row) dispatch_calc(row - align_row_loop);
   }
   return JblasSuccess;
 }
@@ -937,12 +981,16 @@ static inline JBLAS_CODE broadcast_u8(int num, const uint8_t& srcval, uint8_t* d
 }
 
 template <typename _RT>
-static inline JBLAS_CODE quant_s8_row_reduce_sum(const int8_t* srcptr, int ldsrc, const float* scales, int row, int col,
-                                                 _RT* reduce) {
+static inline JBLAS_CODE quant_s8_row_reduce_sum(const int8_t* srcptr, int ldsrc, const float* scales,
+                                                 const int8_t* zero_points, int row, int col, _RT* reduce) {
   std::memset(reduce, 0, sizeof(reduce[0]) * col);
   for (int i = 0; i < row; i++) {
     for (int j = 0; j < col; j++) {
-      reduce[j] += _RT(srcptr[i * ldsrc + j] * scales[j]);
+      if (zero_points != nullptr) {
+        reduce[j] += _RT((float(srcptr[i * ldsrc + j]) - float(zero_points[j])) * float(scales[j]));
+      } else {
+        reduce[j] += _RT(srcptr[i * ldsrc + j] * scales[j]);
+      }
     }
   }
   return JblasSuccess;

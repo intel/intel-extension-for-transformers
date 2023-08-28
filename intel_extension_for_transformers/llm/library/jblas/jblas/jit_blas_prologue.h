@@ -13,6 +13,7 @@
 //  limitations under the License.
 #pragma once
 #include <immintrin.h>
+#include <cassert>
 
 #include "jit_base.hpp"
 #include "jit_blas.h"
@@ -93,6 +94,7 @@ template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class ActivationBase {
  public:
   using AType = typename _GemmCore_T::AType;
+  using SRCType = AType;
   struct Param {
     const AType* A;
     int lda;
@@ -117,34 +119,45 @@ class ActivationBase {
   }
 };
 
-template <class _GemmCore_T, JBLAS_ISA ISA_T>
-class ActivationConverterFp32 {
+template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
+class ActivationConverter {
  public:
-  using SrcType = float;
   using AType = typename _GemmCore_T::AType;
+  using SRCType = SRC_T;
   struct Param {
-    const SrcType* A;
+    const SRC_T* A;
     int lda;
   };
-  ActivationConverterFp32() {}
+  ActivationConverter() {}
 
   JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
                            int k_offset) {
-    auto aptr = const_cast<SrcType*>(_param.A);
+    auto aptr = const_cast<SRC_T*>(_param.A);
     auto k_pad = utils::padto(k_size, _GemmCore_T::KTILE);
     *dststep = k_pad;
-    if constexpr (std::is_same<AType, utils::bf16>::value) {
+    if constexpr (std::is_same_v<AType, utils::bf16> && std::is_same_v<SRC_T, float>) {
       return kernel::wrapper::Memcpy2DFp32CvtBf16::forward<ISA_T>(aptr + m_offset * _param.lda + k_offset, *dstptr,
-                                                                  m_size, k_size, _param.lda * sizeof(SrcType),
+                                                                  m_size, k_size, _param.lda * sizeof(SRC_T),
                                                                   k_pad * sizeof(AType), true);
-    } else if (std::is_same<AType, utils::fp16>::value) {
+    } else if constexpr (std::is_same_v<AType, utils::fp16> && std::is_same_v<SRC_T, float>) {
       return kernel::wrapper::Memcpy2DFp32CvtFp16::forward<ISA_T>(aptr + m_offset * _param.lda + k_offset, *dstptr,
-                                                                  m_size, k_size, _param.lda * sizeof(SrcType),
+                                                                  m_size, k_size, _param.lda * sizeof(SRC_T),
                                                                   k_pad * sizeof(AType), true);
+    } else if constexpr (std::is_same_v<AType, float> && std::is_same_v<SRC_T, utils::bf16>) {
+      return kernel::wrapper::Memcpy2DBf16CvtFp32::forward<ISA_T>(aptr + m_offset * _param.lda + k_offset, *dstptr,
+                                                                  m_size, k_size, _param.lda * sizeof(SRC_T),
+                                                                  k_pad * sizeof(AType), true);
+    } else {
+      assert(0);
     }
     return JblasNotSupport;
   }
 };
+
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ActivationConverterFp32 = ActivationConverter<_GemmCore_T, ISA_T, float>;
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ActivationConverterBf16 = ActivationConverter<_GemmCore_T, ISA_T, utils::bf16>;
 
 template <typename QT_T, typename ST_T>
 class StorageQuantActivation {
@@ -207,14 +220,15 @@ class StorageQuantActivationKblock : public StorageQuantActivation<QT_T, ST_T> {
   }
 };
 
-template <class _GemmCore_T, JBLAS_ISA ISA_T>
-class ActivationF32U8KBlockQuantize {
+template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
+class ActivationU8KBlockQuantize {
  public:
   using AType = typename _GemmCore_T::AType;
   using SType = float;
   using QParam = StorageQuantActivationKblock<AType, SType>;
+  using SRCType = SRC_T;
   struct Param {
-    const float* A;
+    const SRC_T* A;
     int lda;
     QParam* quan;
   };
@@ -247,13 +261,13 @@ class ActivationF32U8KBlockQuantize {
     auto quan = _param.quan;
     if (rowsize > 0 && colsize > 0) {
       // min max
-      auto srcptr = _param.A + rowidx * _param.lda + colidx;
+      auto srcptr = const_cast<SRC_T*>(_param.A) + rowidx * _param.lda + colidx;
       int rowremain = utils::remainsize(rowidx, para.mRows, rowsize);
       int colremain = utils::remainsize(colidx, para.mCols, colsize);
       auto thdqptr = quan->mWPtr + rowidx * quan->lda + colidx;
       auto thdsptr = quan->mSPtr + rowidx * quan->lds + blkidx;
       auto thdzptr = quan->mZPtr + rowidx * quan->lds + blkidx;
-      kernel::wrapper::QuantizeU8ColBlock::template forward<ISA_T>(
+      kernel::wrapper::QuantizeU8ColBlock::template forward<ISA_T, SRC_T>(
           rowremain, colremain, srcptr, _param.lda, thdqptr, quan->lda, thdsptr, quan->lds, thdzptr, para.mColBlock);
     }
   }
@@ -299,13 +313,19 @@ class ActivationF32U8KBlockQuantize {
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
-class ActivationFp32AsymU8Quantize {
+using ActivationF32U8KBlockQuantize = ActivationU8KBlockQuantize<_GemmCore_T, ISA_T, float>;
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ActivationBf16U8KBlockQuantize = ActivationU8KBlockQuantize<_GemmCore_T, ISA_T, utils::bf16>;
+
+template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
+class ActivationAsymU8Quantize {
  public:
   using AType = typename _GemmCore_T::AType;
   using SType = float;
   using QParam = StorageQuantActivation<AType, SType>;
+  using SRCType = SRC_T;
   struct Param {
-    const float* A;
+    const SRC_T* A;
     int lda;
     QParam* Q;
   };
@@ -337,14 +357,14 @@ class ActivationFp32AsymU8Quantize {
     auto quan = _param.Q;
     if (rowsize > 0 && colsize > 0) {
       // min max
-      auto srcptr = _param.A + rowidx * _param.lda + colidx;
+      auto srcptr = const_cast<SRC_T*>(_param.A) + rowidx * _param.lda + colidx;
       int rowremain = utils::remainsize(rowidx, para.mRows, rowsize);
       int colremain = utils::remainsize(colidx, para.mCols, colsize);
       auto thdqptr = quan->mWPtr + rowidx * quan->lda + colidx;
       auto thdsptr = quan->mSPtr + rowidx * quan->lds;
       auto thdzptr = quan->mZPtr + rowidx * quan->lds;
-      kernel::wrapper::QuantizeU8ColBlock::template forward<ISA_T>(rowremain, colremain, srcptr, _param.lda, thdqptr,
-                                                                   quan->lda, thdsptr, quan->lds, thdzptr, para.mCols);
+      kernel::wrapper::QuantizeU8ColBlock::template forward<ISA_T, SRC_T>(
+          rowremain, colremain, srcptr, _param.lda, thdqptr, quan->lda, thdsptr, quan->lds, thdzptr, para.mCols);
     }
   }
 
@@ -368,15 +388,21 @@ class ActivationFp32AsymU8Quantize {
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
-class ActivationF32S8KBlockQuantize {
+using ActivationFp32AsymU8Quantize = ActivationAsymU8Quantize<_GemmCore_T, ISA_T, float>;
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ActivationBf16AsymU8Quantize = ActivationAsymU8Quantize<_GemmCore_T, ISA_T, utils::bf16>;
+
+template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
+class ActivationS8KBlockQuantize {
  public:
   using AType = typename _GemmCore_T::AType;
   using SType = float;
   using QParam = StorageQuantActivationKblock<AType, SType>;
   using Parallel = utils::parallel::Parallel2DRowMajorColBlock;
+  using SRCType = SRC_T;
 
   struct Param {
-    const float* A;
+    const SRC_T* A;
     int lda;
     QParam* quan;
   };
@@ -408,13 +434,13 @@ class ActivationF32S8KBlockQuantize {
     auto quan = _param.quan;
     if (rowsize > 0 && colsize > 0) {
       // min max
-      auto srcptr = _param.A + rowidx * _param.lda + colidx;
+      auto srcptr = const_cast<SRC_T*>(_param.A) + rowidx * _param.lda + colidx;
       int rowremain = utils::remainsize(rowidx, para.mRows, rowsize);
       int colremain = utils::remainsize(colidx, para.mCols, colsize);
       auto thdqptr = quan->mWPtr + rowidx * quan->lda + colidx;
       auto thdsptr = quan->mSPtr + rowidx * quan->lds + blkidx;
-      kernel::wrapper::QuantizeS8ColBlock::template forward<ISA_T>(rowremain, colremain, srcptr, _param.lda, thdqptr,
-                                                                   quan->lda, thdsptr, quan->lds, para.mColBlock);
+      kernel::wrapper::QuantizeS8ColBlock::template forward<ISA_T, SRC_T>(
+          rowremain, colremain, srcptr, _param.lda, thdqptr, quan->lda, thdsptr, quan->lds, para.mColBlock);
     }
   }
 
@@ -456,13 +482,19 @@ class ActivationF32S8KBlockQuantize {
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
-class ActivationFp32SymS8Quantize {
+using ActivationF32S8KBlockQuantize = ActivationS8KBlockQuantize<_GemmCore_T, ISA_T, float>;
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ActivationBf16S8KBlockQuantize = ActivationS8KBlockQuantize<_GemmCore_T, ISA_T, utils::bf16>;
+
+template <class _GemmCore_T, JBLAS_ISA ISA_T, typename SRC_T>
+class ActivationSymS8Quantize {
  public:
   using AType = typename _GemmCore_T::AType;
   using SType = float;
   using QParam = StorageQuantActivation<AType, SType>;
+  using SRCType = SRC_T;
   struct Param {
-    const float* A;
+    const SRC_T* A;
     int lda;
     QParam* Q;
   };
@@ -494,14 +526,14 @@ class ActivationFp32SymS8Quantize {
     auto quan = _param.Q;
     if (rowsize > 0 && colsize > 0) {
       // min max
-      auto srcptr = _param.A + rowidx * _param.lda + colidx;
+      auto srcptr = const_cast<SRC_T*>(_param.A) + rowidx * _param.lda + colidx;
       int rowremain = utils::remainsize(rowidx, para.mRows, rowsize);
       int colremain = utils::remainsize(colidx, para.mCols, colsize);
       auto thdqptr = quan->mWPtr + rowidx * quan->lda + colidx;
       auto thdsptr = quan->mSPtr + rowidx * quan->lds;
       auto thdzptr = quan->mZPtr + rowidx * quan->lds;
-      kernel::wrapper::QuantizeS8ColBlock::template forward<ISA_T>(rowremain, colremain, srcptr, _param.lda, thdqptr,
-                                                                   quan->lda, thdsptr, quan->lds, para.mCols);
+      kernel::wrapper::QuantizeS8ColBlock::template forward<ISA_T, SRC_T>(
+          rowremain, colremain, srcptr, _param.lda, thdqptr, quan->lda, thdsptr, quan->lds, para.mCols);
     }
   }
 
@@ -547,6 +579,11 @@ class WeightBase {
     }
   }
 };
+
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ActivationFp32SymS8Quantize = ActivationSymS8Quantize<_GemmCore_T, ISA_T, float>;
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+using ActivationBf16SymS8Quantize = ActivationSymS8Quantize<_GemmCore_T, ISA_T, utils::bf16>;
 
 // Storage class has real weight memory, PackedWeight provides interface
 class StorageWeight : public prologue::PackedWeight {
@@ -594,9 +631,7 @@ class StorageWeight : public prologue::PackedWeight {
   virtual void serializeDataToBuffer(void* buf) override {
     auto wptr = reinterpret_cast<int8_t*>(buf);
     utils::serialize(wptr, mRawSize);
-    if (mRawPtr != nullptr) {
-      std::memcpy(mRawPtr, wptr, mRawSize);
-    }
+    std::memcpy(mRawPtr, wptr, mRawSize);
   }
   virtual void deserializeDataBuffer(void* buf, int memalloc) override {
     auto rptr = reinterpret_cast<int8_t*>(buf);
