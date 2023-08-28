@@ -18,12 +18,12 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, Ge
 import torch
 import uvicorn
 
-from constants import WORKER_HEART_BEAT_INTERVAL
-from inference import load_model, generate_stream
-from utils import (build_logger, server_error_msg, pretty_print_semaphore)
+from .constants import WORKER_HEART_BEAT_INTERVAL
+from .inference import load_model, generate_stream
+from .utils import (build_logger, server_error_msg, pretty_print_semaphore)
 
-from asr import AudioSpeechRecognition
-from tts import TextToSpeech
+from .asr import AudioSpeechRecognition
+from .tts import TextToSpeech
 
 GB = 1 << 30
 
@@ -82,6 +82,7 @@ class ModelWorker:
             "worker_status": self.get_status()
         }
         r = requests.post(url, json=data)
+
         assert r.status_code == 200
 
     def send_heart_beat(self):
@@ -177,7 +178,7 @@ class StopOnTokens(StoppingCriteria):
                     return True
         return False
 
-@app.post("/talkingbot", response_class=PlainTextResponse)
+@app.post("/talkingbot")
 async def talkingbot(request: Request):
     params = await request.json()
     saved_path = params["file_name"]
