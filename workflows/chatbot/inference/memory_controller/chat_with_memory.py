@@ -63,7 +63,7 @@ if __name__ == "__main__":
         "max_length": args.max_length,
         "device_map": "auto",
         "repetition_penalty": args.penalty,
-    }
+    })
     if args.memory_type == "buffer_window":
         memory = ConversationBufferWindowMemory(memory_key="chat_history", k=3)
     elif args.memory_type == "buffer":
