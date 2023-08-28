@@ -44,8 +44,7 @@ from transformers import (
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
     AutoModelForSeq2SeqLM,
-    set_seed,
-    MPTForCausalLM
+    set_seed
 )
 from transformers.trainer_utils import is_main_process, get_last_checkpoint
 import re
@@ -289,30 +288,17 @@ class Finetuning:
         # Load model
         if model_args.model_name_or_path:
             model_dtype = torch.bfloat16 if training_args.bf16 else None
-            if re.search("mpt", model_args.model_name_or_path, re.IGNORECASE):
-                model = MPTForCausalLM.from_pretrained(
-                    model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                    config=config,
-                    cache_dir=model_args.cache_dir,
-                    revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
-                    trust_remote_code=True if model_args.trust_remote_code else None,
-                    torch_dtype=model_dtype,
-                    low_cpu_mem_usage=True,
-                )
-            else:
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                    config=config,
-                    cache_dir=model_args.cache_dir,
-                    revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
-                    trust_remote_code=True if model_args.trust_remote_code else None,
-                    torch_dtype=model_dtype,
-                    low_cpu_mem_usage=True,
-                )
+            model = AutoModelForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+                trust_remote_code=True if model_args.trust_remote_code else None,
+                torch_dtype=model_dtype,
+                low_cpu_mem_usage=True,
+            )
         else:
             raise ValueError(
                 "Must provide model_name_or_path to load a pretrained CausalLM model."
@@ -464,7 +450,7 @@ class Finetuning:
                     data_collator=data_collator,
                 )
             else:
-                from optimum.habana import GaudiConfig, GaudiTrainer
+                from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611
 
                 gaudi_config = GaudiConfig()
                 gaudi_config.use_fused_adam = True

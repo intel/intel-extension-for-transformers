@@ -308,7 +308,7 @@ class FinetuingExecutor(BaseCommandExecutor):
 
         model_args = ModelArguments()
         data_args = DataArguments()
-        training_args = TrainingArguments()
+        training_args = TrainingArguments(output_dir="./output")
         finetune_args= FinetuningArguments()
 
         self.finetuneCfg = FinetuningConfig(model_args, data_args, training_args, finetune_args)

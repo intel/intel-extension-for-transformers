@@ -42,7 +42,7 @@ from transformers.deepspeed import is_deepspeed_available
 from transformers.utils.bitsandbytes import is_bitsandbytes_available
 
 if is_deepspeed_available():
-    import deepspeed
+    import deepspeed # pylint: disable=E0401
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -248,7 +248,7 @@ def add_template(example, template_name):
 def get_optimized_model_name(config):
     from optimum.habana.transformers.generation import (
         MODELS_OPTIMIZED_WITH_STATIC_SHAPES,
-    )
+    ) # pylint: disable=E0401
 
     for model_type in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
         if model_type == config.model_type:
@@ -326,7 +326,7 @@ def import_deepspeed():
 
 def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs):
     # Initialize the model
-    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
+    from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=E0401
 
     world_size, rank, local_rank = initialize_distributed_hpu()
 
@@ -378,7 +378,7 @@ def load_model(
         # Tweak generation so that it runs faster on Gaudi
         from optimum.habana.transformers.modeling_utils import (
             adapt_transformers_to_gaudi,
-        )
+        ) # pylint: disable=E0401
 
         adapt_transformers_to_gaudi()
     elif device == "cpu":
@@ -495,7 +495,7 @@ def load_model(
         model = model.eval().to("hpu")
 
         if use_hpu_graphs and not use_deepspeed:
-            from habana_frameworks.torch.hpu import wrap_in_hpu_graph
+            from habana_frameworks.torch.hpu import wrap_in_hpu_graph # pylint: disable=E0401
 
             model = wrap_in_hpu_graph(model)
 
@@ -530,10 +530,12 @@ def load_model(
             )
             if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                             or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-                from transformers import jit_trace_mpt_7b, AutoModelForCausalLM
+                from transformers import AutoModelForCausalLM
 
-                model = jit_trace_mpt_7b(model)
-                config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, use_auth_token=hf_access_token)
+                # TDDO
+                # model = jit_trace_mpt_7b(model)
+                config = AutoConfig.from_pretrained(model_name, trust_remote_code=True,
+                                                    use_auth_token=hf_access_token)
                 model = AutoModelForCausalLM(
                     model, config, use_cache=use_cache, model_dtype=torch_dtype
                 )
@@ -585,7 +587,8 @@ def predict_stream(**params):
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
-        `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
+        `use_hpu_graphs` (bool): 
+                    Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
 
     Returns:
@@ -669,7 +672,8 @@ def predict_stream(**params):
             try:
                 with torch.no_grad():
                     context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True) \
-                        if device == "cpu" else torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                        if device == "cpu" else torch.cuda.amp.autocast( \
+                            enabled=True, dtype=dtype, cache_enabled=True)
                     if device == "cuda":
                         input_tokens = prepare_inputs(
                             input_tokens, model.device if hasattr(model, 'device') else torch.device(device)
@@ -831,7 +835,8 @@ def predict(**params):
         `num_return_sequences` (int): Specifies the number of alternative sequences to generate.
         `bad_words_ids` (list or None): Contains a list of token IDs that should not appear in the generated text.
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
-        `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
+        `use_hpu_graphs` (bool): 
+                 Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
 
     Returns:
@@ -1022,7 +1027,7 @@ def main():
 
     if args.habana:
         # Set seed before initializing model.
-        from optimum.habana.utils import set_seed
+        from optimum.habana.utils import set_seed # pylint: disable=E0401
 
         set_seed(args.seed)
     else:

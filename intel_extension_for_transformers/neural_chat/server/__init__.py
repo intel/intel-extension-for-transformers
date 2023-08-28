@@ -20,4 +20,4 @@ from .server_commands import NeuralChatClientHelpCommand
 from .server_commands import NeuralChatServerBaseCommand
 from .server_commands import NeuralChatServerHelpCommand
 from .neuralchat_server import NeuralChatServerExecutor
-from .neuralchat_client import TextChatClientExecutor, VoiceChatClientExecutor, FinetuingClientExecutor
+from .neuralchat_client import TextChatClientExecutor, VoiceChatClientExecutor

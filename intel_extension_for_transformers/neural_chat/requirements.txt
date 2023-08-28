@@ -31,4 +31,6 @@ yacs
 uvicorn
 optimum
 optimum[habana]
-deepspeed
+#py-cpuinfo
+#oneccl_bind_pt==2.0.100 -f https://developer.intel.com/ipex-whl-stable-xpu
+#deepspeed
