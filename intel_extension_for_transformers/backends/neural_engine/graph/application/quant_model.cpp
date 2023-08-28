@@ -28,30 +28,27 @@
 #include "common.h"
 #include "models/model_utils/model_utils.h"
 
-class gptj_quant_layer : public quant_layer_base {
- public:
-  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
-                                                 ne_type type) override {
-    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
-    if (layername == "transformer.wte.weight" || layername == "lm_head.weight") {
-      // special layer process, can be loaded by config file
-      return quant_params_internal{quant_bits::count};  // skip for head and tail layers
-    }
-    quantize &= (ne.size() == 2);
-    if (quantize) {
-      return mGCfg;  // use global quant config
-    } else {
-      return quant_params_internal{quant_bits::count};  // non-quant
-    }
-  }
-};
+std::shared_ptr<quant_layer_base> get_model_quant_layer(const std::string model_name) {
+  return ql_registry::create_ql(model_name);
+}
 
 int main(int argc, char** argv) {
   model_init_backend();
   quant_params q_params;
+#ifdef MODEL_NAME
+  q_params.model_name = MODEL_NAME;
+#endif
+
   if (quant_params_parse(argc, argv, q_params) == false) {
     return 1;
   }
+  model_archs mt = model_name_to_arch::init().find(q_params.model_name);
+  if (mt == MODEL_UNKNOWN) {
+    fprintf(stderr, "error, please set model_name \n");
+    exit(0);
+  }
+  q_params.model_arch = mt;
+
   const std::string fname_inp = q_params.model_file;
   const std::string fname_out = q_params.out_file;
   ne_ftype ftype = quant_params_to_ftype(q_params);
@@ -61,7 +58,7 @@ int main(int argc, char** argv) {
   const int64_t t_main_start_us = model_time_us();
 
   int64_t t_quantize_us = 0;
-  auto quant_layer = new gptj_quant_layer();
+  auto quant_layer = get_model_quant_layer(q_params.model_name);
   // load the model
   {
     const int64_t t_start_us = model_time_us();
@@ -73,7 +70,6 @@ int main(int argc, char** argv) {
 
     t_quantize_us = model_time_us() - t_start_us;
   }
-  delete quant_layer;
   // report timing
   {
     const int64_t t_main_end_us = model_time_us();
