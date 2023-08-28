@@ -22,6 +22,7 @@ from ..utils.command import NeuralChatCommandDict
 from .base_executor import BaseCommandExecutor
 from ..config import PipelineConfig, FinetuningConfig, GenerationConfig
 from ..config import ModelArguments, DataArguments, FinetuningArguments
+from ..plugins import plugins
 from transformers import TrainingArguments
 from ..chatbot import build_chatbot, finetune_model
 from ..pipeline.plugins.audio.asr import AudioSpeechRecognition
@@ -258,13 +259,13 @@ class VoiceChatExecutor(BaseCommandExecutor):
         audio_output_path = parser_args.audio_output_path
         query = parser_args.query
         model_name = parser_args.model_name_or_path
+        plugins.tts.enable = True
+        plugins.tts.args["output_audio_path"]=parser_args.audio_output_path
         if model_name:
-            config = PipelineConfig(audio_input=True if audio_input_path else False,
-                                    audio_output=True if audio_output_path else False,
+            config = PipelineConfig(plugins=plugins,
                                     model_name_or_path=model_name)
         else:
-            config = PipelineConfig(audio_input=True if audio_input_path else False,
-                                    audio_output=True if audio_output_path else False)
+            config = PipelineConfig(plugins=plugins)
         self.chatbot = build_chatbot(config)
         try:
             if audio_input_path:

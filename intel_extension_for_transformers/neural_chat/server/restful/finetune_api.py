@@ -18,16 +18,16 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
-from ...cli.log import logger
-from ...chatbot import finetune_model
+from intel_extension_for_transformers.neural_chat.cli.log import logger
+from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
 from transformers import TrainingArguments
-from ...config import (
+from intel_extension_for_transformers.neural_chat.config import (
     ModelArguments,
     DataArguments,
     FinetuningArguments,
     FinetuningConfig,
 )
-from ...server.restful.request import FinetuneRequest
+from intel_extension_for_transformers.neural_chat.server.restful.request import FinetuneRequest
 
 
 def check_finetune_request(request: BaseModel) -> Optional[str]:
@@ -55,7 +55,9 @@ class FinetuneAPIRouter(APIRouter):
     def handle_finetune_request(self, request: FinetuneRequest) -> str:
         try:
             model_args = ModelArguments(model_name_or_path=request.model_name_or_path)
-            data_args = DataArguments(train_file=request.train_file, dataset_name=request.dataset_name, dataset_concatenation=request.dataset_concatenation)
+            data_args = DataArguments(train_file=request.train_file,
+                                      dataset_name=request.dataset_name,
+                                      dataset_concatenation=request.dataset_concatenation)
             training_args = TrainingArguments(
                 output_dir=request.output_dir,
                 do_train=True,

@@ -29,8 +29,7 @@ from ..cli.log import logger
 
 
 __all__ = [
-    'TextChatClientExecutor', 'VoiceChatClientExecutor', 'RetrievalClientExecutor',
-    'Text2ImageClientExecutor', 'FinetuningClientExecutor'
+    'TextChatClientExecutor', 'VoiceChatClientExecutor', 'FinetuningClientExecutor'
 ]
 
 
@@ -202,9 +201,9 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
             return res
 
 
-class FinetuingClientExecutor(BaseCommandExecutor):
+class FinetuningClientExecutor(BaseCommandExecutor):
     def __init__(self):
-        super(FinetuingClientExecutor, self).__init__()
+        super(FinetuningClientExecutor, self).__init__()
         self.parser = argparse.ArgumentParser(
             prog='neuralstudio_client.finetune', add_help=True)
         self.parser.add_argument(
@@ -259,7 +258,7 @@ class FinetuingClientExecutor(BaseCommandExecutor):
 specific_commands = {
     'textchat': ['neuralchat_client text chat command', 'TextChatClientExecutor'],
     'voicechat': ['neuralchat_client voice chat command', 'VoiceChatClientExecutor'],
-    'finetune': ['neuralchat_client finetuning command', 'FinetuingClientExecutor'],
+    'finetune': ['neuralchat_client finetuning command', 'FinetuningClientExecutor'],
 }
 
 for com, info in specific_commands.items():

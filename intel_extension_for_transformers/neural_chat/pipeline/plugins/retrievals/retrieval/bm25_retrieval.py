@@ -17,7 +17,7 @@
 
 from haystack.nodes import BM25Retriever
 
-class BM25Retriever():
+class SparseBM25Retriever():
     """Retrieve the document database with BM25 sparse algorithm."""
 
     def __int__(self, document_store = None, top_k = 1):

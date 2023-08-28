@@ -426,10 +426,10 @@ def load_model(
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-        from transformers import MPTForCausalLM
+        from transformers import AutoModelForCausalLM
 
         with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = MPTForCausalLM.from_pretrained(
+            model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 trust_remote_code=True,
                 torch_dtype=torch_dtype,
@@ -530,11 +530,11 @@ def load_model(
             )
             if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                             or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-                from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
+                from transformers import jit_trace_mpt_7b, AutoModelForCausalLM
 
                 model = jit_trace_mpt_7b(model)
                 config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, use_auth_token=hf_access_token)
-                model = MPTTSModelForCausalLM(
+                model = AutoModelForCausalLM(
                     model, config, use_cache=use_cache, model_dtype=torch_dtype
                 )
         elif device == "cuda":

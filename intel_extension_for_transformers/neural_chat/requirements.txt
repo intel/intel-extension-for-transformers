@@ -1,4 +1,4 @@
-transformers>=4.32.0
+transformers>=4.31.0
 peft
 fastchat
 torch
@@ -16,10 +16,18 @@ python-multipart
 PyPDF2
 langchain
 python-docx
+scikit-learn
 farm-haystack
 numpy==1.23.5
-librosa
+librosa=0.10.0
 docx
 beautifulsoup4
 InstructorEmbedding
 chromadb
+fastapi
+pydantic
+starlette
+yacs
+uvicorn
+optimum
+optimum[habana]

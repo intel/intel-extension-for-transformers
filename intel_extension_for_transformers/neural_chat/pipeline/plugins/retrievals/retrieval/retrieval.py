@@ -17,7 +17,7 @@
 
 """The class defination for the retriever. Supporting langchain-based and haystack-based retriever."""
 
-from .bm25_retrieval import BM25Retriever
+from .bm25_retrieval import SparseBM25Retriever
 from .chroma_retrieval import ChromaRetriever
 
 class Retriever():
@@ -33,7 +33,7 @@ class Retriever():
                                              search_type=search_type,
                                              search_kwargs=search_kwargs)
         else:
-            self.retriever = BM25Retriever(document_store=document_store, top_k=top_k)
+            self.retriever = SparseBM25Retriever(document_store=document_store, top_k=top_k)
 
     def get_context(self, query):
         context = self.retriever.query_the_database(query)

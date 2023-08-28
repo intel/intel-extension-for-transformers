@@ -27,7 +27,7 @@ from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 from .pipeline.plugins.retrievals.indexing import DocumentIndexing
-from .pipeline.plugins.retrievals.retrieval import BM25Retriever, ChromaRetriever
+from .pipeline.plugins.retrievals.retrieval import SparseBM25Retriever, ChromaRetriever
 from .pipeline.plugins.intent_detector import IntentDetector
 from .pipeline.plugins.security import SafetyChecker
 from .plugins import plugins
@@ -109,7 +109,8 @@ class ModelArguments:
     trust_remote_code: bool = field(
         default=False,
         metadata={
-            "help": "should enable when using custom model architecture that is not yet part of the Hugging Face transformers package like MPT)."
+            "help": "should enable when using custom model architecture that is not yet part of "
+                    "the Hugging Face transformers package like MPT)."
         },
     )
 
@@ -186,13 +187,15 @@ class DataArguments:
     dataset_seed: int = field(
         default=42,
         metadata={
-            "help": "Seed to use in dataset processing, different seeds might yield different datasets. This seed and the seed in training arguments are not related"
+            "help": "Seed to use in dataset processing, different seeds might yield different datasets. "
+                    "This seed and the seed in training arguments are not related"
         },
     )
     dataset_cache_directory: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Path to directory where the processed dataset will be saved. If path exists, try to load processed dataset from this path."
+            "help": "Path to directory where the processed dataset will be saved. If path exists, "
+                    "try to load processed dataset from this path."
         },
     )
     dataset_concatenation: Optional[bool] = field(
