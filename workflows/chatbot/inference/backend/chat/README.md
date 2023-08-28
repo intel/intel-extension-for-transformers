@@ -48,6 +48,7 @@ pip install --no-cache-dir -U chardet
 pip install requests
 pip install --no-cache-dir -U urllib3
 pip install --force-reinstall charset-normalizer==3.2.0
+pip install pydub
 ```
 
 # Install git-lfs
@@ -95,12 +96,4 @@ or
 ```shell
 cd intel-extension-for-transformers/workflows/chatbot/inference
 nohup bash backend/chat/run_itrex.sh &
-```
-
-# Install dependencies for TalkingBot
-
-```
-pip install speechbrain
-pip install soundfile
-pip install pydub
 ```
