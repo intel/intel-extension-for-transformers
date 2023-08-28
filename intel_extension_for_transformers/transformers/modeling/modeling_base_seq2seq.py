@@ -28,11 +28,7 @@ from transformers.file_utils import add_start_docstrings
 from transformers.modeling_utils import no_init_weights
 from transformers.models.auto.auto_factory import _get_model_class
 from transformers.utils.generic import ContextManagers
-from optimum.exporters import TasksManager
 
-from optimum.intel.neural_compressor import INCConfig
-from optimum.intel.utils.import_utils import is_transformers_version
-from optimum.modeling_base import OptimizedModel
 from ..utils.utility import (
     DECODER_NAME,
     ENCODER_NAME,
@@ -43,6 +39,13 @@ if is_transformers_version("<", "4.25.0"):
     from transformers.generation_utils import GenerationMixin
 else:
     from transformers.generation import GenerationMixin
+
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
+optimum = LazyImport("optimum")
+from optimum.exporters import TasksManager
+from optimum.intel.neural_compressor import INCConfig
+from optimum.intel.utils.import_utils import is_transformers_version
+from optimum.modeling_base import OptimizedModel
 
 logger = logging.getLogger(__name__)
 

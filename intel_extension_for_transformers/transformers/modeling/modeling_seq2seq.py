@@ -18,21 +18,23 @@ from typing import Dict, Optional, Tuple, Union
 
 import torch
 from torch.nn import CrossEntropyLoss
-from optimum.utils import NormalizedConfigManager
 import transformers
 from transformers import AutoConfig, AutoModelForSeq2SeqLM
 from transformers.file_utils import add_start_docstrings, add_start_docstrings_to_model_forward
 from transformers.modeling_outputs import BaseModelOutput, Seq2SeqLMOutput
 from transformers.utils import is_torch_fx_proxy
-from optimum.intel.utils.import_utils import is_transformers_version
 from .modeling_base_seq2seq import INCBaseModelForSeq2SeqLM
-
+from intel_extension_for_transformers import LazyImport
 
 if is_transformers_version("<", "4.25.0"):
     from transformers.generation_utils import GenerationMixin
 else:
     from transformers.generation import GenerationMixin
 
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
+optimum = LazyImport("optimum")
+from optimum.utils import NormalizedConfigManager
+from optimum.intel.utils.import_utils import is_transformers_version
 
 logger = logging.getLogger(__name__)
 
