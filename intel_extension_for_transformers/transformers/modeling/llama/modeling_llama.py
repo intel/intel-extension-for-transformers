@@ -44,9 +44,17 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from transformers.activations import ACT2FN
-from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast, SequenceClassifierOutputWithPast
+from transformers.modeling_outputs import (
+        BaseModelOutputWithPast,
+        CausalLMOutputWithPast,
+        SequenceClassifierOutputWithPast
+)
 from transformers.modeling_utils import PreTrainedModel
-from transformers.utils import add_start_docstrings, add_start_docstrings_to_model_forward, logging, replace_return_docstrings
+from transformers.utils import (
+        add_start_docstrings,
+        add_start_docstrings_to_model_forward,
+        logging, replace_return_docstrings
+)
 from transformers.models.llama.configuration_llama import LlamaConfig
 
 
@@ -70,7 +78,9 @@ def _make_causal_mask(
 
     if past_key_values_length > 0:
         mask = torch.cat([torch.zeros(tgt_len, past_key_values_length, dtype=dtype, device=device), mask], dim=-1)
-    return mask[None, None, :, :].expand(bsz, 1, tgt_len, torch.tensor(tgt_len) + torch.tensor(past_key_values_length))
+    return mask[None, None, :, :].expand(
+                                  bsz, 1, tgt_len, torch.tensor(tgt_len) + torch.tensor(past_key_values_length)
+                                  ) 
 
 
 # Copied from transformers.models.bart.modeling_bart._expand_mask
@@ -125,7 +135,8 @@ class LlamaRotaryEmbedding(torch.nn.Module):
 
     def forward(self, x, seq_len=None):
         # x: [bs, num_attention_heads, seq_len, head_size]
-        # This `if` block is unlikely to be run after we build sin/cos in `__init__`. Keep the logic here just in case.
+        # This `if` block is unlikely to be run after we build sin/cos in `__init__`.
+        # Keep the logic here just in case.
         if seq_len > self.max_seq_len_cached:
             self.max_seq_len_cached = seq_len
             t = torch.arange(self.max_seq_len_cached, device=x.device, dtype=self.inv_freq.dtype)
@@ -412,24 +423,25 @@ LLAMA_INPUTS_DOCSTRING = r"""
             config.n_positions - 1]`.
 
             [What are position IDs?](../glossary#position-ids)
-        past_key_values (`tuple(tuple(torch.FloatTensor))`, *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+        past_key_values (`tuple(tuple(torch.FloatTensor))`,
+            *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
             Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of shape
             `(batch_size, num_heads, sequence_length, embed_size_per_head)`) and 2 additional tensors of shape
             `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`.
 
-            Contains pre-computed hidden-states (key and values in the self-attention blocks and in the cross-attention
-            blocks) that can be used (see `past_key_values` input) to speed up sequential decoding.
+            Contains pre-computed hidden-states (key and values in the self-attention blocks and in the
+            cross-attention blocks) that can be used (see `past_key_values` input) to speed up sequential decoding.
 
             If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those that
             don't have their past key value states given to this model) of shape `(batch_size, 1)` instead of all
             `decoder_input_ids` of shape `(batch_size, sequence_length)`.
         inputs_embeds (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
-            Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation. This
-            is useful if you want more control over how to convert `input_ids` indices into associated vectors than the
-            model's internal embedding lookup matrix.
+            Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation.
+            This is useful if you want more control over how to convert `input_ids` indices into associated vectors
+            than the model's internal embedding lookup matrix.
         use_cache (`bool`, *optional*):
-            If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding (see
-            `past_key_values`).
+            If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
+            (see `past_key_values`).
         output_attentions (`bool`, *optional*):
             Whether or not to return the attentions tensors of all attention layers. See `attentions` under returned
             tensors for more detail.
@@ -491,7 +503,8 @@ class LlamaModel(LlamaPreTrainedModel):
                 inputs_embeds.device
             )
             combined_attention_mask = (
-                expanded_attn_mask if combined_attention_mask is None else torch.tensor(expanded_attn_mask) + torch.tensor(combined_attention_mask)
+                expanded_attn_mask if combined_attention_mask is None else \
+                        torch.tensor(expanded_attn_mask) + torch.tensor(combined_attention_mask)
             )
 
         return combined_attention_mask
@@ -537,7 +550,10 @@ class LlamaModel(LlamaPreTrainedModel):
         if position_ids is None:
             device = input_ids.device if input_ids is not None else inputs_embeds.device
             position_ids = torch.arange(
-                past_key_values_length, torch.tensor(seq_length) + torch.tensor(past_key_values_length), dtype=torch.long, device=device
+                past_key_values_length,
+                torch.tensor(seq_length) + torch.tensor(past_key_values_length),
+                dtype=torch.long,
+                device=device
             )
             position_ids = position_ids.unsqueeze(0).view(-1, seq_length)
         else:
@@ -787,10 +803,10 @@ class LlamaForCausalLM(LlamaPreTrainedModel):
     (e.g. GPT-2) do.
 
     Since it does classification on the last token, it requires to know the position of the last token. If a
-    `pad_token_id` is defined in the configuration, it finds the last token that is not a padding token in each row. If
-    no `pad_token_id` is defined, it simply takes the last value in each row of the batch. Since it cannot guess the
-    padding tokens when `inputs_embeds` are passed instead of `input_ids`, it does the same (take the last value in
-    each row of the batch).
+    `pad_token_id` is defined in the configuration, it finds the last token that is not a padding token in each row.
+    If no `pad_token_id` is defined, it simply takes the last value in each row of the batch. Since it cannot guess
+    the padding tokens when `inputs_embeds` are passed instead of `input_ids`, it does the same (take the last value
+    in each row of the batch).
     """,
     LLAMA_START_DOCSTRING,
 )

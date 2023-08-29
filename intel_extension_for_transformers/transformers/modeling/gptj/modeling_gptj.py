@@ -422,16 +422,17 @@ GPTJ_INPUTS_DOCSTRING = r"""
             config.n_positions - 1]`.
 
             [What are position IDs?](../glossary#position-ids)
-        head_mask (`torch.FloatTensor` of shape `(num_attention_heads,)` or `(n_layer, num_attention_heads)`, *optional*):
+        head_mask (`torch.FloatTensor` of shape 
+            `(num_attention_heads,)` or `(n_layer, num_attention_heads)`, *optional*):
             Mask to nullify selected heads of the self-attention modules. Mask values selected in `[0, 1]`:
 
             - 1 indicates the head is **not masked**,
             - 0 indicates the head is **masked**.
 
         inputs_embeds (`torch.FloatTensor` of shape `({0}, hidden_dim)`, *optional*):
-            Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation. This
-            is useful if you want more control over how to convert *input_ids* indices into associated vectors than the
-            model's internal embedding lookup matrix.
+            Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation.
+            This is useful if you want more control over how to convert *input_ids* indices into associated vectors
+            than the model's internal embedding lookup matrix.
         output_attentions (`bool`, *optional*):
             Whether or not to return the attentions tensors of all attention layers. See `attentions` under returned
             tensors for more detail.
@@ -459,7 +460,8 @@ PARALLELIZE_DOCSTRING = r"""
     Example:
 
     ```python
-    # Here is an example of a device map on a machine with 4 GPUs using gpt-j-6B, which has a total of 28 attention modules:
+    # Here is an example of a device map on a machine with 4 GPUs using gpt-j-6B, 
+    # which has a total of 28 attention modules:
     model = GPTJForCausalLM.from_pretrained("EleutherAI/gpt-j-6B")
     device_map = {
         0: [0, 1, 2, 3, 4, 5, 6],
@@ -519,8 +521,8 @@ class GPTJModel(GPTJPreTrainedModel):
         warnings.warn(
             "`GPTJModel.parallelize` is deprecated and will be removed in v5 of Transformers, you should load your"
             " model with `device_map='balanced'` in the call to `from_pretrained`. You can also provide your own"
-            " `device_map` but it needs to be a dictionary module_name to device, so for instance {'h.0': 0, 'h.1': 1,"
-            " ...}",
+            " `device_map` but it needs to be a dictionary module_name to device, so for instance"
+            " {'h.0': 0, 'h.1': 1, ...}",
             FutureWarning,
         )
         # Check validity of device_map
@@ -617,7 +619,10 @@ class GPTJModel(GPTJPreTrainedModel):
             past_length = past_key_values[0][0].size(-2)
 
         if position_ids is None:
-            position_ids = torch.arange(past_length, torch.tensor(input_shape[-1]) + torch.tensor(past_length), dtype=torch.long, device=device)
+            position_ids = torch.arange(past_length, 
+                                        torch.tensor(input_shape[-1]) + torch.tensor(past_length),
+                                        dtype=torch.long,
+                                        device=device)
             position_ids = position_ids.unsqueeze(0).view(-1, input_shape[-1])
 
         # Attention mask.
@@ -733,7 +738,9 @@ class GPTJModel(GPTJPreTrainedModel):
             all_hidden_states = all_hidden_states + (hidden_states,)
 
         if not return_dict:
-            return tuple(v for v in [hidden_states, presents, all_hidden_states, all_self_attentions] if v is not None)
+            return tuple(
+                    v for v in [hidden_states, presents, all_hidden_states, all_self_attentions] if v is not None
+                    )
 
         return BaseModelOutputWithPast(
             last_hidden_state=hidden_states,
@@ -937,10 +944,10 @@ class GPTJForCausalLM(GPTJPreTrainedModel):
     (e.g. GPT, GPT-2, GPT-Neo) do.
 
     Since it does classification on the last token, it requires to know the position of the last token. If a
-    `pad_token_id` is defined in the configuration, it finds the last token that is not a padding token in each row. If
-    no `pad_token_id` is defined, it simply takes the last value in each row of the batch. Since it cannot guess the
-    padding tokens when `inputs_embeds` are passed instead of `input_ids`, it does the same (take the last value in
-    each row of the batch).
+    `pad_token_id` is defined in the configuration, it finds the last token that is not a padding token in each row.
+    If no `pad_token_id` is defined, it simply takes the last value in each row of the batch. Since it cannot guess
+    the padding tokens when `inputs_embeds` are passed instead of `input_ids`, it does the same (take the last value
+    in each row of the batch).
     """,
     GPTJ_START_DOCSTRING,
 )

@@ -41,7 +41,11 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, LayerNorm, MSELoss
 from torch.nn import functional as F
 
-from transformers.file_utils import add_code_sample_docstrings, add_start_docstrings, add_start_docstrings_to_model_forward
+from transformers.file_utils import (
+    add_code_sample_docstrings,
+    add_start_docstrings,
+    add_start_docstrings_to_model_forward
+)
 from transformers.modeling_outputs import (
     BaseModelOutputWithPastAndCrossAttentions,
     CausalLMOutputWithCrossAttentions,
@@ -77,7 +81,9 @@ def _make_causal_mask(
     Make causal mask used for self-attention.
     """
     batch_size, target_length = input_ids_shape
-    mask = torch.empty((target_length, torch.tensor(target_length) + torch.tensor(past_key_values_length)), dtype=torch.bool, device=device)
+    mask = torch.empty((target_length, 
+                        torch.tensor(target_length) + torch.tensor(past_key_values_length)),
+                        dtype=torch.bool, device=device)
     # ONNX doesn't support `torch.Tensor.triu` properly, thus we use this workaround
     seq_ids = torch.arange(target_length, device=device)
     mask[:, past_key_values_length:] = seq_ids[:, None] < seq_ids[None, :]
@@ -85,7 +91,8 @@ def _make_causal_mask(
     if past_key_values_length > 0:
         mask[:, :past_key_values_length] = False
 
-    expanded_mask = mask[None, None, :, :].expand(batch_size, 1, target_length, torch.tensor(target_length) + torch.tensor(past_key_values_length))
+    expanded_mask = mask[None, None, :, :].expand(batch_size, 1, target_length,
+                    torch.tensor(target_length) + torch.tensor(past_key_values_length))
     return expanded_mask
 
 
@@ -105,7 +112,8 @@ def build_alibi_tensor(attention_mask: torch.Tensor, num_heads: int, dtype: torc
     Link to paper: https://arxiv.org/abs/2108.12409 Alibi tensor is not causal as the original paper mentions, it
     relies on a translation invariance of softmax for quick implementation: with l being a tensor, and a fixed value
     `softmax(l+a) = softmax(l)`. Based on
-    https://github.com/ofirpress/attention_with_linear_biases/blob/a35aaca144e0eb6b789dfcb46784c4b8e31b7983/fairseq/models/transformer.py#L742
+    https://github.com/ofirpress/attention_with_linear_biases/blob/
+    a35aaca144e0eb6b789dfcb46784c4b8e31b7983/fairseq/models/transformer.py#L742
     TODO @thomasw21 this doesn't work as nicely due to the masking strategy, and so masking varies slightly.
 
     Args:
@@ -130,7 +138,8 @@ def build_alibi_tensor(attention_mask: torch.Tensor, num_heads: int, dtype: torc
             2 ** (-(2 ** -(math.log2(2 * closest_power_of_2) - 3))), device=attention_mask.device, dtype=torch.float32
         )
         num_remaining_heads = min(closest_power_of_2, num_heads - closest_power_of_2)
-        extra_powers = torch.arange(1, 1 + 2 * num_remaining_heads, 2, device=attention_mask.device, dtype=torch.int32)
+        extra_powers = torch.arange(1, 1 + 2 * num_remaining_heads, 2, device=attention_mask.device,
+                                                                                    dtype=torch.int32)
         slopes = torch.cat([slopes, torch.pow(extra_base, extra_powers)], dim=0)
 
     # Note: alibi will added to the attention bias that will be applied to the query, key product of attention
@@ -138,7 +147,8 @@ def build_alibi_tensor(attention_mask: torch.Tensor, num_heads: int, dtype: torc
     # => here we set (batch_size=1, num_heads=num_heads, query_length=1, key_length=max_length)
     # => the query_length dimension will then be broadcasted correctly
     # This is more or less identical to T5's relative position bias:
-    # https://github.com/huggingface/transformers/blob/f681437203baa7671de3174b0fa583c349d9d5e1/src/transformers/models/t5/modeling_t5.py#L527
+    # https://github.com/huggingface/transformers/blob/
+    # f681437203baa7671de3174b0fa583c349d9d5e1/src/transformers/models/t5/modeling_t5.py#L527
     arange_tensor = ((attention_mask.cumsum(dim=-1) - 1) * attention_mask)[:, None, :]
     alibi = slopes[..., None] * arange_tensor
     return alibi.reshape(batch_size * num_heads, 1, seq_length).to(dtype)
@@ -165,8 +175,8 @@ def dropout_add(x: torch.Tensor, residual: torch.Tensor, prob: float, training: 
 
 def bloom_gelu_forward(x: torch.Tensor) -> torch.Tensor:
     """
-    Custom bias GELU function. Adapted from Megatron-DeepSpeed code. Here we use a simple implementation (inference) to
-    make the model jitable.
+    Custom bias GELU function. Adapted from Megatron-DeepSpeed code. 
+    Here we use a simple implementation (inference) to make the model jitable.
 
     Args:
         x (`torch.tensor`, *required*):
@@ -240,7 +250,8 @@ class BloomAttention(nn.Module):
 
         if self.head_dim * self.num_heads != self.hidden_size:
             raise ValueError(
-                f"`hidden_size` must be divisible by num_heads (got `hidden_size`: {self.hidden_size} and `num_heads`:"
+                f"`hidden_size` must be divisible by num_heads "
+                f" (got `hidden_size`: {self.hidden_size} and `num_heads`:"
                 f" {self.num_heads})."
             )
 
@@ -341,9 +352,11 @@ class BloomAttention(nn.Module):
         # change view to [batch_size, num_heads, q_length, kv_length]
         attention_scores = matmul_result.view(batch_size, self.num_heads, q_length, kv_length)
 
-        # cast attention scores to fp32, compute scaled softmax and cast back to initial dtype - [batch_size, num_heads, q_length, kv_length]
+        # cast attention scores to fp32, compute scaled softmax and cast back to initial dtype
+        # - [batch_size, num_heads, q_length, kv_length]
         input_dtype = attention_scores.dtype
-        # `float16` has a minimum value of -65504.0, whereas `bfloat16` and `float32` have a minimum value of `-3.4e+38`
+        # `float16` has a minimum value of -65504.0, 
+        # whereas `bfloat16` and `float32` have a minimum value of `-3.4e+38`
         if input_dtype == torch.float16:
             attention_scores = attention_scores.to(torch.float)
         attn_weights = torch.masked_fill(attention_scores, attention_mask, torch.finfo(attention_scores.dtype).min)
@@ -580,7 +593,8 @@ BLOOM_START_DOCSTRING = r"""
 BLOOM_INPUTS_DOCSTRING = r"""
     Args:
         input_ids (`torch.LongTensor` of shape `(batch_size, input_ids_length)`):
-            `input_ids_length` = `sequence_length` if `past_key_values` is `None` else `past_key_values[0][0].shape[2]`
+            `input_ids_length` = `sequence_length` if `past_key_values` is `None` 
+            else `past_key_values[0][0].shape[2]`
             (`sequence_length` of input past key value states). Indices of input sequence tokens in the vocabulary.
 
             If `past_key_values` is used, only `input_ids` that do not have their past calculated should be passed as
@@ -612,15 +626,15 @@ BLOOM_INPUTS_DOCSTRING = r"""
             - 0 indicates the head is **masked**.
 
         inputs_embeds (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
-            Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation. This
-            is useful if you want more control over how to convert `input_ids` indices into associated vectors than the
-            model's internal embedding lookup matrix.
+            Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation. 
+            This is useful if you want more control over how to convert `input_ids` indices into associated vectors
+            than the model's internal embedding lookup matrix.
 
             If `past_key_values` is used, optionally only the last `inputs_embeds` have to be input (see
             `past_key_values`).
         use_cache (`bool`, *optional*):
-            If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding (see
-            `past_key_values`).
+            If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
+            (see `past_key_values`).
         output_attentions (`bool`, *optional*):
             Whether or not to return the attentions tensors of all attention layers. See `attentions` under returned
             tensors for more detail.
@@ -709,7 +723,8 @@ class BloomModel(BloomPreTrainedModel):
         **deprecated_arguments,
     ) -> Union[Tuple[torch.Tensor, ...], BaseModelOutputWithPastAndCrossAttentions]:
         if deprecated_arguments.pop("position_ids", False) is not False:
-            # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to `False` allows to detect if users were passing explicitly `None`
+            # `position_ids` could have been `torch.Tensor` or `None` 
+            # so defaulting pop to `False` allows to detect if users were passing explicitly `None`
             warnings.warn(
                 "`position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore"
                 " passing `position_ids`.",
@@ -824,7 +839,9 @@ class BloomModel(BloomPreTrainedModel):
             all_hidden_states = all_hidden_states + (hidden_states,)
 
         if not return_dict:
-            return tuple(v for v in [hidden_states, presents, all_hidden_states, all_self_attentions] if v is not None)
+            return tuple(
+                    v for v in [hidden_states, presents, all_hidden_states, all_self_attentions] if v is not None
+                    )
 
         return BaseModelOutputWithPastAndCrossAttentions(
             last_hidden_state=hidden_states,
@@ -870,7 +887,8 @@ class BloomForCausalLM(BloomPreTrainedModel):
         if past_key_values:
             input_ids = input_ids[:, -1].unsqueeze(-1)
 
-            # the cache may be in the stardard format (e.g. in contrastive search), convert to bloom's format if needed
+            # the cache may be in the stardard format (e.g. in contrastive search),
+            # convert to bloom's format if needed
             if past_key_values[0][0].shape[0] == input_ids.shape[0]:
                 past_key_values = self._convert_to_bloom_cache(past_key_values)
 
@@ -916,7 +934,8 @@ class BloomForCausalLM(BloomPreTrainedModel):
             are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
         """
         if deprecated_arguments.pop("position_ids", False) is not False:
-            # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to `False` allows to detect if users were passing explicitly `None`
+            # `position_ids` could have been `torch.Tensor` or `None`
+            # so defaulting pop to `False` allows to detect if users were passing explicitly `None`
             warnings.warn(
                 "`position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore"
                 " passing `position_ids`.",
@@ -1002,10 +1021,10 @@ class BloomForCausalLM(BloomPreTrainedModel):
     (e.g. GPT-1) do.
 
     Since it does classification on the last token, it requires to know the position of the last token. If a
-    `pad_token_id` is defined in the configuration, it finds the last token that is not a padding token in each row. If
-    no `pad_token_id` is defined, it simply takes the last value in each row of the batch. Since it cannot guess the
-    padding tokens when `inputs_embeds` are passed instead of `input_ids`, it does the same (take the last value in
-    each row of the batch).
+    `pad_token_id` is defined in the configuration, it finds the last token that is not a padding token in each row. 
+    If no `pad_token_id` is defined, it simply takes the last value in each row of the batch. Since it cannot guess 
+    the padding tokens when `inputs_embeds` are passed instead of `input_ids`, it does the same (take the last value
+    in each row of the batch).
     """,
     BLOOM_START_DOCSTRING,
 )
@@ -1048,7 +1067,8 @@ class BloomForSequenceClassification(BloomPreTrainedModel):
             `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
         """
         if deprecated_arguments.pop("position_ids", False) is not False:
-            # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to `False` allows to detect if users were passing explicitly `None`
+            # `position_ids` could have been `torch.Tensor` or `None` 
+            # so defaulting pop to `False` allows to detect if users were passing explicitly `None`
             warnings.warn(
                 "`position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore"
                 " passing `position_ids`.",
@@ -1184,7 +1204,8 @@ class BloomForTokenClassification(BloomPreTrainedModel):
             `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
         """
         if deprecated_arguments.pop("position_ids", False) is not False:
-            # `position_ids` could have been `torch.Tensor` or `None` so defaulting pop to `False` allows to detect if users were passing explicitly `None`
+            # `position_ids` could have been `torch.Tensor` or `None` 
+            # so defaulting pop to `False` allows to detect if users were passing explicitly `None`
             warnings.warn(
                 "`position_ids` have no functionality in BLOOM and will be removed in v5.0.0. You can safely ignore"
                 " passing `position_ids`.",
