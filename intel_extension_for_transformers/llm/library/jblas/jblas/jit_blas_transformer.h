@@ -87,6 +87,82 @@ class QKVGemmInterfacePackWeight {
   _Launcher_T mLauncher;
 };
 
+template <class _Launcher_T, template <class _T> class _Parallel_T>
+class QKVGemmInterfacePackWeightParallelAB {
+ public:
+  struct Arguments {
+    const int M, N, K, Batch;
+    const typename _Launcher_T::AParam paramA;
+    const typename _Launcher_T::BParam* paramsB;
+    const typename _Launcher_T::EpiParam* paramsC;
+    void* workspace;
+  };
+  using Config = typename _Launcher_T::ParallelConfig;
+  using ActivationType = typename _Launcher_T::PrologueA;
+  using WeightType = typename _Launcher_T::PrologueB;
+  using GemmCore = typename _Launcher_T::GemmCore;
+  using LArguments = typename _Launcher_T::Param;
+  using CParam = typename _Launcher_T::EpiParam;
+  using Parallel = _Parallel_T<GemmCore>;
+  Parallel createParallel(int M = 0, int N = 0, int K = 0, int Batch = 1, int KBlock = 0) {
+    Parallel _paral;
+    auto cb = utils::CpuBase();
+    _paral.update(M, N, K, KBlock, cb.mNumThreads);
+    return _paral;
+  }
+  ActivationType* getActivationPtr() { return &mLauncher.mProA; }
+  WeightType* getWeightPtr() { return &mLauncher.mProB; }
+
+  template <bool _LaunchA, bool _LaunchB>
+  JBLAS_CODE compute(const Arguments& _param) {
+    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramsB[0].packedW);
+    if (bptr == nullptr) {
+      return JblasInvalidParam;
+    }
+    auto cb = utils::CpuBase();
+    Parallel _paral = Parallel();
+    if (_paral.update(_param.M, _param.N, _param.K, cb.mNumThreads)) {
+      static bool dbgprint = false;
+      if (dbgprint) {
+        _paral.print();
+        dbgprint = false;
+      }
+    }
+    omp_set_num_threads(cb.mNumThreads);
+#pragma omp parallel
+    {
+      int tidx = omp_get_thread_num();
+      if (_LaunchA) {
+        getActivationPtr()->launch(_param.paramA, tidx, paraA);
+      }
+      if (_LaunchB) {
+        getWeightPtr()->launch(_param.paramB, tidx, paraB);
+      }
+      if (_LaunchA || _LaunchB) {
+#pragma omp barrier
+      }
+      launchT(_param, tidx, _paral, cb.mL2Cache);
+    }
+    return JblasSuccess;
+  }
+
+ protected:
+  void launchT(const Arguments& _param, int tidx, Parallel& _paral, size_t l2cache) {
+    int colidx, rowidx, rowsize, colsize;
+    _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+    if (rowsize > 0 && colsize > 0) {
+      Config _config{rowidx, colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
+                     l2cache};
+      for (size_t i = 0; i < _param.Batch; i++) {
+        mLauncher.launch(_config, {_param.M, _param.N, _param.K, _param.paramA, _param.paramsB[i], _param.paramsC[i],
+                                   _param.workspace});
+      }
+    }
+  }
+
+  _Launcher_T mLauncher;
+};
+
 // compared with BatchGemm, QKV has the same activation matrix.
 // This is the reason why making it a new template.
 template <class _Launcher_T, template <class _T> class _Parallel_T>
