@@ -23,9 +23,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
 
-    @unittest.skip("temperately skip to avoid CI failure")
     def test_bigcode_lm_eval(self):
-        from intel_extension_for_transformers.evaluation.lm_code_eval import evaluate as bigcode_evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate as bigcode_evaluate
         starcoder_tokenizer = AutoTokenizer.from_pretrained("bigcode/tiny_starcoder_py")
         class bigcode_args:
             limit=1

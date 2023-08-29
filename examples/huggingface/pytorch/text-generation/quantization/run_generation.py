@@ -297,7 +297,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
