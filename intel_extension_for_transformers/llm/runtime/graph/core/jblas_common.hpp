@@ -93,7 +93,7 @@ using SS8Fp32PerN = jblas::prologue::weight_comp::gemm_kblcok::StorageWeightS8Sc
 
 using GcCompFp32 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512F;
 using GcCompInt8KBlock = jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK;
-using GcCompBf16 = jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16;
+using GcCompBf16 = jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16;
 using GcCompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 using GcCompInt8 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI;
 
@@ -697,7 +697,7 @@ using AddGemmS4KBlock = DefualtGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32
 namespace amx_bf16 {
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
 using DefualtGemmFp32 =
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<JblasAMX_BF16, jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16,
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<JblasAMX_BF16, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
                                                              jblas::prologue::gemm::ActivationConverterFp32, ProB, Epi>;
 using AddGeluGemmS8KBlock = DefualtGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmS8KBlock = DefualtGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;

@@ -35,7 +35,7 @@ JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
 
 template <template <class GC, JBLAS_ISA ISA> class ProB>
 using Default = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16,
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
                                                              jblas::prologue::gemm::ActivationConverterFp32, ProB,
                                                              jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
