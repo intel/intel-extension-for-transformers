@@ -1,0 +1,117 @@
+accelerate==0.22.0
+aiohttp==3.8.5
+aiosignal==1.3.1
+annotated-types==0.5.0
+anyio==3.7.1
+astunparse==1.6.3
+async-timeout==4.0.3
+attrs==23.1.0
+cachetools==5.3.1
+certifi @ file:///croot/certifi_1690232220950/work/certifi
+cffi @ file:///tmp/abs_98z5h56wf8/croots/recipe/cffi_1659598650955/work
+chardet==5.2.0
+charset-normalizer==3.1.0
+click==8.1.7
+cmake==3.27.2
+contextlib2==21.6.0
+contourpy==1.1.0
+cycler==0.11.0
+datasets==2.14.4
+Deprecated==1.2.14
+diffusers==0.20.0
+dill==0.3.7
+einops==0.6.1
+evaluate==0.4.0
+exceptiongroup==1.1.3
+fastapi==0.101.1
+filelock==3.12.2
+fonttools==4.42.1
+frozenlist==1.4.0
+fsspec==2023.6.0
+future @ file:///croot/future_1677599870788/work
+gmpy2 @ file:///tmp/build/80754af9/gmpy2_1645455533097/work
+gptcache==0.1.40
+h11==0.14.0
+huggingface-hub==0.16.4
+HyperPyYAML==1.2.1
+idna==3.4
+importlib-metadata==6.8.0
+intel-extension-for-pytorch==2.0.100
+intel-extension-for-transformers==1.1
+Jinja2==3.1.2
+joblib==1.3.2
+kiwisolver==1.4.5
+lit==16.0.6
+MarkupSafe==2.1.3
+matplotlib==3.7.2
+mpmath @ file:///croot/mpmath_1690848262763/work
+multidict==6.0.4
+multiprocess==0.70.15
+networkx==3.1
+neural-compressor==2.2.1
+nltk==3.8.1
+numpy @ file:///croot/numpy_and_numpy_base_1691091611330/work
+nvidia-cublas-cu11==11.10.3.66
+nvidia-cuda-cupti-cu11==11.7.101
+nvidia-cuda-nvrtc-cu11==11.7.99
+nvidia-cuda-runtime-cu11==11.7.99
+nvidia-cudnn-cu11==8.5.0.96
+nvidia-cufft-cu11==10.9.0.58
+nvidia-curand-cu11==10.2.10.91
+nvidia-cusolver-cu11==11.4.0.1
+nvidia-cusparse-cu11==11.7.4.91
+nvidia-nccl-cu11==2.14.3
+nvidia-nvtx-cu11==11.7.91
+opencv-python-headless==4.8.0.76
+packaging==23.1
+pandas==2.0.3
+peft==0.5.0
+Pillow==10.0.0
+prettytable==3.8.0
+psutil==5.9.5
+py-cpuinfo==9.0.0
+pyarrow==13.0.0
+pycocotools==2.0.7
+pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
+pydantic==2.3.0
+pydantic_core==2.6.3
+pyparsing==3.0.9
+python-dateutil==2.8.2
+python-multipart==0.0.6
+pytz==2023.3
+PyYAML==6.0.1
+regex==2023.8.8
+requests==2.31.0
+responses==0.18.0
+ruamel.yaml==0.17.28
+ruamel.yaml.clib==0.2.7
+safetensors==0.3.3
+schema==0.7.5
+scikit-learn==1.3.0
+scipy==1.11.2
+sentence-transformers==2.2.2
+sentencepiece==0.1.99
+six @ file:///tmp/build/80754af9/six_1644875935023/work
+sniffio==1.3.0
+soundfile==0.12.1
+speechbrain==0.5.15
+sse-starlette==1.6.5
+starlette==0.27.0
+sympy @ file:///croot/sympy_1668202399572/work
+threadpoolctl==3.2.0
+tokenizers==0.13.3
+torch==2.0.1
+torchaudio==2.0.2
+torchvision==0.15.2
+tqdm==4.66.1
+transformers==4.32.0
+triton==2.0.0
+typing_extensions @ file:///croot/typing_extensions_1690297465030/work
+tzdata==2023.3
+urllib3==2.0.4
+uvicorn==0.23.2
+wcwidth==0.2.6
+wrapt==1.15.0
+xxhash==3.3.0
+yarl==1.9.2
+zipp==3.16.2
