@@ -150,7 +150,8 @@ def parse_args():
     parser.add_argument(
         "--trust_remote_code",
         action="store_true",
-        help="enable when use custom model architecture that is not yet part of the Hugging Face transformers package like MPT",
+        help="enable when use custom model architecture that is not yet "
+             "part of the Hugging Face transformers package like MPT",
     )
 
     # habana parameters
@@ -246,9 +247,11 @@ def add_template(example, template_name):
 
 
 def get_optimized_model_name(config):
+    # pylint: disable=E0611
+    # pylint: disable=E0401
     from optimum.habana.transformers.generation import (
         MODELS_OPTIMIZED_WITH_STATIC_SHAPES,
-    ) # pylint: disable=E0401
+    )
 
     for model_type in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
         if model_type == config.model_type:
@@ -376,9 +379,11 @@ def load_model(
         if use_deepspeed:
             import_deepspeed()
         # Tweak generation so that it runs faster on Gaudi
+        # pylint: disable=E0401
+        # pylint: disable=E0611
         from optimum.habana.transformers.modeling_utils import (
             adapt_transformers_to_gaudi,
-        ) # pylint: disable=E0401
+        )
 
         adapt_transformers_to_gaudi()
     elif device == "cpu":
@@ -1027,7 +1032,8 @@ def main():
 
     if args.habana:
         # Set seed before initializing model.
-        from optimum.habana.utils import set_seed # pylint: disable=E0401
+        # pylint: disable=E0401 E0611
+        from optimum.habana.utils import set_seed
 
         set_seed(args.seed)
     else:

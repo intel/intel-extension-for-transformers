@@ -61,7 +61,7 @@ async def voicechat(file: UploadFile=File(...), voice: str=Form(...), audio_outp
         fout.write(content)
     audio = AudioSegment.from_file("tmp_audio_bytes")
     audio.export(f"{file_name}", format="wav")
-    if audio_output_path is not " ":
+    if not audio_output_path:
         logger.info(f'Predicting voicechat with audio output, output path is {audio_output_path}')
         return await router.handle_voice_chat_request(file_name, audio_output_path)
     else:
