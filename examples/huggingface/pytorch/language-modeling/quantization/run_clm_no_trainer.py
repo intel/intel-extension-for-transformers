@@ -1,13 +1,15 @@
 import argparse
 import os
+import sys
+sys.path.append('./')
 import time
 import json
 import re
 import torch
 from datasets import load_dataset
+import datasets
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -38,7 +40,7 @@ parser.add_argument('--gptq_percdamp', type=float, default=.01, help='Percent of
 parser.add_argument('--gptq_block_size', type=int, default=128, help='Block size. sub weight matrix size to run GPTQ.')
 parser.add_argument('--gptq_nsamples', type=int, default=128, help='Number of calibration data samples.')
 parser.add_argument('--gptq_use_max_length', action="store_true", help='Set all sequence length to be same length of args.gptq_pad_max_length')
-parser.add_argument('--gptq_pad_max_length', type=int, default=2048, help='Calibration dataset sequence max length, this should align with your model config.')
+parser.add_argument('--gptq_pad_max_length', type=int, default=2048, help='Calibration dataset sequence max length, this should align with your model config, and your dataset builder args: args.pad_max_length')
 # =======================================
 parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', 'GPTQ'], 
                     help="Weight-only parameter.")
@@ -212,6 +214,7 @@ if args.quantize:
     # dataset
     user_model, tokenizer = get_user_model()
     calib_dataset = load_dataset(args.dataset, split="train")
+    # calib_dataset = datasets.load_from_disk('/your/local/dataset/pile-10k/') # use this if trouble with connecting to HF
     calib_dataset = calib_dataset.shuffle(seed=42)
     calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
     calib_dataloader = DataLoader(
@@ -266,11 +269,13 @@ if args.quantize:
         )
     elif args.weight_only_algo == "GPTQ":
         recipes = {
-            'percdamp': args.gptq_percdamp, 
-            'act_order':args.gptq_actorder, 
-            'block_size': args.gptq_block_size, 
-            'nsamples': args.gptq_nsamples, 
-            'use_max_length': args.gptq_use_max_length
+            'gptq_args': {
+                'percdamp': args.gptq_percdamp, 
+                'act_order':args.gptq_actorder, 
+                'block_size': args.gptq_block_size, 
+                'nsamples': args.gptq_nsamples, 
+                'use_max_length': args.gptq_use_max_length
+            }
         }
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
@@ -307,7 +312,7 @@ if args.quantize:
     def eval_func(model):
         acc = evaluator.evaluate(model)
         return acc
-    # eval_func should be set when tuning alpha.
+    eval_func should be set when tuning alpha.
     eval_func = eval_func if isinstance(args.alpha, list) else None
 
     q_model = quantization.fit(
