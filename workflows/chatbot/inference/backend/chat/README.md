@@ -88,12 +88,12 @@ Modify the model path in run scripts.
 # Run the Chat server
 ```shell
 cd intel-extension-for-transformers/workflows/chatbot/inference
-nohup bash backend/chat/run_ipex.sh &
+nohup bash backend/chat/run_ipex.sh
 ```
 
 or 
 
 ```shell
 cd intel-extension-for-transformers/workflows/chatbot/inference
-nohup bash backend/chat/run_itrex.sh &
+nohup bash backend/chat/run_itrex.sh
 ```
