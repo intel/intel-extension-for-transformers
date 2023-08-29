@@ -40,7 +40,7 @@
 #include "models/model_utils/util.h"
 
 #define MHA_FUSION 0  //  turn it off for naive beam_search kv cache reorder
-#define MHA_FP16 (MHA_FUSION && 1)
+#define MHA_FP16 (MHA_FUSION && 0)
 
 // evaluate the transformer
 //
