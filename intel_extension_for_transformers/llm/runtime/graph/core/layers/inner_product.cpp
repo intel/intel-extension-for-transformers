@@ -904,8 +904,8 @@ JBLAS_CODE jblas_QKVs8fp32pern_f32f32_forward(float* activation, SS8Fp32PerN* wq
       };
       GemmKernel::CParam oparams[3]{
           {output, ldo, quanA->mSPtr, quanA->lds, wqptr->mSPtr},
-          {output + _m * _n, ldo, quanA->mSPtr, quanA->lds, wqptr->mSPtr},
-          {output + 2 * _m * _n, ldo, quanA->mSPtr, quanA->lds, wqptr->mSPtr},
+          {output + _m * _n, ldo, quanA->mSPtr, quanA->lds, wkptr->mSPtr},
+          {output + 2 * _m * _n, ldo, quanA->mSPtr, quanA->lds, wvptr->mSPtr},
       };
       ret = kernel.compute<true,false>({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
       delete quanA;
@@ -920,8 +920,8 @@ JBLAS_CODE jblas_QKVs8fp32pern_f32f32_forward(float* activation, SS8Fp32PerN* wq
       };
       GemmKernel::CParam oparams[3]{
           {output, ldo, quanA->mZPtr, quanA->mSPtr, quanA->lds, wqptr->mSPtr},
-          {output + _m * _n, ldo, quanA->mZPtr, quanA->mSPtr, quanA->lds, wqptr->mSPtr},
-          {output + 2 * _m * _n, ldo, quanA->mZPtr, quanA->mSPtr, quanA->lds, wqptr->mSPtr},
+          {output + _m * _n, ldo, quanA->mZPtr, quanA->mSPtr, quanA->lds, wkptr->mSPtr},
+          {output + 2 * _m * _n, ldo, quanA->mZPtr, quanA->mSPtr, quanA->lds, wvptr->mSPtr},
       };
       ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
       delete quanA;

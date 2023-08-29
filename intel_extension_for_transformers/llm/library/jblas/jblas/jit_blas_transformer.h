@@ -128,6 +128,8 @@ class QKVGemmInterfacePackWeightParallelAB {
         dbgprint = false;
       }
     }
+    auto paraA = getActivationPtr()->createParallel(_param.M, _param.K);
+    auto paraB = getWeightPtr()->createParallel(_param.M, _param.K);
     omp_set_num_threads(cb.mNumThreads);
 #pragma omp parallel
     {
@@ -136,7 +138,9 @@ class QKVGemmInterfacePackWeightParallelAB {
         getActivationPtr()->launch(_param.paramA, tidx, paraA);
       }
       if (_LaunchB) {
-        getWeightPtr()->launch(_param.paramB, tidx, paraB);
+        for (size_t i = 0; i < _param.Batch; i++) {
+          getWeightPtr()->launch(_param.paramsB[i], tidx, paraB);
+        }
       }
       if (_LaunchA || _LaunchB) {
 #pragma omp barrier
