@@ -200,6 +200,47 @@ class StorageSimpleScale {
   utils::aligned_vector<T> mScales;
 };
 
+template <typename T>
+class StorageWeightReduce {
+ public:
+  T* mRPtr = NULL;
+  size_t mRSize = 0;
+
+  void resize(int NPad, int KBlks) {
+    mReduce.resize((size_t)NPad * KBlks);
+    mRPtr = mReduce.data();
+    mRSize = mReduce.size();
+  }
+
+ protected:
+  size_t myDataSerializedSize() {
+    size_t totalsize = 0;
+    totalsize += sizeof(mRSize);
+    totalsize += mRSize * sizeof(mRPtr[0]);
+    return totalsize;
+  }
+  void mySerializeDataToBuffer(int8_t*& wptr) {
+    utils::serialize(wptr, mRSize);
+    for (size_t i = 0; i < mRSize; i++) {
+      utils::serialize(wptr, mRPtr[i]);
+    }
+  }
+  void myDeserializeDataBuffer(int8_t*& rptr, int memalloc) {
+    size_t rsize = utils::deserialize<size_t>(rptr);
+    if (memalloc) {
+      mReduce.resize(rsize);
+      std::memcpy(mReduce.data(), rptr, rsize * sizeof(mReduce[0]));
+      mRPtr = mReduce.data();
+      mRSize = mReduce.size();
+    } else {
+      mRPtr = (T*)rptr;
+      mRSize = rsize;
+    }
+    rptr += rsize * sizeof(mReduce[0]);
+  }
+  utils::aligned_vector<T> mReduce;
+};
+
 class StorageWeightS8ScaleFp32 : public prologue::weight_comp::PackedWeightKBlock,
                                  public StorageWeight8Bit,
                                  public StorageSimpleScale<float> {
@@ -464,7 +505,7 @@ class WeightS8ScaleFp32 {
   }
 };
 
-class StorageWeightS8ScaleFp32PerChannelN : public StorageWeightS8ScaleFp32 {
+class StorageWeightS8ScaleFp32PerChannelN : public StorageWeightS8ScaleFp32, public StorageWeightReduce<float> {
  public:
   StorageWeightS8ScaleFp32PerChannelN(jblas::gemm::GemmCoreType _type) : StorageWeightS8ScaleFp32(_type) {
     mType = static_cast<int>(WeightCompType::WeightS8ScaleFp32PerChannelN);
@@ -474,13 +515,34 @@ class StorageWeightS8ScaleFp32PerChannelN : public StorageWeightS8ScaleFp32 {
     PackedWeightKBlock::resize(NPad, KPad, K);  // kblock==K
     StorageWeight8Bit::resize(NPad, KPad);
     StorageSimpleScale<float>::resize(NPad, 1);
+    StorageWeightReduce<float>::resize(NPad, 1);
+  }
+
+ protected:
+  virtual size_t getDataSerializedSize() override {
+    size_t totalsize = StorageWeight8Bit::myDataSerializedSize() + StorageSimpleScale<float>::myDataSerializedSize() +
+                       StorageWeightReduce<float>::myDataSerializedSize();
+    return totalsize;
+  }
+  virtual void serializeDataToBuffer(void* buf) override {
+    auto wptr = reinterpret_cast<int8_t*>(buf);
+    StorageWeight8Bit::mySerializeDataToBuffer(wptr);
+    StorageSimpleScale<float>::mySerializeDataToBuffer(wptr);
+    StorageWeightReduce<float>::mySerializeDataToBuffer(wptr);
+  }
+  virtual void deserializeDataBuffer(void* buf, int memalloc) override {
+    auto rptr = reinterpret_cast<int8_t*>(buf);
+    StorageWeight8Bit::myDeserializeDataBuffer(rptr, memalloc);
+    StorageSimpleScale<float>::myDeserializeDataBuffer(rptr, memalloc);
+    StorageWeightReduce<float>::myDeserializeDataBuffer(rptr, memalloc);
   }
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class WeightS8ScaleFp32PerChannelN : public WeightS8ScaleFp32<_GemmCore_T, ISA_T> {
  public:
-  using Param = typename WeightS8ScaleFp32<_GemmCore_T, ISA_T>::Param;
+  using Parent = WeightS8ScaleFp32<_GemmCore_T, ISA_T>;
+  using Param = typename Parent::Param;
   using StorageWeight = StorageWeightS8ScaleFp32PerChannelN;
   using SType = float;
   using WeightBaseFloat = jblas::prologue::gemm::WeightBase<float, ISA_T>;
@@ -502,7 +564,33 @@ class WeightS8ScaleFp32PerChannelN : public WeightS8ScaleFp32<_GemmCore_T, ISA_T
     auto stor = dynamic_cast<StorageWeight*>(ptr);
     if (stor) {
       std::memcpy(stor->mSPtr, scales, N * sizeof(scales[0]));
+      reduceWeight(N, K, B, ldb, scales, stor->mRPtr);
       WeightS8ScaleFp32<_GemmCore_T, ISA_T>::reorderWeight(N, K, B, ldb, stor->mWPtr);
+    }
+  }
+
+ protected:
+  void reduceWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales, float* rptr) {
+    utils::parallel::Parallel2DRowMajor _para;
+    utils::CpuBase cb;
+    _para.update(K, N, K, 16, cb.mNumThreads);
+    omp_set_num_threads(cb.mNumThreads);
+#pragma omp parallel
+    {
+      int tidx = omp_get_thread_num();
+      int colidx, rowidx, rowsize, colsize;
+      _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+      if (rowsize > 0 && colsize > 0) {
+        int rowremain = utils::remainsize(rowidx, K,
+                                          rowsize);  // rowremain: src valid size. rowsize: padded size
+        int colremain = utils::remainsize(colidx, N, colsize);
+        const auto src = B + rowidx * ldb + colidx;
+        const auto dst = rptr + colidx;
+        using RowReduceSum = kernel::wrapper::QuantS8RowReduceSum<float>;
+        auto ret = RowReduceSum::template forward<ISA_T>(  //
+            src, ldb, scales + colidx, rowremain, colremain, dst);
+        assert(ret == JblasSuccess);
+      }
     }
   }
 };
@@ -1286,7 +1374,7 @@ using GemmSKernelDynamicS4FullRangeFp32KBlock = jblas::wrapper::gemm_kblock::Gem
 
 using GemmDynamicS8Fp32PerChannelN = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8_ss,
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8,  //
         jblas::prologue::gemm::ActivationF32S8KBlockQuantize,
         jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
         jblas::epilogue::gemm::DequantInt32ToFp32>,

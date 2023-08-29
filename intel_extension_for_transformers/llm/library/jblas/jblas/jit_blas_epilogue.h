@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #pragma once
+#include <tuple>
+
 #include "jit_base.hpp"
 #include "jit_blas.h"
 #include "jit_blas_utils.h"
@@ -24,8 +26,10 @@ namespace gemm {
 template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T>
 class AccumulatorWriteBack {
  public:
+  using SType = _SRC_T;
+  using DType = _DST_T;
   struct Param {
-    _DST_T* C;
+    DType* C;
     int ldc;
     void* elt_const_v;
   };
@@ -35,20 +39,24 @@ class AccumulatorWriteBack {
                      const int N, const Param& _param, Eltops... ops) {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    bool constexpr Valid = !std::is_same<_DST_T, jblas::utils::bf16>::value ? true : std::is_same<_SRC_T, float>::value;
+    bool constexpr Valid = !std::is_same<DType, utils::bf16>::value || std::is_same<SType, float>::value;
     static_assert(Valid, "fp32 to bf16 conversion only.");
-    if (std::is_same<_DST_T, jblas::utils::bf16>::value) {
+    if (std::is_same<DType, utils::bf16>::value) {
       return kernel::wrapper::Memcpy2DFp32CvtBf16::template forward<ISA_T>(
-          (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T), false);
-    } else if (sizeof(_SRC_T) == sizeof(_DST_T)) {
-      return kernel::wrapper::Memcpy2D::template forward<ISA_T, _SRC_T, _DST_T>(
-          (void*)cacheptr, (void*)cptr, M, N * sizeof(_DST_T), cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T),
+          (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(SType), _param.ldc * sizeof(DType), false);
+    } else if (std::is_same<std::tuple<SType, DType>, std::tuple<utils::fp16, float>>::value) {
+      return kernel::wrapper::Memcpy2DFp16CvtFp32::template forward<ISA_T>(
+          (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(SType), _param.ldc * sizeof(DType), false);
+    } else if (sizeof(SType) == sizeof(DType)) {
+      return kernel::wrapper::Memcpy2D::template forward<ISA_T, SType, DType>(
+          (void*)cacheptr, (void*)cptr, M, N * sizeof(DType), cachestep * sizeof(SType), _param.ldc * sizeof(DType),
           _param.elt_const_v, ops...);
     } else {
       assert(false);
     }
   }
 };
+
 template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T, JBLAS_ELTWISEOP _OP>
 class CustomAccumulatorWriteBackWithEltop {
  public:
@@ -76,6 +84,8 @@ template <JBLAS_ISA ISA_T>
 using AccumulatorWriteBackBf16 = AccumulatorWriteBack<ISA_T, utils::bf16, utils::bf16>;
 template <JBLAS_ISA ISA_T>
 using AccumulatorWriteBackFp16 = AccumulatorWriteBack<ISA_T, utils::fp16, utils::fp16>;
+template <JBLAS_ISA ISA_T>
+using AccumulatorWriteBackFp16Fp32 = AccumulatorWriteBack<ISA_T, utils::fp16, float>;
 template <JBLAS_ISA ISA_T>
 using AccumulatorWriteBackFp32Bf16 = AccumulatorWriteBack<ISA_T, float, utils::bf16>;
 

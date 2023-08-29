@@ -103,8 +103,8 @@ class GemmLauncherPackWeight {
         }
         int k_tail = k_remain - k_paddedle;
         if (k_tail) {
-          int acache_step = 0;
           AType* aptr_cache = tmpA;
+          int acache_step = 0;
           mProA.getActivation(&aptr_cache, &acache_step, _param.paramA, m_remain, k_tail, (blk_m + i + _config.rowidx),
                               iterk + k_paddedle);
           mGemmCore.forward(aptr_cache, bptr_cache + k_paddedle * GemmCore::NTILE, cptr_cache, m_remain, n_padded,
@@ -264,7 +264,7 @@ JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
 using GemmKernel48 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
-        jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8,           //
+        jblas::gemm::GemmCore_Row_NN_16x48_AMX_U8S8,           //
         jblas::prologue::gemm::ActivationBase,                 //
         jblas::prologue::gemm::WeightPack,                     //
         jblas::epilogue::gemm::AlphaBetaProcessS32U8>,
@@ -273,7 +273,7 @@ using GemmKernel48 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
-        jblas::gemm::GemmCore_Row_NN_16x64_AMX_INT8,           //
+        jblas::gemm::GemmCore_Row_NN_16x64_AMX_U8S8,           //
         jblas::prologue::gemm::ActivationBase,                 //
         jblas::prologue::gemm::WeightPack,                     //
         jblas::epilogue::gemm::AlphaBetaProcessS32U8>,
@@ -282,7 +282,7 @@ using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
 using GemmKernelSSFp32 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
-        jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8_ss,        //
+        jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8,           //
         jblas::prologue::gemm::ActivationBase,                 //
         jblas::prologue::gemm::WeightPack,                     //
         jblas::epilogue::gemm::DequantInt32ToFp32>,
@@ -291,7 +291,7 @@ using GemmKernelSSFp32 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeig
 using GemmKernelDynamicQuant = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
-        jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8_ss,        //
+        jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8,           //
         jblas::prologue::gemm::ActivationFp32SymS8Quantize,    //
         jblas::prologue::gemm::WeightPack,                     //
         jblas::epilogue::gemm::DequantInt32ToFp32>,

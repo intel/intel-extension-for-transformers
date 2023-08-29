@@ -72,9 +72,9 @@ using AMX_INT8_KBLOCK_Fp32Fp32 = jblas::wrapper::gemm_kblock::GemmInterfaceKBloc
 
 template <template <class GC, JBLAS_ISA ISA> class ProB>
 using AMX_INT8_PerN_Fp32Fp32 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        JblasAMX_INT8, jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8_ss,
-        jblas::prologue::gemm::ActivationFp32SymS8Quantize, ProB, jblas::epilogue::gemm::DequantInt32ToFp32>,
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<JblasAMX_INT8, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8,
+                                                             jblas::prologue::gemm::ActivationFp32SymS8Quantize, ProB,
+                                                             jblas::epilogue::gemm::DequantInt32ToFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
 
 template <template <class GC, JBLAS_ISA ISA> class ProB>
@@ -155,11 +155,12 @@ static JBLAS_CODE jblas_s8fp32perN_f32f32_forward(float* activation, SS8Fp32PerN
       delete quanA;
     } else if (_cd->AVX512_VNNI()) {
       assert(false);
-      /*using GemmKernel = AVX512_VNNI_PerN_Fp32Fp32<WS8Fp32>;
+      using GemmKernel = AVX512_VNNI_PerN_Fp32Fp32<WS8Fp32>;
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, NULL);
-      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo});
-      delete quanA;*/
+      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo, quanA->mZPtr,
+                                         quanA->mSPtr, quanA->lds, weiptr->mRPtr, weiptr->mSPtr});
+      delete quanA;
     }
   }
   return ret;
@@ -236,6 +237,7 @@ class Gelu {
     return JblasSuccess;
   }
 };
+
 template <JBLAS_ISA ISA_T>
 using GeluFp32 = Gelu<ISA_T, float>;
 

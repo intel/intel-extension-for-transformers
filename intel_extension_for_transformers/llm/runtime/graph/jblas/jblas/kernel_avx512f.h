@@ -30,6 +30,9 @@ namespace avx512f {
 #if CompileAMXBF16()
 #pragma GCC target("avx512bf16")
 #endif
+#if CompileFP16()
+#pragma GCC target("avx512fp16")
+#endif
 #else
 #endif
 
@@ -814,6 +817,60 @@ static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, voi
   }
 #endif
   return JblasSuccess;
+}
+
+static inline JBLAS_CODE fp32_cvt_fp16_2D_write_back(const float* src_ptr, utils::fp16* dst_ptr, int row, int col,
+                                                     int src_step, int dst_step, bool zeropadding) {
+#if CompileFP16()
+  const int npadding = (dst_step - col) * sizeof(utils::fp16);
+  constexpr int simd_proc_elt = 16;
+  auto col_body = col / simd_proc_elt * simd_proc_elt;
+  auto col_tail = col % simd_proc_elt;
+  const auto tail_mask = _cvtu32_mask16((1U << col_tail) - 1);
+  for (int i = 0; i < row; i++) {
+    const auto src = src_ptr + i * src_step;
+    const auto dst = dst_ptr + i * dst_step;
+    int j = 0;
+    for (; j < col_body; j += simd_proc_elt) {
+      _mm256_storeu_ph(dst + j, _mm512_cvtxps_ph(_mm512_loadu_ps(src + j)));
+    }
+    if (col_tail > 0) {
+      _mm256_mask_storeu_epi16(  //
+          dst + j, tail_mask, _mm256_castph_si256(_mm512_cvtxps_ph(_mm512_maskz_loadu_ps(tail_mask, src + j))));
+    }
+    if (zeropadding && npadding) std::memset(dst + col, 0, npadding);
+  }
+  return JblasSuccess;
+#else
+  return JblasNotSupport;
+#endif
+}
+
+static inline JBLAS_CODE fp16_cvt_fp32_2D_write_back(const utils::fp16* src_ptr, float* dst_ptr, int row, int col,
+                                                     int src_step, int dst_step, bool zeropadding) {
+#if CompileFP16()
+  const int npadding = (dst_step - col) * sizeof(float);
+  constexpr int simd_proc_elt = 16;
+  auto col_body = col / simd_proc_elt * simd_proc_elt;
+  auto col_tail = col % simd_proc_elt;
+  const auto tail_mask = _cvtu32_mask16((1U << col_tail) - 1);
+  for (int i = 0; i < row; i++) {
+    const auto src = src_ptr + i * src_step;
+    const auto dst = dst_ptr + i * dst_step;
+    int j = 0;
+    for (; j < col_body; j += simd_proc_elt) {
+      _mm512_storeu_ps(dst + j, _mm512_cvtxph_ps(_mm256_loadu_ph(src + j)));
+    }
+    if (col_tail > 0) {
+      _mm512_mask_storeu_ps(dst + j, tail_mask,
+                            _mm512_cvtxph_ps(_mm256_castsi256_ph(_mm256_maskz_loadu_epi16(tail_mask, src + j))));
+    }
+    if (zeropadding && npadding) std::memset(dst + col, 0, npadding);
+  }
+  return JblasSuccess;
+#else
+  return JblasNotSupport;
+#endif
 }
 
 #ifdef __GNUC__

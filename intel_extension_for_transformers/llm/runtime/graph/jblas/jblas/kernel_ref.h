@@ -936,6 +936,18 @@ static inline JBLAS_CODE broadcast_u8(int num, const uint8_t& srcval, uint8_t* d
   return JblasSuccess;
 }
 
+template <typename _RT>
+static inline JBLAS_CODE quant_s8_row_reduce_sum(const int8_t* srcptr, int ldsrc, const float* scales, int row, int col,
+                                                 _RT* reduce) {
+  std::memset(reduce, 0, sizeof(reduce[0]) * col);
+  for (int i = 0; i < row; i++) {
+    for (int j = 0; j < col; j++) {
+      reduce[j] += _RT(srcptr[i * ldsrc + j] * scales[j]);
+    }
+  }
+  return JblasSuccess;
+}
+
 static inline JBLAS_CODE remove_zeropoint_bias(float* accptr, int ldacc, int row, int col, uint8_t* zps, float* scales,
                                                int lds, const float* reduce) {
   for (int i = 0; i < row; i++) {
