@@ -832,8 +832,8 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
             kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
           }
         } else {
-          using Kernel = WeiS8Fp32<GcCompInt8, JblasAVX512F>;
-          using KernelRef = WeiS8Fp32<GcCompInt8, JblasNoSIMD>;
+          using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
+          using KernelRef = WeiS8Fp32<GcCompInt8KBlock, JblasNoSIMD>;
           static Kernel kernel;
           static Kernel kernelref;
           packedw = kernel.createStorage(n, k, params.block_size);
