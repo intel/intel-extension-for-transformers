@@ -155,7 +155,7 @@ static JBLAS_CODE jblas_s8fp32perN_f32f32_forward(float* activation, SS8Fp32PerN
       delete quanA;
     } else if (_cd->AVX512_VNNI()) {
       assert(false);
-      using GemmKernel = AVX512_VNNI_PerN_Fp32Fp32<WS8Fp32>;
+      using GemmKernel = AVX512_VNNI_PerN_Fp32Fp32<WS8Fp32PerN>;
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, NULL);
       ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo, quanA->mZPtr,
