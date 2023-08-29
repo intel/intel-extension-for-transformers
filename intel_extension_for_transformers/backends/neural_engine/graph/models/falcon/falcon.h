@@ -29,7 +29,7 @@ static const model_scratch falcon_mem_req(int n_layers) {
       return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
     // TODO(hengyu): add more variants besides 6B
     case 60:
-      return {4 * 2048ull * MB, 4 * 2048ull * MB, 4 * 4096ull * MB, 4 * 3072ull * MB};
+      return {2 * 2048ull * MB, 2 * 2048ull * MB, 2 * 4096ull * MB, 2 * 3072ull * MB};
     default:
       MODEL_ASSERT(false);
   }

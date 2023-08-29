@@ -143,7 +143,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
         struct ne_tensor* k = ne_view_3d(ctx0, kv_self.k, head_dim, N, n_head_kv, ne_element_size(kv_self.k) * head_dim,
                                          ne_element_size(kv_self.k) * head_dim * n_ctx,
                                          il * n_ctx * ne_element_size(kv_self.k) * head_dim * n_head_kv +
-                                             n_past * ne_element_size(kv_self.k) * head_dim * n_head_kv);
+                                             n_past * ne_element_size(kv_self.k) * head_dim);
         struct ne_tensor* v = ne_view_3d(
             ctx0, kv_self.v, N, head_dim, n_head_kv, n_ctx * ne_element_size(kv_self.v),
             n_ctx * ne_element_size(kv_self.v) * head_dim,
