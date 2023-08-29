@@ -56,7 +56,7 @@ static const model_scratch opt_mem_req(int n_layers) {
 
 class OPT : public IModel {
  private:
-  model_name name = MODEL_OPT;
+  model_archs arch  = MODEL_OPT;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab, word_embed_proj_dim, max_seq_len;
   bool do_layer_norm_before = true;

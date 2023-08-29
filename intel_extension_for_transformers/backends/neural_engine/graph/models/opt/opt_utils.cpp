@@ -38,8 +38,7 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 #include "models/models.h"
-
-void model_load_internal(const std::string& fname, model_name name, model_context& lctx, int n_ctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
                          ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
                          model_progress_callback progress_callback, void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
@@ -203,3 +202,22 @@ void OPT::load(model_context& lctx, model_progress_callback progress_callback, v
 }
 
 #undef MODEL_BACKEND_OFFLOAD
+
+class opt_quant_layer : public quant_layer_base {
+ public:
+  virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
+                                                 ne_type type) override {
+    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
+    if (layername == "model.decoder.embed_tokens.weight"||layername == "model.decoder.embed_positions.weight") {
+      // special layer process, can be loaded by config file
+      return quant_params_internal();  // return q4_0 to cover the usage of getrow
+    }
+    quantize &= (ne.size() == 2);
+    if (quantize) {
+      return mGCfg;  // use global quant config
+    } else {
+      return quant_params_internal{quant_bits::count};  // non-quant
+    }
+  }
+};
+REGISTER_QUANT_LAYER_CLASS(opt);
