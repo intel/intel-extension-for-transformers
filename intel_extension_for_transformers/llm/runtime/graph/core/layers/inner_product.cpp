@@ -423,13 +423,13 @@ class Dequant_Add_Gelu : protected DequantAdd<ISA_T, _T> {
   using GeluKernel = jblas::epilogue::gemm::AccumulatorWriteBackWithGeluFp32<ISA_T>;
   using Param = typename Parent::Param;
 
-  JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+  JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
     Parent::forward(cacheptr, cachestep, M_offset, N_offset, M, N, _param);
-    auto COffset = M_offset * _param.ldc + N_offset;
-    auto cptr = _param.C + COffset;
-    typename GeluKernel::Param param{_param.C, _param.ldc, NULL};
-    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
+    auto COffset = M_offset * _param.Dequant.ldc + N_offset;
+    auto cptr = _param.Dequant.C + COffset;
+    typename GeluKernel::Param param{_param.Dequant.C, _param.Dequant.ldc, NULL};
+    auto ret = ker.forward(cptr, _param.Dequant.ldc, M_offset, N_offset, M, N, param);
     return ret;
   }
   GeluKernel ker;
@@ -567,6 +567,81 @@ class GeluFusedInterface {
     Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
     _paral.update(_param.Seq, _param.FMid, _param.Fin, bptr->mBlockSize, cb.mNumThreads);
     _paral2.update(_param.Seq, _param.FOut, _param.FMid, bptr->mBlockSize, cb.mNumThreads);
+
+    omp_set_num_threads(cb.mNumThreads);
+#pragma omp parallel
+    {
+      int tidx = omp_get_thread_num();
+      mActLauncher.mProA.launch(_param.paramA, tidx, paraA);
+#pragma omp barrier
+      {
+        int colidx, rowidx, rowsize, colsize;
+        _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+        if (rowsize > 0 && colsize > 0) {
+          ActConfig _actconfig{
+              rowidx, colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(), cb.mL2Cache};
+          mActLauncher.launch(
+              _actconfig, {_param.Seq, _param.FMid, _param.Fin, _param.paramA, _param.paramW1, _param.param1, NULL});
+        }
+      }
+#pragma omp barrier
+      mLauncher.mProA.launch(_param.paramA2, tidx, paraA2);
+#pragma omp barrier
+      {
+        int colidx, rowidx, rowsize, colsize;
+        _paral2.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+        if (rowsize > 0 && colsize > 0) {
+          Config _config{
+              rowidx,     colidx, rowsize, colsize, _paral2.getMStep(), _paral2.getNStep(), _paral2.getKStep(),
+              cb.mL2Cache};
+          mLauncher.launch(_config,
+                           {_param.Seq, _param.FOut, _param.FMid, _param.paramA2, _param.paramW2, _param.param2, NULL});
+        }
+      }
+    }
+    return JblasSuccess;
+  }
+
+ protected:
+  _Launcher_T mLauncher;
+  _GeluLauncher_T mActLauncher;
+};
+
+template <class _GeluLauncher_T, class _Launcher_T>
+class GeluFusedInterfacePerN {
+ public:
+  struct Arguments {
+    const int Seq, Fin, FMid, FOut;
+    const typename _GeluLauncher_T::AParam paramA;
+    const typename _Launcher_T::AParam paramA2;
+    const typename _GeluLauncher_T::BParam paramW1;
+    const typename _Launcher_T::BParam paramW2;
+    const typename _GeluLauncher_T::EpiParam param1;
+    const typename _Launcher_T::EpiParam param2;
+  };
+  using Config = typename _Launcher_T::ParallelConfig;
+  using ActConfig = typename _GeluLauncher_T::ParallelConfig;
+  using ActivationType = typename _Launcher_T::PrologueA;
+  using GemmCore = typename _Launcher_T::GemmCore;
+  using LArguments = typename _Launcher_T::Param;
+  using CParam = typename _Launcher_T::EpiParam;
+  using Parallel = jblas::utils::parallel::Parallel2DGemm<GemmCore>;
+  ActivationType* getActivationPtr() { return &mLauncher.mProA; }
+
+  // forward=packB+compute
+  JBLAS_CODE compute(const Arguments& _param) {
+    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    if (bptr == nullptr) {
+      return JblasInvalidParam;
+    }
+    // dynamic quantization: Seq*Fin
+    auto paraA = mActLauncher.mProA.createParallel(_param.Seq, _param.Fin);
+    auto paraA2 = mLauncher.mProA.createParallel(_param.Seq, _param.FMid);
+    auto cb = utils::CpuBase();
+    Parallel _paral = Parallel();   // w1 from Seq* Fin=>FMid
+    Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
+    _paral.update(_param.Seq, _param.FMid, _param.Fin, cb.mNumThreads);
+    _paral2.update(_param.Seq, _param.FOut, _param.FMid, cb.mNumThreads);
 
     omp_set_num_threads(cb.mNumThreads);
 #pragma omp parallel
@@ -1383,7 +1458,7 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32pern_f32f32_forward(float* activation
     if (_cd->AMX_INT8()) {
       using GemmKernel = custom::wrapper::kblock::amx_int8::AddGemmDynamicS8PerN;
       using GeluGemmKernel = custom::wrapper::kblock::amx_int8::AddGeluGemmDynamicSPerN;
-      using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      using FusedInter = custom::wrapper::transformer::GeluFusedInterfacePerN<GeluGemmKernel, GemmKernel>;
       static FusedInter finter;
       int lda = fin;
       int ldtmp1 = fmid;
