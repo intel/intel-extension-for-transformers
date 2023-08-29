@@ -6,8 +6,8 @@ import torch
 import transformers
 from datasets import load_dataset
 import neural_compressor.adaptor.pytorch as nc_torch
-from intel_extension_for_transformers.optimization import BenchmarkConfig
-from intel_extension_for_transformers.optimization.benchmark import benchmark
+from intel_extension_for_transformers.transformers import BenchmarkConfig
+from intel_extension_for_transformers.transformers.benchmark import benchmark
 
 
 def get_example_inputs(model_name, dataset_name='sst2'):

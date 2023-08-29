@@ -27,7 +27,7 @@ import transformers
 from datasets import load_dataset, load_metric
 
 # Need to use itrex domain toolkit
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     DistillationConfig,
     PrunerConfig,
     PruningConfig,
@@ -36,7 +36,7 @@ from intel_extension_for_transformers.optimization import (
     metrics,
     objectives,
 )
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 class ItrexOpt(object):
     def __init__(self, config_file, no_cuda):
         if int(os.environ.get("LOCAL_RANK", -1)) != -1 and no_cuda:
-            from intel_extension_for_transformers.optimization.utils.utility import (
+            from intel_extension_for_transformers.transformers.utils.utility import (
                 distributed_init,
             )
 

@@ -6,8 +6,8 @@ on:
     paths:
        - '.github/workflows/cpp-graph-test.yml'
        - '.github/workflows/script/models/cpp_graph_inference.sh'
-       - 'intel_extension_for_transformers/backends/neural_engine/graph/**'
-       - '!intel_extension_for_transformers/backends/neural_engine/graph/README.md'
+       - 'intel_extension_for_transformers/llm/runtime/graph/**'
+       - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled

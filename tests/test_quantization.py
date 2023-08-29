@@ -5,7 +5,7 @@ import shutil
 import torch
 import torch.utils.data as data
 import unittest
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     metrics,
     objectives,
     OptimizedModel,
@@ -13,8 +13,8 @@ from intel_extension_for_transformers.optimization import (
     QuantizationMode,
     NoTrainerOptimizer,
 )
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
-from intel_extension_for_transformers.optimization.trainer import NLPSeq2SeqTrainer
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.trainer import NLPSeq2SeqTrainer
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
