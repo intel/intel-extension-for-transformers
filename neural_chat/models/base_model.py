@@ -26,7 +26,7 @@ from neural_chat.utils.common import is_audio_file
 from neural_chat.pipeline.plugins.prompts.prompt import generate_qa_prompt, generate_prompt
 
 
-def construct_parameters(query, model_name, config):
+def construct_parameters(query, model_name, device, config):
     params = {}
     params["prompt"] = query
     params["temperature"] = config.temperature
@@ -42,6 +42,7 @@ def construct_parameters(query, model_name, config):
     params["force_words_ids"] = config.force_words_ids
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
+    params["device"] = device
     return params
 
 
@@ -81,6 +82,7 @@ class BaseModel(ABC):
         self.safety_checker = None
         self.intent_detection = False
         self.cache = None
+        self.device = None
 
     def match(self, model_path: str):
         """
@@ -114,15 +116,16 @@ class BaseModel(ABC):
         }
         """
         self.model_name = kwargs["model_name"]
+        self.device = kwargs["device"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
-                   dtype=kwargs["dtype"],
                    use_hpu_graphs=kwargs["use_hpu_graphs"],
                    cpu_jit=kwargs["cpu_jit"],
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
-                   use_deepspeed=kwargs["use_deepspeed"])
+                   use_deepspeed=kwargs["use_deepspeed"],
+                   optimization_config=kwargs["optimization_config"])
 
     def predict_stream(self, query, config=None):
         """
@@ -134,7 +137,7 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        return predict_stream(**construct_parameters(query, self.model_name, config))
+        return predict_stream(**construct_parameters(query, self.model_name, self.device, config))
 
     def predict(self, query, config=None):
         """
