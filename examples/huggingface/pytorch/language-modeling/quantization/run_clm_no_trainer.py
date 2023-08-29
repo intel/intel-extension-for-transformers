@@ -312,7 +312,7 @@ if args.quantize:
     def eval_func(model):
         acc = evaluator.evaluate(model)
         return acc
-    eval_func should be set when tuning alpha.
+    # eval_func should be set when tuning alpha.
     eval_func = eval_func if isinstance(args.alpha, list) else None
 
     q_model = quantization.fit(
