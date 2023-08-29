@@ -557,7 +557,7 @@ class StorageWeight : public prologue::PackedWeight {
     }
   }
 
-  static size_t getSize(int NPad, int KPad, int EleBytes) { return (size_t)NPad * KPad * EleBytes; }
+  static size_t getSize(size_t NPad, size_t KPad, size_t EleBytes) { return NPad * KPad * EleBytes; }
 
   template <typename WT>
   inline WT* getPtr() const {

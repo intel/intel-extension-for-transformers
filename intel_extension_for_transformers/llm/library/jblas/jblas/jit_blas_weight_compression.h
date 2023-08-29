@@ -1083,6 +1083,12 @@ class PackedWeightParser {
           ptr->deserializeBuffer(rptr, memalloc);
           return ptr;
         }
+        case WeightCompType::WeightS8ScaleFp32PerChannelN:
+        {
+          auto ptr = new StorageWeightS8ScaleFp32PerChannelN(jblas::gemm::GemmCoreType::Undef);
+          ptr->deserializeBuffer(rptr, memalloc);
+          return ptr;
+        }
         default:
           return nullptr;
       }
