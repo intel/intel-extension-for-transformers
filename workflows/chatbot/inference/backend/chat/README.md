@@ -50,6 +50,7 @@ pip install --no-cache-dir -U urllib3
 pip install --force-reinstall charset-normalizer==3.2.0
 pip install pydub
 ```
+You can also run `pip install -r requirements.txt` to install these dependencies.
 
 # Install git-lfs
 
