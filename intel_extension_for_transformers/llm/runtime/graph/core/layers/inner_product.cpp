@@ -448,10 +448,10 @@ class ZpDequant_Add_Gelu : protected ZpDequantAdd<ISA_T, _T> {
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
     Parent::forward(cacheptr, cachestep, M_offset, N_offset, M, N, _param);
-    auto COffset = M_offset * _param.Dequant.ldc + N_offset;
-    auto cptr = _param.Dequant.C + COffset;
-    auto ret = gelufp32.forward(cptr, _param.Dequant.ldc, M_offset, N_offset, M, N,
-                                {_param.Dequant.C, _param.Dequant.ldc, NULL});
+    auto COffset = M_offset * _param.ZpDequant.ldc + N_offset;
+    auto cptr = _param.ZpDequant.C + COffset;
+    auto ret = gelufp32.forward(cptr, _param.ZpDequant.ldc, M_offset, N_offset, M, N,
+                                {_param.ZpDequant.C, _param.ZpDequant.ldc, NULL});
     return ret;
   }
   GeluKernel gelufp32;
