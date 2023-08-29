@@ -9,9 +9,9 @@ function pytest() {
     local coverage_log_dir=$1
     JOB_NAME=unit_test
 
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/test/pytest || exit 1
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/test/pytest
     if [[ -d /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/test/pytest ]] ; then
-      cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/test/pytest || exit 1
+      cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/test/pytest
     fi
     engine_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
     engine_path="${engine_path}/llm/runtime"
