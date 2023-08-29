@@ -16,7 +16,7 @@
 # limitations under the License.
 
 from typing import Optional, Dict
-
+# pylint: disable=E0611
 from pydantic import BaseModel, Extra
 
 

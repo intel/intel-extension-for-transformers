@@ -16,6 +16,7 @@
 # limitations under the License.
 
 from fastapi.routing import APIRouter
+# pylint: disable=E0611
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import APIRouter

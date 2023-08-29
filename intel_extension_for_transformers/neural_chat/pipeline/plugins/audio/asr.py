@@ -55,15 +55,16 @@ class AudioSpeechRecognition():
             raise Exception("[ASR ERROR] Audio format not supported!")
         audio_dataset = Dataset.from_dict({"audio": [audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
         waveform = audio_dataset[0]["audio"]['array']
+        # pylint: disable=E1101
         inputs = self.processor.feature_extractor(waveform, return_tensors="pt",
-                        sampling_rate=16_000).input_features.to(self.device) # pylint: disable=E1101
+                        sampling_rate=16_000).input_features.to(self.device)
         with torch.cpu.amp.autocast() if self.bf16 else contextlib.nullcontext():
             predicted_ids = self.model.generate(inputs)
+        # pylint: disable=E1101
         result = self.processor.tokenizer.batch_decode(
-            predicted_ids, skip_special_tokens=True, normalize=True)[0] # pylint: disable=E1101
+            predicted_ids, skip_special_tokens=True, normalize=True)[0]
         print(f"generated text in {time.time() - start} seconds, and the result is: {result}")
         return result
-
 
     def pre_llm_inference_actions(self, audio_path):
         return self.audio2text(audio_path)

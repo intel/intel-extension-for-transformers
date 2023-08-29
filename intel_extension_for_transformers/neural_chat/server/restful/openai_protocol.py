@@ -23,6 +23,7 @@ https://github.com/lm-sys/FastChat/blob/main/fastchat/protocol/openai_api_protoc
 from typing import Optional, List, Any, Union
 import time
 import shortuuid
+# pylint: disable=E0611
 from pydantic import BaseModel, Field
 
 

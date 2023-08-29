@@ -16,6 +16,7 @@
 # limitations under the License.
 
 from fastapi import APIRouter
+# pylint: disable=E0611
 from pydantic import BaseModel
 from typing import Optional
 from intel_extension_for_transformers.neural_chat.cli.log import logger

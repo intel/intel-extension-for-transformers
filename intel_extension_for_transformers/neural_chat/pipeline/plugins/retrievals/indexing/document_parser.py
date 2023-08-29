@@ -125,6 +125,7 @@ class DocumentIndexing:
                 documents = []
                 for data, meta in data_collection:
                     metadata = {"source": meta}
+                    # pylint: disable=E1123
                     new_doc = SDocument(content=data, metadata=metadata)
                     documents.append(new_doc)
                 document_store.write_documents(documents)
