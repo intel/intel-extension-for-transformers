@@ -341,12 +341,12 @@ class FFNFusedInterface {
   ActivationType* getActivationPtr() { return &mLauncher.mProA; }
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
     // dynamic quantization: Seq*Fin
-    auto cb = utils::CpuBase();
+    auto cb = jblas::utils::CpuBase();
     auto paraA = mLauncher.mProA.createParallel(_param.Seq, _param.Fin, bptr->mBlockSize);
     auto paraA2 = mLauncher.mProA.createParallel(_param.Seq, _param.FMid, bptr->mBlockSize);
 
@@ -431,14 +431,14 @@ class GeluFusedInterface {
 
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
     // dynamic quantization: Seq*Fin
     auto paraA = mActLauncher.mProA.createParallel(_param.Seq, _param.Fin, bptr->mBlockSize);
     auto paraA2 = mLauncher.mProA.createParallel(_param.Seq, _param.FMid, bptr->mBlockSize);
-    auto cb = utils::CpuBase();
+    auto cb = jblas::utils::CpuBase();
     Parallel _paral = Parallel();   // w1 from Seq* Fin=>FMid
     Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
     _paral.update(_param.Seq, _param.FMid, _param.Fin, bptr->mBlockSize, cb.mNumThreads);
@@ -506,14 +506,14 @@ class GeluFusedInterfacePerN {
 
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
     // dynamic quantization: Seq*Fin
     auto paraA = mActLauncher.mProA.createParallel(_param.Seq, _param.Fin);
     auto paraA2 = mLauncher.mProA.createParallel(_param.Seq, _param.FMid);
-    auto cb = utils::CpuBase();
+    auto cb = jblas::utils::CpuBase();
     Parallel _paral = Parallel();   // w1 from Seq* Fin=>FMid
     Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
     _paral.update(_param.Seq, _param.FMid, _param.Fin, cb.mNumThreads);
@@ -577,11 +577,11 @@ class FpGeluFusedInterface {
   using Parallel = jblas::utils::parallel::Parallel2DGemmKBlockFixed<GemmCore>;
 
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
-    auto cb = utils::CpuBase();
+    auto cb = jblas::utils::CpuBase();
     Parallel _paral = Parallel();   // w1 from Seq* Fin=>FMid
     Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
     _paral.update(_param.Seq, _param.FMid, _param.Fin, bptr->mBlockSize, cb.mNumThreads);
