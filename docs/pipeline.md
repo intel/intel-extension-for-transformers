@@ -8,7 +8,7 @@
     2.2. [Pipeline Inference for Executor Backend](#pipeline-inference-for-executor-backend)
 
 ## Introduction
-The pipeline is inherited from [huggingface/transformers pipeline](https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.mdx), it is simple to use any model from [Hub](https://huggingface.co/models) for inference on any language, computer vision, speech, and multimodal tasks. Two features for int8 model inference and model inference on [executor backend](../intel_extension_for_transformers/backends/neural_engine/) have been added to the extension.
+The pipeline is inherited from [huggingface/transformers pipeline](https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.mdx), it is simple to use any model from [Hub](https://huggingface.co/models) for inference on any language, computer vision, speech, and multimodal tasks. Two features for int8 model inference and model inference on [executor backend](../intel_extension_for_transformers/llm/runtime/) have been added to the extension.
 
 
 ## Examples
@@ -17,7 +17,7 @@ The pipeline is inherited from [huggingface/transformers pipeline](https://githu
 
 1. Initialize a pipeline instance with a model name and specific task.
     ```py
-    from intel_extension_for_transformers.optimization.pipeline import pipeline
+    from intel_extension_for_transformers.transformers.pipeline import pipeline
     text_classifier = pipeline(
         task="text-classification",
         model="Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static",
@@ -38,7 +38,7 @@ For executor, we only accept ONNX model now for pipeline. Users can get ONNX mod
 
 1. Initialize a pipeline instance with an ONNX model, model config, model tokenizer and specific backend. The MODEL_NAME is the pytorch model name you used for exporting the ONNX model.
     ```py
-    from intel_extension_for_transformers.optimization.pipeline import pipeline
+    from intel_extension_for_transformers.transformers.pipeline import pipeline
     from transformers import AutoConfig, AutoTokenizer
 
     config = AutoConfig.from_pretrained(MODEL_NAME)

@@ -9,10 +9,12 @@ function pytest() {
     local coverage_log_dir=$1
     JOB_NAME=unit_test
 
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/test/pytest || exit 1
-
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/test/pytest
+    if [[ -d /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/test/pytest ]] ; then
+      cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/test/pytest
+    fi
     engine_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
-    engine_path="${engine_path}/backends/neural_engine"
+    engine_path="${engine_path}/llm/runtime"
     echo "engine path is ${engine_path}"
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${engine_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
     coverage erase
@@ -45,7 +47,7 @@ function gtest() {
     pip install cmake
     cmake_path=$(which cmake)
     ln -s ${cmake_path} ${cmake_path}3 || true
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/
 
     mkdir build && cd build && cmake .. -DNE_WITH_SPARSELIB=ON -DNE_WITH_TESTS=ON -DPYTHON_EXECUTABLE=$(which python) && make -j 2>&1 |
         tee -a ${LOG_DIR}/gtest_cmake_build.log
@@ -57,7 +59,7 @@ function gtest() {
         ut_log_name=${LOG_DIR}/unit_test_gtest.log
     fi
 
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/backends/neural_engine/build
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/build
     ctest -V -L "engine_test" 2>&1 | tee ${ut_log_name}
     if [ $(grep -c "FAILED" ${ut_log_name}) != 0 ] ||
         [ $(grep -c "PASSED" ${ut_log_name}) == 0 ] ||
@@ -83,6 +85,7 @@ function install_itrex_base() {
     git config --global --add safe.directory "*"
     git submodule update --init --recursive
     $BOLD_YELLOW && echo "---------------- pip install binary -------------" && $RESET
+    git clean -xdf
     pip install .
 }
 

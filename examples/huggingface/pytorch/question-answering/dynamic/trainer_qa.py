@@ -20,7 +20,7 @@ import os
 
 from typing import Any, Callable, Dict, List, Optional, Union
 from transformers import  is_torch_tpu_available, __version__
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from transformers.trainer_utils import (
     PREFIX_CHECKPOINT_DIR,
     BestRun,

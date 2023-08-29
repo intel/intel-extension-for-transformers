@@ -35,7 +35,7 @@ from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version, send_example_telemetry
 from transformers.utils.versions import require_version
 
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 import time
 os.environ["WANDB_DISABLED"] = "true"
 
