@@ -801,7 +801,6 @@ JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4
                                           float* output, int _m, int _n, int _k, int lda, int ldo) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
-  float alpha = 1.f, beta = 0.f;
   if (wqptr->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK ||
       wqptr->mCoreType == jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK) {
     if (_cd->AMX_INT8() && wqptr->mBlockSize % 128 == 0) {
@@ -845,7 +844,6 @@ JBLAS_CODE jblas_QKVs8fp32_f32f32_forward(float* activation, SS8Fp32* wqptr, SS8
                                           float* output, int _m, int _n, int _k, int lda, int ldo) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
-  float alpha = 1.f, beta = 0.f;
   if (wqptr->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK ||
       wqptr->mCoreType == jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK) {
     if (_cd->AMX_INT8() && wqptr->mBlockSize % 128 == 0) {
@@ -890,7 +888,6 @@ JBLAS_CODE jblas_QKVs8fp32pern_f32f32_forward(float* activation, SS8Fp32PerN* wq
                                               int ldo) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
-  float alpha = 1.f, beta = 0.f;
   if (wqptr->mCoreType == jblas::gemm::GemmCoreType::AVX512_VNNI_8X48 ||
       wqptr->mCoreType == jblas::gemm::GemmCoreType::AMX_INT8_16x48_SS) {
     if (_cd->AMX_INT8()) {
