@@ -683,6 +683,17 @@ using AddGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::A
 using AddGeluGemmDynamicSPerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::Dequant_Add_GeluFp32>;
 using AddGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::DequantAddFp32>;
 }  // namespace amx_int8
+namespace avx512f {
+template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
+using DefualtGemmFp32 = jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+    JblasAVX512F, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F,
+    jblas::prologue::gemm::ActivationBase, ProB, Epi>;
+using AddGeluGemmS8KBlock = DefualtGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmS8KBlock = DefualtGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
+
+using AddGeluGemmS4KBlock = DefualtGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmS4KBlock = DefualtGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
+}
 }  // namespace kblock
 }  // namespace wrapper
 }  // namespace custom
