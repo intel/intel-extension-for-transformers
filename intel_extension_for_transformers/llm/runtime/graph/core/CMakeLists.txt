@@ -13,7 +13,7 @@
 #  limitations under the License.
 
 find_package(Threads REQUIRED)
-file(GLOB layers_srcs "layers/*.cpp")
+file(GLOB layers_srcs "layers/*.cpp" "jblas_common.cpp")
 set(sources ne_layers.c ${layers_srcs})
 
 add_library_w_warning(ne_layers "${sources}")

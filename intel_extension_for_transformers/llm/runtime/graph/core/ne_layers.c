@@ -40,9 +40,7 @@
 #endif
 
 // layers
-
 #include "layers/vec_dot.h"
-#include "layers/inner_product.h"
 #include "vectors/cpu/quantize.h"
 #include "data_types.h"
 #include "layers/Ops.h"
@@ -50,6 +48,7 @@
 #include "layers/ele_wise.h"
 #include "layers/mha_dense.h"
 #include "ne.h"
+#include "ne_jblas.h"
 
 // if C99 - static_assert is noop
 // ref: https://stackoverflow.com/a/53923785/4039976
