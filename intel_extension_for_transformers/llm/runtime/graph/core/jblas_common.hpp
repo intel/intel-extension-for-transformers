@@ -93,7 +93,7 @@ using SS8Fp32PerN = jblas::prologue::weight_comp::gemm_kblcok::StorageWeightS8Sc
 
 using GcCompFp32 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512F;
 using GcCompInt8KBlock = jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK;
-using GcCompBf16 = jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16;
+using GcCompBf16 = jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16;
 using GcCompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 using GcCompInt8 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI;
 
