@@ -30,6 +30,18 @@ using Default = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
 
 }  // namespace avx512f
 
+namespace amx_bf16 {
+JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
+
+template <template <class GC, JBLAS_ISA ISA> class ProB>
+using Default = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16,
+                                                             jblas::prologue::gemm::ActivationConverterFp32, ProB,
+                                                             jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+    jblas::utils::parallel::Parallel2DGemm>;
+
+}  // namespace amx_bf16
+
 namespace amx_int8 {
 JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
 template <template <class GC, JBLAS_ISA ISA> class ProB>
@@ -88,6 +100,12 @@ static JBLAS_CODE jblas_s4fp32kblock_f32f32_forward(float* activation, SS4Fp32* 
   } else if (weiptr->mCoreType == GcCompFp32::TYPE) {
     if (_cd->AVX512F()) {
       using GemmKernel = avx512f::Default<WeiS4ClipFp32>;
+      static GemmKernel kernel;
+      ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, ldo});
+    }
+  } else if (weiptr->mCoreType == GcCompBf16::TYPE) {
+    if (_cd->AMX_BF16()) {
+      using GemmKernel = amx_bf16::Default<WeiS4ClipFp32>;
       static GemmKernel kernel;
       ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, ldo});
     }
