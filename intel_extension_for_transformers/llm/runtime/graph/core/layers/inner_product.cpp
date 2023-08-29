@@ -428,11 +428,11 @@ class Dequant_Add_Gelu : protected DequantAdd<ISA_T, _T> {
     Parent::forward(cacheptr, cachestep, M_offset, N_offset, M, N, _param);
     auto COffset = M_offset * _param.Dequant.ldc + N_offset;
     auto cptr = _param.Dequant.C + COffset;
-    typename GeluKernel::Param param{_param.Dequant.C, _param.Dequant.ldc, NULL};
-    auto ret = ker.forward(cptr, _param.Dequant.ldc, M_offset, N_offset, M, N, param);
+    auto ret = gelufp32.forward(cptr, _param.Dequant.ldc, M_offset, N_offset, M, N,
+                                {_param.Dequant.C, _param.Dequant.ldc, NULL});
     return ret;
   }
-  GeluKernel ker;
+  GeluKernel gelufp32;
 };
 
 template <JBLAS_ISA ISA_T>
@@ -1340,6 +1340,7 @@ bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq,
   safe_delete(w2tmp);
   return support;
 }
+
 JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS4Fp32* w1tmp, SS4Fp32* w2tmp,
                                                            float* b1ptr, float* b2ptr, float* tmp1, float* output,
                                                            int seq, int fin, int fmid, int fout, bool broadcast_bias) {
@@ -1536,6 +1537,10 @@ void jblas_fusion_FFN_Add_GeLu_f32f32_forward(float* activation, void* w1ptr, vo
   } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
     ret = jblas_fusion_FFN_Add_GeLu_s8fp32_f32f32_forward(activation, (SS8Fp32*)w1tmp, (SS8Fp32*)w2tmp, b1ptr, b2ptr,
                                                           tmp1, output, seq, fin, fmid, fout, broadcast_bias);
+  } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
+    ret =
+        jblas_fusion_FFN_Add_GeLu_s8fp32pern_f32f32_forward(activation, (SS8Fp32PerN*)w1tmp, (SS8Fp32PerN*)w2tmp, b1ptr,
+                                                            b2ptr, tmp1, output, seq, fin, fmid, fout, broadcast_bias);
   }
   assert(ret == JblasSuccess);
   safe_delete(w1tmp);
