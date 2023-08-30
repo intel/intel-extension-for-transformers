@@ -11,11 +11,25 @@ In short, ITREX Graph is an experimental feature and may keep changing.
 
 ### Supported Models
 
-Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [LLaMA2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [Dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON-7B](https://huggingface.co/tiiuae/falcon-7b), [StarCoder](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).
+Now we supports following models.
 | model name | INT8 | INT4|
 |---|:---:|:---:|
-|**`Falcon-40B`**| ✅ | ✅ | 
-
+|[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ | 
+|[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ | 
+|[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ | 
+|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf)| ✅ | ✅ | 
+|[LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
+|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| ✅ | ✅ | 
+|[LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
+|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf)| ✅ | ✅ | 
+|[Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ | 
+|[MPT-7B](https://huggingface.co/mosaicml/mpt-7b)| ✅ | ✅ | 
+|[MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
+|[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b)| ✅ | ✅ | 
+|[Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
+|[StarCoder-1B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
+|[StarCoder-3B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
+|[StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
 
 
 ## How to use
