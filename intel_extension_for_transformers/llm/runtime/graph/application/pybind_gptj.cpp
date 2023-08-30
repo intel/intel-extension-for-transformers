@@ -95,7 +95,7 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
   bool do_beam_search = lctx->beam_search;
 
   if (do_beam_search) {
-    res = beam_search(lctx->beam_size, n_predict, lctx, embd_inp_ptr, ind_size, n_threads);
+    res = beam_search(lctx, n_predict, embd_inp_ptr, ind_size, n_threads);
   } else {
     std::vector<model_token> embd_inp(embd_inp_ptr, embd_inp_ptr + ind_size);
     std::vector<model_token> embd;
@@ -154,7 +154,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
 
   bool do_beam_search = lctx->beam_search;
   if (do_beam_search) {
-    embd = beam_search(lctx->beam_size, n_predict, lctx, embd_inp.data(), embd_inp.size(), N_threads);
+    embd = beam_search(lctx, n_predict, embd_inp.data(), embd_inp.size(), N_threads);
     for (auto id : embd_inp) {
       res += model_token_to_str(lctx, id);
     }

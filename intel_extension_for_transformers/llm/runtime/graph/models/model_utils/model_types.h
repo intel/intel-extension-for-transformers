@@ -188,8 +188,8 @@ struct model_vocab {
 
 // reference: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
 struct generation_config {
-  int max_new_tokens;  // n_predict there
-  int min_new_tokens = 0;
+  uint32_t max_new_tokens;  // n_predict there
+  uint32_t min_new_tokens = 0;
   // Exponential penalty to the length that is used with beam-based generation. It is applied as an exponent to
   // the sequence length, which in turn is used to divide the score of the sequence. Since the score is the log
   // likelihood of the sequence (i.e. negative), `length_penalty` > 0.0 promotes longer sequences, while
