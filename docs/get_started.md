@@ -13,8 +13,8 @@
 
 ## Quantization
 ```python
-from intel_extension_for_transformers.optimization import QuantizationConfig, metrics, objectives
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
 model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",config=config)
@@ -38,8 +38,8 @@ output = model(**input).logits.argmax().item()
 
 ## Pruning
 ```python
-from intel_extension_for_transformers.optimization import PrunerConfig, PruningConfig
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import PrunerConfig, PruningConfig
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -55,8 +55,8 @@ model = trainer.prune(pruning_config=p_conf)
 
 ## Distillation
 ```python
-from intel_extension_for_transformers.optimization import DistillationConfig, Criterion
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import DistillationConfig, Criterion
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -73,8 +73,8 @@ model = trainer.distill(distillation_config=d_conf, teacher_model=teacher_model)
 ## Quantized Length Adaptive Transformer
 Quantized Length Adaptive Transformer leverages sequence-length reduction and low-bit representation techniques to further enhance model inference performance, enabling adaptive sequence-length sizes to accommodate different computational budget requirements with an optimal accuracy efficiency tradeoff.
 ```python
-from intel_extension_for_transformers.optimization import QuantizationConfig, DynamicLengthConfig, metric, objectives
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import QuantizationConfig, DynamicLengthConfig, metric, objectives
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(...)
@@ -99,7 +99,7 @@ model = trainer.quantize(quant_config=q_config)
 Transformers-accelerated Neural Engine is one of reference deployments that Intel® Extension for Transformers provides. Neural Engine aims to demonstrate the optimal performance of extremely compressed NLP models by exploring the optimization opportunities from both HW and SW.
 
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 # /path/to/your/model is a TensorFlow pb model or ONNX model
 model = compile('/path/to/your/model')
 inputs = ... # [input_ids, segment_ids, input_mask]

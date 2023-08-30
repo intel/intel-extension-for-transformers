@@ -46,8 +46,8 @@ raw_datasets = raw_datasets.map(lambda e: tokenizer(e['sentence'], truncation=Tr
 ```
 #### Quantization
 ```python
-from intel_extension_for_transformers.optimization import QuantizationConfig, metrics, objectives
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 
 config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
 model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",config=config)

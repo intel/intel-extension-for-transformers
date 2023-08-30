@@ -26,7 +26,7 @@ import timeit
 import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.optimization import metrics , OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.transformers import metrics , OptimizedModel, QuantizationConfig
 from trainer_qa import QuestionAnsweringTrainer
 from transformers import (
     AutoConfig,

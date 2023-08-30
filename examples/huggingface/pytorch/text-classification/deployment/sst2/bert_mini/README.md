@@ -67,7 +67,7 @@ bash run_bert_mini.sh --model=moshew/bert-mini-sst2-distilled --dataset=sst2 --p
 
 You could also compile the model to IR using python API as follows:
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile import compile
 graph = compile('./model_and_tokenizer/int8-model.onnx')
 graph.save('./ir')
 ```
