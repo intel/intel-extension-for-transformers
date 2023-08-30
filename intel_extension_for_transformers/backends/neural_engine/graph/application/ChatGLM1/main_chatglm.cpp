@@ -68,10 +68,14 @@ std::string build_prompt(const std::vector<std::string> &history) {
     // CHATGLM_CHECK(history.size() % 2 == 1) << "invalid history size " << history.size();
 
     std::ostringstream oss_prompt;
-    for (size_t i = 0; i < history.size(); i += 2) {
-        oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
-        if (i < history.size() - 1) {
-            oss_prompt << history[i + 1] << "\n\n";
+    if (history.size() == 1) {
+        oss_prompt << history.front();
+    } else {
+        for (size_t i = 0; i < history.size(); i += 2) {
+            oss_prompt << "[Round " << i / 2 << "]\n问：" << history[i] << "\n答：";
+            if (i < history.size() - 1) {
+                oss_prompt << history[i + 1] << "\n";
+            }
         }
     }
     return oss_prompt.str();

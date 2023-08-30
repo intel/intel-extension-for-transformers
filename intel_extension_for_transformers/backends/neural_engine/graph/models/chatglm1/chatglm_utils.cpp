@@ -119,9 +119,14 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
 
   ml->ne_ctx = ctx;
 
-  model.others[0] = ml->get_tensor("transformer.embedding.word_embeddings.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[1] = ml->get_tensor("transformer.encoder.final_layernorm.weight", {n_embd}, NE_BACKEND_CPU);
-  model.others[2] = ml->get_tensor("transformer.output_layer.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  // model.others[0] = ml->get_tensor("transformer.........word_embeddings.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  // model.others[1] = ml->get_tensor("transformer.encoder.final_layernorm.weight", {n_embd}, NE_BACKEND_CPU);
+  // model.others[2] = ml->get_tensor("transformer.output_layer.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  // n_embd是4096还是多少
+  model.others[0] = ml->get_tensor("transformer.word_embeddings.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  model.others[1] = ml->get_tensor("transformer.final_layernorm.weight", {n_embd}, NE_BACKEND_CPU);
+  model.others[2] = ml->get_tensor("transformer.final_layernorm.bias", {n_embd}, NE_BACKEND_CPU);
+  model.others[3] = ml->get_tensor("lm_head.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);
@@ -129,32 +134,51 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
   for (uint32_t i = 0; i < n_layer; ++i) {
     const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
-    std::string layers_i = "transformer.encoder.layers." + std::to_string(i);
+    std::string layers_i = "transformer.layers." + std::to_string(i);
+
+    // // norm: cur = ln_1_g*cur + ln_1_b
+    // layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
+    // layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
+  
+    // // qkv GEMM
+    // layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
+    // layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
+    // layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
+
+    // // ffn GEMM
+    // layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, model.hparams.ffn_hidden_size * 2}, backend);
+    // layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {model.hparams.ffn_hidden_size, n_embd}, backend);
+
 
     // norm: cur = ln_1_g*cur + ln_1_b
-    layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
-    layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
+    layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);          // [4096]
+    layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);            // [4096]
+    layer.norm[2] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend); // [4096]
+    layer.norm[3] = ml->get_tensor(layers_i + ".post_attention_layernorm.bias", {n_embd}, backend);   // [4096]
   
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
-    layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + ".attention.query_key_value.weight", {n_embd, 3 * n_embd}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + ".attention.query_key_value.bias", {3 * n_embd}, backend);
+    layer.attn[2] = ml->get_tensor(layers_i + ".attention.dense.weight", {n_embd, n_embd}, backend);
+    layer.attn[3] = ml->get_tensor(layers_i + ".attention.dense.bias", {n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, model.hparams.ffn_hidden_size * 2}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {model.hparams.ffn_hidden_size, n_embd}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, 4 * n_embd}, backend);
+    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.bias", {4 * n_embd}, backend);
+    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {4 * n_embd, n_embd}, backend);
+    layer.ffn[3] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.bias", {n_embd}, backend);
 
-    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096 / 32, 32768, 2);
-    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 32768, 4096 / 32, 2);
-    if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
-                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
-                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
-                    ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) + 
-                    ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
-    }
+    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096 / 32, 2048, 32);
+    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 2048, 4096 / 32, 32);
+    // if (backend != NE_BACKEND_CPU) {
+    //   vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
+    //                 ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
+    //                 ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
+    //                 ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
+    //                 ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
+    //                 ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) + 
+    //                 ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
+    // }
   }
 
   // print memory requirements

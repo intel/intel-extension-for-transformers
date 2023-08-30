@@ -447,8 +447,8 @@ bool falcon_eval(const falcon_model& model, const int n_threads, const int n_pas
                                           (n_embd + head_dim) * sizeof(float));
 
       // using mode = 2 for neox mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2);
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2);
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2, 0);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2, 0);
 
       // store key and value to memory
       {

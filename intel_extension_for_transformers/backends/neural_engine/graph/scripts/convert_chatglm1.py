@@ -180,7 +180,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["inner_hidden_size"]))
 
-    vocab = load_vocab(Path("/home/tensorflow/zhenzhong/models/chatglm-6b"))
+    vocab = load_vocab(Path("/home/tensorflow/zhenzhong/chatglm-models/chatglm-6b"))
     counter = 0
     for text, score in vocab.all_tokens():
         fout.write(struct.pack("i", len(text)))

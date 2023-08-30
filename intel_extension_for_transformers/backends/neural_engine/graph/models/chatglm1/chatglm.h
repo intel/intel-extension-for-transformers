@@ -35,7 +35,7 @@ static const model_scratch chatglm_mem_req(int n_layers) {
 
 class CHATGLM : public IModel {
  private:
-  model_name name = MODEL_CHATGLM;
+  model_name name = MODEL_CHATGLM_1;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;
