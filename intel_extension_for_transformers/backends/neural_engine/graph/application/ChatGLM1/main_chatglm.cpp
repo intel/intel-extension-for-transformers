@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <regex>
+#include <iostream>
 #include <random>
 #include <thread>
 #include <unordered_map>
@@ -79,6 +81,44 @@ std::string build_prompt(const std::vector<std::string> &history) {
         }
     }
     return oss_prompt.str();
+}
+
+static std::string regex_replace(const std::string &input, const std::regex &regex,
+                                 std::function<std::string(const std::smatch &)> format) {
+    std::ostringstream oss;
+    int last_index = 0;
+    for (auto it = std::sregex_iterator(input.begin(), input.end(), regex); it != std::sregex_iterator(); it++) {
+        oss << it->prefix() << format(*it);
+        last_index = it->position() + it->length();
+    }
+    oss << input.substr(last_index);
+    return oss.str();
+}
+
+std::string preprocess(const std::string &text) {
+    std::string output;
+
+    // newline token
+    {
+        static const std::regex newline_regex("\n");
+        output = std::regex_replace(text, newline_regex, "<n>");
+    }
+    // tab token
+    {
+        static const std::regex tab_regex("\t");
+        output = std::regex_replace(output, tab_regex, "<|tab|>");
+    }
+    // blank tokens
+    {
+        static const std::regex pattern(R"([ ]{2,80})");
+        output = regex_replace(output, pattern, [](const std::smatch &sm) {
+            std::ostringstream oss;
+            oss << "<|blank_" << sm.str().size() << "|>";
+            return oss.str();
+        });
+    }
+
+    return output;
 }
 
 int main(int argc, char** argv) {
@@ -202,7 +242,8 @@ int main(int argc, char** argv) {
   // std::vector<int> embd_inp = ::model_tokenize(ctx, params.prompt, false);
   std::vector<std::string> prompts;
   prompts.push_back(params.prompt);
-  std::string prompt = build_prompt(prompts);
+  std::string no_preprocess_prompt = build_prompt(prompts);
+  std::string prompt = preprocess(no_preprocess_prompt);
   std::vector<int> embd_inp = ::model_tokenize(ctx, prompt, false);
   embd_inp.insert(embd_inp.begin(), {64790, 64792}); // special prefix
 
