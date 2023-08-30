@@ -227,6 +227,12 @@ class ActivationF32U8KBlockQuantize {
     return _paral;
   }
 
+  size_t getWorkSpaceSize(int m, int k, int kblock) {
+    int kpad = utils::padto(k, _GemmCore_T::KTILE);
+    size_t totalsize = QParam::getSize(m, kpad, kblock);
+    return totalsize;
+  }
+
   QParam* createStorage(int m, int k, int kblock, int8_t* workspace) {
     auto ptr = new QParam;
     int kpad = utils::padto(k, _GemmCore_T::KTILE);
@@ -380,6 +386,12 @@ class ActivationF32S8KBlockQuantize {
     auto cb = utils::CpuBase();
     _paral.update(m, k, 1, 16, kblock, cb.mNumThreads);
     return _paral;
+  }
+
+  size_t getWorkSpaceSize(int m, int k, int kblock) {
+    int kpad = utils::padto(k, _GemmCore_T::KTILE);
+    size_t totalsize = QParam::getSize(m, kpad, kblock);
+    return totalsize;
   }
 
   QParam* createStorage(int m, int k, int kblock, int8_t* workspace) {

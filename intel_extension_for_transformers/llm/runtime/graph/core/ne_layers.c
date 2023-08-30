@@ -5843,7 +5843,6 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
 
-
   const int ith = params->ith;
   const int nth = params->nth;
 
@@ -6152,7 +6151,7 @@ static void ne_compute_forward_mul_mat_q_f32_jblas(const struct ne_compute_param
   if (params->type == NE_TASK_FINALIZE) {
     return;
   }
-  jblas_f32f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, ne10, ne0);
+  jblas_f32f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, ne10, ne0, params->wdata);
 }
 
 static void ne_compute_forward_mul_mat(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6256,8 +6255,8 @@ static void ne_compute_forward_mul_mat_bias_q_f32_jblas(const struct ne_compute_
     return;
   }
   const bool boardcast_bias = bias->ne[1] == 1;
-  jblas_fusion_add_f32f32_forward((float*)src1->data, src0->data, (float*)bias->data, (float*)dst->data, ne1, ne0,
-                                      ne10, ne10, ne0, boardcast_bias);
+  jblas_fusion_add_f32f32_forward((float*)src1->data, src0->data, (float*)bias->data, (float*)dst->data, ne1, ne0, ne10,
+                                  ne10, ne0, boardcast_bias, params->wdata);
 }
 
 static void ne_compute_forward_mul_mat_bias(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6286,7 +6285,8 @@ static void ne_compute_forward_mul_qkv(const struct ne_compute_params* params, c
   const int n = dst->ne[0];
   const int m = dst->ne[1];
   const int k = src->ne[0];
-  jblas_fusion_QKV_f32f32_forward((float*)src->data, qw->data, kw->data, vw->data, (float*)dst->data, m, n, k, k, n);
+  jblas_fusion_QKV_f32f32_forward((float*)src->data, qw->data, kw->data, vw->data, (float*)dst->data, m, n, k, k, n,
+                                  params->wdata);
 }
 
 static void ne_compute_forward_ffn_silu(const struct ne_compute_params* params, const struct ne_tensor* src,
@@ -6304,7 +6304,7 @@ static void ne_compute_forward_ffn_silu(const struct ne_compute_params* params, 
   const int fmid = w1->ne[1];
   const int seq = dst->ne[1];
   jblas_fusion_FFN_SiLu_f32f32_forward((float*)src->data, w1->data, w2->data, w3->data, (float*)tmp->data,
-                                        (float*)tmp1->data, (float*)dst->data, seq, fin, fmid, fout);
+                                       (float*)tmp1->data, (float*)dst->data, seq, fin, fmid, fout, params->wdata);
 }
 
 static void ne_compute_forward_ffn_add_gelu(const struct ne_compute_params* params, const struct ne_tensor* src,
@@ -6324,7 +6324,8 @@ static void ne_compute_forward_ffn_add_gelu(const struct ne_compute_params* para
   const int seq = dst->ne[1];
   const bool boardcast_bias = b1->ne[1] == 1 || b2->ne[1] == 1;
   jblas_fusion_FFN_Add_GeLu_f32f32_forward((float*)src->data, w1->data, w2->data, (float*)b1->data, (float*)b2->data,
-                                            (float*)tmp->data, (float*)dst->data, seq, fin, fmid, fout, boardcast_bias);
+                                           (float*)tmp->data, (float*)dst->data, seq, fin, fmid, fout, boardcast_bias,
+                                           params->wdata);
 }
 
 static void ne_compute_forward_ffn_gelu(const struct ne_compute_params* params, const struct ne_tensor* src,
@@ -6341,8 +6342,8 @@ static void ne_compute_forward_ffn_gelu(const struct ne_compute_params* params, 
   const int fout = dst->ne[0];
   const int fmid = w1->ne[1];
   const int seq = dst->ne[1];
-  jblas_fusion_FFN_GeLu_f32f32_forward((float*)src->data, w1->data, w2->data, (float*)tmp->data, (float*)dst->data,
-                                        seq, fin, fmid, fout);
+  jblas_fusion_FFN_GeLu_f32f32_forward((float*)src->data, w1->data, w2->data, (float*)tmp->data, (float*)dst->data, seq,
+                                       fin, fmid, fout, params->wdata);
 }
 
 // ne_compute_forward_scale
@@ -10029,7 +10030,8 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
 
           size_t cur = 0;
           if (node->src0->type == NE_TYPE_JBLAS) {
-            cur = 0;
+            cur = jblas_f32f32_get_workspace_size(node->src1->ne[1], node->src0->ne[1], node->src1->ne[0],
+                                                  node->src0->data);
             node->n_tasks = 1;
           } else if (node->src0->type == NE_TYPE_F16 && node->src1->type == NE_TYPE_F32) {
             cur = NE_TYPE_SIZE[NE_TYPE_F16] * ne_nelements(node->src1);
@@ -10048,8 +10050,18 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         } break;
         case NE_OP_MUL_FFN_SILU:
         case NE_OP_MUL_FFN_GELU:
-        case NE_OP_MUL_FFN_ADD_GELU:
+        case NE_OP_MUL_FFN_ADD_GELU: {
+          size_t cur = 0;
+          cur = jblas_fusion_FFN_f32f32_get_workspace_size(node->src0->ne[1], node->src0->ne[0], node->src1->ne[1],
+                                                           node->opt[0]->ne[1], node->src1->data, node->opt[0]->data);
+          work_size = MAX(work_size, cur);
+          node->n_tasks = 1;
+        } break;
         case NE_OP_MUL_QKV: {
+          size_t cur = 0;
+          cur = jblas_fusion_QKV_f32f32_get_workspace_size(node->src0->ne[1], node->src1->ne[1], node->src1->ne[0],
+                                                           node->src1->data);
+          work_size = MAX(work_size, cur);
           node->n_tasks = 1;
         } break;
         case NE_OP_SCALE: {
@@ -10432,10 +10444,8 @@ void ne_graph_print(const struct ne_cgraph* cgraph) {
     NE_PRINT(" - %3d: [ %5" PRId64 ", %5" PRId64 ", %5" PRId64
              "] %16s %s (%3d) cpu = %7.3f / %7.3f ms, wall = %7.3f / %7.3f ms\n",
              i, node->ne[0], node->ne[1], node->ne[2], NE_OP_LABEL[node->op],
-             node->is_param ? "x"
-             : node->grad   ? "g"
-                            : " ",
-             node->perf_runs, (double)node->perf_cycles / (double)ne_cycles_per_ms(),
+             node->is_param ? "x" : node->grad ? "g" : " ", node->perf_runs,
+             (double)node->perf_cycles / (double)ne_cycles_per_ms(),
              (double)node->perf_cycles / (double)ne_cycles_per_ms() / (double)node->perf_runs,
              (double)node->perf_time_us / 1000.0, (double)node->perf_time_us / 1000.0 / node->perf_runs);
   }

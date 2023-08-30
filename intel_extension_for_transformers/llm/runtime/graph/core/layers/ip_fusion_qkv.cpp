@@ -3,6 +3,13 @@
 using namespace jblas;
 using namespace ne_jblas;
 
+unsigned long long jblas_fusion_QKV_f32f32_get_workspace_size(int _m, int _n, int _k, void* w1ptr) {
+  // maximum padding
+  int constexpr padding = 128;
+  size_t s = size_t(_m) * utils::padto((size_t)_k, padding) * 4;
+  return s;
+}
+
 namespace {
 namespace transformer {
 namespace avx512_vnni {
@@ -80,7 +87,7 @@ bool jblas_fusion_QKV_f32f32_support(void* wqptr, void* wkptr, void* wvptr, int 
 }
 
 JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4Fp32* wkptr, SS4Fp32* wvptr,
-                                          float* output, int _m, int _n, int _k, int lda, int ldo) {
+                                          float* output, int _m, int _n, int _k, int lda, int ldo, void* workspace) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
   if (wqptr->mCoreType == GcCompInt8KBlock::TYPE) {
@@ -97,7 +104,7 @@ JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4
           {output + _m * _n, ldo},
           {output + 2 * _m * _n, ldo},
       };
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, NULL);
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, (int8_t*)workspace);
       ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
       delete quanA;
     } else if (_cd->AVX512_VNNI()) {
@@ -113,7 +120,7 @@ JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4
           {output + _m * _n, ldo},
           {output + 2 * _m * _n, ldo},
       };
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, NULL);
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, (int8_t*)workspace);
       ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
       delete quanA;
     }
@@ -122,7 +129,7 @@ JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4
 }
 
 JBLAS_CODE jblas_QKVs8fp32_f32f32_forward(float* activation, SS8Fp32* wqptr, SS8Fp32* wkptr, SS8Fp32* wvptr,
-                                          float* output, int _m, int _n, int _k, int lda, int ldo) {
+                                          float* output, int _m, int _n, int _k, int lda, int ldo, void* workspace) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
   if (wqptr->mCoreType == GcCompInt8KBlock::TYPE) {
@@ -139,7 +146,7 @@ JBLAS_CODE jblas_QKVs8fp32_f32f32_forward(float* activation, SS8Fp32* wqptr, SS8
           {output + _m * _n, ldo},
           {output + 2 * _m * _n, ldo},
       };
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, NULL);
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, (int8_t*)workspace);
       ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
       delete quanA;
     } else if (_cd->AVX512_VNNI()) {
@@ -155,7 +162,7 @@ JBLAS_CODE jblas_QKVs8fp32_f32f32_forward(float* activation, SS8Fp32* wqptr, SS8
           {output + _m * _n, ldo},
           {output + 2 * _m * _n, ldo},
       };
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, NULL);
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, (int8_t*)workspace);
       ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
       delete quanA;
     }
@@ -165,14 +172,14 @@ JBLAS_CODE jblas_QKVs8fp32_f32f32_forward(float* activation, SS8Fp32* wqptr, SS8
 
 JBLAS_CODE jblas_QKVs8fp32pern_f32f32_forward(float* activation, SS8Fp32PerN* wqptr, SS8Fp32PerN* wkptr,
                                               SS8Fp32PerN* wvptr, float* output, int _m, int _n, int _k, int lda,
-                                              int ldo) {
+                                              int ldo, void* workspace) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
   if (wqptr->mCoreType == GcCompInt8::TYPE) {
     if (_cd->AMX_INT8()) {
       using GemmKernel = transformer::amx_int8::QKVGemmDynamicS8Fp32PerN;
       static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, NULL);
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, (int8_t*)workspace);
       GemmKernel::WeightType::Param wparams[3]{
           wqptr,
           wkptr,
@@ -188,7 +195,7 @@ JBLAS_CODE jblas_QKVs8fp32pern_f32f32_forward(float* activation, SS8Fp32PerN* wq
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS8Fp32PerN;
       static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, NULL);
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, (int8_t*)workspace);
       GemmKernel::WeightType::Param wparams[3]{
           wqptr,
           wkptr,
@@ -208,7 +215,7 @@ JBLAS_CODE jblas_QKVs8fp32pern_f32f32_forward(float* activation, SS8Fp32PerN* wq
 
 // f32f32: activation & output dtype
 void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output, int _m,
-                                     int _n, int _k, int lda, int ldo) {
+                                     int _n, int _k, int lda, int ldo, void* workspace) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
   auto wqtmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(wqptr, 0);
@@ -217,14 +224,14 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
   // must check support before forward, there is no need to check support twice.
   if (wqtmp->mType == int(WeightCompType::WeightS4ClipScaleFp32)) {
     ret = jblas_QKVs4fp32_f32f32_forward(activation, dynamic_cast<SS4Fp32*>(wqtmp), dynamic_cast<SS4Fp32*>(wktmp),
-                                         dynamic_cast<SS4Fp32*>(wvtmp), output, _m, _n, _k, lda, ldo);
+                                         dynamic_cast<SS4Fp32*>(wvtmp), output, _m, _n, _k, lda, ldo, workspace);
   } else if (wqtmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
     ret = jblas_QKVs8fp32_f32f32_forward(activation, dynamic_cast<SS8Fp32*>(wqtmp), dynamic_cast<SS8Fp32*>(wktmp),
-                                         dynamic_cast<SS8Fp32*>(wvtmp), output, _m, _n, _k, lda, ldo);
+                                         dynamic_cast<SS8Fp32*>(wvtmp), output, _m, _n, _k, lda, ldo, workspace);
   } else if (wqtmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
     ret = jblas_QKVs8fp32pern_f32f32_forward(activation, dynamic_cast<SS8Fp32PerN*>(wqtmp),
                                              dynamic_cast<SS8Fp32PerN*>(wktmp), dynamic_cast<SS8Fp32PerN*>(wvtmp),
-                                             output, _m, _n, _k, lda, ldo);
+                                             output, _m, _n, _k, lda, ldo, workspace);
   }
   assert(ret == JblasSuccess);
   safe_delete(wqtmp);
