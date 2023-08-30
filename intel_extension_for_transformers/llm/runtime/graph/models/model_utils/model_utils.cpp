@@ -54,10 +54,12 @@
 
 static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, ne_type wtype, int n_ctx) {
   const int n_embd = hparams.n_embd;
+  const int head_dim = n_embd / hparams.n_head;
+  const int n_head_kv = hparams.n_head_kv;
   const int n_layer = hparams.n_layer;
 
   const int64_t n_mem = n_layer * n_ctx;
-  const int64_t n_elements = n_embd * n_mem;
+  const int64_t n_elements = n_head_kv > 0? n_head_kv * head_dim * n_mem : n_embd * n_mem;
 
   cache.buf.resize(2u * n_elements * ne_type_size(wtype) + 2u * MB);
 
