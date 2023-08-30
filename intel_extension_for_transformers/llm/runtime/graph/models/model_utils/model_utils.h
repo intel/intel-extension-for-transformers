@@ -315,7 +315,7 @@ class beam_search_flow {
   std::vector<beam> cur_beams;
   std::vector<beam> next_beams;
   size_t n_past = 0;
-  int n_threads = 4;  // default by 4
+  int num_threads = 4;  // default by 4
   logits_processor lp;
 };
 

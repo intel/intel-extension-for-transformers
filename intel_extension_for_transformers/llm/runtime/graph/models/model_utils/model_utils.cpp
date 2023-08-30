@@ -1977,7 +1977,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
   ctx->batch_size = batch_size;
   int n_tokens = 1;
 
-  model_eval(ctx, embd_inp.data(), n_tokens, n_past, n_threads);
+  model_eval(ctx, embd_inp.data(), n_tokens, n_past, num_threads);
   // DEBUG
 #if 0
   size_t bs_stride = n_tokens * ctx->model.hparams.n_vocab;
@@ -2147,6 +2147,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
     fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens, model_n_ctx(ctx) - 4);
     return std::vector<model_token>();
   }
+  num_threads = n_threads;
   std::vector<model_token> beam_search_response;
   std::vector<model_token> embd(tokens_inp, tokens_inp + n_tokens);
 
@@ -2164,7 +2165,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
        ++n) {
     // first step
     if (n_past == 0) {
-      model_eval(ctx, embd.data(), n_tokens, n_past, n_threads);
+      model_eval(ctx, embd.data(), n_tokens, n_past, num_threads);
       n_past += n_tokens;
       // cpy batch 1 to all batch
 #pragma omp parallel for
