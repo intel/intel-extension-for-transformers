@@ -10,7 +10,7 @@ from pathlib import Path
 from datasets import load_dataset
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
+from transformers import AutoTokenizer, PretrainedConfig
 import transformers
 from optimum.utils import NormalizedConfigManager
 
@@ -87,9 +87,23 @@ parser.add_argument("--temperature", default=0.8, type=float)
 parser.add_argument("--top_p", default=0.95, type=float)
 parser.add_argument("--top_k", default=0, type=int)
 parser.add_argument("--do_sample", action="store_true")
+parser.add_argument("--check_references", action="store_true")
+parser.add_argument("--max_memory_per_gpu", type=str, default=None)
+parser.add_argument(
+    "--modeltype",
+    default="causal",
+    help="AutoModel to use, it can be causal or seq2seq",
+)
+parser.add_argument(
+    "--limit_start",
+    type=int,
+    default=0,
+    help="Optional offset to start from when limiting the number of samples",
+)   
 args = parser.parse_args()
 
 
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 user_model = AutoModelForCausalLM.from_pretrained(
     args.model,
     torchscript=True
