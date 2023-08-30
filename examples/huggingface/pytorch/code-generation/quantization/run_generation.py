@@ -357,7 +357,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    from intel_extension_for_transformers.evaluation.lm_code_eval import evaluate
+    from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
     results = evaluate(
         model=user_model,
         tokenizer=tokenizer,

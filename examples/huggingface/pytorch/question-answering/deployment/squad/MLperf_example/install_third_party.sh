@@ -1,6 +1,6 @@
 #!/bin/bash
 path=`pwd`
-project_source_dir="${path}/intel_extension_for_transformers/backends/neural_engine/"
+project_source_dir="${path}/intel_extension_for_transformers/llm/runtime/"
 if (( $# >= 1 )); then
   echo "project source dir set to $1"
   project_source_dir=$1

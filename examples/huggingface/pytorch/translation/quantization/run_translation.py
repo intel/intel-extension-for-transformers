@@ -28,9 +28,9 @@ import datasets
 import numpy as np
 from datasets import load_dataset, load_metric
 
-from intel_extension_for_transformers.optimization import OptimizedModel, QuantizationConfig
-from intel_extension_for_transformers.optimization import metrics as nlp_metrics
-from intel_extension_for_transformers.optimization.trainer import NLPSeq2SeqTrainer
+from intel_extension_for_transformers.transformers import OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.transformers import metrics as nlp_metrics
+from intel_extension_for_transformers.transformers.trainer import NLPSeq2SeqTrainer
 import transformers
 from transformers import (
     AutoConfig,

@@ -83,14 +83,15 @@ FROM vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installe
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
 
-RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd ./optimum-habana/examples/text-generation/ && \
-    pip install -r requirements.txt && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
-RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
+RUN git clone https://github.com/huggingface/optimum-habana.git && \
+    cd optimum-habana/ && git reset --hard 9570fb8f359ef458fddfb4040e2280d5fec0fd11 && pip install -e . && cd ../ && \
+    cd ./optimum-habana/examples/text-generation/ && \
+    pip install -r requirements.txt && \
+    cd / && \
     pip install peft && \
     pip install einops && \
     pip install datasets && \
@@ -98,6 +99,7 @@ RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
 
 RUN git clone https://github.com/intel/intel-extension-for-transformers.git \
     && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ \
-    && pip install -r requirements.txt
+    && pip install -r requirements.txt \
+    && pip install transformers==4.28.1
 
 WORKDIR /intel-extension-for-transformers/workflows/chatbot/inference/

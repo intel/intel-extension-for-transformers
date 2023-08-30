@@ -98,8 +98,8 @@ raw_datasets = raw_datasets.map(lambda e: tokenizer(e['sentence'], truncation=Tr
 Documentation for API usage can be found [here](https://github.com/intel/intel-extension-for-transformers/tree/main/docs)
 
 ```python
-from intel_extension_for_transformers.optimization import QuantizationConfig, metrics, objectives
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # load config, model and metric
 config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
 # pre-trained model is available on https://huggingface.co/models

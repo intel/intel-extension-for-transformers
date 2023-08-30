@@ -24,6 +24,6 @@ All metrics be provide by [Huggingface datasets](https://github.com/huggingface/
 ## Get Start with Metrics
 - example:
     ```python
-    from intel_extension_for_transformers.optimization import metric
+    from intel_extension_for_transformers.transformers import metric
     metric.Metric(name="eval_f1", greater_is_better=True, is_relative=True, criterion=0.01, weight_ratio=None)
     ```

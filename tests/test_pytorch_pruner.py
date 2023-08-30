@@ -7,8 +7,8 @@ sys.path.insert(0, './')
 import torch
 import numpy as np
 # from neural_compressor.config import WeightPruningConfig
-# from intel_extension_for_transformers.optimization.pruner.pruning import Pruning
-from intel_extension_for_transformers.optimization.pruner import WeightPruningConfig, Pruning
+# from intel_extension_for_transformers.transformers.pruner.pruning import Pruning
+from intel_extension_for_transformers.transformers.pruner import WeightPruningConfig, Pruning
 import torchvision
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
@@ -187,7 +187,7 @@ class TestPruning(unittest.TestCase):
         prune.on_after_eval()
 
     def test_utils(self):
-        from intel_extension_for_transformers.optimization.utils.utility import remove_label
+        from intel_extension_for_transformers.transformers.utils.utility import remove_label
 
         dataset = remove_label({'labels': [], 'ids': []})
         dataset = remove_label({'start_positions': [], 'end_positions': [], 'ids': []})

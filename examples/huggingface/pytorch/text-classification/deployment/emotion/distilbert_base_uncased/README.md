@@ -79,7 +79,7 @@ GLOG_minloglevel=2 python run_executor.py --input_model=./model_and_tokenizerint
 
 or compile framwork model to IR using python API
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile importcompile
+from intel_extension_for_transformers.llm.runtime.compile importcompile
 graph = compile('./model_and_tokenizer/int8-model.onnx')
 graph.save('./ir')
 ```

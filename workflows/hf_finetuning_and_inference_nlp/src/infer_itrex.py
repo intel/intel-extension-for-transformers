@@ -16,12 +16,12 @@
 import numpy as np
 import torch
 from os import path
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     QuantizationConfig,
     metrics,
     objectives,
 )
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from transformers import (
