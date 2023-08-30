@@ -27,7 +27,7 @@ The purpose of a document reranker is to improve the relevance and quality of se
 
 We provide the [generate.py](./generate.py) script for performing inference on Intel® CPUs. We have enabled IPEX BF16 to speed up the inference. Please use the following commands for inference.
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b-chat), it uses the gpt-neox-20b tokenizer, so you need to explicitly define it in the command line. This model also requires passing trust_remote_code=True to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b-chat), it uses the gpt-neox-20b tokenizer, so you need to explicitly define it in the command line.
 
 If you don't have a fine-tuned model, please remove the 'peft_model_path' parameter.
 
@@ -38,7 +38,6 @@ python generate.py \
         --peft_model_path "./mpt_peft_finetuned_model" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
-        --trust_remote_code \
         --task completion \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 
@@ -48,7 +47,6 @@ python generate.py \
         --peft_model_path "./mpt_peft_finetuned_model" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
-        --trust_remote_code \
         --task chat \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 
@@ -58,7 +56,6 @@ python generate.py \
         --peft_model_path "./mpt_peft_finetuned_model" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
-        --trust_remote_code \
         --task summarization \
         --instructions "Editor's note: In our Behind the Scenes series, CNN correspondents share their experiences in covering news and analyze the stories behind the events. Here, Soledad O'Brien takes users inside a jail where many of the inmates are mentally ill. An inmate housed on the 'forgotten floor,' where many mentally ill inmates are housed in Miami before trial. MIAMI, Florida (CNN) -- The ninth floor of the Miami-Dade pretrial detention facility is dubbed the 'forgotten floor.' Here, inmates with the most severe mental illnesses are incarcerated until they're ready to appear in court. Most often, they face drug charges or charges of assaulting an officer --charges that Judge Steven Leifman says are usually 'avoidable felonies.'"
 ```
@@ -68,7 +65,6 @@ If you want to accelerate the generation, you can use the key/value cache for de
 ```bash
 python generate.py \
         --base_model_path "mosaicml/mpt-7b-chat" \
-        --trust_remote_code \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten." \
         --use_kv_cache \
         --jit
@@ -87,7 +83,6 @@ python generate.py  \
           --base_model_path "mosaicml/mpt-7b-chat" \
           --tokenizer_name "EleutherAI/gpt-neox-20b" \
           --use_kv_cache \
-          --trust_remote_code \
           --instructions "Tell me about Intel Xeon."
 ```
 
@@ -188,18 +183,17 @@ Copy the [generate.py](./generate.py) script to Gaudi instance and place it in t
 Run the Docker container with Habana runtime and necessary environment variables:
 
 ```bash
-docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host -v $(pwd):/intel-extension-for-transformers vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest
+docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host -v $(pwd):/intel-extension-for-transformers vault.habana.ai/gaudi-docker/1.11.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest
 apt-get update
 apt-get install git-lfs
 git-lfs install
 cd /intel-extension-for-transformers/workflows/chatbot/inference/
-git clone https://huggingface.co/mosaicml/mpt-7b-chat
 pip install datasets
 pip install optimum
 pip install git+https://github.com/huggingface/optimum-habana.git
 pip install peft
 pip install einops
-pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
+pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0
 ```
 
 ### Run the inference
@@ -207,7 +201,7 @@ pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
 You can use the [generate.py](./generate.py) script for performing direct inference on Habana Gaudi instance. We have enabled BF16 to speed up the inference. Please use the following command for inference.
 
 ```bash
-python generate.py --base_model_path "./mpt-7b-chat" \
+python generate.py --base_model_path "mosaicml/mpt-7b-chat" \
              --habana \
              --tokenizer_name "EleutherAI/gpt-neox-20b" \
              --use_hpu_graphs \
@@ -219,7 +213,7 @@ And you can use `deepspeed` to speedup the inference. currently, TP is not suppo
 
 ```bash
 python ../utils/gaudi_spawn.py --use_deepspeed --world_size 8 generate.py \
-        --base_model_path "./mpt-7b-chat" \
+        --base_model_path "mosaicml/mpt-7b-chat" \
         --habana \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_hpu_graphs \
