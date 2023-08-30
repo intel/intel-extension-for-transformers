@@ -27,8 +27,8 @@ Now we supports following models.
 |[MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
 |[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b)| ✅ | ✅ | 
 |[Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
-|[StarCoder-1B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
-|[StarCoder-3B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
+|[StarCoder-1B](https://huggingface.co/need-for-speed/starcoderbase-1b)| ✅ | ✅ | 
+|[StarCoder-3B](https://huggingface.co/need-for-speed/starcoderbase-3b)| ✅ | ✅ | 
 |[StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
 
 
