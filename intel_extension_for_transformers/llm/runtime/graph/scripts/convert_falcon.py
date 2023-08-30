@@ -73,13 +73,18 @@ def main(args_in: Optional[List[str]] = None) -> None:
                     if ftype == 1 else torch.float32, low_cpu_mem_usage=True, trust_remote_code=True)
     print("Model loaded: ", dir_model)
 
+    n_head_kv = hparams.get("n_head_kv", 1)
+    n_head = hparams["n_head"]
+    head_dim = hparams["hidden_size"] // n_head
+
     fout = open(fname_out, "wb")
     fout.write(struct.pack("i", 0x67676d6c)) # magic: falcon in hex
 
     fout.write(struct.pack("i", hparams["vocab_size"]))
     fout.write(struct.pack("i", hparams["hidden_size"]))
     fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", hparams["n_head"]))
+    fout.write(struct.pack("i", n_head))
+    fout.write(struct.pack("i", n_head_kv))  # multi-query attention
     fout.write(struct.pack("i", hparams["n_layer"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", ftype))
@@ -100,6 +105,23 @@ def main(args_in: Optional[List[str]] = None) -> None:
     list_vars = model.state_dict()
     for name in list_vars.keys():
         src = name
+        # The original query_key_value tensor contains n_head_kv "kv groups",
+        # each consisting of n_head/n_head_kv query weights followed by one key
+        # and one value weight (shared by all query heads in the kv group).
+        # This layout makes it a big pain to work with in GGML.
+        # So we rearrange them here,, so that we have n_head query weights
+        # followed by n_head_kv key weights followed by n_head_kv value weights,
+        # in contiguous fashion.
+
+        if "query_key_value" in src and n_head_kv != 1:
+            qkv = list_vars[src].view(
+                n_head_kv, n_head // n_head_kv + 2, head_dim, head_dim * n_head)
+
+            q = qkv[:, :-2 ].reshape(n_head * head_dim, head_dim * n_head)
+            k = qkv[:, [-2]].reshape(n_head_kv * head_dim, head_dim * n_head)
+            v = qkv[:, [-1]].reshape(n_head_kv * head_dim, head_dim * n_head)
+
+            list_vars[src] = torch.cat((q,k,v)).reshape_as(list_vars[src])
         data = list_vars[src].squeeze().numpy()
         data = data.astype(np.float32)
 

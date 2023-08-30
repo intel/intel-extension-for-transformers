@@ -6,7 +6,7 @@
 - [Splice Sub-chains with the Main Chain and Remove Duplicate Results](#splice-sub-chains-with-the-main-chain-and-remove-duplicate-results)
 
 ## Introduction
-Pattern recognition is one of the most important parts of pattern fusion. The corresponding API is `search_pattern` in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py). The main purpose of it is to find all the group nodes' names from the model that satisfy the given pattern representation. The process of it can be divided into three parts: **1. parse the pattern representation list; 2. search each straight chain pattern; 3. splice sub-chains with the main chain and remove duplicate results**.
+Pattern recognition is one of the most important parts of pattern fusion. The corresponding API is `search_pattern` in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/compile/graph_utils.py). The main purpose of it is to find all the group nodes' names from the model that satisfy the given pattern representation. The process of it can be divided into three parts: **1. parse the pattern representation list; 2. search each straight chain pattern; 3. splice sub-chains with the main chain and remove duplicate results**.
 
 ## Pattern Representation
 
@@ -44,7 +44,7 @@ The pattern recognition function would first parse the pattern representation li
 
 ## Search Each Straight Chain Pattern
 
-The [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py) has `search_straight_pattern` API for searching sequence patterns. It receives `input_pattern` and `graph` parameters and exploits `DFS` algorithm to find eligible results. The `input_pattern` is a list containing several op_type from the step above. For example, it could be one like this:
+The [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/compile/graph_utils.py) has `search_straight_pattern` API for searching sequence patterns. It receives `input_pattern` and `graph` parameters and exploits `DFS` algorithm to find eligible results. The `input_pattern` is a list containing several op_type from the step above. For example, it could be one like this:
 
 ```python
 ['MatMul', 'BiasAdd', ['Add', 'AddV2']]

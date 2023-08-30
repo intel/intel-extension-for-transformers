@@ -40,6 +40,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 RUN apt-get update \
     && apt-get install -y build-essential \
     && apt-get install -y wget numactl git \
+    && apt-get install -y openssh-server \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -68,8 +69,19 @@ RUN source activate && conda activate chatbot-finetuning && pip install oneccl_b
     cd /itrex && pip install -v . && \
     cd workflows/chatbot/fine_tuning && pip install -r requirements.txt
 
+# Enable passwordless ssh for mpirun^M
+RUN mkdir /var/run/sshd
+RUN passwd -d root
+RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /etc/ssh/sshd_config \
+        && sed -i'' -e's/^#PasswordAuthentication yes$/PasswordAuthentication yes/' /etc/ssh/sshd_config \
+        && sed -i'' -e's/^#PermitEmptyPasswords no$/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
+        && sed -i'' -e's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config \
+        && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+EXPOSE 22
+
 WORKDIR /itrex/workflows/chatbot/fine_tuning
 
+CMD ["/usr/sbin/sshd", "-D"]
 
 # HABANA environment
 FROM vault.habana.ai/gaudi-docker/1.11.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu

@@ -1,6 +1,6 @@
 Step-by-Step
 ============
-This example used [Neural Engine](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/backends/neural_engine) to get the MLPerf performance. It can test model `Bert Large Squad Sparse` and `MiniLM L12`.
+This example used [Neural Engine](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/llm/runtime) to get the MLPerf performance. It can test model `Bert Large Squad Sparse` and `MiniLM L12`.
 The benchmark was evaluated using a server with two Intel(R) Xeon(R) Platinum 8480+ (Sapphire Rappids) CPUs with 56 cores or two Intel(R) Xeon(R) Platinum 8380 CPU (IceLake) with 40 cores.
 | Benchmark      | F1 Score [%] | Machine info  |  Offline Throughput [samples/sec]  |
 |:----------------:|:------:|:-------:|:--------:|

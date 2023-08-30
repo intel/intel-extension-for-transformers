@@ -57,10 +57,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     dir_model = args.model.as_posix()
     fname_out = args.outfile.as_posix()
-
-    with open(dir_model + '/config.json', "r", encoding="utf-8") as f:
-        hparams = json.load(f)
-
     # possible data types
     #   ftype == 0 -> float32
     #   ftype == 1 -> float16
@@ -73,7 +69,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     model = AutoModelForCausalLM.from_pretrained(
         dir_model, low_cpu_mem_usage=True, trust_remote_code=True
     )
-
+    hparams = model.config.to_dict()
 
     list_vars = model.state_dict()
     for name in list_vars.keys():
@@ -89,6 +85,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", hparams["d_model"]))
     fout.write(struct.pack("i", hparams["d_model"]))
     fout.write(struct.pack("i", hparams["n_heads"]))
+    fout.write(struct.pack("i", hparams.get("n_head_kv", 0)))  # multi-query attention
     fout.write(struct.pack("i", hparams["n_layers"]))
     fout.write(struct.pack("i", hparams["n_layers"]))
     fout.write(struct.pack("i", ftype))

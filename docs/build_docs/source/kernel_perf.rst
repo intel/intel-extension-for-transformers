@@ -6,6 +6,6 @@ Here we introduce performance relates issues  for users who might want detailed 
 .. toctree::
    :maxdepth: 1
 
-   docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.md
-   docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.md
+   docs/intel_extension_for_transformers/llm/runtime/kernels/docs/profiling.md
+   docs/intel_extension_for_transformers/llm/runtime/kernels/docs/validated_data.md
 
