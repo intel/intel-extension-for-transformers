@@ -6,11 +6,11 @@
 - [Remove the Old Pattern and Insert the New Pattern](#remove-the-old-pattern-and-insert-the-new-pattern)
 
 ## Introduction
-The main purpose of graph fusion and optimization is to simplify the network and speed up inference. We take this process as a way of pattern mapping. Users could call the `pattern_mapping` API in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py) to realize it. The process contains three steps: **1. obtain the necessary information for new pattern construction; 2. create nodes and establish connections; 3. remove the old pattern and insert the new pattern.** Before implementing graph fusion and optimization, users should supply a config (dict) to instruct pattern mapping.
+The main purpose of graph fusion and optimization is to simplify the network and speed up inference. We take this process as a way of pattern mapping. Users could call the `pattern_mapping` API in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/compile/graph_utils.py) to realize it. The process contains three steps: **1. obtain the necessary information for new pattern construction; 2. create nodes and establish connections; 3. remove the old pattern and insert the new pattern.** Before implementing graph fusion and optimization, users should supply a config (dict) to instruct pattern mapping.
 
 ## Pattern Mapping Dict
 
-Here is an example of a pattern mapping dict (a LayerNorm pattern in doc [add_customized_pattern](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.md)): 
+Here is an example of a pattern mapping dict (a LayerNorm pattern in doc [add_customized_pattern](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/docs/add_customized_pattern.md)): 
 
 ```python
 {    'patterns': {
@@ -39,7 +39,7 @@ Here is an example of a pattern mapping dict (a LayerNorm pattern in doc [add_cu
      }
 ```
 
-- `patterns` : gives the patterns representations before (`in`) and after (`out`) mapping. It is a dict with two keys (`in` and `out`), and the values are the corresponding pattern representations. About the representation, refer to [pattern_recognition](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/docs/pattern_recognize.md).
+- `patterns` : gives the patterns representations before (`in`) and after (`out`) mapping. It is a dict with two keys (`in` and `out`), and the values are the corresponding pattern representations. About the representation, refer to [pattern_recognition](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/docs/pattern_recognize.md).
 
 - `search_mode`: a string must be `op_type` or `node_name`. If set as `op_type`, the algorithm will search the old pattern (`in`) in the graph. If set as `node_name`, just means the old pattern (`in`) is representing the search result. In most conditions, it should be `op_type`.
 
@@ -58,15 +58,15 @@ Here is an example of a pattern mapping dict (a LayerNorm pattern in doc [add_cu
 
 ## Obtain the Necessary Information for New Pattern Construction
 
-The `pattern_mapping` API first search the `in` pattern and get the matched result. Then prepare node names, input tensors, output tensors these necessary information for `out` pattern by following the above pattern mapping dict. It also store some specific nodes in old pattern if needed. These related variables have the same length as a matched result of `in` pattern. For more details, please see the `_get_pattern_info` function in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py).
+The `pattern_mapping` API first search the `in` pattern and get the matched result. Then prepare node names, input tensors, output tensors these necessary information for `out` pattern by following the above pattern mapping dict. It also store some specific nodes in old pattern if needed. These related variables have the same length as a matched result of `in` pattern. For more details, please see the `_get_pattern_info` function in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/compile/graph_utils.py).
 
 ## Create Nodes and Establish Connections
 
-In this step, `pattern_mapping` API receives the above node names, input tensors and output tensors information to create new nodes in `out` pattern. The main part is to establish nodes connections by filling and constructing tensors. The connections outside are maintained with keeping the tensors in or out patterns same. As for the connections inside new pattern, output tensor of pre-node would be generated automatically and become one input tensor of next node due to sequential flow. For more details, please see the `_create_out_pattern` function in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py).
+In this step, `pattern_mapping` API receives the above node names, input tensors and output tensors information to create new nodes in `out` pattern. The main part is to establish nodes connections by filling and constructing tensors. The connections outside are maintained with keeping the tensors in or out patterns same. As for the connections inside new pattern, output tensor of pre-node would be generated automatically and become one input tensor of next node due to sequential flow. For more details, please see the `_create_out_pattern` function in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/compile/graph_utils.py).
 
 ## Remove the Old Pattern and Insert the New Pattern
 
-After creating new pattern, the final step is to replace the old pattern with new pattern. For more details, please see the `_replace_pattern` function in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/compile/graph_utils.py).
+After creating new pattern, the final step is to replace the old pattern with new pattern. For more details, please see the `_replace_pattern` function in [`compile.graph_utils`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/compile/graph_utils.py).
 
 
-Do not forget to set specific attributes of your new pattern if it has. These attributes could influence the inference of `Neural Engine`. And the `returns` supply the way to obtain them from the nodes in old pattern. Please see the [add_customized_pattern](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.md) doc for adding your own example.
+Do not forget to set specific attributes of your new pattern if it has. These attributes could influence the inference of `Neural Engine`. And the `returns` supply the way to obtain them from the nodes in old pattern. Please see the [add_customized_pattern](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/docs/add_customized_pattern.md) doc for adding your own example.
