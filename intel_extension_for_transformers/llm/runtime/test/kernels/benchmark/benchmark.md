@@ -22,7 +22,7 @@ This is a tool to perform accuracy test and performance test for kernel in [kern
 
 ## Build
 ```shell
-cd <path/to/this/repo>/intel_extension_for_transformers/backends/neural_engine
+cd <path/to/this/repo>/intel_extension_for_transformers/llm/runtime
 mkdir build
 cd build
 cmake .. -DNE_WITH_SPARSELIB=ON -DNE_WITH_SPARSELIB_ONLY=ON -DNE_WITH_SPARSELIB_BENCHMARK=ON
