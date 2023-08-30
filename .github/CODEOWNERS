@@ -25,6 +25,6 @@
 # *.txt @octo-org/octocats
 
 
-/intel_extension_for_transformers/backends/neural_engine/Cmake* yu.luo@intel.com
-/intel_extension_for_transformers/backends/neural_engine/cmake/ yu.luo@intel.com
-/intel_extension_for_transformers/backends/neural_engine/graph/jblas yu.luo@intel.com
+/intel_extension_for_transformers/llm/runtime/Cmake* yu.luo@intel.com
+/intel_extension_for_transformers/llm/runtime/cmake/ yu.luo@intel.com
+/intel_extension_for_transformers/llm/runtime/graph/jblas yu.luo@intel.com
