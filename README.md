@@ -171,4 +171,4 @@ output = model(**input).logits.argmax().item()
 
 ## Research Collaborations
 
-Welcome to raise any interesting research ideas on model compression techniques and feel free to reach us ([maintainers](mailto:inc.maintainers@intel.com)). Look forward to our collaborations on Intel Extension for Transformers!
+Welcome to raise any interesting research ideas on model compression techniques and feel free to reach [us](mailto:inc.maintainers@intel.com). Look forward to our collaborations on Intel Extension for Transformers!
