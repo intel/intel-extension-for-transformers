@@ -123,12 +123,12 @@ mkdir engine_integration && cd engine_integration
 git init
 git submodule add https://github.com/intel/intel-extension-for-transformers itrex
 git submodule update --init --recursive
-cp itrex/intel_extension_for_transformers/backends/neural_engine/CMakeLists.txt .
-cp itrex/intel_extension_for_transformers/backends/neural_engine/executor/src/nlp_executor.cc neural_engine_example.cc
+cp itrex/intel_extension_for_transformers/llm/runtime/CMakeLists.txt .
+cp itrex/intel_extension_for_transformers/llm/runtime/executor/src/nlp_executor.cc neural_engine_example.cc
 ```
 Modify the NE_ROOT in the CmakeLists.txt.
 ```cmake
-set(NE_ROOT "${PROJECT_SOURCE_DIR}/itrex/intel_extension_for_transformers/backends/neural_engine")
+set(NE_ROOT "${PROJECT_SOURCE_DIR}/itrex/intel_extension_for_transformers/llm/runtime")
 ```
 
 Compile neural_engine_example.cc as binary named neural_engine_example and link Nerual Engine include/lib into neural_engine_example.

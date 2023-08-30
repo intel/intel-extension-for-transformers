@@ -4,7 +4,7 @@ Intel® Extension for Transformers
 ===========================
 <h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
 
-[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/backends/neural_engine/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
 ---
@@ -23,7 +23,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 *  [NeuralChat](workflows/chatbot), a custom Chatbot trained on Intel CPUs through parameter-efficient fine-tuning [PEFT](https://github.com/huggingface/peft) on domain knowledge
 
-*  [Inference](intel_extension_for_transformers/backends/neural_engine/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/backends/neural_engine/graph/application/ChatFALCON)
+*  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatFALCON)
 
 
 ## Installation
@@ -92,8 +92,8 @@ output = model(**input).logits.argmax().item()
   <tr>
     <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
     <td colspan="2" align="center"><a href="workflows/chatbot">NeuralChat</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs">Neural Engine</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/README.md">Kernel Libraries</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs">Neural Engine</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/README.md">Kernel Libraries</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">MODEL COMPRESSION</th>
@@ -114,18 +114,18 @@ output = model(**input).logits.argmax().item()
     <th colspan="8" align="center">NEURAL ENGINE</th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/onnx_compile.md">Model Compilation</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/add_customized_pattern.md">Custom Pattern</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/deploy_and_integration.md">Deployment</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/engine_profiling.md">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/onnx_compile.md">Model Compilation</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/add_customized_pattern.md">Custom Pattern</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/deploy_and_integration.md">Deployment</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/engine_profiling.md">Profiling</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">KERNEL LIBRARIES</th>
   </tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/profiling.md">Profiling</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/profiling.md">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
   <tr>
     <th colspan="8" align="center">ALGORITHMS</th>
   </tr>
@@ -139,8 +139,8 @@ output = model(**input).logits.argmax().item()
   <tr>
     <td colspan="2" align="center"><a href="docs/tutorials/pytorch">Tutorials</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">Supported Models</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/docs/validated_model.md">Model Performance</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/backends/neural_engine/kernels/docs/validated_data.md">Kernel Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/validated_model.md">Model Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/validated_data.md">Kernel Performance</a></td>
   </tr>
 </tbody>
 </table>
