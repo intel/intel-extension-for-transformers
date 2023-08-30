@@ -457,7 +457,8 @@ def query(request: QueryRequest):
         if request.blob:
             file_content = base64.b64decode(request.blob)
             random_suffix = str(uuid.uuid4().hex)
-            file_path = f"/tmp/customized_doc_{random_suffix}" + request.filename
+			sanitized_filename = os.path.basename(request.filename)
+			file_path = f"/tmp/customized_doc_{random_suffix}_{sanitized_filename}"
             with open(file_path, "wb") as f:
                 f.write(file_content)
 
