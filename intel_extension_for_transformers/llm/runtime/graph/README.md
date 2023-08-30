@@ -47,7 +47,8 @@ Currently, Graph uses the same model format as [llama.cpp](https://github.com/gg
 
 You can use `git clone` command like (for example, gpt-j-6b): `git clone https://huggingface.co/EleutherAI/gpt-j-6b`.
 
-Convert process had two steps: 1. get fp32 model from HuggingFcae links in Supported Models and put it in `graph` folder  2. get fp32 model with llama.cpp format 3. quantize the fp32 model into model with low precision (int8, int4, etc.) We recommend you to use int4 model for better LLM inference latency.
+get fp32 model from HuggingFcae links in Supported Models and put it in `graph` folder.
+Convert process had two steps: 1. get fp32 model with llama.cpp format 2. quantize the fp32 model into model with low precision (int8, int4, etc.) We recommend you to use int4 model for better LLM inference latency.
 
 ```bash
 # convert the pytorch model to ggml format
