@@ -63,7 +63,7 @@ python generate.py \
         --instructions "Editor's note: In our Behind the Scenes series, CNN correspondents share their experiences in covering news and analyze the stories behind the events. Here, Soledad O'Brien takes users inside a jail where many of the inmates are mentally ill. An inmate housed on the 'forgotten floor,' where many mentally ill inmates are housed in Miami before trial. MIAMI, Florida (CNN) -- The ninth floor of the Miami-Dade pretrial detention facility is dubbed the 'forgotten floor.' Here, inmates with the most severe mental illnesses are incarcerated until they're ready to appear in court. Most often, they face drug charges or charges of assaulting an officer --charges that Judge Steven Leifman says are usually 'avoidable felonies.'"
 ```
 
-If you want to accelerate the generation, you can use the key/value cache for decoding by adding the flag `--use_kv_cache`, and use jit trace by `pip install optimum-intel` and adding the flag `--jit`.
+If you want to accelerate the generation, you can use the key/value cache for decoding by adding the flag `--use_kv_cache`, and use jit trace by `pip install optimum-intel` and adding the flag `--jit`. If you want to see END_OF_STREAM_STATS, you can add the flag `--return_stats`.
 
 ```bash
 python generate.py \
