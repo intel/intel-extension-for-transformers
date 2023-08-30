@@ -203,6 +203,8 @@ def parse_args():
         "--task", type=str, default="", choices=["completion", "chat", "summarization"],
         help="task name, different task means different templates."
     )
+    parser.add_argument(
+        "--return_stats", action='store_true', default=False,)
     args = parser.parse_args()
     return args
 
@@ -805,13 +807,13 @@ def predict_stream(**params):
     )
     if return_stats:
         stats = {
-            "input_token_len": input_token_len,
-            "output_word_len": output_word_len,
-            "duration": duration,
-            "first_word_latency": first_word_latency,
-            "msecond_per_word": msecond_per_word,
+            "input_token_len": str(input_token_len) + " ms",
+            "output_word_len": str(output_word_len) + " ms",
+            "duration": str(duration) + " ms",
+            "first_word_latency": str(first_word_latency) + " ms",
+            "msecond_per_word": str(msecond_per_word) + " ms",
         }
-        yield "END_OF_STREAM_STATS={}".format(stats)
+        yield "\nEND_OF_STREAM_STATS={}".format(stats)
 
 
 def predict(**params):
@@ -1068,24 +1070,25 @@ def main():
     if args.local_rank in [-1, 0]:
         print("Warmup, Response: ")
 
-    for new_text in predict_stream(
-        model_name=base_model_path,
-        device="hpu" if args.habana else "cpu",
-        prompt="Tell me about Intel Xeon.",
-        task=args.task,
-        temperature=args.temperature,
-        top_p=args.top_p,
-        top_k=args.top_k,
-        repetition_penalty=args.repetition_penalty,
-        num_beams=args.num_beams,
-        max_new_tokens=args.max_new_tokens,
-        do_sample=args.temperature > 0.0,
-        use_hpu_graphs=args.use_hpu_graphs,
-        use_cache=args.use_kv_cache,
-        num_return_sequences=args.num_return_sequences,
-    ):
-        if args.local_rank in [-1, 0]:
-            print(new_text, end="", flush=True)
+    for idx, instruction in enumerate(args.instructions):
+        set_seed(args.seed)
+        idxs = f"{idx+1}"
+        out = predict(
+            model_name=base_model_path,
+            device="hpu" if args.habana else "cpu",
+            prompt=instruction,
+            task=args.task,
+            temperature=args.temperature,
+            top_p=args.top_p,
+            top_k=args.top_k,
+            repetition_penalty=args.repetition_penalty,
+            num_beams=args.num_beams,
+            max_new_tokens=args.max_new_tokens,
+            do_sample=args.temperature > 0.0,
+            use_hpu_graphs=args.use_hpu_graphs,
+            use_cache=args.use_kv_cache,
+            num_return_sequences=args.num_return_sequences,
+        )
 
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
@@ -1109,6 +1112,7 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            return_stats= args.return_stats,
         ):
             if args.local_rank in [-1, 0]:
                 print(new_text, end="", flush=True)
@@ -1141,5 +1145,5 @@ def main():
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
-            logger.info(f"duration: {time.time() - start_time}")
+            logger.info(f"duration: {time.time() - start_time}" + ' s')
             logger.info("=" * (60 + len(idxs)))
