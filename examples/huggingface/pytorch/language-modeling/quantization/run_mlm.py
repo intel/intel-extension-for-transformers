@@ -28,8 +28,8 @@ import transformers
 from dataclasses import dataclass, field
 from datasets import load_dataset, load_metric
 from itertools import chain
-from intel_extension_for_transformers.optimization import metrics, OptimizedModel, QuantizationConfig
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import metrics, OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from transformers import (
     CONFIG_MAPPING,
     MODEL_FOR_MASKED_LM_MAPPING,

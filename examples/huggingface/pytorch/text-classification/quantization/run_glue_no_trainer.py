@@ -30,7 +30,7 @@ from torch.utils.data import DataLoader
 import transformers
 from accelerate import Accelerator
 from huggingface_hub import Repository
-from intel_extension_for_transformers.optimization import (metrics, NoTrainerOptimizer, objectives, OptimizedModel,
+from intel_extension_for_transformers.transformers import (metrics, NoTrainerOptimizer, objectives, OptimizedModel,
                          QuantizationConfig)
 from transformers import (
     AdamW,

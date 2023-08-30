@@ -36,7 +36,7 @@ from transformers import (
     AutoTokenizer,
 )
 
-from intel_extension_for_transformers.optimization.modeling import INCModelForSeq2SeqLM
+from intel_extension_for_transformers.transformers.modeling import INCModelForSeq2SeqLM
 
 
 prompt_texts = ["Translate to German: My name is Arthur",

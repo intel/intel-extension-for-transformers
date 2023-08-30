@@ -34,7 +34,7 @@ def main():
 
     training_args = None
     if int(os.environ.get("LOCAL_RANK", -1)) != -1 and '--no_cuda' in sys.argv:
-        from intel_extension_for_transformers.optimization.utils.utility import distributed_init
+        from intel_extension_for_transformers.transformers.utils.utility import distributed_init
         distributed_init()
         training_args = TrainingArguments(output_dir=data["training_args"].get("output_dir", "./output_dir"), no_cuda=True)
     else:

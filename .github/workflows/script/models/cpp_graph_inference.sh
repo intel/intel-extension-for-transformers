@@ -12,7 +12,7 @@ function main() {
     conda_env="$1"
     model="$2"
     compiler_version="$3"
-    working_dir="${WORKING_DIR}/intel_extension_for_transformers/backends/neural_engine/graph"
+    working_dir="${WORKING_DIR}/intel_extension_for_transformers/llm/runtime/graph"
     # init params
     if [[ "${model}" == "llama-7b-hf" ]]; then
         convert_script="${working_dir}/scripts/convert_llama.py"

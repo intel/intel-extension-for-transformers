@@ -58,6 +58,7 @@ function install_itrex_base() {
     git config --global --add safe.directory "*"
     git submodule update --init --recursive
     $BOLD_YELLOW && echo "---------------- pip install binary -------------" && $RESET
+    git clean -xdf
     pip install .
 }
 
