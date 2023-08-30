@@ -17,9 +17,6 @@ from optimum.utils import NormalizedConfigManager
 import numpy as np
 from itertools import chain
 
-from modeling_gpt_bigcode import GPTBigCodeForCausalLM
-transformers.models.gpt_bigcode.modeling_gpt_bigcode.GPTJForCausalLM = GPTBigCodeForCausalLM
-
 parser = argparse.ArgumentParser()
 
 # Main config
