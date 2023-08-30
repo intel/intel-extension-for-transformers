@@ -45,9 +45,9 @@ ninja
 ### 2. Convert Models
 Currently, Graph uses the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model yourself.
 
+Get fp32 model from HuggingFcae links in Supported Models and put it in `graph` folder.
 You can use `git clone` command like (for example, gpt-j-6b): `git clone https://huggingface.co/EleutherAI/gpt-j-6b`.
 
-get fp32 model from HuggingFcae links in Supported Models and put it in `graph` folder.
 Convert process had two steps: 1. get fp32 model with llama.cpp format 2. quantize the fp32 model into model with low precision (int8, int4, etc.) We recommend you to use int4 model for better LLM inference latency.
 
 ```bash
