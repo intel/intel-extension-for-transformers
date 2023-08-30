@@ -11,7 +11,12 @@ In short, ITREX Graph is an experimental feature and may keep changing.
 
 ### Supported Models
 
-Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [LLaMA2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [Dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON-7B](https://huggingface.co/tiiuae/falcon-7b), [StarCoder](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).sd
+Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [LLaMA2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [Dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON-7B](https://huggingface.co/tiiuae/falcon-7b), [StarCoder](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).
+| model name | INT8 | INT4|
+|---|:---:|:---:|
+|**`Falcon-40B`**| ✅ | ✅ | 
+
+
 
 ## How to use
 
