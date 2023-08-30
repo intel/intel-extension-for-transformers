@@ -185,6 +185,8 @@ def parse_args():
         "--task", type=str, default="", choices=["completion", "chat", "summarization"],
         help="task name, different task means different templates."
     )
+    parser.add_argument(
+        "--return_stats", action='store_true', default=False,)
     args = parser.parse_args()
     return args
 
@@ -210,16 +212,9 @@ class StopOnTokens(StoppingCriteria):
         return False
 
 
-def max_input_len(input_text_length):
-    if input_text_length <= 128:
-        return 128
-    elif input_text_length <= 512:
-        return 512
-    elif input_text_length <= 2048:
-        return 2048
-    else:
-        logger.warning("Max support length is 4096")
-        return 4096
+def max_input_len(model, outlen=0):
+    # need to adjust due to perf and real usage
+    return 128
 
 
 def add_template(example, template_name):
@@ -556,7 +551,7 @@ def predict_stream(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
-    return_stats = params["return_stats"] if "return_stats" in params else False
+    return_stats = params["return_stats"]
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
@@ -631,14 +626,13 @@ def predict_stream(**params):
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     elif device == "hpu":
-        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
-        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
             padding="max_length",
-            max_length=max_input_len(input_token_len),
+            max_length=max_input_len(model, max_new_tokens),
         )
+        input_token_len = input_tokens.input_ids.shape[-1]
         if isinstance(model.generation_config.eos_token_id, list):
             stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
         else:
@@ -730,15 +724,16 @@ def predict_stream(**params):
         if output_word_len != 1
         else 0
     )
+
     if return_stats:
         stats = {
-            "input_token_len": input_token_len,
-            "output_word_len": output_word_len,
-            "duration": duration,
-            "first_word_latency": first_word_latency,
-            "msecond_per_word": msecond_per_word,
+            "input_token_len": str(input_token_len) + " ms",
+            "output_word_len": str(output_word_len) + " ms",
+            "duration": str(duration) + " ms",
+            "first_word_latency": str(first_word_latency) + " ms",
+            "msecond_per_word": str(msecond_per_word) + " ms",
         }
-        yield "END_OF_STREAM_STATS={}".format(stats)
+        yield "\nEND_OF_STREAM_STATS={}".format(stats)
 
 
 def predict(**params):
@@ -773,6 +768,7 @@ def predict(**params):
     Returns:
         generator: A generator that yields the generated streaming text.
     """
+
     device = params["device"] if "device" in params else "cpu"
     temperature = float(params["temperature"]) if "temperature" in params else 0.9
     top_p = float(params["top_p"]) if "top_p" in params else 0.75
@@ -857,14 +853,13 @@ def predict(**params):
                 )
                 generation_output = model.generate(**input_tokens, **generation_kwargs)
     elif device == "hpu":
-        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
-        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
             padding="max_length",
-            max_length=max_input_len(input_token_len),
+            max_length=max_input_len(model, max_new_tokens),
         )
+        input_token_len = input_tokens.input_ids.shape[-1]
         if isinstance(model.generation_config.eos_token_id, list):
             stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
         else:
@@ -988,25 +983,25 @@ def main():
     # warmup, the first time inference take longer because of graph compilation
     if args.local_rank in [-1, 0]:
         print("Warmup, Response: ")
-
-    for new_text in predict_stream(
-        model_name=base_model_path,
-        device="hpu" if args.habana else "cpu",
-        prompt="Tell me about Intel Xeon.",
-        task=args.task,
-        temperature=args.temperature,
-        top_p=args.top_p,
-        top_k=args.top_k,
-        repetition_penalty=args.repetition_penalty,
-        num_beams=args.num_beams,
-        max_new_tokens=args.max_new_tokens,
-        do_sample=args.temperature > 0.0,
-        use_hpu_graphs=args.use_hpu_graphs,
-        use_cache=args.use_kv_cache,
-        num_return_sequences=args.num_return_sequences,
-    ):
-        if args.local_rank in [-1, 0]:
-            print(new_text, end="", flush=True)
+    for idx, instruction in enumerate(args.instructions):
+        set_seed(args.seed)
+        idxs = f"{idx+1}"
+        out = predict(
+            model_name=base_model_path,
+            device="hpu" if args.habana else "cpu",
+            prompt=instruction,
+            task=args.task,
+            temperature=args.temperature,
+            top_p=args.top_p,
+            top_k=args.top_k,
+            repetition_penalty=args.repetition_penalty,
+            num_beams=args.num_beams,
+            max_new_tokens=args.max_new_tokens,
+            do_sample=args.temperature > 0.0,
+            use_hpu_graphs=args.use_hpu_graphs,
+            use_cache=args.use_kv_cache,
+            num_return_sequences=args.num_return_sequences,
+        )
 
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
@@ -1030,12 +1025,14 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            return_stats= args.return_stats,
         ):
             if args.local_rank in [-1, 0]:
                 print(new_text, end="", flush=True)
         if args.local_rank in [-1, 0]:
             logger.info("=" * (60 + len(idxs)))
-
+        
+        
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
         idxs = f"{idx+1}"
@@ -1062,7 +1059,7 @@ def main():
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
-            logger.info(f"duration: {time.time() - start_time}")
+            logger.info(f"duration: {time.time() - start_time}" + ' s')
             logger.info("=" * (60 + len(idxs)))
 
 
