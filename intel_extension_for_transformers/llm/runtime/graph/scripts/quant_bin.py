@@ -16,8 +16,10 @@ import sys
 from pathlib import Path
 import argparse
 from typing import List, Optional
+import subprocess
 
 model_maps = {"gpt_neox": "gptneox"}
+
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Quantize weights of NE files")
@@ -76,20 +78,18 @@ def main(args_in: Optional[List[str]] = None) -> None:
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
 
-    cmd = "{} --model_file {} --out_file {} --nthread {} --bits {}\
-        --alg {} --block_size {} --scale_dtype {} --compute_type {}".format(
-        path,
-        args.model_file,
-        args.out_file,
-        args.nthread,
-        args.bits,
-        args.alg,
-        args.block_size,
-        args.scale_dtype,
-        args.compute_type,
-    )
-    print("cmd:", cmd)
-    os.system(cmd)
+    cmd = [path]
+    cmd.extend(["--model_file",     args.model_file])
+    cmd.extend(["--out_file",       args.out_file])
+    cmd.extend(["--nthread",        str(args.nthread)])
+    cmd.extend(["--bits",           str(args.bits)])
+    cmd.extend(["--alg",            args.alg])
+    cmd.extend(["--block_size",     str(args.block_size)])
+    cmd.extend(["--scale_dtype",    args.scale_dtype])
+    cmd.extend(["--compute_type",   args.compute_type])
+    
+    print(cmd)
+    subprocess.run(cmd)
 
 
 if __name__ == "__main__":

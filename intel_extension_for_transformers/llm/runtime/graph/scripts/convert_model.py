@@ -17,6 +17,7 @@ from pathlib import Path
 import argparse
 from typing import List, Optional
 from transformers import AutoConfig
+import subprocess
 
 model_maps = {"gpt_neox": "gptneox"}
 
@@ -46,11 +47,14 @@ def main(args_in: Optional[List[str]] = None) -> None:
     model_type = model_maps.get(config.model_type, config.model_type)
 
     path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
-    cmd = "python {} --outfile {} --outtype {} {}".format(
-        path, args.outfile, args.outtype, args.model
-    )
+    cmd = []
+    cmd.extend(["python", path])
+    cmd.extend(["--outfile", args.outfile])
+    cmd.extend(["--outtype", args.outtype])
+    cmd.extend([args.model])
+
     print("cmd:", cmd)
-    os.system(cmd)
+    subprocess.run(cmd)
 
 
 if __name__ == "__main__":

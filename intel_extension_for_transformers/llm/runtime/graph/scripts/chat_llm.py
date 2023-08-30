@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 import argparse
 from typing import List, Optional
+import subprocess
 
 model_maps = {"gpt_neox": "gptneox"}
 
@@ -93,23 +94,21 @@ def main(args_in: Optional[List[str]] = None) -> None:
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
 
-    cmd = "{} --model {} --prompt \"{}\" --n-predict {} --threads {} --batch-size {} \
-        --ctx-size {} --seed {} --repeat-penalty {} --keep {}".format(
-        path,
-        args.model,
-        args.prompt,
-        args.n_predict,
-        args.threads,
-        args.batch_size,
-        args.ctx_size,
-        args.seed,
-        args.repeat_penalty,
-        args.keep,
-    )
-    if args.color:
-        cmd = cmd + " --color"
+    cmd = [path]
+    cmd.extend(["--model",          args.model])
+    cmd.extend(["--prompt",         args.prompt])
+    cmd.extend(["--n-predict",      str(args.n_predict)])
+    cmd.extend(["--threads",        str(args.threads)])
+    cmd.extend(["--batch-size",     str(args.batch_size)])
+    cmd.extend(["--ctx-size",       str(args.ctx_size)])
+    cmd.extend(["--seed",           str(args.seed)])
+    cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])
+    cmd.extend(["--keep",           str(args.keep)])
+    # if args.color:
+    #     cmd.append(" --color")
+
     print("cmd:", cmd)
-    os.system(cmd)
+    subprocess.run(cmd)
 
 
 if __name__ == "__main__":
