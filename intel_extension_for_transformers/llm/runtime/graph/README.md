@@ -4,7 +4,7 @@ ITREX Graph is an experimental c++ bare metal LLM inference solution that mainly
 
 - Simple and hierarchical structure, you can add your own high-performance implementation.
 - Applied quantization into high 4 bitsfrom int8, higher performance and accuracy compared with the original one.
-- Utilized AVX512F instruction set, more instructions support on the way.
+- Utilized AMX, VNNI and AVX512F instruction set, more instructions support on the way.
 - Currently only supports x86 platforms, and initial Intel GPU support.
 
 In short, ITREX Graph is an experimental feature and may keep changing.
@@ -27,8 +27,8 @@ Now we supports following models.
 |[MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
 |[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b)| ✅ | ✅ | 
 |[Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
-|[StarCoder-1B](https://huggingface.co/need-for-speed/starcoderbase-1b)| ✅ | ✅ | 
-|[StarCoder-3B](https://huggingface.co/need-for-speed/starcoderbase-3b)| ✅ | ✅ | 
+|[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b)| ✅ | ✅ | 
+|[StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b)| ✅ | ✅ | 
 |[StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
 
 
@@ -45,9 +45,9 @@ ninja
 ### 2. Convert Models
 Currently, Graph uses the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model yourself.
 
-**If you worry about the network issue, please prepare related huggingface models first and put it in `graph` folder.** You can use `git clone` command like (for example, gpt-j-6b): `git clone https://huggingface.co/EleutherAI/gpt-j-6b`.
+You can use `git clone` command like (for example, gpt-j-6b): `git clone https://huggingface.co/EleutherAI/gpt-j-6b`.
 
-Neural Engine Graph only supports `LLaMA`, `LLaMA2`, `GPT-NeoX (Dolly)`, `GPT-J`, `FALCON`, `StarCoder`, `MPT` for now. Other model types could not works well (We are continuing supporting more LLMs...). Convert process had two steps: 1. get fp32 model with llama.cpp format 2. quantize the fp32 model into model with low precision (int8, int4, etc.) We recommend you to use int4 model for better LLM inference latency.
+Convert process had two steps: 1. get fp32 model from HuggingFcae links in Supported Models  2. get fp32 model with llama.cpp format 3. quantize the fp32 model into model with low precision (int8, int4, etc.) We recommend you to use int4 model for better LLM inference latency.
 
 ```bash
 # convert the pytorch model to ggml format
@@ -76,6 +76,9 @@ quantization args explanations:
 
 Running GPT-NEOX / MPT / FALCON / / GPT-J / STARCODER model, please use `chat_gptneox` / `chat_mpt` / `chat_falcon` / `chat_starcoder` (Please type **prompt about codes** when use `STARCODER`. For example, `-p "def fibonnaci("`).
 
+[!NOTE]  
+If you worry about the network issue, please prepare related huggingface models first and put it in `graph` folder.
+
 ### 3. Run Models
 
 We supply LLM chat python script to run supported models conveniently.
@@ -84,13 +87,13 @@ We supply LLM chat python script to run supported models conveniently.
 # recommed to use numactl to bind cores in Intel cpus for better performance
 # if you use different core numbers, please also  change -t arg value
 # please type prompt about codes when run `StarCoder`, for example, -p "def fibonnaci(".
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 --keep 48 -t 56 --color -p "She opened the door and see"
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see"
 
 # if you want to generate fixed outputs, please set --seed arg, for example:
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 --keep 48 -t 56 --color -p "She opened the door and see" --seed 12
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --seed 12
 
 # if you want to reduce repeated generated texts, please set --repeat_penalty (value > 1.0, default = 1.0), for example:
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 --keep 48 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
 ```
 
 Chat script args explanations:
