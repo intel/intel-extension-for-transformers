@@ -1,6 +1,6 @@
 <div align="center">
 
-Intel® Neural Chat
+NeuralChat
 ===========================
 <h3> An open-source Python library that empowers you to customize your chatbot with a diverse range of plugins.</h3>
 
