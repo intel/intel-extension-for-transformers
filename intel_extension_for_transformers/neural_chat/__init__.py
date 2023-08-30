@@ -17,6 +17,7 @@
 
 from .config import PipelineConfig
 from .config import GenerationConfig
+<<<<<<< HEAD
 from .config import (
     TextGenerationFinetuningConfig,
     SummarizationFinetuningConfig,
@@ -24,6 +25,9 @@ from .config import (
     TTSFinetuningConfig
 )
 from .config import OptimizationConfig
+=======
+from .config import FinetuningConfig
+>>>>>>> Added QLoRA support in NeuralChat finetuning. Refined NeuralChat optimization API. synced finetuning code with code under workflow.
 from .chatbot import build_chatbot
 from .chatbot import finetune_model
 from .chatbot import optimize_model

@@ -44,6 +44,7 @@ from transformers import (
     Seq2SeqTrainer,
     Seq2SeqTrainingArguments,
     AutoModelForSeq2SeqLM,
+    BitsAndBytesConfig,
     set_seed
 )
 from transformers.trainer_utils import is_main_process, get_last_checkpoint
@@ -52,10 +53,12 @@ import numpy as np
 import evaluate
 import torch
 import importlib.util
-from transformers.utils.import_utils import is_optimum_available
+from transformers.utils.import_utils import is_optimum_available, is_bitsandbytes_available
 from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
 from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
 
+if is_bitsandbytes_available():
+    import bitsandbytes as bnb
 
 def is_optimum_habana_available():
     return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
@@ -69,6 +72,11 @@ class Finetuning:
             finetuning_config.training_args,
             finetuning_config.finetune_args
         )
+        if finetuning_config.finetune_args.device == "auto":
+            if torch.cuda.is_available():
+                finetuning_config.finetune_args.device = "cuda"
+            else:
+                finetuning_config.finetune_args.device = "cpu"
         if finetuning_config.finetune_args.device == "cpu":
             finetuning_config.training_args.no_cuda = True
             Arguments = type(finetuning_config.training_args)
@@ -235,11 +243,40 @@ class Finetuning:
         return tokenizer
 
     def finetune(self):
+        model_args, data_args, training_args, finetune_args = \
+            self.model_args, self.data_args, self.training_args, self.finetune_args
+        if not (is_bitsandbytes_available() and torch.cuda.is_available() and training_args.device.type == "cuda"):
+            finetune_args.qlora = False
+        if finetune_args.qlora:
+            # finetune_args.lora_all_linear = True
+            finetune_args.peft = "lora"
+            compute_dtype = (
+                torch.float16 if training_args.fp16 else
+                    (torch.bfloat16 if training_args.bf16 else torch.float32)
+            )
+            self.device_map = "auto"
+            self.bitsandbytes_quant_config = BitsAndBytesConfig(
+                load_in_4bit=finetune_args.bits == 4,
+                load_in_8bit=finetune_args.bits == 8,
+                llm_int8_threshold=6.0,
+                llm_int8_has_fp16_weight=False,
+                bnb_4bit_compute_dtype=compute_dtype,
+                bnb_4bit_use_double_quant=finetune_args.double_quant,
+                bnb_4bit_quant_type=finetune_args.quant_type,
+            )
+            if finetune_args.bits not in [4, 8]:
+                raise NotImplementedError(
+                    f"Unsupported bits {finetune_args.bits}, only support 4 and 8 now."
+                )
+        else:
+            self.device_map = None
+            self.bitsandbytes_quant_config = None
+
         config = self.load_model_config(self.model_args)
         if config.architectures[0].endswith("ForCausalLM"):
-            self.finetune_clm()
+            self.finetune_clm(model_args, data_args, training_args, finetune_args)
         elif config.architectures[0].endswith("ForConditionalGeneration"):
-            self.finetune_seq2seq()
+            self.finetune_seq2seq(model_args, data_args, training_args, finetune_args)
         else:
             raise NotImplementedError(
                 "Unsupported architecture {}, only support CausalLM (CLM) \
@@ -248,22 +285,25 @@ class Finetuning:
                 )
             )
 
-    def finetune_clm(self):
-        model_args, data_args, training_args, finetune_args = \
-            self.model_args, self.data_args, self.training_args, self.finetune_args
+    def find_all_linear_names(self, model):
+        cls = torch.nn.Linear
+        if self.finetune_args.qlora:
+            if self.finetune_args.bits == 8:
+                cls = bnb.nn.Linear8bitLt
+            elif self.finetune_args.bits == 4:
+                cls = bnb.nn.Linear4bit
 
-        def find_all_linear_names(model):
-            cls = torch.nn.Linear
-            lora_module_names = set()
-            for name, module in model.named_modules():
-                if isinstance(module, cls):
-                    names = name.split('.')
-                    lora_module_names.add(names[0] if len(names) == 1 else names[-1])
+        lora_module_names = set()
+        for name, module in model.named_modules():
+            if isinstance(module, cls):
+                names = name.split('.')
+                lora_module_names.add(names[0] if len(names) == 1 else names[-1])
 
-            if 'lm_head' in lora_module_names: # needed for 16-bit
-                lora_module_names.remove('lm_head')
-            return list(lora_module_names)
+        if 'lm_head' in lora_module_names: # needed for 16-bit
+            lora_module_names.remove('lm_head')
+        return list(lora_module_names)
 
+    def finetune_clm(self, model_args, data_args, training_args, finetune_args):
         if finetune_args.device == 'habana':
             if not is_optimum_habana_available():
                 raise ImportError(
@@ -287,18 +327,42 @@ class Finetuning:
 
         # Load model
         if model_args.model_name_or_path:
-            model_dtype = torch.bfloat16 if training_args.bf16 else None
-            model = AutoModelForCausalLM.from_pretrained(
-                model_args.model_name_or_path,
-                from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                config=config,
-                cache_dir=model_args.cache_dir,
-                revision=model_args.model_revision,
-                use_auth_token=True if model_args.use_auth_token else None,
-                trust_remote_code=True if model_args.trust_remote_code else None,
-                torch_dtype=model_dtype,
-                low_cpu_mem_usage=True,
+            model_dtype = (
+                torch.float16 if training_args.fp16 else
+                    (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
+            if (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
+                re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
+                from .models.mpt.modeling_mpt import MPTForCausalLM
+
+                model = MPTForCausalLM.from_pretrained(
+                    model_args.model_name_or_path,
+                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                    config=config,
+                    cache_dir=model_args.cache_dir,
+                    device_map=self.device_map,
+                    quantization_config=self.bitsandbytes_quant_config,
+                    revision=model_args.model_revision,
+                    use_auth_token=True if model_args.use_auth_token else None,
+                    trust_remote_code=True if model_args.trust_remote_code else None,
+                    torch_dtype=model_dtype,
+                    low_cpu_mem_usage=True,
+                )
+            else:
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_args.model_name_or_path,
+                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                    config=config,
+                    cache_dir=model_args.cache_dir,
+                    device_map=self.device_map,
+                    quantization_config=self.bitsandbytes_quant_config,
+                    revision=model_args.model_revision,
+                    use_auth_token=True if model_args.use_auth_token else None,
+                    trust_remote_code=True if model_args.trust_remote_code else None,
+                    torch_dtype=model_dtype,
+                    low_cpu_mem_usage=True,
+                )
+                tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
         else:
             raise ValueError(
                 "Must provide model_name_or_path to load a pretrained CausalLM model."
@@ -340,14 +404,15 @@ class Finetuning:
 
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token_id = tokenizer.eos_token_id
-        tokenizer.padding_side = "left"  # Allow batched inference
 
         raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
+        column_names = list(raw_datasets["train"].features)
 
         with training_args.main_process_first(desc="dataset map pre-processing"):
             tokenized_datasets = raw_datasets.map(
                 preprocess_function,
                 batched=True,
+                remove_columns=column_names,
                 load_from_cache_file=not data_args.overwrite_cache,
             )
 
@@ -365,12 +430,19 @@ class Finetuning:
                     concatenated_dataset[column] = reshaped_data
                 return datasets.Dataset.from_dict(concatenated_dataset)
 
-            tokenized_datasets_ = tokenized_datasets["train"].remove_columns(
-                ["prompt_sources", "prompt_targets"]
-            )
             tokenized_datasets["train"] = concatenate_data(
-                tokenized_datasets_, data_args.max_seq_length
+                tokenized_datasets["train"], data_args.max_seq_length
             )
+
+        if training_args.do_eval:
+            if "test" not in tokenized_datasets:
+                self.logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
+                tokenized_datasets = tokenized_datasets["train"].train_test_split(
+                    test_size=data_args.eval_dataset_size, shuffle=True, seed=42
+                )
+            eval_dataset = tokenized_datasets["test"]
+            if data_args.max_eval_samples is not None:
+                eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 
         if training_args.do_train:
             if "train" not in tokenized_datasets:
@@ -378,13 +450,6 @@ class Finetuning:
             train_dataset = tokenized_datasets["train"]
             if data_args.max_train_samples is not None:
                 train_dataset = train_dataset.select(range(data_args.max_train_samples))
-
-        if training_args.do_eval:
-            if "test" not in tokenized_datasets:
-                raise ValueError("--do_eval requires a test dataset")
-            eval_dataset = tokenized_datasets["test"]
-            if data_args.max_eval_samples is not None:
-                eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 
         # Data collator
         # This one will take care of randomly masking the tokens.
@@ -399,7 +464,7 @@ class Finetuning:
             # PEFT settings
             if finetune_args.peft == "lora":
                 if finetune_args.lora_all_linear:
-                    target_modules = find_all_linear_names(model)
+                    target_modules = self.find_all_linear_names(model)
                 else:
                     target_modules = finetune_args.lora_target_modules
 
@@ -474,10 +539,35 @@ class Finetuning:
                         training_args.output_dir, state_dict=unwrapped_model.state_dict()
                     )
 
-    def finetune_seq2seq(self):
-        model_args, data_args, training_args, finetune_args = \
-            self.model_args, self.data_args, self.training_args, self.finetune_args
+        if finetune_args.do_lm_eval and finetune_args.task != "summarization":
+            unwrapped_model.eval()
+            from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+            with training_args.main_process_first(desc="lm_eval"):
+                if is_main_process(training_args.local_rank):
+                    with torch.no_grad():
+                        results = evaluate(
+                                model="hf-causal",
+                                model_args='pretrained='+model_args.model_name_or_path+\
+                                        ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
+                                user_model=unwrapped_model,
+                                device=unwrapped_model.device.type,
+                                batch_size=training_args.per_device_eval_batch_size,
+                                tasks=finetune_args.lm_eval_tasks,)
+                        self.logger.info(results)
 
+        if finetune_args.task == "summarization":
+            from .eval_utils import compute_rouge_metric
+            gen_kwargs = {
+                    "num_beams": data_args.num_beams,
+                    "max_new_tokens": data_args.max_new_tokens,
+                    }
+            with training_args.main_process_first(desc="summarization eval"):
+                if is_main_process(training_args.local_rank):
+                    results = compute_rouge_metric(unwrapped_model, tokenizer, eval_dataset,
+                            training_args, gen_kwargs)
+                    self.logger.info(results)
+
+    def finetune_seq2seq(self, model_args, data_args, training_args, finetune_args):
         # Detecting last checkpoint.
         last_checkpoint = None
         if os.path.isdir(training_args.output_dir) \
@@ -627,13 +717,20 @@ class Finetuning:
 
             # Load model
             if model_args.model_name_or_path:
+                model_dtype = (
+                    torch.float16 if training_args.fp16 else
+                        (torch.bfloat16 if training_args.bf16 else torch.float32)
+                )
                 model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_args.model_name_or_path,
                     from_tf=bool(".ckpt" in model_args.model_name_or_path),
                     config=config,
                     cache_dir=model_args.cache_dir,
+                    device_map=self.device_map,
+                    quantization_config=self.bitsandbytes_quant_config,
                     revision=model_args.model_revision,
                     use_auth_token=True if model_args.use_auth_token else None,
+                    torch_dtype=model_dtype,
                 )
                 model.resize_token_embeddings(len(tokenizer))
             else:
@@ -641,11 +738,15 @@ class Finetuning:
 
             # PEFT settings
             if finetune_args.peft == "lora":
+                if finetune_args.lora_all_linear:
+                    target_modules = self.find_all_linear_names(model)
+                else:
+                    target_modules = finetune_args.lora_target_modules
                 peft_config = LoraConfig(
                     r=finetune_args.lora_rank,
                     lora_alpha=finetune_args.lora_alpha,
                     lora_dropout=finetune_args.lora_dropout,
-                    target_modules=finetune_args.lora_target_modules,
+                    target_modules=target_modules,
                     bias="none",
                     task_type=TaskType.SEQ_2_SEQ_LM,
                 )
