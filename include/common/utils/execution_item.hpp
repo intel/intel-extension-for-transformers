@@ -82,6 +82,14 @@ public:
         return ndi.get_global_linear_id();
     }
 
+    inline uint32_t get_group_range(int dimension) const {
+        return ndi.get_group_range(dimension);
+    }
+
+    inline uint32_t get_group_linear_id() const {
+        return ndi.get_group_linear_id();
+    }
+
 private:
     cl::sycl::nd_item<dims> ndi;
 };

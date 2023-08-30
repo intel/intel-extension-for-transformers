@@ -30,6 +30,8 @@ template <class Test, typename validate_func, typename KERNEL,
 void gemm_exec(const std::string &compile_str, size_t batch = 1) {
     test_result result = test_result::complete;
 
+    using gemm_op_t = KERNEL::gemm_op_t;
+
     using data_type_a = Test::data_type_a;
     using data_type_b = Test::data_type_b;
     using data_type_c = Test::data_type_c;
@@ -75,24 +77,6 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
             },
             queue, device, context);
 
-    size_t group_range_m = (matrix_m % wg_tile_m == 0)
-            ? matrix_m / wg_tile_m
-            : (matrix_m / wg_tile_m) + 1;
-    size_t group_range_n = (matrix_n % wg_tile_n == 0)
-            ? matrix_n / wg_tile_n
-            : (matrix_n / wg_tile_n) + 1;
-    size_t subgroup_range_m = (wg_tile_m % sg_tile_m == 0)
-            ? wg_tile_m / sg_tile_m
-            : (wg_tile_m / sg_tile_m) + 1;
-    size_t subgroup_range_n = (wg_tile_n % sg_tile_n == 0)
-            ? wg_tile_n / sg_tile_n
-            : (wg_tile_n / sg_tile_n) + 1;
-    cl::sycl::range<3> group_range {
-            Test::l3_kslicing, group_range_m, group_range_n};
-    cl::sycl::range<3> local_range {
-            Test::slm_kslicing, subgroup_range_m, subgroup_range_n};
-    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
-
     try {
         std::vector<kernel_id> kernelId = {get_kernel_id<Test>()};
         auto inputBundle
@@ -104,41 +88,25 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
         using namespace gpu::xetla::group;
         using namespace gpu::xetla::kernel;
         using namespace gpu::xetla::subgroup;
-        using tile_shape
-                = tile_shape_t<wg_tile_n, wg_tile_m, sg_tile_n, sg_tile_m>;
-        static constexpr uint32_t periodic_sync_interval = 8;
-        static constexpr uint32_t prefetch_distance = 3;
-        using brgemm_t = typename brgemm_selector_t<data_type_a, data_type_b,
-                Test::layout_a, Test::layout_b, mem_space::global,
-                mem_space::global, sizeof(data_type_a) == 4 ? 4 : 8,
-                sizeof(data_type_a) == 4 ? 4 : 8, data_type_acc, tile_shape,
-                sg_tile_k, mma_engine::xmx, gpu_arch::Xe, prefetch_distance,
-                periodic_sync_interval>::brgemm;
 
-        using update_method = typename std::conditional<(Test::l3_kslicing > 1),
-                result_reduce_sum, result_overwrite>::type;
-        using epilogue_t = epilogue_t<
-                epilogue_policy_default<update_method, gpu_arch::Xe>,
-                tile_shape,
-                mem_desc_t<data_type_c, mem_layout::row_major,
-                        mem_space::global>>;
+        typename gemm_op_t::arguments_t arg(matrix_m, matrix_k, matrix_n,
+                nullptr,
+                Test::layout_a == mem_layout::col_major ? matrix_m : matrix_k,
+                nullptr,
+                Test::layout_b == mem_layout::col_major ? matrix_k : matrix_n,
+                nullptr, matrix_n);
 
-        using gemm_op_t = gemm_t<dispatch_policy_kslicing<Test::l3_kslicing,
-                                         Test::slm_kslicing, gpu_arch::Xe>,
-                brgemm_t, epilogue_t>;
+        cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(arg);
 
         for (size_t i = 0; i < batch; i++) {
             auto A_ptr = A + i * size_a;
             auto B_ptr = B + i * size_b;
             auto C_ptr = C + i * size_c;
-            typename gemm_op_t::arguments_t arg(matrix_m, matrix_k, matrix_n,
-                    A_ptr,
-                    Test::layout_a == mem_layout::col_major ? matrix_m
-                                                            : matrix_k,
-                    B_ptr,
-                    Test::layout_b == mem_layout::col_major ? matrix_k
-                                                            : matrix_n,
-                    C_ptr, matrix_n);
+
+            arg.matA_base = A_ptr;
+            arg.matB_base = B_ptr;
+            arg.matC_base = C_ptr;
+
             if (!gemm_op_t::can_implement(arg)) {
                 std::cout << "The arguments cannot be supported, skip ... "
                           << std::endl;
@@ -153,8 +121,8 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
                             gpu::xetla::xetla_exec_item<3> ei(item);
                             gpu::xetla::xetla_local_init<SLMSIZE>();
                             gpu::xetla::xetla_nbarrier_init<BARNUM>();
-                            KERNEL::run(ei, A_ptr, B_ptr, C_ptr, matrix_m,
-                                    matrix_n, matrix_k);
+                            gemm_op_t gemm_op;
+                            gemm_op(ei, arg);
                         });
             });
             e_esimd.wait();

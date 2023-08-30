@@ -25,5 +25,6 @@
 #include "kernel/gemm/api.hpp"
 #include "kernel/gemm/common.hpp"
 #include "kernel/gemm/dispatch_policy.hpp"
+#include "kernel/gemm/impl/block_xe.hpp"
 #include "kernel/gemm/impl/default_xe.hpp"
 #include "kernel/gemm/impl/kslicing_xe.hpp"

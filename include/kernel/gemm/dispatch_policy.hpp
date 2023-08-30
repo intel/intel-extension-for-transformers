@@ -48,6 +48,20 @@ struct dispatch_policy_kslicing {
     static constexpr gpu_arch arch_tag = arch_tag_;
 };
 
+/// @brief Persistent-thread GEMM implementation.
+/// A GEMM implementation to provide a composition point of brgemm and epilogue.
+/// @tparam wg_num_n_ Is the x-dir workgroup number of repeat block.
+/// @tparam arch_tag_ Is the HW architecture.
+template <int wg_num_n_ = 8, gpu_arch arch_tag_ = gpu_arch::Xe>
+struct dispatch_policy_block {
+    static constexpr gpu_arch arch_tag = arch_tag_;
+    static constexpr uint32_t max_wg_num = arch_attr_t<arch_tag>::max_wg_num;
+    static constexpr int wg_num_n = wg_num_n_;
+    static_assert(!(max_wg_num % wg_num_n),
+            "max_wg_num cannot be divisible by given wg_num_n!");
+    static constexpr int wg_num_m = max_wg_num / wg_num_n;
+};
+
 /// @} xetla_gemm
 
 } // namespace gpu::xetla::kernel

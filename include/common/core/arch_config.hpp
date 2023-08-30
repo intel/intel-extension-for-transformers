@@ -71,6 +71,7 @@ struct arch_attr_t {
     using load_store_attr = load_store_attr_t<ARCH_>;
     using mma_attr = mma_attr_t<ARCH_>;
     using register_attr = register_attr_t<ARCH_, grf_mode::double_grf>;
+    static constexpr uint32_t max_wg_num = 64;
 };
 
 /// @} xetla_core_arch_config

@@ -35,3 +35,16 @@ REGISTER_TYPED_TEST_SUITE_P(bf16_gemm_test, esimd);
 using tests = ::testing::Types<Test0, Test1, Test2, Test3, Test4, Test5, Test6,
         Test7, Test8, Test9, Test10, Test11>;
 INSTANTIATE_TYPED_TEST_SUITE_P(bf16_gemm_test_suite, bf16_gemm_test, tests);
+
+template <typename T>
+class bf16_gemm_test_block_policy : public ::testing::Test {};
+TYPED_TEST_SUITE_P(bf16_gemm_test_block_policy);
+TYPED_TEST_P(bf16_gemm_test_block_policy, esimd) {
+    gemm_exec<TypeParam, result_validate<TypeParam>,
+            bf16_gemm_func_block_policy<TypeParam>>(esimd_compile_string);
+}
+REGISTER_TYPED_TEST_SUITE_P(bf16_gemm_test_block_policy, esimd);
+using tests_block_policy = ::testing::Types<Test12, Test13, Test14, Test15,
+        Test16, Test17, Test18, Test19, Test20, Test21>;
+INSTANTIATE_TYPED_TEST_SUITE_P(
+        bf16_gemm_test_suite, bf16_gemm_test_block_policy, tests_block_policy);
