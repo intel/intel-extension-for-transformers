@@ -78,7 +78,7 @@ WORKDIR /root/chatbot/intel-extension-for-transformers/workflows/chatbot/inferen
 
 
 # HABANA environment
-FROM vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
+FROM vault.habana.ai/gaudi-docker/1.11.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
@@ -88,18 +88,20 @@ RUN apt-get update && \
     git-lfs install
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd optimum-habana/ && git reset --hard 9570fb8f359ef458fddfb4040e2280d5fec0fd11 && pip install -e . && cd ../ && \
+    cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
     pip install peft && \
     pip install einops && \
     pip install datasets && \
-    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
+    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0
 
 RUN git clone https://github.com/intel/intel-extension-for-transformers.git \
     && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ \
     && pip install -r requirements.txt \
-    && pip install transformers==4.28.1
+    && pip install transformers==4.32.0 \
+    && pip install accelerate==0.22.0 
+
 
 WORKDIR /intel-extension-for-transformers/workflows/chatbot/inference/
