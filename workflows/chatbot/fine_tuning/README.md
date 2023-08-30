@@ -278,7 +278,7 @@ python finetune_clm.py \
 
 
 
-**For [MPT](https://huggingface.co/mosaicml/mpt-7b)**, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+**For [MPT](https://huggingface.co/mosaicml/mpt-7b)**, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python finetune_clm.py \
@@ -300,7 +300,6 @@ python finetune_clm.py \
         --save_strategy epoch \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --no_cuda \
 ```
@@ -427,7 +426,6 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --group_by_length True \
     --dataset_concatenation \
     --do_train \
-    --trust_remote_code True \
     --tokenizer_name "EleutherAI/gpt-neox-20b" \
     --no_cuda \
     --ddp_backend ccl \
@@ -469,7 +467,7 @@ python finetune_clm.py \
         --use_lazy_mode \
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python finetune_clm.py \
@@ -493,7 +491,6 @@ python finetune_clm.py \
         --log_level info \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
         --use_habana \
@@ -541,9 +538,10 @@ python ../../utils/gaudi_spawn.py \
         --habana \
         --use_habana \
         --use_lazy_mode \
+        --distribution_strategy fast_ddp \
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python ../../utils/gaudi_spawn.py \
@@ -568,11 +566,11 @@ python ../../utils/gaudi_spawn.py \
         --log_level info \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
         --use_habana \
         --use_lazy_mode \
+        --distribution_strategy fast_ddp \
 ```
 
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
