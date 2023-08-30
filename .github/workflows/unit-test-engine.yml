@@ -124,9 +124,8 @@ jobs:
         
       - name: Calculte coverage
         run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest/coverage && \
-                   bash calc_coverage.sh "
+          cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
+          /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir"
 
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
