@@ -203,6 +203,7 @@ struct model_file_loader {
     hparams.n_embd = file.read_u32();
     hparams.n_mult = file.read_u32();
     hparams.n_head = file.read_u32();
+    hparams.n_head_kv = file.read_u32();
     hparams.n_layer = file.read_u32();
     hparams.n_rot = file.read_u32();
     hparams.ftype = (enum ne_ftype)file.read_u32();
@@ -307,6 +308,7 @@ struct model_file_saver {
     file.write_u32(hparams.n_embd);
     file.write_u32(hparams.n_mult);
     file.write_u32(hparams.n_head);
+    file.write_u32(hparams.n_head_kv);
     file.write_u32(hparams.n_layer);
     file.write_u32(hparams.n_rot);
     file.write_u32(hparams.ftype);

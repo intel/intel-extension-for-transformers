@@ -73,12 +73,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
     
     with open(dir_model + "/added_tokens.json", "r", encoding="utf-8") as f:
         encoder_added = json.load(f)
-    
-    with open(dir_model + "/config.json", "r", encoding="utf-8") as f:
-        hparams = json.load(f)
 
     print("Loading model: ", dir_model)
     model = GPTJForCausalLM.from_pretrained(dir_model, low_cpu_mem_usage=True)
+    hparams = model.config.to_dict()
     list_vars = model.state_dict()
     fout = open(fname_out, "wb")
     
@@ -89,6 +87,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         hparams["n_embd"],
         hparams["n_embd"] // hparams["n_head"],
         hparams["n_head"],
+        hparams.get("n_head_kv", 0),  # multi-query attention
         hparams["n_layer"],
         hparams["rotary_dim"],
         ftype
