@@ -5,6 +5,19 @@ LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
 WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime"
 
+# get parameters
+PATTERN='[-a-zA-Z0-9_]*='
+PERF_STABLE_CHECK=true
+
+for i in "$@"; do
+    case $i in
+        --test_name=*)
+            test_name=`echo $i | sed "s/${PATTERN}//"`;;
+        *)
+            echo "Parameter $i not recognized."; exit 1;;
+    esac
+done
+
 # -------------------pytest------------------------
 function pytest() {
     local coverage_log_dir=$1
@@ -73,8 +86,8 @@ function gtest() {
 
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
-    test_name="$1"
-    if [[ $test_name == "PR" ]]; then
+    echo "test on ${test_name}"
+    if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"
         gtest
     elif [[ $test_name == "baseline" ]]; then
