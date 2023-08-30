@@ -6,7 +6,7 @@ import shutil
 import torch.utils.data as data
 import unittest
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     PrunerConfig,
     PruningConfig,
     DistillationConfig,
@@ -16,8 +16,8 @@ from intel_extension_for_transformers.optimization import (
     objectives,
     OptimizedModel,
 )
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
-from intel_extension_for_transformers.optimization.distillation import Criterion
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.distillation import Criterion
 
 from transformers import (
     AutoModelForSequenceClassification,

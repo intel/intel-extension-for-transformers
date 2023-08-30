@@ -31,7 +31,7 @@ import functools
 import numpy as np
 import torch
 import transformers
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     metrics,
     PrunerConfig,
     PruningConfig,
@@ -293,7 +293,7 @@ class OptimizationArguments:
 
 def main():
     if int(os.environ.get("LOCAL_RANK", -1)) != -1 and '--no_cuda' in sys.argv:
-        from intel_extension_for_transformers.optimization.utils.utility import distributed_init
+        from intel_extension_for_transformers.transformers.utils.utility import distributed_init
         distributed_init()
 
     # See all possible arguments in src/transformers/training_args.py

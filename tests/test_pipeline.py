@@ -2,7 +2,7 @@ import os
 import unittest
 import shutil
 import neural_compressor.adaptor.pytorch as nc_torch
-from intel_extension_for_transformers.optimization.pipeline import pipeline
+from intel_extension_for_transformers.transformers.pipeline import pipeline
 from packaging.version import Version
 from transformers import (
     set_seed,
