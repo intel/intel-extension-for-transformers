@@ -43,7 +43,7 @@
 #include "core/ne_layers.h"
 #include "application/common.h"
 #include "core/jblas_common.hpp"
-#include "jblas/jblas/jit_blas_weight_compression.h"
+#include "jblas/jit_blas_weight_compression.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"

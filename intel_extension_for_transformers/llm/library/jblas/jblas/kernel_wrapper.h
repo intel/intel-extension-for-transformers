@@ -86,13 +86,46 @@ class Memcpy2D {
 class Memcpy2DFp32CvtBf16 {
  public:
   template <JBLAS_ISA ISA_T>
-  static JBLAS_CODE forward(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
+  static JBLAS_CODE forward(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
+                            bool zeropadding) {
 #if CompileAVX512F()
     if (utils::isa_base<ISA_T>::avx512f) {
-      return kernel::avx512f::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride);
+      return kernel::avx512f::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride, zeropadding);
     }
 #endif
-    return kernel::ref::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride);
+    return kernel::ref::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride, zeropadding);
+  }
+};
+
+class Memcpy2DFp32CvtFp16 {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
+                            bool zeropadding) {
+#if CompileFP16()
+    if (utils::isa_base<ISA_T>::avx512_fp16) {
+      return kernel::avx512f::fp32_cvt_fp16_2D_write_back((const float*)srcptr, (utils::fp16*)dstptr, row, col,
+                                                          srcstride / sizeof(float), dststride / sizeof(utils::fp16),
+                                                          zeropadding);
+    }
+#endif
+    return JblasNotSupport;
+  }
+};
+
+class Memcpy2DFp16CvtFp32 {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
+                            bool zeropadding) {
+#if CompileFP16()
+    if (utils::isa_base<ISA_T>::avx512_fp16) {
+      return kernel::avx512f::fp16_cvt_fp32_2D_write_back(  //
+          (const utils::fp16*)srcptr, (float*)dstptr, row, col, srcstride / sizeof(utils::fp16),
+          dststride / sizeof(float), zeropadding);
+    }
+#endif
+    return JblasNotSupport;
   }
 };
 
@@ -365,6 +398,16 @@ class MinMaxKBlock {
   static inline JBLAS_CODE forward(const float* srcptr, int row, int col, int ld_src, float* minmaxptr, int ld_minmax,
                                    int fsize_minmax, int blocksize) {
     return ref::minmax_f32_kblock(srcptr, row, col, ld_src, minmaxptr, ld_minmax, fsize_minmax, blocksize);
+  }
+};
+
+template <typename _RT>
+class QuantS8RowReduceSum {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(const int8_t* srcptr, int ldsrc, const float* scales, int row, int col,
+                                   _RT* reduce) {
+    return ref::quant_s8_row_reduce_sum(srcptr, ldsrc, scales, row, col, reduce);
   }
 };
 
