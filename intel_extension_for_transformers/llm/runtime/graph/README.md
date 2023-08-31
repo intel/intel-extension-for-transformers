@@ -4,14 +4,33 @@ ITREX Graph is an experimental c++ bare metal LLM inference solution that mainly
 
 - Simple and hierarchical structure, you can add your own high-performance implementation.
 - Applied quantization into high 4 bitsfrom int8, higher performance and accuracy compared with the original one.
-- Utilized AVX512F instruction set, more instructions support on the way.
+- Utilized AMX, VNNI and AVX512F instruction set, more instructions support on the way.
 - Currently only supports x86 platforms, and initial Intel GPU support.
 
 In short, ITREX Graph is an experimental feature and may keep changing.
 
 ### Supported Models
 
-Now we supports [GPT-NeoX](https://github.com/EleutherAI/gpt-neox), [LLaMA](https://github.com/facebookresearch/llama), [LLaMA2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [Dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [MPT](https://huggingface.co/mosaicml/mpt-7b), [FALCON-7B](https://huggingface.co/tiiuae/falcon-7b), [StarCoder](https://huggingface.co/bigcode/starcoder), [GPT-J](https://huggingface.co/docs/transformers/model_doc/gptj).
+Now we supports following models.
+| model name | INT8 | INT4|
+|---|:---:|:---:|
+|[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ | 
+|[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ | 
+|[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ | 
+|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf)| ✅ | ✅ | 
+|[LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
+|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| ✅ | ✅ | 
+|[LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
+|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf)| ✅ | ✅ | 
+|[Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ | 
+|[MPT-7B](https://huggingface.co/mosaicml/mpt-7b)| ✅ | ✅ | 
+|[MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
+|[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b)| ✅ | ✅ | 
+|[Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
+|[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b)| ✅ | ✅ | 
+|[StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b)| ✅ | ✅ | 
+|[StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
+
 
 ## How to use
 
@@ -26,9 +45,10 @@ ninja
 ### 2. Convert Models
 Currently, Graph uses the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model yourself.
 
-**If you worry about the network issue, please prepare related huggingface models first and put it in `graph` folder.** You can use `git clone` command like (for example, gpt-j-6b): `git clone https://huggingface.co/EleutherAI/gpt-j-6b`.
+Get fp32 model from HuggingFcae links in Supported Models and put it in `graph` folder.
+You can use `git clone` command like (for example, gpt-j-6b): `git clone https://huggingface.co/EleutherAI/gpt-j-6b`.
 
-Neural Engine Graph only supports `LLaMA`, `LLaMA2`, `GPT-NeoX (Dolly)`, `GPT-J`, `FALCON`, `StarCoder`, `MPT` for now. Other model types could not works well (We are continuing supporting more LLMs...). Convert process had two steps: 1. get fp32 model with llama.cpp format 2. quantize the fp32 model into model with low precision (int8, int4, etc.) We recommend you to use int4 model for better LLM inference latency.
+Convert process had two steps: 1. get fp32 model with llama.cpp format 2. quantize the fp32 model into model with low precision (int8, int4, etc.) We recommend you to use int4 model for better LLM inference latency.
 
 ```bash
 # convert the pytorch model to ggml format
@@ -65,13 +85,13 @@ We supply LLM chat python script to run supported models conveniently.
 # recommed to use numactl to bind cores in Intel cpus for better performance
 # if you use different core numbers, please also  change -t arg value
 # please type prompt about codes when run `StarCoder`, for example, -p "def fibonnaci(".
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 --keep 48 -t 56 --color -p "She opened the door and see"
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see"
 
 # if you want to generate fixed outputs, please set --seed arg, for example:
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 --keep 48 -t 56 --color -p "She opened the door and see" --seed 12
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --seed 12
 
 # if you want to reduce repeated generated texts, please set --repeat_penalty (value > 1.0, default = 1.0), for example:
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 --keep 48 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
 ```
 
 Chat script args explanations:
