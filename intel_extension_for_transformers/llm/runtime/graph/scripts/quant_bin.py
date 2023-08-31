@@ -79,7 +79,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         sys.exit(1)
 
     quant_bits = 4
-    if args.outtype == "int8":
+    if args.weight_dtype == "int8":
         quant_bits = 8
 
     cmd = [path]
