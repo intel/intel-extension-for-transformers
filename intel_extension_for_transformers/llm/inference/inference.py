@@ -563,7 +563,7 @@ def load_model(
 
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    print("model loaded")
+    logger.info("Model loaded.")
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items()}
@@ -777,7 +777,7 @@ def predict_stream(**params):
         raise ValueError(
             f"Unsupported device type {device}, only supports cpu, cuda and hpu now."
         )
-    output_word_len = 0
+    output_token_len = 0
 
     generation_thread.join(0.1)
     if generation_thread.is_alive():
@@ -790,30 +790,33 @@ def predict_stream(**params):
     for new_text in streamer:
         if len(new_text) == 0:
             continue
-        if output_word_len == 0:
+        if output_token_len == 0:
             first_token_output_time = datetime.now()
-        output_word_len += 1
+        output_token_len += 1
         yield new_text
 
     end_time = datetime.now()
     duration = int((end_time - start_time).total_seconds() * 1000)
-    first_word_latency = int(
+    first_token_latency = int(
         (first_token_output_time - start_time).total_seconds() * 1000
     )
-    msecond_per_word = (
-        (duration - first_word_latency) / (output_word_len - 1)
-        if output_word_len != 1
+    msecond_per_token = (
+        (duration - first_token_latency) / (output_token_len - 1)
+        if output_token_len != 1
         else 0
     )
     if return_stats:
         stats = {
-            "input_token_len": str(input_token_len) + " ms",
-            "output_word_len": str(output_word_len) + " ms",
-            "duration": str(duration) + " ms",
-            "first_word_latency": str(first_word_latency) + " ms",
-            "msecond_per_word": str(msecond_per_word) + " ms",
+            "input_token_len": f"{input_token_len}",
+            "output_token_len": f"{output_token_len}",
+            "duration": f"{duration} ms",
+            "first_token_latency": f"{first_token_latency} ms",
+            "msecond_per_token": f"{msecond_per_token} ms",
         }
-        yield "\nEND_OF_STREAM_STATS={}".format(stats)
+        yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
+        yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
+        for key, value in stats.items():
+            yield "| {:<22} | {:<27} |\n".format(key, value)
 
 
 def predict(**params):
@@ -1047,6 +1050,9 @@ def main():
         args.tokenizer_name if args.tokenizer_name is not None else base_model_path
     )
 
+    logger.info("Model loading...")
+    start_time = time.time()
+
     load_model(
         base_model_path,
         tokenizer_path,
@@ -1058,6 +1064,7 @@ def main():
         use_deepspeed=True if use_deepspeed and args.habana else False,
         hf_access_token=args.hf_access_token
     )
+    logger.info(f"Model load duration: {time.time() - start_time}" + ' s')
 
     if args.habana:
         from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=import-error
@@ -1068,11 +1075,12 @@ def main():
         logger.info(f"n_hpu: {world_size}, bf16")
     # warmup, the first time inference take longer because of graph compilation
     if args.local_rank in [-1, 0]:
-        print("Warmup, Response: ")
+        logger.info("Warmup, Response: ")
 
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
         idxs = f"{idx+1}"
+        start_time = time.time()
         out = predict(
             model_name=base_model_path,
             device="hpu" if args.habana else "cpu",
@@ -1089,12 +1097,15 @@ def main():
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
         )
+        logger.info(f"whole sentence out = {out}")
+        logger.info(f"Warm up duration: {time.time() - start_time}" + ' s')
 
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
+            logger.info(f"Generating response with streaming mode...")
             logger.info(f"Instruction: {instruction}")
             logger.info("Response: ")
         for new_text in predict_stream(
@@ -1124,6 +1135,7 @@ def main():
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
+            logger.info(f"Generating response with non-streaming mode...")
             logger.info(f"Instruction: {instruction}")
             start_time = time.time()
             logger.info("Response: ")
@@ -1145,5 +1157,5 @@ def main():
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
-            logger.info(f"duration: {time.time() - start_time}" + ' s')
+            logger.info(f"Duration: {time.time() - start_time}" + ' s')
             logger.info("=" * (60 + len(idxs)))
