@@ -6,7 +6,7 @@ This document showcases the utilization of the fine-tuned model for conversing w
 # Inference on Xeon SPR
 
 ## Setup Environment
-TBD: @Liang enhance the docker file and use docker command here
+To facilitate the process of setting up the inference environment, we have prepared a Dockerfile. This Dockerfile contains all the necessary configurations and dependencies required for running inference on the Xeon SPR platform. The provided [README guide](./docker/README.md) will walk you through the steps to build the Docker image and launch the Docker container for inference.
 
 ## MPT BF16 Inference
 
