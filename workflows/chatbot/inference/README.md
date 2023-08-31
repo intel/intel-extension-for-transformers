@@ -1,7 +1,7 @@
 Chat with the NeuralChat
 ============
 
-This document showcases the utilization of Llama2 model for conversing with NeuralChat. To obtaining the fine-tuned model, please refer to the [fine-tuning](../fine_tuning/README.md) section. The inference of the models has been validated on the 4th Gen Intel® Xeon® Processors. We provide the [generate.py](./generate.py) script for performing inference on Intel® CPUs. We have enabled IPEX BF16 to speed up the inference. Please use the following commands for inference.
+This document showcases the utilization of Llama2 model for conversing with NeuralChat. The inference of the models has been validated on the 4th Gen Intel® Xeon® Processors. We provide the [generate.py](./generate.py) script for performing inference on Intel® CPUs. We have enabled IPEX INT8 to speed up the inference. Please use the following commands for inference.
 
 
 # Llama2
