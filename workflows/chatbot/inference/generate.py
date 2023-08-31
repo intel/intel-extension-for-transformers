@@ -430,25 +430,13 @@ def load_model(
              self_jit = torch.jit.load(quantized_model_path)
              self_jit = torch.jit.freeze(self_jit.eval())
              setattr(model, "trace_graph", self_jit)
-    elif (re.search("mpt", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-        from models.mpt.modeling_mpt import MPTForCausalLM
-
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            from models.mpt.modeling_mpt import MPTForCausalLM
-            model = MPTForCausalLM.from_pretrained(
-                    model_name,
-                    trust_remote_code=True,
-                    torch_dtype=torch.bfloat16,
-                    low_cpu_mem_usage=True,
-                    torchscript=cpu_jit,
-                )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("opt", model_name, re.IGNORECASE)
+        or re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
     ):
@@ -605,7 +593,7 @@ def predict_stream(**params):
     max_new_tokens = (
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
-    do_sample = False #params["do_sample"] if "do_sample" in params else True
+    do_sample = False
     num_beams = int(params["num_beams"]) if "num_beams" in params else 0
     model_name = (
         params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
@@ -617,7 +605,7 @@ def predict_stream(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
-    return_stats = True #params["return_stats"] if "return_stats" in params else False
+    return_stats = True
     prompt = params["prompt"]
     ipex_int8=params["ipex_int8"]
     model = MODELS[model_name]["model"]
@@ -657,14 +645,8 @@ def predict_stream(**params):
         stop_token_ids.append(end_token_id)
         generation_config = GenerationConfig(
             temperature=temperature,
-            #top_p=top_p,
-            #top_k=top_k,
-            #repetition_penalty=repetition_penalty,
             max_new_tokens=max_new_tokens,
-            #do_sample=do_sample,
-            #num_beams=num_beams,
             use_cache=use_cache,
-            #num_return_sequences=num_return_sequences,
         )
 
         def generate_output():
@@ -851,7 +833,7 @@ def predict(**params):
     max_new_tokens = (
         int(params["max_new_tokens"]) if "max_new_tokens" in params else 256
     )
-    do_sample = params["do_sample"] if "do_sample" in params else True
+    do_sample = False
     num_beams = int(params["num_beams"]) if "num_beams" in params else 0
     model_name = (
         params["model_name"] if "model_name" in params else "mosaicml/mpt-7b-chat"
@@ -883,7 +865,7 @@ def predict(**params):
 
     if num_beams == 0:
         num_beams = 1
-        do_sample = True
+        do_sample = False
     if device == "cpu":
         input_tokens = tokenizer.batch_encode_plus(
             [prompt], return_tensors="pt", padding=True
@@ -899,14 +881,8 @@ def predict(**params):
         stop_token_ids.append(end_token_id)
         generation_config = GenerationConfig(
             temperature=temperature,
-            top_p=top_p,
-            top_k=top_k,
-            repetition_penalty=repetition_penalty,
             max_new_tokens=max_new_tokens,
-            do_sample=do_sample,
-            num_beams=num_beams,
             use_cache=use_cache,
-            num_return_sequences=num_return_sequences,
         )
 
         with torch.no_grad():
