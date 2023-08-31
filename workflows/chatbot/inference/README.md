@@ -28,7 +28,7 @@ python generate.py \
 
 ```
 
-To enable FP32 inference, you can add the parameter "--dtype fp32".
+To enable FP32 inference, you can add the parameter `--dtype "float32"`.
 
 ## LLama2 BF16 Inference
 For Llama, use the below command line to chat with it.
@@ -44,7 +44,7 @@ python generate.py \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
-To enable FP32 inference, you can add the parameter "--dtype fp32".
+To enable FP32 inference, you can add the parameter `--dtype "float32"`.
 
 ## LLama2 INT8 Inference
 For [Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference, we need use branch [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) and install IPEX `llm_feature_branch` branch, Please follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization..
