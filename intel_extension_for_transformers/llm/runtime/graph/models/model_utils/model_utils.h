@@ -292,6 +292,32 @@ class logits_processor {
   const uint32_t min_new_tokens;
 };
 
+// base kv_cache reorder class for beam search
+// assume k shape = [head_dim, head_k, seq_len], v shape = [seq_len, head_dim, head_v] in GPT-liked Decoder only model
+// TODO: but k shape may be [head_dim, seq_len, head_k] optimized layouts for original k permute time reduction
+// if a model use different kv cache layout in its own eval process, please inherit this class and override the
+// `update` virtual function
+class beam_search_kv_cache_reorder {
+ public:
+  explicit beam_search_kv_cache_reorder(model_context* lctx)
+      : ctx(lctx),
+        n_ctx(lctx->model.hparams.n_ctx),
+        n_embd(lctx->model.hparams.n_embd),
+        kv_n_ctx_block(lctx->kv_n_ctx_block) {}
+  ~beam_search_kv_cache_reorder() {}
+
+  virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
+                      const std::unordered_map<int, int>& kv_reorder_indices = {}, const std::vector<beam>& next_beams = {});
+
+ private:
+  model_context* ctx = nullptr;
+  const uint32_t n_ctx;
+  const uint32_t n_embd;
+  // const uint32_t n_head_kv;
+  // const uint32_t head_dim;
+  const uint32_t kv_n_ctx_block;
+};
+
 class beam_search_flow {
  public:
   explicit beam_search_flow(model_context* lctx) : ctx(lctx), beam_size(lctx->beam_size), lp(logits_processor(lctx)) {
@@ -317,6 +343,7 @@ class beam_search_flow {
   size_t n_past = 0;
   int num_threads = 4;  // default by 4
   logits_processor lp;
+  std::shared_ptr<beam_search_kv_cache_reorder> kv_reorder;
 };
 
 MODEL_API std::vector<model_token> beam_search(model_context* lctx, const int& n_predict, const model_token* tokens_inp,

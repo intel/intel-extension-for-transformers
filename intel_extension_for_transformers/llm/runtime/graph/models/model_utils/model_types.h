@@ -199,6 +199,7 @@ struct generation_config {
   bool do_early_stopping = false;  // TODO
 };
 
+class beam_search_kv_cache_reorder;  //  forward declaration
 struct model_context {
   std::mt19937 rng;
 
@@ -222,6 +223,7 @@ struct model_context {
   int beam_size = 1;
   int kv_n_ctx_block = 1;
   generation_config generation_conf;
+  std::shared_ptr<beam_search_kv_cache_reorder> bs_kv_reorder;
   std::vector<std::vector<std::string>> tensors_name;
 
   size_t mem_per_token = 0;

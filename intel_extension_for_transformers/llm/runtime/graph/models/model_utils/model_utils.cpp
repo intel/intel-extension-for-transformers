@@ -1946,7 +1946,83 @@ void logits_processor::process(const uint32_t& cur_len, const model_vocab::id& e
   }
 }
 
-//  TODO debug info unify (function ptr?)
+//  TODO dispatch JBLAS kv cache manager
+void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
+                                          const std::unordered_map<int, int>& kv_reorder_indices,
+                                          const std::vector<beam>& next_beams) {
+  // first step
+  if (n_past == n_prompt_tokens) {
+    // cpy batch 1 to all batches
+#pragma omp parallel for
+    for (int i = 0; i < ctx->model.layers.size(); ++i) {
+      for (int j = 1; j < kv_n_ctx_block; ++j) {
+        // [n_embd, N]
+        memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
+                   (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                    j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd),
+               static_cast<char*>(ctx->model.kv_self.k->data) +
+                   i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
+               ne_element_size(ctx->model.kv_self.k) * n_embd * n_prompt_tokens);
+        // [N, n_embd]
+        for (int k = 0; k < n_embd; ++k) {
+          memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
+                     (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                      j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd +
+                      n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
+                 static_cast<char*>(ctx->model.kv_self.v->data) +
+                     (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                      n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
+                 ne_element_size(ctx->model.kv_self.v) * n_prompt_tokens);
+        }
+      }
+    }
+  } else if (n_past > n_prompt_tokens) {
+    // next setp
+    for (auto it : kv_reorder_indices) {
+      if (it.first != it.second) {
+        uint32_t len = next_beams[it.first].token_ids.size() - 1;
+        // last token in beam is for next step inference
+        MODEL_ASSERT(len == n_past - n_prompt_tokens);
+        size_t input_token_offset_k = n_prompt_tokens * ne_element_size(ctx->model.kv_self.k) * n_embd;
+        size_t input_token_offset_v = n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
+        if (len + n_prompt_tokens > n_ctx) {
+          // all token hidden states cache should be updated
+          input_token_offset_k = 0;
+          input_token_offset_v = 0;
+          len = n_ctx;
+        }
+#pragma omp parallel for
+        for (int i = 0; i < ctx->model.layers.size(); ++i) {
+          // [n_embd, N]
+          memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
+                     (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                      it.first * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
+                     input_token_offset_k,
+                 static_cast<char*>(ctx->model.kv_self.k->data) +
+                     i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                     it.second * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
+                 ne_element_size(ctx->model.kv_self.k) * n_embd * len);
+          // [N, n_embd]
+          for (int k = 0; k < n_embd; ++k) {
+            memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
+                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                        it.first * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
+                        n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
+                   static_cast<char*>(ctx->model.kv_self.v->data) +
+                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                        it.second * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
+                        n_ctx * ne_element_size(ctx->model.kv_self.v) + input_token_offset_v),
+                   ne_element_size(ctx->model.kv_self.v) * len);
+          }
+        }
+      }
+    }
+  } else {
+    return;
+  }
+}
+
+// TODO debug info unify (function ptr?)
 void beam_search_flow::fill_next_beams_by_top_probabilities() {
   auto const comp = [](const beam& a, const beam& b) { return a.score > b.score; };
   std::vector<model_token> embd_inp;
@@ -2158,43 +2234,19 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
 
   // Loop while there are any beams that have not yet reached end-of-sentence.
   // If the top beam is at end-of-sentence, then finish since all other
-  // beam probabilities can only decrease.
+  // beam score can only decrease.
   auto const eos = [](const beam& b) { return b.eos(); };
-  int n_ctx = ctx->model.hparams.n_ctx;
-  int n_embd = ctx->model.hparams.n_embd;
-  int kv_n_ctx_block = ctx->kv_n_ctx_block;
+  kv_reorder = ctx->bs_kv_reorder;
+  if (kv_reorder == nullptr) {
+    kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
+  }
   for (int n = 0; n < max_new_tokens && !eos(top_beam()) && !std::all_of(cur_beams.begin(), cur_beams.end(), eos);
        ++n) {
     // first step
     if (n_past == 0) {
       model_eval(ctx, embd.data(), n_tokens, n_past, num_threads);
       n_past += n_tokens;
-      // cpy batch 1 to all batch
-#pragma omp parallel for
-      for (int i = 0; i < ctx->model.layers.size(); ++i) {
-        for (int j = 1; j < kv_n_ctx_block; ++j) {
-          // [n_embd, N]
-          memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
-                     (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                      j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd),
-                 static_cast<char*>(ctx->model.kv_self.k->data) +
-                     i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
-                 ne_element_size(ctx->model.kv_self.k) * n_embd * n_tokens);
-          // [N, n_embd]
-          // TODO MHA_V_ORIGIN_LAYOUT
-          for (int k = 0; k < n_embd; ++k) {
-            memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd +
-                        n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
-                   static_cast<char*>(ctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
-                   ne_element_size(ctx->model.kv_self.v) * n_tokens);
-          }
-        }
-      }
-
+      kv_reorder->update(n_past, n_tokens);
       lp.process(0, 50256);  //  TODO ctx->model.eos_id;
       logits_info li(ctx);
       std::vector<std::vector<model_token_data>> next_tokens = li.top_k(beam_size);
@@ -2213,46 +2265,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       fill_next_beams_by_top_probabilities();
       std::unordered_map<int, int> kv_reorder_indices = update_kv_cache_reorder_indices();
       n_past += 1;
-      for (auto it : kv_reorder_indices) {
-        if (it.first != it.second) {
-          int len = next_beams[it.first].token_ids.size() - 1;
-          // last token in beam is for next step inference
-          MODEL_ASSERT(len == n_past - n_tokens);
-          size_t input_token_offset_k = n_tokens * ne_element_size(ctx->model.kv_self.k) * n_embd;
-          size_t input_token_offset_v = n_tokens * ne_element_size(ctx->model.kv_self.v);
-          if (len + n_tokens > n_ctx) {
-            // all token hidden states cache should be updated
-            input_token_offset_k = 0;
-            input_token_offset_v = 0;
-            len = n_ctx;
-          }
-#pragma omp parallel for
-          for (int i = 0; i < ctx->model.layers.size(); ++i) {
-            // [n_embd, N]
-            memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                        it.first * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
-                       input_token_offset_k,
-                   static_cast<char*>(ctx->model.kv_self.k->data) +
-                       i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                       it.second * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
-                   ne_element_size(ctx->model.kv_self.k) * n_embd * len);
-            // [N, n_embd]
-            for (int k = 0; k < n_embd; ++k) {
-              memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
-                         (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                          it.first * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                          n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
-                     static_cast<char*>(ctx->model.kv_self.v->data) +
-                         (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                          it.second * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                          n_ctx * ne_element_size(ctx->model.kv_self.v) + input_token_offset_v),
-                     ne_element_size(ctx->model.kv_self.v) * len);
-            }
-          }
-        }
-      }
-
+      kv_reorder->update(n_past, n_tokens, kv_reorder_indices, next_beams);
       cur_beams.swap(next_beams);
       next_beams.clear();
       beam_score_length_penalize();
