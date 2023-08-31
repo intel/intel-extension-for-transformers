@@ -30,7 +30,11 @@ namespace gpu::xetla {
 template <int dims = 1>
 class xetla_exec_item {
 public:
-    explicit xetla_exec_item(cl::sycl::nd_item<dims> &n) : ndi(n) {}
+    explicit xetla_exec_item(cl::sycl::nd_item<dims> &n) : ndi(n) {
+#ifdef DEBUG
+        debug_ctx::nd_item::set<dims>(n);
+#endif
+    }
 
     /// @brief Returns the group id for the requested dimensions.
     ///

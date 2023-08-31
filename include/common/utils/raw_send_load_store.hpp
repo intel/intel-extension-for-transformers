@@ -20,138 +20,15 @@
 #pragma once
 
 #include "common/utils/common.hpp"
+#include "common/utils/limitation.hpp"
+#include "common/utils/tensor_descriptor.hpp"
 
 namespace gpu::xetla {
 
 /// @addtogroup xetla_util_tensor_load_store
 /// @{
 
-///
-/// @brief Description of nd tensor descriptor for load and store.
-/// Structure is defined in [here](https://gfxspecs.intel.com/Predator/Home/Index/63986).
-///
-using xetla_tdescriptor = xetla_vector<uint32_t, 16>;
-
-/// @brief Alias to xetla_vector<uint32_t, 16> reference.
-#define xetla_tdescriptor_ref xetla_vector_ref<uint32_t, 16> __REF__
-
 /// @} xetla_util_tensor_load_store
-
-namespace detail {
-__XETLA_API void xetla_set_tensor_base_address(
-        xetla_tdescriptor_ref desc, uint64_t base_address) {
-    desc.xetla_format<uint64_t>().xetla_select<1, 1>(0) = base_address;
-}
-__XETLA_API void xetla_set_tensor_base_address(
-        xetla_tdescriptor_ref desc, uint32_t base_address) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(0) = base_address;
-}
-__XETLA_API void xetla_set_tensor_width_x(
-        xetla_tdescriptor_ref desc, uint32_t width_x) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(2) = width_x;
-}
-
-__XETLA_API void xetla_set_tensor_width_y(
-        xetla_tdescriptor_ref desc, uint32_t width_y) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(3) = width_y;
-}
-
-__XETLA_API void xetla_set_tensor_pitch_x(
-        xetla_tdescriptor_ref desc, uint32_t pitch_x) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(4) = pitch_x;
-}
-
-__XETLA_API void xetla_set_tensor_offset_x(
-        xetla_tdescriptor_ref desc, int32_t offset_x) {
-    desc.xetla_format<int32_t>().xetla_select<1, 1>(5) = offset_x;
-}
-
-__XETLA_API void xetla_set_tensor_offset_y(
-        xetla_tdescriptor_ref desc, int32_t offset_y) {
-    desc.xetla_format<int32_t>().xetla_select<1, 1>(6) = offset_y;
-}
-
-__XETLA_API int32_t xetla_get_tensor_width_x(xetla_tdescriptor desc) {
-    return desc.xetla_format<int32_t>().xetla_select<1, 1>(2)[0];
-}
-
-__XETLA_API int32_t xetla_get_tensor_width_y(xetla_tdescriptor desc) {
-    return desc.xetla_format<int32_t>().xetla_select<1, 1>(3)[0];
-}
-
-__XETLA_API int32_t xetla_get_tensor_pitch_x(xetla_tdescriptor desc) {
-    return desc.xetla_format<int32_t>().xetla_select<1, 1>(4)[0];
-}
-
-__XETLA_API int32_t xetla_get_tensor_offset_x(xetla_tdescriptor desc) {
-    return desc.xetla_format<int32_t>().xetla_select<1, 1>(5)[0];
-}
-
-__XETLA_API int32_t xetla_get_tensor_offset_y(xetla_tdescriptor desc) {
-    return desc.xetla_format<int32_t>().xetla_select<1, 1>(6)[0];
-}
-
-__XETLA_API void xetla_set_block_widthx_widthy_arrlen(
-        xetla_tdescriptor_ref desc, uint32_t block_widthx_widthy_arrlen) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(7)
-            = block_widthx_widthy_arrlen;
-}
-
-__XETLA_API void xetla_set_block_width_x(
-        xetla_tdescriptor_ref desc, uint8_t width_x) {
-    desc.xetla_format<uint8_t>().xetla_select<1, 1>(28) = width_x;
-}
-
-__XETLA_API void xetla_set_block_width_y(
-        xetla_tdescriptor_ref desc, uint8_t width_y) {
-    desc.xetla_format<uint8_t>().xetla_select<1, 1>(29) = width_y;
-}
-
-__XETLA_API void xetla_set_block_array_len(
-        xetla_tdescriptor_ref desc, uint8_t array_len) {
-    desc.xetla_format<uint8_t>().xetla_select<1, 1>(30) = array_len;
-}
-
-__XETLA_API void xetla_set_tensor_width_z(
-        xetla_tdescriptor_ref desc, uint32_t width_z) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(9) = width_z;
-}
-
-__XETLA_API void xetla_set_tensor_width_w(
-        xetla_tdescriptor_ref desc, uint32_t width_w) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(10) = width_w;
-}
-
-__XETLA_API void xetla_set_tensor_pitch_y(
-        xetla_tdescriptor_ref desc, uint32_t pitch_y) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(11) = pitch_y;
-}
-
-__XETLA_API void xetla_set_tensor_pitch_z(
-        xetla_tdescriptor_ref desc, uint32_t pitch_z) {
-    desc.xetla_format<uint32_t>().xetla_select<1, 1>(12) = pitch_z;
-}
-
-__XETLA_API void xetla_set_tensor_offset_z(
-        xetla_tdescriptor_ref desc, int32_t offset_z) {
-    desc.xetla_format<int32_t>().xetla_select<1, 1>(13) = offset_z;
-}
-
-__XETLA_API void xetla_set_tensor_offset_w(
-        xetla_tdescriptor_ref desc, int32_t offset_w) {
-    desc.xetla_format<int32_t>().xetla_select<1, 1>(14) = offset_w;
-}
-
-__XETLA_API void xetla_set_block_width_z(
-        xetla_tdescriptor_ref desc, uint8_t width_z) {
-    desc.xetla_format<uint8_t>().xetla_select<1, 1>(60) = width_z;
-}
-
-__XETLA_API void xetla_set_block_width_w(
-        xetla_tdescriptor_ref desc, uint8_t width_w) {
-    desc.xetla_format<uint8_t>().xetla_select<1, 1>(61) = width_w;
-}
-} // namespace detail
 
 /// @addtogroup xetla_util_tensor_load_store
 /// @{
@@ -303,7 +180,10 @@ template <typename Ty, uint32_t N, cache_hint L1H = cache_hint::none,
         cache_hint L3H = cache_hint::none, bool transpose = false,
         bool transform = false>
 __XETLA_API xetla_vector<Ty, N> xetla_tload_global(xetla_tdescriptor tdesc) {
-
+#ifdef DEBUG
+    limitation<gpu_arch::Xe>::block_2d<Ty>::template check_load<transpose,
+            transform>(tdesc);
+#endif
     constexpr uint32_t numDst = 31 < ((N * sizeof(Ty) + 63) / 64)
             ? 31
             : ((N * sizeof(Ty) + 63) / 64);
@@ -344,7 +224,9 @@ template <typename Ty, uint32_t N, cache_hint L1H = cache_hint::none,
         cache_hint L3H = cache_hint::none>
 __XETLA_API void xetla_tstore_global(
         xetla_tdescriptor tdesc, xetla_vector<Ty, N> data) {
-
+#ifdef DEBUG
+    limitation<gpu_arch::Xe>::block_2d<Ty>::check_store(tdesc);
+#endif
     uint32_t msg_desc = 7; // store operation
     msg_desc |= detail::get_element_size_code<sizeof(Ty)>() << 9;
     msg_desc |= detail::get_store_cache_hint_code<L1H, L3H>() << 17;

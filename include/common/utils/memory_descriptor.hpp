@@ -131,10 +131,14 @@ struct mem_base_t<dtype_, mem_space::local> {
         return *this;
     }
     inline void init(uint32_t base_) {
-        limitation::slm::check_alignment("mem_base_t", base_);
+#ifdef DEBUG
+        limitation<gpu_arch::Xe>::slm::check_alignment("mem_base_t", base_);
+#endif
         base = base_;
     }
-    inline void update(int offset) { init(base + offset * sizeof(dtype)); }
+    inline void update(int offset) {
+        init(base + offset * sizeof(dtype));
+    }
 };
 
 template <typename dtype_, mem_layout layout_, mem_space space_, int dim_ = 2>

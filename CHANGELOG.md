@@ -4,7 +4,7 @@
 ## [v0.3.4](https://github.com/intel/xetla/releases/tag/v0.3.4) (2023-08-18)
 - New Features
   * Enabled limitation checking.
-  * Provided "DEVICE_PRINTF" and "DEVICE_ASSERT" for kernels debugging.
+  * Provided "XETLA_PRINTF" and "XETLA_ASSERT" for debugging.
   * Refined fpu based GEMM.
   * Refined tile reduce APIs, deprecated API "tile_row_reduce".
   * Supported new data type int4 (experimental feature).

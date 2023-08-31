@@ -167,6 +167,15 @@ using get_uint_type_t = typename get_uint_type<Size>::type;
 template <typename Ty, uint32_t N>
 using xetla_vector = __ESIMD_NS::simd<native_type_t<Ty>, N>;
 
+///
+/// @brief Description of nd tensor descriptor for load and store.
+/// Structure is defined in [here](https://gfxspecs.intel.com/Predator/Home/Index/63986).
+///
+using xetla_tdescriptor = xetla_vector<uint32_t, 16>;
+
+/// @brief Alias to xetla_vector<uint32_t, 16> reference.
+#define xetla_tdescriptor_ref xetla_vector_ref<uint32_t, 16> __REF__
+
 /// @brief wrapper for xetla_mask.
 /// Alias to ESIMD `__ESIMD_NS::simd_mask`.
 /// @tparam N  data length in xetla_mask.

@@ -62,6 +62,13 @@ public:
     using dtype_zero_pt = typename compute_policy::dtype_zero_pt;
     static constexpr uint32_t pack_ratio = sizeof(dtype_b) * 2;
 
+    static constexpr mem_layout mem_layout_a = mem_desc_a_t::layout;
+    static constexpr mem_layout mem_layout_b = mem_desc_b_t::layout;
+    static constexpr bool is_col_major_a
+            = mem_layout_a == mem_layout::col_major;
+    static constexpr bool is_col_major_b
+            = mem_layout_b == mem_layout::col_major;
+
 private:
     /******** set data type **********/
     using dtype_a = typename mem_desc_a_t::dtype;
@@ -78,14 +85,9 @@ private:
             "this is for 4bit zero_pt ");
 
     /******** set memory attribute **********/
-    static constexpr mem_layout mem_layout_a = mem_desc_a_t::layout;
-    static constexpr mem_layout mem_layout_b = mem_desc_b_t::layout;
     static constexpr mem_space mem_space_a = mem_desc_a_t::space;
     static constexpr mem_space mem_space_b = mem_desc_b_t::space;
-    static constexpr bool is_col_major_a
-            = mem_layout_a == mem_layout::col_major;
-    static constexpr bool is_col_major_b
-            = mem_layout_b == mem_layout::col_major;
+
     static constexpr bool is_local_a = mem_space_a == mem_space::local;
     static constexpr bool is_local_b = mem_space_b == mem_space::local;
     static constexpr tdesc_update_dir update_dir_a = is_col_major_a

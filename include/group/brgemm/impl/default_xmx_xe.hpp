@@ -54,6 +54,13 @@ public:
 
     constexpr static gpu_arch arch_tag = compute_policy::arch_tag;
 
+    static constexpr mem_layout mem_layout_a = mem_desc_a_t::layout;
+    static constexpr mem_layout mem_layout_b = mem_desc_b_t::layout;
+    static constexpr bool is_col_major_a
+            = mem_layout_a == mem_layout::col_major;
+    static constexpr bool is_col_major_b
+            = mem_layout_b == mem_layout::col_major;
+
 private:
     /******** set data type **********/
     using dtype_a = typename mem_desc_a_t::dtype;
@@ -62,19 +69,13 @@ private:
     using dtype_mma_a = typename compute_policy::dtype_mma_a;
     using dtype_mma_b = typename compute_policy::dtype_mma_b;
 
-    using check_dtype
-            = limitation::brgemm::default_xmx::check_dtype_default_xmx_xe<
-                    dtype_a, dtype_b, dtype_mma_a, dtype_mma_b>;
+    using check_dtype = limitation<gpu_arch::Xe>::brgemm::default_xmx::
+            check_dtype_default<dtype_a, dtype_b, dtype_mma_a, dtype_mma_b>;
 
     /******** set memory attribute **********/
-    static constexpr mem_layout mem_layout_a = mem_desc_a_t::layout;
-    static constexpr mem_layout mem_layout_b = mem_desc_b_t::layout;
     static constexpr mem_space mem_space_a = mem_desc_a_t::space;
     static constexpr mem_space mem_space_b = mem_desc_b_t::space;
-    static constexpr bool is_col_major_a
-            = mem_layout_a == mem_layout::col_major;
-    static constexpr bool is_col_major_b
-            = mem_layout_b == mem_layout::col_major;
+
     static constexpr bool is_local_a = mem_space_a == mem_space::local;
     static constexpr bool is_local_b = mem_space_b == mem_space::local;
     static constexpr tdesc_update_dir update_dir_a = is_col_major_a
@@ -84,9 +85,9 @@ private:
             ? tdesc_update_dir::x_dir
             : tdesc_update_dir::y_dir;
 
-    using check_memory
-            = limitation::brgemm::default_xmx::check_memory_default_xmx_xe<
-                    mem_layout_a, mem_layout_b, mem_space_a, mem_space_b>;
+    using check_memory = limitation<gpu_arch::Xe>::brgemm::default_xmx::
+            check_memory_default<mem_layout_a, mem_layout_b, mem_space_a,
+                    mem_space_b>;
 
     static constexpr uint32_t stages = compute_policy::stages;
     static constexpr uint32_t sync_freq = compute_policy::sync_freq;
@@ -107,11 +108,11 @@ private:
     static constexpr uint32_t block_size_y_b = compute_policy::block_size_y_b;
 
     using arch_attr = arch_attr_t<arch_tag>;
-    using check_tile_size
-            = limitation::brgemm::default_xmx::check_tile_size_default_xmx_xe<
-                    arch_attr, dtype_mma_a, tile_size_x_a, tile_size_y_a,
-                    block_size_x_a, block_size_y_a, tile_size_x_b,
-                    tile_size_y_b, block_size_x_b, block_size_y_b>;
+    using check_tile_size = limitation<gpu_arch::Xe>::brgemm::default_xmx::
+            check_tile_size_default<arch_attr, dtype_mma_a, tile_size_x_a,
+                    tile_size_y_a, block_size_x_a, block_size_y_a,
+                    tile_size_x_b, tile_size_y_b, block_size_x_b,
+                    block_size_y_b>;
 
     /******** set tile  **********/
     static constexpr reg_layout reg_layout_a = reg_layout::tiled;
@@ -273,7 +274,7 @@ public:
         int32_t sg_idx = g.get_id() % wg_size_x;
         int32_t sg_idy = g.get_id() / wg_size_x;
 
-        DEVICE_ASSERT(g.get_id() < (wg_size_x * wg_size_y),
+        XETLA_ASSERT(g.get_id() < (wg_size_x * wg_size_y),
                 "Thread id(%d) should less than wg_size(%d)", g.get_id(),
                 wg_size_x * wg_size_y);
 

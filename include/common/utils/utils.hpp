@@ -46,4 +46,5 @@
 #include "common/utils/rand.hpp"
 #include "common/utils/raw_send_load_store.hpp"
 #include "common/utils/raw_send_nbarrier.hpp"
+#include "common/utils/tensor_descriptor.hpp"
 #include "common/utils/work_group.hpp"

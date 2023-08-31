@@ -264,49 +264,35 @@ public:
     static bool can_implement(arguments_t &args) {
         bool implementable = true;
         if (brgemm_t::is_2d_block_a) {
-            bool implementable_a = detail::check_2d_block_restriction<dtype_a>(
-                    args.matA_base.base, args.matA_ld);
-            if (!implementable_a) {
-                std::cout << "matA is not well aligned!" << std::endl;
-            }
-            implementable &= implementable_a;
+            implementable &= limitation<gpu_arch::Xe>::block_2d<
+                    dtype_a>::check_tensor((uint64_t)(args.matA_base.base),
+                    brgemm_t::is_col_major_a ? args.matrix_m : args.matrix_k,
+                    brgemm_t::is_col_major_a ? args.matrix_k : args.matrix_m,
+                    args.matA_ld);
         } else {
-            bool implementable_a = detail::check_dw_align<dtype_a>(
-                    args.matA_base.base, args.matA_ld);
-            if (!implementable_a) {
-                std::cout << "matA is not well aligned!" << std::endl;
-            }
-            implementable &= implementable_a;
+            implementable &= limitation<gpu_arch::Xe>::block_1d<
+                    dtype_a>::check_alignment(args.matA_base.base,
+                    args.matA_ld);
         }
         if (brgemm_t::is_2d_block_b) {
-            bool implementable_b = detail::check_2d_block_restriction<dtype_b>(
-                    args.matB_base.base, args.matB_ld);
-            if (!implementable_b) {
-                std::cout << "matB is not well aligned!" << std::endl;
-            }
-            implementable &= implementable_b;
+            implementable &= limitation<gpu_arch::Xe>::block_2d<
+                    dtype_b>::check_tensor((uint64_t)(args.matB_base.base),
+                    brgemm_t::is_col_major_b ? args.matrix_k : args.matrix_n,
+                    brgemm_t::is_col_major_b ? args.matrix_n : args.matrix_k,
+                    args.matB_ld);
         } else {
-            bool implementable_b = detail::check_dw_align<dtype_b>(
-                    args.matB_base.base, args.matB_ld);
-            if (!implementable_b) {
-                std::cout << "matB is not well aligned!" << std::endl;
-            }
-            implementable &= implementable_b;
+            implementable &= limitation<gpu_arch::Xe>::block_1d<
+                    dtype_b>::check_alignment(args.matB_base.base,
+                    args.matB_ld);
         }
         if (epilogue_t::is_2d_block_c) {
-            bool implementable_c = detail::check_2d_block_restriction<dtype_c>(
-                    args.matC_base.base, args.matC_ld);
-            if (!implementable_c) {
-                std::cout << "matC is not well aligned!" << std::endl;
-            }
-            implementable &= implementable_c;
+            implementable &= limitation<gpu_arch::Xe>::block_2d<
+                    dtype_c>::check_tensor((uint64_t)(args.matC_base.base),
+                    args.matrix_n, args.matrix_m, args.matC_ld);
         } else {
-            bool implementable_c = detail::check_dw_align<dtype_c>(
-                    args.matC_base.base, args.matC_ld);
-            if (!implementable_c) {
-                std::cout << "matC is not well aligned!" << std::endl;
-            }
-            implementable &= implementable_c;
+            implementable &= limitation<gpu_arch::Xe>::block_1d<
+                    dtype_c>::check_alignment(args.matC_base.base,
+                    args.matC_ld);
         }
 
         return implementable;
