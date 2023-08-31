@@ -196,6 +196,13 @@ def parse_args():
         choices=["completion", "chat", "summarization"],
         help="task name, different task means different templates.",
     )
+    parser.add_argument(
+        "--dtype",
+        type=str,
+        choices=["float32", "bfloat16", "float16"],
+        default="bfloat16",
+        help="bfloat16, float32 or float16",
+    )
     args = parser.parse_args()
     return args
 
@@ -307,6 +314,7 @@ def load_model(
     peft_path=None,
     use_deepspeed=False,
     hf_access_token=None,
+    dtype=torch.bfloat16
 ):
     """
     Load the model and initialize the tokenizer.
@@ -370,7 +378,7 @@ def load_model(
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
-                torch_dtype=torch.bfloat16,
+                torch_dtype=dtype,
                 low_cpu_mem_usage=True,
                 use_auth_token=hf_access_token,
             )
@@ -941,7 +949,7 @@ def main():
     tokenizer_path = (
         args.tokenizer_name if args.tokenizer_name is not None else base_model_path
     )
-
+    datatype = torch.bfloat16 if args.dtype != "float32" else torch.float32
     load_model(
         base_model_path,
         tokenizer_path,
@@ -952,6 +960,7 @@ def main():
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
         hf_access_token=args.hf_access_token,
+        dtype=datatype
     )
 
     if args.habana:
