@@ -11,7 +11,7 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 ## Supported Models
 
-Now we supports following models.
+We support the following models:
 ### Text generation models
 | model name | INT8 | INT4|
 |---|:---:|:---:|
@@ -32,7 +32,7 @@ Now we supports following models.
 
 ## How to use
 
-### 1. Build Graph
+### 1. Build LLM Runtime
 ```shell
 mkdir build
 cd build
@@ -40,24 +40,23 @@ cmake .. -G Ninja
 ninja
 ```
 
-### 2. Convert Models
-Currently, Graph uses the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model yourself.
+### 2. Convert LLM
+LLM Runtime assumes the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
 
-Get fp32 model from HuggingFcae links in Supported Models and put it in `graph` folder.
-You can use `git clone` command like (for example, gpt-j-6b): `git clone https://huggingface.co/EleutherAI/gpt-j-6b`.
-
-Convert process had two steps: 1. get fp32 model with llama.cpp format 2. quantize the fp32 model into model with low precision (int8, int4, etc.) We recommend you to use int4 model for better LLM inference latency.
 
 ```bash
+# download fp32 model (e.g., GPT-J-6B) from Hugging Face
+git clone https://huggingface.co/EleutherAI/gpt-j-6b
+
 # convert the pytorch model to ggml format
 python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path/model_id
 
-# quantize weights of float32 ggml bin
+# quantize weights of fp32 ggml bin
 # to ggml q4_0 format
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_0.bin --bits 4
 # to neuarl engine graph optimized q4_j with 32 block_size format
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --bits 4 --block_size 32 --compute_type int8
-# to neuarl engine graph optimized q4_j with 128 block_size format (recommend)
+# to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --bits 4 --block_size 128 --compute_type int8
 ```
 quantization args explanations:
