@@ -168,6 +168,25 @@ curl -X POST -H "Content-Type: application/json" -d '{"query": ""Could you elabo
 
 You can also use [chatcli](../demo/chatcli/) to access the service.
 
+### Test Performance
+If you want to test the performance, you can bind cores as follows.
+```bash
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
+
+export OMP_NUM_THREADS=56
+export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
+
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
+
+numactl -l -C 0-55 python generate.py \
+        --base_model_path "mosaicml/mpt-7b-chat" \
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten." \
+        --use_kv_cache \
+        --jit
+```
+
 ## Inference on Habana Gaudi
 
 Use this [link](https://docs.habana.ai/en/latest/AWS_EC2_DL1_and_PyTorch_Quick_Start/AWS_EC2_DL1_and_PyTorch_Quick_Start.html) to get started with setting up Gaudi-based Amazon EC2 DL1 instances.
