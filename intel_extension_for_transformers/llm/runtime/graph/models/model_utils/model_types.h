@@ -64,7 +64,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON };
+enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, MODEL_CHATGLM, MODEL_CHATGLM2, MODEL_CHATGLM1};
 
 static const size_t MB = 1024 * 1024;
 
@@ -105,6 +105,19 @@ struct model_hparams {
   float clip_qkv = 0;        // for mpt
   int32_t par_res = 1;       // for neox 1 = true, 0 = false
 
+  // ChatGLM-1 & 2 tokenizer
+  int32_t bos_token_id = 0;
+  int32_t eos_token_id = 0;
+  int32_t pad_token_id = 0;
+  int32_t sep_token_id = 0;
+
+  // ChatGLM-2
+  int32_t multi_query_group_num = 0;
+  int32_t ffn_hidden_size = 0;
+
+  // ChatGLM-1
+  int32_t inner_hidden_size = 0;
+
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
   }
@@ -119,6 +132,9 @@ struct model_layer {
 
   // ff
   struct ne_tensor* ffn[MODEL_MAX_FFN];
+
+  struct ne_tensor* k_cache;
+  struct ne_tensor* v_cache;
 };
 
 struct model_kv_cache {
@@ -336,6 +352,7 @@ class model_name_to_arch {
   std::unordered_map<std::string, model_archs> name2arch_ = {
       {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ},           {"mpt", MODEL_MPT},
       {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
+      {"chatglm", MODEL_CHATGLM}, {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1},
   };
 };
 

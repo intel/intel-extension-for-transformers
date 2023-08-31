@@ -5281,11 +5281,19 @@ static void ne_compute_forward_gelu(const struct ne_compute_params* params, cons
 }
 
 // ne_compute_forward_silu
+static inline bool ne_is_contiguous_except_dim_1(const struct ne_tensor * tensor) {
+    static_assert(NE_MAX_DIMS == 4, "NE_MAX_DIMS is not 4 - update this function");
+
+    return
+        tensor->nb[0] == NE_TYPE_SIZE[tensor->type] &&
+        tensor->nb[2] == tensor->nb[1]*tensor->ne[1] &&
+        tensor->nb[3] == tensor->nb[2]*tensor->ne[2];
+}
 
 static void ne_compute_forward_silu_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                         struct ne_tensor* dst) {
-  NE_ASSERT(ne_is_contiguous(src0));
-  NE_ASSERT(ne_is_contiguous(dst));
+  NE_ASSERT(ne_is_contiguous_except_dim_1(src0));
+  NE_ASSERT(ne_is_contiguous_except_dim_1(dst));
   NE_ASSERT(ne_are_same_shape(src0, dst));
 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
