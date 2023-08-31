@@ -9,17 +9,16 @@ LLM Runtime is an experimental c++ bare metal LLM inference solution that mainly
 
 In short, LLM Runtime is an experimental feature and may keep changing.
 
-### Supported Models
+## Supported Models
 
 Now we supports following models.
-# Text generation models
+### Text generation models
 | model name | INT8 | INT4|
 |---|:---:|:---:|
 |[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ | 
 |[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ | 
 |[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ | 
-|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf)| ✅ | ✅ | 
-|[LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
+|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
 |[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| ✅ | ✅ | 
 |[LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
 |[MPT-7B](https://huggingface.co/mosaicml/mpt-7b)| ✅ | ✅ | 
@@ -27,7 +26,7 @@ Now we supports following models.
 |[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b)| ✅ | ✅ | 
 |[Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
 
-# Code generation models
+### Code generation models
 | model name | INT8 | INT4|
 |---|:---:|:---:|
 |[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf)| ✅ | ✅ | 
