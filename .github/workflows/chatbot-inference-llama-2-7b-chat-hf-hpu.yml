@@ -9,7 +9,7 @@ concurrency:
 
 jobs:
   inference:
-    name: inference test
+    name: inference testii
     runs-on: guadi2-4
     steps:
       - name: Checkout

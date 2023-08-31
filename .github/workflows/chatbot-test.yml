@@ -38,4 +38,3 @@ jobs:
 
   call-inference-llama-2-7b-chat-hf-hpu:
     uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf-hpu.yml
-
