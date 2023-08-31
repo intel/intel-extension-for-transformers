@@ -19,21 +19,15 @@ Now we supports following models.
 |[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ | 
 |[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ | 
 |[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
-|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| ✅ | ✅ | 
-|[LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
-|[MPT-7B](https://huggingface.co/mosaicml/mpt-7b)| ✅ | ✅ | 
-|[MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
-|[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b)| ✅ | ✅ | 
-|[Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
+|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
+|[MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
+|[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
 
 ### Code generation models
 | model name | INT8 | INT4|
 |---|:---:|:---:|
-|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf)| ✅ | ✅ | 
-|[Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ | 
-|[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b)| ✅ | ✅ | 
-|[StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b)| ✅ | ✅ | 
-|[StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
+|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf), [Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ | 
+|[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
 
 
 ## How to use
