@@ -215,9 +215,16 @@ class StopOnTokens(StoppingCriteria):
         return False
 
 
-def max_input_len(model, outlen=0):
-    # need to adjust due to perf and real usage
-    return 128
+def max_input_len(input_text_length):
+    if input_text_length <= 128:
+        return 128
+    elif input_text_length <= 512:
+        return 512
+    elif input_text_length <= 2048:
+        return 2048
+    else:
+        logger.warning("Max support length is 4096")
+        return 4096
 
 
 def add_template(example, template_name):
@@ -631,13 +638,14 @@ def predict_stream(**params):
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     elif device == "hpu":
+        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
+        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
             padding="max_length",
-            max_length=max_input_len(model, max_new_tokens),
+            max_length=max_input_len(input_token_len),
         )
-        input_token_len = input_tokens.input_ids.shape[-1]
         if isinstance(model.generation_config.eos_token_id, list):
             stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
         else:
@@ -863,13 +871,14 @@ def predict(**params):
                 )
                 generation_output = model.generate(**input_tokens, **generation_kwargs)
     elif device == "hpu":
+        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
+        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
             padding="max_length",
-            max_length=max_input_len(model, max_new_tokens),
+            max_length=max_input_len(input_token_len),
         )
-        input_token_len = input_tokens.input_ids.shape[-1]
         if isinstance(model.generation_config.eos_token_id, list):
             stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
         else:
