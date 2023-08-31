@@ -18,10 +18,10 @@
 import unittest
 import numpy as np
 import shutil
-from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.compile import compile, autocast
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
 import copy
 
 

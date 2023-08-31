@@ -16,9 +16,9 @@
 # limitations under the License.
 
 import unittest
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
-import intel_extension_for_transformers.llm.runtime.compile.graph_utils as util
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils as util
 import numpy as np
 
 

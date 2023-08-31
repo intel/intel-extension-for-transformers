@@ -318,7 +318,7 @@ def add_instance_num_flag(prefix_list):
 def get_memory_settings(path, args):
     """append memory setting."""
     memory_prefix_list = []
-    jemalloc_prefix = "LD_PRELOAD={}/intel_extension_for_transformers/llm/runtime/"\
+    jemalloc_prefix = "LD_PRELOAD={}/intel_extension_for_transformers/llm/runtime/deprecated/"\
                       "third_party/jemalloc/lib/libjemalloc.so:$LD_PRELOAD ".format(path)
     if args.memory_allocator == "jemalloc":
         memory_prefix_list.append(jemalloc_prefix)
@@ -351,7 +351,7 @@ def set_numactl_env(env_cmd, core_list):
 def set_jemalloc_env(env_cmd, memory_allocator, path):
     """set jemalloc env"""
     if memory_allocator == "jemalloc":
-        env_cmd["LD_PRELOAD"] = "{}/intel_extension_for_transformers/llm/runtime/executor/" \
+        env_cmd["LD_PRELOAD"] = "{}/intel_extension_for_transformers/llm/runtime/deprecated/executor/" \
                                 "third_party/jemalloc/lib/libjemalloc.so:$".format(path) \
                                 + env_cmd["LD_PRELOAD"]        
 

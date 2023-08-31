@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import unittest
-from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 from transformers import BertForSequenceClassification
 import numpy as np
 import os

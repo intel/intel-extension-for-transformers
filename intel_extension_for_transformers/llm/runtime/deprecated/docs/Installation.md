@@ -22,7 +22,7 @@ pip install intel-extension-for-transformers
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
 cd itrex
 git submodule update --init --recursive
-cd intel_extension_for_transformers/llm/runtime/
+cd intel_extension_for_transformers/llm/runtime/deprecated/
 mkdir build
 cd build
 cmake .. -DPYTHON_EXECUTABLE=$(which python3) -DNE_WITH_SPARSELIB=True

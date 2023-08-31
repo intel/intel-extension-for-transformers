@@ -18,10 +18,10 @@
 import unittest
 import numpy as np
 from collections import OrderedDict
-from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.compile.sub_graph.reshape_after_restore_hidden_states import ReshapeAfterRestoreHiddenStates
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS, Operator
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.reshape_after_restore_hidden_states import ReshapeAfterRestoreHiddenStates
 
 
 class TestLayerNormWithReduceMean(unittest.TestCase):

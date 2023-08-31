@@ -17,7 +17,7 @@
 
 import unittest
 from tensorflow.core.framework import node_def_pb2 
-import intel_extension_for_transformers.llm.runtime.compile.tf_utils as util 
+import intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils as util 
 
 
 class TestTfUtils(unittest.TestCase):

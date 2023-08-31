@@ -18,7 +18,7 @@
         "lhs": "${hostSystemName}",
         "rhs": "Linux"
       },
-      "vendor": { "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}/intel_extension_for_transformers/llm/runtime" } }
+      "vendor": { "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": { "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}/intel_extension_for_transformers/llm/runtime/deprecated" } }
     },
     {
       "name": "linux-debug-kernels",

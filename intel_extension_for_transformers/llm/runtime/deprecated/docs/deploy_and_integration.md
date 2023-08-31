@@ -24,7 +24,7 @@ Neural Engine support model optimizer, model executor and high performance kerne
 Only support TensorFlow and ONNX models for now.
 
 ```python
-from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 model = compile('/path/to/your/model')
 model.save('/ir/path')   # Engine graph could be saved to path
 ```
@@ -96,7 +96,7 @@ All input tensors are in an operator typed Input. But slightly difference is som
 Parse the yaml and weight bin to Engine Graph throught Python API
 
 ```python
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 model = Graph()
 model.graph_init('./ir/conf.yaml', './ir/model.bin')
 input_data = [input_0, input_1, input_2]
@@ -123,12 +123,12 @@ mkdir engine_integration && cd engine_integration
 git init
 git submodule add https://github.com/intel/intel-extension-for-transformers itrex
 git submodule update --init --recursive
-cp itrex/intel_extension_for_transformers/llm/runtime/CMakeLists.txt .
-cp itrex/intel_extension_for_transformers/llm/runtime/executor/src/nlp_executor.cc neural_engine_example.cc
+cp itrex/intel_extension_for_transformers/llm/runtime/deprecated/CMakeLists.txt .
+cp itrex/intel_extension_for_transformers/llm/runtime/deprecated/executor/src/nlp_executor.cc neural_engine_example.cc
 ```
 Modify the NE_ROOT in the CmakeLists.txt.
 ```cmake
-set(NE_ROOT "${PROJECT_SOURCE_DIR}/itrex/intel_extension_for_transformers/llm/runtime")
+set(NE_ROOT "${PROJECT_SOURCE_DIR}/itrex/intel_extension_for_transformers/llm/runtime/deprecated")
 ```
 
 Compile neural_engine_example.cc as binary named neural_engine_example and link Nerual Engine include/lib into neural_engine_example.

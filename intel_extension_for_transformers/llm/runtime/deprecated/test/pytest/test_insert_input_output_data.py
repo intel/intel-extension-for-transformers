@@ -17,11 +17,11 @@
 
 import os
 import unittest
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.compile.sub_graph.input_data import InputData
-from intel_extension_for_transformers.llm.runtime.compile.sub_graph.output_data import OutputData
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.input_data import InputData
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.output_data import OutputData
 
 os.environ['GLOG_minloglevel'] = '2'
 class TestInsertInputOuputData(unittest.TestCase):

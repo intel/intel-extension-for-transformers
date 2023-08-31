@@ -19,7 +19,7 @@ import os
 import unittest
 from onnx import helper
 from onnx import TensorProto
-from intel_extension_for_transformers.llm.runtime.compile.onnx_utils \
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.onnx_utils \
                                 import is_supported_onnx_graph, is_supported_onnx_node
 
 os.environ['GLOG_minloglevel'] = '2'

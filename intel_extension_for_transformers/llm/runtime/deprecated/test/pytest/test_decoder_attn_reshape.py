@@ -17,10 +17,10 @@
 
 import unittest
 from collections import OrderedDict
-from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.compile.sub_graph.decoder_attn_reshape import DecoderAttnReshape
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS, Operator
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.decoder_attn_reshape import DecoderAttnReshape
 import numpy as np
 
 

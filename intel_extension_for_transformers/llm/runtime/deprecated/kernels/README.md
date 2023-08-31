@@ -8,7 +8,7 @@ Transformers-accelerated Libraries (formerly known as **SparseLib**) is a high-p
 ## Installation
 ### Build
 ```shell
-cd %{workdir}/intel_extension_for_transformers/llm/runtime
+cd %{workdir}/intel_extension_for_transformers/llm/runtime/deprecated
 mkdir build
 cd build
 cmake .. -DNE_WITH_TESTS=ON                   # if UT needed

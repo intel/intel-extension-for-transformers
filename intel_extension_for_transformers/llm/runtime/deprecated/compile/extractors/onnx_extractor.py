@@ -28,7 +28,7 @@ from ..graph.graph import Graph
 from ..ops.op import OPERATORS
 from ..onnx_utils import graph_node_names_details
 from ..graph_utils import names_from_input
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
 
 
 class ONNXExtractor(object):
@@ -77,7 +77,7 @@ class ONNXExtractor(object):
                         if op_type == 'Constant':
                             continue
                         else:
-                            import intel_extension_for_transformers.llm.runtime.compile.graph_utils\
+                            import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils\
                                 as util
                             input_tensor_names = inner_node.input
                             for input_tensor_name in input_tensor_names:

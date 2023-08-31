@@ -19,7 +19,7 @@ import os
 import sys
 import unittest
 import numpy as np
-from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 import copy
 
 def is_win():

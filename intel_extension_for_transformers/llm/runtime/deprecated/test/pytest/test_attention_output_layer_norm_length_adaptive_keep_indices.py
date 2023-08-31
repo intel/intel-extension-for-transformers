@@ -17,10 +17,10 @@
 
 import unittest
 from collections import OrderedDict
-from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
-from intel_extension_for_transformers.llm.runtime.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices import AttentionOutputLayerNormLengthAdaptiveExpandIndices
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS, Operator
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices import AttentionOutputLayerNormLengthAdaptiveExpandIndices
 import numpy as np
 
 

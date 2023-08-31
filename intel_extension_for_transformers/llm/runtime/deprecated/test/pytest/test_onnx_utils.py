@@ -16,11 +16,11 @@
 # limitations under the License.
 
 import unittest
-import intel_extension_for_transformers.llm.runtime.compile as compile
+import intel_extension_for_transformers.llm.runtime.deprecated.compile as compile
 import numpy as np
 import onnx
-from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS, Operator
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS, Operator
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
 
 
 class TestOnnxUtils(unittest.TestCase):

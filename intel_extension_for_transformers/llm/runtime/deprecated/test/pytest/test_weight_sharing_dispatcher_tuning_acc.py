@@ -24,7 +24,7 @@ import time
 import torch
 from datasets import load_dataset
 from transformers import BertForSequenceClassification
-from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 
 
 class TestWeightSharingDispatcherTuningAcc(unittest.TestCase):
@@ -41,7 +41,7 @@ import numpy as np
 from transformers import AutoTokenizer
 from datasets import load_from_disk, load_metric, load_dataset
 import intel_extension_for_transformers.neural_engine_py as dp
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 
 
 class MRPCDataSet():

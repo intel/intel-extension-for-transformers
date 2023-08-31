@@ -18,10 +18,10 @@
 import os
 import unittest
 import numpy as np
-from intel_extension_for_transformers.llm.runtime.compile import compile
-from intel_extension_for_transformers.llm.runtime.compile.loaders.loader import Loader
-from intel_extension_for_transformers.llm.runtime.compile.extractors.extractor import Extractor
-from intel_extension_for_transformers.llm.runtime.compile.sub_graph.subgraph_matcher import SubGraphMatcher
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.loaders.loader import Loader
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors.extractor import Extractor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.subgraph_matcher import SubGraphMatcher
 import sys
 import copy
 

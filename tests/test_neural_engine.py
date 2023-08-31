@@ -1,6 +1,6 @@
-from intel_extension_for_transformers.llm.runtime.compile import compile
-from intel_extension_for_transformers.llm.runtime.compile.ops.tensor import Tensor
-from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor import Tensor
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 import numpy as np
 import os
 import shutil

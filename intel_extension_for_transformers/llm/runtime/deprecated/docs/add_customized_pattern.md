@@ -5,21 +5,21 @@
 - [Fuse Pattern and Set Attributes of New Pattern after Fusion](#fuse-pattern-and-set-attributes-of-new-pattern-after-fusion)
 
 ## Introduction
-The `Neural Engine` in `Intel® Extension for Transformers` support user to add customized pattern of model, which means you can compile your own pretrained model to `Neural Engine` IR (Intermediate Representation) just by adding the specific patterns which the [`compile`](/intel_extension_for_transformers/llm/runtime/compile) does not contain.
+The `Neural Engine` in `Intel® Extension for Transformers` support user to add customized pattern of model, which means you can compile your own pretrained model to `Neural Engine` IR (Intermediate Representation) just by adding the specific patterns which the [`compile`](/intel_extension_for_transformers/llm/runtime/deprecated/compile) does not contain.
 
 The intermediate graph in `Neural Engine` can be treated as a `list` that stores all nodes of the model under control flow. Some certain nodes may compose a pattern which needs to be fused for speeding up inference. For simplifying the network structure, we also design different attributes attached to fused nodes. To aim at adding a customized pattern, there are three steps: **1. register the nodes' op_types; 2. set the pattern mapping config and register the pattern; 3. fuse pattern and set attributes of the new pattern after fusion.**
 
 ![](imgs/layernorm_distilbert_base_onnx.png)
 
-Above is a `LayerNorm` pattern in the `Distilbert_Base` onnx model. Assume it is a customized pattern in your model that need to be added in [`compile`](/intel_extension_for_transformers/llm/runtime/compile). Follow the steps below to make `Neural Engine` support this pattern, and fuse these 9 nodes to one node called `LayerNorm`.
+Above is a `LayerNorm` pattern in the `Distilbert_Base` onnx model. Assume it is a customized pattern in your model that need to be added in [`compile`](/intel_extension_for_transformers/llm/runtime/deprecated/compile). Follow the steps below to make `Neural Engine` support this pattern, and fuse these 9 nodes to one node called `LayerNorm`.
 
 ## Register the Nodes' Op Types
 
-First, you should check whether the nodes' op_types in the pattern are registered in `Engine` or not. If not, you need to add the op_type class for [`compile`](/intel_extension_for_transformers/llm/runtime/compile) loading and extracting the origin model. All the ops can be found from the [`compile.ops`](/intel_extension_for_transformers/llm/runtime/compile/ops). For quick check, use the commands below.
+First, you should check whether the nodes' op_types in the pattern are registered in `Engine` or not. If not, you need to add the op_type class for [`compile`](/intel_extension_for_transformers/llm/runtime/deprecated/compile) loading and extracting the origin model. All the ops can be found from the [`compile.ops`](/intel_extension_for_transformers/llm/runtime/deprecated/compile/ops). For quick check, use the commands below.
 
 ```python
 # make sure you have cloned intel_extension_for_transformers repo and installed intel_extension_for_transformers
-from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS
 # All the op_type names and objects are stored in `OPERATORS`
 print(OPERATORS)
 ```
@@ -27,14 +27,14 @@ print(OPERATORS)
 The print result will show all registered ops, for example:
 
 ```shell
-{'Gelu': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.gelu.Gelu'>, 'Unsqueeze': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.unsqueeze.Unsqueeze'>, 'OptimizeDataset': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.optimize_dataset.OptimizeDataset'>, 'IteratorV2': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.iterator_v2.IteratorV2'>, 'QuantizeLinear': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.quantize_linear.QuantizeLinear'>, 'Gather': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.gather.Gather'>, 'GatherV2': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.gather.GatherV2'>, 'GatherElements': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.gather_elements.GatherElements'>, 'Unpack': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.unpack.Unpack'>, 'MapAndBatchDataset': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.map_and_batch_dataset.MapAndBatchDataset'>, 'Concat': <class 'intel_extension_for_transformers.llm.runtime.compile.ops.concat.Concat'>, ...}
+{'Gelu': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.gelu.Gelu'>, 'Unsqueeze': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.unsqueeze.Unsqueeze'>, 'OptimizeDataset': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.optimize_dataset.OptimizeDataset'>, 'IteratorV2': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.iterator_v2.IteratorV2'>, 'QuantizeLinear': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.quantize_linear.QuantizeLinear'>, 'Gather': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.gather.Gather'>, 'GatherV2': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.gather.GatherV2'>, 'GatherElements': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.gather_elements.GatherElements'>, 'Unpack': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.unpack.Unpack'>, 'MapAndBatchDataset': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.map_and_batch_dataset.MapAndBatchDataset'>, 'Concat': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.concat.Concat'>, ...}
 ```
 
-These ops can be roughly divided into two categories, the one is without attributes, like `Mul`, the other one is with attributes, for example, `Reshape` has the attributes `dst_shape`. You can look through the [`executor`](/intel_extension_for_transformers/llm/runtime/executor) for more info about the `Neural Engine` ops' attribute settings.
+These ops can be roughly divided into two categories, the one is without attributes, like `Mul`, the other one is with attributes, for example, `Reshape` has the attributes `dst_shape`. You can look through the [`executor`](/intel_extension_for_transformers/llm/runtime/deprecated/executor) for more info about the `Neural Engine` ops' attribute settings.
 
-Assume the `Sqrt` and `ReduceMean` in `LayerNorm` pattern are new op_types for [`compile`](/intel_extension_for_transformers/llm/runtime/compile). Here are the examples that show how to register them.
+Assume the `Sqrt` and `ReduceMean` in `LayerNorm` pattern are new op_types for [`compile`](/intel_extension_for_transformers/llm/runtime/deprecated/compile). Here are the examples that show how to register them.
 
-`Sqrt` has no attributes. You can add this op class in [`compile.ops.empty_ops`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/compile/ops/empty_ops.py).
+`Sqrt` has no attributes. You can add this op class in [`compile.ops.empty_ops`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/ops/empty_ops.py).
 
 ```python
 # register the 'Sqrt' class in OPERATORS
@@ -47,9 +47,9 @@ class Sqrt(Operator):
 
 `ReduceMean` has `keep_dims` and `axis` two attributes, you need to set them by extracting the node from the origin model.
 
-Create a python file (for example, name can be `reduce_mean.py`) in [`compile.ops`](/intel_extension_for_transformers/llm/runtime/compile/ops) and add the `ReduceMean` op class.
+Create a python file (for example, name can be `reduce_mean.py`) in [`compile.ops`](/intel_extension_for_transformers/llm/runtime/deprecated/compile/ops) and add the `ReduceMean` op class.
 
-In this `LayerNorm` pattern, the `ReduceMean` node in origin onnx model just has `axes` value which is a list, that is the value of `axis` attribute comes from. The `keep_dims` attribute is `False` by default in [`executor`](/intel_extension_for_transformers/llm/runtime/executor), so if the `ReduceMean` node has the `keep_dims` attribute, you should extract and set it. Otherwise, you can just ignore it.
+In this `LayerNorm` pattern, the `ReduceMean` node in origin onnx model just has `axes` value which is a list, that is the value of `axis` attribute comes from. The `keep_dims` attribute is `False` by default in [`executor`](/intel_extension_for_transformers/llm/runtime/deprecated/executor), so if the `ReduceMean` node has the `keep_dims` attribute, you should extract and set it. Otherwise, you can just ignore it.
 
 ```python
 from .op import Operator, operator_registry
@@ -91,7 +91,7 @@ pip install -v .
 
 ```python
 # check your code changes
-from intel_extension_for_transformers.llm.runtime.compile.ops.op import OPERATORS
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op import OPERATORS
 'Sqrt' and 'ReduceMean' in OPERATORS
 ```
 
@@ -99,9 +99,9 @@ If nothing wrong, the output result should be `True`.
 
 ## Set the Pattern Mapping Config and Register the Pattern
 
-In `Neural Engine`, we treat the pattern fusion as the process of pattern mapping: from a group nodes to another group nodes. In this step, you need to provide a config for `pattern_mapping` function and register your pattern, in order to make sure the [`compile`](/intel_extension_for_transformers/llm/runtime/compile) implements pattern fusion correctly.
+In `Neural Engine`, we treat the pattern fusion as the process of pattern mapping: from a group nodes to another group nodes. In this step, you need to provide a config for `pattern_mapping` function and register your pattern, in order to make sure the [`compile`](/intel_extension_for_transformers/llm/runtime/deprecated/compile) implements pattern fusion correctly.
 
-- Create a python file (for example, name can be `layer_norm.py`) in [`compile.sub_graph`](/intel_extension_for_transformers/llm/runtime/compile/sub_graph) and add the `LayerNorm` pattern mapping config.
+- Create a python file (for example, name can be `layer_norm.py`) in [`compile.sub_graph`](/intel_extension_for_transformers/llm/runtime/deprecated/compile/sub_graph) and add the `LayerNorm` pattern mapping config.
 
   For the above `LayerNorm` pattern, the config example can be like this:
 
@@ -139,21 +139,21 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
   }
   ```
 
-  The dict in the config will guide the `pattern_mapping` function on how to find all the group nodes that belong to `LayerNorm` pattern in intermediate graph and how to replace them with new pattern. We use this config to store many dicts because different models (even the same model) could have different representations for a certain pattern. If you want to delve into it, please see [pattern_recognize](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/docs/pattern_recognize.md) and [graph_fusion](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/docs/graph_fusion.md) docs for more details.
+  The dict in the config will guide the `pattern_mapping` function on how to find all the group nodes that belong to `LayerNorm` pattern in intermediate graph and how to replace them with new pattern. We use this config to store many dicts because different models (even the same model) could have different representations for a certain pattern. If you want to delve into it, please see [pattern_recognize](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/pattern_recognize.md) and [graph_fusion](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/graph_fusion.md) docs for more details.
 
 - Register the `LayerNorm` pattern
 
   Like the node op_type, the new pattern also need to be registered. You can check the existing pattern classes by the commands below.
 
   ```python
-  from intel_extension_for_transformers.llm.runtime.compile.sub_graph.pattern import PATTERNS
+  from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern import PATTERNS
   print(PATTERNS)
   ```
 
   The print result will show all registered patterns, for example:
 
   ```shell
-  {'Gelu': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.gelu.Gelu'>, 'TokenTypeEmbeddings': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.token_type_embeddings.TokenTypeEmbeddings'>, 'TransposeBatchMatMul': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.transpose_batch_matmul.TransposeBatchMatMul'>, 'TokenTypeEmbeddingsV1': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.token_type_embeddings_v1.TokenTypeEmbeddingsV1'>, 'LayerNormWithReduceMean': <class 'intel_extension_for_transformers.llm.runtime.compile.sub_graph.layer_norm_with_reduce_mean.LayerNormWithReduceMean'>, ...}
+  {'Gelu': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.gelu.Gelu'>, 'TokenTypeEmbeddings': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.token_type_embeddings.TokenTypeEmbeddings'>, 'TransposeBatchMatMul': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transpose_batch_matmul.TransposeBatchMatMul'>, 'TokenTypeEmbeddingsV1': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.token_type_embeddings_v1.TokenTypeEmbeddingsV1'>, 'LayerNormWithReduceMean': <class 'intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.layer_norm_with_reduce_mean.LayerNormWithReduceMean'>, ...}
   ```
 
   In order to complete the `LayerNorm` pattern registration, write a related classes in the python file you created before and put the pattern mapping config in.
@@ -203,7 +203,7 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
   After save this python file, you can check it by retrieving the `PATTERNS`
 
   ```python
-  from intel_extension_for_transformers.llm.runtime.compile.sub_graph.pattern import PATTERNS
+  from intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern import PATTERNS
   'LayerNorm' in PATTERNS
   ```
 
@@ -213,9 +213,9 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
 
 - Define the pattern fusion order
 
-  Fusing patterns should follow specific order if a model has multiple patterns. For example, if the model has A pattern (nodes: a-->b) and B pattern (nodes: a-->b-->c), and B pattern is actually equivalent to A pattern + c node. So you should fuse A pattern first, then B pattern (more info and details please see the [graph_fusion](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/docs/graph_fusion.md)).
+  Fusing patterns should follow specific order if a model has multiple patterns. For example, if the model has A pattern (nodes: a-->b) and B pattern (nodes: a-->b-->c), and B pattern is actually equivalent to A pattern + c node. So you should fuse A pattern first, then B pattern (more info and details please see the [graph_fusion](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/graph_fusion.md)).
 
-  There is a list called `supported_patterns` in [`compile.sub_graph.pattern`](/intel_extension_for_transformers/llm/runtime/compile/sub_graph/pattern.py). It controls the order of pattern fusion. You need to add your customized pattern name (the `pattern_type` you register in step 2) into `supported_patterns` at appropriate location (If a pattern does not influence other patterns, you can put it at an arbitrary location).
+  There is a list called `supported_patterns` in [`compile.sub_graph.pattern`](/intel_extension_for_transformers/llm/runtime/deprecated/compile/sub_graph/pattern.py). It controls the order of pattern fusion. You need to add your customized pattern name (the `pattern_type` you register in step 2) into `supported_patterns` at appropriate location (If a pattern does not influence other patterns, you can put it at an arbitrary location).
 
   For example, change the `supported_patterns` like:
 
@@ -245,7 +245,7 @@ In `Neural Engine`, we treat the pattern fusion as the process of pattern mappin
 
 - Set the attributes of new pattern
 
-  Every new pattern generated after fusion could have its attributes (when we talk about pattern attributes, it stands for the operator's attributes in the pattern, which are defined by the [`executor`](/intel_extension_for_transformers/llm/runtime/executor) ). As for `LayerNorm` pattern, the above 9 nodes are fused to one node with op_type `LayerNorm`. This operation has an attribute `epsilon` in [`executor`](/intel_extension_for_transformers/llm/runtime/executor), which is a value added to the denominator for numerical stability.
+  Every new pattern generated after fusion could have its attributes (when we talk about pattern attributes, it stands for the operator's attributes in the pattern, which are defined by the [`executor`](/intel_extension_for_transformers/llm/runtime/deprecated/executor) ). As for `LayerNorm` pattern, the above 9 nodes are fused to one node with op_type `LayerNorm`. This operation has an attribute `epsilon` in [`executor`](/intel_extension_for_transformers/llm/runtime/deprecated/executor), which is a value added to the denominator for numerical stability.
 
   We recommend to write a `_set_attr` function and call it after pattern mapping to set the nodes' attributes. Here is the example for `LayerNorm` pattern.
 
@@ -335,7 +335,7 @@ class LayerNorm(Pattern):
         return model
 ```
 
-After finishing these three steps in [`compile`](/intel_extension_for_transformers/llm/runtime/compile), reinstall `intel_extension_for_transformers` and then use [`compile`](/intel_extension_for_transformers/llm/runtime/compile) function would compile your model with the customized pattern.
+After finishing these three steps in [`compile`](/intel_extension_for_transformers/llm/runtime/deprecated/compile), reinstall `intel_extension_for_transformers` and then use [`compile`](/intel_extension_for_transformers/llm/runtime/deprecated/compile) function would compile your model with the customized pattern.
 
 >**Note**:
 >

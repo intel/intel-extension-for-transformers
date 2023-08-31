@@ -16,8 +16,8 @@
 # limitations under the License.
 
 import unittest
-from intel_extension_for_transformers.llm.runtime.compile import compile
-import intel_extension_for_transformers.llm.runtime.compile.graph_utils as util
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
+import intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils as util
 import os
 import torch
 import onnx
