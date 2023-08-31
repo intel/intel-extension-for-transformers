@@ -1,13 +1,13 @@
 # LLM Runtime 
 
-LLM Runtime is an experimental c++ bare metal LLM inference solution that mainly references and borrows from the [llama.cpp](https://github.com/ggerganov/llama.cpp) project. llama.cpp puts almost all core code and kernels in a single file and use a large number of macros, making it difficult for developers to read and modify. LLM Runtime has the following features:
+LLM Runtime is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from [llama.cpp](https://github.com/ggerganov/llama.cpp), which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it difficult for developers to read and modify. Our LLM Runtime has the following features:
 
 - Simple and hierarchical structure, you can add your own high-performance implementation.
 - Applied quantization into high 4 bitsfrom int8, higher performance and accuracy compared with the original one.
 - Utilized AMX, VNNI and AVX512F instruction set, more instructions support on the way.
 - Currently only supports x86 platforms, and initial Intel GPU support.
 
-In short, LLM Runtime is an experimental feature and may keep changing.
+> LLM Runtime is under active development so APIs are subject to change.
 
 ## Supported Models
 
