@@ -74,6 +74,12 @@ RUN source activate && conda activate chatbot-demo && \
     cd /root/chatbot && git clone https://github.com/intel/intel-extension-for-transformers.git \
     && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ && pip install -r requirements.txt
 
+ENV KMP_BLOCKTIME=1
+ENV KMP_SETTINGS=1
+ENV KMP_AFFINITY=granularity=fine,compact,1,0
+ENV LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
+ENV LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
+
 WORKDIR /root/chatbot/intel-extension-for-transformers/workflows/chatbot/inference/
 
 
