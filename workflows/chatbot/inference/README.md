@@ -20,7 +20,6 @@ If you don't have a fine-tuned model, please remove the 'peft_model_path' parame
 # chat task
 python generate.py \
         --base_model_path "mosaicml/mpt-7b-chat" \
-        --peft_model_path "./mpt_peft_finetuned_model" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
         --task chat \
@@ -29,10 +28,9 @@ python generate.py \
 
 ```
 
-TODO: @chang mention FP32 inference
+To enable FP32 inference, you can add the parameter "--dtype fp32".
 
 ## LLama2 BF16 Inference
-TODO: @Liang use llama2 for below
 For Llama, use the below command line to chat with it.
 If you encounter a failure with the Llama fast tokenizer while using the latest transformers, add the option "--use_slow_tokenizer".
 The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`.
@@ -40,12 +38,13 @@ The `architectures` in `config.json` should be changed from `LLaMAForCausalLM` t
 
 ```bash
 python generate.py \
-        --base_model_path "decapoda-research/llama-7b-hf" \
-        --peft_model_path "./llama_peft_finetuned_model" \
+        --base_model_path "meta-llama/Llama-2-7b-chat-hf" \
         --use_slow_tokenizer \
         --use_kv_cache \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
+
+To enable FP32 inference, you can add the parameter "--dtype fp32".
 
 ## LLama2 INT8 Inference
 TODO: @chang add INT8 inference
