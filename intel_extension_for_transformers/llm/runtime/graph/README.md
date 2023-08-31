@@ -1,17 +1,18 @@
-# ITREX Graph 
+# LLM Runtime 
 
-ITREX Graph is an experimental c++ bare metal LLM inference solution that mainly references and borrows from the [llama.cpp](https://github.com/ggerganov/llama.cpp) project. llama.cpp puts almost all core code and kernels in a single file and use a large number of macros, making it difficult for developers to read and modify. The graph has the following features:
+LLM Runtime is an experimental c++ bare metal LLM inference solution that mainly references and borrows from the [llama.cpp](https://github.com/ggerganov/llama.cpp) project. llama.cpp puts almost all core code and kernels in a single file and use a large number of macros, making it difficult for developers to read and modify. LLM Runtime has the following features:
 
 - Simple and hierarchical structure, you can add your own high-performance implementation.
 - Applied quantization into high 4 bitsfrom int8, higher performance and accuracy compared with the original one.
 - Utilized AMX, VNNI and AVX512F instruction set, more instructions support on the way.
 - Currently only supports x86 platforms, and initial Intel GPU support.
 
-In short, ITREX Graph is an experimental feature and may keep changing.
+In short, LLM Runtime is an experimental feature and may keep changing.
 
 ### Supported Models
 
 Now we supports following models.
+# Text generation models
 | model name | INT8 | INT4|
 |---|:---:|:---:|
 |[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ | 
@@ -21,12 +22,16 @@ Now we supports following models.
 |[LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
 |[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)| ✅ | ✅ | 
 |[LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
-|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf)| ✅ | ✅ | 
-|[Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ | 
 |[MPT-7B](https://huggingface.co/mosaicml/mpt-7b)| ✅ | ✅ | 
 |[MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
 |[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b)| ✅ | ✅ | 
 |[Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
+
+# Code generation models
+| model name | INT8 | INT4|
+|---|:---:|:---:|
+|[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf)| ✅ | ✅ | 
+|[Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ | 
 |[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b)| ✅ | ✅ | 
 |[StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b)| ✅ | ✅ | 
 |[StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
@@ -85,13 +90,13 @@ We supply LLM chat python script to run supported models conveniently.
 # recommed to use numactl to bind cores in Intel cpus for better performance
 # if you use different core numbers, please also  change -t arg value
 # please type prompt about codes when run `StarCoder`, for example, -p "def fibonnaci(".
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see"
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see"
 
 # if you want to generate fixed outputs, please set --seed arg, for example:
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --seed 12
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --seed 12
 
 # if you want to reduce repeated generated texts, please set --repeat_penalty (value > 1.0, default = 1.0), for example:
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/chat_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
 ```
 
 Chat script args explanations:
