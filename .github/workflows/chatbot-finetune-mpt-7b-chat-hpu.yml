@@ -1,0 +1,61 @@
+name: Chatbot finetune on mosaicml/mpt-7b-chat with hpu
+
+on:
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-ft-mpt-7b-hpu
+  cancel-in-progress: true
+
+jobs:
+  finetuning:
+    name: finetuning test
+    runs-on: guadi2-4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Build Docker Image
+        run: docker build ./ --target hpu -f workflows/chatbot/fine_tuning/docker/Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
+
+      - name: Start Docker Container on socket 0
+        id: master_container
+        run: |
+          cid=$(docker ps -q --filter "name=chatbotfinetune-hpu-s0")
+          if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
+          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot --name="chatbotfinetune-hpu-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-hpu:latest
+
+      - name: Run Finetuning
+        run: |
+          cmd="python3 /root/chatbot/workflows/chatbot/fine_tuning/instruction_tuning_pipeline/finetune_clm.py \
+            --model_name_or_path mosaicml/mpt-7b-chat \
+            --train_file /root/chatbot/.github/workflows/sample_data/alpaca_data_sample_45.json \
+            --bf16 True \
+            --output_dir ./mpt_peft_finetuned_model \
+            --num_train_epochs 3 \
+            --per_device_train_batch_size 4 \
+            --per_device_eval_batch_size 4 \
+            --gradient_accumulation_steps 1 \
+            --save_strategy \"epoch\" \
+            --save_steps 2000 \
+            --save_total_limit 1 \
+            --learning_rate 1e-4  \
+            --logging_steps 10 \
+            --peft lora \
+            --dataset_concatenation \
+            --do_train \
+            --tokenizer_name \"EleutherAI/gpt-neox-20b\" \
+            --habana \
+            --use_habana \
+            --use_lazy_mode "
+          
+          docker exec "chatbotfinetune-hpu-s0" bash -c "$cmd"       
+
+      - name: Stop Container
+        if: success() || failure()
+        run: |
+          cid=$(docker ps -q --filter "name=chatbotfinetune-hpu-s0")
+          if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
+
+      - name: Test Summary
+        run: echo "Finetuning completed successfully"

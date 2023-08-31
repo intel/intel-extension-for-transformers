@@ -35,3 +35,6 @@ jobs:
   call-finetune-mpt-7b-chat:
     uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat.yml
 
+  call-finetune-mpt-7b-chat-hpu:
+    uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat-hpu.yml
+
