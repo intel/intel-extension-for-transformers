@@ -30,7 +30,7 @@ class PaddingInterleaveMN {
   template <JBLAS_ISA ISA_T, typename T_SRC, typename T_DST = T_SRC>
   static JBLAS_CODE forward(const T_SRC* src, T_DST* dst, int row, int col, int row_pad, int col_pad, int src_step,
                             int dst_step) {
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       const auto kern_ret = kernel::avx512f::padding_interleave_cvt<T_SRC, T_DST, RowPack>::forward(
           src, dst, NTile, row, col, row_pad, col_pad, src_step, dst_step);
       if (kern_ret != JblasNotSupport) return kern_ret;
@@ -59,7 +59,7 @@ class PaddingTransInterleaveMN {
   static JBLAS_CODE forward(const T_SRC* src, T_DST* dst, int row, int col, int row_pad, int col_pad, int src_step,
                             int dst_step) {
     // Note: rows/cols and i/j are in terms of src
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       const auto kern_ret = kernel::avx512f::padding_trans_interleave_cvt<T_SRC, T_DST, ColPack>::forward(
           src, dst, MTile, row, col, row_pad, col_pad, src_step, dst_step);
       if (kern_ret != JblasNotSupport) return kern_ret;
@@ -74,7 +74,7 @@ class Memcpy2D {
   static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
                             void* const_elt_v = nullptr, Eltops... ops) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return kernel::jit::JitMemcpy2DAvx512f::forward<_SRC_T, _DST_T>(srcptr, dstptr, row, col, srcstride, dststride,
                                                                       const_elt_v, ops...);
     }
@@ -89,7 +89,7 @@ class Memcpy2DFp32CvtBf16 {
   static JBLAS_CODE forward(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
                             bool zeropadding) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return kernel::avx512f::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride, zeropadding);
     }
 #endif
@@ -103,7 +103,7 @@ class Memcpy2DFp32CvtFp16 {
   static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
                             bool zeropadding) {
 #if CompileFP16()
-    if (utils::isa_base<ISA_T>::avx512_fp16) {
+    if constexpr (utils::isa_base<ISA_T>::avx512_fp16) {
       return kernel::avx512f::fp32_cvt_fp16_2D_write_back((const float*)srcptr, (utils::fp16*)dstptr, row, col,
                                                           srcstride / sizeof(float), dststride / sizeof(utils::fp16),
                                                           zeropadding);
@@ -119,7 +119,7 @@ class Memcpy2DFp16CvtFp32 {
   static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
                             bool zeropadding) {
 #if CompileFP16()
-    if (utils::isa_base<ISA_T>::avx512_fp16) {
+    if constexpr (utils::isa_base<ISA_T>::avx512_fp16) {
       return kernel::avx512f::fp16_cvt_fp32_2D_write_back(  //
           (const utils::fp16*)srcptr, (float*)dstptr, row, col, srcstride / sizeof(utils::fp16),
           dststride / sizeof(float), zeropadding);
@@ -164,7 +164,7 @@ class QuantizeSignIntRowBlock {
   static inline JBLAS_CODE forward(const float* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst,
                                    float* scales, int blocksize) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f &&
+    if constexpr (utils::isa_base<ISA_T>::avx512f &&
         S4_T != S4_FULLRANGE) {  // TODO(zhe): support simd version s4_fullrange quantization.
       return avx512f::quantize_f32_sign_int_rowblock<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, blocksize);
     }
@@ -187,7 +187,7 @@ class QuantizeU8ColBlock {
   static inline JBLAS_CODE forward(int row, int col, const float* srcptr, int ld_src, uint8_t* dstptr, int ld_dst,
                                    float* scales, int ld_scale, uint8_t* zps, int blocksize) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::quantize_f32_u8_colblock(row, col, srcptr, ld_src, dstptr, ld_dst, scales, ld_scale, zps,
                                                blocksize);
     }
@@ -202,7 +202,7 @@ class QuantizeS8ColBlock {
   static inline JBLAS_CODE forward(int row, int col, const float* srcptr, int ld_src, int8_t* dstptr, int ld_dst,
                                    float* scales, int ld_scale, int blocksize) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::quantize_f32_s8_colblock(row, col, srcptr, ld_src, dstptr, ld_dst, scales, ld_scale, blocksize);
     }
 #endif
@@ -215,7 +215,7 @@ class Broadcast {
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(int num, const uint8_t& srcval, uint8_t* dstptr) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::broadcast_u8(num, srcval, dstptr);
     }
 #endif
@@ -229,7 +229,7 @@ class AccumulateDequantizeS32F32 {
   static inline JBLAS_CODE forward(const int32_t* srcptr, float* dstptr, float alpha, float beta, int row, int col,
                                    int ld_src, int ld_dst, float* ascales, int ldas, float* wscales) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::accumulate_dequantize_s32_f32(srcptr, dstptr, alpha, beta, row, col, ld_src, ld_dst, ascales,
                                                     ldas, wscales);
     }
@@ -248,7 +248,7 @@ class DecompressKBlockS4FP {
     JBLAS_CODE ret = JblasNotSupport;
 
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       ret = avx512f::decompress_kblock_s4_fp<_T, _DST_T, S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
                                                                k_offset, kblock, NPad);
       if (ret == JblasSuccess) {
@@ -291,7 +291,7 @@ class DecompressKBlockF4Fp {
   static inline JBLAS_CODE forward(utils::f4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
                                    _T* scales, int k_offset, int kblock, int NPad) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::decompress_kblock_f4_fp<_T, _DST_T, F4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales,
                                                                 k_offset, kblock, NPad);
     }
@@ -304,11 +304,11 @@ class DecompressKBlockS4S8 {
  public:
   template <JBLAS_ISA ISA_T, JBLAS_SIGN_INT_TYPE S4_T>
   static inline JBLAS_CODE forward(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst) {
-    if (utils::isa_base<ISA_T>::avx512f && S4_T == S4_CLIP) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f && S4_T == S4_CLIP) {
       return jit::decompress_s4_s8(srcptr, dstptr, row, col, ld_src, ld_dst);
     }
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::decompress_s4_s8<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst);
     }
 #endif
@@ -322,7 +322,7 @@ class DecompressKBlockS8F32 {
   static inline JBLAS_CODE forward(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst, _T* scales,
                                    int k_offset, int kblock, int NPad) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return jit::DequanKBlockS8F32::forward_avx512f(srcptr, dstptr, row, col, ld_src, ld_dst, scales, k_offset, kblock,
                                                      NPad);
     }
@@ -349,7 +349,7 @@ class AlphaBetaF32F32 {
                             const float* src1ptr, const int src1step, float* dstptr, const int dststep, const int M,
                             const int N) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::alphabeta_f32_f32(alpha, srcptr, srcstep, beta, src1ptr, src1step, dstptr, dststep, M, N);
     }
 #endif
@@ -368,7 +368,7 @@ class QuanOutS32U32 {
   static JBLAS_CODE forward(const float alpha, const int32_t* srcptr, const int srcstep, uint8_t* dstptr,
                             const int dststep, const int M, const int N, float scaleSrc, float scaleDst, int zpDst) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::quanout_s32_u32(alpha, srcptr, srcstep, dstptr, dststep, M, N, scaleSrc, scaleDst, zpDst);
     }
 #endif
@@ -384,7 +384,7 @@ class DequanS32Fp32 {
   static JBLAS_CODE forward(const int32_t* srcptr, const int srcstep, float* dstptr, const int dststep, const int M,
                             const int N, const float* scaleA, const int ldsa, const float* scaleB) {
 #if CompileAVX512F()
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::dequant_s32_fp32(srcptr, srcstep, dstptr, dststep, M, N, scaleA, ldsa, scaleB);
     }
 #endif
@@ -416,7 +416,7 @@ class RemoveZeroPointBias {
   template <JBLAS_ISA ISA_T>
   static inline JBLAS_CODE forward(float* accptr, int ldacc, int row, int col, uint8_t* zps, float* scales, int lds,
                                    const float* reduce) {
-    if (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return avx512f::remove_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);
     }
     return ref::remove_zeropoint_bias(accptr, ldacc, row, col, zps, scales, lds, reduce);

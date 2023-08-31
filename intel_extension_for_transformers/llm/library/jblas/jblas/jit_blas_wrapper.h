@@ -179,13 +179,13 @@ class GemmInterfaceParallelAB {
 #pragma omp parallel
     {
       int tidx = omp_get_thread_num();
-      if (_LaunchA) {
+      if constexpr (_LaunchA) {
         getActivationPtr()->launch(_param.paramA, tidx, paraA);
       }
-      if (_LaunchB) {
+      if constexpr (_LaunchB) {
         getWeightPtr()->launch(_param.paramB, tidx, paraB);
       }
-      if (_LaunchA || _LaunchB) {
+      if constexpr (_LaunchA || _LaunchB) {
 #pragma omp barrier
       }
       int colidx, rowidx, rowsize, colsize;

@@ -41,13 +41,13 @@ class AccumulatorWriteBack {
     auto cptr = _param.C + COffset;
     bool constexpr Valid = !std::is_same<DType, utils::bf16>::value || std::is_same<SType, float>::value;
     static_assert(Valid, "fp32 to bf16 conversion only.");
-    if (std::is_same<DType, utils::bf16>::value) {
+    if constexpr (std::is_same<DType, utils::bf16>::value) {
       return kernel::wrapper::Memcpy2DFp32CvtBf16::template forward<ISA_T>(
           (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(SType), _param.ldc * sizeof(DType), false);
-    } else if (std::is_same<std::tuple<SType, DType>, std::tuple<utils::fp16, float>>::value) {
+    } else if constexpr (std::is_same<std::tuple<SType, DType>, std::tuple<utils::fp16, float>>::value) {
       return kernel::wrapper::Memcpy2DFp16CvtFp32::template forward<ISA_T>(
           (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(SType), _param.ldc * sizeof(DType), false);
-    } else if (sizeof(SType) == sizeof(DType)) {
+    } else if constexpr (sizeof(SType) == sizeof(DType)) {
       return kernel::wrapper::Memcpy2D::template forward<ISA_T, SType, DType>(
           (void*)cacheptr, (void*)cptr, M, N * sizeof(DType), cachestep * sizeof(SType), _param.ldc * sizeof(DType),
           _param.elt_const_v, ops...);
@@ -69,7 +69,7 @@ class CustomAccumulatorWriteBackWithEltop {
                      const int N, const Param& _param) {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    if (std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value) {
+    if constexpr (std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value) {
       return kernel::jit::CustomMemCpy::template forward<_OP>(cacheptr, cptr, M, N * sizeof(_DST_T),
                                                               cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T),
                                                               _param.elt_const_v);

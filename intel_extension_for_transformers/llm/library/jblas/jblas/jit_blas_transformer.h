@@ -134,15 +134,15 @@ class QKVGemmInterfacePackWeightParallelAB {
 #pragma omp parallel
     {
       int tidx = omp_get_thread_num();
-      if (_LaunchA) {
+      if constexpr (_LaunchA) {
         getActivationPtr()->launch(_param.paramA, tidx, paraA);
       }
-      if (_LaunchB) {
+      if constexpr (_LaunchB) {
         for (size_t i = 0; i < _param.Batch; i++) {
           getWeightPtr()->launch(_param.paramsB[i], tidx, paraB);
         }
       }
-      if (_LaunchA || _LaunchB) {
+      if constexpr (_LaunchA || _LaunchB) {
 #pragma omp barrier
       }
       launchT(_param, tidx, _paral, cb.mL2Cache);

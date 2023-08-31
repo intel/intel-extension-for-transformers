@@ -405,7 +405,7 @@ class WeightS8ScaleFp32 {
       auto KPad = wptr->mKPad;
       auto bptr = wptr->mWPtr + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
       for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-        if (_GemmCore_T::PACK_ROW == 1) {
+        if constexpr (_GemmCore_T::PACK_ROW == 1) {
           kernel::wrapper::DecompressKBlockS8F32::forward<ISA_T, float>(
               bptr + i * KPad, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
               _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
@@ -726,7 +726,7 @@ class WeightS4ScaleFp32 : public WeightS8ScaleFp32<_GemmCore_T, ISA_T> {
       auto KPad = wptr->mKPad;
       auto bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
       for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-        if (_GemmCore_T::PACK_ROW == 1) {
+        if constexpr (_GemmCore_T::PACK_ROW == 1) {
           kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, float, S4_T>(
               (utils::int4x2*)(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
               _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
@@ -1284,13 +1284,13 @@ class GemmInterfaceKblockParallelAB {
 #pragma omp parallel
     {
       int tidx = omp_get_thread_num();
-      if (_LaunchA) {
+      if constexpr (_LaunchA) {
         getActivationPtr()->launch(_param.paramA, tidx, paraA);
       }
-      if (_LaunchB) {
+      if constexpr (_LaunchB) {
         getWeightPtr()->launch(_param.paramB, tidx, paraB);
       }
-      if (_LaunchA || _LaunchB) {
+      if constexpr (_LaunchA || _LaunchB) {
 #pragma omp barrier
       }
       int colidx, rowidx, rowsize, colsize;
