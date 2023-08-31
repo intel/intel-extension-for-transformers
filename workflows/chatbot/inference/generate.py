@@ -405,6 +405,7 @@ def load_model(
                 model_name,
                 torch_dtype=torch.bfloat16,
                 low_cpu_mem_usage=True,
+                trust_remote_code=True,
                 use_auth_token=hf_access_token,
             )
     else:
@@ -631,7 +632,7 @@ def predict_stream(**params):
                         )
                         return model.generate(**input_tokens, **generation_kwargs)
             except Exception as e:
-                errors_queue.put(e)
+                errors_queue.put(str(e))
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -700,7 +701,7 @@ def predict_stream(**params):
                         ignore_eos=False,
                     )
             except Exception as e:
-                errors_queue.put(e)
+                errors_queue.put(str(e))
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -715,7 +716,8 @@ def predict_stream(**params):
         pass
     else:
         thread_exception = errors_queue.get()
-        raise thread_exception
+        yield "STREAM_ERROR_REPORT:" + thread_exception
+        return
     # prevent crash if no words are coming out
     first_token_output_time = datetime.now()
     for new_text in streamer:
