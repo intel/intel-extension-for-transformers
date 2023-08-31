@@ -18,6 +18,14 @@ from transformers import (
     StoppingCriteria,
 )
 
+from checkpoint_utils import (
+    get_ds_injection_policy,
+    get_repo_root,
+    model_is_optimized,
+    model_on_meta,
+    write_checkpoints_json,
+)
+
 # Set necessary env variables
 os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
 os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
@@ -253,63 +261,6 @@ def add_template(example, template_name):
     return prompt
 
 
-def get_optimized_model_name(config):
-    from optimum.habana.transformers.generation import (
-        MODELS_OPTIMIZED_WITH_STATIC_SHAPES,
-    )
-
-    for model_type in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
-        if model_type == config.model_type:
-            return model_type
-
-    return None
-
-
-def model_is_optimized(config):
-    """
-    Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a
-    new input token_idx.
-    """
-    return get_optimized_model_name(config) is not None or config.model_type == "mpt"
-
-
-def get_ds_injection_policy(config):
-    model_type = get_optimized_model_name(config)
-    policy = {}
-    if model_type:
-        if model_type == "bloom":
-            from transformers.models.bloom.modeling_bloom import BloomBlock
-
-            policy = {BloomBlock: ("self_attention.dense", "mlp.dense_4h_to_h")}
-
-        if model_type == "opt":
-            from transformers.models.opt.modeling_opt import OPTDecoderLayer
-
-            policy = {OPTDecoderLayer: ("self_attn.out_proj", ".fc2")}
-
-        if model_type == "gpt2":
-            from transformers.models.gpt2.modeling_gpt2 import GPT2MLP
-
-            policy = {GPT2MLP: ("attn.c_proj", "mlp.c_proj")}
-
-        if model_type == "gptj":
-            from transformers.models.gptj.modeling_gptj import GPTJBlock
-
-            policy = {GPTJBlock: ("attn.out_proj", "mlp.fc_out")}
-
-        if model_type == "gpt_neox":
-            from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXLayer
-
-            policy = {GPTNeoXLayer: ("attention.dense", "mlp.dense_4h_to_h")}
-
-        if model_type == "llama":
-            from transformers.models.llama.modeling_llama import LlamaDecoderLayer
-
-            policy = {LlamaDecoderLayer: ("self_attn.o_proj", "mlp.down_proj")}
-
-    return policy
-
-
 MODELS = {}
 
 
@@ -332,17 +283,25 @@ def import_deepspeed():
     logger.info("DeepSpeed is enabled.")
 
 
-def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs):
+def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta):
     # Initialize the model
     from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
 
     world_size, rank, local_rank = initialize_distributed_hpu()
 
+    model = model.eval()
     ds_inference_kwargs = {"dtype": torch.bfloat16}
     ds_inference_kwargs["tensor_parallel"] = {"tp_size": world_size}
     ds_inference_kwargs["enable_cuda_graph"] = use_hpu_graphs
     # Make sure all devices/nodes have access to the model checkpoints
+    if is_meta:
+        checkpoints_json = "checkpoints.json"
+        write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json)
+
     torch.distributed.barrier()
+
+    if is_meta:
+        ds_inference_kwargs["checkpoint"] = checkpoints_json
 
     ds_inference_kwargs["injection_policy"] = get_ds_injection_policy(model.config)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
@@ -404,7 +363,15 @@ def load_model(
         else True,
         use_auth_token=hf_access_token,
     )
-    if re.search("flan-t5", model_name, re.IGNORECASE):
+    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
+    load_to_meta = model_on_meta(config)
+    if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
+        logger.warn("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
+        load_to_meta = False
+    if device == "hpu" and use_deepspeed and load_to_meta:
+        with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
+            model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
+    elif re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name, low_cpu_mem_usage=True, use_auth_token=hf_access_token
@@ -495,25 +462,27 @@ def load_model(
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
     if device == "hpu":
-        model = model.eval().to("hpu")
 
-        if use_hpu_graphs and not use_deepspeed:
-            from habana_frameworks.torch.hpu import wrap_in_hpu_graph
+        if peft_path:
+            from peft import PeftModel
+            model = PeftModel.from_pretrained(model, peft_path)
+            model = model.to(torch.bfloat16)
+            model = model.merge_and_unload()
 
-            model = wrap_in_hpu_graph(model)
+        if not use_deepspeed:
+            model = model.eval().to("hpu")
+            if use_hpu_graphs:
+                from habana_frameworks.torch.hpu import wrap_in_hpu_graph
+                model = wrap_in_hpu_graph(model)
 
         if use_deepspeed:
             model = init_deepspeed_inference(
                 model=model,
                 model_name_or_path=model_name,
                 use_hpu_graphs=use_hpu_graphs,
+                is_meta=load_to_meta,
             )
 
-        if peft_path:
-            from peft import PeftModel
-
-            model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(torch.bfloat16)
     else:
         if peft_path:
             from peft import PeftModel
