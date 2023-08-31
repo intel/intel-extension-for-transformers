@@ -337,6 +337,7 @@ class model_name_to_arch {
   std::unordered_map<std::string, model_archs> name2arch_ = {
       {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ},           {"mpt", MODEL_MPT},
       {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
+      {"bloom", MODEL_BLOOM},
   };
 };
 
