@@ -101,7 +101,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
-          name: "Engine Unit Test ${{ matrix.test_name }}"
+          name: "EngineUnitTest${{ matrix.test_name }}"
           path: ${{ github.workspace }}/log_dir
           retention-days: 5
           
@@ -125,7 +125,7 @@ jobs:
       - name: Calculte coverage
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
-          /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir"
+          /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir
 
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3

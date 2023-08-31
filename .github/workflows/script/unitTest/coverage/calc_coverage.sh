@@ -2,8 +2,8 @@
 source ../../change_color.sh
 LOG_DIR=$1
 coverage_compare="${LOG_DIR}/coverage_compare.html"
-coverage_log_pr="${LOG_DIR}/Engine Unit Test PR-test/coverage_pr"
-coverage_log_base="${LOG_DIR}/Engine Unit Test baseline/coverage_base"
+coverage_log_pr="${LOG_DIR}/EngineUnitTestPR-test/coverage_pr"
+coverage_log_base="${LOG_DIR}/EngineUnitTestbaseline/coverage_base"
 
 function get_coverage_data() {
     # Input argument
