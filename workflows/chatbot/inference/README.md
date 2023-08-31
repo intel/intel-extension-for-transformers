@@ -1,7 +1,7 @@
 Chatbot Inference
 ============
 
-This document showcases the utilization of the fine-tuned model for conversing with NeuralChat. To obtaining the fine-tuned model, please refer to the [fine-tuning](../fine_tuning/README.md) section. The inference of the fine-tuned models has been validated on the 4th Gen Intel® Xeon® Processors, Sapphire Rapids(SPR) and Habana® Gaudi® Deep Learning Processors.
+This document shows how to perform the chatbot inference. You may refer to the [fine-tuning](../fine_tuning/README.md) section to understand how to fine-tune the model for chat. The chatbot inference has been validated on the 4th Gen Intel® Xeon® Processors, Sapphire Rapids (SPR) and Habana® Gaudi® Deep Learning Processors.
 
 # Inference on Xeon SPR
 
