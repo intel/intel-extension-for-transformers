@@ -47,13 +47,14 @@ python generate.py \
 To enable FP32 inference, you can add the parameter `--dtype "float32"`.
 
 ## LLama2 INT8 Inference
-[Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference demostrates with branch [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) and install Intel-extension-for-pytorch [llm_feature_branch](https://github.com/intel/intel-extension-for-pytorch/tree/llm_feature_branch) branch. please checkout to int8_llama2 branch first, and then follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
+[Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference demostrates in [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) branch and need install Intel-extension-for-pytorch [llm_feature_branch](https://github.com/intel/intel-extension-for-pytorch/tree/llm_feature_branch) branch. Please checkout to int8_llama2 branch first, and then follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel_extension_for_transformers
 git checkout int8_llama2
 python setup.py install
 cd intel_extension_for_transformers/workflows/chatbot/inference
+# then setup the environment following the README.md mentioned.
 ```
 then please follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
 
