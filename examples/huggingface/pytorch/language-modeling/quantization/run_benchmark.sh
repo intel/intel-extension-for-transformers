@@ -107,16 +107,20 @@ function run_benchmark {
     elif [ "${topology}" = "falcon_7b_instruct" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="tiiuae/falcon-7b-instruct"
-    elif [ "${topology}" = "opt_125m_weight_only" ]; then
+    elif [ "${topology}" = "opt_125m_weight_only"  -o \
+           "${topology}" = "opt_125m_weight_only_awq"  -o \
+           "${topology}" = "opt_125m_weight_only_gptq"  -o \
+           "${topology}" = "opt_125m_weight_only_teq" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="facebook/opt-125m"
         lm_eval_tasks="lambada_openai"
         extra_cmd=$extra_cmd" --approach weight_only"
-    elif [ "${topology}" = "opt_125m_weight_only_awq" ]; then
+    elif [ "${topology}" = "opt_125m" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="facebook/opt-125m"
-        lm_eval_tasks="lambada_openai"
-        extra_cmd=$extra_cmd" --approach weight_only"
+        if [ "${backend}" = "ipex" ]; then
+            extra_cmd=$extra_cmd" --ipex"
+        fi
     elif [ "${topology}" = "opt_1.3b" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="facebook/opt-1.3b"
