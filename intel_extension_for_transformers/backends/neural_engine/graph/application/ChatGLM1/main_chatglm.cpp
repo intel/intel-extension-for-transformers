@@ -20,6 +20,7 @@
 #include <cinttypes>
 #include <cstdio>
 #include <ctime>
+#include <codecvt>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -116,6 +117,52 @@ std::string preprocess(const std::string &text) {
             oss << "<|blank_" << sm.str().size() << "|>";
             return oss.str();
         });
+    }
+
+    return output;
+}
+
+std::string postprocess(const std::string &text) {
+    std::string output;
+
+    // newline token
+    {
+        static const std::regex pattern(R"(<n>)");
+        output = std::regex_replace(text, pattern, "\n");
+    }
+    // tab token
+    {
+        static const std::regex pattern(R"(<\|tab\|>)");
+        output = std::regex_replace(output, pattern, "\t");
+    }
+    // blank tokens
+    {
+        static const std::regex pattern(R"(<\|blank_(\d+)\|>)");
+        output = regex_replace(output, pattern,
+                               [](const std::smatch &sm) { return std::string(std::stoi(sm[1].str()), ' '); });
+    }
+
+    // replace punctuations
+    // reference: https://stackoverflow.com/questions/37989081/how-to-use-unicode-range-in-c-regex
+    {
+        static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+        static const std::vector<std::pair<std::wregex, std::wstring>> punct_map{
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]),)")), converter.from_bytes("$1，")},
+            {std::wregex(converter.from_bytes(R"(,([\u4e00-\u9fff]))")), converter.from_bytes("，$1")},
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff])!)")), converter.from_bytes("$1！")},
+            {std::wregex(converter.from_bytes(R"(!([\u4e00-\u9fff]))")), converter.from_bytes("！$1")},
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]):)")), converter.from_bytes("$1：")},
+            {std::wregex(converter.from_bytes(R"(:([\u4e00-\u9fff]))")), converter.from_bytes("：$1")},
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]);)")), converter.from_bytes("$1；")},
+            {std::wregex(converter.from_bytes(R"(;([\u4e00-\u9fff]))")), converter.from_bytes("；$1")},
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff])\?)")), converter.from_bytes("$1？")},
+            {std::wregex(converter.from_bytes(R"(\?([\u4e00-\u9fff]))")), converter.from_bytes("？$1")},
+        };
+        std::wstring w_output = converter.from_bytes(output);
+        for (const auto &punct_pair : punct_map) {
+            w_output = std::regex_replace(w_output, punct_pair.first, punct_pair.second);
+        }
+        output = converter.to_bytes(w_output);
     }
 
     return output;
@@ -244,8 +291,16 @@ int main(int argc, char** argv) {
   prompts.push_back(params.prompt);
   std::string no_preprocess_prompt = build_prompt(prompts);
   std::string prompt = preprocess(no_preprocess_prompt);
-  std::vector<int> embd_inp = ::model_tokenize(ctx, prompt, false);
-  embd_inp.insert(embd_inp.begin(), {64790, 64792}); // special prefix
+
+  std::cout << " ------------------------prompt = " << prompt << std::endl;
+  // std::vector<int> embd_inp = ::model_tokenize(ctx, prompt, false);
+  // embd_inp.insert(embd_inp.end(), {130001, 130004}); // special prefix for ChatGLM-1
+  std::vector<int> embd_inp{5, 74874, 130001, 130004};
+
+  // 先写成原本的embd_inp
+  for (auto &i : embd_inp) {
+    std::cout << i << std::endl;
+  }  
 
   const int n_ctx = model_n_ctx(ctx);
 
@@ -585,7 +640,10 @@ int main(int argc, char** argv) {
     // display text
     if (input_echo) {
       for (auto id : embd) {
-        printf("%s", model_token_to_str(ctx, id));
+        std::string s(model_token_to_str(ctx, id));
+        s = postprocess(s);
+        std::cout << s;
+        //printf("%s", model_token_to_str(ctx, id));
       }
       fflush(stdout);
     }
@@ -682,7 +740,7 @@ int main(int argc, char** argv) {
     }
 
     // end of text token
-    if (!embd.empty() && embd.back() == model_token_eos()) {
+    if (!embd.empty() && embd.back() == 13005) {
       if (params.instruct) {
         is_interacting = true;
       } else {
