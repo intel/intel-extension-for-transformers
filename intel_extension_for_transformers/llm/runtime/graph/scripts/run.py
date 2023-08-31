@@ -17,6 +17,7 @@ from pathlib import Path
 import argparse
 from typing import List, Optional
 from transformers import AutoConfig
+import subprocess
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="run quantization and inference")
@@ -61,6 +62,59 @@ def main(args_in: Optional[List[str]] = None) -> None:
         help="prompt to start generation with (default: empty)",
         default="",
     )
+    parser.add_argument(
+        "-n",
+        "--n_predict",
+        type=int,
+        help="number of tokens to predict (default: -1, -1 = infinity)",
+        default=-1,
+    )
+    parser.add_argument(
+        "-t",
+        "--threads",
+        type=int,
+        help="number of threads to use during computation (default: 56)",
+        default=56,
+    )
+    parser.add_argument(
+        "-b",
+        "--batch_size",
+        type=int,
+        help="batch size for prompt processing (default: 512)",
+        default=512,
+    )
+    parser.add_argument(
+        "-c",
+        "--ctx_size",
+        type=int,
+        help="size of the prompt context (default: 512)",
+        default=512,
+    )
+    parser.add_argument(
+        "-s",
+        "--seed",
+        type=int,
+        help="NG seed (default: -1, use random seed for < 0)",
+        default=-1,
+    )
+    parser.add_argument(
+        "--repeat_penalty",
+        type=float,
+        help="penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)",
+        default=1.1,
+    )
+    parser.add_argument(
+        "--color",
+        action="store_true",
+        help="colorise output to distinguish prompt and user input from generations",
+    )
+    parser.add_argument(
+        "--keep",
+        type=int,
+        help="number of tokens to keep from the initial prompt (default: 0, -1 = all)  ",
+        default=0,
+    )
+
 
     args = parser.parse_args(args_in)
 
@@ -80,42 +134,41 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     # 1. convert
     path = Path(parent_path, "convert_model.py")
-    convert_cmd = "python {} --outtype f32 --outfile {} {}".format(
-        path,
-        Path(work_path, "ne_{}_f32.bin".format(model_type)),
-        args.model
-    )
+    convert_cmd = ["python", path]
+    convert_cmd.extend(["--outfile", Path(work_path, "ne_{}_f32.bin".format(model_type))])
+    convert_cmd.extend(["--outtype", "f32"])
+    convert_cmd.append(args.model)
     print("convert model ...")
-    os.system(convert_cmd)
+    subprocess.run(convert_cmd)
 
     # 2. quantize
-    # TODO: if quantize
     path = Path(parent_path, "quant_bin.py")
-    cmd = "python {} --model_name {} --model_file {} --out_file {} --bits {} --block_size {} --scale_dtype {} --compute_type {}".format(
-        path,
-        model_type,
-        Path(work_path, "ne_{}_f32.bin".format(model_type)),
-        Path(work_path, "ne_{}_{}.bin".format(model_type, args.bits, args.block_size)),
-        args.bits,
-        args.block_size,
-        args.scale_dtype,
-        args.compute_type
-    )
+    quant_cmd = ["python", path]
+    quant_cmd.extend(["--model_name", model_type])
+    quant_cmd.extend(["--model_file", Path(work_path, "ne_{}_f32.bin".format(model_type))])
+    quant_cmd.extend(["--out_file", Path(work_path, "ne_{}_{}.bin".format(model_type, args.bits, args.block_size))])
+    quant_cmd.extend(["--bits", str(args.bits)])
+    quant_cmd.extend(["--block_size", str(args.block_size)])
+    quant_cmd.extend(["--scale_dtype", args.scale_dtype])
+    quant_cmd.extend(["--compute_type", args.compute_type])
     print("quantize model ...")
-    print(cmd)
-    os.system(cmd)
+    subprocess.run(quant_cmd)
 
     # 3. inference
     path = Path(parent_path, "chat_llm.py")
-    cmd = "python {} --model_name {} -m {} --seed 12 -c 512 -b 1024 -n 256 --keep 48 -t 56 --repeat_penalty 1.0 --color -p \"{}\"".format(
-        path,
-        model_type,
-        Path(work_path, "ne_{}_{}.bin".format(model_type, args.bits, args.block_size)),
-        args.prompt,
-    )
+    infer_cmd = ["python", path]
+    infer_cmd.extend(["--model_name", model_type])
+    infer_cmd.extend(["-m", Path(work_path, "ne_{}_{}.bin".format(model_type, args.bits, args.block_size))])
+    infer_cmd.extend(["--prompt", args.prompt])
+    infer_cmd.extend(["--n_predict",      str(args.n_predict)])
+    infer_cmd.extend(["--threads",        str(args.threads)])
+    infer_cmd.extend(["--batch_size",     str(args.batch_size)])
+    infer_cmd.extend(["--ctx_size",       str(args.ctx_size)])
+    infer_cmd.extend(["--seed",           str(args.seed)])
+    infer_cmd.extend(["--repeat_penalty", str(args.repeat_penalty)])
+    infer_cmd.extend(["--keep",           str(args.keep)])
     print("inferce model ...")
-    print(cmd)
-    os.system(cmd)
+    subprocess.run(infer_cmd)
 
 
 if __name__ == "__main__":
