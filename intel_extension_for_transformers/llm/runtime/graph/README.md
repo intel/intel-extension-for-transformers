@@ -53,11 +53,11 @@ python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path/mo
 
 # quantize weights of fp32 ggml bin
 # to ggml q4_0 format
-python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_0.bin --bits 4
+python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_0.bin --outtype i4
 # to neuarl engine graph optimized q4_j with 32 block_size format
-python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --bits 4 --block_size 32 --compute_type int8
+python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --outtype i4 --block_size 32 --compute_type int8
 # to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
-python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --bits 4 --block_size 128 --compute_type int8
+python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --outtype i4 --block_size 128 --compute_type int8
 ```
 quantization args explanations:
 | arg             | explanation                                                 |
@@ -66,7 +66,7 @@ quantization args explanations:
 | --out_file      | path to the quantized model                                 |
 | --config        | path to the configuration file (default: )                  |
 | --nthread       | number of threads to use (default: 1)                       |
-| --bits          | number of bits to use for quantization (default: 4)         |
+| --outtype       | data type of quantization (default: i4)         |
 | --alg           | quantization algorithm to use: sym/asym (default: sym)      |
 | --block_size    | block size (default: 32)                                    |
 | --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
