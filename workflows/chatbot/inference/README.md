@@ -50,14 +50,6 @@ python generate.py \
 ## LLama2 INT8 Inference
 TODO: @chang add INT8 inference
 
-Here are the explanations of each parameter:
-`--temperature`: Controls the diversity of generated text. Lower values result in more deterministic outputs. The default value is 0.1.
-`--top_p`: During text generation, only consider tokens with cumulative probability up to this value. This parameter helps to avoid extremely low probability tokens. The default value is 0.75.
-`--top_k`: The number of highest probability vocabulary tokens to consider for each step of text generation. The default value is 40.
-`--num_beams`: The number of beams to use for beam search decoding. This parameter helps to generate multiple possible completions. The default value is 1.
-`--repetition_penalty`: This value controls the penalty for repeating tokens in the generated text. Higher values encourage the model to produce more diverse outputs. The default value is 1.1.
-`--max_new_tokens`: The maximum number of tokens allowed in the generated output. This parameter helps to limit the length of the generated text. The default value is 128.
-
 
 # Inference on Habana Gaudi
 
