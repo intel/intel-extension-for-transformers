@@ -67,6 +67,7 @@ jobs:
       - name: Binary build
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
+          -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
           && bash install_binary.sh \
           && pip install intel_extension_for_pytorch wget sentencepiece \
