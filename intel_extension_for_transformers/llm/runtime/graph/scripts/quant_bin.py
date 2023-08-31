@@ -40,10 +40,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
         "--nthread", type=int, help="number of threads to use (default: 1)", default=1
     )
     parser.add_argument(
-        "--outtype",
-        choices=["i4", "i8"],
-        help="output format, default: i4",
-        default="i4",
+        "--weight_dtype",
+        choices=["int4", "int8"],
+        help="weight data type, default: int4",
+        default="int4",
     )
     parser.add_argument(
         "--alg",
@@ -79,7 +79,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         sys.exit(1)
 
     quant_bits = 4
-    if args.outtype == "i8":
+    if args.outtype == "int8":
         quant_bits = 8
 
     cmd = [path]
