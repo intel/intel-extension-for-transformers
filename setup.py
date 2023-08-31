@@ -5,8 +5,13 @@ import sys
 import time
 from io import open
 from pathlib import Path
+
+from cmake import CMAKE_BIN_DIR
+from cpuinfo import get_cpu_info
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+
+cpu_flags = get_cpu_info()['flags']
 
 
 def check_env_flag(name: str, default: bool = False) -> bool:
@@ -16,32 +21,23 @@ def check_env_flag(name: str, default: bool = False) -> bool:
         return os.getenv(name, "").upper() in ["ON", "1", "TRUE", "YES", "Y"]
 
 
-SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
-""" Whether to only packaging optimization """
-
-RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
+BACKENDS_ONLY = check_env_flag("BACKENDS_ONLY", False)
 """ Whether to only packaging backends """
 
-if not SKIP_RUNTIME:
-    from cmake import CMAKE_BIN_DIR
-    from cpuinfo import get_cpu_info
-    cpu_flags = get_cpu_info()['flags']
+CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
+""" Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
 
+CMAKE_GENERATOR = os.environ.get("CMAKE_GENERATOR", "Ninja")
+""" The CMake generator to be used; default to Ninja """
 
-    CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
-    """ Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
+CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
+""" Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
 
-    CMAKE_GENERATOR = os.environ.get("CMAKE_GENERATOR", "Ninja")
-    """ The CMake generator to be used; default to Ninja """
+CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "")
+""" Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
 
-    CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
-    """ Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
-
-    CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "")
-    """ Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
-
-    NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
-    """ Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF """
+NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
+""" Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF """
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
@@ -238,12 +234,8 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    if not SKIP_RUNTIME:
-        check_submodules()
-        ext_modules=[CMakeExtension(
-            "intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/")],
-        cmdclass={'build_ext': CMakeBuild}
-
+    check_submodules()
+    
     setup(
         name=project_name,
         author="Intel AIA/AIPC Team",
@@ -254,7 +246,7 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/intel-extension-for-transformers",
-        ext_modules = ext_modules if not SKIP_RUNTIME else [],
+        ext_modules=[CMakeExtension("intel_extension_for_transformers.neural_engine_py", 'intel_extension_for_transformers/llm/runtime/')],
         packages=find_packages(),
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
@@ -262,7 +254,7 @@ if __name__ == '__main__':
         package_data={
             '': ['*.yaml'],
         },
-        cmdclass = cmdclass if not SKIP_RUNTIME else {},
+        cmdclass={'build_ext': CMakeBuild},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [
