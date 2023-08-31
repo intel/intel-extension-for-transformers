@@ -87,6 +87,8 @@ RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
+COPY 0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
+
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
@@ -95,13 +97,18 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install peft && \
     pip install einops && \
     pip install datasets && \
-    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0
+    git clone https://github.com/HabanaAI/DeepSpeed.git && \
+    cd DeepSpeed && \
+    git checkout -b v1.11 origin/1.11.0 && \
+    git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
+    pip install -e . 
 
 RUN git clone https://github.com/intel/intel-extension-for-transformers.git \
     && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ \
     && pip install -r requirements.txt \
     && pip install transformers==4.32.0 \
-    && pip install accelerate==0.22.0 
+    && pip install accelerate==0.22.0  \
+    && pip uninstall -y intel_extension_for_pytorch
 
 
 WORKDIR /intel-extension-for-transformers/workflows/chatbot/inference/
