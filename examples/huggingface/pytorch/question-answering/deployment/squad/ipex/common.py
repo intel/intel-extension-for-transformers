@@ -19,8 +19,8 @@ import os
 import logging
 import sys
 import numpy as np
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.compile.graph import Graph
 from tqdm import tqdm
 import time
 
@@ -41,7 +41,7 @@ def set_log_file(log, log_file):
 def load_graph(model_path):
     if os.path.exists(model_path):
         if os.path.isdir(model_path):
-            from intel_extension_for_transformers.optimization import OptimizedModel
+            from intel_extension_for_transformers.transformers import OptimizedModel
             graph = OptimizedModel.from_pretrained(model_path)
         else:
             graph = compile(model_path)

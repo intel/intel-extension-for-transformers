@@ -29,6 +29,6 @@ from intel_extension_for_transformers.objectives import performance, modelsize
 or
 
 ```python
-from intel_extension_for_transformers.optimization import objectives
+from intel_extension_for_transformers.transformers import objectives
 performance = objectives.Objective(name="performance", greater_is_better=True, weight_ratio=None)
 ```

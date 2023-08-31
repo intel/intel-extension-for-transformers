@@ -1,0 +1,37 @@
+name: Chat Bot Test
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - './requirements.txt'
+      - '.github/workflows/chatbot-test.yml'
+      - '.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml'
+      - '.github/workflows/chatbot-inference-mpt-7b-chat.yml'
+      - '.github/workflows/chatbot-finetune-mpt-7b-chat.yml'
+      - '.github/workflows/script/chatbot/**'
+      - '.github/workflows/sample_data/**'
+      - 'intel_extension_for_transformers/**'
+      - 'workflows/chatbot/inference/**'
+      - 'workflows/dlsa/**'
+      - 'workflows/hf_finetuning_and_inference_nlp/**'
+
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  call-inference-llama-2-7b-chat-hf:
+    uses: ./.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml
+
+  call-inference-mpt-7b-chat:
+    uses: ./.github/workflows/chatbot-inference-mpt-7b-chat.yml
+
+  call-finetune-mpt-7b-chat:
+    uses: ./.github/workflows/chatbot-finetune-mpt-7b-chat.yml
+

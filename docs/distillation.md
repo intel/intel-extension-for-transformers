@@ -49,8 +49,8 @@ Where $D$ is a distance measurement as before, $F_t^{n_i}$ the output feature of
 ## usage
 ### Pytorch Script:
 ```python
-from intel_extension_for_transformers.optimization import metric, objectives, DistillationConfig, Criterion
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import metric, objectives, DistillationConfig, Criterion
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -65,8 +65,8 @@ Please refer to [example](../examples/huggingface/pytorch/text-classification/di
 
 ### Tensorflow Script:
 ```python
-from intel_extension_for_transformers.optimization import (DistillationConfig, metrics)
-from intel_extension_for_transformers.optimization.distillation import Criterion
+from intel_extension_for_transformers.transformers import (DistillationConfig, metrics)
+from intel_extension_for_transformers.transformers.distillation import Criterion
 
 optimizer = TFOptimization(...)
 metric_ = metrics.Metric(name="eval_accuracy")

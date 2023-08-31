@@ -2,6 +2,7 @@ import argparse
 import copy, time
 from datetime import datetime
 import torch
+from queue import Queue
 import re, os, logging
 from threading import Thread
 import contextlib
@@ -58,9 +59,9 @@ summarization_template = "{instruction}\nSummarize the highlights of this articl
 
 
 template_maps = {
-        "completion": instruction_template,
-        "chat": chat_template,
-        "summarization": summarization_template
+    "completion": instruction_template,
+    "chat": chat_template,
+    "summarization": summarization_template,
 }
 
 
@@ -102,6 +103,12 @@ def parse_args():
         type=int,
         default=128,
         help="The maximum number of new tokens to generate.",
+    )
+    parser.add_argument(
+        "--hf_access_token",
+        type=str,
+        default=None,
+        help="Huggingface token to access model",
     )
     parser.add_argument(
         "--num_beams",
@@ -180,8 +187,11 @@ def parse_args():
         "--local_rank", type=int, default=-1, metavar="N", help="Local process rank."
     )
     parser.add_argument(
-        "--task", type=str, default="", choices=["completion", "chat", "summarization"],
-        help="task name, different task means different templates."
+        "--task",
+        type=str,
+        default="",
+        choices=["completion", "chat", "summarization"],
+        help="task name, different task means different templates.",
     )
     args = parser.parse_args()
     return args
@@ -208,18 +218,25 @@ class StopOnTokens(StoppingCriteria):
         return False
 
 
-def max_input_len(model, outlen=0):
-    # need to adjust due to perf and real usage
-    return 128
+def max_input_len(input_text_length):
+    if input_text_length <= 128:
+        return 128
+    elif input_text_length <= 512:
+        return 512
+    elif input_text_length <= 2048:
+        return 2048
+    else:
+        logger.warning("Max support length is 4096")
+        return 4096
 
 
 def add_template(example, template_name):
     if "prompt_with_input" in template_name:
         prompt_template = (
-                template_name["prompt_with_input"]
-                if example["input"] != "" 
-                else template_name["prompt_without_input"]
-                )
+            template_name["prompt_with_input"]
+            if example["input"] != ""
+            else template_name["prompt_without_input"]
+        )
     else:
         prompt_template = template_name
     prompt = prompt_template.format_map(example)
@@ -298,7 +315,7 @@ def import_deepspeed():
     if not is_deepspeed_available():
         raise ImportError(
             "This script requires deepspeed: `pip install"
-            " git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
+            " git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0`."
         )
     # Initialize process(es) for DeepSpeed
     deepspeed.init_distributed(dist_backend="hccl")
@@ -336,6 +353,7 @@ def load_model(
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
+    hf_access_token=None,
 ):
     """
     Load the model and initialize the tokenizer.
@@ -366,51 +384,34 @@ def load_model(
     MODELS[model_name] = {}
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
-        use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+        use_fast=False
+        if (
+            re.search("llama", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+        )
+        else True,
+        use_auth_token=hf_access_token,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name, low_cpu_mem_usage=True
+                model_name, low_cpu_mem_usage=True, use_auth_token=hf_access_token
             )
-    elif (
-        (re.search("mpt", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-        or re.search("llama", model_name, re.IGNORECASE))
-        and ipex_int8
-    ):
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            import intel_extension_for_pytorch
-            from optimum.intel.generation.modeling import TSModelForCausalLM
-            model = TSModelForCausalLM.from_pretrained(
-                model_name,
-                trust_remote_code=True,
-                file_name="best_model.pt",
-            )
-    elif (re.search("mpt", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-        from models.mpt.modeling_mpt import MPTForCausalLM
-
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            from models.mpt.modeling_mpt import MPTForCausalLM
-            model = MPTForCausalLM.from_pretrained(
-                    model_name,
-                    trust_remote_code=True,
-                    torch_dtype=torch.bfloat16,
-                    low_cpu_mem_usage=True,
-                    torchscript=cpu_jit,
-                )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
+        or re.search("mpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("opt", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True
+                model_name,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True,
+                use_auth_token=hf_access_token,
             )
     else:
         raise ValueError(
@@ -484,7 +485,8 @@ def load_model(
                 level="O1",
                 auto_kernel_selection=True,
             )
-            if cpu_jit and re.search("mpt-7b", model_name, re.IGNORECASE):
+            if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
+                            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
                 from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
                 model = jit_trace_mpt_7b(model)
@@ -569,10 +571,12 @@ def predict_stream(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else True
+    return_stats = params["return_stats"] if "return_stats" in params else False
     prompt = params["prompt"]
     ipex_int8=params["ipex_int8"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    errors_queue = Queue()
     task = params.get("task", "")
 
     if task != "":
@@ -580,10 +584,11 @@ def predict_stream(**params):
         if template_maps.get(task) is not None:
             template_name = template_maps.get(task)
         else:
-            NotImplementedError(f'task template is not exist.')
-        prompt = add_template({"instruction": prompt,
-            "input": "",
-            "eos_token": tokenizer.eos_token}, template_name)
+            NotImplementedError(f"task template is not exist.")
+        prompt = add_template(
+            {"instruction": prompt, "input": "", "eos_token": tokenizer.eos_token},
+            template_name,
+        )
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -617,39 +622,43 @@ def predict_stream(**params):
         )
 
         def generate_output():
-            with torch.no_grad():
-                generation_kwargs = dict(
-                    streamer=streamer,
-                    generation_config=generation_config,
-                    return_dict_in_generate=True,
-                )
-                generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
-                    [
-                        StopOnTokens(
-                            min_length=max(max_new_tokens - 20, 0),
-                            start_length=input_token_len,
-                            stop_token_id=stop_token_ids,
-                        )
-                    ]
-                )
-                if ipex_int8:
-                    return model.generate(**input_tokens, **generation_kwargs)
-                else:
-                    with torch.cpu.amp.autocast(
-                        enabled=True, dtype=torch.bfloat16, cache_enabled=True
-                    ):
+            try:
+                with torch.no_grad():
+                    generation_kwargs = dict(
+                        streamer=streamer,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True,
+                    )
+                    generation_kwargs["stopping_criteria"] = StoppingCriteriaList(
+                        [
+                            StopOnTokens(
+                                min_length=max(max_new_tokens - 20, 0),
+                                start_length=input_token_len,
+                                stop_token_id=stop_token_ids,
+                            )
+                        ]
+                    )
+                    if ipex_int8:
                         return model.generate(**input_tokens, **generation_kwargs)
+                    else:
+                        with torch.cpu.amp.autocast(
+                            enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                        ):
+                            return model.generate(**input_tokens, **generation_kwargs)
+            except Exception as e:
+                errors_queue.put(e)
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     elif device == "hpu":
+        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
+        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
             padding="max_length",
-            max_length=max_input_len(model, max_new_tokens),
+            max_length=max_input_len(input_token_len),
         )
-        input_token_len = input_tokens.input_ids.shape[-1]
         if isinstance(model.generation_config.eos_token_id, list):
             stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
         else:
@@ -691,19 +700,22 @@ def predict_stream(**params):
         generation_config.repetition_penalty = repetition_penalty
 
         def generate_output():
-            with torch.no_grad():
-                return model.generate(
-                    **input_tokens,
-                    **generate_kwargs,
-                    streamer=streamer,
-                    generation_config=generation_config,
-                    return_dict_in_generate=True,
-                    output_scores=True,
-                    max_new_tokens=max_new_tokens,
-                    lazy_mode=True,
-                    hpu_graphs=use_hpu_graphs,
-                    ignore_eos=False,
-                )
+            try:
+                with torch.no_grad():
+                    return model.generate(
+                        **input_tokens,
+                        **generate_kwargs,
+                        streamer=streamer,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True,
+                        output_scores=True,
+                        max_new_tokens=max_new_tokens,
+                        lazy_mode=True,
+                        hpu_graphs=use_hpu_graphs,
+                        ignore_eos=False,
+                    )
+            except Exception as e:
+                errors_queue.put(e)
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
@@ -713,6 +725,14 @@ def predict_stream(**params):
         )
     output_word_len = 0
 
+    generation_thread.join(0.1)
+    if generation_thread.is_alive():
+        pass
+    else:
+        thread_exception = errors_queue.get()
+        raise thread_exception
+    # prevent crash if no words are coming out
+    first_token_output_time = datetime.now()
     for new_text in streamer:
         if len(new_text) == 0:
             continue
@@ -731,14 +751,15 @@ def predict_stream(**params):
         if output_word_len != 1
         else 0
     )
-    stats = {
-        "input_token_len": input_token_len,
-        "output_word_len": output_word_len,
-        "duration": duration,
-        "first_word_latency": first_word_latency,
-        "msecond_per_word": msecond_per_word,
-    }
-    yield "END_OF_STREAM_STATS={}".format(stats)
+    if return_stats:
+        stats = {
+            "input_token_len": input_token_len,
+            "output_word_len": output_word_len,
+            "duration": duration,
+            "first_word_latency": first_word_latency,
+            "msecond_per_word": msecond_per_word,
+        }
+        yield "END_OF_STREAM_STATS={}".format(stats)
 
 
 def predict(**params):
@@ -808,10 +829,11 @@ def predict(**params):
         if template_maps.get(task) is not None:
             template_name = template_maps.get(task)
         else:
-            NotImplementedError(f'task template is not exist.')
-        prompt = add_template({"instruction": prompt,
-            "input": "",
-            "eos_token": tokenizer.eos_token}, template_name)
+            NotImplementedError(f"task template is not exist.")
+        prompt = add_template(
+            {"instruction": prompt, "input": "", "eos_token": tokenizer.eos_token},
+            template_name,
+        )
 
     if num_beams == 0:
         num_beams = 1
@@ -862,13 +884,14 @@ def predict(**params):
                 ):
                     generation_output = model.generate(**input_tokens, **generation_kwargs)
     elif device == "hpu":
+        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
+        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
             padding="max_length",
-            max_length=max_input_len(model, max_new_tokens),
+            max_length=max_input_len(input_token_len),
         )
-        input_token_len = input_tokens.input_ids.shape[-1]
         if isinstance(model.generation_config.eos_token_id, list):
             stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
         else:
@@ -980,6 +1003,7 @@ def main():
         use_cache=args.use_kv_cache,
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
+        hf_access_token=args.hf_access_token,
     )
 
     if args.habana:
