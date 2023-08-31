@@ -96,6 +96,7 @@ struct model_hparams {
   uint32_t n_embd = 4096;
   uint32_t n_mult = 256;
   uint32_t n_head = 32;
+  uint32_t n_head_kv = 0;  //  MQA, multi-query attention (default =0 means no MQA)
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;

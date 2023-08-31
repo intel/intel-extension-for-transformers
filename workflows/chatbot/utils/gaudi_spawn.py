@@ -84,7 +84,7 @@ def main():
         if not is_deepspeed_available():
             raise ImportError(
                 "--use_deepspeed requires deepspeed: `pip install"
-                " git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
+                " git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0`."
             )
 
     # Patch sys.argv
@@ -107,4 +107,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

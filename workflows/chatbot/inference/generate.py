@@ -59,9 +59,9 @@ summarization_template = "{instruction}\nSummarize the highlights of this articl
 
 
 template_maps = {
-        "completion": instruction_template,
-        "chat": chat_template,
-        "summarization": summarization_template
+    "completion": instruction_template,
+    "chat": chat_template,
+    "summarization": summarization_template,
 }
 
 
@@ -182,8 +182,11 @@ def parse_args():
         "--local_rank", type=int, default=-1, metavar="N", help="Local process rank."
     )
     parser.add_argument(
-        "--task", type=str, default="", choices=["completion", "chat", "summarization"],
-        help="task name, different task means different templates."
+        "--task",
+        type=str,
+        default="",
+        choices=["completion", "chat", "summarization"],
+        help="task name, different task means different templates.",
     )
     args = parser.parse_args()
     return args
@@ -225,10 +228,10 @@ def max_input_len(input_text_length):
 def add_template(example, template_name):
     if "prompt_with_input" in template_name:
         prompt_template = (
-                template_name["prompt_with_input"]
-                if example["input"] != "" 
-                else template_name["prompt_without_input"]
-                )
+            template_name["prompt_with_input"]
+            if example["input"] != ""
+            else template_name["prompt_without_input"]
+        )
     else:
         prompt_template = template_name
     prompt = prompt_template.format_map(example)
@@ -307,7 +310,7 @@ def import_deepspeed():
     if not is_deepspeed_available():
         raise ImportError(
             "This script requires deepspeed: `pip install"
-            " git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
+            " git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0`."
         )
     # Initialize process(es) for DeepSpeed
     deepspeed.init_distributed(dist_backend="hccl")
@@ -375,8 +378,12 @@ def load_model(
     MODELS[model_name] = {}
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_name,
-        use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
+        use_fast=False
+        if (
+            re.search("llama", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
+        )
+        else True,
         use_auth_token=hf_access_token,
     )
     if re.search("flan-t5", model_name, re.IGNORECASE):
@@ -384,29 +391,21 @@ def load_model(
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name, low_cpu_mem_usage=True, use_auth_token=hf_access_token
             )
-    elif (re.search("mpt", model_name, re.IGNORECASE)
-        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-        from models.mpt.modeling_mpt import MPTForCausalLM
-
-        with smart_context_manager(use_deepspeed=use_deepspeed):
-            model = MPTForCausalLM.from_pretrained(
-                model_name,
-                trust_remote_code=True,
-                torch_dtype=torch.bfloat16,
-                low_cpu_mem_usage=True,
-                torchscript=cpu_jit,
-                use_auth_token=hf_access_token,
-            )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
+        or re.search("mpt", model_name, re.IGNORECASE)
         or re.search("bloom", model_name, re.IGNORECASE)
         or re.search("llama", model_name, re.IGNORECASE)
         or re.search("opt", model_name, re.IGNORECASE)
+        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
     ):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
-                model_name, torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, use_auth_token=hf_access_token
+                model_name,
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True,
+                use_auth_token=hf_access_token,
             )
     else:
         raise ValueError(
@@ -479,12 +478,17 @@ def load_model(
             level="O1",
             auto_kernel_selection=True,
         )
-        if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
-                        or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
+        if cpu_jit and (
+            re.search("mpt-7b", model_name, re.IGNORECASE)
+            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+        ):
             from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
+            model.config.use_cache = use_cache
             model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(model_name, trust_remote_code=True, use_auth_token=hf_access_token)
+            config = AutoConfig.from_pretrained(
+                model_name, use_auth_token=hf_access_token
+            )
             model = MPTTSModelForCausalLM(
                 model, config, use_cache=use_cache, model_dtype=torch.bfloat16
             )
@@ -568,10 +572,11 @@ def predict_stream(**params):
         if template_maps.get(task) is not None:
             template_name = template_maps.get(task)
         else:
-            NotImplementedError(f'task template is not exist.')
-        prompt = add_template({"instruction": prompt,
-            "input": "",
-            "eos_token": tokenizer.eos_token}, template_name)
+            NotImplementedError(f"task template is not exist.")
+        prompt = add_template(
+            {"instruction": prompt, "input": "", "eos_token": tokenizer.eos_token},
+            template_name,
+        )
 
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
@@ -678,6 +683,7 @@ def predict_stream(**params):
         # generation_config.top_p = top_p
         generation_config.temperature = temperature
         generation_config.repetition_penalty = repetition_penalty
+
         def generate_output():
             try:
                 with torch.no_grad():
@@ -806,10 +812,11 @@ def predict(**params):
         if template_maps.get(task) is not None:
             template_name = template_maps.get(task)
         else:
-            NotImplementedError(f'task template is not exist.')
-        prompt = add_template({"instruction": prompt,
-            "input": "",
-            "eos_token": tokenizer.eos_token}, template_name)
+            NotImplementedError(f"task template is not exist.")
+        prompt = add_template(
+            {"instruction": prompt, "input": "", "eos_token": tokenizer.eos_token},
+            template_name,
+        )
 
     if num_beams == 0:
         num_beams = 1
@@ -975,7 +982,7 @@ def main():
         use_cache=args.use_kv_cache,
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
-        hf_access_token=args.hf_access_token
+        hf_access_token=args.hf_access_token,
     )
 
     if args.habana:

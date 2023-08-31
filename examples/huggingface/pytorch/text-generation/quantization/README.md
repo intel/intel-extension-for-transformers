@@ -20,7 +20,7 @@ cd intel-extension-for-pytorch
 git submodule sync && git submodule update --init --recursive
 python setup.py install
 ```
-We use the local GPTJ defination script `modeling_gptj.py` in `run_generation.py`. Here is a little change to success trace.
+We use the GPTJ defination script [modeling_gptj.py](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/modeling/gptj/modeling_gptj.py) in `run_generation.py`. Here is a little change to success trace.
 ```diff
 # Line 602 in modeling_gptj.py on transformers 4.28.1
 
