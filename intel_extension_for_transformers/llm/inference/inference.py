@@ -1083,8 +1083,6 @@ def main():
         logger.info(f"Args: {args}")
         logger.info(f"n_hpu: {world_size}, bf16")
     # warmup, the first time inference take longer because of graph compilation
-    if args.local_rank in [-1, 0]:
-        logger.info("Warmup, Response: ")
 
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
