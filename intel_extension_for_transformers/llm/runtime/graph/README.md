@@ -52,7 +52,7 @@ git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 # convert the pytorch model to ggml format
 python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path
 
-# or convert the model without downloading it by hand (support mpt, gptj, starcoder, falcon, dolly) 
+# or convert the model without downloading it by hand (llama and llama2 are WIP) 
 python scripts/convert_model.py --outtype f32 --outfile EleutherAI/gpt-j-6b
 
 # quantize weights of fp32 ggml bin
