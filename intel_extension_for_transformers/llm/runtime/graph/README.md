@@ -16,11 +16,11 @@ We support the following models:
 ### Text generation models
 | model name | INT8 | INT4|
 |---|:---:|:---:|
+|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
+|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
 |[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ | 
 |[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ | 
 |[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ | 
-|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
-|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
 |[MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
 |[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
 
@@ -46,23 +46,25 @@ LLM Runtime assumes the same model format as [llama.cpp](https://github.com/gger
 
 
 ```bash
-# download fp32 model (e.g., GPT-J-6B) from Hugging Face
-git clone https://huggingface.co/EleutherAI/gpt-j-6b
+# download fp32 model (e.g., LLAMA2) from Hugging Face
+git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 
 # convert the pytorch model to ggml format
 python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path/model_id
 
 # or convert the model without downloading it by hand
-python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin EleutherAI/gpt-j-6b
+python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin meta-llama/Llama-2-7b-chat-hf
 
 # quantize weights of fp32 ggml bin
+# model_name: llama (llama and llama2 use the same model_name), mpt, falcon, gptj, starcoder, dolly
+# to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
+python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
+
 # to ggml q4_0 format
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
 # to neuarl engine graph optimized q4_j with 32 block_size format
 
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
-# to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
-python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
 
 ```
 quantization args explanations:
