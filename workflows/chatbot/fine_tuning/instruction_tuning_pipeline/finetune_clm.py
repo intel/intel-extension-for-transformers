@@ -209,7 +209,7 @@ class DataArguments:
     )
     special_tokens: Optional[List[str]] = field(
         default=None,
-        metadata={"help": "The list of special tokens to add in tokenizer."}
+        metadata={"help": "The list of special tokens to add in tokenizer."},
     )
     max_source_length: Optional[int] = field(
         default=384,
@@ -220,9 +220,7 @@ class DataArguments:
     )
     max_new_tokens: Optional[int] = field(
         default=128,
-        metadata={
-            "help": "The maximum generation sequence length when do generation."
-        },
+        metadata={"help": "The maximum generation sequence length when do generation."},
     )
     num_beams: Optional[int] = field(
         default=4,
@@ -297,21 +295,28 @@ class FinetuneArguments:
     )
     lora_all_linear: bool = field(
         default=False,
-        metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
+        metadata={
+            "help": "if True, will add adaptor for all linear for lora finetuning"
+        },
     )
     task: Optional[str] = field(
         default="completion",
-        metadata={"help": "task name, different task means different data format.",
-            "choices": ["completion", "chat", "summarization"]
-            },
+        metadata={
+            "help": "task name, different task means different data format.",
+            "choices": ["completion", "chat", "summarization"],
+        },
     )
     do_lm_eval: bool = field(
         default=False,
-        metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
+        metadata={
+            "help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"
+        },
     )
     lm_eval_tasks: Optional[List[str]] = field(
         default_factory=lambda: ["truthfulqa_mc"],
-        metadata={"help": "tasks list for accuracy validation with EleutherAI/lm-evaluation-harness."},
+        metadata={
+            "help": "tasks list for accuracy validation with EleutherAI/lm-evaluation-harness."
+        },
     )
 
 
@@ -320,11 +325,11 @@ def find_all_linear_names(model):
     lora_module_names = set()
     for name, module in model.named_modules():
         if isinstance(module, cls):
-            names = name.split('.')
+            names = name.split(".")
             lora_module_names.add(names[0] if len(names) == 1 else names[-1])
 
-    if 'lm_head' in lora_module_names: # needed for 16-bit
-        lora_module_names.remove('lm_head')
+    if "lm_head" in lora_module_names:  # needed for 16-bit
+        lora_module_names.remove("lm_head")
     return list(lora_module_names)
 
 
@@ -406,11 +411,10 @@ def main():
         )
     else:
         raise ValueError("Please provide value for model_name_or_path or config_name.")
-    
+
     # set use_fast_tokenizer to False for Llama series models
     if "llama" in config.model_type:
         model_args.use_fast_tokenizer = False
-
 
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -473,38 +477,28 @@ def main():
             **dataset_args,
         )
 
-
     # Load model
     if model_args.model_name_or_path:
         model_dtype = torch.bfloat16 if training_args.bf16 else None
-        if (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
-            re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
-            from models.mpt.modeling_mpt import MPTForCausalLM
-
-            model = MPTForCausalLM.from_pretrained(
-                model_args.model_name_or_path,
-                from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                config=config,
-                cache_dir=model_args.cache_dir,
-                revision=model_args.model_revision,
-                use_auth_token=True if model_args.use_auth_token else None,
-                trust_remote_code=True if model_args.trust_remote_code else None,
-                torch_dtype=model_dtype,
-                low_cpu_mem_usage=True,
+        model = AutoModelForCausalLM.from_pretrained(
+            model_args.model_name_or_path,
+            from_tf=bool(".ckpt" in model_args.model_name_or_path),
+            config=config,
+            cache_dir=model_args.cache_dir,
+            revision=model_args.model_revision,
+            use_auth_token=True if model_args.use_auth_token else None,
+            trust_remote_code=True if model_args.trust_remote_code else None,
+            torch_dtype=model_dtype,
+            low_cpu_mem_usage=True,
+        )
+        if not re.search(
+            "mpt", model_args.model_name_or_path, re.IGNORECASE
+        ) and not re.search(
+            "neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE
+        ):
+            tokenizer.padding_side = (
+                "left"  # allow batched inference, while mpt series don't support
             )
-        else:
-            model = AutoModelForCausalLM.from_pretrained(
-                model_args.model_name_or_path,
-                from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                config=config,
-                cache_dir=model_args.cache_dir,
-                revision=model_args.model_revision,
-                use_auth_token=True if model_args.use_auth_token else None,
-                trust_remote_code=True if model_args.trust_remote_code else None,
-                torch_dtype=model_dtype,
-                low_cpu_mem_usage=True,
-            )
-            tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
     else:
         raise ValueError(
             "Must provide model_name_or_path to load a pretrained CausalLM model."
@@ -513,7 +507,8 @@ def main():
     # add special tokens
     if data_args.special_tokens:
         additional_special_tokens = {
-            "additional_special_tokens": data_args.special_tokens}
+            "additional_special_tokens": data_args.special_tokens
+        }
         tokenizer.add_special_tokens(additional_special_tokens)
 
     # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
@@ -547,7 +542,9 @@ def main():
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token_id = tokenizer.eos_token_id
 
-    raw_datasets, preprocess_function = preprocess_dataset(raw_datasets, tokenizer, data_args, finetune_args)
+    raw_datasets, preprocess_function = preprocess_dataset(
+        raw_datasets, tokenizer, data_args, finetune_args
+    )
     column_names = list(raw_datasets["train"].features)
 
     with training_args.main_process_first(desc="dataset map pre-processing"):
@@ -557,7 +554,6 @@ def main():
             remove_columns=column_names,
             load_from_cache_file=not data_args.overwrite_cache,
         )
-
 
     if data_args.dataset_concatenation:
 
@@ -580,7 +576,9 @@ def main():
 
     if training_args.do_eval:
         if "test" not in tokenized_datasets:
-            logger.info('Splitting train dataset in train and validation according to `eval_dataset_size`')
+            logger.info(
+                "Splitting train dataset in train and validation according to `eval_dataset_size`"
+            )
             tokenized_datasets = tokenized_datasets["train"].train_test_split(
                 test_size=data_args.eval_dataset_size, shuffle=True, seed=42
             )
@@ -686,31 +684,41 @@ def main():
         if finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model.eval()
             from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
                         results = evaluate(
-                                model="hf-causal",
-                                model_args='pretrained='+model_args.model_name_or_path+\
-                                        ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
-                                user_model=unwrapped_model,
-                                device=unwrapped_model.device.type,
-                                batch_size=training_args.per_device_eval_batch_size,
-                                tasks=finetune_args.lm_eval_tasks,)
+                            model="hf-causal",
+                            model_args="pretrained="
+                            + model_args.model_name_or_path
+                            + ",tokenizer="
+                            + model_args.model_name_or_path
+                            + ",dtype=float16",
+                            user_model=unwrapped_model,
+                            device=unwrapped_model.device.type,
+                            batch_size=training_args.per_device_eval_batch_size,
+                            tasks=finetune_args.lm_eval_tasks,
+                        )
                         logger.info(results)
 
         if finetune_args.task == "summarization":
             from eval_utils import compute_rouge_metric
+
             gen_kwargs = {
-                    "num_beams": data_args.num_beams,
-                    "max_new_tokens": data_args.max_new_tokens,
-                    }
+                "num_beams": data_args.num_beams,
+                "max_new_tokens": data_args.max_new_tokens,
+            }
             with training_args.main_process_first(desc="summarization eval"):
                 if is_main_process(training_args.local_rank):
-                    results = compute_rouge_metric(unwrapped_model, tokenizer, eval_dataset,
-                            training_args, gen_kwargs)
+                    results = compute_rouge_metric(
+                        unwrapped_model,
+                        tokenizer,
+                        eval_dataset,
+                        training_args,
+                        gen_kwargs,
+                    )
                     logger.info(results)
-
 
 
 if __name__ == "__main__":
