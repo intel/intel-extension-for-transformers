@@ -29,7 +29,7 @@ from .utils import load_unstructured_data, laod_structured_data, get_chuck_data
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
-                 process=False, embedding_model="hkunlp/instructor-large", max_length=512):
+                 process=False, embedding_model="/data1/lkk/instructor_large/", max_length=512):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
         """
@@ -100,6 +100,7 @@ class DocumentIndexing:
                     metadata = {"source": meta}
                     new_doc = Document(page_content=data, metadata=metadata)
                     documents.append(new_doc)
+                # import pdb;pdb.set_trace()
                 embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
                 vectordb = Chroma.from_documents(documents=documents, embedding=embedding,
                                                  persist_directory=self.persist_dir)

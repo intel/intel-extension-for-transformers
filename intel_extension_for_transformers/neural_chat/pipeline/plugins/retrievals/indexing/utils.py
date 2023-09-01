@@ -165,19 +165,21 @@ def laod_structured_data(input, process, max_length):
 
 def get_chuck_data(content, max_length, input):
     """Process the context to make it maintain a suitable length for the generation."""
-    sentences = re.split('(?<=[;!.?])', content)
+    sentences = re.split('(?<=[!.?])', content)
 
     paragraphs = []
     current_length = 0
     count = 0
     current_paragraph = ""
     for sub_sen in sentences:
+        if sub_sen == "":
+            continue
         count +=1
         sentence_length = len(sub_sen)
         if current_length + sentence_length <= max_length:
             current_paragraph += sub_sen
             current_length += sentence_length
-            if count == len(sentences):
+            if count == len(sentences) and len(current_paragraph.strip())>5:
                 paragraphs.append([current_paragraph.strip() ,input])
         else:
             paragraphs.append([current_paragraph.strip() ,input])

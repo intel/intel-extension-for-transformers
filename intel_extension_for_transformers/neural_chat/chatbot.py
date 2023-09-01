@@ -20,7 +20,7 @@ from intel_extension_for_transformers.llm.finetuning.finetuning import Finetunin
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import OptimizationConfig
-from .config import BaseFinetuningConfig
+from .config import FinetuningConfig
 from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from .config import DeviceOptions
 from .models.base_model import get_model_adapter
@@ -30,9 +30,9 @@ from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-from .pipeline.plugins.retrievals import QA_Client
-from .pipeline.plugins.security.safety_checker import SafetyChecker
+from .pipeline.plugins.security import SafetyChecker
 from .pipeline.plugins.intent_detector import IntentDetector
+from .pipeline.plugins.retrievals import QA_Client
 from .models.llama_model import LlamaModel
 from .models.mpt_model import MptModel
 from .models.chatglm_model import ChatGlmModel
@@ -89,14 +89,14 @@ def build_chatbot(config: PipelineConfig=None):
 
     return adapter
 
-def finetune_model(config: BaseFinetuningConfig):
+def finetune_model(config: FinetuningConfig):
     """Finetune the model based on the provided configuration.
 
     Args:
-        config (BaseFinetuningConfig): Configuration for finetuning the model.
+        config (FinetuningConfig): Configuration for finetuning the model.
     """
 
-    assert config is not None, "BaseFinetuningConfig is needed for finetuning."
+    assert config is not None, "FinetuningConfig is needed for finetuning."
     finetuning = Finetuning(config)
     finetuning.finetune()
 
