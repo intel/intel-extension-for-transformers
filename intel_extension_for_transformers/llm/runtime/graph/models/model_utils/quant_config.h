@@ -93,7 +93,7 @@ struct quant_params_internal {
   quant_comp compute_type = quant_comp::ggml;
   bool valid() const {
     return bits != quant_bits::count && alg != quant_alg::count && scale_dtype != quant_sdtype::count &&
-           compute_type != quant_comp::count && block_size > 0;
+           compute_type != quant_comp::count;
   }
   std::string getstr() {
     return std::to_string(int(bits)) + "_" + std::to_string(int(alg)) + "_" + std::to_string(block_size) + "_" +
