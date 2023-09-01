@@ -99,7 +99,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python  g
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python  generate.py \
         --base_model_path meta-llama/Llama-2-7b-chat-hf \
         --use_kv_cache \
-        --instructions "Tell me about Intel Xeon." "Tell me about Intel Xeon."\
+        --instructions "Tell me about Intel Xeon." "Tell me about Intel Xeon." \
         --ipex_int8 \
         --quantized_model_path "./saved_results/best_model.pt"
 ```

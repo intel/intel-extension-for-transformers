@@ -190,7 +190,7 @@ if args.ipex_smooth_quant:
         break
     from intel_extension_for_pytorch.quantization import prepare, convert
 
-    qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5)
+    qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=1.0)
     prepared_model = prepare(user_model.eval(), qconfig, example_inputs=example_inputs, inplace=True)
     with torch.no_grad():
         for i, (
