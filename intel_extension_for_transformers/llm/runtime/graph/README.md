@@ -8,7 +8,6 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization 
 
-
 > LLM Runtime is under active development so APIs are subject to change.
 
 ## Supported Models
