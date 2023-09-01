@@ -3,6 +3,10 @@
 
 FROM intel/ai-tools:itrex-0.1.1
 
+RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
+USER nonroot
+ENTRYPOINT ["id"]
+
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     build-essential \
     libgl1-mesa-glx \

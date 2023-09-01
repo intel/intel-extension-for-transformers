@@ -5,6 +5,10 @@ ARG IMAGE_NAME=intel/ai-tools
 ARG IMAGE_TAG=itrex-0.1.1
 FROM ${IMAGE_NAME}:${IMAGE_TAG}
 
+RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
+USER nonroot
+ENTRYPOINT ["id"]
+
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
     git \
     python3-dev 

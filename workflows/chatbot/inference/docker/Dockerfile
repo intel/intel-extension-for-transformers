@@ -45,6 +45,10 @@ RUN apt-get update \
     && git-lfs install \
     && rm -rf /var/lib/apt/lists/*
 
+RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
+USER nonroot
+ENTRYPOINT ["id"]
+
 # Install miniconda
 ENV CONDA_DIR /opt/conda
 RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \

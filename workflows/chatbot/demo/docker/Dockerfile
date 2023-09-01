@@ -31,6 +31,10 @@ FROM ubuntu:${UBUNTU_VER} as demo
 # See http://bugs.python.org/issue19846
 ENV LANG C.UTF-8
 
+RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
+USER nonroot
+ENTRYPOINT ["id"]
+
 ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
@@ -98,19 +102,19 @@ RUN conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi 
 
 
 # Add user
-SHELL ["/bin/bash", "--login", "-c"]
-RUN adduser --disabled-password --gecos "" fastrag
+# SHELL ["/bin/bash", "--login", "-c"]
+# RUN adduser --disabled-password --gecos "" fastrag
 
 # Switch to non-root user
-USER fastrag
+# USER fastrag
 
 # Change directory
-WORKDIR /home/fastrag/
+# WORKDIR /home/fastrag/
 
 # Download Elasticsearch
 ADD https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.10-linux-x86_64.tar.gz .
 
 # Switch to root user
-USER root
+# USER root
 
 WORKDIR /itrex/workflows/chatbot/demo/

@@ -26,6 +26,10 @@ RUN ${PYTHON} -m pip install -U pip
 
 FROM itrex-base as devel
 
+RUN addgroup -S nonroot && adduser -S nonroot -G nonroot
+USER nonroot
+ENTRYPOINT ["id"]
+
 ENV DEBIAN_FRONTEND=noninteractive
 
 ENV LANG C.UTF-8
