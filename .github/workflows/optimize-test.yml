@@ -27,6 +27,7 @@ env:
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "modelTest"
   EXTRA_CONTAINER_NAME: "utTest"
+  EXTRA_CONTAINER_NAME2: "codeScan"
 
 
 jobs:
@@ -147,6 +148,14 @@ jobs:
     runs-on: itrex-node-spell
     needs: [Optimize-Workflow]
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME2 }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.EXTRA_CONTAINER_NAME2 }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME2 }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
         with:
