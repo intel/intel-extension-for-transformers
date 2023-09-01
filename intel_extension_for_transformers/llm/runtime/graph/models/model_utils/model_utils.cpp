@@ -59,7 +59,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   const int n_layer = hparams.n_layer;
 
   const int64_t n_mem = n_layer * n_ctx;
-  const int64_t n_elements = n_head_kv > 0? n_head_kv * head_dim * n_mem : n_embd * n_mem;
+  const int64_t n_elements = n_head_kv > 0 ? n_head_kv * head_dim * n_mem : n_embd * n_mem;
 
   cache.buf.resize(2u * n_elements * ne_type_size(wtype) + 2u * MB);
 
@@ -783,7 +783,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
         using KernelRef = WeiS4ClipFp32<GcCompInt8KBlock, JblasNoSIMD>;
         static Kernel kernel;
-        static Kernel kernelref;
+        static KernelRef kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
         if (cd->AVX512F()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
