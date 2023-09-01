@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 
 from functools import lru_cache
 
-from pydantic import AnyUrl, BaseSettings
+from pydantic_settings import BaseSettings
+from pydantic import AnyUrl
 
 # from ..utils import get_logger
 

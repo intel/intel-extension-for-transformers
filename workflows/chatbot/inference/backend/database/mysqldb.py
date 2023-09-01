@@ -1,4 +1,4 @@
-from db_config import get_settings
+from database.db_config import get_settings
 from pymysql import connect
 
 global_settings = get_settings()
@@ -23,6 +23,10 @@ class MysqlDb(object):
         self._cursor.close()
         self._conn.close()
 
+# =================== ADD =======================
+    def set_db(self, db):
+        self._db = db
+
     def fetch_one(self, sql, params=None):
         result = None
         try:
@@ -31,7 +35,7 @@ class MysqlDb(object):
             result = self._cursor.fetchone()
             self._close()
         except Exception as e:
-            print(e)
+            raise Exception(e)
         return result
 
     def fetch_all(self, sql, params=None):
@@ -42,7 +46,7 @@ class MysqlDb(object):
             lst = self._cursor.fetchall()
             self._close()
         except Exception as e:
-            print(e)
+            raise Exception(e)
         return lst
 
     def insert(self, sql, params):
@@ -62,5 +66,5 @@ class MysqlDb(object):
             self._conn.commit()
             self._close()
         except Exception as e:
-            print(e)
+            raise Exception(e)
         return count
