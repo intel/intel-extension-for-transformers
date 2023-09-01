@@ -20,7 +20,7 @@ from intel_extension_for_transformers.llm.finetuning.finetuning import Finetunin
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import OptimizationConfig
-from .config import FinetuningConfig
+from .config import BaseFinetuningConfig
 from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from .config import DeviceOptions
 from .models.base_model import get_model_adapter
@@ -89,14 +89,14 @@ def build_chatbot(config: PipelineConfig=None):
 
     return adapter
 
-def finetune_model(config: FinetuningConfig):
+def finetune_model(config: BaseFinetuningConfig):
     """Finetune the model based on the provided configuration.
 
     Args:
-        config (FinetuningConfig): Configuration for finetuning the model.
+        config (BaseFinetuningConfig): Configuration for finetuning the model.
     """
 
-    assert config is not None, "FinetuningConfig is needed for finetuning."
+    assert config is not None, "BaseFinetuningConfig is needed for finetuning."
     finetuning = Finetuning(config)
     finetuning.finetune()
 
