@@ -1,6 +1,5 @@
-Chatbot Inference Dockerfile on Ubuntu 22.04
-
 # Setup Environment with Docker
+Chatbot inference dockerfile is based on Ubuntu 22.04.
 
 ## Xeon
 Option 1 (default): you could use docker build to build the docker image in your environment.
