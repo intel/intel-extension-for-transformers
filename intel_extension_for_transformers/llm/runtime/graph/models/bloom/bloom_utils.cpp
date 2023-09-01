@@ -148,8 +148,10 @@ void BLOOM::load(model_context& lctx, model_progress_callback progress_callback,
 
     if (backend != NE_BACKEND_CPU) {
       vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]);
+                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) + ne_nbytes(layer.attn[2]) +
+		    ne_nbytes(layer.attn[3]) +
+                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.ffn[2]) +
+		    ne_nbytes(layer.ffn[3]) + ne_nbytes(layer.ffn[4]) + ne_nbytes(layer.ffn[5]);
     }
   }
 
