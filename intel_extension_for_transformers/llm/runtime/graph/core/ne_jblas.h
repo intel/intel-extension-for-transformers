@@ -24,30 +24,39 @@ int jblas_set_threads(int _nth);
 
 void jblas_init();
 
-void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m, int _n, int _k, int lda, int ldo);
+unsigned long long jblas_f32f32_get_workspace_size(int _m, int _n, int _k, void* wptr);
+
+void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m, int _n, int _k, int lda, int ldo,
+                          void* workspace);
 
 bool jblas_fusion_add_f32f32_support(void* weiptr, int _m, int _n, int _k);
 void jblas_fusion_add_f32f32_forward(float* activation, void* weiptr, float* bias, float* output, int _m, int _n,
-                                         int _k, int lda, int ldo, bool boardcast_bias);
+                                     int _k, int lda, int ldo, bool boardcast_bias, void* workspace);
+
+unsigned long long jblas_fusion_QKV_f32f32_get_workspace_size(int _m, int _n, int _k, void* w1ptr);
 
 bool jblas_fusion_QKV_f32f32_support(void* wqptr, void* wkptr, void* wvptr, int _m, int _n, int _k);
 
-void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output,
-                                         int _m, int _n, int _k, int lda, int ldo);
+void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output, int _m,
+                                     int _n, int _k, int lda, int ldo, void* workspace);
+
+unsigned long long jblas_fusion_FFN_f32f32_get_workspace_size(int seq, int fin, int fmid, int fout, void* w1ptr,
+                                                              void* w2ptr);
 
 bool jblas_fusion_FFN_SiLu_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr, int seq, int fin, int fmid, int fout);
 
 void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, void* w3ptr, float* tmp1,
-                                           float* tmp2, float* output, int seq, int fin, int fmid, int fout);
+                                          float* tmp2, float* output, int seq, int fin, int fmid, int fout,
+                                          void* workspace);
 
 bool jblas_fusion_FFN_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout);
 void jblas_fusion_FFN_GeLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1, float* output,
-                                           int seq, int fin, int fmid, int fout);
+                                          int seq, int fin, int fmid, int fout, void* workspace);
 
 bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout);
 void jblas_fusion_FFN_Add_GeLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* b1ptr, float* b2ptr,
-                                               float* tmp1, float* output, int seq, int fin, int fmid, int fout,
-                                               bool boardcast_bias);
+                                              float* tmp1, float* output, int seq, int fin, int fmid, int fout,
+                                              bool boardcast_bias, void* workspace);
 
 #ifdef __cplusplus
 }

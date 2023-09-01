@@ -86,7 +86,7 @@ static inline JBLAS_CODE padding_trans_interleave(const T_SRC* src, T_DST* dst, 
 }
 
 static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, void* raw_dstptr, int row, int col,
-                                                     int srcstride, int dststride) {
+                                                     int srcstride, int dststride, bool zeropadding) {
   for (int i = 0; i < row; i++) {
     int j = 0;
     for (; j < col; j++) {
@@ -94,8 +94,10 @@ static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, voi
       const auto dst = reinterpret_cast<utils::bf16*>(reinterpret_cast<char*>(raw_dstptr) + i * dststride);
       dst[j] = static_cast<utils::bf16>(src[j]);
     }
-    for (int bj = j * sizeof(utils::bf16); bj < dststride; bj++) {
-      (reinterpret_cast<char*>(raw_dstptr) + i * dststride)[bj] = 0;
+    if (zeropadding) {
+      for (int bj = j * sizeof(utils::bf16); bj < dststride; bj++) {
+        (reinterpret_cast<char*>(raw_dstptr) + i * dststride)[bj] = 0;
+      }
     }
   }
   return JblasSuccess;
@@ -930,6 +932,18 @@ static inline JBLAS_CODE broadcast_u8(int num, const uint8_t& srcval, uint8_t* d
   int i = 0;
   for (; i < num; i++) {
     dstptr[i] = srcval;
+  }
+  return JblasSuccess;
+}
+
+template <typename _RT>
+static inline JBLAS_CODE quant_s8_row_reduce_sum(const int8_t* srcptr, int ldsrc, const float* scales, int row, int col,
+                                                 _RT* reduce) {
+  std::memset(reduce, 0, sizeof(reduce[0]) * col);
+  for (int i = 0; i < row; i++) {
+    for (int j = 0; j < col; j++) {
+      reduce[j] += _RT(srcptr[i * ldsrc + j] * scales[j]);
+    }
   }
   return JblasSuccess;
 }
