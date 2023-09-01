@@ -48,7 +48,7 @@ struct dispatch_policy_kslicing {
     static constexpr gpu_arch arch_tag = arch_tag_;
 };
 
-/// @brief Persistent-thread GEMM implementation.
+/// @brief Blocked dispatch GEMM implementation.
 /// A GEMM implementation to provide a composition point of brgemm and epilogue.
 /// @tparam wg_num_n_ Is the x-dir workgroup number of repeat block.
 /// @tparam arch_tag_ Is the HW architecture.

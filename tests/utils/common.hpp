@@ -86,6 +86,8 @@ inline auto getTypeName<gpu::xetla::tf32>() {
     return "tf32";
 }
 
+enum class test_result { complete = 0, skip = 1, fail = 2 };
+
 template <typename result_type>
 inline result_type generate_random(result_type a = 0.0, result_type b = 1.0) {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();

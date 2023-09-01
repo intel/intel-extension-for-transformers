@@ -61,30 +61,15 @@ struct fp16_gemm_test_func {
     using gemm_op_t = gemm_t<
             dispatch_policy_kslicing<l3_kslicing, slm_kslicing, gpu_arch::Xe>,
             brgemm_t, epilogue_t>;
-
     static const char *func_name() { return "fp16_gemm_test_func"; }
-};
 
-template <typename dtype_a, typename dtype_b, typename dtype_c,
-        typename dtype_acc, uint32_t wg_m, uint32_t wg_n, uint32_t sg_m,
-        uint32_t sg_n, uint32_t sg_k, mem_layout layout_a, mem_layout layout_b,
-        uint32_t wg_num_n, mma_engine engine>
-struct fp16_gemm_test_func_block_policy {
-    using tile_shape = tile_shape_t<wg_n, wg_m, sg_n, sg_m>;
-    static constexpr uint32_t periodic_sync_interval = 8;
-    static constexpr uint32_t prefetch_distance = 3;
-    using brgemm_t = typename brgemm_selector_t<dtype_a, dtype_b, layout_a,
-            layout_b, mem_space::global, mem_space::global, 8, 8, dtype_acc,
-            tile_shape, sg_k, engine, gpu_arch::Xe, prefetch_distance,
-            periodic_sync_interval>::brgemm;
+    static inline void run(xetla_exec_item<3> &ei, dtype_a *A, dtype_b *B,
+            dtype_c *C, uint32_t mat_m, uint32_t mat_n, uint32_t mat_k) {
 
-    using epilogue_t = epilogue_t<
-            epilogue_policy_default<result_overwrite, gpu_arch::Xe>, tile_shape,
-            mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>>;
-
-    using gemm_op_t = gemm_t<dispatch_policy_block<wg_num_n, gpu_arch::Xe>,
-            brgemm_t, epilogue_t>;
-    static const char *func_name() {
-        return "fp16_gemm_test_func_block_policy";
+        typename gemm_op_t::arguments_t arg(mat_m, mat_k, mat_n, A,
+                layout_a == mem_layout::col_major ? mat_m : mat_k, B,
+                layout_b == mem_layout::col_major ? mat_k : mat_n, C, mat_n);
+        gemm_op_t gemm_op;
+        gemm_op(ei, arg);
     }
 };

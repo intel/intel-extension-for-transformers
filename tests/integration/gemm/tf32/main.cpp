@@ -34,7 +34,7 @@ public:
 };
 
 template <class Test>
-using gemm_func = gemm_test_func<typename Test::data_type_a,
+using tf32_gemm_func = tf32_gemm_test_func<typename Test::data_type_a,
         typename Test::data_type_b, typename Test::data_type_c, float,
         Test::wg_m, Test::wg_n, Test::sg_m, Test::sg_n, Test::sg_k,
         Test::layout_a, Test::layout_b, Test::l3_kslicing, Test::slm_kslicing>;
@@ -50,7 +50,7 @@ template <typename T>
 class gemm_tf32 : public ::testing::Test {};
 TYPED_TEST_SUITE_P(gemm_tf32);
 TYPED_TEST_P(gemm_tf32, esimd) {
-    gemm_exec<TypeParam, result_validate<TypeParam>, gemm_func<TypeParam>>(
+    gemm_exec<TypeParam, result_validate<TypeParam>, tf32_gemm_func<TypeParam>>(
             esimd_compile_string);
 }
 REGISTER_TYPED_TEST_SUITE_P(gemm_tf32, esimd);

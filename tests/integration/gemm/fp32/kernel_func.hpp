@@ -59,4 +59,14 @@ struct fp32_gemm_test_func {
             dispatch_policy_kslicing<l3_kslicing, slm_kslicing, gpu_arch::Xe>,
             brgemm_t, epilogue_t>;
     static const char *func_name() { return "fp32_gemm_test_func"; }
+
+    static inline void run(xetla_exec_item<3> &ei, dtype_a *A, dtype_b *B,
+            dtype_c *C, uint32_t mat_m, uint32_t mat_n, uint32_t mat_k) {
+
+        typename gemm_op_t::arguments_t arg(mat_m, mat_k, mat_n, A,
+                layout_a == mem_layout::col_major ? mat_m : mat_k, B,
+                layout_b == mem_layout::col_major ? mat_k : mat_n, C, mat_n);
+        gemm_op_t gemm_op;
+        gemm_op(ei, arg);
+    }
 };

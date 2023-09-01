@@ -314,14 +314,11 @@ struct gelu_bwd_op_t<dtype_in_, gpu_arch::Xe> {
         using bwd_x_payload_t = mem_payload_t<dtype_in, bwd_x_tile_desc_t,
                 msg_type::block_2d, mem_desc_x_t::layout, mem_desc_x_t::space,
                 gpu_arch::Xe>;
-        using bwd_x_acc_tile_t = tile_t<dtype_acc, bwd_x_tile_desc_t>;
         bwd_x_tile_t bwd_x;
-        bwd_x_acc_tile_t bwd_x_acc;
         // init tdesc
         mem_desc_x_t mem_desc_x(args.base, args.shape, coord);
         bwd_x_payload_t bwd_x_payload(mem_desc_x);
         tile_load<cache_hint::cached, cache_hint::cached>(bwd_x, bwd_x_payload);
-        elemwise_cvt(bwd_x_acc, bwd_x);
         // start compute
         constexpr dtype_acc c0 = 0.044715f;
         constexpr dtype_acc d0 = 0.134145f;
@@ -332,8 +329,9 @@ struct gelu_bwd_op_t<dtype_in_, gpu_arch::Xe> {
         for (int i = 0; i < tile_size_y / block_size_y; ++i) {
 #pragma unroll
             for (int j = 0; j < num_block_x; ++j) {
-                auto x = bwd_x_acc.reg.xetla_select<block_elems, 1>(
+                auto x_in = bwd_x.reg.xetla_select<block_elems, 1>(
                         block_elems * (i * num_block_x + j));
+                auto x = xetla_cvt<dtype_acc, dtype_in, block_elems>(x_in);
                 auto dy = matAcc.reg.xetla_select<block_elems, 1>(
                         block_elems * (i * num_block_x + j));
                 xetla_vector<dtype_acc, block_elems> z
@@ -355,8 +353,10 @@ struct gelu_bwd_op_t<dtype_in_, gpu_arch::Xe> {
                     = remain_size_y * block_size_x;
 #pragma unroll
             for (int j = 0; j < num_block_x; ++j) {
-                auto x = bwd_x_acc.reg.xetla_select<remain_block_elems, 1>(
+                auto x_in = bwd_x.reg.xetla_select<remain_block_elems, 1>(
                         remain_elems_start + remain_block_elems * j);
+                auto x = xetla_cvt<dtype_acc, dtype_in, remain_block_elems>(
+                        x_in);
                 auto dy = matAcc.reg.xetla_select<remain_block_elems, 1>(
                         remain_elems_start + remain_block_elems * j);
                 xetla_vector<dtype_acc, remain_block_elems> z
@@ -636,14 +636,15 @@ struct dropout_op_t<dtype_mask_, gpu_arch::Xe> {
         mask_in_payload_t mask_in_payload(mem_desc_mask);
         tile_load<cache_hint::cached, cache_hint::cached>(
                 mask_in, mask_in_payload);
-        matAcc.reg = matAcc.reg * args.scale;
 #pragma unroll
         for (int i = 0; i < tile_elems / unroll_size; i++) {
             xetla_mask<unroll_size> mask_flag
                     = mask_in.reg.xetla_select<unroll_size, 1>(i * unroll_size)
                     > 0;
-            matAcc.reg.xetla_select<unroll_size, 1>(i * unroll_size)
-                    .xetla_merge(0, mask_flag);
+            auto dst_reg
+                    = matAcc.reg.xetla_select<unroll_size, 1>(i * unroll_size);
+            dst_reg *= args.scale;
+            dst_reg.xetla_merge(0, mask_flag);
         }
         if constexpr (tile_elems % unroll_size != 0) {
             constexpr uint32_t remain_len = tile_elems % unroll_size;
@@ -651,8 +652,9 @@ struct dropout_op_t<dtype_mask_, gpu_arch::Xe> {
                     = tile_elems / unroll_size * unroll_size;
             xetla_mask<remain_len> mask_flag
                     = mask_in.reg.xetla_select<remain_len, 1>(remain_start) > 0;
-            matAcc.reg.xetla_select<remain_len, 1>(remain_start)
-                    .xetla_merge(0, mask_flag);
+            auto dst_reg = matAcc.reg.xetla_select<remain_len, 1>(remain_start);
+            dst_reg *= args.scale;
+            dst_reg.xetla_merge(0, mask_flag);
         }
     }
 };
@@ -729,15 +731,19 @@ struct rng_dropout_op_t<dtype_mask_, gpu_arch::Xe> {
         uint64_t rand_subseq = uint64_t(coord.y) << 32 | uint64_t(coord.x);
         rand_gen.init(args.rand_seed, rand_subseq, rand_offset);
 
-        xetla_vector<dtype_mask, tile_elems> mask;
-        matAcc.reg = matAcc.reg * scale;
+        mem_desc_mask_t mem_desc_mask(args.mask_base, args.mask_shape, coord);
+        mask_out_tile_t mask_out;
+        mask_out_payload_t mask_out_payload(mem_desc_mask);
+
 #pragma unroll
         for (int i = 0; i < tile_elems / random_len; i++) {
             auto out_sub
                     = matAcc.reg.xetla_select<random_len, 1>(i * random_len);
-            auto mask_sub = mask.xetla_select<random_len, 1>(i * random_len);
+            auto mask_sub
+                    = mask_out.reg.xetla_select<random_len, 1>(i * random_len);
             xetla_vector<uint32_t, random_len> rand_val = rand_gen.rand();
             xetla_mask<random_len> mask_flag = rand_val < threshold;
+            out_sub *= scale;
             out_sub.xetla_merge(0, mask_flag);
             mask_sub.xetla_merge(1, 0, mask_flag);
         }
@@ -746,18 +752,16 @@ struct rng_dropout_op_t<dtype_mask_, gpu_arch::Xe> {
             constexpr uint32_t remain_start
                     = tile_elems / random_len * random_len;
             auto out_sub = matAcc.reg.xetla_select<remain_len, 1>(remain_start);
-            auto mask_sub = mask.xetla_select<remain_len, 1>(remain_start);
+            auto mask_sub
+                    = mask_out.reg.xetla_select<remain_len, 1>(remain_start);
             // dropout, still generate random_len
             xetla_vector<uint32_t, random_len> rand_val = rand_gen.rand();
             xetla_mask<random_len> mask_flag = rand_val < threshold;
+            out_sub *= scale;
             out_sub.xetla_merge(0, mask_flag.xetla_select<remain_len, 1>(0));
             mask_sub.xetla_merge(
                     1, 0, mask_flag.xetla_select<remain_len, 1>(0));
         }
-        mem_desc_mask_t mem_desc_mask(args.mask_base, args.mask_shape, coord);
-        mask_out_tile_t mask_out;
-        mask_out_payload_t mask_out_payload(mem_desc_mask);
-        mask_out.reg = mask;
         tile_store<cache_hint::streaming>(mask_out, mask_out_payload);
     }
 };

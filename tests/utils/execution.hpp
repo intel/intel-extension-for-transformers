@@ -16,14 +16,13 @@
 
 #pragma once
 
+#include "common.hpp"
 #include "profiling.hpp"
 #include "xetla.hpp"
 
 using namespace cl::sycl;
 using namespace gpu;
 using namespace gpu::xetla;
-
-enum class test_result { complete = 0, skip = 1, fail = 2 };
 
 template <class Test, typename validate_func, typename KERNEL,
         int SLMSIZE = 128 * 1024, int BARNUM = 32>
@@ -35,7 +34,7 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
     using data_type_a = Test::data_type_a;
     using data_type_b = Test::data_type_b;
     using data_type_c = Test::data_type_c;
-    using data_type_acc = float;
+    using data_type_acc = Test::data_type_acc;
 
     constexpr size_t matrix_m = Test::mat_m;
     constexpr size_t matrix_n = Test::mat_n;
@@ -121,8 +120,8 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
                             gpu::xetla::xetla_exec_item<3> ei(item);
                             gpu::xetla::xetla_local_init<SLMSIZE>();
                             gpu::xetla::xetla_nbarrier_init<BARNUM>();
-                            gemm_op_t gemm_op;
-                            gemm_op(ei, arg);
+                            KERNEL::run(ei, A_ptr, B_ptr, C_ptr, matrix_m,
+                                    matrix_n, matrix_k);
                         });
             });
             e_esimd.wait();

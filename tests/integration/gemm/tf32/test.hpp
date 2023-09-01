@@ -36,6 +36,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 class TF32_test_mat_m_5376_mat_k_8008_mat_n_290_wg_m_16_wg_n_128_sg_m_8_sg_n_32_sg_k_8_l3_kslicing_1_slm_kslicing_4_layout_a_col_major_layout_b_col_major_data_type_a_tf32_data_type_b_tf32_data_type_c_tf32 {
@@ -55,6 +56,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 class TF32_test_mat_m_8104_mat_k_4870_mat_n_732_wg_m_16_wg_n_128_sg_m_8_sg_n_32_sg_k_8_l3_kslicing_1_slm_kslicing_4_layout_a_row_major_layout_b_row_major_data_type_a_tf32_data_type_b_tf32_data_type_c_tf32 {
@@ -74,6 +76,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 class TF32_test_mat_m_6502_mat_k_7092_mat_n_990_wg_m_16_wg_n_16_sg_m_8_sg_n_16_sg_k_16_l3_kslicing_1_slm_kslicing_2_layout_a_row_major_layout_b_col_major_data_type_a_tf32_data_type_b_tf32_data_type_c_tf32 {
@@ -93,6 +96,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 class TF32_test_mat_m_2750_mat_k_6686_mat_n_520_wg_m_64_wg_n_32_sg_m_32_sg_n_32_sg_k_16_l3_kslicing_1_slm_kslicing_2_layout_a_row_major_layout_b_col_major_data_type_a_tf32_data_type_b_tf32_data_type_c_tf32 {
@@ -112,6 +116,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 class TF32_test_mat_m_7000_mat_k_5568_mat_n_248_wg_m_32_wg_n_32_sg_m_16_sg_n_32_sg_k_16_l3_kslicing_1_slm_kslicing_2_layout_a_row_major_layout_b_col_major_data_type_a_tf32_data_type_b_tf32_data_type_c_tf32 {
@@ -131,6 +136,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 class TF32_test_mat_m_3844_mat_k_6020_mat_n_838_wg_m_32_wg_n_64_sg_m_16_sg_n_16_sg_k_8_l3_kslicing_1_slm_kslicing_4_layout_a_row_major_layout_b_col_major_data_type_a_tf32_data_type_b_tf32_data_type_c_tf32 {
@@ -150,6 +156,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 class TF32_test_mat_m_3312_mat_k_5044_mat_n_750_wg_m_32_wg_n_64_sg_m_16_sg_n_16_sg_k_16_l3_kslicing_1_slm_kslicing_4_layout_a_row_major_layout_b_col_major_data_type_a_tf32_data_type_b_tf32_data_type_c_tf32 {
@@ -169,6 +176,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 class TF32_test_mat_m_7682_mat_k_6370_mat_n_456_wg_m_32_wg_n_256_sg_m_16_sg_n_64_sg_k_16_l3_kslicing_1_slm_kslicing_4_layout_a_row_major_layout_b_row_major_data_type_a_tf32_data_type_b_tf32_data_type_c_tf32 {
@@ -188,6 +196,7 @@ public:
     using data_type_a = tf32;
     using data_type_b = tf32;
     using data_type_c = tf32;
+    using data_type_acc = float;
 };
 
 using tests = ::testing::Types<
