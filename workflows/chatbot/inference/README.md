@@ -48,8 +48,8 @@ pip install transformers==4.31.0
 # Install others deps
 pip install cpuid accelerate datasets sentencepiece protobuf==3.20.3
 # Install intel-extension-for-transformers
-git clone https://github.com/intel/intel-extension-for-pytorch.git
-cd intel-extension-for-pytorch
+git clone https://github.com/intel/intel-extension-for-transformers.git
+cd intel-extension-for-transformers
 git checkout int8_llama2
 python setup.py install
 
