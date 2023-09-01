@@ -312,11 +312,50 @@ class FinetuningArguments:
     )
 
 @dataclass
-class FinetuningConfig:
+class TTSDatasetArguments:
+    audio_paths: Optional[str] = field(default=None, metadata={"help": "The path of audios."})
+    gender: Optional[str] = field(default=None, metadata={"help": "Gender."})
+    language: Optional[str] = field(default="English", metadata={"help": "Language."})
+
+@dataclass
+class TTSModelArguments:
+    step: int = field(default=0, metadata={"help": "TTS model step."})
+    warmup_step: int = field(default=0, metadata={"help": "TTS model warmup step."})
+    learning_rate: float = field(default=5e-5, metadata={"help": "Learning rate."})
+ 
+@dataclass
+class BaseFinetuningConfig:
     model_args: ModelArguments
     data_args: DataArguments
     training_args: TrainingArguments
     finetune_args: FinetuningArguments
+
+@dataclass
+class TextGenerationFinetuningConfig(BaseFinetuningConfig):
+    model_args: ModelArguments
+    data_args: DataArguments
+    training_args: TrainingArguments
+    finetune_args: FinetuningArguments
+
+@dataclass
+class SummarizationFinetuningConfig(BaseFinetuningConfig):
+    model_args: ModelArguments
+    data_args: DataArguments
+    training_args: TrainingArguments
+    finetune_args: FinetuningArguments
+
+@dataclass
+class CodeGenerationFinetuningConfig(BaseFinetuningConfig):
+    model_args: ModelArguments
+    data_args: DataArguments
+    training_args: TrainingArguments
+    finetune_args: FinetuningArguments
+
+@dataclass
+class TTSFinetuningConfig(BaseFinetuningConfig):
+    training_args: TrainingArguments
+    dataset_args: TTSDatasetArguments
+    model_args: TTSModelArguments
 
 @dataclass
 class GenerationConfig:
