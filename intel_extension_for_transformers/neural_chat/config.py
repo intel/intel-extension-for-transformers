@@ -330,26 +330,11 @@ class BaseFinetuningConfig:
     training_args: TrainingArguments
     finetune_args: FinetuningArguments
 
-@dataclass
-class TextGenerationFinetuningConfig(BaseFinetuningConfig):
-    model_args: ModelArguments
-    data_args: DataArguments
-    training_args: TrainingArguments
-    finetune_args: FinetuningArguments
+TextGenerationFinetuningConfig = BaseFinetuningConfig
 
-@dataclass
-class SummarizationFinetuningConfig(BaseFinetuningConfig):
-    model_args: ModelArguments
-    data_args: DataArguments
-    training_args: TrainingArguments
-    finetune_args: FinetuningArguments
+SummarizationFinetuningConfig = BaseFinetuningConfig
 
-@dataclass
-class CodeGenerationFinetuningConfig(BaseFinetuningConfig):
-    model_args: ModelArguments
-    data_args: DataArguments
-    training_args: TrainingArguments
-    finetune_args: FinetuningArguments
+CodeGenerationFinetuningConfig = BaseFinetuningConfig
 
 @dataclass
 class TTSFinetuningConfig(BaseFinetuningConfig):
