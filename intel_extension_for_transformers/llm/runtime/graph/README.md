@@ -8,6 +8,7 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization 
 
+
 > LLM Runtime is under active development so APIs are subject to change.
 
 ## Supported Models
@@ -56,9 +57,11 @@ python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path/mo
 # to ggml q4_0 format
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
 # to neuarl engine graph optimized q4_j with 32 block_size format
+
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
 # to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
+
 ```
 quantization args explanations:
 | arg             | explanation                                                 |
