@@ -18,7 +18,8 @@ If you don't have a fine-tuned model, please remove the 'peft_model_path' parame
 
 ```bash
 # chat task
-numactl -l -C 0-55 python generate.py \
+# e.g., -m 0 -C 0-55
+numactl -m <node N> -C <cpu list> python generate.py \
         --base_model_path "mosaicml/mpt-7b-chat" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
@@ -30,13 +31,14 @@ numactl -l -C 0-55 python generate.py \
 To enable FP32 inference, you can add the parameter `--dtype "float32"`.
 
 ## LLama2 BF16 Inference
-For Llama, use the below command line to chat with it.
+For Llama2, use the below command line to chat with it.
 If you encounter a failure with the Llama fast tokenizer while using the latest transformers, add the option "--use_slow_tokenizer".
 The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`.
 The `architectures` in `config.json` should be changed from `LLaMAForCausalLM` to `LlamaForCausalLM`.
 
 ```bash
-numactl -l -C 0-55 python generate.py \
+# e.g., -m 0 -C 0-55
+numactl -m <node N> -C <cpu list> python generate.py \
         --base_model_path "meta-llama/Llama-2-7b-chat-hf" \
         --use_kv_cache \
         --task chat \
