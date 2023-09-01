@@ -557,6 +557,7 @@ def predict_stream(**params):
         `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
+        `dtype` (object): Default is torch.bfloat16
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -591,6 +592,8 @@ def predict_stream(**params):
     tokenizer = MODELS[model_name]["tokenizer"]
     errors_queue = Queue()
     task = params.get("task", "")
+    dtype = params["dtype"]
+    amp_dtype = torch.bfloat16 if dtype != torch.float32 else None
 
     if task != "":
         # add template
@@ -627,6 +630,7 @@ def predict_stream(**params):
             max_new_tokens=max_new_tokens,
             use_cache=use_cache,
         )
+        amp_enabled = True if dtype != torch.float32 else False
 
         def generate_output():
             try:
@@ -649,7 +653,7 @@ def predict_stream(**params):
                         return model.generate(**input_tokens, **generation_kwargs)
                     else:
                         with torch.cpu.amp.autocast(
-                            enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                            enabled=amp_enabled, dtype=amp_dtype, cache_enabled=amp_enabled
                         ):
                             return model.generate(**input_tokens, **generation_kwargs)
             except Exception as e:
@@ -798,6 +802,7 @@ def predict(**params):
         `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
         `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
+        `dtype` (object): Default is torch.bfloat16
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -828,7 +833,8 @@ def predict(**params):
     ipex_int8=params["ipex_int8"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
-
+    dtype = params["dtype"]
+    amp_dtype = torch.bfloat16 if dtype != torch.float32 else None
     task = params.get("task", "")
 
     if task != "":
@@ -863,6 +869,7 @@ def predict(**params):
             max_new_tokens=max_new_tokens,
             use_cache=use_cache,
         )
+        amp_enabled = True if dtype != torch.float32 else False
 
         with torch.no_grad():
             generation_kwargs = dict(
@@ -881,7 +888,7 @@ def predict(**params):
                 generation_output = model.generate(**input_tokens, **generation_kwargs)
             else:
                 with torch.cpu.amp.autocast(
-                    enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                    enabled=amp_enabled, dtype=amp_dtype, cache_enabled=amp_enabled
                 ):
                     generation_output = model.generate(**input_tokens, **generation_kwargs)
     elif device == "hpu":
@@ -1038,6 +1045,7 @@ def main():
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
         ipex_int8=args.ipex_int8,
+        dtype=datatype
     ):
         if args.local_rank in [-1, 0]:
             print(new_text, end="", flush=True)
@@ -1065,6 +1073,7 @@ def main():
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
             ipex_int8=args.ipex_int8,
+            dtype=datatype
         ):
             if args.local_rank in [-1, 0]:
                 print(new_text, end="", flush=True)
@@ -1095,6 +1104,7 @@ def main():
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
             ipex_int8=args.ipex_int8,
+            dtype=datatype
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
