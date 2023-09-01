@@ -140,9 +140,9 @@ link_directories(
   ${COMMON_LIB_DIRS}
 )
 
+add_subdirectory(../../library/jblas jblas)
 
 add_subdirectory(core)
-add_subdirectory(jblas)
 add_subdirectory(vectors)
 add_subdirectory(models)
 
