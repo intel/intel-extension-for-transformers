@@ -50,7 +50,7 @@ LLM Runtime assumes the same model format as [llama.cpp](https://github.com/gger
 git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 
 # convert the pytorch model to ggml format
-python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path/model_id
+python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path
 
 # or convert the model without downloading it by hand
 python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin meta-llama/Llama-2-7b-chat-hf

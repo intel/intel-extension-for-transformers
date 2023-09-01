@@ -18,7 +18,7 @@ import argparse
 from typing import List, Optional
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox"}
+model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
 
 
 def main(args_in: Optional[List[str]] = None) -> None:
