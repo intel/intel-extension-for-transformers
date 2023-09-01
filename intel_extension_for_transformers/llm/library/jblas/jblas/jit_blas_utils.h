@@ -507,12 +507,12 @@ class CpuDevice {
 
 #define GetCPUDevice() auto _cd = jblas::utils::parallel::CpuDevice::getInstance();
 
-#define CheckISA(ISA)                       \
-  {                                         \
-    GetCPUDevice() if (!_cd->ISA()) {       \
+#define CheckISA(ISA)                         \
+  {                                           \
+    GetCPUDevice() if (!_cd->ISA()) {         \
       printf("Wrong Device ISA: " #ISA "\n"); \
-      return;                               \
-    }                                       \
+      return;                                 \
+    }                                         \
   }
 
 struct Parallel2D {
