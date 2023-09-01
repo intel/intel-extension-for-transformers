@@ -42,7 +42,7 @@
 
 #include "core/ne_layers.h"
 #include "application/common.h"
-#include "jblas/jblas/jit_blas_weight_compression.h"
+#include "core/layers/jblas_common.hpp"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
@@ -59,7 +59,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   const int n_layer = hparams.n_layer;
 
   const int64_t n_mem = n_layer * n_ctx;
-  const int64_t n_elements = n_head_kv > 0? n_head_kv * head_dim * n_mem : n_embd * n_mem;
+  const int64_t n_elements = n_head_kv > 0 ? n_head_kv * head_dim * n_mem : n_embd * n_mem;
 
   cache.buf.resize(2u * n_elements * ne_type_size(wtype) + 2u * MB);
 
@@ -769,19 +769,10 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
   return quant_params_internal{parse_bits(params.bits), parse_alg(params.alg), params.block_size,
                                parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_type)};
 }
-template <class T, JBLAS_ISA ISA>
-using WeiS4Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32<T, ISA>;
-
-template <class T, JBLAS_ISA ISA>
-using WeiS8Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32<T, ISA>;
-
-using CompFp32 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512F;
-using CompInt8 = jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK;
-using CompBf16 = jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16;
-using CompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::WeightCompType;
+  using namespace ne_jblas;
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
   jblas::prologue::PackedWeight* packedw = NULL;
 
@@ -789,10 +780,10 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.bits == quant_bits::q4) {
     if (params.scale_dtype == quant_sdtype::fp32) {
       if (params.compute_type == quant_comp::int8) {
-        using Kernel = WeiS4Fp32<CompInt8, JblasAVX512F>;
-        using KernelRef = WeiS4Fp32<CompInt8, JblasNoSIMD>;
+        using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+        using KernelRef = WeiS4ClipFp32<GcCompInt8KBlock, JblasNoSIMD>;
         static Kernel kernel;
-        static Kernel kernelref;
+        static KernelRef kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
         if (cd->AVX512F()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
@@ -800,8 +791,8 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
           kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
         }
       } else if (params.compute_type == quant_comp::fp32) {
-        using Kernel = WeiS4Fp32<CompFp32, JblasAVX512_FP16>;
-        using KernelRef = WeiS4Fp32<CompFp32, JblasNoSIMD>;
+        using Kernel = WeiS4ClipFp32<GcCompFp32, JblasAVX512_FP16>;
+        using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static Kernel kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
@@ -811,8 +802,8 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
           kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
         }
       } else if (params.compute_type == quant_comp::bf16) {
-        using Kernel = WeiS4Fp32<CompBf16, JblasAMX_BF16>;
-        using KernelRef = WeiS4Fp32<CompBf16, JblasNoSIMD>;
+        using Kernel = WeiS4ClipFp32<GcCompBf16, JblasAMX_BF16>;
+        using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static Kernel kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
@@ -828,19 +819,32 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     // TODO add 8bit quantization
     if (params.scale_dtype == quant_sdtype::fp32) {
       if (params.compute_type == quant_comp::int8) {
-        using Kernel = WeiS8Fp32<CompInt8, JblasAVX512F>;
-        using KernelRef = WeiS8Fp32<CompInt8, JblasNoSIMD>;
-        static Kernel kernel;
-        static Kernel kernelref;
-        packedw = kernel.createStorage(n, k, params.block_size);
-        if (cd->AVX512F()) {
-          kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+        if (params.block_size == -1) {
+          using Kernel = WeiS8Fp32PerN<GcCompInt8, JblasAVX512F>;
+          using KernelRef = WeiS8Fp32PerN<GcCompInt8, JblasNoSIMD>;
+          static Kernel kernel;
+          static Kernel kernelref;
+          packedw = kernel.createStorage(n, k);
+          if (cd->AVX512F()) {
+            kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+          } else {
+            kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+          }
         } else {
-          kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+          using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
+          using KernelRef = WeiS8Fp32<GcCompInt8KBlock, JblasNoSIMD>;
+          static Kernel kernel;
+          static Kernel kernelref;
+          packedw = kernel.createStorage(n, k, params.block_size);
+          if (cd->AVX512F()) {
+            kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+          } else {
+            kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+          }
         }
       } else if (params.compute_type == quant_comp::fp32) {
-        using Kernel = WeiS8Fp32<CompFp32, JblasAVX512_FP16>;
-        using KernelRef = WeiS8Fp32<CompFp32, JblasNoSIMD>;
+        using Kernel = WeiS8Fp32<GcCompFp32, JblasAVX512_FP16>;
+        using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static Kernel kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
@@ -850,8 +854,8 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
           kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
         }
       } else if (params.compute_type == quant_comp::bf16) {
-        using Kernel = WeiS8Fp32<CompBf16, JblasAMX_BF16>;
-        using KernelRef = WeiS8Fp32<CompBf16, JblasNoSIMD>;
+        using Kernel = WeiS8Fp32<GcCompBf16, JblasAMX_BF16>;
+        using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static Kernel kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
