@@ -16,6 +16,7 @@ concurrency:
 
 env:
   CODE_SCAN_LOG_PATH: "${{ github.workspace }}/log"
+  CONTAINER_NAME: "codeScan"
 
 jobs:
   format-scan:
@@ -25,6 +26,15 @@ jobs:
         job_name: ["copyright"]
       fail-fast: false
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.CONTAINER_NAME }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          
       - name: Checkout out Repo
         uses: actions/checkout@v3
 

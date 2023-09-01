@@ -85,6 +85,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", hparams["d_model"]))
     fout.write(struct.pack("i", hparams["d_model"]))
     fout.write(struct.pack("i", hparams["n_heads"]))
+    fout.write(struct.pack("i", hparams.get("n_head_kv", 0)))  # multi-query attention
     fout.write(struct.pack("i", hparams["n_layers"]))
     fout.write(struct.pack("i", hparams["n_layers"]))
     fout.write(struct.pack("i", ftype))
