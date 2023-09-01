@@ -488,7 +488,7 @@ def load_model(
             model = PeftModel.from_pretrained(model, peft_path)
             model = model.to(torch.bfloat16)
 
-        if not ipex_int8:
+        if not ipex_int8 and dtype == torch.bfloat16:
             import intel_extension_for_pytorch as intel_ipex
 
             model = intel_ipex.optimize(
