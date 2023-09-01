@@ -15,7 +15,7 @@
 # common
 set(TARGET common)
 
-add_library(${TARGET} OBJECT
+add_library_w_warning(${TARGET} OBJECT
     common.h
     common.cpp
     )

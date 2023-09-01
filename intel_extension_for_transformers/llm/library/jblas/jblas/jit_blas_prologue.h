@@ -133,10 +133,14 @@ class ActivationConverterFp32 {
     auto aptr = const_cast<SrcType*>(_param.A);
     auto k_pad = utils::padto(k_size, _GemmCore_T::KTILE);
     *dststep = k_pad;
-    if (std::is_same<AType, utils::bf16>::value) {
+    if constexpr (std::is_same<AType, utils::bf16>::value) {
       return kernel::wrapper::Memcpy2DFp32CvtBf16::forward<ISA_T>(aptr + m_offset * _param.lda + k_offset, *dstptr,
                                                                   m_size, k_size, _param.lda * sizeof(SrcType),
-                                                                  k_pad * sizeof(AType));
+                                                                  k_pad * sizeof(AType), true);
+    } else if (std::is_same<AType, utils::fp16>::value) {
+      return kernel::wrapper::Memcpy2DFp32CvtFp16::forward<ISA_T>(aptr + m_offset * _param.lda + k_offset, *dstptr,
+                                                                  m_size, k_size, _param.lda * sizeof(SrcType),
+                                                                  k_pad * sizeof(AType), true);
     }
     return JblasNotSupport;
   }
@@ -221,6 +225,12 @@ class ActivationF32U8KBlockQuantize {
     auto cb = utils::CpuBase();
     _paral.update(m, k, 1, 16, kblock, cb.mNumThreads);
     return _paral;
+  }
+
+  size_t getWorkSpaceSize(int m, int k, int kblock) {
+    int kpad = utils::padto(k, _GemmCore_T::KTILE);
+    size_t totalsize = QParam::getSize(m, kpad, kblock);
+    return totalsize;
   }
 
   QParam* createStorage(int m, int k, int kblock, int8_t* workspace) {
@@ -378,6 +388,12 @@ class ActivationF32S8KBlockQuantize {
     return _paral;
   }
 
+  size_t getWorkSpaceSize(int m, int k, int kblock) {
+    int kpad = utils::padto(k, _GemmCore_T::KTILE);
+    size_t totalsize = QParam::getSize(m, kpad, kblock);
+    return totalsize;
+  }
+
   QParam* createStorage(int m, int k, int kblock, int8_t* workspace) {
     auto ptr = new QParam;
     int kpad = utils::padto(k, _GemmCore_T::KTILE);
@@ -508,7 +524,6 @@ class ActivationFp32SymS8Quantize {
   }
 };
 
-
 template <typename T, JBLAS_ISA ISA_T>
 class WeightBase {
  public:
@@ -554,7 +569,7 @@ class StorageWeight : public prologue::PackedWeight {
     }
   }
 
-  static size_t getSize(int NPad, int KPad, int EleBytes) { return (size_t)NPad * KPad * EleBytes; }
+  static size_t getSize(size_t NPad, size_t KPad, size_t EleBytes) { return NPad * KPad * EleBytes; }
 
   template <typename WT>
   inline WT* getPtr() const {
