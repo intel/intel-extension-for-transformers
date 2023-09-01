@@ -39,9 +39,10 @@ The `architectures` in `config.json` should be changed from `LLaMAForCausalLM` t
 ```bash
 python generate.py \
         --base_model_path "meta-llama/Llama-2-7b-chat-hf" \
-        --use_slow_tokenizer \
         --use_kv_cache \
-        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
+        --task chat \
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten." \
+        --jit
 ```
 
 To enable FP32 inference, you can add the parameter `--dtype "float32"`.
