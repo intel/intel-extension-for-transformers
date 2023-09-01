@@ -1003,6 +1003,7 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            dtype=datatype,
         )
 
     for idx, instruction in enumerate(args.instructions):
