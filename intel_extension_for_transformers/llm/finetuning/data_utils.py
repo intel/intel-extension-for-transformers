@@ -107,7 +107,7 @@ class ChatDataPreprocess:
     - You are a helpful assistant chatbot trained by Intel.
     - You answer questions.
     - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.{eos_token}\n"""
+    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.{eos_token}\n"""  # pylint: disable=C0301
 
     def __init__(self, eos_token):
         self.prompt_template = self.base_template.format_map({"eos_token": eos_token})

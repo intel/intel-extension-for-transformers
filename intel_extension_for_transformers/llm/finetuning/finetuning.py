@@ -58,7 +58,7 @@ from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
 from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
 
 if is_bitsandbytes_available():
-    import bitsandbytes as bnb
+    import bitsandbytes as bnb # pylint: disable=E0401
 
 def is_optimum_habana_available():
     return is_optimum_available() and importlib.util.find_spec("optimum.habana") != None
@@ -333,9 +333,7 @@ class Finetuning:
             )
             if (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
                 re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
-                from .models.mpt.modeling_mpt import MPTForCausalLM
-
-                model = MPTForCausalLM.from_pretrained(
+                model = AutoModelForCausalLM.from_pretrained(
                     model_args.model_name_or_path,
                     from_tf=bool(".ckpt" in model_args.model_name_or_path),
                     config=config,
@@ -541,7 +539,7 @@ class Finetuning:
 
         if finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model.eval()
-            from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+            from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
@@ -559,7 +557,7 @@ class Finetuning:
             from .eval_utils import compute_rouge_metric
             gen_kwargs = {
                     "num_beams": data_args.num_beams,
-                    "max_new_tokens": data_args.max_new_tokens,
+                    "max_new_tokens": data_args.max_target_length,
                     }
             with training_args.main_process_first(desc="summarization eval"):
                 if is_main_process(training_args.local_rank):
