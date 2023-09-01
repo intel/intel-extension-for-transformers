@@ -54,24 +54,33 @@ git checkout int8_llama2
 python setup.py install
 
 ````
+> Note:
+> ```
+> ImportError: /lib64/libstdc++.so.6: version `GLIBCXX_3.4.29' not found
+> ```
+> if the above error raised when `import intel-extension-for-pytorch`, it is due to the high gcc library request, there is the solution to find the correct version.
+> ```
+> find $CONDA_PREFIX | grep libstdc++.so.6
+> export LD_PRELOAD=<the path of libstdc++.so.6>:${LD_PRELOAD}
+> ```
 ### Quantization
 `meta-llama/Llama-2-7b-chat-hf` model need request the access, please follow the [instruction](https://huggingface.co/meta-llama/Llama-2-7b-hf), the quantized model saved in the `saved_results` folder and named `best_model.pt`.
 
 ```bash
-cd intel-extension-for-transformers/workflows/chatbot/inference
+cd workflows/chatbot/inference
 python run_llama_int8.py \
         -m meta-llama/Llama-2-7b-chat-hf \
         --ipex-smooth-quant \
         --dataset "NeelNanda/pile-10k" \
         --output-dir "saved_results" \
         --jit \
-        --int8-bf16-mixed
+        --int8
 ```
 
 ### Inference
 
 ```bash
-cd intel-extension-for-transformers/workflows/chatbot/inference
+cd workflows/chatbot/inference
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
@@ -90,7 +99,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python  g
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python  generate.py \
         --base_model_path meta-llama/Llama-2-7b-chat-hf \
         --use_kv_cache \
-        --instructions "Tell me about Intel Xeon." \
+        --instructions "Tell me about Intel Xeon." "Tell me about Intel Xeon."\
         --ipex_int8 \
         --quantized_model_path "./saved_results/best_model.pt"
 ```
