@@ -41,6 +41,7 @@ pip install -r ./inference/document_indexing/requirements.txt
 ```
 
 #### Indexing
+example code is in [document_indexing](inference/document_indexing/)
 ```python
 from inference.document_indexing.doc_index import d_load_file, persist_embedding
 from langchain.embeddings import HuggingFaceInstructEmbeddings
