@@ -36,7 +36,7 @@ ln -s ${PWD}/_install/llvm/bin/llvm-config ${CONDA_PREFIX}/bin/llvm-config-13
 cd ../../
 
 git clone --branch llm_feature_branch https://github.com/intel/intel-extension-for-pytorch.git
-cd intel_extension_for_pytorch
+cd intel-extension-for-pytorch
 git submodule sync && git submodule update --init --recursive
 export DNNL_GRAPH_BUILD_COMPILER_BACKEND=1
 export CXXFLAGS="${CXXFLAGS} -D__STDC_FORMAT_MACROS"
@@ -47,11 +47,18 @@ cd ../
 pip install transformers==4.31.0
 # Install others deps
 pip install cpuid accelerate datasets sentencepiece protobuf==3.20.3
+# Install intel-extension-for-transformers
+git clone https://github.com/intel/intel-extension-for-pytorch.git
+cd intel-extension-for-pytorch
+git checkout int8_llama2
+python setup.py install
+
 ````
 ### Quantization
 `meta-llama/Llama-2-7b-chat-hf` model need request the access, please follow the [instruction](https://huggingface.co/meta-llama/Llama-2-7b-hf), the quantized model saved in the `saved_results` folder and named `best_model.pt`.
 
 ```bash
+cd intel-extension-for-pytorch/workflows/chatbot/inference
 python run_llama_int8.py \
         -m meta-llama/Llama-2-7b-chat-hf \
         --ipex-smooth-quant \
@@ -64,6 +71,7 @@ python run_llama_int8.py \
 ### Inference
 
 ```bash
+cd intel-extension-for-pytorch/workflows/chatbot/inference
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
