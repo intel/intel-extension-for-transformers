@@ -22,7 +22,7 @@ from intel_extension_for_transformers.neural_chat.config import (
     ModelArguments,
     DataArguments,
     FinetuningArguments,
-    FinetuningConfig,
+    TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
 
@@ -48,7 +48,7 @@ def main():
             finetune_args,
         ) = parser.parse_args_into_dataclasses()
 
-    finetune_cfg = FinetuningConfig(
+    finetune_cfg = TextGenerationFinetuningConfig(
         model_args=model_args,
         data_args=data_args,
         training_args=training_args,
