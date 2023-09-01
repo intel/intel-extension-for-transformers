@@ -18,14 +18,13 @@ If you don't have a fine-tuned model, please remove the 'peft_model_path' parame
 
 ```bash
 # chat task
-python generate.py \
+numactl -l -C 0-55 python generate.py \
         --base_model_path "mosaicml/mpt-7b-chat" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
         --task chat \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten." \
         --jit
-
 ```
 
 To enable FP32 inference, you can add the parameter `--dtype "float32"`.
@@ -37,12 +36,11 @@ The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATo
 The `architectures` in `config.json` should be changed from `LLaMAForCausalLM` to `LlamaForCausalLM`.
 
 ```bash
-python generate.py \
+numactl -l -C 0-55 python generate.py \
         --base_model_path "meta-llama/Llama-2-7b-chat-hf" \
         --use_kv_cache \
         --task chat \
-        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten." \
-        --jit
+        --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
 To enable FP32 inference, you can add the parameter `--dtype "float32"`.
