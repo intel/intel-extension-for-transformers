@@ -445,30 +445,30 @@ def load_model(
 
             model = PeftModel.from_pretrained(model, peft_path)
             model = model.to(torch.bfloat16)
+        if dtype == torch.bfloat16:
+            import intel_extension_for_pytorch as intel_ipex
 
-        import intel_extension_for_pytorch as intel_ipex
-
-        model = intel_ipex.optimize(
-            model.eval(),
-            dtype=torch.bfloat16,
-            inplace=True,
-            level="O1",
-            auto_kernel_selection=True,
-        )
-        if cpu_jit and (
-            re.search("mpt-7b", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-        ):
-            from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
-
-            model.config.use_cache = use_cache
-            model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(
-                model_name, use_auth_token=hf_access_token
+            model = intel_ipex.optimize(
+                model.eval(),
+                dtype=torch.bfloat16,
+                inplace=True,
+                level="O1",
+                auto_kernel_selection=True,
             )
-            model = MPTTSModelForCausalLM(
-                model, config, use_cache=use_cache, model_dtype=torch.bfloat16
-            )
+            if cpu_jit and (
+                re.search("mpt-7b", model_name, re.IGNORECASE)
+                or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+            ):
+                from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
+
+                model.config.use_cache = use_cache
+                model = jit_trace_mpt_7b(model)
+                config = AutoConfig.from_pretrained(
+                    model_name, use_auth_token=hf_access_token
+                )
+                model = MPTTSModelForCausalLM(
+                    model, config, use_cache=use_cache, model_dtype=torch.bfloat16
+                )
 
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
