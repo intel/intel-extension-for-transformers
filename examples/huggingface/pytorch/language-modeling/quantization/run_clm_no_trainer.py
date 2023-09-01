@@ -257,6 +257,13 @@ if args.quantize:
             "mse_range": args.weight_only_mse_range,
             "sym_full_range": args.weight_only_sym_full_range,
         }
+        recipes['gptq_args'] = {
+                'percdamp': args.gptq_percdamp, 
+                'act_order':args.gptq_actorder, 
+                'block_size': args.gptq_block_size, 
+                'nsamples': args.gptq_nsamples, 
+                'use_max_length': args.gptq_use_max_length
+            }
         # GPTQ: use assistive functions to modify calib_dataloader and calib_func
         # TEQ: set calib_func=None, use default training func as calib_func
         if args.weight_only_algo in ["GPTQ", "TEQ"]:
