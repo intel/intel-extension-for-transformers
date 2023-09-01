@@ -22,10 +22,12 @@ Note: `${host_dir}` is your local directory, `${mount_dir}` is the docker's dire
 
 
 ## Habana Gaudi
+Build the docker image:
 ```
 DOCKER_BUILDKIT=1 docker build --network=host --tag chatbothabana:latest  ./ -f Dockerfile  --target hpu --build-arg BASE_NAME="base-installer-ubuntu22.04" --build-arg ARTIFACTORY_URL="vault.habana.ai" --build-arg VERSION="1.11.0" --build-arg REVISION="587" --build-arg PT_VERSION="2.0.1" --build-arg OS_NUMBER="2204"
 ```
 
+Launch the docker image:
 ```
 docker run -it --runtime=habana -e HABANA_VISIBLE_DEVICES=all -e OMPI_MCA_btl_vader_single_copy_mechanism=none --cap-add=sys_nice --net=host --ipc=host chatbothabana:latest 
 ```
