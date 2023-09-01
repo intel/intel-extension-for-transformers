@@ -53,6 +53,9 @@ git clone https://huggingface.co/EleutherAI/gpt-j-6b
 # convert the pytorch model to ggml format
 python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path/model_id
 
+# or convert the model without downloading it by hand
+python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin EleutherAI/gpt-j-6b
+
 # quantize weights of fp32 ggml bin
 # to ggml q4_0 format
 python scripts/quant_bin.py --model_name llama --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
