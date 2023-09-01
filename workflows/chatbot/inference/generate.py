@@ -18,6 +18,14 @@ from transformers import (
     StoppingCriteria,
 )
 
+from checkpoint_utils import (
+    get_ds_injection_policy,
+    get_repo_root,
+    model_is_optimized,
+    model_on_meta,
+    write_checkpoints_json,
+)
+
 # Set necessary env variables
 os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
 os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
@@ -189,6 +197,13 @@ def parse_args():
         help="task name, different task means different templates.",
     )
     parser.add_argument(
+        "--dtype",
+        type=str,
+        choices=["float32", "bfloat16", "float16"],
+        default="bfloat16",
+        help="bfloat16, float32 or float16",
+    )
+    parser.add_argument(
         "--return_stats", action='store_true', default=False,)
     args = parser.parse_args()
     return args
@@ -240,63 +255,6 @@ def add_template(example, template_name):
     return prompt
 
 
-def get_optimized_model_name(config):
-    from optimum.habana.transformers.generation import (
-        MODELS_OPTIMIZED_WITH_STATIC_SHAPES,
-    )
-
-    for model_type in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
-        if model_type == config.model_type:
-            return model_type
-
-    return None
-
-
-def model_is_optimized(config):
-    """
-    Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a
-    new input token_idx.
-    """
-    return get_optimized_model_name(config) is not None or config.model_type == "mpt"
-
-
-def get_ds_injection_policy(config):
-    model_type = get_optimized_model_name(config)
-    policy = {}
-    if model_type:
-        if model_type == "bloom":
-            from transformers.models.bloom.modeling_bloom import BloomBlock
-
-            policy = {BloomBlock: ("self_attention.dense", "mlp.dense_4h_to_h")}
-
-        if model_type == "opt":
-            from transformers.models.opt.modeling_opt import OPTDecoderLayer
-
-            policy = {OPTDecoderLayer: ("self_attn.out_proj", ".fc2")}
-
-        if model_type == "gpt2":
-            from transformers.models.gpt2.modeling_gpt2 import GPT2MLP
-
-            policy = {GPT2MLP: ("attn.c_proj", "mlp.c_proj")}
-
-        if model_type == "gptj":
-            from transformers.models.gptj.modeling_gptj import GPTJBlock
-
-            policy = {GPTJBlock: ("attn.out_proj", "mlp.fc_out")}
-
-        if model_type == "gpt_neox":
-            from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXLayer
-
-            policy = {GPTNeoXLayer: ("attention.dense", "mlp.dense_4h_to_h")}
-
-        if model_type == "llama":
-            from transformers.models.llama.modeling_llama import LlamaDecoderLayer
-
-            policy = {LlamaDecoderLayer: ("self_attn.o_proj", "mlp.down_proj")}
-
-    return policy
-
-
 MODELS = {}
 
 
@@ -319,17 +277,25 @@ def import_deepspeed():
     logger.info("DeepSpeed is enabled.")
 
 
-def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs):
+def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta):
     # Initialize the model
     from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
 
     world_size, rank, local_rank = initialize_distributed_hpu()
 
+    model = model.eval()
     ds_inference_kwargs = {"dtype": torch.bfloat16}
     ds_inference_kwargs["tensor_parallel"] = {"tp_size": world_size}
     ds_inference_kwargs["enable_cuda_graph"] = use_hpu_graphs
     # Make sure all devices/nodes have access to the model checkpoints
+    if is_meta:
+        checkpoints_json = "checkpoints.json"
+        write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json)
+
     torch.distributed.barrier()
+
+    if is_meta:
+        ds_inference_kwargs["checkpoint"] = checkpoints_json
 
     ds_inference_kwargs["injection_policy"] = get_ds_injection_policy(model.config)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
@@ -350,6 +316,7 @@ def load_model(
     peft_path=None,
     use_deepspeed=False,
     hf_access_token=None,
+    dtype=torch.bfloat16
 ):
     """
     Load the model and initialize the tokenizer.
@@ -388,7 +355,15 @@ def load_model(
         else True,
         use_auth_token=hf_access_token,
     )
-    if re.search("flan-t5", model_name, re.IGNORECASE):
+    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
+    load_to_meta = model_on_meta(config)
+    if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
+        logger.warn("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
+        load_to_meta = False
+    if device == "hpu" and use_deepspeed and load_to_meta:
+        with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
+            model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
+    elif re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name, low_cpu_mem_usage=True, use_auth_token=hf_access_token
@@ -405,7 +380,7 @@ def load_model(
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
-                torch_dtype=torch.bfloat16,
+                torch_dtype=dtype,
                 low_cpu_mem_usage=True,
                 use_auth_token=hf_access_token,
             )
@@ -445,55 +420,57 @@ def load_model(
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
     if device == "hpu":
-        model = model.eval().to("hpu")
+        if peft_path:
+            from peft import PeftModel
+            model = PeftModel.from_pretrained(model, peft_path)
+            model = model.to(torch.bfloat16)
+            model = model.merge_and_unload()
 
-        if use_hpu_graphs and not use_deepspeed:
-            from habana_frameworks.torch.hpu import wrap_in_hpu_graph
-
-            model = wrap_in_hpu_graph(model)
+        if not use_deepspeed:
+            model = model.eval().to("hpu")
+            if use_hpu_graphs:
+                from habana_frameworks.torch.hpu import wrap_in_hpu_graph
+                model = wrap_in_hpu_graph(model)
 
         if use_deepspeed:
             model = init_deepspeed_inference(
                 model=model,
                 model_name_or_path=model_name,
                 use_hpu_graphs=use_hpu_graphs,
+                is_meta=load_to_meta,
             )
 
-        if peft_path:
-            from peft import PeftModel
-
-            model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(torch.bfloat16)
     else:
         if peft_path:
             from peft import PeftModel
 
             model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(torch.bfloat16)
+            model = model.to(torch.bfloat16) if dtype == torch.bfloat16 else model.to(torch.float32)
 
-        import intel_extension_for_pytorch as intel_ipex
+        if dtype == torch.bfloat16:
+            import intel_extension_for_pytorch as intel_ipex
 
-        model = intel_ipex.optimize(
-            model.eval(),
-            dtype=torch.bfloat16,
-            inplace=True,
-            level="O1",
-            auto_kernel_selection=True,
-        )
-        if cpu_jit and (
-            re.search("mpt-7b", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-        ):
-            from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
-
-            model.config.use_cache = use_cache
-            model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(
-                model_name, use_auth_token=hf_access_token
+            model = intel_ipex.optimize(
+                model.eval(),
+                dtype=torch.bfloat16,
+                inplace=True,
+                level="O1",
+                auto_kernel_selection=True,
             )
-            model = MPTTSModelForCausalLM(
-                model, config, use_cache=use_cache, model_dtype=torch.bfloat16
-            )
+            if cpu_jit and (
+                re.search("mpt-7b", model_name, re.IGNORECASE)
+                or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+            ):
+                from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
+
+                model.config.use_cache = use_cache
+                model = jit_trace_mpt_7b(model)
+                config = AutoConfig.from_pretrained(
+                    model_name, use_auth_token=hf_access_token
+                )
+                model = MPTTSModelForCausalLM(
+                    model, config, use_cache=use_cache, model_dtype=torch.bfloat16
+                )
 
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
@@ -504,7 +481,7 @@ def load_model(
 
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    logger.info("Model loaded.")
+    print("model loaded")
 
 
 def predict_stream(**params):
@@ -535,6 +512,7 @@ def predict_stream(**params):
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
         `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `dtype`(object): default is torch.bfloat16
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -568,6 +546,8 @@ def predict_stream(**params):
     tokenizer = MODELS[model_name]["tokenizer"]
     errors_queue = Queue()
     task = params.get("task", "")
+    dtype = params["dtype"]
+    amp_dtype = torch.bfloat16 if dtype != torch.float32 else None
 
     if task != "":
         # add template
@@ -610,12 +590,13 @@ def predict_stream(**params):
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
         )
+        amp_enabled = True if dtype != torch.float32 else False
 
         def generate_output():
             try:
                 with torch.no_grad():
                     with torch.cpu.amp.autocast(
-                        enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                        enabled=amp_enabled, dtype=amp_dtype, cache_enabled=amp_enabled
                     ):
                         generation_kwargs = dict(
                             streamer=streamer,
@@ -710,7 +691,7 @@ def predict_stream(**params):
         raise ValueError(
             f"Unsupported device type {device}, only supports cpu and hpu now."
         )
-    output_token_len = 0
+    output_word_len = 0
 
     generation_thread.join(0.1)
     if generation_thread.is_alive():
@@ -723,29 +704,28 @@ def predict_stream(**params):
     for new_text in streamer:
         if len(new_text) == 0:
             continue
-        if output_token_len == 0:
+        if output_word_len == 0:
             first_token_output_time = datetime.now()
-        output_token_len += 1
+        output_word_len += 1
         yield new_text
 
     end_time = datetime.now()
     duration = int((end_time - start_time).total_seconds() * 1000)
-    first_token_latency = int(
+    first_word_latency = int(
         (first_token_output_time - start_time).total_seconds() * 1000
     )
-    msecond_per_token = (
-        (duration - first_token_latency) / (output_token_len - 1)
-        if output_token_len != 1
+    msecond_per_word = (
+        (duration - first_word_latency) / (output_word_len - 1)
+        if output_word_len != 1
         else 0
     )
-
     if return_stats:
         stats = {
-            "input_token_len": f"{input_token_len}",
-            "output_token_len": f"{output_token_len}",
-            "duration": f"{duration} ms",
-            "first_token_latency": f"{first_token_latency} ms",
-            "msecond_per_token": f"{msecond_per_token} ms",
+            "input_token_len": str(input_token_len),
+            "output_word_len": str(output_word_len),
+            "duration": str(duration) + " ms",
+            "first_word_latency": str(first_word_latency) + " ms",
+            "msecond_per_word": str(msecond_per_word) + " ms",
         }
         yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
         yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
@@ -781,11 +761,11 @@ def predict(**params):
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
         `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `dtype`(object): default is torch.bfloat16
 
     Returns:
         generator: A generator that yields the generated streaming text.
     """
-
     device = params["device"] if "device" in params else "cpu"
     temperature = float(params["temperature"]) if "temperature" in params else 0.9
     top_p = float(params["top_p"]) if "top_p" in params else 0.75
@@ -811,6 +791,8 @@ def predict(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    dtype = params["dtype"]
+    amp_dtype = torch.bfloat16 if dtype != torch.float32 else None
 
     task = params.get("task", "")
 
@@ -852,10 +834,11 @@ def predict(**params):
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
         )
+        amp_enabled = True if dtype != torch.float32 else False
 
         with torch.no_grad():
             with torch.cpu.amp.autocast(
-                enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                enabled=amp_enabled, dtype=amp_dtype, cache_enabled=amp_enabled
             ):
                 generation_kwargs = dict(
                     generation_config=generation_config, return_dict_in_generate=True
@@ -979,9 +962,7 @@ def main():
     tokenizer_path = (
         args.tokenizer_name if args.tokenizer_name is not None else base_model_path
     )
-
-    logger.info("Model loading...")
-    start_time = time.time()
+    datatype = torch.bfloat16 if args.dtype != "float32" else torch.float32
     load_model(
         base_model_path,
         tokenizer_path,
@@ -992,8 +973,8 @@ def main():
         peft_path=args.peft_model_path,
         use_deepspeed=True if use_deepspeed and args.habana else False,
         hf_access_token=args.hf_access_token,
+        dtype=datatype
     )
-    logger.info(f"Model load duration: {time.time() - start_time}" + ' s')
 
     if args.habana:
         from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu
@@ -1004,11 +985,11 @@ def main():
         logger.info(f"n_hpu: {world_size}, bf16")
     # warmup, the first time inference take longer because of graph compilation
     if args.local_rank in [-1, 0]:
-        logger.info("Warmup, Response: ")
+        print("Warmup, Response: ")
+
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
         idxs = f"{idx+1}"
-        start_time = time.time()
         out = predict(
             model_name=base_model_path,
             device="hpu" if args.habana else "cpu",
@@ -1025,15 +1006,12 @@ def main():
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
         )
-        logger.info(f"whole sentence out = {out}")
-        logger.info(f"Warm up duration: {time.time() - start_time}" + ' s')
 
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
-            logger.info(f"Generating response with streaming mode...")
             logger.info(f"Instruction: {instruction}")
             logger.info("Response: ")
         for new_text in predict_stream(
@@ -1051,6 +1029,7 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            dtype=datatype,
             return_stats= args.return_stats,
         ):
             if args.local_rank in [-1, 0]:
@@ -1063,7 +1042,6 @@ def main():
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
-            logger.info(f"Generating response with non-streaming mode...")
             logger.info(f"Instruction: {instruction}")
             start_time = time.time()
             logger.info("Response: ")
@@ -1082,10 +1060,11 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            dtype=datatype
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
-            logger.info(f"Duration: {time.time() - start_time}" + ' s')
+            logger.info(f"duration: {time.time() - start_time}")
             logger.info("=" * (60 + len(idxs)))
 
 
