@@ -29,7 +29,7 @@ from .utils import load_unstructured_data, laod_structured_data, get_chuck_data
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
-                 process=False, embedding_model="hkunlp/instructor-large", max_length=512):
+                 process=False, embedding_model="/data1/lkk/instructor_large/", max_length=512):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
         """
@@ -97,15 +97,17 @@ class DocumentIndexing:
                     
                 documents = []
                 for data, meta in data_collection:
+                    if len(data) < 5:
+                        continue
                     metadata = {"source": meta}
                     new_doc = Document(page_content=data, metadata=metadata)
                     documents.append(new_doc)
-                # import pdb;pdb.set_trace()
+                assert documents!= [], "The given file/files cannot be loaded." 
                 embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
                 vectordb = Chroma.from_documents(documents=documents, embedding=embedding,
                                                  persist_directory=self.persist_dir)
                 vectordb.persist()
-                print("success")
+                print("The local knowledge base has been successfully built!")
                 return vectordb
             else:
                 print("There might be some errors, please wait and try again!")
@@ -126,11 +128,13 @@ class DocumentIndexing:
                 documents = []
                 for data, meta in data_collection:
                     metadata = {"source": meta}
-                    # pylint: disable=E1123
+                    if len(data) < 5:
+                        continue
                     new_doc = SDocument(content=data, metadata=metadata)
                     documents.append(new_doc)
+                assert documents != [], "The given file/files cannot be loaded."
                 document_store.write_documents(documents)
-                print("success")
+                print("The local knowledge base has been successfully built!")
                 return document_store
             else:
                 print("There might be some errors, please wait and try again!")
