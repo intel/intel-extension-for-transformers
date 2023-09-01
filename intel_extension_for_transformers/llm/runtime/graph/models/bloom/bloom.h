@@ -26,7 +26,7 @@ enum bloom_model {
 static const model_scratch bloom_mem_req(int n_layers) {
   switch (n_layers) {
     case 30:
-      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
+      return {4*2048ull * MB, 4*2048ull * MB, 4*4096ull * MB, 4*3072ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);

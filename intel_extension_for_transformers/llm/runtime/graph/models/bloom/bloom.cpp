@@ -103,7 +103,7 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
     struct ne_tensor * inpSA = inpL; //TODO: copy?
 
     struct ne_tensor * cur;
-
+    lctx.use_buf(ctx0, 0);
     // norm
     {
         cur = ne_norm(ctx0, inpL);
