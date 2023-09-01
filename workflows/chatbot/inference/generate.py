@@ -1063,7 +1063,7 @@ def main():
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
-            logger.info(f"duration: {time.time() - start_time}")
+            logger.info(f"duration: {time.time() - start_time}" + ' s')
             logger.info("=" * (60 + len(idxs)))
 
 
