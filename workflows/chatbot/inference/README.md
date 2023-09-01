@@ -58,7 +58,7 @@ python setup.py install
 `meta-llama/Llama-2-7b-chat-hf` model need request the access, please follow the [instruction](https://huggingface.co/meta-llama/Llama-2-7b-hf), the quantized model saved in the `saved_results` folder and named `best_model.pt`.
 
 ```bash
-cd intel-extension-for-pytorch/workflows/chatbot/inference
+cd intel-extension-for-transformers/workflows/chatbot/inference
 python run_llama_int8.py \
         -m meta-llama/Llama-2-7b-chat-hf \
         --ipex-smooth-quant \
@@ -71,7 +71,7 @@ python run_llama_int8.py \
 ### Inference
 
 ```bash
-cd intel-extension-for-pytorch/workflows/chatbot/inference
+cd intel-extension-for-transformers/workflows/chatbot/inference
 export KMP_BLOCKTIME=1
 export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
