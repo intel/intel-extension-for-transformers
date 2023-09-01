@@ -28,6 +28,7 @@ numactl -m <node N> -C <cpu list> python generate.py \
         --jit
 ```
 
+
 To enable FP32 inference, you can add the parameter `--dtype "float32"`. To check the statistical information of inference, you can add the parameter `--return_stats`.
 
 ## LLama2 BF16 Inference

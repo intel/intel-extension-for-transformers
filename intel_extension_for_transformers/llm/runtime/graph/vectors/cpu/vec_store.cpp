@@ -13,6 +13,7 @@
 //  limitations under the License.
 
 #include "vec_store.hpp"
+#include "vec_convert.hpp"
 
 inline void store_int8x16(void* mem_addr, int8x16 a) { _mm_storeu_si128(reinterpret_cast<__m128i*>(mem_addr), a); }
 inline void mask_store_int8x16(void* mem_addr, const int mask, int8x16 a) {

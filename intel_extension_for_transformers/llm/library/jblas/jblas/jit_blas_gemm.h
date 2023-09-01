@@ -36,7 +36,6 @@ enum class GemmCoreType : int {
   AMX_INT8_16x48_SS,
 };
 
-
 class GemmCore_Row_NN_4x24_AVX2 {
  public:
   struct params {
@@ -1728,10 +1727,12 @@ class GemmCore_Row_NN_16x48_AMX_BF16 {
  private:
   MicroKernel mCodes;
 };
-class GemmCore_Row_NN_16x64_AMX_INT8 {
+
+template <class T_A_, class T_B_>
+class GemmCore_Row_NN_16x64_AMX_I8 {
  public:
-  typedef uint8_t AType;
-  typedef int8_t BType;
+  typedef T_A_ AType;
+  typedef T_B_ BType;
   typedef int32_t CType;
   struct params {
     AType* matA;
@@ -1752,7 +1753,7 @@ class GemmCore_Row_NN_16x64_AMX_INT8 {
   static int constexpr PREFERED_N = 256;
   class MicroKernel : protected jblas::xbyak::JitAmxint8 {
    public:
-    friend GemmCore_Row_NN_16x64_AMX_INT8;
+    friend GemmCore_Row_NN_16x64_AMX_I8<T_A_, T_B_>;
     MicroKernel() {}
     static int constexpr CReg = 0, TmpReg = 4;
     static int constexpr NRegs = 4;
@@ -1891,7 +1892,8 @@ class GemmCore_Row_NN_16x64_AMX_INT8 {
           for (int mm = 0; mm < 1; mm++) {
             tileloadd(Xbyak::Tmm(ATile + mm), ptr[reg_matAptr + reg_astep + kk * AKStepSize]);
             for (int i = 0; i < _NTile; i++) {
-              tdpbusd(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm), Xbyak::Tmm(BTile + i));
+              _tdpb<AType, BType>(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm),
+                                  Xbyak::Tmm(BTile + i));
             }
           }
         }
@@ -1904,10 +1906,12 @@ class GemmCore_Row_NN_16x64_AMX_INT8 {
           for (int mm = 0; mm < 1; mm++) {
             tileloadd(Xbyak::Tmm(ATile + mm), ptr[reg_matAptr + reg_astep + kk * AKStepSize]);
             for (int i = 0; i < _NTile - 1; i++) {
-              tdpbusd(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm), Xbyak::Tmm(BTile + i));
+              _tdpb<AType, BType>(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm),
+                                  Xbyak::Tmm(BTile + i));
             }
             tileloaddt1(Xbyak::Tmm(BTile + 0), ptr[reg_matBptr + reg_tmp + kk * BKStepSize + (_NTile - 1) * 64]);
-            tdpbusd(Xbyak::Tmm(CTile + mm * C_tilenum + _NTile - 1), Xbyak::Tmm(ATile + mm), Xbyak::Tmm(BTile + 0));
+            _tdpb<AType, BType>(Xbyak::Tmm(CTile + mm * C_tilenum + _NTile - 1), Xbyak::Tmm(ATile + mm),
+                                Xbyak::Tmm(BTile + 0));
           }
         }
       }
@@ -1985,12 +1989,12 @@ class GemmCore_Row_NN_16x64_AMX_INT8 {
   };
 
  public:
-  GemmCore_Row_NN_16x64_AMX_INT8() { mCodes.generate_code(); }
+  GemmCore_Row_NN_16x64_AMX_I8() { mCodes.generate_code(); }
 
   void forward(AType* matA, BType* matB, CType* matC, int _m, int _n, int _k, int _astride, int _bstride, int _cstride,
                int kpos) {
     char tmp[NTILE * MTILE * sizeof(CType)];
-    MicroKernel::tileconfig_t mCfg;
+    typename MicroKernel::tileconfig_t mCfg;
     memset(&mCfg, 0, sizeof(mCfg));
     auto param = params{matA, matB, matC, _k, _m, _n, _astride, _bstride, _cstride, kpos, tmp, &mCfg};
     if (_m <= MTILE) {
@@ -2009,10 +2013,13 @@ class GemmCore_Row_NN_16x64_AMX_INT8 {
  private:
   MicroKernel mCodes;
 };
-class GemmCore_Row_NN_16x48_AMX_INT8 {
+using GemmCore_Row_NN_16x64_AMX_U8S8 = GemmCore_Row_NN_16x64_AMX_I8<uint8_t, int8_t>;
+
+template <class T_A_, class T_B_>
+class GemmCore_Row_NN_16x48_AMX_I8 {
  public:
-  typedef uint8_t AType;
-  typedef int8_t BType;
+  typedef T_A_ AType;
+  typedef T_B_ BType;
   typedef int32_t CType;
   struct params {
     AType* matA;
@@ -2033,7 +2040,7 @@ class GemmCore_Row_NN_16x48_AMX_INT8 {
   static int constexpr PREFERED_N = 240;  // TODO?
   class MicroKernel : protected jblas::xbyak::JitAmxint8 {
    public:
-    friend GemmCore_Row_NN_16x48_AMX_INT8;
+    friend GemmCore_Row_NN_16x48_AMX_I8<T_A_, T_B_>;
     MicroKernel() {}
     static int constexpr CReg = 0;
     static int constexpr C_tilenum = 3, A_tilenum = 1, B_tilenum = 3;
@@ -2161,7 +2168,8 @@ class GemmCore_Row_NN_16x48_AMX_INT8 {
           for (int mm = 0; mm < 1; mm++) {
             tileloadd(Xbyak::Tmm(ATile + mm), ptr[reg_matAptr + reg_astep + kk * AKStepSize]);
             for (int i = 0; i < _NTile; i++) {
-              tdpbusd(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm), Xbyak::Tmm(BTile + i));
+              _tdpb<AType, BType>(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm),
+                                  Xbyak::Tmm(BTile + i));
             }
           }
         }
@@ -2174,10 +2182,12 @@ class GemmCore_Row_NN_16x48_AMX_INT8 {
           for (int mm = 0; mm < 1; mm++) {
             tileloadd(Xbyak::Tmm(ATile + mm), ptr[reg_matAptr + reg_astep + kk * AKStepSize]);
             for (int i = 0; i < _NTile - 1; i++) {
-              tdpbusd(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm), Xbyak::Tmm(BTile + i));
+              _tdpb<AType, BType>(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm),
+                                  Xbyak::Tmm(BTile + i));
             }
             tileloaddt1(Xbyak::Tmm(BTile + 0), ptr[reg_matBptr + reg_tmp + kk * BKStepSize + (_NTile - 1) * 64]);
-            tdpbusd(Xbyak::Tmm(CTile + mm * C_tilenum + _NTile - 1), Xbyak::Tmm(ATile + mm), Xbyak::Tmm(BTile + 0));
+            _tdpb<AType, BType>(Xbyak::Tmm(CTile + mm * C_tilenum + _NTile - 1), Xbyak::Tmm(ATile + mm),
+                                Xbyak::Tmm(BTile + 0));
           }
         }
       }
@@ -2255,12 +2265,12 @@ class GemmCore_Row_NN_16x48_AMX_INT8 {
   };
 
  public:
-  GemmCore_Row_NN_16x48_AMX_INT8() { mCodes.generate_code(); }
+  GemmCore_Row_NN_16x48_AMX_I8() { mCodes.generate_code(); }
 
   void forward(AType* matA, BType* matB, CType* matC, int _m, int _n, int _k, int _astride, int _bstride, int _cstride,
                int kpos) {
     char tmp[NTILE * MTILE * sizeof(CType)];
-    MicroKernel::tileconfig_t mCfg;
+    typename MicroKernel::tileconfig_t mCfg;
     memset(&mCfg, 0, sizeof(mCfg));
     auto param = params{matA, matB, matC, _k, _m, _n, _astride, _bstride, _cstride, kpos, tmp, &mCfg};
     if (_m <= MTILE) {
@@ -2279,259 +2289,8 @@ class GemmCore_Row_NN_16x48_AMX_INT8 {
  private:
   MicroKernel mCodes;
 };
-class GemmCore_Row_NN_16x48_AMX_INT8_ss {
- public:
-  typedef int8_t AType;
-  typedef int8_t BType;
-  typedef int32_t CType;
-  struct params {
-    AType* matA;
-    BType* matB;
-    CType* matC;
-    int k, msize, nsize;
-    int astep, bstep, cstep;
-    int kpos;
-    void *workspace, *cfg;
-  };
-  typedef long long (*func_t)(params*);
-
-  static JBLAS_ISA constexpr ISA = JblasAMX_INT8;
-  static GemmCoreType constexpr TYPE = GemmCoreType::AMX_INT8_16x48_SS;
-  static int constexpr NTILE = 48, MTILE = 16, KTILE = 64 / sizeof(BType);
-  static int constexpr PACK_ROW = 4 / sizeof(BType);
-  static int constexpr KUNROLL = 2;
-  static int constexpr PREFERED_N = 240;  // TODO?
-  class MicroKernel : protected jblas::xbyak::JitAmxint8 {
-   public:
-    friend GemmCore_Row_NN_16x48_AMX_INT8_ss;
-    MicroKernel() {}
-    static int constexpr CReg = 0;
-    static int constexpr C_tilenum = 3, A_tilenum = 1, B_tilenum = 3;
-    static int constexpr CTile = 0, ATile = CTile + C_tilenum, BTile = ATile + A_tilenum;
-    static int constexpr BKStepSize = KTILE * NTILE * sizeof(BType);
-    static int constexpr AKStepSize = KTILE * sizeof(AType);
-    static int constexpr VecBytes = 64;
-
-    void generate_code() {
-      reset();
-      generate_mtile();
-      ready();
-      mKernel = getCode<func_t>();
-    }
-    func_t mKernel = nullptr;
-
-   protected:
-    void generate_mtile() {
-      inLocalLabel();  // use local label for multiple instance
-      Xbyak::util::StackFrame st(this, 1, 11, 16 * 10);
-      parambase = st.p[0];
-      reg_matAptr = st.t[0];
-      reg_matBptr = st.t[1];
-      reg_matCptr = st.t[0];
-      reg_ksize = st.t[2];
-      reg_nsize = st.t[9];
-      reg_cstep = st.t[3];
-      reg_astep = st.t[5];
-      reg_iterk = st.t[4];
-      reg_itern = st.t[7];
-      reg_tmp = st.t[6];
-      reg_tmp1 = st.t[8];
-      reg_tmp2 = st.t[10];
-      reg_ret = rax;
-
-      vreg_push(rsp);
-      mov(reg_tmp, ptr[parambase + OFFSET(cfg)]);
-      ldtilecfg(ptr[reg_tmp]);
-
-      mov(reg_matBptr, ptr[parambase + OFFSET(matB)]);
-      load32(reg_ksize, ptr[parambase + OFFSET(k)]);
-      load32(reg_nsize, ptr[parambase + OFFSET(nsize)]);
-      load32(reg_astep, ptr[parambase + OFFSET(astep)]);
-
-      xor_(reg_itern, reg_itern);
-      L(".nloop");
-      for (int i = 0; i < C_tilenum; i++) {
-        tilezero(Xbyak::Tmm(CTile + i));
-      }
-      mov(reg_matAptr, ptr[parambase + OFFSET(matA)]);
-      mov(reg_tmp1, reg_matBptr);
-
-      xor_(reg_iterk, reg_iterk);
-
-      mov(reg_tmp, reg_nsize);
-      sub(reg_tmp, reg_itern);
-      cmp(reg_tmp, NTILE);
-      jl(".n32", T_NEAR);
-      generate_kloop(C_tilenum);
-      write_back(MTILE, C_tilenum, parambase, reg_matCptr, reg_cstep, reg_itern);
-      load32(reg_tmp, ptr[parambase + OFFSET(bstep)]);
-      imul(reg_tmp, reg_tmp, NTILE);
-      add(reg_matBptr, reg_tmp);
-      add(reg_itern, NTILE);
-      jmp(".nend", T_NEAR);
-
-      L(".n32");
-      cmp(reg_tmp, 32);
-      jl(".n16", T_NEAR);
-      generate_kloop(2);
-      write_back(MTILE, 2, parambase, reg_matCptr, reg_cstep, reg_itern);
-      add(reg_itern, 32);
-      add(reg_matBptr, 32 * sizeof(BType));
-      jmp(".nend", T_NEAR);
-
-      L(".n16");
-      xor_(reg_iterk, reg_iterk);
-      generate_kloop(1);
-      write_back(MTILE, 1, parambase, reg_matCptr, reg_cstep, reg_itern);
-      add(reg_itern, 16);
-      add(reg_matBptr, 16 * sizeof(BType));
-      L(".nend");
-      cmp(reg_itern, reg_nsize);
-      jb(".nloop");
-
-      mov(reg_ret, 0);
-      vreg_pop(rsp);
-
-      outLocalLabel();  // end of local label
-    }
-
-    void generate_kloop(int _nregs) {
-      inLocalLabel();
-      L(".kloop");
-      mov(reg_tmp, reg_ksize);
-      sub(reg_tmp, reg_iterk);
-      cmp(reg_tmp, KUNROLL * KTILE);
-      jl(".k1loop", T_NEAR);
-      generate_fma(_nregs, KUNROLL, reg_tmp, reg_matAptr, reg_tmp1, reg_astep);
-      add(reg_matAptr, KUNROLL * AKStepSize);
-      add(reg_tmp1, KUNROLL * BKStepSize);
-      add(reg_iterk, KUNROLL * KTILE);
-      jmp(".kloopend", T_NEAR);
-
-      L(".k1loop");
-      generate_fma(_nregs, 1, reg_tmp, reg_matAptr, reg_tmp1, reg_astep);
-      add(reg_matAptr, 1 * AKStepSize);
-      add(reg_tmp1, 1 * BKStepSize);
-      add(reg_iterk, 1 * KTILE);
-      L(".kloopend");
-      cmp(reg_iterk, reg_ksize);  // k iteration variable
-      jb(".kloop");
-      outLocalLabel();
-    }
-
-    void generate_fma(int _NTile, int _kunroll, const Xbyak::Reg64& reg_tmp, const Xbyak::Reg64& reg_matAptr,
-                      const Xbyak::Reg64& reg_matBptr, const Xbyak::Reg64& reg_astep) {
-      mov(reg_tmp, NTILE * 4);
-      for (int kk = 0; kk < _kunroll; kk++) {
-        for (int i = 0; i < _NTile; i++) {
-          tileloaddt1(Xbyak::Tmm(BTile + i), ptr[reg_matBptr + reg_tmp + kk * BKStepSize + i * 64]);
-        }
-
-        for (int mm = 0; mm < 1; mm++) {
-          tileloadd(Xbyak::Tmm(ATile + mm), ptr[reg_matAptr + reg_astep + kk * AKStepSize]);
-          for (int i = 0; i < _NTile; i++) {
-            tdpbssd(Xbyak::Tmm(CTile + mm * C_tilenum + i), Xbyak::Tmm(ATile + mm), Xbyak::Tmm(BTile + i));
-          }
-        }
-      }
-    }
-
-    void write_back(int _mtile, int _NRegs, const Xbyak::Reg64& parambase, const Xbyak::Reg64& reg_matCptr,
-                    const Xbyak::Reg64& reg_cstep, const Xbyak::Reg64& reg_itern) {
-      inLocalLabel();
-      mov(reg_tmp, dword[parambase + OFFSET(workspace)]);
-      mov(reg_tmp1, NTILE * 4);
-      for (int mm = 0; mm < 1; mm++) {
-        for (int i = 0; i < _NRegs; i++) {
-          tilestored(ptr[reg_tmp + reg_tmp1 + i * 64 + mm * 16 * NTILE * 4], Xbyak::Tmm(CTile + mm * C_tilenum + i));
-        }
-      }
-      load32(reg_matCptr, ptr[parambase + OFFSET(kpos)]);
-      cmp(reg_matCptr, 0);
-      jg(".LACC", T_NEAR);
-      mov(reg_matCptr, ptr[parambase + OFFSET(matC)]);
-      lea(reg_matCptr, ptr[reg_matCptr + reg_itern * sizeof(CType)]);
-      load32(reg_cstep, ptr[parambase + OFFSET(cstep)]);
-      inLocalLabel();
-      xor_(reg_tmp1, reg_tmp1);
-      L(".mloop");
-      for (int j = 0; j < _NRegs; j++) {
-        vmovups(Xbyak::Zmm(CReg + j), ptr[reg_tmp + j * 64]);
-        vmovups(ptr[reg_matCptr + j * VecBytes], Xbyak::Zmm(CReg + j));
-      }
-      add(reg_matCptr, reg_cstep);
-      add(reg_tmp, NTILE * 4);
-      add(reg_tmp1, 1);
-      cmp(reg_tmp1.cvt32(), ptr[parambase + OFFSET(msize)]);
-      jb(".mloop");
-      outLocalLabel();
-      jmp(".LEND", T_NEAR);
-      L(".LACC");
-      mov(reg_matCptr, ptr[parambase + OFFSET(matC)]);
-      lea(reg_matCptr, ptr[reg_matCptr + reg_itern * sizeof(CType)]);
-      load32(reg_cstep, ptr[parambase + OFFSET(cstep)]);
-      inLocalLabel();
-      xor_(reg_tmp1, reg_tmp1);
-      L(".mloop");
-      for (int j = 0; j < _NRegs; j++) {
-        vmovups(Xbyak::Zmm(CReg + j), ptr[reg_tmp + j * 64]);
-        vpaddd(Xbyak::Zmm(CReg + j), Xbyak::Zmm(CReg + j), ptr[reg_matCptr + j * VecBytes]);
-        vmovups(ptr[reg_matCptr + j * VecBytes], Xbyak::Zmm(CReg + j));
-      }
-      add(reg_matCptr, reg_cstep);
-      add(reg_tmp, NTILE * 4);
-      add(reg_tmp1, 1);
-      cmp(reg_tmp1.cvt32(), ptr[parambase + OFFSET(msize)]);
-      jb(".mloop");
-      outLocalLabel();
-      L(".LEND");
-      nop();
-      outLocalLabel();
-    }
-
-   private:
-    Xbyak::Reg64 parambase;
-    Xbyak::Reg64 reg_matAptr;
-    Xbyak::Reg64 reg_matBptr;
-    Xbyak::Reg64 reg_matCptr;
-    Xbyak::Reg64 reg_ksize;
-    Xbyak::Reg64 reg_nsize;
-    Xbyak::Reg64 reg_cstep;
-    Xbyak::Reg64 reg_astep;
-    Xbyak::Reg64 reg_iterk;
-    Xbyak::Reg64 reg_itern;
-    Xbyak::Reg64 reg_tmp;
-    Xbyak::Reg64 reg_tmp1;
-    Xbyak::Reg64 reg_tmp2;
-    Xbyak::Reg64 reg_ret = rax;
-    Xbyak::Opmask msk_wr = k1;
-  };
-
- public:
-  GemmCore_Row_NN_16x48_AMX_INT8_ss() { mCodes.generate_code(); }
-
-  void forward(AType* matA, BType* matB, CType* matC, int _m, int _n, int _k, int _astride, int _bstride, int _cstride,
-               int kpos) {
-    char tmp[NTILE * MTILE * sizeof(CType)];
-    MicroKernel::tileconfig_t mCfg;
-    memset(&mCfg, 0, sizeof(mCfg));
-    auto param = params{matA, matB, matC, _k, _m, _n, _astride, _bstride, _cstride, kpos, tmp, &mCfg};
-    if (_m <= MTILE) {
-      jblas::xbyak::JitAmxint8::configure_tiles(mCfg, _m < 16 ? _m : 16, _n < 16 ? _n : 16, _k < KTILE ? _k : KTILE,
-                                                sizeof(BType), MicroKernel::A_tilenum, MicroKernel::B_tilenum,
-                                                MicroKernel::C_tilenum);
-      mCodes.mKernel(&param);
-    } else {
-      assert(0);
-    }
-  }
-
-  void reference(AType* matA, BType* matB, CType* matC, int _m, int _n, int _k, int _astride, int _bstride,
-                 int _cstride, int kpos);
-
- private:
-  MicroKernel mCodes;
-};
+using GemmCore_Row_NN_16x48_AMX_U8S8 = GemmCore_Row_NN_16x48_AMX_I8<uint8_t, int8_t>;
+using GemmCore_Row_NN_16x48_AMX_S8S8 = GemmCore_Row_NN_16x48_AMX_I8<int8_t, int8_t>;
 
 // special kblock core: A:u8/s8 B:s8 intra-block accumulator:s32 inter-block
 // accumulator:f32
@@ -2540,7 +2299,7 @@ class GemmCore_Row_NN_16x48_AMX_INT8_ss {
 //  Activation zp=M*KBlocks scale=M*KBlocks
 namespace kblock {
 
-//KBLOCK>=KUNROLL*KTILE
+// KBLOCK>=KUNROLL*KTILE
 class GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK {
  public:
   typedef uint8_t AType;

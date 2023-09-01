@@ -12,6 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
+#include <cassert>
+
 #include "vec_arithmetic.hpp"
 
 inline fp32x16 sub_fp32x16(fp32x16 x, fp32x16 y) {

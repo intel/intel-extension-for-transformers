@@ -19,7 +19,7 @@ from typing import List, Optional
 from transformers import AutoConfig
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox"}
+model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 
 
 def main(args_in: Optional[List[str]] = None) -> None:
