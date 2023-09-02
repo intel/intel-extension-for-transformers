@@ -43,8 +43,8 @@
 
 #define MODEL_MAX_NORM 4
 #define MODEL_MAX_ATTN 4
-#define MODEL_MAX_FFN 4
-#define MODEL_MAX_OTHERS 5
+#define MODEL_MAX_FFN 6
+#define MODEL_MAX_OTHERS 6
 
 #define MODEL_USE_SCRATCH
 #define MODEL_MAX_SCRATCH_BUFFERS 16
@@ -64,7 +64,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON };
+enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON,
+                   MODEL_BLOOM };
 
 static const size_t MB = 1024 * 1024;
 
@@ -336,6 +337,7 @@ class model_name_to_arch {
   std::unordered_map<std::string, model_archs> name2arch_ = {
       {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ},           {"mpt", MODEL_MPT},
       {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
+      {"bloom", MODEL_BLOOM},
   };
 };
 
