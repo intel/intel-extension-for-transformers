@@ -16,3 +16,5 @@
 # limitations under the License.
 
 from .retrieval import Retriever
+from .bm25_retrieval import SparseBM25Retriever
+from .chroma_retrieval import ChromaRetriever
