@@ -130,7 +130,7 @@ class DocumentIndexing:
                     metadata = {"source": meta}
                     if len(data) < 5:
                         continue
-                    new_doc = SDocument(content=data, metadata=metadata)
+                    new_doc = SDocument(content=data, meta=metadata)
                     documents.append(new_doc)
                 assert documents != [], "The given file/files cannot be loaded."
                 document_store.write_documents(documents)
