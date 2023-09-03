@@ -292,9 +292,9 @@ int main(int argc, char** argv) {
   std::string no_preprocess_prompt = build_prompt(prompts);
   std::string prompt = preprocess(no_preprocess_prompt);
 
-  std::vector<int> embd_inp = ::model_tokenize(ctx, prompt, false);
-  embd_inp.insert(embd_inp.end(), {130001, 130004}); // special prefix for ChatGLM-1
-  //std::vector<int> embd_inp{5, 74874, 130001, 130004};
+  //std::vector<int> embd_inp = ::model_tokenize(ctx, prompt, false);
+  //embd_inp.insert(embd_inp.end(), {130001, 130004}); // special prefix for ChatGLM-1
+  std::vector<int> embd_inp{5, 74874, 130001, 130004};
 
   // 先写成原本的embd_inp
   // for (auto &i : embd_inp) {
@@ -644,7 +644,6 @@ int main(int argc, char** argv) {
         // std::string s(model_token_to_str(ctx, id));
         // s = postprocess(s);
         // std::cout << s;
-        
       }
       fflush(stdout);
     }
