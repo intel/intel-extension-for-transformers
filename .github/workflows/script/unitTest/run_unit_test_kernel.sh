@@ -3,13 +3,13 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 test_install_backend="true"
 LOG_DIR=/intel-extension-for-transformers/log_dir
 mkdir -p ${LOG_DIR}
-
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime"
 # -------------------gtest------------------------
 function gtest() {
     pip install cmake
     cmake_path=$(which cmake)
     ln -s ${cmake_path} ${cmake_path}3 || true
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/
+    cd ${WORKING_DIR}
 
     mkdir build && cd build && cmake .. -DNE_WITH_SPARSELIB=ON -DNE_WITH_TESTS=ON -DPYTHON_EXECUTABLE=$(which python) && make -j 2>&1 |
         tee -a ${LOG_DIR}/gtest_cmake_build.log
@@ -18,7 +18,7 @@ function gtest() {
 
 # -------------------engine test-------------------
 function engine_test() {
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/build
+    cd ${WORKING_DIR}/build
 
     if [[ ${test_install_backend} == "true" ]]; then
         local ut_log_name=${LOG_DIR}/unit_test_engine_gtest_backend_only.log
@@ -41,7 +41,7 @@ function engine_test() {
 
 # ------------------kernel test--------------------
 function kernel_test() {
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/build
+    cd ${WORKING_DIR}/build
 
     if [[ ${test_install_backend} == "true" ]]; then
         local ut_log_name=${LOG_DIR}/unit_test_kernel_gtest_backend_only.log
