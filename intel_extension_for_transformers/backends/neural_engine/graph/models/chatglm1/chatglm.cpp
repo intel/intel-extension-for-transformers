@@ -43,6 +43,8 @@
 //   - n_threads: number of threads to use
 //
 
+static int flag = 0;
+static int first_tokens_size = 0;
 static bool chatglm_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                      const int n_past, const int n_threads) {
   // // enforce that the first token is BOS
@@ -65,6 +67,15 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
   const int n_ctx = hparams.n_ctx;
+  // printf("n_ctx = %d\n", n_ctx);
+  if (flag == 0) {
+    first_tokens_size = n_tokens;
+    flag++;
+  }
+
+  //const int tokens_size = tokens.size();
+  //printf("n_tokens = %d, n_past = %d \n", n_tokens, n_past);
+
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = n_embd / n_head / 2;
@@ -97,12 +108,12 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   memcpy(embd->data, tokens, N * ne_element_size(embd));
   // int qlen = embd->ne[1];
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
+  //printf(" ChatGLM1 embedding output = %f ", *(float*)inpL->data);
 
   int hidden_size = inpL->ne[0];
   int qlen = inpL->ne[1];
   int head_size = hidden_size / num_attention_heads;
   int rope_dim = head_size / 2;
-  //for (int il = 0; il < 1; ++il) {
   for (int il = 0; il < n_layer; ++il) {
     struct ne_tensor* cur;
     struct ne_tensor *alpha = ne_new_f32(ctx0, std::sqrt(2.f * n_layer));
@@ -115,6 +126,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
     // LayerNorm::forward
     cur = ne_norm(ctx0, inpL);
+    
     //printf("  ************************************  = %d\n", il);
     //printf(" cur->ne[0] = %d, cur->ne[1] = %d  ", cur->ne[0], cur->ne[1]);
     //printf(" norm[0]->ne[0] = %d, norm[0]->ne[1] = %d ", model.layers[il].norm[0]->ne[0], model.layers[il].norm[0]->ne[1]);
@@ -122,6 +134,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     ne_set_name(cur, "cur");
     cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
     cur = ne_add(ctx0, cur, model.layers[il].norm[1]);
+
     //cur = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur);
     //cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].norm[1], cur), cur);
     
@@ -149,7 +162,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
       ne_set_name(query_layer, "query_layer");
       //query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0);  // ChatGLM-2
-      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 4, n_ctx);  // glm1
+      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 4, first_tokens_size);  // glm1
 
       // 2      
       // query_layer = ne_cont(ctx0, ne_permute(ctx0, query_layer, 0, 2, 1, 3)); // [heads, qlen, head_size]
@@ -170,7 +183,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       ne_tensor *key_layer =
           ne_view_3d(ctx0, cur, head_size, num_attention_heads, qlen, 3 * head_size * ne_element_size(cur),
                       cur->nb[1], head_size * ne_element_size(cur));
-      key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 4, n_ctx); // [qlen, heads, head_size]
+      key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 4, first_tokens_size); // [qlen, heads, head_size]
       key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3); // [heads, qlen, head_size]
 
       // 2
@@ -350,7 +363,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
   // logits -> probs
   // inpL = ne_soft_max_inplace(ctx0, inpL);
-  printf(" inpL = %f  \n", *(float*)inpL->data);
+  //printf(" Final inpL = %f  \n", *(float*)inpL->data);
   // run the computation
   ne_build_forward_expand(&gf, inpL);
   ne_graph_compute(ctx0, &gf);
@@ -377,6 +390,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       logits_out.resize(n_vocab);
       memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
     }
+    
+    //printf("  lctx.logits = %f \n", lctx.logits[0]);
     // printf("logits_out: ");
     // for (int i = 0; i < 20; i++) {
     //   printf("%f, ", logits_out[i]);
