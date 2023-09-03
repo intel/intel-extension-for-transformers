@@ -1465,12 +1465,12 @@
       }
     }
   },
-  "gpt_j_6b_clm_weight_only": {
+  "gpt_j_6b_clm_woq": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_j_weight_only",
+        "topology": "gpt_j_woq",
         "task": "clm",
         "approach": "weight_only",
         "output_model": "saved_results"
@@ -1479,7 +1479,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_j_weight_only",
+        "topology": "gpt_j_woq",
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
@@ -1489,12 +1489,12 @@
       }
     }
   },
-  "gpt_j_6b_clm_weight_only_awq": {
+  "gpt_j_6b_clm_woq_awq": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_j_weight_only_awq",
+        "topology": "gpt_j_woq_awq",
         "task": "clm",
         "approach": "weight_only",
         "output_model": "saved_results"
@@ -1503,7 +1503,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_j_weight_only_awq",
+        "topology": "gpt_j_woq_awq",
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
@@ -1592,12 +1592,12 @@
       }
     }
   },
-  "chatglm_clm_weight_only": {
+  "chatglm_clm_woq": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "chatglm_weight_only",
+        "topology": "chatglm_woq",
         "task": "clm",
         "approach": "weight_only",
         "output_model": "saved_results"
@@ -1606,7 +1606,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "chatglm_weight_only",
+        "topology": "chatglm_woq",
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
@@ -1616,12 +1616,12 @@
       }
     }
   },
-  "opt_125m_clm_weight_only": {
+  "opt_125m_clm_woq": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "opt_125m_weight_only",
+        "topology": "opt_125m_woq",
         "task": "clm",
         "approach": "weight_only",
         "output_model": "saved_results"
@@ -1630,7 +1630,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "opt_125m_weight_only",
+        "topology": "opt_125m_woq",
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
@@ -1640,12 +1640,12 @@
       }
     }
   },
-  "opt_125m_clm_weight_only_awq": {
+  "opt_125m_clm_woq_awq": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "opt_125m_weight_only_awq",
+        "topology": "opt_125m_woq_awq",
         "task": "clm",
         "approach": "weight_only",
         "output_model": "saved_results"
@@ -1654,7 +1654,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "opt_125m_weight_only_awq",
+        "topology": "opt_125m_woq_awq",
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
@@ -1664,12 +1664,12 @@
       }
     }
   },
-  "opt_125m_clm_weight_only_gptq": {
+  "opt_125m_clm_woq_gptq": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "opt_125m_weight_only_gptq",
+        "topology": "opt_125m_woq_gptq",
         "task": "clm",
         "approach": "weight_only",
         "output_model": "saved_results"
@@ -1678,7 +1678,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "opt_125m_weight_only_gptq",
+        "topology": "opt_125m_woq_gptq",
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",
@@ -1688,12 +1688,12 @@
       }
     }
   },
-  "opt_125m_clm_weight_only_teq": {
+  "opt_125m_clm_woq_teq": {
     "working_dir": "huggingface/pytorch/language-modeling/quantization",
     "tune": {
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "opt_125m_weight_only_teq",
+        "topology": "opt_125m_woq_teq",
         "task": "clm",
         "approach": "weight_only",
         "output_model": "saved_results"
@@ -1702,7 +1702,7 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "opt_125m_weight_only_teq",
+        "topology": "opt_125m_woq_teq",
         "task": "clm",
         "mode": "accuracy",
         "batch_size": "112",

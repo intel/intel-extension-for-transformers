@@ -83,17 +83,17 @@ function run_benchmark {
             model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
             extra_cmd=$extra_cmd" --ipex"
         fi
-    elif [ "${topology}" = "gpt_j_weight_only" ]; then
+    elif [ "${topology}" = "gpt_j_woq" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         lm_eval_tasks="lambada_openai"
         extra_cmd=$extra_cmd" --approach weight_only"
-   elif [ "${topology}" = "chatglm_weight_only" ]; then
+   elif [ "${topology}" = "chatglm_woq" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="THUDM/chatglm-6b"
         lm_eval_tasks="lambada_openai"
         extra_cmd=$extra_cmd" --approach weight_only"
-    elif [ "${topology}" = "gpt_j_weight_only_awq" ]; then
+    elif [ "${topology}" = "gpt_j_woq_awq" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         lm_eval_tasks="lambada_openai"
@@ -107,10 +107,10 @@ function run_benchmark {
     elif [ "${topology}" = "falcon_7b_instruct" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="tiiuae/falcon-7b-instruct"
-    elif [ "${topology}" = "opt_125m_weight_only"  -o \
-           "${topology}" = "opt_125m_weight_only_awq"  -o \
-           "${topology}" = "opt_125m_weight_only_gptq"  -o \
-           "${topology}" = "opt_125m_weight_only_teq" ]; then
+    elif [ "${topology}" = "opt_125m_woq"  -o \
+           "${topology}" = "opt_125m_woq_awq"  -o \
+           "${topology}" = "opt_125m_woq_gptq"  -o \
+           "${topology}" = "opt_125m_woq_teq" ]; then
         script="run_clm_no_trainer.py"
         model_name_or_path="facebook/opt-125m"
         lm_eval_tasks="lambada_openai"

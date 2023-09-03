@@ -50,13 +50,13 @@ parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto", help="Smooth quant parameter.")
 # ============WeightOnly configs===============
-parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', 'GPTQ'], 
+parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', 'GPTQ'], 
                     help="Weight-only parameter.")
-parser.add_argument("--weight_only_bits", type=int, default=8)
-parser.add_argument("--weight_only_group", type=int, default=-1)
-parser.add_argument("--weight_only_scheme", default="sym")
-parser.add_argument("--weight_only_mse_range", action="store_true")
-parser.add_argument("--weight_only_sym_full_range", action="store_true")
+parser.add_argument("--woq_bits", type=int, default=8)
+parser.add_argument("--woq_group_size", type=int, default=-1)
+parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument("--woq_mse_range", action="store_true")
+parser.add_argument("--woq_sym_full_range", action="store_true")
 # =============GPTQ configs====================
 parser.add_argument("--gptq_actorder", action="store_true", help="Whether to apply the activation order GPTQ heuristic.")
 parser.add_argument('--gptq_percdamp', type=float, default=.01, help='Percent of the average Hessian diagonal to use for dampening.')
@@ -88,7 +88,7 @@ class Evaluator:
 
     @torch.no_grad()
     def tokenize_function(self, examples):
-        if args.weight_only_algo in ['TEQ']:
+        if args.woq_algo in ['TEQ']:
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             example = self.tokenizer(examples["text"], padding="max_length", max_length=self.pad_max)
@@ -153,7 +153,7 @@ class Evaluator:
 def get_user_model():
     from transformers import AutoModelForCausalLM, AutoModel, AutoTokenizer
     torchscript = False
-    if args.sq or args.weight_only_algo in ['AWQ', 'TEQ']:
+    if args.sq or args.woq_algo in ['AWQ', 'TEQ']:
         torchscript = True
     if re.search("llama", args.model.lower()):
         import transformers
@@ -202,7 +202,7 @@ def get_user_model():
         tokenizer = AutoTokenizer.from_pretrained(args.model)
 
     # Set model's seq_len when GPTQ calibration is enabled.
-    if args.weight_only_algo == 'GPTQ':
+    if args.woq_algo == 'GPTQ':
         user_model.seqlen = args.gptq_pad_max_length
 
     if args.peft_model_id is not None:
@@ -242,10 +242,10 @@ if args.quantize:
         op_type_dict = {
             '.*':{ 	# re.match
                 "weight": {
-                    'bits': args.weight_only_bits, # 1-8 bits 
-                    'group_size': args.weight_only_group,  # -1 (per-channel)
-                    'scheme': args.weight_only_scheme, # sym/asym
-                    'algorithm': args.weight_only_algo, # RTN/AWQ/TEQ
+                    'bits': args.woq_bits, # 1-8 bits 
+                    'group_size': args.woq_group_size,  # -1 (per-channel)
+                    'scheme': args.woq_scheme, # sym/asym
+                    'algorithm': args.woq_algo, # RTN/AWQ/TEQ
                 },
             },
         }
@@ -254,8 +254,8 @@ if args.quantize:
             'embed_out':{"weight": {'dtype': 'fp32'},},  # for dolly_v2
         }
         recipes["rtn_args"] = {
-            "mse_range": args.weight_only_mse_range,
-            "sym_full_range": args.weight_only_sym_full_range,
+            "mse_range": args.woq_mse_range,
+            "sym_full_range": args.woq_sym_full_range,
         }
         recipes['gptq_args'] = {
                 'percdamp': args.gptq_percdamp, 
@@ -266,7 +266,7 @@ if args.quantize:
             }
         # GPTQ: use assistive functions to modify calib_dataloader and calib_func
         # TEQ: set calib_func=None, use default training func as calib_func
-        if args.weight_only_algo in ["GPTQ", "TEQ"]:
+        if args.woq_algo in ["GPTQ", "TEQ"]:
             calib_func = None
 
         conf = PostTrainingQuantConfig(
