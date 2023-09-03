@@ -31,7 +31,7 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
-#include "models/gptj/gptj.h"
+#include "models/bloom/bloom.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
@@ -44,14 +44,14 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
                          model_progress_callback progress_callback, void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
-  std::unique_ptr<IModel> ms(new GPTJ());
+  std::unique_ptr<IModel> ms(new BLOOM());
   ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void GPTJ::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, ne_type memory_type_,
+void BLOOM::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, ne_type memory_type_,
                 bool use_mmap_, bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
@@ -79,12 +79,12 @@ void GPTJ::init(const char* path_model, model_context& lctx, int n_ctx_, int n_g
   n_embd = hparams.n_embd;
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
-  scratch = gptj_mem_req(n_layer);
+  scratch = bloom_mem_req(n_layer);
   model.scratchs = scratch;
 }
 
 #define MODEL_BACKEND_OFFLOAD NE_BACKEND_CPU
-void GPTJ::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+void BLOOM::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
   auto& model = lctx.model;
   auto& ctx = model.ctx;
 
@@ -113,14 +113,12 @@ void GPTJ::load(model_context& lctx, model_progress_callback progress_callback, 
 
   ml->ne_ctx = ctx;
 
-  model.others[0] = ml->get_tensor("transformer.wte.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[1] = ml->get_tensor("transformer.ln_f.weight", {n_embd}, NE_BACKEND_CPU);
-  model.others[2] = ml->get_tensor("transformer.ln_f.bias", {n_embd}, NE_BACKEND_CPU);
-  model.others[3] = ml->get_tensor("lm_head.weight", {n_embd, n_vocab},
-                                   n_gpu_layer > int(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
-  model.others[4] =
-      ml->get_tensor("lm_head.bias", {n_vocab}, n_gpu_layer > int(n_layer) ? MODEL_BACKEND_OFFLOAD : NE_BACKEND_CPU);
-
+  model.others[0] = ml->get_tensor("transformer.word_embeddings.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  model.others[1] = ml->get_tensor("transformer.word_embeddings_layernorm.weight", {n_embd}, NE_BACKEND_CPU);
+  model.others[2] = ml->get_tensor("transformer.word_embeddings_layernorm.bias", {n_embd}, NE_BACKEND_CPU);
+  model.others[3] = ml->get_tensor("transformer.ln_f.weight", {n_embd}, NE_BACKEND_CPU);
+  model.others[4] = ml->get_tensor("transformer.ln_f.bias", {n_embd}, NE_BACKEND_CPU);
+  model.others[5] = ml->get_tensor("lm_head.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);
@@ -131,25 +129,29 @@ void GPTJ::load(model_context& lctx, model_progress_callback progress_callback, 
     std::string layers_i = "transformer.h." + std::to_string(i);
 
     // norm: cur = ln_1_g*cur + ln_1_b
-    layer.norm[0] = ml->get_tensor(layers_i + ".ln_1.weight", {n_embd}, backend);
-    layer.norm[1] = ml->get_tensor(layers_i + ".ln_1.bias", {n_embd}, backend);
+    layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
+    layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
 
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".attn.q_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".attn.k_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[2] = ml->get_tensor(layers_i + ".attn.v_proj.weight", {n_embd, n_embd}, backend);
-    layer.attn[3] = ml->get_tensor(layers_i + ".attn.out_proj.weight", {n_embd, n_embd}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, 3*n_embd}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {3*n_embd}, backend);
+    layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
+    layer.attn[3] = ml->get_tensor(layers_i + ".self_attention.dense.bias", {n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.fc_in.weight", {n_embd, n_ff}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.fc_in.bias", {n_ff}, backend);
-    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.fc_out.weight", {n_ff, n_embd}, backend);
-    layer.ffn[3] = ml->get_tensor(layers_i + ".mlp.fc_out.bias", {n_embd}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
+    layer.ffn[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.bias", {n_embd}, backend);
+    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, n_ff}, backend);
+    layer.ffn[3] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.bias", {n_ff}, backend);
+    layer.ffn[4] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {n_ff, n_embd}, backend);
+    layer.ffn[5] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.bias", {n_embd}, backend);
 
     if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.ffn[2]);
+      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
+                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) + ne_nbytes(layer.attn[2]) +
+		    ne_nbytes(layer.attn[3]) +
+                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.ffn[2]) +
+		    ne_nbytes(layer.ffn[3]) + ne_nbytes(layer.ffn[4]) + ne_nbytes(layer.ffn[5]);
     }
   }
 
@@ -184,14 +186,15 @@ void GPTJ::load(model_context& lctx, model_progress_callback progress_callback, 
 
 #undef MODEL_BACKEND_OFFLOAD
 
-class gptj_quant_layer : public quant_layer_base {
+
+class bloom_quant_layer : public quant_layer_base {
  public:
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
-    if (layername == "transformer.wte.weight") {
+    if (layername == "transformer.word_embeddings.weight") {
       // special layer process, can be loaded by config file
-      return quant_params_internal{};  // keep embedding as q4_0
+      return quant_params_internal();  // return q4_0 to cover the usage of getrow
     }
     quantize &= (ne.size() == 2);
     if (quantize) {
@@ -201,4 +204,4 @@ class gptj_quant_layer : public quant_layer_base {
     }
   }
 };
-REGISTER_QUANT_LAYER_CLASS(gptj);
+REGISTER_QUANT_LAYER_CLASS(bloom);

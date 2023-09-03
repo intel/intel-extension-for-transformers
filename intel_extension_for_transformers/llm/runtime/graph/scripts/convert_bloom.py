@@ -11,25 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-# Convert Hugging Face fine-tuned gpt-neox-like models to ne format
-#
-# Usage:
-#
-#   python3 models/convert-h5-to-ne.py
-#
-# This script is similar to "convert-pt-to-ne.py"
-#
 
+import io
+import os
 import sys
 import struct
 import json
+import code
 import torch
 import numpy as np
 from pathlib import Path
 import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -38,7 +33,7 @@ def bytes_to_unicode():
     The reversible bpe codes work on unicode strings.
     This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
     When you're at something like a 10B token dataset you end up needing around 5K for decent coverage.
-    This is a signficant percentage of your normal, say, 32K bpe vocab.
+    This is a significant percentage of your normal, say, 32K bpe vocab.
     To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
     And avoids mapping to whitespace/control characters the bpe code barfs on.
     """
@@ -63,91 +58,77 @@ def main(args_in: Optional[List[str]] = None) -> None:
     dir_model = args.model.as_posix()
     fname_out = args.outfile.as_posix()
 
+    # possible data types
+    #   ftype == 0 -> float32
+    #   ftype == 1 -> float16
     ftype = 0
     if args.outtype== "f16":
         ftype = 1
 
+    tokenizer = AutoTokenizer.from_pretrained(dir_model)
+    config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
+    hparams = config.to_dict()
     print("Loading model: ", dir_model)
-    tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(dir_model, low_cpu_mem_usage=True)
-    hparams = model.config.to_dict()
-    list_vars = model.state_dict()
+    model = AutoModelForCausalLM.from_pretrained(dir_model, config=config, torch_dtype=torch.float16
+                    if ftype == 1 else torch.float32, low_cpu_mem_usage=True, trust_remote_code=True)
+    print("Model loaded: ", dir_model)
+
     fout = open(fname_out, "wb")
-    
-    fout.write(b"ggjt"[::-1])#0x67676d6c)) # magic: ggml in hex
-    values = [
-        1,  # file version
-        hparams["vocab_size"],
-        hparams["n_embd"],
-        hparams["n_embd"] // hparams["n_head"],
-        hparams["n_head"],
-        hparams.get("n_head_kv", 0),  # multi-query attention
-        hparams["n_layer"],
-        hparams["rotary_dim"],
-        ftype
-    ]
-    fout.write(struct.pack("i" * len(values), *values))                                                                                                          
+    fout.write(struct.pack("i", 0x67676d6c)) # magic: ggml in hex
+
+    fout.write(struct.pack("i", hparams["vocab_size"]))
+    fout.write(struct.pack("i", hparams["hidden_size"]))
+    fout.write(struct.pack("i", 1))
+    fout.write(struct.pack("i", hparams["n_head"]))
+    fout.write(struct.pack("i", hparams.get("n_head_kv", 0))) # multi-query attention
+    fout.write(struct.pack("i", hparams["n_layer"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", ftype))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("f", 0))
     fout.write(struct.pack("i", 0))
 
+    reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
     byte_encoder = bytes_to_unicode()
     byte_decoder = {v:k for k, v in byte_encoder.items()}
-    
-    encoder = tokenizer.vocab
-    # Add added_tokens (special tokens) to the encoder
-    encoder_added = tokenizer.get_added_vocab()
 
-    for i, key in enumerate(sorted(encoder, key=encoder.get)):
-    # for key in encoder:
-        text = bytearray([byte_decoder[c] for c in key])
+    for i in range(hparams["vocab_size"]):
+        text = tokenizer.decode([i]).encode('utf-8')
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
-        if key not in encoder_added:
-            fout.write(struct.pack("f",0.0 - i))
-        else:
-            fout.write(struct.pack("f", -10000))
 
-    
+    list_vars = model.state_dict()
     for name in list_vars.keys():
-        data = list_vars[name].squeeze().numpy()
-        print("Processing variable: " + name + " with shape: ", data.shape)
-    
-        # we don't need these
-        if name.endswith("attn.masked_bias") or name.endswith(".attn.bias"):
-            print("  Skipping variable: " + name)
-            continue
-    
+        src = name
+        if "query_key_value" in src:
+            q, k, v = list_vars[src].reshape(config.n_head, 3, -1).unbind(1)
+            list_vars[src] = torch.cat([q, k, v], dim=0).reshape_as(list_vars[src])
+
+
+        data = list_vars[src].squeeze().numpy()
+        data = data.astype(np.float32)
+
         n_dims = len(data.shape)
-    
-        # ftype == 0 -> float32, ftype == 1 -> float16
+        print(name, n_dims, data.shape)
+
+        # default type is fp32
         ftype_cur = 0
-        if ftype != 0:
-            if name[-7:] == ".weight" and n_dims == 2:
-                print("  Converting to float16")
-                data = data.astype(np.float16)
-                ftype_cur = 1
-            else:
-                print("  Converting to float32")
-                data = data.astype(np.float32)
-                ftype_cur = 0
-        else:
-            if data.dtype != np.float32:
-                print("  Converting to float32")
-                data = data.astype(np.float32)
-                ftype_cur = 0
-    
+        if ftype == 1 and n_dims > 1:
+            print("  Converting to float16")
+            data = data.astype(np.float16)
+            ftype_cur = 1
+
+        # header
         str = name.encode('utf-8')
-        shape = data.shape
         fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
-        fout.write(struct.pack("i" * n_dims, *shape[::-1]))
+        for i in range(n_dims):
+            fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
         fout.write(str)
-        fout.seek((fout.tell() + 31) & -32)
-    
+
         # data
         data.tofile(fout)
-    
+
     fout.close()
 
     print("Done. Output file: " + fname_out)
