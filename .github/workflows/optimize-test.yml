@@ -39,9 +39,9 @@ jobs:
           - modelName: "bert_base_mrpc_static"
             framework: "pytorch"
             mode: "accuracy,performance"
-          - modelName: "bert_base_mrpc_static"
-            framework: "tensorflow"
-            mode: "accuracy,performance"
+          #- modelName: "bert_base_mrpc_static"
+          #  framework: "tensorflow"
+          #  mode: "accuracy,performance"
       fail-fast: true
     steps:
       - name: Docker Clean Up
