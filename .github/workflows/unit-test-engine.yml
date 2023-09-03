@@ -101,7 +101,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
-          name: "EngineUnitTest${{ matrix.test_name }}"
+          name: "UnitTest${{ matrix.test_name }}"
           path: ${{ github.workspace }}/log_dir
           retention-days: 5
           
