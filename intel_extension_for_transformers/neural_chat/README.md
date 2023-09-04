@@ -76,7 +76,7 @@ neuralchat textchat --retrieval_type sparse --retrieval_document_path ./assets/d
 ```python
 >>> from intel_extension_for_transformers.neural_chat import PipelineConfig
 >>> from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat import plugins
+>>> from intel_extension_for_transformers.neural_chat import plugins
 >>> plugins.retrieval.enable=True
 >>> plugins.retrieval.args["retrieval_input_path"]="./assets/docs/"
 >>> config = PipelineConfig(plugins=plugins)
