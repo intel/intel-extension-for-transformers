@@ -28,7 +28,7 @@ from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 from .pipeline.plugins.retrieval.indexing import DocumentIndexing
 from .pipeline.plugins.retrieval import SparseBM25Retriever, ChromaRetriever
-from .pipeline.plugins.detector import IntentDetector
+from .pipeline.plugins.retrieval.detector import IntentDetector
 from .pipeline.plugins.security import SafetyChecker
 from .plugins import plugins
 
