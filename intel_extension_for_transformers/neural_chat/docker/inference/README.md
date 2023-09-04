@@ -15,11 +15,10 @@ Option 2: If you need to use proxy, please use the following command.
 docker build --network=host --tag chatbotinfer:latest  ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile  --target cpu  
 ```
 
+Then mount the model files to the docker container using '-v'. Make sure using the absolute path for host_dir.
 ```
-docker run -it -v ${host_dir}:${mount_dir} -v /dev/shm/models--google--flan-t5-xl:/root/.cache/models--google--flan-t5-xl chatbotinfer:latest
+docker run -it -v ${host_dir}:${mount_dir} chatbotinfer:latest
 ```
-
-If you have already cached the original model and the lora model, you may replace the `-v` parameter to map the cached models on your host machine to the location inside your Docker container.
 
 Note: `${host_dir}` is your local directory, `${mount_dir}` is the docker's directory. If you need to use proxy, add `-e http_proxy=${http_proxy} -e https_proxy=${https_proxy}`
 

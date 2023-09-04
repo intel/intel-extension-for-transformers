@@ -54,7 +54,7 @@ import torch
 import importlib.util
 from transformers.utils.import_utils import is_optimum_available
 from .data_utils import preprocess_dataset, ALPACA_PROMPT_DICT
-from intel_extension_for_transformers.neural_chat.config import FinetuningConfig
+from intel_extension_for_transformers.neural_chat.config import BaseFinetuningConfig
 
 
 def is_optimum_habana_available():
@@ -62,7 +62,7 @@ def is_optimum_habana_available():
 
 
 class Finetuning:
-    def __init__(self, finetuning_config: FinetuningConfig):
+    def __init__(self, finetuning_config: BaseFinetuningConfig):
         self.model_args, self.data_args, self.training_args, self.finetune_args = (
             finetuning_config.model_args, 
             finetuning_config.data_args, 

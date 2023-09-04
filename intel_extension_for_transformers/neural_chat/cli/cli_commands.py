@@ -20,7 +20,7 @@ import argparse
 from typing import List
 from ..utils.command import NeuralChatCommandDict
 from .base_executor import BaseCommandExecutor
-from ..config import PipelineConfig, FinetuningConfig, GenerationConfig
+from ..config import PipelineConfig, FinetuningConfig, GenerationConfig # pylint: disable=E0611
 from ..config import ModelArguments, DataArguments, FinetuningArguments
 from ..plugins import plugins
 from transformers import TrainingArguments

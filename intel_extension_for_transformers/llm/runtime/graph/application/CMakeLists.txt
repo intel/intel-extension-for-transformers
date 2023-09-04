@@ -59,5 +59,6 @@ compile_quant(quant_dolly     quant_model.cpp dolly     gptneox)
 compile_quant(quant_llama     quant_model.cpp llama     llama)
 compile_quant(quant_mpt       quant_model.cpp mpt       mpt)
 compile_quant(quant_starcoder quant_model.cpp starcoder starcoder)
+compile_quant(quant_bloom     quant_model.cpp bloom     bloom)
 
 add_subdirectory(chat)

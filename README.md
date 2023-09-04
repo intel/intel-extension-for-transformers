@@ -154,14 +154,8 @@ output = model(**input).logits.argmax().item()
 * Arxiv: [An Efficient Sparse Inference Software Accelerator for Transformer-based Language Models on CPUs](https://arxiv.org/abs/2306.16601) (June 2023)
 * Blog published on Medium: [Simplify Your Custom Chatbot Deployment](https://medium.com/intel-analytics-software/simplify-your-custom-chatbot-deployment-on-intel-platforms-c8a911d906cf) (June 2023)
 * Blog published on Medium: [Create Your Own Custom Chatbot](https://medium.com/intel-analytics-software/create-your-own-chatbot-on-cpus-b8d186cfefb2) (April 2023)
-* Blog of Tech-Innovation Artificial-Intelligence(AI): [Intel® Xeon® Processors Are Still the Only CPU With MLPerf Results, Raising the Bar By 5x - Intel Communities](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Intel-Xeon-Processors-Are-Still-the-Only-CPU-With-MLPerf-Results/post/1472750) (April 2023)
-* Blog published on Medium: [MLefficiency — Optimizing transformer models for efficiency](https://medium.com/@kawapanion/mlefficiency-optimizing-transformer-models-for-efficiency-a9e230cff051) (Dec 2022)
-* NeurIPS'2022: [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (Nov 2022)
-* NeurIPS'2022: [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) (Nov 2022)
-* Blog published by Cohere: [Top NLP Papers—November 2022](https://txt.cohere.ai/top-nlp-papers-november-2022/) (Nov 2022)
-* Blog published by Alibaba: [Deep learning inference optimization for Address Purification](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
-* NeurIPS'2021: [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754) (Nov 2021)
 
+> View [Full Publication List](./docs/publication.md).
 ## Additional Content
 
 * [Release Information](./docs/release.md)
