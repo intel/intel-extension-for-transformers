@@ -55,7 +55,7 @@ The user can costomize the retrieval parameters to meet the personal demmads for
     
 >>>top_k [int]: The number of the retrieved documents. Default to "1".
 
->>>search_type [str]: Select a ranking method for dense retrieval from "mmr" or "similarity". "similarity" will return the most similar docs to the input query. "mmr" will return ranking the docs using the maximal marginal relevance method. Deault to "mmr".
+>>>search_type [str]: Select a ranking method for dense retrieval from "mmr" or "similarity". "similarity" will return the most similar docs to the input query. "mmr" will rank the docs using the maximal marginal relevance method. Deault to "mmr".
 
 >>>search_kwargs [dict]: Used by dense retrieval. Should be in the same format with {"k":1, "fetch_k":5}. "fetch_k" determines the amount of documents to pass to the ranking algorithm. Default to {"k":1, "fetch_k":5}.
 ```
