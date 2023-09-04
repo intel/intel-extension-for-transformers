@@ -97,14 +97,17 @@ class DocumentIndexing:
                     
                 documents = []
                 for data, meta in data_collection:
+                    if len(data) < 5:
+                        continue
                     metadata = {"source": meta}
                     new_doc = Document(page_content=data, metadata=metadata)
                     documents.append(new_doc)
+                assert documents!= [], "The given file/files cannot be loaded." 
                 embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
                 vectordb = Chroma.from_documents(documents=documents, embedding=embedding,
                                                  persist_directory=self.persist_dir)
                 vectordb.persist()
-                print("success")
+                print("The local knowledge base has been successfully built!")
                 return vectordb
             else:
                 print("There might be some errors, please wait and try again!")
@@ -125,11 +128,13 @@ class DocumentIndexing:
                 documents = []
                 for data, meta in data_collection:
                     metadata = {"source": meta}
-                    # pylint: disable=E1123
-                    new_doc = SDocument(content=data, metadata=metadata)
+                    if len(data) < 5:
+                        continue
+                    new_doc = SDocument(content=data, meta=metadata)
                     documents.append(new_doc)
+                assert documents != [], "The given file/files cannot be loaded."
                 document_store.write_documents(documents)
-                print("success")
+                print("The local knowledge base has been successfully built!")
                 return document_store
             else:
                 print("There might be some errors, please wait and try again!")
