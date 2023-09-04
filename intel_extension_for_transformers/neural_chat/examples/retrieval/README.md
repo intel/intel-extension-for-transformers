@@ -19,7 +19,7 @@ The user can download the [Intel 2022 Annual Report](https://d1io3yog0oux5.cloud
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
 plugins.retrieval.enable=True
-plugins.retrieval.args["retrieval_input_path"]="./Annual_report.pdf"
+plugins.retrieval.args["input_path"]="./Annual_report.pdf"
 config = PipelineConfig(plugins=plugins)
 ```
 
@@ -37,6 +37,27 @@ python retrieval_chat.py
 ```
 
 # Parameters
-The user can costomize the retrieval parameters to meet the personal demmads for better catering the local files. Please check [here](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrievals/retrievals.py) for more details.
+The user can costomize the retrieval parameters to meet the personal demmads for better catering the local files. The user can set the specific parameter by plugins.retrieval.args["xxx"]. Below the description of each available parameters,
+```
+>>>persist_dir [str]: The local path to save the processed database. Default to "./output".
+
+>>>process [bool]: Select to process the too long document into small chucks. Default to "False".
+
+>>>input_path [str]: The user local path to a file folder or a specific file path. The code itself will check the path is a folder or a file. If it is a folder, the code will process all the files in the given folder. If it is a file, the code will prcess this single file.
+
+>>>embedding_model [str]: the user specific document embedding model for dense retrieval. The user could selecte a specific embedding model from "https://huggingface.co/spaces/mteb/leaderboard". Default to "hkunlp/instructor-large". 
+
+>>>max_length [int]: The max context length in the processed chucks. Should be combined with "process". Default to "512".
+
+>>>retrieval_type [str]: Select a method for retrieval from "dense" or "sparse". Default to "dense".
+
+>>>document_store [str]: Considering the sparse retrieval needs to load the data into memory. We provide "InMemoryDocumentStore" and "ElasticsearchDocumentStore" for manage the memory efficiency for sparse retrieval. 
+    
+>>>top_k [int]: The number of the retrieved documents. Default to "1".
+
+>>>search_type [str]: Select a ranking method for dense retrieval from "mmr" or "similarity". "similarity" will return the most similar docs to the input query. "mmr" will return ranking the docs using the maximal marginal relevance method. Deault to "mmr".
+
+>>>search_kwargs [dict]: Used by dense retrieval. Should be in the same format with {"k":1, "fetch_k":5}. "fetch_k" determines the amount of documents to pass to the ranking algorithm. Default to {"k":1, "fetch_k":5}.
+```
 
 
