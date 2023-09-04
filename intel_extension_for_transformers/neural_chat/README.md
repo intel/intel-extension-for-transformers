@@ -78,7 +78,7 @@ neuralchat textchat --retrieval_type sparse --retrieval_document_path ./assets/d
 >>> from intel_extension_for_transformers.neural_chat import build_chatbot
 >>> from intel_extension_for_transformers.neural_chat import plugins
 >>> plugins.retrieval.enable=True
->>> plugins.retrieval.args["retrieval_input_path"]="./assets/docs/"
+>>> plugins.retrieval.args["input_path"]="./assets/docs/"
 >>> config = PipelineConfig(plugins=plugins)
 >>> chatbot = build_chatbot(config)
 >>> response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
