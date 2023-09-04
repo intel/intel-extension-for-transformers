@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef CHATGLM2_H
-#define CHATGLM2_H
+#ifndef CHATGLM1_H
+#define CHATGLM1_H
 
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
@@ -33,9 +33,9 @@ static const model_scratch chatglm_mem_req(int n_layers) {
   }
 }
 
-class CHATGLM2 : public IModel {
+class CHATGLM1 : public IModel {
  private:
-  model_archs name = MODEL_CHATGLM2;
+  model_archs name = MODEL_CHATGLM1;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;
@@ -49,4 +49,4 @@ class CHATGLM2 : public IModel {
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };
 
-#endif  // CHATGLM2_H
+#endif  // CHATGLM1_H
