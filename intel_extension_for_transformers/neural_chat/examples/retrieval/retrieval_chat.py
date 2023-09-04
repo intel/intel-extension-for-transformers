@@ -18,12 +18,7 @@
 import os
 import sys
 from transformers import TrainingArguments, HfArgumentParser
-from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig,
-    RetrieverConfig,
-    SafetyConfig,
-    GenerationConfig
-)
+from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 
 
@@ -31,22 +26,15 @@ def main():
     # See all possible arguments in config.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
-    parser = HfArgumentParser(
-        (PipelineConfig, RetrieverConfig, SafetyConfig, GenerationConfig)
-    )
+    parser = HfArgumentParser(PipelineConfig)
     
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        pipeline_args, retriever_args, safety_args, generation_args = parser.parse_json_file(
-            json_file = os.path.abspath(sys.argv[1])
-        )
+        pipeline_args= parser.parse_json_file(json_file = os.path.abspath(sys.argv[1]))
     else:
-        (pipeline_args, retriever_args, safety_args, generation_args) = parser.parse_args_into_dataclasses()
+        pipeline_args= parser.parse_args_into_dataclasses()
 
-    pipeline_args.saftey_config = safety_args
-    pipeline_args.retrieval_config = retriever_args
-    pipeline_args.generation_config = generation_args
     chatbot = build_chatbot(pipeline_args)
 
     response = chatbot.predict(query="What is IDM 2.0?", config=pipeline_args)

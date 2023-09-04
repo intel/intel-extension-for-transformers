@@ -244,22 +244,50 @@ async def talkingbot(request: Request):
 async def api_get_status(request: Request):
     return worker.get_status()
 
+def validate_port(value):
+    try:
+        port = int(value)
+        if 1 <= port <= 65535:
+            return port
+        else:
+            raise argparse.ArgumentTypeError("Port number must be between 1 and 65535.")
+    except ValueError:
+        raise argparse.ArgumentTypeError("Invalid port number. Must be an integer.")
+
+def validate_device(value):
+    valid_devices = ["cpu", "cuda", "mps"]
+    if value in valid_devices:
+        return value
+    else:
+        raise argparse.ArgumentTypeError(f"Invalid device. Must be one of {', '.join(valid_devices)}.")
+
+def validate_limit_model_concurrency(value):
+    if value >= 0:
+        return value
+    else:
+        raise argparse.ArgumentTypeError("Limit model concurrency must be a non-negative integer.")
+
+def validate_stream_interval(value):
+    if value > 0:
+        return value
+    else:
+        raise argparse.ArgumentTypeError("Stream interval must be a positive integer.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--port", type=validate_port, default=8080)
     parser.add_argument("--worker-address", type=str,
         default="http://localhost:8080")
     parser.add_argument("--controller-address", type=str,
         default="http://localhost:80")
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-name", type=str)
-    parser.add_argument("--device", type=str, choices=["cpu", "cuda", "mps"], default="cuda")
+    parser.add_argument("--device", type=validate_device, choices=["cpu", "cuda", "mps"], default="cpu")
     parser.add_argument("--num-gpus", type=int, default=1)
     parser.add_argument("--load-8bit", action="store_true")
-    parser.add_argument("--limit-model-concurrency", type=int, default=5)
-    parser.add_argument("--stream-interval", type=int, default=2)
+    parser.add_argument("--limit-model-concurrency", type=validate_limit_model_concurrency, default=5)
+    parser.add_argument("--stream-interval", type=validate_stream_interval, default=2)
     parser.add_argument("--no-register", action="store_true")
     parser.add_argument("--ipex", action="store_true")
     parser.add_argument("--itrex", action="store_true")
