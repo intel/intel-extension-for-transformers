@@ -64,7 +64,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, MODEL_CHATGLM, MODEL_CHATGLM2, MODEL_CHATGLM1};
+enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, MODEL_CHATGLM2, MODEL_CHATGLM1};
 
 static const size_t MB = 1024 * 1024;
 
@@ -352,7 +352,7 @@ class model_name_to_arch {
   std::unordered_map<std::string, model_archs> name2arch_ = {
       {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ},           {"mpt", MODEL_MPT},
       {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
-      {"chatglm", MODEL_CHATGLM}, {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1},
+      {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1},
   };
 };
 

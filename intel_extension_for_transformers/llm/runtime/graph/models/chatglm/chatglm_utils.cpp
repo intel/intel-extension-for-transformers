@@ -44,14 +44,14 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
                          model_progress_callback progress_callback, void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
-  std::unique_ptr<IModel> ms(new CHATGLM());
+  std::unique_ptr<IModel> ms(new CHATGLM2());
   ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void CHATGLM::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, ne_type memory_type_,
+void CHATGLM2::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, ne_type memory_type_,
                 bool use_mmap_, bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
@@ -84,7 +84,7 @@ void CHATGLM::init(const char* path_model, model_context& lctx, int n_ctx_, int 
 }
 
 #define MODEL_BACKEND_OFFLOAD NE_BACKEND_CPU
-void CHATGLM::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
   auto& model = lctx.model;
   auto& ctx = model.ctx;
 
@@ -187,12 +187,12 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
 
 #undef MODEL_BACKEND_OFFLOAD
 
-class chatglm_quant_layer : public quant_layer_base {
+class chatglm2_quant_layer : public quant_layer_base {
  public:
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
-    if (layername == "transformer.embedding.word_embeddings.weight") {
+    if (layername == "transformer.embedding.word_embeddings.weight" || layername == "transformer.word_embeddings.weight") {
       // special layer process, can be loaded by config file
       return quant_params_internal();  // return q4_0 to cover the usage of getrow
     }
@@ -204,4 +204,4 @@ class chatglm_quant_layer : public quant_layer_base {
     }
   }
 };
-REGISTER_QUANT_LAYER_CLASS(chatglm);
+REGISTER_QUANT_LAYER_CLASS(chatglm2);
