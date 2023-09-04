@@ -25,6 +25,13 @@ env:
 jobs:
   unit-test:
     runs-on: [self-hosted, Linux, X64, itrex-node]
+    strategy:
+      matrix:
+        include:
+          - test_branch: ${{ github.ref }}
+            test_name: "PR-test"
+          - test_branch: "main"
+            test_name: "baseline"
     steps:
       - name: Docker Clean Up
         run: |
@@ -44,6 +51,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
+          ref: ${{ matrix.test_branch }}
 
       - name: Docker Build
         run: |
@@ -83,7 +91,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
-          && bash run_unit_test_neuralchat.sh"
+          && bash run_unit_test_neuralchat.sh --test_name=${{ matrix.test_name }}"
 
       - name: Calculte coverage
         run: |
@@ -98,9 +106,47 @@ jobs:
           bash -c "cd /intel-extension-for-transformers && \
                    mv /log_dir . "
 
+      - name: Collect log
+        if: ${{ !cancelled() }}
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers && \
+                 mv /log_dir . "
+      
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
-          name: NeuralChat Unit Test
+          name: "UnitTest${{ matrix.test_name }}"
           path: ${{ github.workspace }}/log_dir
+           
+           
+  Genreate-Report:
+    runs-on: itrex-node-spell
+    needs: [unit-test]
+    steps:
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+        
+      - name: Download UT PR Log
+        uses: actions/download-artifact@v3
+        with:
+          path: ${{ github.workspace }}/log_dir
+           
+      - name: Display structure of downloaded files
+        run: cd ${{ github.workspace }}/log_dir && ls -R
+        
+      - name: Calculte coverage
+        run: |
+          cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
+          /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir
+
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: Neural Chat Unit Test
+          path: ${{ github.workspace }}/log_dir
+          retention-days: 5

@@ -1,6 +1,4 @@
 #!/bin/bash
-export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.coveragerc"
-
 output_log_dir="/intel-extension-for-transformers/benchmark_log"
 WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime"
 mkdir ${output_log_dir}

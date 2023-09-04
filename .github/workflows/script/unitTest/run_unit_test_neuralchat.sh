@@ -1,14 +1,27 @@
 #!/bin/bash
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
-export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.optimize-coveragerc"
+export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.neural-chat-coveragerc"
 LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tests"
+# get parameters
+PATTERN='[-a-zA-Z0-9_]*='
+PERF_STABLE_CHECK=true
+
+for i in "$@"; do
+    case $i in
+        --test_name=*)
+            test_name=`echo $i | sed "s/${PATTERN}//"`;;
+        *)
+            echo "Parameter $i not recognized."; exit 1;;
+    esac
+done
 
 function pytest() {
     local coverage_log_dir=$1
     mkdir -p ${coverage_log_dir}
 
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/tests/ || exit 1
+    cd ${WORKING_DIR} || exit 1
     JOB_NAME=unit_test
     ut_log_name=${LOG_DIR}/${JOB_NAME}.log
     export GLOG_minloglevel=2
@@ -37,35 +50,20 @@ function pytest() {
     $BOLD_GREEN && echo "UT finished successfully! " && $RESET
 }
 
-function re_install_packages() {
-    local package_name=$1
-    echo "re-install ${package_name} resolve the issue..."
-    pip uninstall ${package_name} -y
-    pip install --no-cache-dir ${package_name}
-}
-
-function install_itrex_base() {
-    pip uninstall intel_extension_for_transformers -y
-
-    cd /intel-extension-for-transformers
-    git config --global --add safe.directory "*"
-    git fetch
-    git checkout -b refer origin/main
-    git pull
-
-    $BOLD_YELLOW && echo "---------------- git submodule update --init --recursive -------------" && $RESET
-    git config --global --add safe.directory "*"
-    git submodule update --init --recursive
-    $BOLD_YELLOW && echo "---------------- pip install binary -------------" && $RESET
-    git clean -xdf
-    pip install .
-}
-
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
-    pytest "${LOG_DIR}/coverage_pr"
-    install_itrex_base
-    pytest "${LOG_DIR}/coverage_base"
+    cd ${WORKING_DIR} || exit 1
+    if [ -f "requirements.txt" ]; then
+        python -m pip install --default-timeout=100 -r requirements.txt
+        pip list
+    else
+        echo "Not found requirements.txt file."
+    fi
+    echo "test on ${test_name}"
+    if [[ $test_name == "PR-test" ]]; then
+        pytest "${LOG_DIR}/coverage_pr"
+    elif [[ $test_name == "baseline" ]]; then
+        pytest "${LOG_DIR}/coverage_base"  
+    fi
 }
-
 main
