@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2021 Intel Corporation
+# Copyright (c) 2023 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,20 +15,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-def _get_version(default='x.x.x.dev'):
-    try:
-        from pkg_resources import DistributionNotFound, get_distribution
-    except ImportError:
-        return default
-    else:
-        try:
-            return get_distribution(__package__).version
-        except DistributionNotFound:  # Run without install
-            return default
-        except ValueError:  # Python 3 setup
-            return default
-        except TypeError:  # Python 2 setup
-            return default
 
-
-__version__ = _get_version()
+from .quantization_config import WeightOnlyConfig
