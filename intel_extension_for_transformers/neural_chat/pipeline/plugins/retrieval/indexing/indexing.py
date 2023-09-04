@@ -24,7 +24,7 @@ from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings
 from langchain.vectorstores import Chroma
 from haystack.schema import Document as SDocument
-from .utils import load_unstructured_data, laod_structured_data, get_chuck_data
+from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 
 
 class DocumentIndexing:

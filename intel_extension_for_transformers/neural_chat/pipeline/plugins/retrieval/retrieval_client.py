@@ -18,11 +18,11 @@
 import os
 import torch
 import transformers
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.intent_detector import IntentDetector
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrievals.indexing import DocumentIndexing
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrievals.retrieval import Retriever
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.detector import IntentDetector
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing import DocumentIndexing
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval import Retriever
 from intel_extension_for_transformers.neural_chat.plugins import register_plugin
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompts import generate_qa_prompt, generate_prompt
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt import generate_qa_prompt, generate_prompt
 
 @register_plugin("retrieval")
 class QA_Client():
