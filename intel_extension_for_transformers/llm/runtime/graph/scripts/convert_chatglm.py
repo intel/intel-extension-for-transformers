@@ -19,7 +19,7 @@ from pathlib import Path
 import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
 import sentencepiece.sentencepiece_model_pb2 as model
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
@@ -101,7 +101,25 @@ class SentencePieceVocab:
         return f"<SentencePieceVocab with {self.vocab_size_base} base tokens and {len(self.added_tokens_list)} added tokens>"
 
 
-def load_vocab(path: Path) -> SentencePieceVocab:
+def load_vocab_for_glm1(path: Path) -> SentencePieceVocab:
+    # Be extra-friendly and accept either a file or a directory.  Also, if it's
+    # a directory, it might be the model directory, and tokenizer.model might
+    # be in the parent of that.
+    if path.is_dir():
+        path2 = path / "ice_text.model"
+        # Use `.parent` instead of /.. to handle the symlink case better.
+        path3 = path.parent / "ice_text.model"
+        if path2.exists():
+            path = path2
+        elif path3.exists():
+            path = path3
+        else:
+            raise FileNotFoundError(f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir")
+    added_tokens_path = path.parent / "added_tokens.json"
+    print(f"Loading vocab file {path}")
+    return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
+
+def load_vocab_for_glm2(path: Path) -> SentencePieceVocab:
     # Be extra-friendly and accept either a file or a directory.  Also, if it's
     # a directory, it might be the model directory, and tokenizer.model might
     # be in the parent of that.
@@ -119,34 +137,8 @@ def load_vocab(path: Path) -> SentencePieceVocab:
     print(f"Loading vocab file {path}")
     return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
 
-
-def main(args_in: Optional[List[str]] = None) -> None:
-    parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
-    parser.add_argument("--outtype", choices=["f32", "f16"], help="output format (default: based on input)")
-    parser.add_argument("--outfile", type=Path, help="path to write to; default: based on input")
-    parser.add_argument("model", type=Path, help="directory containing model file")
-    args = parser.parse_args(args_in)
-
-    dir_model = args.model.as_posix()
-    fname_out = args.outfile.as_posix()
-
-    with open(dir_model + '/config.json', "r", encoding="utf-8") as f:
-        hparams = json.load(f)
-
-    # possible data types
-    #   ftype == 0 -> float32
-    #   ftype == 1 -> float16
-    ftype = 0
-    if args.outtype== "f16":
-        ftype = 1
-
-
-    tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        dir_model, low_cpu_mem_usage=True, trust_remote_code=True
-    )
-
-
+def chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
+    print("ChatGLM-2 converting: ")
     list_vars = model.state_dict()
     for name in list_vars.keys():
         print(name, list_vars[name].shape, list_vars[name].dtype)
@@ -180,7 +172,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", hparams["ffn_hidden_size"]))
     fout.write(struct.pack("i", 0))
 
-    vocab = load_vocab(Path("/home/tensorflow/zhenzhong/chatglm-models/chatglm2-6b"))
+    vocab = load_vocab_for_glm2(Path(dir_model))
     counter = 0
     for text, score in vocab.all_tokens():
         fout.write(struct.pack("i", len(text)))
@@ -233,6 +225,127 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     print("Done. Output file: " + fname_out)
     print("")
+
+def chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
+    print("ChatGLM-1 converting: ")
+    list_vars = model.state_dict()
+    for name in list_vars.keys():
+        print(name, list_vars[name].shape, list_vars[name].dtype)
+
+    fout = open(fname_out, "wb")
+
+    print(hparams)
+
+    fout.write(struct.pack("i", 0x67676d66))
+    fout.write(struct.pack("i", 1))
+
+    fout.write(struct.pack("i", hparams["vocab_size"]))
+    fout.write(struct.pack("i", hparams["hidden_size"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", hparams["num_attention_heads"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", hparams["num_layers"]))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", ftype))
+    fout.write(struct.pack("i", hparams["max_sequence_length"]))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("f", 0))
+    fout.write(struct.pack("i", 0))
+
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", hparams["inner_hidden_size"]))
+
+    vocab = load_vocab_for_glm1(Path(dir_model))
+    counter = 0
+    for text, score in vocab.all_tokens():
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        fout.write(struct.pack("f", score))
+        counter += 1
+
+    while counter < hparams["vocab_size"]:
+        fout.write(struct.pack("i", len(text)))
+        fout.write(text)
+        fout.write(struct.pack("f", 0))
+        counter += 1
+
+    for name in list_vars.keys():
+        data = list_vars[name].squeeze().numpy()
+        print("Processing variable: " + name + " with shape: ", data.shape)
+        if 'inv_freq' in name:
+            continue
+
+        n_dims = len(data.shape)
+
+        # ftype == 0 -> float32, ftype == 1 -> float16
+        ftype_cur = 0
+        if ftype != 0:
+            if name[-7:] == ".weight" and n_dims == 2:
+                print("  Converting to float16")
+                data = data.astype(np.float16)
+                ftype_cur = 14
+            else:
+                print("  Converting to float32")
+                data = data.astype(np.float32)
+                ftype_cur = 0
+        else:
+            if data.dtype != np.float32:
+                print("  Converting to float32")
+                data = data.astype(np.float32)
+                ftype_cur = 0
+
+        # header
+        str = name.encode("utf-8")
+        fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
+        for i in range(n_dims):
+            fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+        fout.write(str)
+
+        # data
+        data.tofile(fout)
+
+    fout.close()
+
+    print("Done. Output file: " + fname_out)
+    print("")
+
+
+def main(args_in: Optional[List[str]] = None) -> None:
+    parser = argparse.ArgumentParser(description="Convert a model to a NE compatible file")
+    parser.add_argument("--outtype", choices=["f32", "f16"], help="output format (default: based on input)")
+    parser.add_argument("--outfile", type=Path, help="path to write to; default: based on input")
+    parser.add_argument("model", type=Path, help="directory containing model file")
+    args = parser.parse_args(args_in)
+
+    dir_model = args.model.as_posix()
+    fname_out = args.outfile.as_posix()
+
+    with open(dir_model + '/config.json', "r", encoding="utf-8") as f:
+        hparams = json.load(f)
+
+    # possible data types
+    #   ftype == 0 -> float32
+    #   ftype == 1 -> float16
+    ftype = 0
+    if args.outtype== "f16":
+        ftype = 1
+
+
+    tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
+    model = AutoModel.from_pretrained(
+        dir_model, low_cpu_mem_usage=True, trust_remote_code=True
+    )
+
+    if hasattr(model.config, "multi_query_attention"):
+        chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
+    else:
+        chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
 
 
 if __name__ == '__main__':
