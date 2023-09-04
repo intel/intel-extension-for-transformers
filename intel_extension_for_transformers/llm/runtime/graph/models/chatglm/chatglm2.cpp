@@ -119,7 +119,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
         ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
                      0); // [qlen, heads, head_size]
       ne_set_name(query_layer, "query_layer");
-      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0);
+      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0, 0);
       //query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0, 0);
       query_layer = ne_cont(ctx0, ne_permute(ctx0, query_layer, 0, 2, 1, 3)); // [heads, qlen, head_size]
       query_layer = ne_reshape_3d(ctx0, query_layer, head_size, mqa_scale * qlen,
@@ -129,7 +129,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
         ne_view_3d(ctx0, cur, head_size, num_kv_heads, qlen, head_size * ne_element_size(cur), cur->nb[1],
                      hidden_size * ne_element_size(cur)); // [qlen, kv_heads, head_size]
       ne_set_name(key_layer, "key_layer");
-      key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 0);
+      key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 0, 0);
       //key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 0, 0);
       key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3); // [kv_heads, qlen, head_size]
 

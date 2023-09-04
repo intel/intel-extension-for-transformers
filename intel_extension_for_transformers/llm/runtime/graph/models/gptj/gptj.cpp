@@ -124,24 +124,24 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                            ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size,
                                                       0 * N * n_embd * batch_size * ne_element_size(QKVcur)),
                                            n_embd / n_head, n_head, N, batch_size),
-                             n_past, n_rot, 0);
+                             n_past, n_rot, 0, 0);
       Kcur = ne_rope_inplace(ctx0,
                              ne_reshape_4d(ctx0,
                                            ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size,
                                                       1 * N * n_embd * batch_size * ne_element_size(QKVcur)),
                                            n_embd / n_head, n_head, N, batch_size),
-                             n_past, n_rot, 0);
+                             n_past, n_rot, 0, 0);
       Vcur = ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size, 2 * N * n_embd * batch_size * ne_element_size(QKVcur));
 
     } else {
       Qcur = ne_rope_inplace(
           ctx0,
           ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), n_embd / n_head, n_head, N, batch_size),
-          n_past, n_rot, 0);
+          n_past, n_rot, 0, 0);
       Kcur = ne_rope_inplace(
           ctx0,
           ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N, batch_size),
-          n_past, n_rot, 0);
+          n_past, n_rot, 0, 0);
       Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
     }
     ne_set_name(Qcur, "Qcur");
