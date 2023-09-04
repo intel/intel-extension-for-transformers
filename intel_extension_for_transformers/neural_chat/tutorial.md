@@ -38,11 +38,11 @@ NeuralChat provides a default chatbot configuration in `neuralchat.yaml`. User c
 |                           | cache_embedding_model_dir| hkunlp/instructor-large                 |
 | model_name                |                          | meta-llama/Llama-2-7b-chat-hf           |
 
-## Practice on different Platforms
+## Deply on Different Platforms
 
-### Intel XEON Server Platforms
+### Intel XEON Scalable Processors
 
-On Intel XEON Server platforms, especially those having [Intel(R) AMX](https://www.intel.com/content/www/us/en/products/docs/accelerator-engines/advanced-matrix-extensions/overview.html) support, user can utilize `mixed precision` feature to accelerate the inference of NeuralChat on local mode, as shown in the below code.
+On Intel XEON platforms, especially those having [Intel(R) AMX](https://www.intel.com/content/www/us/en/products/docs/accelerator-engines/advanced-matrix-extensions/overview.html) support, user can utilize `mixed precision` feature to accelerate the inference of NeuralChat on local mode, as shown in the below code.
 
 ```python
 ## create a chatbot on local mode
@@ -60,11 +60,6 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 This way converts the underneath LLM model into `bfloat16` on the fly and fully leverage `Intel(R) AMX` technology's power to speed up the inference of the whole working flow.
-
-### Intel XEON Client Platforms
-
-TBD
-
 
 ### Nvidia DataCenter GPU
 
