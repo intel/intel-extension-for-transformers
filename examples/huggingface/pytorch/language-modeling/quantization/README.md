@@ -48,11 +48,11 @@ python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \
     --approach weight_only \
-    --weight_only_bits 4 \
-    --weight_only_group 128 \
-    --weight_only_scheme asym  \
-    --weight_only_algo RTN \
-    --weight_only_mse_range \
+    --woq_bits 4 \
+    --woq_group_size 128 \
+    --woq_scheme asym  \
+    --woq_algo RTN \
+    --woq_mse_range \
     --output_dir "saved_results"
 ```
 **Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN, GPTQ[1], AWQ[2], TEQ algorithms. For more details, please refer to [link](https://github.com/intel/neural-compressor/blob/master/docs/source/quantization_weight_only.md)
@@ -61,8 +61,8 @@ python run_clm_no_trainer.py \
 ```bash
 python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
-    --weight_only_algo GPTQ \
-    --weight_only_bits 4 \
+    --woq_algo GPTQ \
+    --woq_bits 4 \
     --quantize \
     --pad_max_length 2048 \
     --gptq_pad_max_length 2048 \
