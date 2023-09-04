@@ -5,4 +5,6 @@ packaging
 protobuf --no-binary=protobuf
 transformers==4.30.2
 evaluate
-optimum-intel
+ninja
+--index-url https://download.pytorch.org/whl/cpu
+torch
