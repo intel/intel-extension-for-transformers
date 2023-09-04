@@ -638,7 +638,12 @@ int main(int argc, char** argv) {
     }
 
     // display text
+    static bool is_prompt = true;
     if (input_echo) {
+        if (is_prompt == true) {
+          is_prompt = false;
+          continue;
+        }
       for (auto id : embd) {
         printf("%s", model_token_to_str(ctx, id));
         // std::string s(model_token_to_str(ctx, id));
