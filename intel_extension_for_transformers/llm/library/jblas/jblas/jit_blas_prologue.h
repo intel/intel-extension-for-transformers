@@ -594,7 +594,9 @@ class StorageWeight : public prologue::PackedWeight {
   virtual void serializeDataToBuffer(void* buf) override {
     auto wptr = reinterpret_cast<int8_t*>(buf);
     utils::serialize(wptr, mRawSize);
-    std::memcpy(mRawPtr, wptr, mRawSize);
+    if (mRawPtr != nullptr) {
+      std::memcpy(mRawPtr, wptr, mRawSize);
+    }
   }
   virtual void deserializeDataBuffer(void* buf, int memalloc) override {
     auto rptr = reinterpret_cast<int8_t*>(buf);
