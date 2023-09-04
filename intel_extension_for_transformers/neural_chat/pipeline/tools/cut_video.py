@@ -111,7 +111,11 @@ if __name__ == '__main__':
     parser.add_argument("--sr", type=str, default=16000)
     parser.add_argument("--out_path", type=str, default="../raw")
     args = parser.parse_args()
-    
+
+    # Validate and normalize input and output paths
+    if not os.path.exists(args.path):
+        raise FileNotFoundError(f"Input path '{args.path}' does not exist.")
+
     outdir = os.path.join(shlex.quote(args.path), shlex.quote(args.out_path))
     if not os.path.exists(outdir):
         os.mkdir(outdir)
