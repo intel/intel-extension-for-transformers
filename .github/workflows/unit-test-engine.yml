@@ -34,7 +34,7 @@ jobs:
         include:
           - test_branch: ${{ github.ref }}
             test_name: "PR-test"
-          - test_branch: "ut_parallal"
+          - test_branch: "main"
             test_name: "baseline"
     steps:
       - name: Docker Clean Up
