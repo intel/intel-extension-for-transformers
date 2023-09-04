@@ -3,7 +3,7 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 test_install_backend="true"
 LOG_DIR=/intel-extension-for-transformers/log_dir
 mkdir -p ${LOG_DIR}
-WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime"
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/deprecated"
 # -------------------gtest------------------------
 function gtest() {
     pip install cmake

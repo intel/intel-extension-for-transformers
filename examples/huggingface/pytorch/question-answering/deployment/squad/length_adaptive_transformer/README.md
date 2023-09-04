@@ -82,7 +82,7 @@ python run_qa.py --model_name_or_path "sguskin/dynamic-minilmv2-L6-H384-squad1.1
 
 You could also compile the model to IR using python API as follows:
 ```python
-from intel_extension_for_transformers.llm.runtime.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 graph = compile('./model_and_tokenizer/int8-model.onnx')
 graph.save('./ir')
 ```
