@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
   }
   
   std::vector<int> embd_inp;
-  if (params.model_arch == MODEL_CHATGLM2) {
+  if (params.model_arch == MODEL_CHATGLM2 || params.model_arch == MODEL_CHATGLM1) {
       std::vector<std::string> prompts;
       prompts.push_back(params.prompt);
       std::string prompt = build_prompt(prompts);

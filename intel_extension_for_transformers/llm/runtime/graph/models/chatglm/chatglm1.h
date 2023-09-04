@@ -12,8 +12,8 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef CHATGLM_H
-#define CHATGLM_H
+#ifndef CHATGLM2_H
+#define CHATGLM2_H
 
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
@@ -49,4 +49,4 @@ class CHATGLM2 : public IModel {
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };
 
-#endif  // CHATGLM_H
+#endif  // CHATGLM2_H
