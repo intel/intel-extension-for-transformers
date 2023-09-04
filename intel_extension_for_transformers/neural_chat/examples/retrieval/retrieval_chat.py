@@ -20,6 +20,7 @@ import sys
 from transformers import TrainingArguments, HfArgumentParser
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
+from intel_extension_for_transformers.neural_chat.plugins import plugins
 
 
 def main():
@@ -35,6 +36,9 @@ def main():
     else:
         pipeline_args= parser.parse_args_into_dataclasses()
 
+    plugins.retrieval.enable = True
+    plugins.retrieval.args["retrieval_input_path"] = "./Annual_report.pdf"
+    pipeline_args.plugins = plugins
     chatbot = build_chatbot(pipeline_args)
 
     response = chatbot.predict(query="What is IDM 2.0?", config=pipeline_args)
