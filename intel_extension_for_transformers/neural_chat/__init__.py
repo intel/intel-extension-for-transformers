@@ -23,7 +23,6 @@ from .config import (
     CodeGenerationFinetuningConfig,
     TTSFinetuningConfig
 )
-from .config import OptimizationConfig
 from .chatbot import build_chatbot
 from .chatbot import finetune_model
 from .chatbot import optimize_model

@@ -19,7 +19,6 @@
 from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
-from .config import OptimizationConfig
 from .config import BaseFinetuningConfig
 from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from .config import DeviceOptions
@@ -99,7 +98,7 @@ def finetune_model(config: BaseFinetuningConfig):
     finetuning = Finetuning(config)
     finetuning.finetune()
 
-def optimize_model(model, config: OptimizationConfig):
+def optimize_model(model, config):
     """Optimize the model based on the provided configuration.
 
     Args:
