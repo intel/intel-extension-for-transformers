@@ -145,7 +145,7 @@ function run_tuning {
         DATASET_NAME="NeelNanda/pile-10k"
         model_name_or_path="facebook/opt-125m"
         approach="weight_only"
-        extra_cmd=$extra_cmd" --approach weight_only --woq_algo RTN --woq_mse_range"
+        extra_cmd=$extra_cmd" --approach weight_only --woq_algo RTN --woq_enable_mse_search"
     elif [ "${topology}" = "opt_125m_woq_awq" ]; then
         script="run_clm_no_trainer.py"
         DATASET_NAME="NeelNanda/pile-10k"

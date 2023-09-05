@@ -379,7 +379,7 @@ class WeightOnlyQuantizationConfig:
     bits: int = 8
     group_size: int = -1
     scheme: str = 'sym'
-    sym_full_range: bool = True
+    enable_full_range: bool = True
 
 @dataclass
 class AMPConfig:
