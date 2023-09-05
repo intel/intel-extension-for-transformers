@@ -427,6 +427,25 @@ class WeightPackBatchBf16NonTr : public WeightPackBatchBf16Base<GemmCore_T, ISA_
   };
 };
 
+template <class _GemmCore_T, JBLAS_ISA ISA_T>
+class ActivationIdentity {
+ public:
+  using AType = typename _GemmCore_T::AType;
+  struct Param {
+    const AType* A;
+    int lda;
+  };
+  ActivationIdentity() {}
+
+  JBLAS_CODE getActivation(AType** dstptr, int* dststep, const Param& _param, int m_size, int k_size, int m_offset,
+                           int k_offset) {
+    auto aptr = const_cast<AType*>(_param.A);
+    *dstptr = aptr + m_offset * _param.lda + k_offset;
+    *dststep = _param.lda;
+    return JblasSuccess;
+  }
+};
+
 /**
  * @brief GemmLauncherPackWeight with addition input as packed weight offset
  */
@@ -1606,7 +1625,7 @@ void jblas_fusion_attn_forward<float, bf16, bf16, float>(const attn_fwd_args_t<f
     using GemmKernelBF16 = ::GemmLauncherBaseWeight<          //
         JblasAMX_BF16,                                        //
         jblas::gemm::GemmCore_Row_NN_16x48_AMX_BF16,          //
-        jblas::prologue::gemm::ActivationBase,                //
+        ::ActivationIdentity,                                 // pretty sure we have enough paddings for P-matrix
         ::WeightForwardNTile48,                               //
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>;     //
     static MHAStableInterface<GemmKernelBF16TrackMax, GemmKernelBF16> mha;
@@ -1627,9 +1646,9 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
   static std::uniform_int_distribution<> dist;
   init_vector(p.tmp, workspace_size, INT8_MIN - 1, INT8_MAX + 1, dist(rng));
   std::fill_n(p.tmp, workspace_size, 'f');
-  const bool IS_FP16BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
-                                std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
-                                (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1));
+  const bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
+                            std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
+                            (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1));
   assert(p.Q_layout == ATTN_FWD_LAYOUT_PLAIN);
   assert(p.dst_layout == ATTN_FWD_LAYOUT_PLAIN);
   assert((p.K_layout == ATTN_FWD_LAYOUT_PLAIN ||
@@ -1673,7 +1692,7 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
               const auto k_value =
                   static_cast<float>(k_curr[j_block * p.step_k_sl + k_block * NTILE + j_remain * ROWPACK + k_remain]);
               curr_row[j] += k_value * static_cast<float>(q_curr[k]);
-            } else if (IS_FP16BF16_GEMM) {
+            } else if (IS_BF16_GEMM) {
               curr_row[j] += static_cast<float>(static_cast<bf16>(q_curr[k])) *  // TODO(Yi) fp16 acc
                              static_cast<float>(static_cast<bf16>(k_curr[j * p.step_k_sl + k * p.step_k_head_size]));
             } else {
@@ -1711,7 +1730,7 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
               const auto v_value = static_cast<float>(
                   v_curr[j_block * p.step_v_head_size + k_block * NTILE + j_remain * ROWPACK + k_remain]);
               dst_f32_val += curr_row[k] * v_value;
-            } else if (IS_FP16BF16_GEMM) {
+            } else if (IS_BF16_GEMM) {
               dst_f32_val += curr_row[k] * static_cast<float>(static_cast<bf16>(v_curr[k * p.step_v_sl + j]));
             } else {
               dst_f32_val += curr_row[k] * static_cast<float>(v_curr[k * p.step_v_sl + j]);

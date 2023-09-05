@@ -279,7 +279,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;           // us nb0 for layout
       ne_set_name(V, "V");
 
-      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head), true);
+      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head),
+                                                n_past == 0);  // no causal mask on next-token cases
       struct ne_tensor* KQV_merged_contiguous =
           ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
       ne_set_name(KQV_merged_contiguous, "KQV_merged_contiguous");

@@ -307,10 +307,11 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     struct ne_tensor* KQV_merged_contiguous;
 
     if (kv_mem_jblas) {  // reordered kv-cache bf16 mha must be used if kv_mem_jblas
-      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head), true);
+      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head),
+                                                n_past == 0);  // no causal mask on next-token cases
       KQV_merged_contiguous = ne_view_2d(ctx0, KQV_Out, n_embd, N * batch_size, n_embd * ne_element_size(KQV_Out), 0);
     } else if (MHA_FUSION && MHA_FP16) {  // non-reordered kv-cache fp16 mha
-      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head), true);
+      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head), n_past == 0);
       KQV_merged_contiguous = ne_view_2d(ctx0, KQV_Out, n_embd, N * batch_size, n_embd * ne_element_size(KQV_Out), 0);
     } else if (MHA_FUSION && n_past == 0 && jblas_fusion_attn_fp32_fp16_fp16_fp32_support(NULL)) {
       // non-reordered kv-cache bf16 mha (first token only)
@@ -320,7 +321,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       Vtmp = ne_view_4d(ctx0, Vtmp, n_embd / n_head, n_head, N, batch_size, ne_element_size(Vtmp) * n_embd / n_head,
                         ne_element_size(Vtmp) * n_embd, N * ne_element_size(Vtmp) * n_embd, 0);
       Vtmp = ne_permute(ctx0, Vtmp, 1, 2, 0, 3);
-      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, Vtmp, 1.0f / sqrtf(float(n_embd) / n_head), true);
+      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, Vtmp, 1.0f / sqrtf(float(n_embd) / n_head), n_past == 0);
       KQV_merged_contiguous = ne_view_2d(ctx0, KQV_Out, n_embd, N * batch_size, n_embd * ne_element_size(KQV_Out), 0);
     } else {
       // K * Q
