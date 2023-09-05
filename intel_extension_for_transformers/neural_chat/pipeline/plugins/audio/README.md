@@ -1,6 +1,6 @@
 The Audio Processing and Text-to-Speech (TTS) Plugin is a software component designed to enhance audio-related functionality in Neural Chat, specially for TalkingBot. This plugin offers a range of capabilities, primarily focused on processing audio data and converting text into spoken language. Here is a general overview of its key features:
 
-- **Audio Processing**: This plugin includes a suite of tools and algorithms for manipulating audio data. It can perform tasks such as cut Video, split audio, convert video to audio, noise reduction, equalization, pitch shifting, and audio synthesis, enabling developers to improve audio quality and add various audio effects to their applications.
+- **Audio Processing**: This component includes a suite of tools and algorithms for manipulating audio data. It can perform tasks such as cut Video, split audio, convert video to audio, noise reduction, equalization, pitch shifting, and audio synthesis, enabling developers to improve audio quality and add various audio effects to their applications.
 
 - **Text-to-Speech (TTS) Conversion**: The TTS plugin can convert written text into natural-sounding speech by synthesizing human-like voices. Users can customize the voice, tone, and speed of the generated speech to suit their specific requirements.
 
