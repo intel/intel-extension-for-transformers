@@ -14,7 +14,7 @@ The Neural Chat API offers an easy way to create and utilize chatbot models whil
 The workflow of this plugin consists of three main operations: document indexing, intent detection, and retrieval. The `Agent_QA` initializes itself using the provided `input_path` to construct a local database. During a conversation, the user's query is first passed to the `IntentDetector` to determine whether the user intends to engage in chitchat or seek answers to specific questions. If the `IntentDetector` determines that the user's query requires an answer, the retriever is activated to search the database using the user's query. The documents retrieved from the database serve as reference context in the input prompt, assisting in generating responses using the Large Language Models (LLMs).
 
 # Usage
-The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval). The user could refer to it for more detail.
+The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval). The user could refer to it for a simple test.
 
 ## Import the module and set the retrieval config:
 The user can download the [Intel 2022 Annual Report](https://d1io3yog0oux5.cloudfront.net/_897efe2d574a132883f198f2b119aa39/intel/db/888/8941/file/412439%281%29_12_Intel_AR_WR.pdf) for a test.
@@ -33,11 +33,6 @@ config = PipelineConfig(plugins=plugins)
 from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot(config)
 response = chatbot.predict("What is IDM 2.0?")
-```
-
-## Deploying through shell comand:
-```shell
-python retrieval_chat.py
 ```
 
 # Parameters
