@@ -34,7 +34,7 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-#define FFN_FUSION 1
+#define FFN_FUSION 0
 
 // evaluate the transformer
 //
