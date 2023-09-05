@@ -1,5 +1,5 @@
 <div align="center">
-<h1>Retrieval Plugin in NeuralChat</h3>
+<h1>Retriever</h3>
 <div align="left">
 
 # Introduction
