@@ -66,7 +66,7 @@ bash run_bert_mini.sh --model=Intel/bert-mini-sst2-distilled-sparse-90-1X4-block
 
 
 ### Benchmark
-Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](/intel_extension_for_transformers/llm/runtime/kernels) and high performance layernorm op with transpose mode to improve inference performance.
+Neural Engine will automatically detect weight structured sparse ratio, as long as it beyond 70% (since normaly get performance gain when sparse ratio beyond 70%), Neural Engine will call [Transformers-accelerated Libraries](/intel_extension_for_transformers/llm/runtime/deprecated/kernels) and high performance layernorm op with transpose mode to improve inference performance.
 
 Before using Python API to benchmark, need to transpose onnx model to IR, command as follows:
 ```shell

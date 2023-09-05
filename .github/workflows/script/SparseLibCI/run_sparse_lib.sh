@@ -1,6 +1,6 @@
 #!/bin/bash
 output_log_dir="/intel-extension-for-transformers/benchmark_log"
-WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime"
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/deprecated"
 mkdir ${output_log_dir}
 mkdir ${output_log_dir}/cur
 cur_dir=${output_log_dir}/cur

@@ -6,11 +6,11 @@ on:
     paths:
       - ".github/workflows/unit-test-engine.yml"
       - ".github/workflows/script/unitTest/**"
-      - "intel_extension_for_transformers/llm/runtime/**"
-      - "!intel_extension_for_transformers/llm/runtime/kernels/**"
+      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
       - "!intel_extension_for_transformers/llm/runtime/graph/**"
-      - "!intel_extension_for_transformers/llm/runtime/third_party/**"
-      - "!intel_extension_for_transformers/llm/runtime/docs/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled

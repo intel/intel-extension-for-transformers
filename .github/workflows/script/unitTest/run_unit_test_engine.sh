@@ -3,7 +3,7 @@ source /intel-extension-for-transformers/.github/workflows/script/change_color.s
 export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.engine-coveragerc"
 LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
-WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime"
+WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/deprecated"
 
 # get parameters
 PATTERN='[-a-zA-Z0-9_]*='
