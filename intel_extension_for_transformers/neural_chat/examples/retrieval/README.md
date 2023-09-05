@@ -41,7 +41,7 @@ The user can costomize the retrieval parameters to meet the personal demmads for
 ```
 >>>persist_dir [str]: The local path to save the processed database. Default to "./output".
 
->>>process [bool]: Select to process the too long document into small chucks. Default to "False".
+>>>process [bool]: Select to process the too long document into small chucks. Default to "True".
 
 >>>input_path [str]: The user local path to a file folder or a specific file path. The code itself will check the path is a folder or a file. If it is a folder, the code will process all the files in the given folder. If it is a file, the code will prcess this single file.
 
@@ -55,9 +55,9 @@ The user can costomize the retrieval parameters to meet the personal demmads for
     
 >>>top_k [int]: The number of the retrieved documents. Default to "1".
 
->>>search_type [str]: Select a ranking method for dense retrieval from "mmr" or "similarity". "similarity" will return the most similar docs to the input query. "mmr" will rank the docs using the maximal marginal relevance method. Deault to "mmr".
+>>>search_type [str]: Select a ranking method for dense retrieval from "mmr", "similarity" and "similarity_score_threshold". "similarity" will return the most similar docs to the input query. "mmr" will rank the docs using the maximal marginal relevance method. "similarity_score_threshold" will return the mosy similar docs that also meet the threshold. Deault to "mmr".
 
->>>search_kwargs [dict]: Used by dense retrieval. Should be in the same format with {"k":1, "fetch_k":5}. "fetch_k" determines the amount of documents to pass to the ranking algorithm. Default to {"k":1, "fetch_k":5}.
+>>>search_kwargs [dict]: Used by dense retrieval. Should be in the same format like {"k":1, "fetch_k":5}. "k" is the amount of documents to return. "score_threshold" is the minimal relevance threshold for "similarity_score_threshold" search. "lambda_mult" is the diversity of results returned by "mmr". "fetch_k" determines the amount of documents to pass to the "mmr" algorithm. Default to {"k":1, "fetch_k":5}.
 ```
 
 
