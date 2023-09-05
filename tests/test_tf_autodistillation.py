@@ -1,7 +1,6 @@
 import shutil
 import numpy as np
 import unittest
-#import tensorflow as tf
 from datasets import load_dataset, load_metric
 from transformers import (TFAutoModelForSequenceClassification, AutoTokenizer,
                           DefaultDataCollator, HfArgumentParser,
@@ -13,6 +12,7 @@ from intel_extension_for_transformers.transformers import (
 )
 from intel_extension_for_transformers.transformers.optimizer_tf import TFOptimization
 from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
+import tensorflow as tf
 
 def compute_metrics(preds, label_ids):
     metric = load_metric("glue", "sst2")
@@ -26,7 +26,7 @@ def compute_metrics(preds, label_ids):
 class TestAutoDistillation(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.skipTest(self, "skip tensorflow related tests temperately")
+        #self.skipTest(self, "skip tensorflow related tests temperately")
         self.strategy = tf.distribute.MultiWorkerMirroredStrategy()
         set_seed(42)
         self.model = TFAutoModelForSequenceClassification.from_pretrained(

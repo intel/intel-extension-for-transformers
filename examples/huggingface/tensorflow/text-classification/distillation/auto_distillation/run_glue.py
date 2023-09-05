@@ -20,7 +20,6 @@ import logging
 import os
 import sys
 import numpy as np
-import tensorflow as tf
 import time
 import transformers
 from dataclasses import dataclass, field
@@ -41,7 +40,9 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 from transformers.utils import check_min_version
-
+from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init, get_filepath
+from intel_extension_for_transformers.transformers import metrics, TFOptimization, AutoDistillationConfig, TFDistillationConfig
+import tensorflow as tf        
 # region Helper functions
 
 
@@ -531,7 +532,6 @@ def main():
     # endregion
     if distributed_args.multinode:
         logger.info('*** using multinode mode... ***')
-        from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init, get_filepath
         assert distributed_args.worker is not None, "worker address list should not be empty"
         distributed_args.worker = distributed_args.worker.strip().split(',')
         distributed_init(distributed_args.worker,
@@ -627,7 +627,6 @@ def main():
         # endregion
     if optim_args.autodistill:
         logger.info('*** start distillation... ***')
-        from intel_extension_for_transformers.transformers import metrics, TFOptimization, AutoDistillationConfig, TFDistillationConfig
         optimization = TFOptimization(
             model=model,
             args=training_args,

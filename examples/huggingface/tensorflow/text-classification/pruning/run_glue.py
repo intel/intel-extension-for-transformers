@@ -20,7 +20,6 @@ import logging
 import os
 import sys
 import numpy as np
-import tensorflow as tf
 import time
 import transformers
 from dataclasses import dataclass, field
@@ -41,7 +40,10 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 from transformers.utils import check_min_version
-
+from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
+from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
+from intel_extension_for_transformers.transformers import metrics, PrunerConfig, PruningConfig, TFOptimization
+import tensorflow as tf                   
 
 # region Helper functions
 
@@ -260,11 +262,8 @@ def main():
 
         worker_list = distributed_args.worker.split(",")
 
-        from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
         distributed_init(worker_list, "worker", distributed_args.task_index)
-
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
-        from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
         training_args.output_dir = get_filepath(training_args.output_dir, strategy.cluster_resolver.task_type, strategy.cluster_resolver.task_id)
     else:
         strategy = training_args.strategy
@@ -451,7 +450,7 @@ def main():
         )
         # endregion
 
-        # region Optimizer, loss and compilation
+        # region Optimizer, loss and compilation        
         optimizer = tf.keras.optimizers.Adam(
             learning_rate=training_args.learning_rate,
             beta_1=training_args.adam_beta1,
@@ -513,7 +512,6 @@ def main():
 
     # region Pruning
     if optim_args.prune:
-        from intel_extension_for_transformers.transformers import metrics, PrunerConfig, PruningConfig, TFOptimization
         optimization = TFOptimization(
             model=model,
             args=training_args,

@@ -27,7 +27,6 @@ from typing import Optional
 
 from datasets import ClassLabel, load_dataset, load_metric
 import numpy as np
-import tensorflow as tf
 
 import transformers
 from transformers import (
@@ -41,7 +40,11 @@ from transformers import (
 )
 from transformers.utils.versions import require_version
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
-
+from intel_extension_for_transformers.transformers import metrics, objectives, QuantizationConfig, TFOptimization
+from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
+from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
+from intel_extension_for_transformers.transformers.utils.utility_tf import keras2SavedModel
+import tensorflow as tf
 logger = logging.getLogger(__name__)
 require_version("datasets>=1.8.0", "To fix: pip install -r examples/tensorflow/token-classification/requirements.txt")
 
@@ -285,11 +288,8 @@ def main():
 
         worker_list = distributed_args.worker.split(",")
 
-        from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
         distributed_init(worker_list, "worker", distributed_args.task_index)
-
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
-        from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
         training_args.output_dir = get_filepath(training_args.output_dir, strategy.cluster_resolver.task_type, strategy.cluster_resolver.task_id)
     else:
         strategy = training_args.strategy
@@ -540,7 +540,6 @@ def main():
         # well as inputs.
         collate_fn = DataCollatorForTokenClassification(tokenizer=tokenizer, return_tensors="tf")
         total_train_batch_size = training_args.per_device_train_batch_size * (len(worker_list) if worker_list is not None else 1)
-
         dataset_options = tf.data.Options()
         dataset_options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
 
@@ -582,7 +581,6 @@ def main():
         # endregion
 
     if optim_args.tune:
-        from intel_extension_for_transformers.transformers import metrics, objectives, QuantizationConfig, TFOptimization
         optimization = TFOptimization(
             model=model,
             args=training_args,
@@ -638,7 +636,6 @@ def main():
         if optim_args.int8:
             model = tf.saved_model.load(training_args.output_dir)
         else:
-            from intel_extension_for_transformers.transformers.utils.utility_tf import keras2SavedModel
             model = keras2SavedModel(model)
 
         for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):

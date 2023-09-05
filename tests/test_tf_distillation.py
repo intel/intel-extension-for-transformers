@@ -1,7 +1,6 @@
 import shutil
 import numpy as np
 import unittest
-#import tensorflow as tf
 from datasets import load_dataset, load_metric
 from transformers import (TFAutoModelForSequenceClassification, AutoTokenizer,
                           HfArgumentParser, TFTrainingArguments, set_seed,
@@ -9,12 +8,12 @@ from transformers import (TFAutoModelForSequenceClassification, AutoTokenizer,
 from intel_extension_for_transformers.transformers import (DistillationConfig, metrics)
 from intel_extension_for_transformers.transformers.distillation import Criterion
 from intel_extension_for_transformers.transformers.optimizer_tf import TFOptimization
-
+import tensorflow as tf
 
 class TestDistillation(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.skipTest(self, "skip tensorflow related tests temperately")
+        #self.skipTest(self, "skip tensorflow related tests temperately")
         set_seed(42)
         self.model = TFAutoModelForSequenceClassification.from_pretrained(
             'distilbert-base-uncased')

@@ -2,7 +2,6 @@ from intel_extension_for_transformers.transformers.utils.utility_tf import get_f
 import numpy as np
 import os
 import shutil
-#import tensorflow as tf 
 import unittest
 from datasets import load_dataset, load_metric
 from intel_extension_for_transformers.transformers import (
@@ -18,14 +17,14 @@ from transformers import (
     TFAutoModelForSequenceClassification,
     TFTrainingArguments,
 )
-
+import tensorflow as tf 
 os.environ["WANDB_DISABLED"] = "true"
 
 
 class TestTFPruning(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.skipTest(self, "skip tensorflow related tests temperately")
+        #self.skipTest(self, "skip tensorflow related tests temperately")
         self.model = TFAutoModelForSequenceClassification.from_pretrained(
             'bhadresh-savani/distilbert-base-uncased-sentiment-sst2'
         )

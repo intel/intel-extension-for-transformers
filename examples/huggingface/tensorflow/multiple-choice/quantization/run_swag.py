@@ -29,7 +29,6 @@ from typing import Optional, Union
 import numpy as np
 
 import datasets
-import tensorflow as tf
 from datasets import load_dataset
 
 import time
@@ -315,7 +314,7 @@ def main():
 
         from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
         distributed_init(worker_list, "worker", distributed_args.task_index)
-
+        import tensorflow as tf
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
         from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
         training_args.output_dir = get_filepath(training_args.output_dir, strategy.cluster_resolver.task_type, strategy.cluster_resolver.task_id)
@@ -513,7 +512,7 @@ def main():
             adam_global_clipnorm=training_args.max_grad_norm,
         )
 
-
+        import tensorflow as tf
         dataset_options = tf.data.Options()
         dataset_options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
 

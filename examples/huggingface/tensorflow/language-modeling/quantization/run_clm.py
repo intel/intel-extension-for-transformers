@@ -37,7 +37,6 @@ import time
 
 import numpy as np
 import datasets
-import tensorflow as tf
 from datasets import load_dataset, load_metric
 from sklearn.model_selection import train_test_split
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
@@ -325,7 +324,7 @@ def main():
 
         from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
         distributed_init(worker_list, "worker", distributed_args.task_index)
-
+        import tensorflow as tf
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
         from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
         training_args.output_dir = get_filepath(training_args.output_dir, strategy.cluster_resolver.task_type, strategy.cluster_resolver.task_id)
@@ -564,6 +563,7 @@ def main():
 
         # region TF Dataset preparation
         num_replicas = (len(worker_list) if worker_list is not None else 1)
+        import tensorflow as tf
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.OFF
 

@@ -24,7 +24,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
-import tensorflow as tf
 from datasets import load_dataset
 
 import transformers
@@ -41,8 +40,11 @@ from transformers import (
 )
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 from transformers.utils import check_min_version
-
-
+from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
+from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
+from intel_extension_for_transformers.transformers import metrics, objectives, QuantizationConfig, TFOptimization
+from intel_extension_for_transformers.transformers.utils.utility_tf import keras2SavedModel           
+import tensorflow as tf
 # region Helper functions
 
 
@@ -274,11 +276,9 @@ def main():
 
         worker_list = distributed_args.worker.split(",")
 
-        from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
         distributed_init(worker_list, "worker", distributed_args.task_index)
-
+        
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
-        from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
         training_args.output_dir = get_filepath(training_args.output_dir, strategy.cluster_resolver.task_type, strategy.cluster_resolver.task_id)
     else:
         strategy = training_args.strategy
@@ -447,7 +447,6 @@ def main():
 
         preds: np.ndarray = None
         infer = model.signatures["serving_default"]
-
         for idx, (inputs, labels) in enumerate(tf_eval_dataset):
             for name in inputs:
                 inputs[name] = tf.constant(inputs[name].numpy(), dtype=infer.inputs[0].dtype)
@@ -486,7 +485,6 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
         # endregion
-
         # region Optimizer, loss and compilation
         optimizer = tf.keras.optimizers.Adam(
             learning_rate=training_args.learning_rate,
@@ -547,7 +545,6 @@ def main():
         # endregion
 
     if optim_args.tune:
-        from intel_extension_for_transformers.transformers import metrics, objectives, QuantizationConfig, TFOptimization
         optimization = TFOptimization(
             model=model,
             args=training_args,
@@ -611,7 +608,6 @@ def main():
         if optim_args.int8:
             model = tf.saved_model.load(training_args.output_dir)
         else:
-            from intel_extension_for_transformers.transformers.utils.utility_tf import keras2SavedModel
             model = keras2SavedModel(model)
         for raw_dataset, tf_dataset, task in zip(raw_datasets, tf_datasets, tasks):
             num_examples += sum(
