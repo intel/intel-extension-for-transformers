@@ -1,9 +1,5 @@
 Safety Checker
 ======
-1. [Introduction](#introduction)
-2. [General Domain](#general-domain)
-3. [Chinese Domain](#chinese-domain)
-4. [Medical Domain](#medical-domain)
 
 ## Introduction
 We are committed to ensuring that everyone uses our tool safely and responsibly. However, due to the inherent capabilities of large language models (LLMs), we cannot guarantee that the generated results are always safe and useful for users. To address this concern, we have developed a safety checker that carefully examines and filters sensitive or harmful words that may appear in both the input and output contexts.
