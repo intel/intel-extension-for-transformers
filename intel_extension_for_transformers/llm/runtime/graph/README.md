@@ -91,7 +91,7 @@ quantization args explanations:
 | --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
 
 
-### 3. Run Models
+### 3. Run Models of C++ Inferface
 
 We supply LLM running python script to run supported models conveniently.
 
@@ -124,7 +124,6 @@ LLM running script args explanations:
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 | --glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
 
-
 ### 4. One-click Script 
 
 You can use the following script to run, including convertion, quantization and inference.
@@ -150,6 +149,39 @@ LLM one-click running script args explanations:
 | --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
+
+### 4. Run Models of Python Interface
+Here is how to install itrex_llm_runtime from source.
+```bash
+git submodule update --recursive --init
+python setup.py install
+```
+
+```python
+import itrex_llm_runtime.mpt_cpp as cpp_model
+prompt = "Once upon a time, a little girl"
+m = cpp_model.Model()
+
+m.set_threads(56) # set parameters before init_model
+m.init_model("ne-mpt-q4.bin")
+
+while not m.is_token_end():
+    out = m.generate(prompt, True)
+    print(out, end="", flush=True)
+```
+
+itrex_llm_runtime Model methods explanations:
+| methods        | explanation                                                                                             |
+|----------------|---------------------------------------------------------------------------------------------------------|
+| init_model     | initialize the model with model path                                                                    |
+| reinit         | reinitialize the model buffer                                                                           |
+| set_n_predict  | number of tokens to predict (default: -1, -1 = infinity)                                                |
+| set_batch_size | batch size for prompt processing (default: 512)                                                         |
+| set_ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length |
+| set_threads    | number of threads to use during computation (default: 56)                                               |
+| set_seed       | NG seed (default: -1, use random seed for < 0)                                                          |
+| is_token_end   | check if the token of "end of text" has been output                                                     |
+| generate       | generate tokens based on prompt, with the second arg representing whether to enable stream mode         |
 
 ### 5. Tensor Parallelism cross nodes/sockets
 

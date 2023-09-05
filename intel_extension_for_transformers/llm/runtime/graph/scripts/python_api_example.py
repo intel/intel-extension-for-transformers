@@ -14,3 +14,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+
+prompt = "Once upon a time, a little girl"
+model_name = "/mnt/disk1/data2/zhenweil/models/mpt/mpt-7b/"
+
+model = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=True) # weightonlyconfig
+print(model.generate("Hello, my dog is cute")) #max_length=100 , sentence_mode=True
