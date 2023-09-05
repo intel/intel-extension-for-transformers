@@ -256,3 +256,9 @@ class CachePlugin:
 
     def _get_post_func(self, post_process):
         return getattr(gptcache.processor.post, post_process)
+
+    def pre_llm_inference_actions(self, prompt):
+        return self.get(prompt)
+
+    def post_llm_inference_actions(self, prompt, response):
+        self.put(prompt, response)
