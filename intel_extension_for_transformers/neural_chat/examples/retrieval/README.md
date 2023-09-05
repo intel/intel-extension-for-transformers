@@ -1,7 +1,7 @@
 This example demonstrates how to enhance the generation ability of your chatbot with your local documents within few lines of codes.
 
 # Introduction
-he popularity of applications like ChatGPT has attracted many users seeking to address everyday problems. However, some users have encountered a challenge known as "model hallucination," where LLMs generate incorrect or nonexistent information, raising concerns about content accuracy. This example introduce our solution to build a retrieval-based chatbot. Though few lines of code, our api could help the user build a local refernece ddatabase to enhance the accuracy of the generation results.
+The popularity of applications like ChatGPT has attracted many users seeking to address everyday problems. However, some users have encountered a challenge known as "model hallucination," where LLMs generate incorrect or nonexistent information, raising concerns about content accuracy. This example introduce our solution to build a retrieval-based chatbot. Though few lines of code, our api could help the user build a local refernece ddatabase to enhance the accuracy of the generation results.
 
 Before deploying this example, please follow the instructions in the [README](../../README.md) to install the necessary dependencies.
 
@@ -26,7 +26,7 @@ chatbot = build_chatbot(config)
 response = chatbot.predict("What is IDM 2.0?")
 ```
 
-## Deploying through shell comand:
+## Run the complete code
 ```shell
 python retrieval_chat.py
 ```
