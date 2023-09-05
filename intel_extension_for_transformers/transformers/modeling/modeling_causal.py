@@ -31,30 +31,12 @@
 # limitations under the License.
 
 import copy
-import os
-import transformers
-import warnings
 
 from transformers import AutoConfig, PretrainedConfig
-from transformers.utils import extract_commit_hash, cached_file, CONFIG_NAME
 from transformers.dynamic_module_utils import get_class_from_dynamic_module, resolve_trust_remote_code
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING
 from transformers.models.auto.auto_factory import _get_model_class
 
-from .gptj.modeling_gptj import GPTJForCausalLM
-from .llama.modeling_llama import LlamaForCausalLM
-from .bloom.modeling_bloom import BloomForCausalLM
-from .gpt_neox.modeling_gpt_neox import GPTNeoXForCausalLM
-from .opt.modeling_opt import OPTForCausalLM
-from .gpt_bigcode.modeling_gpt_bigcode import GPTBigCodeForCausalLM
-# to use modeling modification base transformers 4.30.2:
-transformers.models.gpt_bigcode.modeling_gpt_bigcode.GPTJForCausalLM = GPTBigCodeForCausalLM
-# to use modeling modification base transformers 4.28.1:
-transformers.models.gptj.modeling_gptj.GPTJForCausalLM = GPTJForCausalLM
-transformers.models.llama.modeling_llama.LlamaForCausalLM = LlamaForCausalLM
-transformers.models.bloom.modeling_bloom.BloomForCausalLM = BloomForCausalLM
-transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM = GPTNeoXForCausalLM
-transformers.models.opt.modeling_opt.OPTForCausalLM = OPTForCausalLM
 
 class _BaseAutoModelClass:
     # Base class for auto models.
@@ -62,6 +44,7 @@ class _BaseAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
+        import intel_extension_for_transformers.transformers.modeling.modeling_restructure
         config = kwargs.pop("config", None)
         trust_remote_code = kwargs.pop("trust_remote_code", None)
         kwargs["_from_auto"] = True
