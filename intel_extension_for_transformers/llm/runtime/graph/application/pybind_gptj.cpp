@@ -204,7 +204,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
   }
 
   char* res_c_str = new char[res.size() + 1];
-  std::strcpy(res_c_str, res.c_str());
+  std::strncpy(res_c_str, res.c_str(), res.size());
   return res_c_str;
 }
 

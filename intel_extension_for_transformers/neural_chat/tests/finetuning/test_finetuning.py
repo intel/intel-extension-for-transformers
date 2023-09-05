@@ -23,7 +23,7 @@ from intel_extension_for_transformers.neural_chat.config import (
     ModelArguments,
     DataArguments,
     FinetuningArguments,
-    FinetuningConfig,
+    TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
 
@@ -56,8 +56,8 @@ class TestFinetuning(unittest.TestCase):
             max_steps=3,
             overwrite_output_dir=True
         )
-        finetune_args = FinetuningArguments()
-        finetune_cfg = FinetuningConfig(
+        finetune_args = FinetuningArguments(device='cpu')
+        finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
             training_args=training_args,
@@ -74,8 +74,8 @@ class TestFinetuning(unittest.TestCase):
             max_steps=3,
             overwrite_output_dir=True
         )
-        finetune_args = FinetuningArguments()
-        finetune_cfg = FinetuningConfig(
+        finetune_args = FinetuningArguments(device='cpu')
+        finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
             training_args=training_args,

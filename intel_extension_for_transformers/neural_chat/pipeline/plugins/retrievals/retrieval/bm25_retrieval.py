@@ -22,7 +22,7 @@ class SparseBM25Retriever():
 
     def __int__(self, document_store = None, top_k = 1):
         assert document_store is not None, "Please give a document database for retrieving."
-        self.retriever = BM25Retriever(document_store=document_store)
+        self.retriever = BM25Retriever(document_store=document_store, top_k=top_k)
 
     def query_the_database(self, query):
         documents = self.retriever.retrieve(query)

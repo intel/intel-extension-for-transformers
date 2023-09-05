@@ -17,7 +17,7 @@
 import subprocess
 import os
 import argparse
-
+import shlex
 
 def get_length(filename):
     result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
@@ -29,10 +29,10 @@ def get_length(filename):
     return float(result.stdout)
 
 def cut_video(args, outdir):
-    path = args.path
+    path = shlex.quote(args.path)
     save_path = outdir
     video_list = os.listdir(path)
-    delta_X = int(args.min)
+    delta_X = int(shlex.quote(args.min))
 
     for file_name in video_list:
         min = int(get_length(os.path.join(path, file_name))) // 60
@@ -91,7 +91,7 @@ def cut_video(args, outdir):
                 name = str(name) + "_" + str(mark)
                 mark += 1
                 command = 'ffmpeg -i {} -ss {}:{}:{} -to {}:{}:{} -ac 1 -ar {} -f wav {}'.format(os.path.join(path,file_name),
-                                                start_hour, start_min, start_sec, end_hour, end_min, end_sec, args.sr,
+                                                start_hour, start_min, start_sec, end_hour, end_min, end_sec, shlex.quote(args.sr),
                                                 os.path.join(save_path, str(name))+'.wav')
                 print(start_hour, start_min, start_sec)
                 print(end_hour, end_min, end_sec)
@@ -111,8 +111,12 @@ if __name__ == '__main__':
     parser.add_argument("--sr", type=str, default=16000)
     parser.add_argument("--out_path", type=str, default="../raw")
     args = parser.parse_args()
-    
-    outdir = os.path.join(args.path, args.out_path)
+
+    # Validate and normalize input and output paths
+    if not os.path.exists(args.path):
+        raise FileNotFoundError(f"Input path '{args.path}' does not exist.")
+
+    outdir = os.path.join(shlex.quote(args.path), shlex.quote(args.out_path))
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
