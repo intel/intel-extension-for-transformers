@@ -50,7 +50,7 @@ bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval,
 extern "C" {
 void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, float temp, float repeat_penalty,
                 bool perplexity, int n_ctx, const char* model_file, bool beam_search = false, int beam_size = 4,
-                int batch_size = 1, int n_threads = 56) {
+                int batch_size = 1, int n_threads = 56, int min_new_tokens = 0, float length_penalty = 1.0) {
   gpt_params params;
   params.n_threads = n_threads;
   params.seed = seed;
@@ -78,6 +78,8 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
     fprintf(stderr, "%s: error: unable to load model\n", __func__);
     return nullptr;
   }
+  ctx->generation_conf.min_new_tokens = min_new_tokens;
+  ctx->generation_conf.length_penalty = length_penalty;
   return (void*)ctx;
 }
 
@@ -93,7 +95,7 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
   bool do_beam_search = lctx->beam_search;
 
   if (do_beam_search) {
-    res = beam_search(lctx->beam_size, n_predict, lctx, embd_inp_ptr, ind_size, n_threads);
+    res = beam_search(lctx, n_predict, embd_inp_ptr, ind_size, n_threads);
   } else {
     std::vector<model_token> embd_inp(embd_inp_ptr, embd_inp_ptr + ind_size);
     std::vector<model_token> embd;
@@ -152,7 +154,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
 
   bool do_beam_search = lctx->beam_search;
   if (do_beam_search) {
-    embd = beam_search(lctx->beam_size, n_predict, lctx, embd_inp.data(), embd_inp.size(), N_threads);
+    embd = beam_search(lctx, n_predict, embd_inp.data(), embd_inp.size(), N_threads);
     for (auto id : embd_inp) {
       res += model_token_to_str(lctx, id);
     }
@@ -218,11 +220,13 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  auto gptj_in_all_bs = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, argv[1], true, 4, 1);
+  auto gptj_in_all_bs = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, argv[1], true, 4, 1, 56, 30, 1.0);
   std::vector<void*> ctxs = {gptj_in_all_bs};
   for (auto gptj_in_all : ctxs) {
     auto res = eval_gptj_char(
         gptj_in_all,
+        //"she opened the door and see",
+        // "A spaceship lands on the moon",
         "2017: It is done, and submitted. You can play 'Survival of the Tastiest' on Android, and on the web. Playing "
         "on the web works, but you have to simulate multiple touch for table moving and that can be a bit confusing. "
         "There is a lot I'd like to talk about. I will go through every topic, insted of making the typical what went "
@@ -300,7 +304,7 @@ int main(int argc, char* argv[]) {
         "out-of-place-and-still-not-obvious 'Call Waiter' button. But in hindsight, I should have gone with a simple "
         "HUD from the start, especially one that indicated each team's colors and general state of the game without "
         "the need for zooming in and out. Development Development went fast.",
-        10, 40, 1.0, 0.8, 2048);
+        128, 40, 1.0, 0.8, 2048);
     std::cout << res << std::endl;
     exit_gptj(gptj_in_all);
     delete[] res;
