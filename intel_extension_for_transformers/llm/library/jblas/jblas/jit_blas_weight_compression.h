@@ -200,6 +200,47 @@ class StorageSimpleScale {
   utils::aligned_vector<T> mScales;
 };
 
+template <typename T>
+class StorageWeightReduce {
+ public:
+  T* mRPtr = NULL;
+  size_t mRSize = 0;
+
+  void resize(int NPad, int KBlks) {
+    mReduce.resize((size_t)NPad * KBlks);
+    mRPtr = mReduce.data();
+    mRSize = mReduce.size();
+  }
+
+ protected:
+  size_t myDataSerializedSize() {
+    size_t totalsize = 0;
+    totalsize += sizeof(mRSize);
+    totalsize += mRSize * sizeof(mRPtr[0]);
+    return totalsize;
+  }
+  void mySerializeDataToBuffer(int8_t*& wptr) {
+    utils::serialize(wptr, mRSize);
+    for (size_t i = 0; i < mRSize; i++) {
+      utils::serialize(wptr, mRPtr[i]);
+    }
+  }
+  void myDeserializeDataBuffer(int8_t*& rptr, int memalloc) {
+    size_t rsize = utils::deserialize<size_t>(rptr);
+    if (memalloc) {
+      mReduce.resize(rsize);
+      std::memcpy(mReduce.data(), rptr, rsize * sizeof(mReduce[0]));
+      mRPtr = mReduce.data();
+      mRSize = mReduce.size();
+    } else {
+      mRPtr = (T*)rptr;
+      mRSize = rsize;
+    }
+    rptr += rsize * sizeof(mReduce[0]);
+  }
+  utils::aligned_vector<T> mReduce;
+};
+
 class StorageWeightS8ScaleFp32 : public prologue::weight_comp::PackedWeightKBlock,
                                  public StorageWeight8Bit,
                                  public StorageSimpleScale<float> {
@@ -364,7 +405,7 @@ class WeightS8ScaleFp32 {
       auto KPad = wptr->mKPad;
       auto bptr = wptr->mWPtr + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
       for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-        if (_GemmCore_T::PACK_ROW == 1) {
+        if constexpr (_GemmCore_T::PACK_ROW == 1) {
           kernel::wrapper::DecompressKBlockS8F32::forward<ISA_T, float>(
               bptr + i * KPad, *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
               _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
@@ -464,7 +505,7 @@ class WeightS8ScaleFp32 {
   }
 };
 
-class StorageWeightS8ScaleFp32PerChannelN : public StorageWeightS8ScaleFp32 {
+class StorageWeightS8ScaleFp32PerChannelN : public StorageWeightS8ScaleFp32, public StorageWeightReduce<float> {
  public:
   StorageWeightS8ScaleFp32PerChannelN(jblas::gemm::GemmCoreType _type) : StorageWeightS8ScaleFp32(_type) {
     mType = static_cast<int>(WeightCompType::WeightS8ScaleFp32PerChannelN);
@@ -474,13 +515,34 @@ class StorageWeightS8ScaleFp32PerChannelN : public StorageWeightS8ScaleFp32 {
     PackedWeightKBlock::resize(NPad, KPad, K);  // kblock==K
     StorageWeight8Bit::resize(NPad, KPad);
     StorageSimpleScale<float>::resize(NPad, 1);
+    StorageWeightReduce<float>::resize(NPad, 1);
+  }
+
+ protected:
+  virtual size_t getDataSerializedSize() override {
+    size_t totalsize = StorageWeight8Bit::myDataSerializedSize() + StorageSimpleScale<float>::myDataSerializedSize() +
+                       StorageWeightReduce<float>::myDataSerializedSize();
+    return totalsize;
+  }
+  virtual void serializeDataToBuffer(void* buf) override {
+    auto wptr = reinterpret_cast<int8_t*>(buf);
+    StorageWeight8Bit::mySerializeDataToBuffer(wptr);
+    StorageSimpleScale<float>::mySerializeDataToBuffer(wptr);
+    StorageWeightReduce<float>::mySerializeDataToBuffer(wptr);
+  }
+  virtual void deserializeDataBuffer(void* buf, int memalloc) override {
+    auto rptr = reinterpret_cast<int8_t*>(buf);
+    StorageWeight8Bit::myDeserializeDataBuffer(rptr, memalloc);
+    StorageSimpleScale<float>::myDeserializeDataBuffer(rptr, memalloc);
+    StorageWeightReduce<float>::myDeserializeDataBuffer(rptr, memalloc);
   }
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
 class WeightS8ScaleFp32PerChannelN : public WeightS8ScaleFp32<_GemmCore_T, ISA_T> {
  public:
-  using Param = typename WeightS8ScaleFp32<_GemmCore_T, ISA_T>::Param;
+  using Parent = WeightS8ScaleFp32<_GemmCore_T, ISA_T>;
+  using Param = typename Parent::Param;
   using StorageWeight = StorageWeightS8ScaleFp32PerChannelN;
   using SType = float;
   using WeightBaseFloat = jblas::prologue::gemm::WeightBase<float, ISA_T>;
@@ -502,7 +564,33 @@ class WeightS8ScaleFp32PerChannelN : public WeightS8ScaleFp32<_GemmCore_T, ISA_T
     auto stor = dynamic_cast<StorageWeight*>(ptr);
     if (stor) {
       std::memcpy(stor->mSPtr, scales, N * sizeof(scales[0]));
+      reduceWeight(N, K, B, ldb, scales, stor->mRPtr);
       WeightS8ScaleFp32<_GemmCore_T, ISA_T>::reorderWeight(N, K, B, ldb, stor->mWPtr);
+    }
+  }
+
+ protected:
+  void reduceWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales, float* rptr) {
+    utils::parallel::Parallel2DRowMajor _para;
+    utils::CpuBase cb;
+    _para.update(K, N, K, 16, cb.mNumThreads);
+    omp_set_num_threads(cb.mNumThreads);
+#pragma omp parallel
+    {
+      int tidx = omp_get_thread_num();
+      int colidx, rowidx, rowsize, colsize;
+      _para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+      if (rowsize > 0 && colsize > 0) {
+        int rowremain = utils::remainsize(rowidx, K,
+                                          rowsize);  // rowremain: src valid size. rowsize: padded size
+        int colremain = utils::remainsize(colidx, N, colsize);
+        const auto src = B + rowidx * ldb + colidx;
+        const auto dst = rptr + colidx;
+        using RowReduceSum = kernel::wrapper::QuantS8RowReduceSum<float>;
+        auto ret = RowReduceSum::template forward<ISA_T>(  //
+            src, ldb, scales + colidx, rowremain, colremain, dst);
+        assert(ret == JblasSuccess);
+      }
     }
   }
 };
@@ -638,7 +726,7 @@ class WeightS4ScaleFp32 : public WeightS8ScaleFp32<_GemmCore_T, ISA_T> {
       auto KPad = wptr->mKPad;
       auto bptr = wptr->mWPtr + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
       for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-        if (_GemmCore_T::PACK_ROW == 1) {
+        if constexpr (_GemmCore_T::PACK_ROW == 1) {
           kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, float, S4_T>(
               (utils::int4x2*)(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
               _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
@@ -995,6 +1083,12 @@ class PackedWeightParser {
           ptr->deserializeBuffer(rptr, memalloc);
           return ptr;
         }
+        case WeightCompType::WeightS8ScaleFp32PerChannelN:
+        {
+          auto ptr = new StorageWeightS8ScaleFp32PerChannelN(jblas::gemm::GemmCoreType::Undef);
+          ptr->deserializeBuffer(rptr, memalloc);
+          return ptr;
+        }
         default:
           return nullptr;
       }
@@ -1119,30 +1213,21 @@ class GemmInterfaceKBlockPackWeight {
   using WeightType = typename _Launcher_T::PrologueB;
   using GemmCore = typename _Launcher_T::GemmCore;
   using Parallel = _Parallel_T<GemmCore>;
-  Parallel createParallel(int M = 0, int N = 0, int K = 0, int KBlock = 0) {
-    Parallel _paral;
-    auto cb = utils::CpuBase();
-    _paral.update(M, N, K, KBlock, cb.mNumThreads);
-    return _paral;
-  }
+
   ActivationType* getActivationPtr() { return &mLauncher.mProA; }
+
   WeightType* getWeightPtr() { return &mLauncher.mProB; }
-  // forward=packB+compute
+
   template <typename... Eltops>
-  JBLAS_CODE compute(const Arguments& _param, Parallel _paral = Parallel(), Eltops... ops) {
+  JBLAS_CODE compute(const Arguments& _param, Eltops... ops) {
     auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramB.packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
-    auto paraA = mLauncher.mProA.createParallel(_param.M, _param.K, bptr->mBlockSize);
     auto cb = utils::CpuBase();
-    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
-      static bool dbgprint = false;
-      if (dbgprint) {
-        _paral.print();
-        dbgprint = false;
-      }
-    }
+    auto para = Parallel();
+    para.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads);
+    auto paraA = mLauncher.mProA.createParallel(_param.M, _param.K, bptr->mBlockSize);
     omp_set_num_threads(cb.mNumThreads);
 #pragma omp parallel
     {
@@ -1150,10 +1235,10 @@ class GemmInterfaceKBlockPackWeight {
       mLauncher.mProA.launch(_param.paramA, tidx, paraA);
 #pragma omp barrier
       int colidx, rowidx, rowsize, colsize;
-      _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+      para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        Config _config{rowidx,     colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
-                       cb.mL2Cache};
+        Config _config{rowidx,          colidx,          rowsize,         colsize,
+                       para.getMStep(), para.getNStep(), para.getKStep(), cb.mL2Cache};
         mLauncher.launch(_config, _param, ops...);
       }
     }
@@ -1164,8 +1249,8 @@ class GemmInterfaceKBlockPackWeight {
   _Launcher_T mLauncher;
 };
 
-template <class _Launcher_T, template <class _T> class _Parallel_T, bool _LaunchA, bool _LaunchB>
-class GemmInterfaceKblockAB {
+template <class _Launcher_T, template <class _T> class _Parallel_T>
+class GemmInterfaceKblockParallelAB {
  public:
   using Arguments = typename _Launcher_T::Param;
   using Config = typename _Launcher_T::ParallelConfig;
@@ -1177,7 +1262,8 @@ class GemmInterfaceKblockAB {
   ActivationType* getActivationPtr() { return &mLauncher.mProA; }
 
   WeightType* getWeightPtr() { return &mLauncher.mProB; }
-  // forward=packB+compute
+
+  template <bool _LaunchA, bool _LaunchB>
   JBLAS_CODE compute(const Arguments& _param) {
     auto bptr = dynamic_cast<const prologue::weight_comp::PackedWeightKBlock*>(_param.paramB.packedW);
     if (bptr == nullptr) {
@@ -1185,12 +1271,12 @@ class GemmInterfaceKblockAB {
     }
     auto paraA = getActivationPtr()->createParallel(_param.M, _param.K, _param.KBlock);
     auto paraB = getWeightPtr()->createParallel(_param.K, _param.N, _param.KBlock);
-    auto _paral = Parallel();
+    auto para = Parallel();
     auto cb = utils::CpuBase();
-    if (_paral.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
+    if (para.update(_param.M, _param.N, _param.K, bptr->mBlockSize, cb.mNumThreads)) {
       static bool dbgprint = false;
       if (dbgprint) {
-        _paral.print();
+        para.print();
         dbgprint = false;
       }
     }
@@ -1198,20 +1284,20 @@ class GemmInterfaceKblockAB {
 #pragma omp parallel
     {
       int tidx = omp_get_thread_num();
-      if (_LaunchA) {
+      if constexpr (_LaunchA) {
         getActivationPtr()->launch(_param.paramA, tidx, paraA);
       }
-      if (_LaunchB) {
+      if constexpr (_LaunchB) {
         getWeightPtr()->launch(_param.paramB, tidx, paraB);
       }
-      if (_LaunchA || _LaunchB) {
+      if constexpr (_LaunchA || _LaunchB) {
 #pragma omp barrier
       }
       int colidx, rowidx, rowsize, colsize;
-      _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+      para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
       if (rowsize > 0 && colsize > 0) {
-        Config _config{rowidx,     colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
-                       cb.mL2Cache};
+        Config _config{rowidx,          colidx,          rowsize,         colsize,
+                       para.getMStep(), para.getNStep(), para.getKStep(), cb.mL2Cache};
         mLauncher.launch(_config, _param);
       }
     }
@@ -1292,13 +1378,13 @@ using GemmSKernelDynamicS4FullRangeFp32KBlock = jblas::wrapper::gemm_kblock::Gem
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
-using GemmDynamicS4Fp32PerChannelN = jblas::wrapper::gemm_pack_weight::GemmInterfaceAB<
+using GemmDynamicS8Fp32PerChannelN = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_INT8_ss,
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8,  //
         jblas::prologue::gemm::ActivationF32S8KBlockQuantize,
         jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
         jblas::epilogue::gemm::DequantInt32ToFp32>,
-    jblas::utils::parallel::Parallel2DGemmKBlockFixed, true, false>;
+    jblas::utils::parallel::Parallel2DGemm>;
 }  // namespace amx_int8
 }  // namespace weight_comp
 }  // namespace gemm_default

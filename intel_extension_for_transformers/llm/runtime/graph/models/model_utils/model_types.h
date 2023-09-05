@@ -43,7 +43,7 @@
 
 #define MODEL_MAX_NORM 4
 #define MODEL_MAX_ATTN 8
-#define MODEL_MAX_FFN 4
+#define MODEL_MAX_FFN 6
 #define MODEL_MAX_OTHERS 7
 
 #define MODEL_USE_SCRATCH
@@ -65,7 +65,9 @@
 extern "C" {
 #endif
 
-enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, MODEL_OPT };
+enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, 
+                   MODEL_OPT, MODEL_BLOOM};
+
 
 static const size_t MB = 1024 * 1024;
 
@@ -97,6 +99,7 @@ struct model_hparams {
   uint32_t n_embd = 4096;
   uint32_t n_mult = 256;
   uint32_t n_head = 32;
+  uint32_t n_head_kv = 0;  //  MQA, multi-query attention (default =0 means no MQA)
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;
@@ -340,6 +343,7 @@ class model_name_to_arch {
   std::unordered_map<std::string, model_archs> name2arch_ = {
       {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ}, {"mpt", MODEL_MPT}, {"opt", MODEL_OPT},
       {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
+      {"bloom", MODEL_BLOOM},
   };
 };
 

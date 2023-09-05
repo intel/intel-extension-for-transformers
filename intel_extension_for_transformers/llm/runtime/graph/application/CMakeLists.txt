@@ -15,7 +15,7 @@
 # common
 set(TARGET common)
 
-add_library(${TARGET} OBJECT
+add_library_w_warning(${TARGET} OBJECT
     common.h
     common.cpp
     )
@@ -60,5 +60,6 @@ compile_quant(quant_llama     quant_model.cpp llama     llama)
 compile_quant(quant_mpt       quant_model.cpp mpt       mpt)
 compile_quant(quant_starcoder quant_model.cpp starcoder starcoder)
 compile_quant(quant_opt       quant_model.cpp opt       opt)
+compile_quant(quant_bloom     quant_model.cpp bloom     bloom)
 
 add_subdirectory(chat)

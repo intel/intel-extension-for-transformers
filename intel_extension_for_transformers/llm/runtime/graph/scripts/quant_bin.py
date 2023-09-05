@@ -18,7 +18,7 @@ import argparse
 from typing import List, Optional
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox"}
+model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
 
 
 def main(args_in: Optional[List[str]] = None) -> None:
@@ -40,10 +40,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
         "--nthread", type=int, help="number of threads to use (default: 1)", default=1
     )
     parser.add_argument(
-        "--bits",
-        type=int,
-        help="number of bits to use for quantization (default: 4)",
-        default=4,
+        "--weight_dtype",
+        choices=["int4", "int8"],
+        help="weight data type, default: int4",
+        default="int4",
     )
     parser.add_argument(
         "--alg",
@@ -78,11 +78,15 @@ def main(args_in: Optional[List[str]] = None) -> None:
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
 
+    quant_bits = 4
+    if args.weight_dtype == "int8":
+        quant_bits = 8
+
     cmd = [path]
     cmd.extend(["--model_file",     args.model_file])
     cmd.extend(["--out_file",       args.out_file])
     cmd.extend(["--nthread",        str(args.nthread)])
-    cmd.extend(["--bits",           str(args.bits)])
+    cmd.extend(["--bits",           str(quant_bits)])
     cmd.extend(["--alg",            args.alg])
     cmd.extend(["--block_size",     str(args.block_size)])
     cmd.extend(["--scale_dtype",    args.scale_dtype])
