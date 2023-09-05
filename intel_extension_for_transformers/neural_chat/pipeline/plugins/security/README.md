@@ -18,12 +18,12 @@ There is also a parm names `matchType` in `SafetyChecker`. We defaulty set `matc
 
 We enable users to check whether the input query/context contains sensitive words using the following function,
 ```python
-contain =  safety_checker.sensitive_check(query)
+contain = safety_checker.sensitive_check(query)
 ```
 If the input query contains the sensitive, it will return `True`. The user needs to modifiy the input query to avoid the sensitive word.
 
 Additionally, the chatbot can filter sensitive words with customized symbols. Users can access this function via the following method:
 ```python
-processed_text =  safety_checker.sensitive_filter(context=query, replaceChar="*")
+processed_text = safety_checker.sensitive_filter(context=query, replaceChar="*")
 ```
 The sensitive words will be masked by the `replaceChar` to avoid unexpected output.
