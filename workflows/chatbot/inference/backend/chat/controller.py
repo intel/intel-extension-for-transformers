@@ -1094,14 +1094,16 @@ def get_type_obj_from_attr(attr, user_id):
         logger.info(f"current item of {attr} is: {item}")
         if attr == 'time':
             if item == None:
-                example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE ISNULL(captured_time) is TRUE and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)[0]
-            else:
-                example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE DATEDIFF(captured_time, "{item}") = 0 and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)[0]
+                continue
+                # example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE ISNULL(captured_time) is TRUE and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)[0]
+            example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE DATEDIFF(captured_time, "{item}") = 0 and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)[0]
         elif attr == 'address':
+            if item == None or item == 'None' or item == 'null':
+                continue
             example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE address="{item}" and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)[0]
         
-        if item == None or item == 'None' or item == 'null':
-            item = 'default'
+        # if item == None or item == 'None' or item == 'null':
+        #     item = 'default'
         image_name = example_image_path.split('/')[-1]
         image_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + image_name
         select_result[item] = image_path
