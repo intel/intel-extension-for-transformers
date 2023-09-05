@@ -34,6 +34,11 @@ from transformers import (
     StoppingCriteriaList,
     StoppingCriteria,
 )
+from intel_extension_for_transformers.neural_chat.config import (
+    AMPConfig,
+    WeightOnlyQuantizationConfig,
+    BitsAndBytesConfig
+)
 
 # Set necessary env variables
 os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
@@ -389,26 +394,27 @@ def load_model(
     elif device == "cpu":
         set_cpu_running_env()
 
-    if optimization_config:
-        if optimization_config.amp_config:
-            dtype = optimization_config.amp_config.dtype
+    if isinstance(optimization_config, AMPConfig):
+        dtype = optimization_config.dtype
+    else:
+        dtype = "float32"
+
+    bitsandbytes_quant_config = None
+    if isinstance(optimization_config, BitsAndBytesConfig):
+        if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
+            bitsandbytes_quant_config = optimization_config
         else:
-            dtype = "float32"
-        if optimization_config.bitsandbytes_config:
-            if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
-                bitsandbytes_quant_config = optimization_config.bitsandbytes_config
-            else:
-                logger.warning(
-                    "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
-                    + " library is available, ignoring bitsandbytes config now."
-                )
-        else:
-            bitsandbytes_quant_config = None
+            logger.warning(
+                "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
+                + " library is available, ignoring bitsandbytes config now."
+            )
 
     if dtype == "bfloat16":
         torch_dtype = torch.bfloat16
     elif dtype == "float16":
         torch_dtype = torch.float16
+    elif dtype == "float32":
+        torch_dtype = torch.float32
     else:
         logger.warning(f"Unsupported dtype {dtype}, using float32 now.")
         torch_dtype = torch.float32
@@ -431,7 +437,6 @@ def load_model(
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-        from transformers import AutoModelForCausalLM
 
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
@@ -492,7 +497,7 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-    if optimization_config:
+    if isinstance(optimization_config, WeightOnlyQuantizationConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         model = optimize_model(model, optimization_config)
 
@@ -535,8 +540,6 @@ def load_model(
             )
             if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                             or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-                from transformers import AutoModelForCausalLM
-
                 # TDDO
                 # model = jit_trace_mpt_7b(model)
                 config = AutoConfig.from_pretrained(model_name, trust_remote_code=True,

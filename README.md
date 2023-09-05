@@ -92,8 +92,8 @@ output = model(**input).logits.argmax().item()
   <tr>
     <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
     <td colspan="2" align="center"><a href="workflows/chatbot">NeuralChat</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs">Neural Engine</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/README.md">Kernel Libraries</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs">Neural Engine</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/README.md">Kernel Libraries</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">MODEL COMPRESSION</th>
@@ -114,18 +114,18 @@ output = model(**input).logits.argmax().item()
     <th colspan="8" align="center">NEURAL ENGINE</th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/onnx_compile.md">Model Compilation</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/add_customized_pattern.md">Custom Pattern</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/deploy_and_integration.md">Deployment</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/engine_profiling.md">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/onnx_compile.md">Model Compilation</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/add_customized_pattern.md">Custom Pattern</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/deploy_and_integration.md">Deployment</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/engine_profiling.md">Profiling</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">KERNEL LIBRARIES</th>
   </tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/profiling.md">Profiling</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/profiling.md">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
   <tr>
     <th colspan="8" align="center">ALGORITHMS</th>
   </tr>
@@ -139,8 +139,8 @@ output = model(**input).logits.argmax().item()
   <tr>
     <td colspan="2" align="center"><a href="docs/tutorials/pytorch">Tutorials</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">Supported Models</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/validated_model.md">Model Performance</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/validated_data.md">Kernel Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/validated_data.md">Kernel Performance</a></td>
   </tr>
 </tbody>
 </table>
