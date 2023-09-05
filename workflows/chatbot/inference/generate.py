@@ -615,7 +615,7 @@ def predict_stream(**params):
                         return model.generate(**input_tokens, **generation_kwargs)
             except Exception as e:
                 errors_queue.put(e)
-
+        output_token_len=generate_output().sequences[0].shape[-1]
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     elif device == "hpu":
@@ -684,7 +684,7 @@ def predict_stream(**params):
                     )
             except Exception as e:
                 errors_queue.put(e)
-
+        output_token_len=generate_output().sequences[0].shape[-1]
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     else:
@@ -722,7 +722,7 @@ def predict_stream(**params):
     if return_stats:
         stats = {
             "input_token_len": str(input_token_len),
-            "output_word_len": str(output_word_len),
+            "output_token_len": str(output_token_len),
             "duration": str(duration) + " ms",
             "first_word_latency": str(first_word_latency) + " ms",
             "msecond_per_word": str(msecond_per_word) + " ms",
