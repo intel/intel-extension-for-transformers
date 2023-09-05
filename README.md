@@ -7,6 +7,12 @@ Intel® Extension for Transformers
 [Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
+## Latest News
+<b> <span style="color:orange" > NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is available for you to create your own chatbot within minutes. NeuralChat offers a rich set of plugins to make your chatbot more NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is available for you to create your own chatbot within minutes. NeuralChat offers a rich set of plugins to allow your personalized chatbot more smart with knowledge retrieval, more interactive through speech, faster through response caching, and more secure with guardrails.</span></b>
+
+* [Plugins] Knowledge Retrieval, Speech Interaction, Response Caching, Security Guardrail
+* [Architectures] Intel® Xeon® Scalable Processors, Habana Gaudi® Accelerator, and others
+
 ---
 <div align="left">
 
