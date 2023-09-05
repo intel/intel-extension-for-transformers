@@ -15,4 +15,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .prompt import generate_intent_prompt, generate_qa_prompt, generate_prompt
+from .prompt_template import generate_intent_prompt, generate_qa_prompt, generate_prompt
