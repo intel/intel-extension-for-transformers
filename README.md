@@ -7,12 +7,18 @@ IntelÂ® Extension for Transformers
 [Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
-## Latest News
+## í ½íº€Latest Newsí ½íº€
 <b> <span style="color:orange" > NeuralChat, a customizable chatbot framework under IntelÂ® Extension for Transformers, is available for you to create your own chatbot within minutes. NeuralChat offers a rich set of plugins to make your chatbot more NeuralChat, a customizable chatbot framework under IntelÂ® Extension for Transformers, is available for you to create your own chatbot within minutes. NeuralChat offers a rich set of plugins to allow your personalized chatbot more smart with knowledge retrieval, more interactive through speech, faster through response caching, and more secure with guardrails.</span></b>
 
-* [Plugins] Knowledge Retrieval, Speech Interaction, Response Caching, Security Guardrail
+* [Plugins] [Knowledge Retrieval](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval), Speech Interaction, Response Caching, Security Guardrail
 * [Architectures] IntelÂ® XeonÂ® Scalable Processors, Habana GaudiÂ® Accelerator, and others
 
+Build a chatbot with few lines:
+```python
+from intel_extension_for_transformers.neural_chat import build_chatbot
+chatbot = build_chatbot()
+response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+```
 ---
 <div align="left">
 
