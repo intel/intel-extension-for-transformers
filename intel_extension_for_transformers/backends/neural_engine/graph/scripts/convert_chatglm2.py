@@ -185,19 +185,23 @@ def main(args_in: Optional[List[str]] = None) -> None:
     # fout.write(struct.pack("i", hparams["pad_token_id"]))
     # fout.write(struct.pack("i", hparams["sep_token_id"]))
 
-    vocab = load_vocab(Path("/home/zhenweil/models/chatglm2-6b/"))
-    counter = 0
-    for text, score in vocab.all_tokens():
-        fout.write(struct.pack("i", len(text)))
-        fout.write(text)
-        fout.write(struct.pack("f", score))
-        counter += 1
+    # glm2
+    serialized_model_proto = tokenizer.tokenizer.sp_model.serialized_model_proto()
+    fout.write(struct.pack("i", len(serialized_model_proto)))
+    fout.write(serialized_model_proto)
+    # vocab = load_vocab(Path("/home/tensorflow/zhenzhong/chatglm-models/chatglm2-6b/"))
+    # counter = 0
+    # for text, score in vocab.all_tokens():
+    #     fout.write(struct.pack("i", len(text)))
+    #     fout.write(text)
+    #     fout.write(struct.pack("f", score))
+    #     counter += 1
 
-    while counter < hparams["padded_vocab_size"]:
-        fout.write(struct.pack("i", len(text)))
-        fout.write(text)
-        fout.write(struct.pack("f", 0))
-        counter += 1
+    # while counter < hparams["padded_vocab_size"]:
+    #     fout.write(struct.pack("i", len(text)))
+    #     fout.write(text)
+    #     fout.write(struct.pack("f", 0))
+    #     counter += 1
 
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
