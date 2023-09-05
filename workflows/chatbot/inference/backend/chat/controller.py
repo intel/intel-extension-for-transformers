@@ -13,7 +13,7 @@ from typing import List, Union
 import threading
 import re
 
-from fastapi import FastAPI, Request, File, UploadFile, Form, status, HTTPException
+from fastapi import FastAPI, Request, File, UploadFile, Form, status
 from fastapi.responses import StreamingResponse, FileResponse, JSONResponse, Response
 import numpy as np
 import requests
@@ -34,6 +34,7 @@ import random
 import datetime
 import pandas as pd
 from PIL import Image
+from ner import generate_query_from_prompt
 from deepface import DeepFace
 from typing import List, Dict
 from pydantic import BaseModel
@@ -1183,6 +1184,69 @@ def get_face_list_by_user_id(user_id: str) -> List[Dict]:
     return response_person
 
 
+def get_image_list_by_ner_query(ner_result: Dict, user_id: str) -> List[Dict]:
+    sys.path.append("..")
+    from database.mysqldb import MysqlDb
+    mysql_db = MysqlDb()
+    mysql_db.set_db("ai_photos")
+
+    logger.info(f'start query from ner results')
+    query_sql = "SELECT image_id, image_path FROM image_info WHERE "
+    if not ner_result.get('location', None):
+        logger.info(f'no location in query')
+    else:
+        locations = ner_result['location']
+        sql_conditions = []
+        for loc in locations:
+            sql_conditions.append(f' address LIKE "%{loc}%" ')
+        sql = 'OR'.join(sql_conditions)
+        query_sql += '('+sql+')'
+        
+    if 'time' in ner_result.keys():
+        if ner_result['time'] == []:
+            logger.info(f'no time in query')
+        else:
+            time_points = ner_result['time']
+            sql_conditions = []
+            for loc in time_points:
+                sql_conditions.append(f' captured_time LIKE "%{loc}%" ')
+            sql = 'OR'.join(sql_conditions)
+            if query_sql[-1] == ')':
+                query_sql += ' AND '
+            query_sql += '('+sql+')'
+    else:
+        if ner_result['period'] == []:
+            logger.info(f'no time period in query')
+        else:
+            periods = ner_result['period']
+            sql_conditions = []
+            for period in periods:
+                from_time = period['from']
+                to_time = period['to']
+                sql_conditions.append(f' captured_time BETWEEN "{from_time}" AND "{to_time}" ')
+            sql = 'OR'.join(sql_conditions)
+            if query_sql[-1] == ')':
+                query_sql += ' AND '
+            query_sql += '('+sql+')'
+    if query_sql == "SELECT image_id, image_path FROM image_info WHERE ":
+        logger.info(f'no compatible data for current query')
+        return []
+    query_sql += f' AND user_id="{user_id}" AND exist_status="active";'
+
+    try:
+        query_result = mysql_db.fetch_all(sql=query_sql, params=None)
+    except Exception as e:
+        raise Exception(e)
+    result_image_list = []
+    for res in query_result:
+        image_name = res[1].split('/')[-1]
+        image_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + image_name
+        item = {"image_id": res[0], "imgSrc": image_path}
+        result_image_list.append(item)
+    logger.info(f'result: {result_image_list}')
+    return result_image_list
+
+
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor()
 
@@ -1469,6 +1533,31 @@ async def handel_ai_photos_update_caption(request: Request):
             return Response(content=str(e), status_code=status.HTTP_400_BAD_REQUEST)
 
     return "Succeed"
+
+
+@app.post("/v1/aiphotos/chatWithImage")
+async def handle_ai_photos_chat_to_image(request: Request):
+    user_id = request.client.host
+    logger.info(f'user ip is: {user_id}')
+    check_user_ip(user_id)
+
+    params = await request.json()
+    query = params['query']
+    logger.info(f'generating chat to image for user {user_id} with query: {query}')
+
+    try:
+        result = generate_query_from_prompt(query)
+    except Exception as e:
+        logger.error(e)
+        raise Exception(e)
+    logger.info(f'NER result: {result}')
+
+    try:
+        result_image_list = get_image_list_by_ner_query(result, user_id)
+    except Exception as e:
+        logger.error(e)
+        raise Exception(e)
+    return "No query result" if result_image_list==[] else result_image_list
 
 
 if __name__ == "__main__":
