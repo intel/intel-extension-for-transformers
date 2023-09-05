@@ -32,12 +32,13 @@ import sys
 import base64
 import random
 import datetime
+import ipaddress
 import pandas as pd
+from io import BytesIO
 from PIL import Image
 from ner import generate_query_from_prompt
 from deepface import DeepFace
 from typing import List, Dict
-from pydantic import BaseModel
 from utils_image import find_GPS_image, get_address_from_gps, generate_caption, image_to_byte64, byte64_to_image, generate_random_name, transfer_xywh
 
 logger = build_logger("controller", "controller.log")
@@ -857,7 +858,7 @@ def update_image_attr(image, attr):
             new_checked = 1 if new_attr else 0
             mysql_db.update(sql=f"UPDATE image_info SET {attr}={new_checked} WHERE image_id={image_id}", params=None)
         else:
-            mysql_db.update(sql=f"UPDATE image_info SET {attr}='{new_attr}' WHERE image_id={image_id}", params=None)
+            mysql_db.update(sql=f'UPDATE image_info SET {attr}="{new_attr}" WHERE image_id={image_id}', params=None)
     except Exception as e:
         logger.error(e)
     else:
@@ -984,6 +985,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
         # no face in this image, finish process
         logger.info(f"Image {image_id} does not contains faces")
         logger.info(f"Image {image_id} face process finished.")
+        return None
     face_cnt = len(face_objs)
     logger.info(f'Found {face_cnt} faces in image {image_id}')
     face_xywh_list = []
@@ -1141,7 +1143,7 @@ def get_images_by_type(user_id, type, subtype) -> List:
         sql=f"SELECT image_id, image_path FROM image_info WHERE user_id='{user_id}' AND exist_status='active' AND address='{subtype}';"
 
     elif type == 'time':
-        sql = f'SELECT image_id, image_path AS date FROM image_info WHERE DATE(captured_time)="{subtype}" AND exist_status="active";'
+        sql = f'SELECT image_id, image_path AS date FROM image_info WHERE DATE(captured_time)="{subtype}" AND user_id="{user_id}" AND exist_status="active";'
 
     elif type == 'person':
         sql = f"SELECT image_info.image_id, image_info.image_path FROM image_face INNER JOIN image_info ON image_info.image_id=image_face.image_id WHERE image_info.user_id='{user_id}' AND image_info.exist_status='active' AND image_face.face_tag='{subtype}'"
@@ -1249,6 +1251,23 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str) -> List[Dict]:
     return result_image_list
 
 
+def forward_req_to_sd_inference_runner(inputs):
+    resp = requests.post("http://{}:{}".format("198.175.88.27", "80"),
+                         data=json.dumps(inputs), timeout=200)
+    try:
+        img_str = json.loads(resp.text)["img_str"]
+        print("compute node: ", json.loads(resp.text)["ip"])
+    except:
+        print('no inference result. please check server connection')
+        return None
+
+    return img_str
+
+
+def stable_defusion_func(inputs):
+    return forward_req_to_sd_inference_runner(inputs)
+
+
 from concurrent.futures import ThreadPoolExecutor
 executor = ThreadPoolExecutor()
 
@@ -1271,6 +1290,7 @@ async def handle_ai_photos_upload_images(request: Request):
     mysql_db.set_db("ai_photos")
 
     image_id_list = []
+    return_list = []
 
     for image in image_list:
         img_b64 = image['imgSrc'].split(',')[1]
@@ -1305,12 +1325,15 @@ async def handle_ai_photos_upload_images(request: Request):
             logger.info(e)
             return JSONResponse(content=f'Database select failed for image {img_path}', status_code=500)
         img_id = result[0]
-        logger.info(f'Image id is {img_id}')
-        image_id_list.append(result[0])
+        frontend_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + img_name
+        item = {'img_id': img_id, 'img_path': frontend_path}
+        logger.info(f'Image id is {img_id}, image path is {frontend_path}')
+        return_list.append(item)
+        image_id_list.append(img_id)
     
     executor.submit(process_images_in_background, image_id_list, user_id)
     logger.info('Finish image uploading and saving')
-    return image_id_list
+    return return_list
 
 
 @app.post("/v1/aiphotos/getAllImages")
@@ -1319,6 +1342,8 @@ def handle_ai_photos_get_all_images(request: Request):
     user_id = request.client.host
     logger.info(f'user id is: {user_id}')
     check_user_ip(user_id)
+    origin = request.headers.get("Origin")
+    logger.info(f'origin: {origin}')
 
     # setup mysql_db
     sys.path.append("..")
@@ -1344,11 +1369,6 @@ def handle_ai_photos_get_type_list(request: Request):
     user_id = request.client.host
     logger.info(f'user id is: {user_id}')
     check_user_ip(user_id)
-
-    sys.path.append("..")
-    from database.mysqldb import MysqlDb
-    mysql_db = MysqlDb()
-    mysql_db.set_db("ai_photos")
 
     type_result_dict = {"type_list": {}}
 
@@ -1562,6 +1582,50 @@ async def handle_ai_photos_chat_to_image(request: Request):
     return "No query result" if result_image_list==[] else result_image_list
 
 
+@app.post("/v1/aiphotos/image2Image")
+async def image_to_image(request: Request):
+    user_id = request.client.host
+    logger.info(f'user ip is: {user_id}')
+    check_user_ip(user_id)
+
+    params = await request.json()
+    query = params['query']
+    image_list = params['ImageList']
+    logger.info(f'user: {user_id}, image to image query command: {query}')
+
+    sys.path.append("..")
+    from database.mysqldb import MysqlDb
+    mysql_db = MysqlDb()
+    mysql_db.set_db("ai_photos")
+
+    generated_images = []
+    steps=25
+    strength=0.75
+    seed=42
+    guidance_scale=7.5
+    # Loop through the list of images in ImageList
+    for img_info in image_list:
+        img_id = img_info["imgId"]
+        img_path = img_info["imgSrc"]
+        userid, img_name = img_path.split('/')[-2], img_path.split('/')[-1]
+        image_path = '/home/ubuntu/images/'+userid+'/'+img_name
+        logger.info(f'current image id: {img_id}, image path: {image_path}')
+
+        img_b64 = image_to_byte64(image_path)
+        data = {"source_img": img_b64.decode(), "prompt": query, "steps": steps,
+                "guidance_scale": guidance_scale, "seed": seed, "strength": strength,
+                "token": "intel_sd_bf16_112233"}
+        start_time = time.time()
+        img_str = stable_defusion_func(data)
+        # img_byte = base64.b64decode(img_str)
+        # img_io = BytesIO(img_byte)  # convert image to file-like object
+        # img = Image.open(img_io)   # img is now PIL Image object
+        print("elapsed time: ", time.time() - start_time)
+        generated_images.append({"imgId": img_id, "imgSrc": "data:image/jpeg;base64,"+img_str})
+
+    return generated_images
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
@@ -1584,4 +1648,4 @@ if __name__ == "__main__":
         put("test","test")
 
     controller = Controller(args.dispatch_method)
-    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+    uvicorn.run(app, host=args.host, port=args.port, log_level="info", proxy_headers=True, forwarded_allow_ips='*')
