@@ -34,11 +34,11 @@ if [[ "${ir_path}" == "sparse_.*_ir" ]]; then
 else
     cd ${working_dir_fullpath}
     if [[ "${precision}" == "fp32" ]]; then
-        python -c 'from intel_extension_for_transformers.llm.runtime.compile import compile; graph = compile("./model_and_tokenizer/fp32-model.onnx"); graph.save("./ir")'
+        python -c 'from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile; graph = compile("./model_and_tokenizer/fp32-model.onnx"); graph.save("./ir")'
     elif [[ "${precision}" == "bf16" ]]; then
-        python -c 'from intel_extension_for_transformers.llm.runtime.compile import compile; graph = compile("./model_and_tokenizer/bf16-model.onnx"); graph.save("./ir")'
+        python -c 'from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile; graph = compile("./model_and_tokenizer/bf16-model.onnx"); graph.save("./ir")'
     else
-        python -c 'from intel_extension_for_transformers.llm.runtime.compile import compile; graph = compile("./model_and_tokenizer/int8-model.onnx"); graph.save("./ir")'
+        python -c 'from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile; graph = compile("./model_and_tokenizer/int8-model.onnx"); graph.save("./ir")'
     fi
     echo "ir_path for model ${model} is ${ir_path}"
     cd -

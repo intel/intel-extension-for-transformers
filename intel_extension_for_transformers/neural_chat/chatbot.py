@@ -19,7 +19,6 @@
 from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
-from .config import OptimizationConfig
 from .config import BaseFinetuningConfig
 from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from .config import DeviceOptions
@@ -31,7 +30,7 @@ from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
 from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 from .pipeline.plugins.security import SafetyChecker
-from .pipeline.plugins.retrievals import QA_Client
+from .pipeline.plugins.retrieval import Agent_QA
 from .models.llama_model import LlamaModel
 from .models.mpt_model import MptModel
 from .models.chatglm_model import ChatGlmModel
@@ -99,7 +98,7 @@ def finetune_model(config: BaseFinetuningConfig):
     finetuning = Finetuning(config)
     finetuning.finetune()
 
-def optimize_model(model, config: OptimizationConfig):
+def optimize_model(model, config):
     """Optimize the model based on the provided configuration.
 
     Args:

@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'intel_extension_for_transformers/llm/library/kernels/**'
-      - 'intel_extension_for_transformers/llm/runtime/test/kernels/benchmark/**'
+      - 'intel_extension_for_transformers/llm/runtime/deprecated/test/kernels/benchmark/**'
       - '.github/workflows/sparse_lib_CI.yml'
       - '.github/workflows/script/SparseLibCI'
       - '!intel_extension_for_transformers/llm/library/kernels/docs/**'
