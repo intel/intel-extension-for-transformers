@@ -1,4 +1,6 @@
-Retrieval Plugin in NeuralChat
+<div align="center">
+<h1>Retrieval Plugin in NeuralChat</h3>
+<div align="left">
 
 # Introduction
 Large Language Models (LLMs) have demonstrated remarkable performance in various Natural Language Processing (NLP) tasks. Compared to earlier pretrained models, LLMs can produce better results on tasks without fine-tuning, reducing the cost of use. The popularity of applications like ChatGPT has attracted many users seeking to address everyday problems. However, some users have encountered a challenge known as "model hallucination," where LLMs generate incorrect or nonexistent information, raising concerns about content accuracy.
