@@ -41,7 +41,7 @@ The user can costomize the retrieval parameters to meet the personal demmads for
 ```
 >>>persist_dir [str]: The local path to save the processed database. Default to "./output".
 
->>>process [bool]: Select to process the too long document into small chucks. Default to "False".
+>>>process [bool]: Select to process the too long document into small chucks. Default to "True".
 
 >>>input_path [str]: The user local path to a file folder or a specific file path. The code itself will check the path is a folder or a file. If it is a folder, the code will process all the files in the given folder. If it is a file, the code will prcess this single file.
 
