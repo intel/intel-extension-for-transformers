@@ -279,8 +279,8 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
         break;
       }
       params.n_gpu_layers = std::stoi(argv[i]);
-    } else if (arg == "--no-mmap") {
-      params.use_mmap = false;
+    } else if (arg == "--use-mmap") {
+      params.use_mmap = true;
     } else if (arg == "--mtest") {
       params.mem_test = true;
     } else if (arg == "--verbose-prompt") {
@@ -458,7 +458,7 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   if (model_mmap_supported()) {
     fprintf(
         stderr,
-        "  --no-mmap             do not memory-map model (slower load but may reduce pageouts if not using mlock)\n");
+        "  --use-mmap             use memory-map model (faster load but may have NUMA issue)\n");
   }
   fprintf(stderr, "  -ngl N, --n-gpu-layers N\n");
   fprintf(stderr, "                        number of layers to store in VRAM\n");

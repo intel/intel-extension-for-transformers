@@ -227,6 +227,26 @@ class JitAmxbf16 : protected JitAmxtile {
   void cvt_fp32_bf16(const Xbyak::Ymm& _bf16, const Xbyak::Zmm& _fp32) { vcvtneps2bf16(_bf16, _fp32); }
 };
 
-class JitAmxint8 : protected JitAmxtile {};
+class JitAmxint8 : protected JitAmxtile {
+ protected:
+  template <class, class>
+  void _tdpb(const Xbyak::Tmm& x1, const Xbyak::Tmm& x2, const Xbyak::Tmm& x3);
+};
+template <>
+inline void JitAmxint8::_tdpb<int8_t, int8_t>(const Xbyak::Tmm& x1, const Xbyak::Tmm& x2, const Xbyak::Tmm& x3) {
+  tdpbssd(x1, x2, x3);
+}
+template <>
+inline void JitAmxint8::_tdpb<int8_t, uint8_t>(const Xbyak::Tmm& x1, const Xbyak::Tmm& x2, const Xbyak::Tmm& x3) {
+  tdpbsud(x1, x2, x3);
+}
+template <>
+inline void JitAmxint8::_tdpb<uint8_t, int8_t>(const Xbyak::Tmm& x1, const Xbyak::Tmm& x2, const Xbyak::Tmm& x3) {
+  tdpbusd(x1, x2, x3);
+}
+template <>
+inline void JitAmxint8::_tdpb<uint8_t, uint8_t>(const Xbyak::Tmm& x1, const Xbyak::Tmm& x2, const Xbyak::Tmm& x3) {
+  tdpbuud(x1, x2, x3);
+}
 }  // namespace xbyak
 }  // namespace jblas

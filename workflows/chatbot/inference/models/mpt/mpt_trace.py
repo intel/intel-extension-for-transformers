@@ -6,6 +6,7 @@ from optimum.intel.generation.modeling import TSModelForCausalLM
 
 def jit_trace_mpt_7b(model):
     torch._C._jit_set_texpr_fuser_enabled(False)
+    model.config.return_dict = False
     inputs = dict()
     inputs["input_ids"] = torch.ones([4, 2], dtype=torch.int64)
     inputs["attention_mask"] = torch.ones([4, 34], dtype=torch.int64)
@@ -17,7 +18,6 @@ def jit_trace_mpt_7b(model):
         pkv[-1] = tuple(pkv[-1])
     inputs["past_key_values"] = pkv
     with torch.inference_mode():
-        model(*(inputs["input_ids"], inputs["past_key_values"], inputs["attention_mask"]))
         traced_model = torch.jit.trace(model, example_inputs=(inputs["input_ids"], inputs["past_key_values"],
                                        inputs["attention_mask"]), strict=False)
         traced_model = torch.jit.freeze(traced_model.eval())
@@ -41,7 +41,6 @@ class MPTTSModelForCausalLM(TSModelForCausalLM):
             "input_ids": input_ids,
             "attention_mask": attention_mask,
         }
-
         if self.use_cache:
             if past_key_values is None:
                 nb_pkv = 2
@@ -60,7 +59,6 @@ class MPTTSModelForCausalLM(TSModelForCausalLM):
                 past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
 
             inputs["past_key_values"] = past_key_values
-
         outputs = self.model(**inputs)
 
         if isinstance(outputs, tuple):

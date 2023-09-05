@@ -22,10 +22,10 @@ from intel_extension_for_transformers.neural_chat.config import (
     ModelArguments,
     DataArguments,
     FinetuningArguments,
-    FinetuningConfig,
+    TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.chatbot import finetune_model
-from intel_extension_for_transformers.neural_chat.pipeline.finetuning.finetuning import is_optimum_habana_available
+from intel_extension_for_transformers.llm.finetuning.finetuning import is_optimum_habana_available
 
 def main():
     # See all possible arguments in src/transformers/training_args.py
@@ -56,7 +56,7 @@ def main():
             finetune_args,
         ) = parser.parse_args_into_dataclasses()
 
-    finetune_cfg = FinetuningConfig(
+    finetune_cfg = TextGenerationFinetuningConfig(
         model_args=model_args,
         data_args=data_args,
         training_args=training_args,

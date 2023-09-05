@@ -76,7 +76,10 @@ neuralchat textchat --retrieval_type sparse --retrieval_document_path ./assets/d
 ```python
 >>> from intel_extension_for_transformers.neural_chat import PipelineConfig
 >>> from intel_extension_for_transformers.neural_chat import build_chatbot
->>> config = PipelineConfig(retrieval=True, retrieval_document_path="./assets/docs/")
+>>> from intel_extension_for_transformers.neural_chat import plugins
+>>> plugins.retrieval.enable=True
+>>> plugins.retrieval.args["input_path"]="./assets/docs/"
+>>> config = PipelineConfig(plugins=plugins)
 >>> chatbot = build_chatbot(config)
 >>> response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
 ```
@@ -122,6 +125,8 @@ We provide multiple plugins to augment the chatbot on top of LLM inference. Our 
 
 Finetune the pretrained large language model (LLM) with the instruction-following dataset for creating the customized chatbot is very easy for NeuralChat.
 
+### Finetuning for Text Generation Task
+
 **command line experience**
 
 ```shell
@@ -132,10 +137,81 @@ neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeli
 **Python API experience**
 
 ```python
->>> from intel_extension_for_transformers.neural_chat import FinetuningConfig
+>>> from intel_extension_for_transformers.neural_chat import TextGenerationFinetuningConfig
 >>> from intel_extension_for_transformers.neural_chat import finetune_model
->>> finetune_cfg = FinetuningConfig()
+>>> finetune_cfg = TextGenerationFinetuningConfig()
 >>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+### Finetuning for Summarization Task
+
+**command line experience**
+
+```shell
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+```
+
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import SummarizationFinetuningConfig
+>>> from intel_extension_for_transformers.neural_chat import finetune_model
+>>> finetune_cfg = SummarizationFinetuningConfig()
+>>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+### Finetuning for Code Generation Task
+
+**command line experience**
+
+```shell
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+```
+
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import CodeGenerationFinetuningConfig
+>>> from intel_extension_for_transformers.neural_chat import finetune_model
+>>> finetune_cfg = CodeGenerationFinetuningConfig()
+>>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+### Finetuning for Text-to-Speech(TTS) Task
+
+**command line experience**
+
+```shell
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+```
+
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import TTSFinetuningConfig
+>>> from intel_extension_for_transformers.neural_chat import finetune_model
+>>> finetune_cfg = TTSFinetuningConfig()
+>>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+### Inference with Finetuned Model
+
+By default, Parameter-Efficient Fine-Tuning (PEFT) methods are used to accelerate the finetuning process, and to reduce the finetuning cost as well. Below shows the way to load the finetuned model of such and inference with it.
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import build_chatbot
+>>> from intel_extension_for_transformers.neural_chat.config import PipelineConfig, LoadingModelConfig
+>>> chatbot = build_chatbot(
+  PipelineConfig(
+    loading_config=LoadingModelConfig(peft_path="/path/to/peft_model")
+  )
+)
+>>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
 ## Quantization

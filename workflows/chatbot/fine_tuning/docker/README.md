@@ -103,7 +103,7 @@ python instruction_tuning_pipeline/finetune_clm.py \
         --peft lora \
         --use_fast_tokenizer false
 ```
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python instruction_tuning_pipeline/finetune_clm.py \
@@ -124,7 +124,6 @@ python instruction_tuning_pipeline/finetune_clm.py \
         --save_strategy epoch \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --no_cuda \
 ```
@@ -154,7 +153,7 @@ For example, to finetune FLAN-T5 through Distributed Data Parallel training, bas
 > Also please note that to use CPU for training in each node with multi-node settings, argument `--no_cuda` is mandatory, and `--ddp_backend ccl` is required if to use ccl as the distributed backend. In multi-node setting, following command needs to be launched in each node, and all the commands should be the same except for *`<NODE_RANK>`*, which should be integer from 0 to *`<NUM_NODES>`*`-1` assigned to each node.
 
 ``` bash
-mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_seq2seq.py \
+mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 instruction_tuning_pipeline/finetune_seq2seq.py \
     --model_name_or_path "google/flan-t5-xl" \
     --bf16 True \
     --train_file "stanford_alpaca/alpaca_data.json" \
@@ -206,7 +205,7 @@ Now, run the following command in node0 and **4DDP** will be enabled in node0 an
 export CCL_WORKER_COUNT=1
 export MASTER_ADDR=xxx.xxx.xxx.xxx #node0 ip
 ## for DDP ptun for LLama
-mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
+mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 instruction_tuning_pipeline/finetune_clm.py \
     --model_name_or_path decapoda-research/llama-7b-hf \
     --train_file ./alpaca_data.json \
     --bf16 True \
@@ -230,7 +229,7 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --ddp_backend ccl \
 
 ## for DDP LORA for MPT
-mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
+mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 instruction_tuning_pipeline/finetune_clm.py \
     --model_name_or_path mosaicml/mpt-7b \
     --train_file ./alpaca_data.json \
     --bf16 True \
@@ -249,7 +248,6 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --group_by_length True \
     --dataset_concatenation \
     --do_train \
-    --trust_remote_code True \
     --tokenizer_name "EleutherAI/gpt-neox-20b" \
     --no_cuda \
     --ddp_backend ccl \
@@ -289,10 +287,10 @@ python instruction_tuning_pipeline/finetune_clm.py \
         --use_lazy_mode \
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
-python finetune_clm.py \
+python instruction_tuning_pipeline/finetune_clm.py \
         --model_name_or_path "mosaicml/mpt-7b" \
         --bf16 True \
         --train_file "/path/to/alpaca_data.json" \
@@ -310,7 +308,6 @@ python finetune_clm.py \
         --save_strategy epoch \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
         --use_habana \

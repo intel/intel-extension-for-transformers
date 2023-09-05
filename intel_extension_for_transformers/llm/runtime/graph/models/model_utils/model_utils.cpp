@@ -38,11 +38,9 @@
 #include <sstream>
 #include <thread>
 #include <unordered_map>
-#include <iostream>
 
-#include "core/ne_layers.h"
 #include "application/common.h"
-#include "jblas/jblas/jit_blas_weight_compression.h"
+#include "core/layers/jblas_common.hpp"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
@@ -54,10 +52,12 @@
 
 static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, ne_type wtype, int n_ctx) {
   const int n_embd = hparams.n_embd;
+  const int head_dim = n_embd / hparams.n_head;
+  const int n_head_kv = hparams.n_head_kv;
   const int n_layer = hparams.n_layer;
 
   const int64_t n_mem = n_layer * n_ctx;
-  const int64_t n_elements = n_embd * n_mem;
+  const int64_t n_elements = n_head_kv > 0 ? n_head_kv * head_dim * n_mem : n_embd * n_mem;
 
   cache.buf.resize(2u * n_elements * ne_type_size(wtype) + 2u * MB);
 
@@ -214,7 +214,8 @@ struct model_tokenizer {
       left_sym.n += right_sym.n;
       right_sym.n = 0;
 
-      // printf("left = '%*s' size = %zu\n", (int) left_sym.n, left_sym.text, bigram.size);
+      // printf("left = '%*s' size = %zu\n", (int) left_sym.n, left_sym.text,
+      // bigram.size);
 
       // remove the right sym from the chain
       left_sym.next = right_sym.next;
@@ -363,7 +364,8 @@ void model_sample_top_p(struct model_context* ctx, model_token_data_array* candi
   for (size_t i = 0; i < candidates->size; ++i) {
     cum_sum += candidates->data[i].p;
 
-    // Check if the running sum is greater than p or if we have kept at least min_keep tokens
+    // Check if the running sum is greater than p or if we have kept at least
+    // min_keep tokens
     if (cum_sum > p && i >= min_keep) {
       last_idx = i;
       break;
@@ -414,7 +416,8 @@ void model_sample_tail_free(struct model_context* ctx, model_token_data_array* c
   for (size_t i = 0; i < second_derivatives.size(); ++i) {
     cum_sum += second_derivatives[i];
 
-    // Check if the running sum is greater than z or if we have kept at least min_keep tokens
+    // Check if the running sum is greater than z or if we have kept at least
+    // min_keep tokens
     if (cum_sum > z && i >= min_keep) {
       last_idx = i;
       break;
@@ -446,7 +449,8 @@ void model_sample_typical(struct model_context* ctx, model_token_data_array* can
     entropy += -candidates->data[i].p * logf(candidates->data[i].p);
   }
 
-  // Compute the absolute difference between negative log probability and entropy for each candidate
+  // Compute the absolute difference between negative log probability and
+  // entropy for each candidate
   std::vector<float> shifted_scores;
   for (size_t i = 0; i < candidates->size; ++i) {
     float shifted_score = fabsf(-logf(candidates->data[i].p) - entropy);
@@ -467,7 +471,8 @@ void model_sample_typical(struct model_context* ctx, model_token_data_array* can
     size_t idx = indices[i];
     cum_sum += candidates->data[idx].p;
 
-    // Check if the running sum is greater than typical or if we have kept at least min_keep tokens
+    // Check if the running sum is greater than typical or if we have kept at
+    // least min_keep tokens
     if (cum_sum > p && i >= min_keep - 1) {
       last_idx = i + 1;
       break;
@@ -583,9 +588,10 @@ void model_sample_repetition_penalty(struct model_context* ctx, model_token_data
       continue;
     }
 
-    // The academic publication that described this technique actually just only divided, but that would cause tokens
-    // with negative logits to become more likely, which is obviously wrong. This is common fix for this problem, which
-    // is to multiply by the penalty instead of dividing.
+    // The academic publication that described this technique actually just only
+    // divided, but that would cause tokens with negative logits to become more
+    // likely, which is obviously wrong. This is common fix for this problem,
+    // which is to multiply by the penalty instead of dividing.
     if (candidates->data[i].logit <= 0) {
       candidates->data[i].logit *= penalty;
     } else {
@@ -666,7 +672,8 @@ model_token model_sample_token_mirostat(struct model_context* ctx, model_token_d
   model_token X = model_sample_token(ctx, candidates);
   t_start_sample_us = ne_time_us();
 
-  // Compute error as the difference between observed surprise and target surprise value
+  // Compute error as the difference between observed surprise and target
+  // surprise value
   size_t X_idx = std::distance(candidates->data,
                                std::find_if(candidates->data, candidates->data + candidates->size,
                                             [&](const model_token_data& candidate) { return candidate.id == X; }));
@@ -706,7 +713,8 @@ model_token model_sample_token_mirostat_v2(struct model_context* ctx, model_toke
   model_token X = model_sample_token(ctx, candidates);
   t_start_sample_us = ne_time_us();
 
-  // Compute error as the difference between observed surprise and target surprise value
+  // Compute error as the difference between observed surprise and target
+  // surprise value
   size_t X_idx = std::distance(candidates->data,
                                std::find_if(candidates->data, candidates->data + candidates->size,
                                             [&](const model_token_data& candidate) { return candidate.id == X; }));
@@ -767,19 +775,10 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
   return quant_params_internal{parse_bits(params.bits), parse_alg(params.alg), params.block_size,
                                parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_type)};
 }
-template <class T, JBLAS_ISA ISA>
-using WeiS4Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32<T, ISA>;
-
-template <class T, JBLAS_ISA ISA>
-using WeiS8Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32<T, ISA>;
-
-using CompFp32 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512F;
-using CompInt8 = jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK;
-using CompBf16 = jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16;
-using CompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::WeightCompType;
+  using namespace ne_jblas;
   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
   jblas::prologue::PackedWeight* packedw = NULL;
 
@@ -787,10 +786,10 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   if (params.bits == quant_bits::q4) {
     if (params.scale_dtype == quant_sdtype::fp32) {
       if (params.compute_type == quant_comp::int8) {
-        using Kernel = WeiS4Fp32<CompInt8, JblasAVX512F>;
-        using KernelRef = WeiS4Fp32<CompInt8, JblasNoSIMD>;
+        using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+        using KernelRef = WeiS4ClipFp32<GcCompInt8KBlock, JblasNoSIMD>;
         static Kernel kernel;
-        static Kernel kernelref;
+        static KernelRef kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
         if (cd->AVX512F()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
@@ -798,8 +797,8 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
           kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
         }
       } else if (params.compute_type == quant_comp::fp32) {
-        using Kernel = WeiS4Fp32<CompFp32, JblasAVX512_FP16>;
-        using KernelRef = WeiS4Fp32<CompFp32, JblasNoSIMD>;
+        using Kernel = WeiS4ClipFp32<GcCompFp32, JblasAVX512_FP16>;
+        using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static Kernel kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
@@ -809,8 +808,8 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
           kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
         }
       } else if (params.compute_type == quant_comp::bf16) {
-        using Kernel = WeiS4Fp32<CompBf16, JblasAMX_BF16>;
-        using KernelRef = WeiS4Fp32<CompBf16, JblasNoSIMD>;
+        using Kernel = WeiS4ClipFp32<GcCompBf16, JblasAMX_BF16>;
+        using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static Kernel kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
@@ -826,19 +825,32 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     // TODO add 8bit quantization
     if (params.scale_dtype == quant_sdtype::fp32) {
       if (params.compute_type == quant_comp::int8) {
-        using Kernel = WeiS8Fp32<CompInt8, JblasAVX512F>;
-        using KernelRef = WeiS8Fp32<CompInt8, JblasNoSIMD>;
-        static Kernel kernel;
-        static Kernel kernelref;
-        packedw = kernel.createStorage(n, k, params.block_size);
-        if (cd->AVX512F()) {
-          kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+        if (params.block_size == -1) {
+          using Kernel = WeiS8Fp32PerN<GcCompInt8, JblasAVX512F>;
+          using KernelRef = WeiS8Fp32PerN<GcCompInt8, JblasNoSIMD>;
+          static Kernel kernel;
+          static Kernel kernelref;
+          packedw = kernel.createStorage(n, k);
+          if (cd->AVX512F()) {
+            kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+          } else {
+            kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+          }
         } else {
-          kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+          using Kernel = WeiS8Fp32<GcCompInt8KBlock, JblasAVX512F>;
+          using KernelRef = WeiS8Fp32<GcCompInt8KBlock, JblasNoSIMD>;
+          static Kernel kernel;
+          static Kernel kernelref;
+          packedw = kernel.createStorage(n, k, params.block_size);
+          if (cd->AVX512F()) {
+            kernel.packTransposeWeight(n, k, f32ptr, k, packedw);
+          } else {
+            kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
+          }
         }
       } else if (params.compute_type == quant_comp::fp32) {
-        using Kernel = WeiS8Fp32<CompFp32, JblasAVX512_FP16>;
-        using KernelRef = WeiS8Fp32<CompFp32, JblasNoSIMD>;
+        using Kernel = WeiS8Fp32<GcCompFp32, JblasAVX512_FP16>;
+        using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static Kernel kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
@@ -848,8 +860,8 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
           kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
         }
       } else if (params.compute_type == quant_comp::bf16) {
-        using Kernel = WeiS8Fp32<CompBf16, JblasAMX_BF16>;
-        using KernelRef = WeiS8Fp32<CompBf16, JblasNoSIMD>;
+        using Kernel = WeiS8Fp32<GcCompBf16, JblasAMX_BF16>;
+        using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static Kernel kernelref;
         packedw = kernel.createStorage(n, k, params.block_size);
@@ -1222,7 +1234,8 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
     std::string lora_type = name.substr(pos + lora_suffix.length());
     std::string base_name = name;
     base_name.erase(pos);
-    // fprintf(stderr, "%s: %s => %s (lora type %s) ", __func__, name.c_str(),base_name.c_str(), lora_type.c_str());
+    // fprintf(stderr, "%s: %s => %s (lora type %s) ", __func__,
+    // name.c_str(),base_name.c_str(), lora_type.c_str());
 
     if (model_tensors.find(base_name) == model_tensors.end()) {
       fprintf(stderr, "%s: unknown tensor '%s' in lora adapter\n", __func__, name.data());
@@ -1285,7 +1298,8 @@ int model_apply_lora_from_file_internal(struct model_context* ctx, const char* p
       if (ne_is_quantized(base_t->type)) {
         if (!warned) {
           fprintf(stderr,
-                  "%s: warning: using a lora adapter with a quantized model may result in poor quality, "
+                  "%s: warning: using a lora adapter with a quantized model "
+                  "may result in poor quality, "
                   "use a f16 or f32 base model with --lora-base\n",
                   __func__);
           warned = true;
@@ -1410,8 +1424,9 @@ void model_set_rng_seed(struct model_context* ctx, int seed) {
 
 // Returns the *maximum* size of the state
 size_t model_get_state_size(const struct model_context* ctx) {
-  // we don't know size of rng until we actually serialize it. so reserve more than enough memory for its serialized
-  // state. for reference, std::mt19937(1337) serializes to 6701 bytes.
+  // we don't know size of rng until we actually serialize it. so reserve more
+  // than enough memory for its serialized state. for reference,
+  // std::mt19937(1337) serializes to 6701 bytes.
   const size_t s_rng_size = sizeof(size_t);
   const size_t s_rng = MODEL_MAX_RNG_STATE;
   const size_t s_logits_capacity = sizeof(size_t);
@@ -1834,17 +1849,198 @@ std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tenso
   return ctx->model.tensors_by_name;
 }
 
-void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const std::vector<beam>& cur_beams,
-                                          const int& beam_size, model_context* lctx, const int& n_threads,
-                                          const int& n_past) {
-  auto const comp = [](const beam& a, const beam& b) { return a.p > b.p; };
+// beam search
+// A struct for calculating logits-related info.
+struct logits_info {
+  const model_context* const ctx = nullptr;
+  // (batch, seq_len * vocab_size)
+  const float* const logits = nullptr;
+  const int batch_size;
+  const int32_t n_vocab;
+  // last seq_len indice
+  // only handle last seq_len indice
+  const size_t offset;
+  const size_t bs_stride;
+  // max logit (batch,)
+  std::vector<float> max_ls;
+  // 1 / exp sum (batch,)
+  std::vector<float> normalizers;
+  struct sum_exp {
+    float max_l;
+    float operator()(float sum, float l) const { return sum + std::exp(l - max_l); }
+  };
+
+  logits_info(struct model_context* lctx)
+      : ctx(lctx),
+        logits(model_get_logits(lctx)),
+        batch_size(lctx->batch_size),
+        n_vocab(lctx->model.hparams.n_vocab),
+        offset(lctx->logits.size() / lctx->batch_size - n_vocab),
+        bs_stride(lctx->logits.size() / lctx->batch_size) {
+    max_ls.resize(lctx->batch_size);
+    normalizers.resize(lctx->batch_size);
+    MODEL_ASSERT(lctx->logits.size() % lctx->batch_size == 0);
+    // batch
+#pragma omp parallel for
+    for (int i = 0; i < batch_size; ++i) {
+      max_ls[i] = *std::max_element(logits + i * bs_stride + offset, logits + i * bs_stride + offset + n_vocab);
+      normalizers[i] = 1.0f / std::accumulate(logits + i * bs_stride + offset,
+                                              logits + i * bs_stride + offset + n_vocab, 0.0f, sum_exp{max_ls[i]});
+    }
+  }
+
+  model_token_data get_token_data(const int& batch_idx, const int32_t& token_idx) const {
+    return {token_idx, *(logits + batch_idx * bs_stride + offset + token_idx), 0.0f};
+  }
+
+  // Return top k token_data by logit. (batch, top_k)
+  std::vector<std::vector<model_token_data>> top_k(const int& k) {
+    std::vector<std::vector<model_token_data>> min_heap(batch_size);  // min-heap by logit
+    int tk = std::min(k, n_vocab);
+    // min_heap.reserve(batch_size * tk);
+    for (int idx = 0; idx < batch_size; ++idx) {
+      for (int32_t token_idx = 0; token_idx < tk; ++token_idx) {
+        min_heap[idx].push_back(get_token_data(idx, token_idx));
+      }
+    }
+    auto comp = [](const model_token_data& a, const model_token_data& b) { return a.logit > b.logit; };
+    for (int idx = 0; idx < batch_size; ++idx) {
+      std::make_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+      for (int32_t token_idx = tk; token_idx < n_vocab; ++token_idx) {
+        if (min_heap[idx].front().logit < get_token_data(idx, token_idx).logit) {
+          std::pop_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+          min_heap[idx].back().id = token_idx;
+          min_heap[idx].back().logit = get_token_data(idx, token_idx).logit;
+          std::push_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+        }
+      }
+    }
+    return min_heap;
+  }
+
+  float probability_from_logit(const int& batch_idx, const float& logit) {
+    return normalizers[batch_idx] * std::exp(logit - max_ls[batch_idx]);
+  }
+
+  float log_probability_from_logit(const int& batch_idx, const float& logit) {
+    return std::log(probability_from_logit(batch_idx, logit));
+  }
+};
+
+void logits_processor::min_new_tokens_logits_process(const uint32_t& cur_len, const model_vocab::id& eos_token_id) {
+  MODEL_ASSERT(ctx->generation_conf.min_new_tokens >= 0);
+  if (ctx->generation_conf.min_new_tokens == 0 || ctx->generation_conf.min_new_tokens <= cur_len) {
+    return;
+  } else {
+    int batch_size = ctx->batch_size;
+    size_t offset = ctx->logits.size() / ctx->batch_size - ctx->model.hparams.n_vocab;
+    size_t bs_stride = ctx->logits.size() / ctx->batch_size;
+    for (int i = 0; i < batch_size; ++i) {
+      // forbidden to choose eos_token if cur_len < min_new_tokens
+      *(model_get_logits(ctx) + i * bs_stride + offset + eos_token_id) = 0.0f;
+    }
+  }
+}
+
+void logits_processor::process(const uint32_t& cur_len, const model_vocab::id& eos_token_id) {
+  MODEL_ASSERT(model_get_logits(ctx) != nullptr);
+  if (min_new_tokens > 0) {
+    min_new_tokens_logits_process(cur_len, eos_token_id);
+  }
+}
+
+//  TODO dispatch JBLAS kv cache manager
+void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
+                                          const std::unordered_map<int, int>& kv_reorder_indices,
+                                          const std::vector<beam>& next_beams) {
+  // first step
+  if (n_past == n_prompt_tokens) {
+    // cpy batch 1 to all batches
+#pragma omp parallel for
+    for (int i = 0; i < ctx->model.layers.size(); ++i) {
+      for (int j = 1; j < kv_n_ctx_block; ++j) {
+        // [n_embd, N]
+        memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
+                   (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                    j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd),
+               static_cast<char*>(ctx->model.kv_self.k->data) +
+                   i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
+               ne_element_size(ctx->model.kv_self.k) * n_embd * n_prompt_tokens);
+        // [N, n_embd]
+        for (int k = 0; k < n_embd; ++k) {
+          memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
+                     (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                      j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd +
+                      n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
+                 static_cast<char*>(ctx->model.kv_self.v->data) +
+                     (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                      n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
+                 ne_element_size(ctx->model.kv_self.v) * n_prompt_tokens);
+        }
+      }
+    }
+  } else if (n_past > n_prompt_tokens) {
+    // next setp
+    for (auto it : kv_reorder_indices) {
+      if (it.first != it.second) {
+        uint32_t len = next_beams[it.first].token_ids.size() - 1;
+        // last token in beam is for next step inference
+        MODEL_ASSERT(len == n_past - n_prompt_tokens);
+        size_t input_token_offset_k = n_prompt_tokens * ne_element_size(ctx->model.kv_self.k) * n_embd;
+        size_t input_token_offset_v = n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
+        if (len + n_prompt_tokens > n_ctx) {
+          // all token hidden states cache should be updated
+          input_token_offset_k = 0;
+          input_token_offset_v = 0;
+          len = n_ctx;
+        }
+#pragma omp parallel for
+        for (int i = 0; i < ctx->model.layers.size(); ++i) {
+          // [n_embd, N]
+          memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
+                     (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                      it.first * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
+                     input_token_offset_k,
+                 static_cast<char*>(ctx->model.kv_self.k->data) +
+                     i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
+                     it.second * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
+                 ne_element_size(ctx->model.kv_self.k) * n_embd * len);
+          // [N, n_embd]
+          for (int k = 0; k < n_embd; ++k) {
+            memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
+                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                        it.first * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
+                        n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
+                   static_cast<char*>(ctx->model.kv_self.v->data) +
+                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
+                        it.second * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
+                        n_ctx * ne_element_size(ctx->model.kv_self.v) + input_token_offset_v),
+                   ne_element_size(ctx->model.kv_self.v) * len);
+          }
+        }
+      }
+    }
+  } else {
+    return;
+  }
+}
+
+// TODO debug info unify (function ptr?)
+void beam_search_flow::fill_next_beams_by_top_probabilities() {
+  auto const comp = [](const beam& a, const beam& b) { return a.score > b.score; };
   std::vector<model_token> embd_inp;
   std::vector<int> infer_beam_ids(beam_size);
   int record = 0;
   int batch_size = 0;
+  uint32_t cur_len = 0;
   for (int i = 0; i < beam_size; ++i) {
     // is done or not
     if (!cur_beams[i].eos()) {
+      if (cur_len != 0) {
+        MODEL_ASSERT(cur_len == cur_beams[i].token_ids.size());
+      } else {
+        cur_len = cur_beams[i].token_ids.size();
+      }
       // (batch, 1)
       // ordered by infer_bs_id
       embd_inp.push_back(cur_beams[i].token_ids.back());
@@ -1856,40 +2052,36 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
 #if 0
   printf("====================== \n");
   for (auto kk : embd_inp) {
-    printf("%s \n", (lctx->vocab.id_to_token.at(kk).tok).c_str());
+    printf("%s \n", (ctx->vocab.id_to_token.at(kk).tok).c_str());
   }
 #endif
-  lctx->batch_size = batch_size;
+  ctx->batch_size = batch_size;
   int n_tokens = 1;
 
-  // int* pos = embd_inp.data();
-
-  // prints the vector
-  // std::cout << "The vector elements are: ";
-  // for (int i = 0; i < embd_inp.size(); ++i)
-  // 	std::cout << *pos++ << " ";
-
-  model_eval(lctx, embd_inp.data(), n_tokens, n_past, n_threads);
+  model_eval(ctx, embd_inp.data(), n_tokens, n_past, num_threads);
   // DEBUG
 #if 0
-  size_t bs_stride = n_tokens * lctx->model.hparams.n_vocab;
+  size_t bs_stride = n_tokens * ctx->model.hparams.n_vocab;
   for (int k = 0; k < batch_size; ++k) {
     printf("====================== \n");
     for (int kk = 0; kk < 10; ++kk) {
-      printf("%4.5f \n", model_get_logits(lctx) + k * bs_stride + kk);
+      printf("%4.5f \n", model_get_logits(ctx) + k * bs_stride + kk);
     }
   }
 #endif
-  logits_info li(lctx);
-  // top_k num = beam_size
-  std::vector<std::vector<model_token_data>> next_tokens = li.top_k(2);  // sample 2
+
+  lp.process(cur_len, 50256);  //  TODO ctx->model.eos_id;
+  logits_info li(ctx);
+  //  sample 2
+  const int sample_num = 2;
+  std::vector<std::vector<model_token_data>> next_tokens = li.top_k(sample_num);
   // DEBUG
 #if 0
   for (int k = 0; k < next_tokens.size(); ++k) {
     printf("====================== \n");
     for (auto kk : next_tokens[k]) {
-      printf("%s, l: %3.6f, p: %0.6f \n", (lctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.logit,
-             li.probability_from_logit(k, kk.logit));
+      printf("%s, l: %3.6f, p: %0.6f \n", (ctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.logit,
+             li.log_probability_from_logit(k, kk.logit));
     }
   }
 #endif
@@ -1897,13 +2089,14 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
   for (int i = 0; i < beam_size; ++i) {
     beam b = cur_beams[i];
     if (b.eos()) {
-      // b is at end-of-sentence, so just copy it to next_beams if its probability is high enough.
+      // b is at end-of-sentence, so just copy it to next_beams if its
+      // probability is high enough.
       if (next_beams.size() < beam_size) {
         next_beams.push_back(b);
         if (next_beams.size() == beam_size) {
           std::make_heap(next_beams.begin(), next_beams.end(), comp);
         }
-      } else if (next_beams.front().p < b.p) {
+      } else if (next_beams.front().score < b.score) {
         std::pop_heap(next_beams.begin(), next_beams.end(), comp);
         next_beams.back() = b;
         std::push_heap(next_beams.begin(), next_beams.end(), comp);
@@ -1911,22 +2104,22 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
     } else {
       int j = 0;
       if (next_beams.size() < beam_size) {
-        for (; next_beams.size() < beam_size && j < 2; ++j) {
+        for (; next_beams.size() < beam_size && j < sample_num; ++j) {
           beam next_beam = b;
           next_beam.token_ids.push_back(next_tokens[infer_beam_ids[i]][j].id);
-          next_beam.p *= li.probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
+          next_beam.score += li.log_probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
           next_beams.push_back(std::move(next_beam));
         }
         std::make_heap(next_beams.begin(), next_beams.end(), comp);
       }
-      for (; j < 2; ++j) {  // sample 2
-        float const next_p =
-            b.p * li.probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
-        if (next_beams.front().p < next_p) {
+      for (; j < sample_num; ++j) {
+        float const next_score =
+            b.score + li.log_probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
+        if (next_beams.front().score < next_score) {
           std::pop_heap(next_beams.begin(), next_beams.end(), comp);
           next_beams.back() = b;
           next_beams.back().token_ids.push_back(next_tokens[infer_beam_ids[i]][j].id);
-          next_beams.back().p = next_p;
+          next_beams.back().score = next_score;
           std::push_heap(next_beams.begin(), next_beams.end(), comp);
         }
       }
@@ -1948,8 +2141,7 @@ void fill_next_beams_by_top_probabilities(std::vector<beam>& next_beams, const s
 //     - g
 // kv_cache_reorder_indices = {0:0, 1:0}
 // if kv_cache_reorder_indices = {0:0, 1:1}, then do not need reorder (cpy)
-std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& next_beams,
-                                                             const std::vector<beam>& cur_beams, const int& beam_size) {
+std::unordered_map<int, int> beam_search_flow::update_kv_cache_reorder_indices() {
   MODEL_ASSERT(next_beams.size() == beam_size);
   MODEL_ASSERT(cur_beams.size() == beam_size);
   // DEBUG
@@ -2016,199 +2208,70 @@ std::unordered_map<int, int> update_kv_cache_reorder_indices(std::vector<beam>& 
   return kv_reorder_indices;
 }
 
-// As beams grow, the cumulative probabilities decrease.
-// Renormalize them to avoid floating point underflow.
-void renormalize_beam_probabilities(std::vector<beam>& beams) {
-  auto const sum_p = [](float sum, beam& b) { return sum + b.p; };
-  float const inv_sum = 1.0f / std::accumulate(beams.begin(), beams.end(), 0.0f, sum_p);
-  std::for_each(beams.begin(), beams.end(), [inv_sum](beam& b) { b.p *= inv_sum; });
+void beam_search_flow::beam_score_length_penalize() {
+  float length_penalty = ctx->generation_conf.length_penalty;
+  std::for_each(cur_beams.begin(), cur_beams.end(),
+                [&](beam& b) { b.score /= std::pow(b.token_ids.size(), length_penalty); });
 }
 
 // Return beam with highest probability.
-const beam& top_beam(std::vector<beam> const& beams) {
-  auto const by_p = [](beam const& a, beam const& b) { return a.p < b.p; };
-  return *std::max_element(beams.begin(), beams.end(), by_p);
+const beam& beam_search_flow::top_beam() {
+  auto const by_score = [](beam const& a, beam const& b) { return a.score < b.score; };
+  return *std::max_element(cur_beams.begin(), cur_beams.end(), by_score);
 }
 
-// This is deterministic, but can be made probabilistic in
-// fill_next_beams_by_top_probabilities() by randomly selecting from all next_beams.
-// Not thread-safe.
-// TODO make the first step outside?
 // TODO batch_size = 1 only
-// TODO better way to return?
-std::vector<model_token> beam_search(const int& beam_size, const int& n_predict, model_context* lctx,
-                                     const model_token* tokens_inp, const int& n_tokens, const int& n_threads) {
-  if (n_tokens > model_n_ctx(lctx)) {
-    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens, model_n_ctx(lctx) - 4);
+// TODO batch prompt processing
+std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, const int& n_tokens,
+                                                const int& n_threads) {
+  if (n_tokens > model_n_ctx(ctx)) {
+    fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, n_tokens, model_n_ctx(ctx) - 4);
     return std::vector<model_token>();
   }
+  num_threads = n_threads;
   std::vector<model_token> beam_search_response;
-  // printf("%s: beam search in progress ", __func__);
-  // const int64_t t_start_search_us = ne_time_us();
-
-  // const int32_t n_vocab = lctx->model.hparams.n_vocab;
-  size_t n_past = 0;
-  // TODO add params.n_batch?
   std::vector<model_token> embd(tokens_inp, tokens_inp + n_tokens);
 
-  lctx->batch_size = 1;
-  std::vector<beam> beams;
-  beams.reserve(beam_size);
-  beams.push_back({lctx, {}, 1.0});
-  // Init next_beams with unique next token_id each.
-  std::vector<beam> next_beams;
-  next_beams.reserve(beam_size);
+  ctx->batch_size = 1;
+  const uint32_t max_new_tokens = ctx->generation_conf.max_new_tokens;
+
   // Loop while there are any beams that have not yet reached end-of-sentence.
   // If the top beam is at end-of-sentence, then finish since all other
-  // beam probabilities can only decrease.
+  // beam score can only decrease.
   auto const eos = [](const beam& b) { return b.eos(); };
-  int n_ctx = lctx->model.hparams.n_ctx;
-  int n_embd = lctx->model.hparams.n_embd;
-  int kv_n_ctx_block = lctx->kv_n_ctx_block;
-  for (int n = 0; n < n_predict && !eos(top_beam(beams)) && !std::all_of(beams.begin(), beams.end(), eos); ++n) {
+  kv_reorder = ctx->bs_kv_reorder;
+  if (kv_reorder == nullptr) {
+    kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
+  }
+  for (int n = 0; n < max_new_tokens && !eos(top_beam()) && !std::all_of(cur_beams.begin(), cur_beams.end(), eos);
+       ++n) {
     // first step
     if (n_past == 0) {
-      // TODO add -b param for long prompt (memory issue)
-      model_eval(lctx, embd.data(), n_tokens, n_past, n_threads);
+      model_eval(ctx, embd.data(), n_tokens, n_past, num_threads);
       n_past += n_tokens;
-      // cpy batch 1 to all batch
-#pragma omp parallel for
-      for (int i = 0; i < lctx->model.layers.size(); ++i) {
-        for (int j = 1; j < kv_n_ctx_block; ++j) {
-          // [n_embd, N]
-          memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
-                     (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                      j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd),
-                 static_cast<char*>(lctx->model.kv_self.k->data) +
-                     i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
-                 ne_element_size(lctx->model.kv_self.k) * n_embd * n_tokens);
-          // memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-          //            (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-          //             j * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd),
-          //        static_cast<char*>(lctx->model.kv_self.v->data) +
-          //            i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block,
-          //        ne_element_size(lctx->model.kv_self.v) * n_embd * (n_tokens));
-          // [N, n_embd]
-          // TODO MHA_V_ORIGIN_LAYOUT
-          for (int k = 0; k < n_embd; ++k) {
-            memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd +
-                        n_ctx * k * ne_element_size(lctx->model.kv_self.v)),
-                   static_cast<char*>(lctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        n_ctx * k * ne_element_size(lctx->model.kv_self.v)),
-                   ne_element_size(lctx->model.kv_self.v) * n_tokens);
-          }
-
-          // memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
-          //            (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-          //             j * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd)
-          //       ,
-          //        static_cast<char*>(lctx->model.kv_self.k->data) +
-          //            i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-          //            0 * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd ,
-          //        ne_element_size(lctx->model.kv_self.k) * n_embd * n_ctx);
-          // // [N, n_embd]
-          // // for (int k = 0; k < n_embd; ++k) {
-          // memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-          //            (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-          //             j * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd ),
-          //        static_cast<char*>(lctx->model.kv_self.v->data) +
-          //            (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-          //             0* n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd ),
-          //        ne_element_size(lctx->model.kv_self.v) * n_ctx*n_embd);
-        }
-      }
-
-      logits_info li(lctx);
+      kv_reorder->update(n_past, n_tokens);
+      lp.process(0, 50256);  //  TODO ctx->model.eos_id;
+      logits_info li(ctx);
       std::vector<std::vector<model_token_data>> next_tokens = li.top_k(beam_size);
       MODEL_ASSERT(next_tokens.size() == 1);
-      beams.clear();
+      cur_beams.clear();
       for (int i = 0; i < beam_size; ++i) {
         beam b;
-        b.ctx = lctx;
+        b.ctx = ctx;
         b.token_ids.push_back(next_tokens[0][i].id);
-        b.p = li.probability_from_logit(0, next_tokens[0][i].logit);
+        b.score = li.log_probability_from_logit(0, next_tokens[0][i].logit);
         b.infer_bs_id = i;
-        beams.push_back(b);
+        cur_beams.push_back(b);
       }
-      renormalize_beam_probabilities(beams);
+      beam_score_length_penalize();
     } else {
-      fill_next_beams_by_top_probabilities(next_beams, beams, beam_size, lctx, n_threads, n_past);
-      std::unordered_map<int, int> kv_reorder_indices = update_kv_cache_reorder_indices(next_beams, beams, beam_size);
+      fill_next_beams_by_top_probabilities();
+      std::unordered_map<int, int> kv_reorder_indices = update_kv_cache_reorder_indices();
       n_past += 1;
-      for (auto it : kv_reorder_indices) {
-        if (it.first != it.second) {
-          int len = next_beams[it.first].token_ids.size() - 1;
-          size_t input_token_offset_k = n_tokens * ne_element_size(lctx->model.kv_self.k) * n_embd;
-          size_t input_token_offset_v = n_tokens * ne_element_size(lctx->model.kv_self.v);
-
-          // std::cout << "here is first " << it.first << " " <<it.second << std::endl;
-          if (len + n_tokens > n_ctx) {
-            // all token hidden states cache should be updated
-            input_token_offset_k = 0;
-            input_token_offset_v = 0;
-            len = n_ctx;
-          }
-#pragma omp parallel for
-          for (int i = 0; i < lctx->model.layers.size(); ++i) {
-            // [n_embd, N]
-            memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
-                       (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                        it.first * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd) +
-                       input_token_offset_k,
-                   static_cast<char*>(lctx->model.kv_self.k->data) +
-                       i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                       it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset_k,
-                   ne_element_size(lctx->model.kv_self.k) * n_embd * (n_past - n_tokens));
-            // [N, n_embd]
-            memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd) +
-                       input_token_offset_k,
-                   static_cast<char*>(lctx->model.kv_self.v->data) +
-                       i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                       it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd + input_token_offset_k,
-                   ne_element_size(lctx->model.kv_self.v) * n_embd * (n_past - n_tokens));
-
-            // for (int k = 0; k < n_embd; ++k) {
-            //   memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-            //               it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd +
-            //               n_ctx * ne_element_size(lctx->model.kv_self.v) * k + input_token_offset_v),
-            //          static_cast<char*>(lctx->model.kv_self.v->data) +
-            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-            //               it.second * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd +
-            //               n_ctx * ne_element_size(lctx->model.kv_self.v) + input_token_offset_v),
-            //          ne_element_size(lctx->model.kv_self.v) * len);
-            // }
-            // memcpy(static_cast<char*>(lctx->model.kv_self.k->data) +
-            //            (i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-            //             it.first * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd)
-            //       ,
-            //        static_cast<char*>(lctx->model.kv_self.k->data) +
-            //            i * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-            //            it.second * n_ctx * ne_element_size(lctx->model.kv_self.k) * n_embd ,
-            //        ne_element_size(lctx->model.kv_self.k) * n_embd * n_ctx);
-            // // [N, n_embd]
-            // // for (int k = 0; k < n_embd; ++k) {
-            //   memcpy(static_cast<char*>(lctx->model.kv_self.v->data) +
-            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-            //               it.first * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd ),
-            //          static_cast<char*>(lctx->model.kv_self.v->data) +
-            //              (i * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-            //               it.second * n_ctx * ne_element_size(lctx->model.kv_self.v) * n_embd ),
-            //          ne_element_size(lctx->model.kv_self.v) * n_ctx*n_embd);
-
-            // }
-          }
-        }
-      }
-
-      beams.swap(next_beams);
+      kv_reorder->update(n_past, n_tokens, kv_reorder_indices, next_beams);
+      cur_beams.swap(next_beams);
       next_beams.clear();
-      renormalize_beam_probabilities(beams);
+      beam_score_length_penalize();
     }
 
 #if 0  // DEBUG: print current beams for this iteration
@@ -2218,17 +2281,10 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
       beams[j].print();
       fflush(stdout);
     }
-// #else
-//     // Show progress
-//     if (i % 10 == 0) {
-//       printf(".");
-//       fflush(stdout);
-//     }
 #endif
   }
 
-  const beam& top_b = top_beam(beams);
-  // printf(" done \n");
+  const beam& top_b = top_beam();
 
 #if 0  // DEBUG: print final beam result
     printf("\n\nFinal beam:\n");
@@ -2239,8 +2295,12 @@ std::vector<model_token> beam_search(const int& beam_size, const int& n_predict,
   for (const auto& id : top_b.token_ids) {
     beam_search_response.push_back(id);
   }
-
-  // int64_t t_search_us = ne_time_us() - t_start_search_us;
-  // printf("%s: beam_search time   = %8.2f ms\n", __func__, t_search_us / 1000.0f);
   return beam_search_response;
+}
+
+std::vector<model_token> beam_search(model_context* lctx, const int& n_predict, const model_token* tokens_inp,
+                                     const int& n_tokens, const int& n_threads) {
+  lctx->generation_conf.max_new_tokens = n_predict;
+  beam_search_flow bsf(lctx);
+  return bsf.loop(tokens_inp, n_tokens, n_threads);
 }

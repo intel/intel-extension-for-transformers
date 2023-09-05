@@ -29,7 +29,7 @@ from pathlib import Path
 import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
-from transformers import GPTJForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
 def bytes_to_unicode():
@@ -67,18 +67,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.outtype== "f16":
         ftype = 1
 
-    # output in the same directory as the model
-    with open(dir_model + "/vocab.json", "r", encoding="utf-8") as f:
-        encoder = json.load(f)
-    
-    with open(dir_model + "/added_tokens.json", "r", encoding="utf-8") as f:
-        encoder_added = json.load(f)
-    
-    with open(dir_model + "/config.json", "r", encoding="utf-8") as f:
-        hparams = json.load(f)
-
     print("Loading model: ", dir_model)
-    model = GPTJForCausalLM.from_pretrained(dir_model, low_cpu_mem_usage=True)
+    tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(dir_model, low_cpu_mem_usage=True)
+    hparams = model.config.to_dict()
     list_vars = model.state_dict()
     fout = open(fname_out, "wb")
     
@@ -89,6 +81,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         hparams["n_embd"],
         hparams["n_embd"] // hparams["n_head"],
         hparams["n_head"],
+        hparams.get("n_head_kv", 0),  # multi-query attention
         hparams["n_layer"],
         hparams["rotary_dim"],
         ftype
@@ -102,21 +95,20 @@ def main(args_in: Optional[List[str]] = None) -> None:
     byte_encoder = bytes_to_unicode()
     byte_decoder = {v:k for k, v in byte_encoder.items()}
     
-    if(len(encoder) == hparams["vocab_size"]):
-        encoder_added = {}
+    encoder = tokenizer.vocab
+    # Add added_tokens (special tokens) to the encoder
+    encoder_added = tokenizer.get_added_vocab()
 
-    for i, key in enumerate(encoder):
+    for i, key in enumerate(sorted(encoder, key=encoder.get)):
     # for key in encoder:
         text = bytearray([byte_decoder[c] for c in key])
         fout.write(struct.pack("i", len(text)))
         fout.write(text)
-        fout.write(struct.pack("f",0.0 - i))
-    
-    for key in encoder_added:
-        text = bytearray([byte_decoder[c] for c in key])
-        fout.write(struct.pack("i", len(text)))
-        fout.write(text)
-        fout.write(struct.pack("f", -10000))
+        if key not in encoder_added:
+            fout.write(struct.pack("f",0.0 - i))
+        else:
+            fout.write(struct.pack("f", -10000))
+
     
     for name in list_vars.keys():
         data = list_vars[name].squeeze().numpy()
@@ -127,10 +119,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
             print("  Skipping variable: " + name)
             continue
     
-        n_dims = len(data.shape);
+        n_dims = len(data.shape)
     
         # ftype == 0 -> float32, ftype == 1 -> float16
-        ftype_cur = 0;
+        ftype_cur = 0
         if ftype != 0:
             if name[-7:] == ".weight" and n_dims == 2:
                 print("  Converting to float16")
@@ -150,7 +142,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         shape = data.shape
         fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
         fout.write(struct.pack("i" * n_dims, *shape[::-1]))
-        fout.write(str);
+        fout.write(str)
         fout.seek((fout.tell() + 31) & -32)
     
         # data

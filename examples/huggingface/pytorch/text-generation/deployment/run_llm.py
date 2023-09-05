@@ -81,7 +81,7 @@ num_iter = 10
 num_warmup = 4
 
 
-from intel_extension_for_transformers.llm.runtime.compile import compile, autocast
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
 if args.weight_type:
     with autocast('bf16', weight_dtype=args.weight_type):
         print("Using FP8 weight which has storage type {} and make sure your IR is BF16 type".format(
