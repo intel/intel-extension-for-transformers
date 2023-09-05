@@ -1,5 +1,5 @@
 <div align="center">
-<h1>Retriever</h3>
+<h1>Retrieval</h3>
 <div align="left">
 
 # Introduction
@@ -34,6 +34,8 @@ from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot(config)
 response = chatbot.predict("What is IDM 2.0?")
 ```
+
+Checkout the full example [retrieval_chat.py](../../../neural_chat/examples/retrieval/retrieval_chat.py) and have a try!
 
 # Parameters
 The user can costomize the retrieval parameters to meet the personal demmads for better catering the local files. The user can set the specific parameter by plugins.retrieval.args["xxx"]. Below the description of each available parameters,
