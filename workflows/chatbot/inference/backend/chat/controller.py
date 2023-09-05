@@ -1011,7 +1011,14 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
             logger.info(f'length of {df} less than 1, continue')
             continue
         # found ref image
-        ref_image_path = df.iloc[1]['identity']
+        ref_image_path = df.iloc[0]['identity']
+        ref_image_list = df['identity']
+        for ref_image_name in ref_image_list:
+            logger.info(f'current ref_image_name: {ref_image_name}')
+            if ref_image_name!=image_path:
+                ref_image_path = ref_image_name
+                break
+        
         # find faces in img2: one or many
         find_face_sql = f"SELECT face_id, face_tag, xywh FROM image_face WHERE image_path='{ref_image_path}' AND user_id='{user_id}';"
         try:
