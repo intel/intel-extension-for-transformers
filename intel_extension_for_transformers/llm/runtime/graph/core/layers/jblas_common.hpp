@@ -131,14 +131,9 @@ class Silu {
     using SiluKernel = jblas::epilogue::gemm::CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, SWISH>;
     static SiluKernel ker;
     typename SiluKernel::Param param{_param.C, _param.ldc, NULL};
-    //auto ret = ker.forward(cacheptr, cachestep, M_offset, N_offset, M, N, param);
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    for (int i = 0; i < M; i++) {
-      for (int j = 0; j < N; j++) {
-        cptr[i * _param.ldc + j] = ne_silu_f32(cacheptr[i * cachestep + j]);
-      }
-    }
+    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
     return JblasSuccess;
   }
 };
@@ -160,12 +155,7 @@ class DequantSiluFp32 : protected jblas::epilogue::gemm::DequantInt32ToFp32<ISA_
     static SiluKernel ker;
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    //auto ret = ker.forward((float*)cacheptr, cachestep, M_offset, N_offset, M, N, param);
-    for (int i = 0; i < M; i++) {
-      for (int j = 0; j < N; j++) {
-        cptr[i * _param.ldc + j] = ne_silu_f32(cptr[i * _param.ldc + j]);
-      }
-    }
+    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
     return JblasSuccess;
   }
 };
@@ -179,18 +169,13 @@ class ZpDequantSiluFp32 : protected jblas::epilogue::gemm::ZpDequantInt32ToFp32<
 
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
-    float alpha = 1.f;
+    float alpha = -1.f;
     typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
     Parent::forward(cacheptr, cachestep, M_offset, N_offset, M, N, _param);
     static SiluKernel ker;
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
-    //auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
-    for (int i = 0; i < M; i++) {
-      for (int j = 0; j < N; j++) {
-        cptr[i * _param.ldc + j] = ne_silu_f32(cptr[i * _param.ldc + j]);
-      }
-    }
+    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
     return JblasSuccess;
   }
 };
