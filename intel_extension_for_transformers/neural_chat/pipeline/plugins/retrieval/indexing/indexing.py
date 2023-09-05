@@ -29,7 +29,7 @@ from .context_utils import load_unstructured_data, laod_structured_data, get_chu
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
-                 process=False, embedding_model="hkunlp/instructor-large", max_length=512):
+                 process=True, embedding_model="hkunlp/instructor-large", max_length=512):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
         """
