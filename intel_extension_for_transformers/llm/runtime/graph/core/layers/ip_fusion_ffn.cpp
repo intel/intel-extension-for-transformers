@@ -156,8 +156,8 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32pern_f32f32_forward(float* activation, SS
                                                            int seq, int fin, int fmid, int fout, void* workspace) {
   GetCPUDevice();
   auto ret = JblasNotSupport;
-  if (w1ptr->mCoreType == GcCompInt8KBlock::TYPE) {
-    if (_cd->AMX_INT8() && w1ptr->mBlockSize % 128 == 0) {
+  if (w1ptr->mCoreType == GcCompInt8::TYPE) {
+    if (_cd->AMX_INT8()) {
       using GemmKernel = custom::wrapper::kblock::amx_int8::GemmDynamicS8PerN;
       using SiluGemmKernel = custom::wrapper::kblock::amx_int8::SiluGemmDynamicS8PerN;
       using FusedInter = custom::wrapper::transformer::FFNFusedInterfacePerN<SiluGemmKernel, GemmKernel>;
@@ -177,7 +177,7 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32pern_f32f32_forward(float* activation, SS
       delete quanA1;
       delete quanA2;
 
-    } else if (_cd->AVX512_VNNI() && w1ptr->mBlockSize % 4 == 0) {
+    } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmDynamicS8PerN;
       using SiluGemmKernel = custom::wrapper::kblock::avx512_vnni::SiluGemmDynamicS8PerN;
       using FusedInter = custom::wrapper::transformer::FFNFusedInterfacePerN<SiluGemmKernel, GemmKernel>;
