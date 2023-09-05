@@ -36,7 +36,7 @@ from transformers import (
     AutoTokenizer,
 )
 
-from intel_extension_for_transformers.transformers.modeling import INCModelForSeq2SeqLM
+from intel_extension_for_transformers.transformers.modeling.modeling_seq2seq import INCModelForSeq2SeqLM
 
 
 prompt_texts = ["Translate to German: My name is Arthur",
@@ -431,7 +431,7 @@ def main():
         print("Throughput: {} tokens/sec".format(throughput))
 
     if args.accuracy:
-        from intel_extension_for_transformers.evaluation.hf_eval import summarization_evaluate
+        from intel_extension_for_transformers.llm.evaluation.hf_eval import summarization_evaluate
         results = summarization_evaluate(
            model=model,
            tokenizer_name=args.model_name_or_path,
