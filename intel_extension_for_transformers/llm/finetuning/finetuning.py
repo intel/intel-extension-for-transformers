@@ -78,12 +78,12 @@ class Finetuning:
             else:
                 finetuning_config.finetune_args.device = "cpu"
         if finetuning_config.finetune_args.device == "cpu":
-            finetuning_config.training_args.no_cuda = True
             Arguments = type(finetuning_config.training_args)
             training_args = {
                 k: getattr(finetuning_config.training_args, k) \
                     for k in Arguments.__dataclass_fields__.keys() if Arguments.__dataclass_fields__[k].init
             }
+            training_args["no_cuda"] = True
             self.training_args = Arguments(**training_args)
 
         os.environ["WANDB_DISABLED"] = "true"

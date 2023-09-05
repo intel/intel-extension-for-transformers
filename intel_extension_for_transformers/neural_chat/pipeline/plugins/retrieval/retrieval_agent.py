@@ -18,9 +18,9 @@
 import os
 import torch
 import transformers
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval import Retriever
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector import IntentDetector
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing import DocumentIndexing
+from .retrieval_base import Retriever
+from .detector import IntentDetector
+from .indexing import DocumentIndexing
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt import generate_qa_prompt, generate_prompt
 from intel_extension_for_transformers.neural_chat.plugins import register_plugin
 
