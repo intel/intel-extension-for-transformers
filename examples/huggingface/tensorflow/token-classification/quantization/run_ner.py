@@ -40,7 +40,7 @@ from transformers import (
 )
 from transformers.utils.versions import require_version
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
-from intel_extension_for_transformers.transformers import metrics, objectives, QuantizationConfig, TFOptimization
+from intel_extension_for_transformers.transformers import objectives, QuantizationConfig, TFOptimization
 from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
 from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
 from intel_extension_for_transformers.transformers.utils.utility_tf import keras2SavedModel
@@ -590,6 +590,7 @@ def main():
             task_type=strategy.cluster_resolver.task_type if isinstance(strategy, tf.distribute.MultiWorkerMirroredStrategy) else None,
             task_id=strategy.cluster_resolver.task_id if isinstance(strategy, tf.distribute.MultiWorkerMirroredStrategy) else None,
         )
+        from intel_extension_for_transformers.transformers import metrics
         tune_metric = metrics.Metric(
             name="accuracy", greater_is_better=True, is_relative=True, criterion=optim_args.perf_tol,
         )

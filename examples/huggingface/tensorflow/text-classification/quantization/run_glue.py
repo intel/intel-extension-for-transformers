@@ -41,8 +41,8 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint, is_main_process
 from transformers.utils import check_min_version
 from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
+from intel_extension_for_transformers.transformers import objectives, QuantizationConfig, TFOptimization
 from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
-from intel_extension_for_transformers.transformers import metrics, objectives, QuantizationConfig, TFOptimization
 from intel_extension_for_transformers.transformers.utils.utility_tf import keras2SavedModel           
 import tensorflow as tf
 # region Helper functions
@@ -557,7 +557,7 @@ def main():
 
         # use customized eval function
         optimization.eval_func = eval_func_mrpc
-
+        from intel_extension_for_transformers.transformers import metrics
         tune_metric = metrics.Metric(
             name="accuracy", greater_is_better=True, is_relative=True, criterion=optim_args.perf_tol,
         )
