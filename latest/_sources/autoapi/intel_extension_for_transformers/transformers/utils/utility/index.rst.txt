@@ -1,0 +1,29 @@
+:py:mod:`intel_extension_for_transformers.transformers.utils.utility`
+=====================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.utils.utility
+
+.. autoapi-nested-parse::
+
+   Utils for pytorch framework.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.utils.utility.distributed_init
+
+
+
+.. py:function:: distributed_init(backend='gloo', world_size=1, rank=-1, init_method=None, master_addr='127.0.0.1', master_port='12345')
+
+   Init the distibute environment.
+
+

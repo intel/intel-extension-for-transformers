@@ -81,7 +81,7 @@ Quantization aware training emulates inference-time quantization in the forward 
 
 This feature can be used to solve accuracy loss pain points brought by applying low precision quantization and other lossy optimization methods. 
 
-This tuning algorithm is provided by [Intel(R) Neural Compressor](https://github.com/intel/neural-compressor/blob/master/docs/source/quantization.md).
+This tuning algorithm is provided by [Intel(R) Neural Compressor](https://github.com/intel/neural-compressor/blob/master/docs/source/quantization.html).
 
 ## Supported Feature Matrix
 
@@ -134,8 +134,8 @@ Quantization methods include the following three types:
 ## Get Started
 ### Script:
 ```python
-from intel_extension_for_transformers.optimization import metric, objectives, QuantizationConfig
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import metric, objectives, QuantizationConfig
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -159,7 +159,7 @@ The Metric defines which metric will be used to measure the performance of tuned
     metric = metrics.Metric(name="eval_f1", greater_is_better=True, is_relative=True, criterion=0.01, weight_ratio=None)
     ```
 
-    Please refer to [metrics document](metrics.md) for the details.
+    Please refer to [metrics document](metrics.html) for the details.
 
 ### Create an Instance of Objective(Optional)
 In terms of evaluating the status of a specific model during tuning, we should have general objectives to measure the status of different models.
@@ -169,7 +169,7 @@ In terms of evaluating the status of a specific model during tuning, we should h
     objective = objectives.Objective(name="performance", greater_is_better=True, weight_ratio=None)
     ```
 
-    Please refer to [objective document](objectives.md) for the details.
+    Please refer to [objective document](objectives.html) for the details.
 
 ### Create an Instance of QuantizationConfig
 The QuantizationConfig contains all the information related to the model quantization behavior. If you have created Metric and Objective instance(default Objective is "performance"), then you can create an instance of QuantizationConfig.

@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements`
+=====================================================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements
+
+.. autoapi-nested-parse::
+
+   The ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.reshape_before_and_after_attention_out_layer_norm_gather_elements.ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements
+
+
+
+
+.. py:class:: ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements
+
+
+
+
+   The ReshapeBeforeAndAfterAttentionOutLayerNormGatherElements pattern.
+
+   Fuse the original sub-graph into the custom acceleration graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pattern Recognize &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="Customized Operators Register" href="operator_register.html" />
+    <link rel="prev" title="Graph Fusion" href="graph_fusion.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="deploy_and_integration.html">Deploy and Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_quantize.html">Quantize a ONNX model to engine low precision/int8 IR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_profiling.html">Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_tuning.html">Engine Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="graph_fusion.html">Graph Fusion</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Pattern Recognize</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pattern-representation">Pattern Representation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#parse-pattern-representation-list">Parse Pattern Representation List</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#search-each-straight-chain-pattern">Search Each Straight Chain Pattern</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#splice-sub-chains-with-the-main-chain-and-remove-duplicate-results">Splice Sub-chains with the Main Chain and Remove Duplicate Results</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="operator_register.html">Customized Operators Register</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_customized_pattern.html">Add Customized Pattern</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../neural_engine.html">Neural Engine</a></li>
+      <li class="breadcrumb-item active">Pattern Recognize</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs/pattern_recognize.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pattern-recognize">
+<h1>Pattern Recognize<a class="headerlink" href="#pattern-recognize" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#pattern-representation">Pattern Representation</a></p></li>
+<li><p><a class="reference external" href="#parse-pattern-representation-list">Parse Pattern Representation List</a></p></li>
+<li><p><a class="reference external" href="#search-each-straight-chain-pattern">Search Each Straight Chain Pattern</a></p></li>
+<li><p><a class="reference external" href="#splice-sub-chains-with-the-main-chain-and-remove-duplicate-results">Splice Sub-chains with the Main Chain and Remove Duplicate Results</a></p></li>
+</ul>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>Pattern recognition is one of the most important parts of pattern fusion. The corresponding API is <code class="docutils literal notranslate"><span class="pre">search_pattern</span></code> in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><code class="docutils literal notranslate"><span class="pre">compile.graph_utils</span></code></a>. The main purpose of it is to find all the group nodes’ names from the model that satisfy the given pattern representation. The process of it can be divided into three parts: <strong>1. parse the pattern representation list; 2. search each straight chain pattern; 3. splice sub-chains with the main chain and remove duplicate results</strong>.</p>
+</section>
+<section id="pattern-representation">
+<h2>Pattern Representation<a class="headerlink" href="#pattern-representation" title="Link to this heading"></a></h2>
+<p>Our pattern recognition function supports the pattern which is not sequence and has sub-graphs, like the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern below (from TensorFlow bert_large model).</p>
+<p><img alt="../../../../../../_images/layernorm_bert_large_tf.png" src="../../../../../../_images/layernorm_bert_large_tf.png" /></p>
+<p>Pattern recognition function utilizes general rules to represent and search the pattern. We use a combination of index and op_type to recruit nodes and several lists to indicate different straight chains. For example, the pattern representation of the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern above can be like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ln_pattern</span> <span class="o">=</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;Mean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;SquaredDifference&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Mean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;AddV2&#39;</span><span class="p">]),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Rsqrt&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;Sub&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;AddV2&#39;</span><span class="p">])],</span> <span class="p">[(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;AddV2&#39;</span><span class="p">])]]</span>
+</pre></div>
+</div>
+<p>First, due to computation order, we set indexs for each node in the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern. These indexes also supply the locations for splicing sub-chains with the main chain. You can set the index number by yourself as long as the calculation order is correct (We recommend the number starts from 0 and grows recursively for conciseness and intuition).</p>
+<p>Second, define the main chain by choosing the longest one containing head and tail nodes of the pattern, and the rest are the sub-chains whose tail node must be in the main chain for splicing successfully. In the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern, we choose the chain with index <code class="docutils literal notranslate"><span class="pre">[0,1,2,3,4,5,7,8,9]</span></code>(see the image below) as the main chain. And the rest chain with index <code class="docutils literal notranslate"><span class="pre">[5,6,9]</span></code> is a sub-chain attached to the main chain. Of course, you can choose the chain with index <code class="docutils literal notranslate"><span class="pre">[0,1,2,3,4,5,6,9]</span></code> as the main chain, but generally, we recommend and prefer longer ones.</p>
+<p>Finally, write the index and op_type of each node into a list and form the pattern representation.</p>
+<blockquote>
+<div><p><strong>Note</strong></p>
+<ol class="simple">
+<li><p>The main chain representation should always be the first one in the list, while the rest sub-chains have no order requirements.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[op_type1,</span> <span class="pre">op_type2]</span></code> means the the op_type could be op_type1 or op_type2. It is optional. This feature would be useful for adding new pattern representation which just has some different op_types.</p></li>
+<li><p>The sub-chains must have a tail node which is in the main chain, while the head node can be empty (’empty’ means the head node is not in the main chain, mostly from the outside of the pattern, using <code class="docutils literal notranslate"><span class="pre">()</span></code> to indicate an empty head node). For example, if node <code class="docutils literal notranslate"><span class="pre">(6,</span> <span class="pre">'Mul')</span></code> has no head node, then its representation list should be: <code class="docutils literal notranslate"><span class="pre">[(),</span> <span class="pre">(6,</span> <span class="pre">'Mul'),</span> <span class="pre">(9,</span> <span class="pre">['Add',</span> <span class="pre">'AddV2'])]</span></code></p></li>
+</ol>
+</div></blockquote>
+<p><img alt="../../../../../../_images/layernorm_with_index.png" src="../../../../../../_images/layernorm_with_index.png" /></p>
+</section>
+<section id="parse-pattern-representation-list">
+<h2>Parse Pattern Representation List<a class="headerlink" href="#parse-pattern-representation-list" title="Link to this heading"></a></h2>
+<p>The pattern recognition function would first parse the pattern representation list and separate the main chain, sub-chains patterns and related op_type and index for searching and splicing later. It will also check the sub-chains whether have a head or not.</p>
+</section>
+<section id="search-each-straight-chain-pattern">
+<h2>Search Each Straight Chain Pattern<a class="headerlink" href="#search-each-straight-chain-pattern" title="Link to this heading"></a></h2>
+<p>The <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><code class="docutils literal notranslate"><span class="pre">compile.graph_utils</span></code></a> has <code class="docutils literal notranslate"><span class="pre">search_straight_pattern</span></code> API for searching sequence patterns. It receives <code class="docutils literal notranslate"><span class="pre">input_pattern</span></code> and <code class="docutils literal notranslate"><span class="pre">graph</span></code> parameters and exploits <code class="docutils literal notranslate"><span class="pre">DFS</span></code> algorithm to find eligible results. The <code class="docutils literal notranslate"><span class="pre">input_pattern</span></code> is a list containing several op_type from the step above. For example, it could be one like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="s1">&#39;MatMul&#39;</span><span class="p">,</span> <span class="s1">&#39;BiasAdd&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;AddV2&#39;</span><span class="p">]]</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">graph</span></code> is the intermediate graph of <code class="docutils literal notranslate"><span class="pre">compile</span></code>. This API returns matched node_names results list. For example, if the intermediate graph has 24 layers and each layer has a <code class="docutils literal notranslate"><span class="pre">['MatMul',</span> <span class="pre">'BiasAdd',</span> <span class="pre">['Add',</span> <span class="pre">'AddV2']]</span></code> pattern, then the length is 24. Each match pattern result is still a list containing the node names, and the last element is the op_type list corresponding to the former node names.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># the input_pattern is [A, B, C]</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="p">[[</span><span class="n">A_node_name_1</span><span class="p">,</span> <span class="n">B_node_name_1</span><span class="p">,</span> <span class="n">C_node_name_1</span><span class="p">,</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">]],</span> <span class="p">[</span><span class="n">A_node_name_2</span><span class="p">,</span> <span class="n">B_node_name_2</span><span class="p">,</span> <span class="n">C_node_name_2</span><span class="p">,</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">]],</span> <span class="o">...</span><span class="p">,</span> <span class="p">[</span><span class="n">A_node_name_n</span><span class="p">,</span> <span class="n">B_node_name_n</span><span class="p">,</span> <span class="n">C_node_name_n</span><span class="p">,</span> <span class="p">[</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">,</span> <span class="n">C</span><span class="p">]],</span> <span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Assume you want to find the match results of pattern <code class="docutils literal notranslate"><span class="pre">['MatMul',</span> <span class="pre">'BiasAdd',</span> <span class="pre">['Add',</span> <span class="pre">'AddV2']]</span></code> in bert_large TensorFlow model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile</span> <span class="kn">import</span> <span class="n">COMPILES</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils</span> <span class="kn">import</span> <span class="n">search_straight_pattern</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">COMPILES</span><span class="p">[</span><span class="s1">&#39;loader&#39;</span><span class="p">]()(</span><span class="n">bert_large_model_path</span><span class="p">)</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">COMPILES</span><span class="p">[</span><span class="s1">&#39;extractor&#39;</span><span class="p">]()(</span><span class="n">graph</span><span class="p">)</span>
+<span class="n">input_pattern</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MatMul&#39;</span><span class="p">,</span> <span class="s1">&#39;BiasAdd&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;AddV2&#39;</span><span class="p">]]</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="n">search_straight_pattern</span><span class="p">(</span><span class="n">input_pattern</span><span class="p">,</span> <span class="n">graph</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If nothing wrong, you can get the output like this:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[[</span><span class="s1">&#39;bert/encoder/layer_0/attention/output/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_0/intermediate/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/intermediate/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/intermediate/dense/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_0/output/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_1/attention/output/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_1/attention/output/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_1/attention/output/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_1/intermediate/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_1/intermediate/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_1/intermediate/dense/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_1/output/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_1/output/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_1/output/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_2/attention/output/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_2/attention/output/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_2/attention/output/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_2/intermediate/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_2/intermediate/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_2/intermediate/dense/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_2/output/dense/MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_2/output/dense/BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_2/output/add&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;MatMul&#39;</span>,<span class="w"> </span><span class="s1">&#39;BiasAdd&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span>...<span class="o">]</span>
+</pre></div>
+</div>
+<p>The pattern recognition function would search each straight chain pattern after parsing it in the graph. It stores the main chain pattern matched results first and implements other sub-chains pattern search and splicing one by one afterwards.</p>
+</section>
+<section id="splice-sub-chains-with-the-main-chain-and-remove-duplicate-results">
+<h2>Splice Sub-chains with the Main Chain and Remove Duplicate Results<a class="headerlink" href="#splice-sub-chains-with-the-main-chain-and-remove-duplicate-results" title="Link to this heading"></a></h2>
+<p>Each sub-chain pattern matched results would find their attached main chain by checking the node names with the indexes. They are merged into the last result recursively by inserting node names at certain positions with the help of the indexes. However, due to the volatile and complicated pattern form, there must have other validation ways to avoid duplicated and incorrect outcomes. For example, a pattern may be symmetric, the main chain and sub-chain are totally same. Or a pattern has several exactly the same sub-chains attached at the same location. So when doing splicing, the pattern recognition function would screen the sub-chain pattern matched results by checking if any node name occurs already or not. And before returning the final results, it also removes the duplicate element in the list. For more details, you can see the implementation of <code class="docutils literal notranslate"><span class="pre">search_pattern</span></code> API.</p>
+<p>In the end, here is the example shows how to get the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern matched results in bert_large TensorFlow model.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile</span> <span class="kn">import</span> <span class="n">COMPILES</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils</span> <span class="kn">import</span> <span class="n">search_pattern</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">COMPILES</span><span class="p">[</span><span class="s1">&#39;loader&#39;</span><span class="p">]()(</span><span class="n">bert_large_model_path</span><span class="p">)</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">COMPILES</span><span class="p">[</span><span class="s1">&#39;extractor&#39;</span><span class="p">]()(</span><span class="n">graph</span><span class="p">)</span>
+<span class="n">ln_pattern</span> <span class="o">=</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;Mean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;SquaredDifference&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Mean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;AddV2&#39;</span><span class="p">]),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Rsqrt&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;Sub&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;AddV2&#39;</span><span class="p">])],</span> <span class="p">[(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Add&#39;</span><span class="p">,</span> <span class="s1">&#39;AddV2&#39;</span><span class="p">])]]</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="n">search_pattern</span><span class="p">(</span><span class="n">ln_pattern</span><span class="p">,</span> <span class="n">graph</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ret</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If nothing wrong, the output outcome should be like this:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="m">49</span>
+<span class="o">[[</span><span class="s1">&#39;bert/embeddings/LayerNorm/moments/mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/moments/SquaredDifference&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/moments/variance&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/batchnorm/add&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/batchnorm/Rsqrt&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/batchnorm/mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/batchnorm/mul_1&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/batchnorm/mul_2&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/batchnorm/sub&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/embeddings/LayerNorm/batchnorm/add_1&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;Mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;SquaredDifference&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span>,<span class="w"> </span><span class="s1">&#39;Rsqrt&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Sub&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/moments/mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/moments/SquaredDifference&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/moments/variance&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/batchnorm/add&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/batchnorm/Rsqrt&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/batchnorm/mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/batchnorm/mul_1&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/batchnorm/mul_2&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/batchnorm/sub&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/attention/output/LayerNorm/batchnorm/add_1&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;Mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;SquaredDifference&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span>,<span class="w"> </span><span class="s1">&#39;Rsqrt&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Sub&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/moments/mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/moments/SquaredDifference&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/moments/variance&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/batchnorm/add&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/batchnorm/Rsqrt&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/batchnorm/mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/batchnorm/mul_1&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/batchnorm/mul_2&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/batchnorm/sub&#39;</span>,<span class="w"> </span><span class="s1">&#39;bert/encoder/layer_0/output/LayerNorm/batchnorm/add_1&#39;</span>,<span class="w"> </span><span class="o">[</span><span class="s1">&#39;Mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;SquaredDifference&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mean&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span>,<span class="w"> </span><span class="s1">&#39;Rsqrt&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Mul&#39;</span>,<span class="w"> </span><span class="s1">&#39;Sub&#39;</span>,<span class="w"> </span><span class="s1">&#39;AddV2&#39;</span><span class="o">]]</span>,<span class="w"> </span>...<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="graph_fusion.html" class="btn btn-neutral float-left" title="Graph Fusion" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="operator_register.html" class="btn btn-neutral float-right" title="Customized Operators Register" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da75a45e0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

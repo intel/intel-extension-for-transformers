@@ -4,21 +4,25 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Installation &mdash; Intel® Extension for Transformers 0.1.dev1+g99d458f documentation</title>
+  <title>Installation &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
-    <script src="../_static/js/theme.js"></script>
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="User Guide" href="../user_guide.html" />
@@ -70,6 +74,7 @@
 <li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
 <li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
 </ul>
 
         </div>
@@ -97,7 +102,7 @@
            <div itemprop="articleBody">
              
   <section id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
 <ol>
 <li><p><a class="reference external" href="#install-from-pypi">Install from Pypi</a></p></li>
 <li><p><a class="reference external" href="#install-from-source">Install from Source</a></p>
@@ -110,7 +115,7 @@
 </li>
 </ol>
 <section id="install-from-pypi">
-<h2>Install from Pypi<a class="headerlink" href="#install-from-pypi" title="Permalink to this heading"></a></h2>
+<h2>Install from Pypi<a class="headerlink" href="#install-from-pypi" title="Link to this heading"></a></h2>
 <p>Binary builds for python 3.7, 3.8, 3.9 and 3.10 are available in Pypi</p>
 <blockquote>
 <div><p><strong>Note</strong>: Recommend install protobuf &lt;= 3.20.0 if use onnxruntime &lt;= 1.11</p>
@@ -131,9 +136,9 @@ conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> <
 </div>
 </section>
 <section id="install-from-source">
-<h2>Install from Source<a class="headerlink" href="#install-from-source" title="Permalink to this heading"></a></h2>
+<h2>Install from Source<a class="headerlink" href="#install-from-source" title="Link to this heading"></a></h2>
 <section id="prerequisites">
-<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h3>
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
 <p>The following prerequisites and requirements must be satisfied for a successful installation:</p>
 <ul class="simple">
 <li><p>Python version: 3.7 or 3.8 or 3.9 or 3.10</p></li>
@@ -141,7 +146,7 @@ conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> <
 </ul>
 </section>
 <section id="install-intel-extension-for-transformers">
-<h3>Install Intel Extension for Transformers<a class="headerlink" href="#install-intel-extension-for-transformers" title="Permalink to this heading"></a></h3>
+<h3>Install Intel Extension for Transformers<a class="headerlink" href="#install-intel-extension-for-transformers" title="Link to this heading"></a></h3>
 <div class="highlight-Bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git<span class="w"> </span>itrex
 <span class="nb">cd</span><span class="w"> </span>itrex
 <span class="c1"># Install intel_extension_for_transformers</span>
@@ -151,9 +156,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
 </section>
 </section>
 <section id="system-requirements">
-<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Permalink to this heading"></a></h2>
+<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading"></a></h2>
 <section id="validated-hardware-environment">
-<h3>Validated Hardware Environment<a class="headerlink" href="#validated-hardware-environment" title="Permalink to this heading"></a></h3>
+<h3>Validated Hardware Environment<a class="headerlink" href="#validated-hardware-environment" title="Link to this heading"></a></h3>
 <p>Intel® Extension for Transformers supports systems based on <a class="reference external" href="https://en.wikipedia.org/wiki/X86-64">Intel 64 architecture or compatible processors</a> that are specifically optimized for the following CPUs:</p>
 <ul class="simple">
 <li><p>Intel Xeon Scalable processor (formerly Cascade Lake, Icelake)</p></li>
@@ -161,7 +166,7 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
 </ul>
 </section>
 <section id="validated-software-environment">
-<h3>Validated Software Environment<a class="headerlink" href="#validated-software-environment" title="Permalink to this heading"></a></h3>
+<h3>Validated Software Environment<a class="headerlink" href="#validated-software-environment" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>OS version: CentOS 8.4, Ubuntu 20.04</p></li>
 <li><p>Python version: 3.7, 3.8, 3.9</p></li>
@@ -227,7 +232,9 @@ pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+   <jinja2.runtime.BlockReference object at 0x7f0da75136a0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
 
 </footer>
         </div>

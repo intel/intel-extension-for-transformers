@@ -1,0 +1,48 @@
+:py:mod:`intel_extension_for_transformers.utils.utils`
+======================================================
+
+.. py:module:: intel_extension_for_transformers.utils.utils
+
+.. autoapi-nested-parse::
+
+   Utility for data augmentation.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.utils.utils.AugmenterType
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.utils.utils.get_augmenter_from_type
+
+
+
+.. py:class:: AugmenterType
+
+
+
+
+   Enumeration of types of augmentation.
+
+
+.. py:function:: get_augmenter_from_type(aug_type: str)
+
+   Get nlpaug's augmenter by augment_type name.
+
+   The nlpaug is a library helps you with augmenting nlp for your machine learning projects.
+   It provide many augmenter, please refer to https://github.com/makcedward/nlpaug#augmenter.
+
+

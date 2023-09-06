@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_causal_attention_mask`
+=====================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_causal_attention_mask
+
+.. autoapi-nested-parse::
+
+   The TextEncoder_CasualAttentionMask Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_causal_attention_mask.TextEncoder_CasualAttentionMask
+
+
+
+
+.. py:class:: TextEncoder_CasualAttentionMask
+
+
+
+
+   The TextEncoder_CasualAttentionMask pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'TextEncoder_CasualAttentionMask' graph.
+   The search strategy is based on the following pattern mapping configs for the stable diffusionV1-5.
+
+

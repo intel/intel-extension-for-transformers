@@ -1,0 +1,33 @@
+:py:mod:`fastchat.data.clean_sharegpt`
+======================================
+
+.. py:module:: fastchat.data.clean_sharegpt
+
+.. autoapi-nested-parse::
+
+   - Convert html to markdown with basic data cleaning.
+   - Deduplication.
+
+   Usage:
+   python3 -m fastchat.data.clean_sharegpt --in sharegpt_html.json --out sharegpt_clean.json
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.data.clean_sharegpt.clean_html_all
+
+
+
+.. py:function:: clean_html_all(content, begin, end)
+
+   Clean the source html files.
+
+

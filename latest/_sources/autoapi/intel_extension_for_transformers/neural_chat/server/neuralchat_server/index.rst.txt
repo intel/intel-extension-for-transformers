@@ -1,0 +1,22 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.server.neuralchat_server`
+===============================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.server.neuralchat_server
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor
+
+
+
+
+

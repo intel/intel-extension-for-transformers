@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithslice`
+=========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithslice
+
+.. autoapi-nested-parse::
+
+   The InnerproductwithSlice Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithslice.InnerproductwithSlice
+
+
+
+
+.. py:class:: InnerproductwithSlice
+
+
+
+
+   The InnerproductwithSlice pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'InnerproductwithSlice' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">NeuralChat</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/docs/intel_extension_for_transformers/neural_chat/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div align="center"><section id="neuralchat">
+<h1>NeuralChat<a class="headerlink" href="#neuralchat" title="Link to this heading"></a></h1>
+<p><h3> A customizable chatbot framework that empowers you to personalize your chatbot with a diverse range of plugins</h3></p>
+<hr class="docutils" />
+<div align="left"><p>NeuralChat is a customizable chat framework designed to create your own chatbot that can be efficiently deployed on multiple architectures such as Intel CPU/GPU, Habana HPU and Nvidia GPU. NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, response caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on your favorite platform. Here is the flow of NeuralChat:</p>
+<a target="_blank" href="./assets/pictures/neuralchat.png">
+<p align="center">
+  <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=250>
+</p>
+</a><p>NeuralChat is under active development with some experimental features (APIs are subject to change).</p>
+</section>
+<section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h1>
+<p>NeuralChat is seamlessly integrated into the Intel Extension for Transformers. Getting started is quick and simple, just simply install ‘intel-extension-for-transformers’.</p>
+<section id="install-from-pypi">
+<h2>Install from Pypi<a class="headerlink" href="#install-from-pypi" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
+</pre></div>
+</div>
+<blockquote>
+<div><p>For more installation method, please refer to <a class="reference external" href="../docs/installation.html">Installation Page</a></p>
+</div></blockquote>
+<p><a name="quickstart"></a></p>
+</section>
+</section>
+<section id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h1>
+<p>Users can have a try of NeuralChat with <a class="reference external" href="./cli/README.html">NeuralChat Command Line</a> or Python API.</p>
+<section id="install-from-source">
+<h2>Install from source<a class="headerlink" href="#install-from-source" title="Link to this heading"></a></h2>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="n">PYTHONPATH</span><span class="o">=&lt;</span><span class="n">PATH</span><span class="w"> </span><span class="n">TO</span><span class="w"> </span><span class="n">intel</span><span class="o">-</span><span class="n">extension</span><span class="o">-</span><span class="k">for</span><span class="o">-</span><span class="n">transformers</span><span class="o">&gt;</span>
+<span class="n">conda</span><span class="w"> </span><span class="n">create</span><span class="w"> </span><span class="o">-</span><span class="n">n</span><span class="w"> </span><span class="n">neural_chat</span><span class="w"> </span><span class="n">python</span><span class="o">==</span><span class="mf">3.10</span>
+<span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="o">-</span><span class="n">r</span><span class="w"> </span><span class="n">requirements</span><span class="p">.</span><span class="n">txt</span>
+<span class="n">pip</span><span class="w"> </span><span class="n">install</span><span class="w"> </span><span class="n">librosa</span><span class="o">==</span><span class="mf">0.10.0</span>
+</pre></div>
+</div>
+</section>
+<section id="inference">
+<h2>Inference<a class="headerlink" href="#inference" title="Link to this heading"></a></h2>
+<section id="text-chat">
+<h3>Text Chat<a class="headerlink" href="#text-chat" title="Link to this heading"></a></h3>
+<p>Giving NeuralChat the textual instruction, it will respond with the textual response.</p>
+<p><strong>command line experience</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>textchat<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span>
+</pre></div>
+</div>
+<p><strong>Python API experience</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="text-chat-with-retreival">
+<h3>Text Chat With Retreival<a class="headerlink" href="#text-chat-with-retreival" title="Link to this heading"></a></h3>
+<p>Giving NeuralChat the textual instruction, it will respond with the textual response.</p>
+<p><strong>command line experience</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>textchat<span class="w"> </span>--retrieval_type<span class="w"> </span>sparse<span class="w"> </span>--retrieval_document_path<span class="w"> </span>./assets/docs/<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span>
+</pre></div>
+</div>
+<p><strong>Python API experience</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">PipelineConfig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">plugins</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plugins</span><span class="o">.</span><span class="n">retrieval</span><span class="o">.</span><span class="n">enable</span><span class="o">=</span><span class="kc">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plugins</span><span class="o">.</span><span class="n">retrieval</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;input_path&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;./assets/docs/&quot;</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">config</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span><span class="n">plugins</span><span class="o">=</span><span class="n">plugins</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="voice-chat">
+<h3>Voice Chat<a class="headerlink" href="#voice-chat" title="Link to this heading"></a></h3>
+<p>In the context of voice chat, users have the option to engage in various modes: utilizing input audio and receiving output audio, employing input audio and receiving textual output, or providing input in textual form and receiving audio output.</p>
+<p><strong>command line experience</strong></p>
+<ul class="simple">
+<li><p>audio in and audio output</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>voicechat<span class="w"> </span>--audio_input_path<span class="w"> </span>./assets/audio/pat.wav<span class="w"> </span>--audio_output_path<span class="w"> </span>./response.wav
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>audio in and text output</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>voicechat<span class="w"> </span>--audio_input_path<span class="w"> </span>./assets/audio/pat.wav
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>text in and audio output</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>voicechat<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="w"> </span>--audio_output_path<span class="w"> </span>./response.wav
+</pre></div>
+</div>
+<p><strong>Python API experience</strong></p>
+<p>For the Python API code, users have the option to enable different voice chat modes by setting audio_input to True for input or audio_output to True for output.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">PipelineConfig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">config</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span><span class="n">audio_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">audio_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">result</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;./assets/audio/pat.wav&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>We provide multiple plugins to augment the chatbot on top of LLM inference. Our plugins support <a class="reference external" href="./pipeline/plugins/retrievers/">knowledge retrieval</a>, <a class="reference external" href="./pipeline/plugins/caching/">query caching</a>, <a class="reference external" href="./pipeline/plugins/prompts/">prompt optimization</a>, <a class="reference external" href="./pipeline/plugins/security/">safety checker</a>, etc. Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time. Prompt optimization suppots auto prompt engineering to improve user prompts, instruction optimization to enhance the model’s performance, and memory controller for efficient memory utilization.</p>
+</section>
+</section>
+<section id="finetuning">
+<h2>Finetuning<a class="headerlink" href="#finetuning" title="Link to this heading"></a></h2>
+<p>Finetune the pretrained large language model (LLM) with the instruction-following dataset for creating the customized chatbot is very easy for NeuralChat.</p>
+<section id="finetuning-for-text-generation-task">
+<h3>Finetuning for Text Generation Task<a class="headerlink" href="#finetuning-for-text-generation-task" title="Link to this heading"></a></h3>
+<p><strong>command line experience</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/finetuning/config/finetuning.yaml
+</pre></div>
+</div>
+<p><strong>Python API experience</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">TextGenerationFinetuningConfig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">finetune_model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">finetune_cfg</span> <span class="o">=</span> <span class="n">TextGenerationFinetuningConfig</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">finetuned_model</span> <span class="o">=</span> <span class="n">finetune_model</span><span class="p">(</span><span class="n">finetune_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="finetuning-for-summarization-task">
+<h3>Finetuning for Summarization Task<a class="headerlink" href="#finetuning-for-summarization-task" title="Link to this heading"></a></h3>
+<p><strong>command line experience</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/finetuning/config/finetuning.yaml
+</pre></div>
+</div>
+<p><strong>Python API experience</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">SummarizationFinetuningConfig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">finetune_model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">finetune_cfg</span> <span class="o">=</span> <span class="n">SummarizationFinetuningConfig</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">finetuned_model</span> <span class="o">=</span> <span class="n">finetune_model</span><span class="p">(</span><span class="n">finetune_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="finetuning-for-code-generation-task">
+<h3>Finetuning for Code Generation Task<a class="headerlink" href="#finetuning-for-code-generation-task" title="Link to this heading"></a></h3>
+<p><strong>command line experience</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/finetuning/config/finetuning.yaml
+</pre></div>
+</div>
+<p><strong>Python API experience</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">CodeGenerationFinetuningConfig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">finetune_model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">finetune_cfg</span> <span class="o">=</span> <span class="n">CodeGenerationFinetuningConfig</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">finetuned_model</span> <span class="o">=</span> <span class="n">finetune_model</span><span class="p">(</span><span class="n">finetune_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="finetuning-for-text-to-speech-tts-task">
+<h3>Finetuning for Text-to-Speech(TTS) Task<a class="headerlink" href="#finetuning-for-text-to-speech-tts-task" title="Link to this heading"></a></h3>
+<p><strong>command line experience</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/finetuning/config/finetuning.yaml
+</pre></div>
+</div>
+<p><strong>Python API experience</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">TTSFinetuningConfig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">finetune_model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">finetune_cfg</span> <span class="o">=</span> <span class="n">TTSFinetuningConfig</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">finetuned_model</span> <span class="o">=</span> <span class="n">finetune_model</span><span class="p">(</span><span class="n">finetune_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="inference-with-finetuned-model">
+<h3>Inference with Finetuned Model<a class="headerlink" href="#inference-with-finetuned-model" title="Link to this heading"></a></h3>
+<p>By default, Parameter-Efficient Fine-Tuning (PEFT) methods are used to accelerate the finetuning process, and to reduce the finetuning cost as well. Below shows the way to load the finetuned model of such and inference with it.</p>
+<p><strong>Python API experience</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.config</span> <span class="kn">import</span> <span class="n">PipelineConfig</span><span class="p">,</span> <span class="n">LoadingModelConfig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span>
+<span class="go">  PipelineConfig(</span>
+<span class="go">    loading_config=LoadingModelConfig(peft_path=&quot;/path/to/peft_model&quot;)</span>
+<span class="go">  )</span>
+<span class="go">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="quantization">
+<h2>Quantization<a class="headerlink" href="#quantization" title="Link to this heading"></a></h2>
+<p>NeuralChat provides three quantization approaches respectively (PostTrainingDynamic, PostTrainingStatic, QuantAwareTraining) based on <a class="reference external" href="https://github.com/intel/neural-compressor">Intel® Neural Compressor</a>.</p>
+<p><strong>command line experience</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/optimization/config/optimization.yaml
+</pre></div>
+</div>
+<p><strong>Python API experience</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">OptimizationConfig</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">optimize_model</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">opt_cfg</span> <span class="o">=</span> <span class="n">OptimizationConfig</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">optimized_model</span> <span class="o">=</span> <span class="n">optimize_model</span><span class="p">(</span><span class="n">opt_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a name="quickstartserver"></a></p>
+</section>
+</section>
+<section id="quick-start-server">
+<h1>Quick Start Server<a class="headerlink" href="#quick-start-server" title="Link to this heading"></a></h1>
+<p>Users can have a try of NeuralChat server with <a class="reference external" href="./server/README.html">NeuralChat Server Command Line</a>.</p>
+<p><strong>Start Server</strong></p>
+<ul class="simple">
+<li><p>Command Line (Recommended)</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat_server<span class="w"> </span>start<span class="w"> </span>--config_file<span class="w"> </span>./server/config/neuralchat.yaml
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Python API</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">NeuralChatServerExecutor</span>
+<span class="n">server_executor</span> <span class="o">=</span> <span class="n">NeuralChatServerExecutor</span><span class="p">()</span>
+<span class="n">server_executor</span><span class="p">(</span><span class="n">config_file</span><span class="o">=</span><span class="s2">&quot;./server/config/neuralchat.yaml&quot;</span><span class="p">,</span> <span class="n">log_file</span><span class="o">=</span><span class="s2">&quot;./log/neuralchat.log&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Access Text Chat Service</strong></p>
+<ul class="simple">
+<li><p>Command Line</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat_client<span class="w"> </span>textchat<span class="w"> </span>--server_ip<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Python API</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">TextChatClientExecutor</span>
+<span class="n">executor</span> <span class="o">=</span> <span class="n">TextChatClientExecutor</span><span class="p">()</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">executor</span><span class="p">(</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">,</span>
+    <span class="n">server_ip</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Curl with Restful API</p></li>
+</ul>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;prompt&quot;: &quot;Tell me about Intel Xeon Scalable Processors.&quot;}&#39;</span><span class="w"> </span>http://127.0.0.1:80/v1/chat/completions
+</pre></div>
+</div>
+<p><strong>Access Voice Chat Service</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat_client<span class="w"> </span>voicechat<span class="w"> </span>--server_ip<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--audio_input_path<span class="w"> </span>./assets/audio/pat.wav<span class="w"> </span>--audio_output_path<span class="w"> </span>response.wav
+</pre></div>
+</div>
+<p><strong>Access Finetune Service</strong></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat_client<span class="w"> </span>finetune<span class="w"> </span>--server_ip<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;facebook/opt-125m&quot;</span><span class="w"> </span>--train_file<span class="w"> </span><span class="s2">&quot;/path/to/finetune/dataset.json&quot;</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da71dfee0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

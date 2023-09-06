@@ -4,21 +4,25 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>convert_llama &mdash; Intel® Extension for Transformers 0.1.dev1+g99d458f documentation</title>
+  <title>convert_llama &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
       <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
       <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../../_static/jquery.js"></script>
-        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
-        <script src="../../_static/doctools.js"></script>
-        <script src="../../_static/sphinx_highlight.js"></script>
-    <script src="../../_static/js/theme.js"></script>
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
 </head>
@@ -55,6 +59,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../docs/SECURITY.html">Security Policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/release.html">Release</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
 </ul>
 
         </div>
@@ -82,11 +87,11 @@
            <div itemprop="articleBody">
              
   <section id="module-convert_llama">
-<span id="convert-llama"></span><h1><a class="reference internal" href="#module-convert_llama" title="convert_llama"><code class="xref py py-mod docutils literal notranslate"><span class="pre">convert_llama</span></code></a><a class="headerlink" href="#module-convert_llama" title="Permalink to this heading"></a></h1>
+<span id="convert-llama"></span><h1><a class="reference internal" href="#module-convert_llama" title="convert_llama"><code class="xref py py-mod docutils literal notranslate"><span class="pre">convert_llama</span></code></a><a class="headerlink" href="#module-convert_llama" title="Link to this heading"></a></h1>
 <section id="module-contents">
-<h2>Module Contents<a class="headerlink" href="#module-contents" title="Permalink to this heading"></a></h2>
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
 <section id="classes">
-<h3>Classes<a class="headerlink" href="#classes" title="Permalink to this heading"></a></h3>
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#convert_llama.NEFileType" title="convert_llama.NEFileType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NEFileType</span></code></a></p></td>
@@ -99,7 +104,7 @@
 </table>
 </section>
 <section id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Permalink to this heading"></a></h3>
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#convert_llama.handle_quantization" title="convert_llama.handle_quantization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_quantization</span></code></a>(→ LazyModel)</p></td>
@@ -121,14 +126,14 @@
 </table>
 <dl class="py class">
 <dt class="sig sig-object py" id="convert_llama.NEFileType">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">NEFileType</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.NEFileType" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">NEFileType</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.NEFileType" title="Link to this definition"></a></dt>
 <dd><p>Generic enumeration.</p>
 <p>Derive from this class to define new enumerations.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="convert_llama.handle_quantization">
-<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">handle_quantization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LazyModel</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">LazyModel</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.handle_quantization" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">handle_quantization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LazyModel</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">LazyModel</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.handle_quantization" title="Link to this definition"></a></dt>
 <dd><p>Convert a model with entries for ‘foo.qweight’, ‘foo.scales’, etc.
 (which resolve to UnquantizedTensors with the raw data) to one with entries
 for ‘foo.weight’ (which resolve to QuantizedTensors).</p>
@@ -136,7 +141,7 @@ for ‘foo.weight’ (which resolve to QuantizedTensors).</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="convert_llama.LazyUnpickler">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">LazyUnpickler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IO</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_base_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zip_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">zipfile.ZipFile</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.LazyUnpickler" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">LazyUnpickler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IO</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_base_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zip_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">zipfile.ZipFile</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.LazyUnpickler" title="Link to this definition"></a></dt>
 <dd><p>This takes a binary file for reading a pickle data stream.</p>
 <p>The protocol version of the pickle is detected automatically, so no
 protocol argument is needed.  Bytes past the pickled object’s
@@ -156,7 +161,7 @@ respectively.  The <em>encoding</em> can be ‘bytes’ to read these 8-bit
 string instances as bytes objects.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="convert_llama.LazyUnpickler.find_class">
-<span class="sig-name descname"><span class="pre">find_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.LazyUnpickler.find_class" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">find_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.LazyUnpickler.find_class" title="Link to this definition"></a></dt>
 <dd><p>Return an object from a specified module.</p>
 <p>If necessary, the module will be imported. Subclasses may override
 this method (e.g. to restrict unpickling of arbitrary classes and
@@ -169,7 +174,7 @@ needed.  Both arguments passed are str objects.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="convert_llama.bounded_parallel_map">
-<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">bounded_parallel_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">In</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Out</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">In</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concurrency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Out</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.bounded_parallel_map" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">bounded_parallel_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">In</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Out</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">In</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concurrency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Out</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.bounded_parallel_map" title="Link to this definition"></a></dt>
 <dd><p>Parallel map, but with backpressure.  If the caller doesn’t call <cite>next</cite>
 fast enough, this will stop calling <cite>func</cite> at some point rather than
 letting results pile up in memory.  Specifically, there is a max of one
@@ -178,21 +183,21 @@ output value buffered per thread.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="convert_llama.nth_multifile_path">
-<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">nth_multifile_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.nth_multifile_path" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">nth_multifile_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../intel_extension_for_transformers/neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.nth_multifile_path" title="Link to this definition"></a></dt>
 <dd><p>Given any path belonging to a multi-file model (e.g. foo.bin.1), return
 the nth path in the model.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="convert_llama.find_multifile_paths">
-<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">find_multifile_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.find_multifile_paths" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">find_multifile_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.find_multifile_paths" title="Link to this definition"></a></dt>
 <dd><p>Given any path belonging to a multi-file model (e.g. foo.bin.1), return
 the whole list of paths in the model.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="convert_llama.load_some_model">
-<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">load_some_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ModelPlus</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.load_some_model" title="Permalink to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">convert_llama.</span></span><span class="sig-name descname"><span class="pre">load_some_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ModelPlus</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/convert_llama.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#convert_llama.load_some_model" title="Link to this definition"></a></dt>
 <dd><p>Load a model of any supported format.</p>
 </dd></dl>
 
@@ -214,7 +219,9 @@ the whole list of paths in the model.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+   <jinja2.runtime.BlockReference object at 0x7f0dc035c6a0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
 
 </footer>
         </div>

@@ -1,0 +1,86 @@
+:py:mod:`intel_extension_for_transformers.transformers.benchmark`
+=================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.benchmark
+
+.. autoapi-nested-parse::
+
+   Benchmark: provide the inference functions for PyTorchBenchmark and ExecutorBenchmark.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.benchmark.refactor_batch_size
+   intel_extension_for_transformers.transformers.benchmark.get_example_inputs
+   intel_extension_for_transformers.transformers.benchmark.preprocess_model
+   intel_extension_for_transformers.transformers.benchmark.benchmark
+
+
+
+.. py:function:: refactor_batch_size(value, batch_size, old_batch_size=-1)
+
+   return batched data from value.
+
+   :param value: input data.
+   :type value: torch.Tensor
+   :param batch_size: target batch size.
+   :type batch_size: int
+   :param old_batch_size: original batch size of value. Defaults to -1.
+   :type old_batch_size: int, optional
+
+   :returns: batched data.
+   :rtype: batched_value
+
+
+.. py:function:: get_example_inputs(dataloader, batch_size=1)
+
+   return batched data from dataloader.
+
+   :param dataloader: dataloader.
+   :param batch_size: batch size. Defaults to 1.
+   :type batch_size: int, optional
+
+   :returns: batched data.
+   :rtype: batched_data
+
+
+.. py:function:: preprocess_model(model, example_inputs, config, additional_cmd)
+
+   convert model to torchscript and generate mode.
+
+   :param model: original model.
+   :type model: torch.nn.Module
+   :param example_inputs: used to jit trace original model.
+   :param config: control the benchmark process.
+   :type config: BenchmarkConfig
+   :param additional_cmd: additional_cmd for raw_cmd.
+   :type additional_cmd: str
+
+   :returns: original model.
+             example_inputs: preprocessed example_inputs for jit model.
+             additional_cmd (str): additional_cmd for raw_cmd.
+   :rtype: model (torch.jit.ScriptModule)
+
+
+.. py:function:: benchmark(model_name_or_path, config=None, example_inputs=None, dataloader=None)
+
+   function for benchmarking model.
+
+   :param model_name_or_path: model_name_or_path.
+   :type model_name_or_path: str, torch.nn.Module or torch.jit.ScriptModule
+   :param config: control the benchmark process. Defaults to None.
+   :type config: BenchmarkConfig, optional
+   :param example_inputs: used as a input for benchmarking. Defaults to None.
+   :type example_inputs: optional
+   :param dataloader: used to build example_inputs for benchmarking. Defaults to None.
+   :type dataloader: optional
+
+

@@ -1,0 +1,51 @@
+:py:mod:`fastchat.serve.inference`
+==================================
+
+.. py:module:: fastchat.serve.inference
+
+.. autoapi-nested-parse::
+
+   Inference for FastChat models.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.serve.inference.ChatIO
+
+
+
+
+.. py:class:: ChatIO
+
+
+
+
+   Helper class that provides a standard way to create an ABC using
+   inheritance.
+
+   .. py:method:: prompt_for_input(role: str) -> str
+      :abstractmethod:
+
+      Prompt for input from a role.
+
+
+   .. py:method:: prompt_for_output(role: str)
+      :abstractmethod:
+
+      Prompt for output from a role.
+
+
+   .. py:method:: stream_output(output_stream, skip_echo_len: int)
+      :abstractmethod:
+
+      Stream output.
+
+
+

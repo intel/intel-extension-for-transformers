@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`fastchat.client.api`
+=============================
+
+.. py:module:: fastchat.client.api
+
+

@@ -1,0 +1,38 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated`
+=================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated
+
+.. autoapi-nested-parse::
+
+   The module of Neural Engine.
+
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   compile/index.rst
+
+
+Package Contents
+----------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.neural_engine_bin
+
+
+
+.. py:function:: neural_engine_bin()
+
+   Entry point for C++ interface
+
+

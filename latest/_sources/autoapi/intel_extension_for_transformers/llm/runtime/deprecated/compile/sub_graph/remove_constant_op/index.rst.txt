@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_constant_op`
+======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_constant_op
+
+.. autoapi-nested-parse::
+
+   The RemoveConstantOP Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_constant_op.RemoveConstantOP
+
+
+
+
+.. py:class:: RemoveConstantOP
+
+
+
+
+   The RemoveConstantOP pattern.
+
+   Remove Constant OP
+
+

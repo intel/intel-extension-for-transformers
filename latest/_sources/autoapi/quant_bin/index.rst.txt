@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`quant_bin`
+===================
+
+.. py:module:: quant_bin
+
+

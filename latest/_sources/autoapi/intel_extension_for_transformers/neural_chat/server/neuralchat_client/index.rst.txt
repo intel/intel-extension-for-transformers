@@ -1,0 +1,26 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.server.neuralchat_client`
+===============================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.server.neuralchat_client
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.server.neuralchat_client.TextChatClientExecutor
+   intel_extension_for_transformers.neural_chat.server.neuralchat_client.VoiceChatClientExecutor
+   intel_extension_for_transformers.neural_chat.server.neuralchat_client.FinetuningClientExecutor
+
+
+
+
+
+
+

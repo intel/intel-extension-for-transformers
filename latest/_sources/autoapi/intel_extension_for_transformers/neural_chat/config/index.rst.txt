@@ -1,0 +1,88 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.config`
+=============================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.config
+
+.. autoapi-nested-parse::
+
+   Configs for Neural Chat.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.config.DeviceOptions
+   intel_extension_for_transformers.neural_chat.config.BackendOptions
+   intel_extension_for_transformers.neural_chat.config.AudioLanguageOptions
+   intel_extension_for_transformers.neural_chat.config.RetrievalTypeOptions
+   intel_extension_for_transformers.neural_chat.config.ModelArguments
+   intel_extension_for_transformers.neural_chat.config.DataArguments
+   intel_extension_for_transformers.neural_chat.config.FinetuningArguments
+
+
+
+
+.. py:class:: DeviceOptions
+
+
+
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+
+.. py:class:: BackendOptions
+
+
+
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+
+.. py:class:: AudioLanguageOptions
+
+
+
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+
+.. py:class:: RetrievalTypeOptions
+
+
+
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+
+.. py:class:: ModelArguments
+
+
+   Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
+
+
+.. py:class:: DataArguments
+
+
+   Arguments pertaining to what data we are going to input our model for training and eval.
+
+
+.. py:class:: FinetuningArguments
+
+
+   Arguments of finetune we are going to apply on the model.
+
+

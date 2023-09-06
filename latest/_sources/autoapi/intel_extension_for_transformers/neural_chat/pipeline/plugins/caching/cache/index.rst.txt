@@ -1,0 +1,101 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.put
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.get
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.init_similar_cache
+
+
+
+.. py:function:: put(prompt: str, data: Any, **kwargs) -> None
+
+   put api, put qa pair information to GPTCache
+   Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache
+
+   :param prompt: the cache data key, usually question text
+   :type prompt: str
+   :param data: the cache data value, usually answer text
+   :type data: Any
+   :param kwargs: list of user-defined parameters
+   :type kwargs: Dict
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gptcache.adapter.api import put
+       from gptcache.processor.pre import get_prompt
+
+       cache.init(pre_embedding_func=get_prompt)
+       put("hello", "foo")
+
+
+.. py:function:: get(prompt: str, **kwargs) -> Any
+
+   get api, get the cache data according to the `prompt`
+   Please make sure that the `pre_embedding_func` param is `get_prompt` when initializing the cache
+
+   :param prompt: the cache data key, usually question text
+   :type prompt: str
+   :param kwargs: list of user-defined parameters
+   :type kwargs: Dict
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gptcache.adapter.api import put, get
+       from gptcache.processor.pre import get_prompt
+
+       cache.init(pre_embedding_func=get_prompt)
+       put("hello", "foo")
+       print(get("hello"))
+
+
+.. py:function:: init_similar_cache(data_dir: str = 'api_cache', cache_obj: Optional[gptcache.Cache] = None, pre_func: Callable = get_prompt, embedding: Optional[gptcache.embedding.base.BaseEmbedding] = None, data_manager: Optional[gptcache.manager.data_manager.DataManager] = None, evaluation: Optional[gptcache.similarity_evaluation.SimilarityEvaluation] = None, post_func: Callable = temperature_softmax, config: gptcache.Config = Config())
+
+   Provide a quick way to initialize cache for api service
+
+   :param data_dir: cache data storage directory
+   :type data_dir: str
+   :param cache_obj: specify to initialize the Cache object, if not specified, initialize the global object
+   :type cache_obj: Optional[Cache]
+   :param pre_func: pre-processing of the cache input text
+   :type pre_func: Callable
+   :param embedding: embedding object
+   :type embedding: BaseEmbedding
+   :param data_manager: data manager object
+   :type data_manager: DataManager
+   :param evaluation: similarity evaluation object
+   :type evaluation: SimilarityEvaluation
+   :param post_func: post-processing of the cached result list, the most similar result is taken by default
+   :type post_func: Callable[[List[Any]], Any]
+   :param config: cache configuration, the core is similar threshold
+   :type config: Config
+   :return: None
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+       from gptcache.adapter.api import put, get, init_similar_cache
+
+       init_similar_cache()
+       put("hello", "foo")
+       print(get("hello"))
+
+

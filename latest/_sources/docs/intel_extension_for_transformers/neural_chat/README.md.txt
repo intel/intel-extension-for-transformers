@@ -1,0 +1,290 @@
+<div align="center">
+
+NeuralChat
+===========================
+<h3> A customizable chatbot framework that empowers you to personalize your chatbot with a diverse range of plugins</h3>
+
+---
+<div align="left">
+
+NeuralChat is a customizable chat framework designed to create your own chatbot that can be efficiently deployed on multiple architectures such as Intel CPU/GPU, Habana HPU and Nvidia GPU. NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, response caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on your favorite platform. Here is the flow of NeuralChat:
+
+<a target="_blank" href="./assets/pictures/neuralchat.png">
+<p align="center">
+  <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=250>
+</p>
+</a>
+
+NeuralChat is under active development with some experimental features (APIs are subject to change).
+
+# Installation
+
+NeuralChat is seamlessly integrated into the Intel Extension for Transformers. Getting started is quick and simple, just simply install 'intel-extension-for-transformers'.
+
+## Install from Pypi
+```bash
+pip install intel-extension-for-transformers
+```
+> For more installation method, please refer to [Installation Page](../docs/installation.html)
+
+<a name="quickstart"></a>
+# Quick Start
+
+Users can have a try of NeuralChat with [NeuralChat Command Line](./cli/README.html) or Python API.
+
+## Install from source
+
+```
+export PYTHONPATH=<PATH TO intel-extension-for-transformers>
+conda create -n neural_chat python==3.10
+pip install -r requirements.txt
+pip install librosa==0.10.0
+```
+
+## Inference
+
+### Text Chat
+
+Giving NeuralChat the textual instruction, it will respond with the textual response.
+
+**command line experience**
+
+```shell
+neuralchat textchat --query "Tell me about Intel Xeon Scalable Processors."
+```
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import build_chatbot
+>>> chatbot = build_chatbot()
+>>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+```
+
+### Text Chat With Retreival
+
+Giving NeuralChat the textual instruction, it will respond with the textual response.
+
+**command line experience**
+
+```shell
+neuralchat textchat --retrieval_type sparse --retrieval_document_path ./assets/docs/ --query "Tell me about Intel Xeon Scalable Processors."
+```
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import PipelineConfig
+>>> from intel_extension_for_transformers.neural_chat import build_chatbot
+>>> from intel_extension_for_transformers.neural_chat import plugins
+>>> plugins.retrieval.enable=True
+>>> plugins.retrieval.args["input_path"]="./assets/docs/"
+>>> config = PipelineConfig(plugins=plugins)
+>>> chatbot = build_chatbot(config)
+>>> response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
+```
+
+### Voice Chat
+
+In the context of voice chat, users have the option to engage in various modes: utilizing input audio and receiving output audio, employing input audio and receiving textual output, or providing input in textual form and receiving audio output.
+
+**command line experience**
+
+- audio in and audio output
+```shell
+neuralchat voicechat --audio_input_path ./assets/audio/pat.wav --audio_output_path ./response.wav
+```
+
+- audio in and text output
+```shell
+neuralchat voicechat --audio_input_path ./assets/audio/pat.wav
+```
+
+- text in and audio output
+```shell
+neuralchat voicechat --query "Tell me about Intel Xeon Scalable Processors." --audio_output_path ./response.wav
+```
+
+
+**Python API experience**
+
+For the Python API code, users have the option to enable different voice chat modes by setting audio_input to True for input or audio_output to True for output.
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import PipelineConfig
+>>> from intel_extension_for_transformers.neural_chat import build_chatbot
+>>> config = PipelineConfig(audio_input=True, audio_output=True)
+>>> chatbot = build_chatbot(config)
+>>> result = chatbot.predict(query="./assets/audio/pat.wav")
+```
+
+We provide multiple plugins to augment the chatbot on top of LLM inference. Our plugins support [knowledge retrieval](./pipeline/plugins/retrievers/), [query caching](./pipeline/plugins/caching/), [prompt optimization](./pipeline/plugins/prompts/), [safety checker](./pipeline/plugins/security/), etc. Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses. Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time. Prompt optimization suppots auto prompt engineering to improve user prompts, instruction optimization to enhance the model's performance, and memory controller for efficient memory utilization.
+
+
+## Finetuning
+
+Finetune the pretrained large language model (LLM) with the instruction-following dataset for creating the customized chatbot is very easy for NeuralChat.
+
+### Finetuning for Text Generation Task
+
+**command line experience**
+
+```shell
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+```
+
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import TextGenerationFinetuningConfig
+>>> from intel_extension_for_transformers.neural_chat import finetune_model
+>>> finetune_cfg = TextGenerationFinetuningConfig()
+>>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+### Finetuning for Summarization Task
+
+**command line experience**
+
+```shell
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+```
+
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import SummarizationFinetuningConfig
+>>> from intel_extension_for_transformers.neural_chat import finetune_model
+>>> finetune_cfg = SummarizationFinetuningConfig()
+>>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+### Finetuning for Code Generation Task
+
+**command line experience**
+
+```shell
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+```
+
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import CodeGenerationFinetuningConfig
+>>> from intel_extension_for_transformers.neural_chat import finetune_model
+>>> finetune_cfg = CodeGenerationFinetuningConfig()
+>>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+### Finetuning for Text-to-Speech(TTS) Task
+
+**command line experience**
+
+```shell
+neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/finetuning/config/finetuning.yaml
+```
+
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import TTSFinetuningConfig
+>>> from intel_extension_for_transformers.neural_chat import finetune_model
+>>> finetune_cfg = TTSFinetuningConfig()
+>>> finetuned_model = finetune_model(finetune_cfg)
+```
+
+### Inference with Finetuned Model
+
+By default, Parameter-Efficient Fine-Tuning (PEFT) methods are used to accelerate the finetuning process, and to reduce the finetuning cost as well. Below shows the way to load the finetuned model of such and inference with it.
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import build_chatbot
+>>> from intel_extension_for_transformers.neural_chat.config import PipelineConfig, LoadingModelConfig
+>>> chatbot = build_chatbot(
+  PipelineConfig(
+    loading_config=LoadingModelConfig(peft_path="/path/to/peft_model")
+  )
+)
+>>> response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+```
+
+## Quantization
+
+NeuralChat provides three quantization approaches respectively (PostTrainingDynamic, PostTrainingStatic, QuantAwareTraining) based on [Intel® Neural Compressor](https://github.com/intel/neural-compressor).
+
+**command line experience**
+
+```shell
+neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeline/optimization/config/optimization.yaml
+```
+
+
+**Python API experience**
+
+```python
+>>> from intel_extension_for_transformers.neural_chat import OptimizationConfig
+>>> from intel_extension_for_transformers.neural_chat import optimize_model
+>>> opt_cfg = OptimizationConfig()
+>>> optimized_model = optimize_model(opt_cfg)
+```
+
+
+<a name="quickstartserver"></a>
+# Quick Start Server
+
+Users can have a try of NeuralChat server with [NeuralChat Server Command Line](./server/README.html).
+
+
+**Start Server**
+- Command Line (Recommended)
+```shell
+neuralchat_server start --config_file ./server/config/neuralchat.yaml
+```
+
+- Python API
+```python
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
+server_executor = NeuralChatServerExecutor()
+server_executor(config_file="./server/config/neuralchat.yaml", log_file="./log/neuralchat.log")
+```
+
+**Access Text Chat Service**
+
+- Command Line
+```shell
+neuralchat_client textchat --server_ip 127.0.0.1 --port 8000 --query "Tell me about Intel Xeon Scalable Processors."
+```
+
+- Python API
+```python
+from intel_extension_for_transformers.neural_chat import TextChatClientExecutor
+executor = TextChatClientExecutor()
+result = executor(
+    prompt="Tell me about Intel Xeon Scalable Processors.",
+    server_ip="127.0.0.1",
+    port=8000)
+print(result.text)
+```
+
+- Curl with Restful API
+```shell
+curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
+```
+
+**Access Voice Chat Service**
+
+```shell
+neuralchat_client voicechat --server_ip 127.0.0.1 --port 8000 --audio_input_path ./assets/audio/pat.wav --audio_output_path response.wav
+```
+
+**Access Finetune Service**
+```shell
+neuralchat_client finetune --server_ip 127.0.0.1 --port 8000 --model_name_or_path "facebook/opt-125m" --train_file "/path/to/finetune/dataset.json"
+```
+

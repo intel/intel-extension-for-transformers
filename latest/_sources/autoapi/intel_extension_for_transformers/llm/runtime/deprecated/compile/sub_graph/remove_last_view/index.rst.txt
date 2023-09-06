@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_last_view`
+====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_last_view
+
+.. autoapi-nested-parse::
+
+   The RemoveLastView Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_last_view.RemoveLastView
+
+
+
+
+.. py:class:: RemoveLastView
+
+
+
+
+   The RemoveLastView pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'RemoveLastView' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

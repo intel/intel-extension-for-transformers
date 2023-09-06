@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_QKVReshape4D`
+===================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_QKVReshape4D
+
+.. autoapi-nested-parse::
+
+   The Transformer2Dmodel_QKVReshapeTo4D Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_QKVReshape4D.Transformer2Dmodel_QKVReshapeTo4D
+
+
+
+
+.. py:class:: Transformer2Dmodel_QKVReshapeTo4D
+
+
+
+
+   The Transformer2Dmodel_QKVReshapeTo4D pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'Transformer2Dmodel_QKVReshapeTo4D' graph.
+   The search strategy is based on the following pattern mapping configs for the stable diffusionV1-5.
+
+

@@ -1,0 +1,32 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.subgraph_matcher`
+====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.subgraph_matcher
+
+.. autoapi-nested-parse::
+
+   The neural engine subgraph matcher file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.subgraph_matcher.SubGraphMatcher
+
+
+
+
+.. py:class:: SubGraphMatcher
+
+
+
+
+   The SubGraphMatcher class.
+
+

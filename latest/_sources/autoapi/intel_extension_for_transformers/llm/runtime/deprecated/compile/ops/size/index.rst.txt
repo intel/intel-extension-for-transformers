@@ -1,0 +1,37 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.size`
+==================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.size
+
+.. autoapi-nested-parse::
+
+   The neural engine operator mapping file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.size.Size
+
+
+
+
+.. py:class:: Size
+
+
+
+
+   Parse the PrimConstant operator to the neural engine.
+
+   .. py:method:: set_attr(framework, node)
+
+      Extract the node attr from torchscript.
+
+
+

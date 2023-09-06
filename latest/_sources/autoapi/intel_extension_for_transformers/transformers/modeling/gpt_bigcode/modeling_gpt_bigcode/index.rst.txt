@@ -1,0 +1,97 @@
+:py:mod:`intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode`
+=================================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode
+
+.. autoapi-nested-parse::
+
+   PyTorch GPTBigCode model.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodePreTrainedModel
+   intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeModel
+   intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForCausalLM
+   intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForSequenceClassification
+   intel_extension_for_transformers.transformers.modeling.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForTokenClassification
+
+
+
+
+.. py:class:: GPTBigCodePreTrainedModel(*inputs, **kwargs)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+
+.. py:class:: GPTBigCodeModel(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+
+.. py:class:: GPTBigCodeForCausalLM(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.CausalLMOutputWithCrossAttentions]
+
+      labels (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
+          `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
+          are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
+
+
+
+.. py:class:: GPTBigCodeForSequenceClassification(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.SequenceClassifierOutputWithPast]
+
+      labels (`torch.Tensor` of shape `(batch_size,)`, *optional*):
+          Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+          config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+          `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+
+
+
+.. py:class:: GPTBigCodeForTokenClassification(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, labels: Optional[torch.Tensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.TokenClassifierOutput]
+
+      labels (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+          config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+          `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+
+
+

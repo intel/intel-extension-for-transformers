@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`locust`
+================
+
+.. py:module:: locust
+
+

@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices`
+===========================================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices
+
+.. autoapi-nested-parse::
+
+   The RestoreHiddenStatesInLengthAdaptive pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.restore_hidden_states_in_length_adaptive_update_indices.RestoreHiddenStatesInLengthAdaptive
+
+
+
+
+.. py:class:: RestoreHiddenStatesInLengthAdaptive
+
+
+
+
+   The RestoreHiddenStatesInLengthAdaptive pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'RestoreHiddenStatesInLengthAdaptive' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

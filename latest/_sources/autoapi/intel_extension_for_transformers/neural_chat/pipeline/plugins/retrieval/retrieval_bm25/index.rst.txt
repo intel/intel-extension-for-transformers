@@ -1,0 +1,27 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_bm25`
+================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_bm25
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_bm25.SparseBM25Retriever
+
+
+
+
+.. py:class:: SparseBM25Retriever
+
+
+   Retrieve the document database with BM25 sparse algorithm.
+
+

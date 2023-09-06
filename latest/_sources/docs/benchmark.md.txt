@@ -12,7 +12,7 @@ Benchmark
 
 ## Introduction
 
-The Benchmark is used to measure the model performance with the objective settings. It is inherited from Intel® Neural Compressor [Benchmark](https://github.com/intel/neural-compressor/blob/master/docs/source/benchmark.md).
+The Benchmark is used to measure the model performance with the objective settings. It is inherited from Intel® Neural Compressor [Benchmark](https://github.com/intel/neural-compressor/blob/master/docs/source/benchmark.html).
 
 ## Get Started with Benchmark API
 The class `BenchmarkConfig` allows users to adjust the following parameters with objective settings to measure model performance:
@@ -39,8 +39,8 @@ def get_example_inputs(model_name, dataset_name='sst2'):
 ```
 ### Stock Pytorch Model
 ```py
-from intel_extension_for_transformers.optimization import BenchmarkConfig
-from intel_extension_for_transformers.optimization.benchmark import benchmark
+from intel_extension_for_transformers.transformers import BenchmarkConfig
+from intel_extension_for_transformers.transformers.benchmark import benchmark
 
 config = BenchmarkConfig(
     batch_size=16,
@@ -52,8 +52,8 @@ benchmark(model_name_or_path, config, example_inputs=example_inputs)
 ```
 ### IPEX Model
 ```py
-from intel_extension_for_transformers.optimization import BenchmarkConfig
-from intel_extension_for_transformers.optimization.benchmark import benchmark
+from intel_extension_for_transformers.transformers import BenchmarkConfig
+from intel_extension_for_transformers.transformers.benchmark import benchmark
 
 config = BenchmarkConfig(
     backend='ipex',

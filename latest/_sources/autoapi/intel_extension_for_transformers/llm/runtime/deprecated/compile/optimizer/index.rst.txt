@@ -1,0 +1,40 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.optimizer`
+===================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.optimizer
+
+.. autoapi-nested-parse::
+
+   The neural engine optimizer module.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.optimizer.Optimizer
+
+
+
+
+.. py:class:: Optimizer(graph, input_shape=None, *args, **kwargs)
+
+
+   The defintion of the neural engine optimizer.
+
+   .. py:method:: optimize()
+
+      Optimize the graph.
+
+
+   .. py:method:: weight_optimization()
+
+      Optimize weight format.
+
+
+

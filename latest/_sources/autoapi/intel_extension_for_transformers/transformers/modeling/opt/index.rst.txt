@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.modeling.opt`
+====================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.opt
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   modeling_opt/index.rst
+
+

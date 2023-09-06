@@ -1,0 +1,30 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_chroma`
+==================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_chroma
+
+.. autoapi-nested-parse::
+
+   The wrapper for Chroma retriever based on langchain
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_chroma.ChromaRetriever
+
+
+
+
+.. py:class:: ChromaRetriever(database=None, search_type='mmr', search_kwargs={'k': 1, 'fetch_k': 5})
+
+
+   Retrieve the document database with Chroma database using dense retrieval.
+
+

@@ -1,0 +1,32 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor`
+====================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor
+
+.. autoapi-nested-parse::
+
+   The neural engine tensor file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.tensor.Tensor
+
+
+
+
+.. py:class:: Tensor(name='', source_op=None, dest_op=None, shape=None, data=None, dtype=None, location=None)
+
+
+
+
+   The definition of the neural engine.
+
+

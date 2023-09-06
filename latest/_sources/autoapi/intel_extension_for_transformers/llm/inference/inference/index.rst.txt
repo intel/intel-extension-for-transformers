@@ -1,0 +1,142 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.inference.inference`
+==================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.inference.inference
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.inference.inference.model_is_optimized
+   intel_extension_for_transformers.llm.inference.inference.load_model
+   intel_extension_for_transformers.llm.inference.inference.predict_stream
+   intel_extension_for_transformers.llm.inference.inference.predict
+
+
+
+.. py:function:: model_is_optimized(config)
+
+   Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a
+   new input token_idx.
+
+
+.. py:function:: load_model(model_name, tokenizer_name, device='cpu', use_hpu_graphs=False, cpu_jit=False, use_cache=True, peft_path=None, use_deepspeed=False, optimization_config=None, hf_access_token=None)
+
+   Load the model and initialize the tokenizer.
+
+   :param model_name: The name of the model.
+   :type model_name: str
+   :param device: The device for the model. Defaults to 'cpu'. The valid value is 'cpu', 'cuda' or 'hpu'.
+   :type device: str, optional
+   :param use_hpu_graphs: Whether to use HPU graphs. Defaults to False. Only set when device is hpu.
+   :type use_hpu_graphs: bool, optional
+
+   :returns: None
+
+   :raises ValueError: If the model is not supported, ValueError is raised.
+
+
+.. py:function:: predict_stream(**params)
+
+   Generates streaming text based on the given parameters and prompt.
+
+   :param params: A dictionary containing the parameters for text generation.
+   :type params: dict
+   :param `device`: Specifies the device type for text generation. It can be either "cpu", "cuda" or "hpu".
+   :type `device`: string
+   :param `prompt`: Represents the initial input or context provided to the text generation model.
+   :type `prompt`: string
+   :param `temperature`: Controls the randomness of the generated text.
+                         Higher values result in more diverse outputs.
+   :type `temperature`: float
+   :param `top_p`: Specifies the cumulative probability threshold for using in the top-p sampling strategy.
+                   Smaller values make the output more focused.
+   :type `top_p`: float
+   :param `top_k`: Specifies the number of highest probability tokens to consider in the top-k sampling strategy.
+   :type `top_k`: int
+   :param `repetition_penalty`: Controls the penalty applied to repeated tokens in the generated text.
+                                Higher values discourage repetition.
+   :type `repetition_penalty`: float
+   :param `max_new_tokens`: Limits the maximum number of tokens to be generated.
+   :type `max_new_tokens`: int
+   :param `do_sample`: Determines whether to use sampling-based text generation.
+                       If set to True, the output will be sampled; otherwise,
+                       it will be determined by the model's top-k or top-p strategy.
+   :type `do_sample`: bool
+   :param `num_beams`: Controls the number of beams used in beam search.
+                       Higher values increase the diversity but also the computation time.
+   :type `num_beams`: int
+   :param `model_name`: Specifies the name of the pre-trained model to use for text generation.
+                        If not provided, the default model is "mosaicml/mpt-7b-chat".
+   :type `model_name`: string
+   :param `num_return_sequences`: Specifies the number of alternative sequences to generate.
+   :type `num_return_sequences`: int
+   :param `bad_words_ids`: Contains a list of token IDs that should not appear in the generated text.
+   :type `bad_words_ids`: list or None
+   :param `force_words_ids`: Contains a list of token IDs that must be included in the generated text.
+   :type `force_words_ids`: list or None
+   :param `use_hpu_graphs`: Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
+   :type `use_hpu_graphs`: bool
+   :param `use_cache`: Determines whether to utilize kv cache for accelerated generation.
+   :type `use_cache`: bool
+
+   :returns: A generator that yields the generated streaming text.
+   :rtype: generator
+
+
+.. py:function:: predict(**params)
+
+   Generates streaming text based on the given parameters and prompt.
+
+   :param params: A dictionary containing the parameters for text generation.
+   :type params: dict
+   :param `device`: Specifies the device type for text generation. It can be either "cpu", "cuda" or "hpu".
+   :type `device`: string
+   :param `prompt`: Represents the initial input or context provided to the text generation model.
+   :type `prompt`: string
+   :param `temperature`: Controls the randomness of the generated text.
+                         Higher values result in more diverse outputs.
+   :type `temperature`: float
+   :param `top_p`: Specifies the cumulative probability threshold for using in the top-p sampling strategy.
+                   Smaller values make the output more focused.
+   :type `top_p`: float
+   :param `top_k`: Specifies the number of highest probability tokens to consider in the top-k sampling strategy.
+   :type `top_k`: int
+   :param `repetition_penalty`: Controls the penalty applied to repeated tokens in the generated text.
+                                Higher values discourage repetition.
+   :type `repetition_penalty`: float
+   :param `max_new_tokens`: Limits the maximum number of tokens to be generated.
+   :type `max_new_tokens`: int
+   :param `do_sample`: Determines whether to use sampling-based text generation.
+                       If set to True, the output will be sampled; otherwise,
+                       it will be determined by the model's top-k or top-p strategy.
+   :type `do_sample`: bool
+   :param `num_beams`: Controls the number of beams used in beam search.
+                       Higher values increase the diversity but also the computation time.
+   :type `num_beams`: int
+   :param `model_name`: Specifies the name of the pre-trained model to use for text generation.
+                        If not provided, the default model is "mosaicml/mpt-7b-chat".
+   :type `model_name`: string
+   :param `num_return_sequences`: Specifies the number of alternative sequences to generate.
+   :type `num_return_sequences`: int
+   :param `bad_words_ids`: Contains a list of token IDs that should not appear in the generated text.
+   :type `bad_words_ids`: list or None
+   :param `force_words_ids`: Contains a list of token IDs that must be included in the generated text.
+   :type `force_words_ids`: list or None
+   :param `use_hpu_graphs`: Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
+   :type `use_hpu_graphs`: bool
+   :param `use_cache`: Determines whether to utilize kv cache for accelerated generation.
+   :type `use_cache`: bool
+
+   :returns: A generator that yields the generated streaming text.
+   :rtype: generator
+
+

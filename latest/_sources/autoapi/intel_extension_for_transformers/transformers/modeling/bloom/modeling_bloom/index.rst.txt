@@ -1,0 +1,100 @@
+:py:mod:`intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom
+
+.. autoapi-nested-parse::
+
+   PyTorch BLOOM model.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.BloomGelu
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.build_alibi_tensor
+   intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.dropout_add
+   intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_forward
+   intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_back
+
+
+
+.. py:function:: build_alibi_tensor(attention_mask: torch.Tensor, num_heads: int, dtype: torch.dtype) -> torch.Tensor
+
+   Link to paper: https://arxiv.org/abs/2108.12409 Alibi tensor is not causal as the original paper mentions, it
+   relies on a translation invariance of softmax for quick implementation: with l being a tensor, and a fixed value
+   `softmax(l+a) = softmax(l)`. Based on
+   https://github.com/ofirpress/attention_with_linear_biases/blob/
+   a35aaca144e0eb6b789dfcb46784c4b8e31b7983/fairseq/models/transformer.py#L742
+   TODO @thomasw21 this doesn't work as nicely due to the masking strategy, and so masking varies slightly.
+
+   Args:
+   Returns tensor shaped (batch_size * num_heads, 1, max_seq_len)
+       attention_mask (`torch.Tensor`):
+           Token-wise attention mask, this should be of shape (batch_size, max_seq_len).
+       num_heads (`int`, *required*):
+           number of heads
+       dtype (`torch.dtype`, *optional*, default=`torch.bfloat16`):
+           dtype of the output tensor
+
+
+.. py:function:: dropout_add(x: torch.Tensor, residual: torch.Tensor, prob: float, training: bool) -> torch.Tensor
+
+   Dropout add function
+
+   :param x: input tensor
+   :type x: `torch.tensor`, *required*
+   :param residual: esidual tensor
+   :type residual: `torch.tensor`, *required*
+   :param prob: dropout probability
+   :type prob: `float`, *required*
+   :param training: training mode
+   :type training: `bool`, *required*
+
+
+.. py:function:: bloom_gelu_forward(x: torch.Tensor) -> torch.Tensor
+
+   Custom bias GELU function. Adapted from Megatron-DeepSpeed code.
+   Here we use a simple implementation (inference) to make the model jitable.
+
+   :param x: input hidden states
+   :type x: `torch.tensor`, *required*
+
+
+.. py:function:: bloom_gelu_back(g: torch.Tensor, x: torch.Tensor) -> torch.Tensor
+
+   gradient of tanh approximation of gelu gradient of actual gelu is: 0.5 * (1. + torch.erf(x * 0.70710678)) +
+   0.3989423 * x * torch.exp(-0.5 * x * x)
+
+   :param g: gradient output tensor
+   :type g: `torch.tensor`, *required*
+   :param x: input tensor
+   :type x: `torch.tensor`, *required*
+
+
+.. py:class:: BloomGelu
+
+
+
+
+   BloomBiasGelu wrapper function that make use of the simple function on inference mode to make the model
+   torchscriptable and use the autograd function in training mode to get the accurate results of the gradients Partly
+   copied from Megatron-DeepSpeed code and adapted for our needs
+
+   See here why autograd functions are not torchscriptable: https://github.com/pytorch/pytorch/issues/22329
+
+

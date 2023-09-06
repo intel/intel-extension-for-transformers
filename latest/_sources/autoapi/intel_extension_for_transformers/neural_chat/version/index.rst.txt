@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.version`
+==============================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.version
+
+.. autoapi-nested-parse::
+
+   Intel® Neural Chat: An open-source Python library supporting LLM chatbot.
+
+
+

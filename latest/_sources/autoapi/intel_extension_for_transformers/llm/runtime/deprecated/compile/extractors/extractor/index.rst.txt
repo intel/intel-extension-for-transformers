@@ -1,0 +1,38 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors.extractor`
+==============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors.extractor
+
+.. autoapi-nested-parse::
+
+   The neural engine base extractor file.
+
+   This is the base extractor class for tensorflow and onnx.
+   Please refer to onnx_extractor.py and tf_extractor.py for more details.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors.extractor.Extractor
+
+
+
+
+.. py:class:: Extractor
+
+
+
+
+   Extractor base class.
+
+   A super class for an operation extractor.
+   Do additional extraction of operation attributes without modifying of graph topology.
+
+

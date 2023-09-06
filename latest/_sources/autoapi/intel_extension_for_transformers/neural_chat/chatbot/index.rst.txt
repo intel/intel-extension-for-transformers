@@ -1,0 +1,59 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.chatbot`
+==============================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.chatbot
+
+.. autoapi-nested-parse::
+
+   Neural Chat Chatbot API.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.chatbot.build_chatbot
+   intel_extension_for_transformers.neural_chat.chatbot.finetune_model
+   intel_extension_for_transformers.neural_chat.chatbot.optimize_model
+
+
+
+.. py:function:: build_chatbot(config: intel_extension_for_transformers.neural_chat.config.PipelineConfig = None)
+
+   Build the chatbot with a given configuration.
+
+   :param config: Configuration for building the chatbot.
+   :type config: PipelineConfig
+
+   :returns: The chatbot model adapter.
+   :rtype: adapter
+
+   .. rubric:: Example
+
+   from intel_extension_for_transformers.neural_chat import build_chatbot
+   pipeline = build_chatbot()
+   response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
+
+
+.. py:function:: finetune_model(config: intel_extension_for_transformers.neural_chat.config.BaseFinetuningConfig)
+
+   Finetune the model based on the provided configuration.
+
+   :param config: Configuration for finetuning the model.
+   :type config: BaseFinetuningConfig
+
+
+.. py:function:: optimize_model(model, config)
+
+   Optimize the model based on the provided configuration.
+
+   :param config: Configuration for optimizing the model.
+   :type config: OptimizationConfig
+
+

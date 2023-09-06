@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/autoapi/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox">
+<span id="intel-extension-for-transformers-transformers-modeling-gpt-neox-modeling-gpt-neox"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox" title="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox" title="Link to this heading"></a></h1>
+<p>PyTorch GPTNeoX model.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXPreTrainedModel" title="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXPreTrainedModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GPTNeoXPreTrainedModel</span></code></a></p></td>
+<td><p>An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXModel" title="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXModel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GPTNeoXModel</span></code></a></p></td>
+<td><p>An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM" title="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GPTNeoXForCausalLM</span></code></a></p></td>
+<td><p>An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForSequenceClassification" title="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForSequenceClassification"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GPTNeoXForSequenceClassification</span></code></a></p></td>
+<td><p>An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.rotate_half" title="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.rotate_half"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rotate_half</span></code></a>(x)</p></td>
+<td><p>Rotates half the hidden dims of the input.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXPreTrainedModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.</span></span><span class="sig-name descname"><span class="pre">GPTNeoXPreTrainedModel</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXPreTrainedModel" title="Link to this definition"></a></dt>
+<dd><p>An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+models.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.rotate_half">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.</span></span><span class="sig-name descname"><span class="pre">rotate_half</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.rotate_half" title="Link to this definition"></a></dt>
+<dd><p>Rotates half the hidden dims of the input.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXModel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.</span></span><span class="sig-name descname"><span class="pre">GPTNeoXModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXModel" title="Link to this definition"></a></dt>
+<dd><p>An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+models.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXModel.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.LongTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attention_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.LongTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs_embeds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_key_values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.FloatTensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_attentions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_hidden_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">transformers.modeling_outputs.BaseModelOutputWithPast</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXModel.forward" title="Link to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>past_key_values (<cite>tuple(tuple(torch.FloatTensor))</cite> of length <cite>config.n_layers</cite> with</dt><dd><p>each tuple having 4 tensors of shape <cite>(batch_size, num_heads, sequence_length - 1, embed_size_per_head)</cite>):
+Contains precomputed key and value hidden states of the attention blocks.
+Can be used to speed up decoding.
+If <cite>past_key_values</cite> are used, the user can optionally input only the last <cite>decoder_input_ids</cite> (those that
+don’t have their past key value states given to this model) of shape <cite>(batch_size, 1)</cite> instead of all
+<cite>decoder_input_ids</cite> of shape <cite>(batch_size, sequence_length)</cite>.</p>
+</dd>
+<dt>use_cache (<cite>bool</cite>, <em>optional</em>):</dt><dd><p>If set to <cite>True</cite>, <cite>past_key_values</cite> key value states are returned and can be used to speed up decoding
+(see <cite>past_key_values</cite>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.</span></span><span class="sig-name descname"><span class="pre">GPTNeoXForCausalLM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM" title="Link to this definition"></a></dt>
+<dd><p>An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+models.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.LongTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_key_values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.FloatTensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attention_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.LongTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs_embeds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.LongTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_attentions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_hidden_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">transformers.modeling_outputs.CausalLMOutputWithPast</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM.forward" title="Link to this definition"></a></dt>
+<dd><dl>
+<dt>past_key_values (<cite>tuple(tuple(torch.FloatTensor))</cite>,</dt><dd><p><em>optional</em>, returned when <cite>use_cache=True</cite> is passed or when <cite>config.use_cache=True</cite>):
+Tuple of <cite>tuple(torch.FloatTensor)</cite> of length <cite>config.n_layers</cite>, with each tuple having 2 tensors of shape
+<cite>(batch_size, num_heads, sequence_length, embed_size_per_head)</cite>) and 2 additional tensors of shape
+<cite>(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)</cite>. The two additional tensors are
+only required when the model is used as a decoder in a Sequence to Sequence model.</p>
+<p>Contains pre-computed hidden-states (key and values in the self-attention blocks that can be used (see
+<cite>past_key_values</cite> input) to speed up sequential decoding.</p>
+<p>If <cite>past_key_values</cite> are used, the user can optionally input only the last <cite>decoder_input_ids</cite> (those
+that don’t have their past key value states given to this model) of shape <cite>(batch_size, 1)</cite> instead of
+all <cite>decoder_input_ids</cite> of shape <cite>(batch_size, sequence_length)</cite>.</p>
+</dd>
+<dt>labels (<cite>torch.LongTensor</cite> of shape <cite>(batch_size, sequence_length)</cite>, <em>optional</em>):</dt><dd><p>Labels for computing the left-to-right language modeling loss (next word prediction). Indices should be
+in <cite>[-100, 0, …, config.vocab_size]</cite> (see <cite>input_ids</cite> docstring) Tokens with indices set to <cite>-100</cite> are
+ignored (masked), the loss is only computed for the tokens with labels n <cite>[0, …, config.vocab_size]</cite>.</p>
+</dd>
+<dt>use_cache (<cite>bool</cite>, <em>optional</em>):</dt><dd><p>If set to <cite>True</cite>, <cite>past_key_values</cite> key value states are returned and can be used to speed up decoding
+(see <cite>past_key_values</cite>).</p>
+</dd>
+</dl>
+<p>Returns:</p>
+<p>Example:</p>
+<p><a href="#id1"><span class="problematic" id="id2">``</span></a><a href="#id3"><span class="problematic" id="id4">`</span></a>python
+&gt;&gt;&gt; from transformers import AutoTokenizer, GPTNeoXForCausalLM, GPTNeoXConfig
+&gt;&gt;&gt; import torch</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">config</span> <span class="o">=</span> <span class="n">GPTNeoXConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">config</span><span class="o">.</span><span class="n">is_decoder</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">GPTNeoXForCausalLM</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="s2">&quot;Hello, my dog is cute&quot;</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">prediction_logits</span> <span class="o">=</span> <span class="n">outputs</span><span class="o">.</span><span class="n">logits</span>
+<span class="go">```</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForSequenceClassification">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.</span></span><span class="sig-name descname"><span class="pre">GPTNeoXForSequenceClassification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForSequenceClassification" title="Link to this definition"></a></dt>
+<dd><p>An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+models.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForSequenceClassification.forward">
+<span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.LongTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attention_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.LongTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs_embeds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">head_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.FloatTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_key_values</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.FloatTensor</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.LongTensor</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_attentions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_hidden_states</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">torch.Tensor</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">transformers.modeling_outputs.SequenceClassifierOutputWithPast</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/modeling/gpt_neox/modeling_gpt_neox.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForSequenceClassification.forward" title="Link to this definition"></a></dt>
+<dd><dl class="simple">
+<dt>labels (<cite>torch.LongTensor</cite> of shape <cite>(batch_size,)</cite>, <em>optional</em>):</dt><dd><p>Labels for computing the sequence classification/regression loss. Indices should be in <cite>[0, …,
+config.num_labels - 1]</cite>. If <cite>config.num_labels == 1</cite> a regression loss is computed (Mean-Square loss), If
+<cite>config.num_labels &gt; 1</cite> a classification loss is computed (Cross-Entropy).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0dbdfcf5b0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

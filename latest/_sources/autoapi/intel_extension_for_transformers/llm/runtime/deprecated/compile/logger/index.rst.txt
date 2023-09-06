@@ -1,0 +1,86 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.logger`
+================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.logger
+
+.. autoapi-nested-parse::
+
+   The neural engine logger file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.logger.Logger
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.logger.log
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.logger.debug
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.logger.error
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.logger.fatal
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.logger.info
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.logger.warn
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.logger.warning
+
+
+
+.. py:class:: Logger
+
+
+
+
+   The logger class.
+
+   .. py:method:: get_logger()
+
+      Get logger.
+
+
+
+.. py:function:: log(level, msg, *args, **kwargs)
+
+   The format for the log level.
+
+
+.. py:function:: debug(msg, *args, **kwargs)
+
+   The format for the debug level.
+
+
+.. py:function:: error(msg, *args, **kwargs)
+
+   The format for the error level.
+
+
+.. py:function:: fatal(msg, *args, **kwargs)
+
+   The format for the fatal level.
+
+
+.. py:function:: info(msg, *args, **kwargs)
+
+   The format for the info level.
+
+
+.. py:function:: warn(msg, *args, **kwargs)
+
+   The format for the warn level.
+
+
+.. py:function:: warning(msg, *args, **kwargs)
+
+   The format for the warning level.
+
+

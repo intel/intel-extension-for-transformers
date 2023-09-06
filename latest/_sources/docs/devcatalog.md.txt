@@ -74,7 +74,7 @@ pip install -v .
 You can check if installation succeeded by running `pip list | grep intel_extension_for_transformers`
 
 ### 3. How To Run
-In this example, we show how to use the quantization API for model optimization. For other model compression samples, refer to [Get Started Page](./get_started.md). For additional validated examples, refer to [Support Model Matrix](./examples.md)
+In this example, we show how to use the quantization API for model optimization. For other model compression samples, refer to [Get Started Page](./get_started.html). For additional validated examples, refer to [Support Model Matrix](./examples.html)
 
 #### 3.1 Install Requirements
 ```bash
@@ -98,8 +98,8 @@ raw_datasets = raw_datasets.map(lambda e: tokenizer(e['sentence'], truncation=Tr
 Documentation for API usage can be found [here](https://github.com/intel/intel-extension-for-transformers/tree/main/docs)
 
 ```python
-from intel_extension_for_transformers.optimization import QuantizationConfig, metrics, objectives
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # load config, model and metric
 config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
 # pre-trained model is available on https://huggingface.co/models
@@ -134,7 +134,7 @@ trainer.export_to_onnx(scale_mapping=True)
 ```
 
 #### 3.4 Model Inference
-For deployment, we show how to use Neural Engine for model inference. For additional validated examples under different backends, refer to [Support Model Matrix](./examples.md)
+For deployment, we show how to use Neural Engine for model inference. For additional validated examples under different backends, refer to [Support Model Matrix](./examples.html)
 
 ```python
 import os

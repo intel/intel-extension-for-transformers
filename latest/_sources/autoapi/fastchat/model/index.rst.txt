@@ -1,0 +1,20 @@
+:orphan:
+
+:py:mod:`fastchat.model`
+========================
+
+.. py:module:: fastchat.model
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   apply_delta/index.rst
+   apply_lora/index.rst
+   convert_fp16/index.rst
+   make_delta/index.rst
+
+

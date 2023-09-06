@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.stableDiffusion_QuantizeFusion`
+==================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.stableDiffusion_QuantizeFusion
+
+.. autoapi-nested-parse::
+
+   The StableDiffusion_QuantizeFusion Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.stableDiffusion_QuantizeFusion.StableDiffusion_QuantizeFusion
+
+
+
+
+.. py:class:: StableDiffusion_QuantizeFusion
+
+
+
+
+   The StableDiffusion_QuantizeFusion pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'StableDiffusion_QuantizeFusion' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

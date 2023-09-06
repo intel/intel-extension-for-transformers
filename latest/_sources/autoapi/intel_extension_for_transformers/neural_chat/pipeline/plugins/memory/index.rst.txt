@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.memory`
+==============================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.memory
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   memory/index.rst
+
+

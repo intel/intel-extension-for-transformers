@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Element-wise Injector &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../search.html" />
+    <link rel="next" title="Sparse GEMM VNNI" href="kernel_vnni.html" />
+    <link rel="prev" title="Binary Injectors" href="binaryop_injector.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../../../../../../../../kernel_desc.html">Implementation Details</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="3D_inference.html">3D Inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="binaryop_injector.html">Binary Injectors</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Element-wise Injector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_vnni.html">Sparse GEMM VNNI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_amx.html">Sparse GEMM AMX</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_avx512f.html">Sparse GEMM AVX512F</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_transpose_matmul.html">Transposed MatMul</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_transpose_mha.html">Transposed MHA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_dynamic_quant_matmul.html">Dynamic Quant Matmul</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../kernel.html">Kernels</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../kernel_desc.html">Implementation Details</a></li>
+      <li class="breadcrumb-item active">Element-wise Injector</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc/eltwise_injector.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="element-wise-injector">
+<h1>Element-wise Injector<a class="headerlink" href="#element-wise-injector" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#framework-features">Framework Features</a></p>
+<ul>
+<li><p><a class="reference external" href="#param_typeshpp">param_types.hpp</a></p>
+<ul>
+<li><p><a class="reference external" href="#alphabetascale-meaning">alpha,beta,scale meaning</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#operator_deschpp">operator_desc.hpp</a></p></li>
+<li><p><a class="reference external" href="#jit_eltwise_injectorhpp">jit_eltwise_injector.hpp</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#usage">Usage</a></p>
+<ul>
+<li><p><a class="reference external" href="#developers-perspective">Developer’s Perspective.</a></p></li>
+<li><p><a class="reference external" href="#users-perspective">User’s Perspective</a></p></li>
+</ul>
+</li>
+</ul>
+<p><a name="VRz3S"></a></p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>op-fusion is a very widely used optimization approach in Deep-Learning. Considering we have two ops, Conv and Relu, in traditional way, we apply Conv op first, then store the value in the memory, after that we load the value and apply Relu. Obviously there have a useless load&amp;store operations, we can fuse the Conv&amp;Relu to remove the useless I/O, this is the key idea about op-fusion.<br />
+In Transformers-accelerated Libraries, we will provide a new class named injector for the op-fusion. From the perspective of the developers who want to apply the op-fusion optimization, they can make the injector a member of their jit_kernel class and initialize it in the kernel class’s construct function, when they want to apply postop, just need to call <strong>eltwise_injector-&gt;vector_compute</strong> and tell injector what registers has been used by <strong>eltwise_injector-&gt;escape_regs</strong>. Besides, the upper-level users also should call <strong>eltwise_injector-&gt;prepare_table</strong> to prepare the LUT which element-wise-op needs at the end of their xbyak kernel.<br />
+<strong>eltwise-injector</strong> supports 8 operators currently, there are exp, tanh, gelu, relu, linear, quantize(fp32-&gt;u8/s8), dequantize(u8/s8-&gt;fp32) and look-up result from LUT(as experimental API now). <strong>eltwise_injector</strong> also supports a postop-chain for applying multiple postops(pure-eltwise op now, will support binary-op in the future) sequentially.
+<a name="vY7m9"></a></p>
+</section>
+<section id="framework-features">
+<h2>Framework Features<a class="headerlink" href="#framework-features" title="Link to this heading"></a></h2>
+<p><a name="Bu07F"></a></p>
+<section id="param-types-hpp">
+<h3>param_types.hpp<a class="headerlink" href="#param-types-hpp" title="Link to this heading"></a></h3>
+<p>Follow classes/structs will be introduced. The most important class is <code class="docutils literal notranslate"><span class="pre">postop_attr</span></code>, which indicate the postop’s attribute developer wants to apply, including data_type(e.g. fp32/bf16), op_type(only support eltwise now), algo_type(e.g. Gelu/Relu), aplha(zero points for quantization), beta, sacle for some operators such as linear&amp;quantize.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">postop_alg</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">exp</span><span class="p">,</span><span class="w"> </span><span class="n">gelu</span><span class="p">,</span><span class="w"> </span><span class="n">tanh</span><span class="p">,</span><span class="w"> </span><span class="n">gelu</span><span class="p">,</span><span class="w"> </span><span class="n">relu</span><span class="p">,</span><span class="w"> </span><span class="n">quantize</span><span class="p">,</span><span class="w"> </span><span class="n">dequantize</span><span class="p">,</span><span class="w"> </span><span class="n">linear</span><span class="p">,</span><span class="w"> </span><span class="n">int8_lut</span><span class="w"> </span><span class="p">};</span>
+
+<span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">postop_type</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="kt">uint8_t</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eltwise</span><span class="w"> </span><span class="p">};</span>
+
+<span class="c1">// postop attribute for op-fusion</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">postop_attr</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="n">data_type</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span>
+<span class="w">  </span><span class="n">postop_type</span><span class="w"> </span><span class="n">op_type</span><span class="p">;</span>
+<span class="w">  </span><span class="n">postop_alg</span><span class="w"> </span><span class="n">op_alg</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">float</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">float</span><span class="w"> </span><span class="n">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">float</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">postop_attr</span><span class="p">(){};</span>
+
+<span class="w">  </span><span class="n">postop_attr</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">data_type</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dt</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">postop_type</span><span class="o">&amp;</span><span class="w"> </span><span class="n">op_type</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">postop_alg</span><span class="o">&amp;</span><span class="w"> </span><span class="n">op_alg</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">alpha</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span>
+<span class="w">              </span><span class="kt">float</span><span class="w"> </span><span class="n">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">scale</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0</span><span class="p">)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">dt</span><span class="p">(</span><span class="n">dt</span><span class="p">),</span><span class="w"> </span><span class="n">op_type</span><span class="p">(</span><span class="n">op_type</span><span class="p">),</span><span class="w"> </span><span class="n">op_alg</span><span class="p">(</span><span class="n">op_alg</span><span class="p">),</span><span class="w"> </span><span class="n">alpha</span><span class="p">(</span><span class="n">alpha</span><span class="p">),</span><span class="w"> </span><span class="n">beta</span><span class="p">(</span><span class="n">beta</span><span class="p">),</span><span class="w"> </span><span class="n">scale</span><span class="p">(</span><span class="n">scale</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<section id="alpha-beta-scale-meaning">
+<h4>alpha,beta,scale meaning<a class="headerlink" href="#alpha-beta-scale-meaning" title="Link to this heading"></a></h4>
+<p>these 3 params are only used in quantize, dequantize, linear, relu.
+The quantize’s mathematical definition is fp32=saturate(round(int8/scale+zero_point)) and the dequantize’s mathematical definition is int8=(fp32-zero_point)*scale. In these two operators,alpha represents zero_point, scale represents scale and beta is unused.
+The mathematical definition of linear is y=αx+β. attr’s alpha represents alpha, beta represents beta and scale is unused.
+The relu’s mathematical definition is as follow, attr’s alpha represents alpha, beta and scale are unused.</p>
+<p>$$
+\begin{align}
+y =\begin{cases}
+\alpha x &amp; \text{if $x \le 0 $} \
+x &amp; \text{if $x \gt 0 $}
+\end{cases}
+\end{align}
+$$</p>
+<p><a name="raAMd"></a></p>
+</section>
+</section>
+<section id="operator-desc-hpp">
+<h3>operator_desc.hpp<a class="headerlink" href="#operator-desc-hpp" title="Link to this heading"></a></h3>
+<p>The member <code class="docutils literal notranslate"><span class="pre">apply_postops_list_</span></code>store the <code class="docutils literal notranslate"><span class="pre">postop_attr</span></code> which user want to apply.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">operator_desc</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="n">operator_desc</span><span class="p">()</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">ker_kind_</span><span class="p">(</span><span class="n">jd</span><span class="o">::</span><span class="n">kernel_kind</span><span class="o">::</span><span class="n">undef</span><span class="p">),</span>
+<span class="w">        </span><span class="n">ker_prop_</span><span class="p">(</span><span class="n">jd</span><span class="o">::</span><span class="n">kernel_prop</span><span class="o">::</span><span class="n">undef</span><span class="p">),</span>
+<span class="w">        </span><span class="n">eng_kind_</span><span class="p">(</span><span class="n">jd</span><span class="o">::</span><span class="n">engine_kind</span><span class="o">::</span><span class="n">undef</span><span class="p">),</span>
+<span class="w">        </span><span class="n">impl_nthr_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+<span class="w">        </span><span class="n">ts_descs_</span><span class="p">({}),</span>
+<span class="w">        </span><span class="n">attrs_</span><span class="p">({}),</span>
+<span class="w">        </span><span class="n">apply_postops_list_</span><span class="p">({})</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="n">operator_desc</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">jd</span><span class="o">::</span><span class="n">kernel_kind</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ker_kind</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">jd</span><span class="o">::</span><span class="n">kernel_prop</span><span class="o">&amp;</span><span class="w"> </span><span class="n">ker_prop</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">jd</span><span class="o">::</span><span class="n">engine_kind</span><span class="o">&amp;</span><span class="w"> </span><span class="n">eng_kind</span><span class="p">,</span>
+<span class="w">                </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">tensor_desc</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">ts_descs</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">attrs</span><span class="p">,</span>
+<span class="w">                </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">postop_attr</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">apply_postops_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{})</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">ker_kind_</span><span class="p">(</span><span class="n">ker_kind</span><span class="p">),</span>
+<span class="w">        </span><span class="n">ker_prop_</span><span class="p">(</span><span class="n">ker_prop</span><span class="p">),</span>
+<span class="w">        </span><span class="n">eng_kind_</span><span class="p">(</span><span class="n">eng_kind</span><span class="p">),</span>
+<span class="w">        </span><span class="n">impl_nthr_</span><span class="p">((</span><span class="n">omp_get_max_threads</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">omp_get_num_procs</span><span class="p">())</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">omp_get_max_threads</span><span class="p">()),</span>
+<span class="w">        </span><span class="n">ts_descs_</span><span class="p">(</span><span class="n">ts_descs</span><span class="p">),</span>
+<span class="w">        </span><span class="n">attrs_</span><span class="p">(</span><span class="n">attrs</span><span class="p">),</span>
+<span class="w">        </span><span class="n">apply_postops_list_</span><span class="p">(</span><span class="n">apply_postops_list</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="w">  </span><span class="k">private</span><span class="o">:</span>
+<span class="w">   </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">postop_attr</span><span class="o">&gt;</span><span class="w"> </span><span class="n">apply_postops_list_</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><a name="hZaPk"></a></p>
+</section>
+<section id="jit-eltwise-injector-hpp">
+<h3>jit_eltwise_injector.hpp<a class="headerlink" href="#jit-eltwise-injector-hpp" title="Link to this heading"></a></h3>
+<p>We design an element-wise injector named eltwise_injector which can apply eltwise-ops. We will combine the injectors like eltwise_injector, binary_injector into a new injector named postop-injector in the future.<br />Here are the APIs which eltwise_injector expose to the developer:<br /><code class="docutils literal notranslate"><span class="pre">eltwise_injector_init</span></code> is used for injector initialization.<br /><code class="docutils literal notranslate"><span class="pre">vector_compute</span></code> is used for executing the postop calculate, users can indicate the eltwiseop’s idx to select the op which they want to apply, if the idx list is empty, the injector will apply all ops in postop-chian.<br /><code class="docutils literal notranslate"><span class="pre">escape_regs</span></code> is used for telling injector which registers have been used in upper-level kernel.All dst zmm registers should be registered.<br />
+<code class="docutils literal notranslate"><span class="pre">escape_erase</span></code> is used for removing the specified type register ID from used_regs set, if reg_idx is not given,this function will erase all IDs by default.
+<code class="docutils literal notranslate"><span class="pre">prepare_table</span></code> is used for inserting the LUT which injected code needed at the end of the upper-level kernel.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">jit_eltwise_injector</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">jit_eltwise_injector</span><span class="p">(){};</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">jit_eltwise_injector</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
+
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">eltwise_injector_init</span><span class="p">(</span><span class="n">jit_generator</span><span class="o">*</span><span class="w"> </span><span class="n">ptr</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">postop_attr</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">postop_attrs</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">vector_compute</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Xbyak</span><span class="o">::</span><span class="n">Zmm</span><span class="o">&amp;</span><span class="w"> </span><span class="n">zmm_src</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">postop_attr</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">postop_attrs</span><span class="p">,</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="w"> </span><span class="n">postop_idxs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{});</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">escape_regs</span><span class="p">(</span><span class="n">reg_type</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">reg_idx</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">escape_erase</span><span class="p">(</span><span class="n">reg_type</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="kt">int</span><span class="w"> </span><span class="n">reg_idx</span><span class="o">=</span><span class="mi">-1</span><span class="p">);</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">prepare_table</span><span class="p">();</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p><a name="AHBMr"></a></p>
+</section>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="developer-s-perspective">
+<h3>Developer’s Perspective.<a class="headerlink" href="#developer-s-perspective" title="Link to this heading"></a></h3>
+<p><a name="EibWR"></a>
+step0. Add a postop_attrs vector member in your params for pass the postop_attrs to the jit_kernel</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">eltwiseop_param_t</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">element_num</span><span class="p">;</span>
+<span class="w">  </span><span class="n">data_type</span><span class="w"> </span><span class="n">dt</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">postop_attr</span><span class="o">&gt;</span><span class="w"> </span><span class="n">postop_attrs</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p><a name="xqgcY"></a>
+step1. Make injector as a member of your jit_class and init it in your construct&amp;param_init function.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">jit_eltwiseop_t</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">jit_generator</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">jit_eltwiseop_t</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">ssd</span><span class="o">::</span><span class="n">eltwiseop_param_t</span><span class="o">&amp;</span><span class="w"> </span><span class="n">param</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">jit_generator</span><span class="p">(),</span><span class="w"> </span><span class="n">param_</span><span class="p">(</span><span class="n">param</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">eltwise_injector</span><span class="p">.</span><span class="n">eltwise_injector_init</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">param_</span><span class="p">.</span><span class="n">postop_attrs</span><span class="p">);</span>
+<span class="w">    </span><span class="n">assign_regs</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w"> </span><span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="n">ssd</span><span class="o">::</span><span class="n">eltwiseop_param_t</span><span class="w"> </span><span class="n">param_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">jit_eltwise_injector</span><span class="w"> </span><span class="n">eltwise_injector</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">bool</span><span class="w"> </span><span class="nf">eltwiseop_kd_t::init</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">op_attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">op_desc_</span><span class="p">.</span><span class="n">attrs</span><span class="p">();</span>
+<span class="w">  </span><span class="n">params_</span><span class="p">.</span><span class="n">postop_attrs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">op_desc_</span><span class="p">.</span><span class="n">apply_postops_list</span><span class="p">();</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><a name="zcZPl"></a>
+step2. Tell the injector which registers have been used before you apply postops.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">jit_eltwiseop_t::assign_regs</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">remain_task_mask</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Xbyak</span><span class="o">::</span><span class="n">Opmask</span><span class="p">(</span><span class="mi">6</span><span class="p">);</span>
+<span class="w">  </span><span class="n">scratch_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Xbyak</span><span class="o">::</span><span class="n">Reg64</span><span class="p">(</span><span class="n">r10</span><span class="p">);</span>
+<span class="w">  </span><span class="n">reg_src</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Zmm</span><span class="p">(</span><span class="mi">6</span><span class="p">);</span>
+<span class="w">  </span><span class="n">addr_src</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r15</span><span class="p">;</span>
+<span class="w">  </span><span class="n">addr_dst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r14</span><span class="p">;</span>
+<span class="w">  </span><span class="n">reg_param</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rdi</span><span class="p">;</span>
+<span class="w">  </span><span class="n">remain_element_num</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rsi</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">eltwise_injector</span><span class="p">.</span><span class="n">escape_regs</span><span class="p">(</span><span class="n">reg_type</span><span class="o">::</span><span class="n">mask</span><span class="p">,</span><span class="w"> </span><span class="n">remain_task_mask</span><span class="p">.</span><span class="n">getIdx</span><span class="p">());</span>
+<span class="w">  </span><span class="n">eltwise_injector</span><span class="p">.</span><span class="n">escape_regs</span><span class="p">(</span><span class="n">reg_type</span><span class="o">::</span><span class="n">reg64</span><span class="p">,</span><span class="w"> </span><span class="n">scratch_</span><span class="p">.</span><span class="n">getIdx</span><span class="p">());</span>
+<span class="w">  </span><span class="n">eltwise_injector</span><span class="p">.</span><span class="n">escape_regs</span><span class="p">(</span><span class="n">reg_type</span><span class="o">::</span><span class="n">zmm</span><span class="p">,</span><span class="w"> </span><span class="n">reg_src</span><span class="p">.</span><span class="n">getIdx</span><span class="p">());</span>
+<span class="w">  </span><span class="n">eltwise_injector</span><span class="p">.</span><span class="n">escape_regs</span><span class="p">(</span><span class="n">reg_type</span><span class="o">::</span><span class="n">zmm</span><span class="p">,</span><span class="w"> </span><span class="n">addr_src</span><span class="p">.</span><span class="n">getIdx</span><span class="p">());</span>
+<span class="w">  </span><span class="n">eltwise_injector</span><span class="p">.</span><span class="n">escape_regs</span><span class="p">(</span><span class="n">reg_type</span><span class="o">::</span><span class="n">zmm</span><span class="p">,</span><span class="w"> </span><span class="n">addr_dst</span><span class="p">.</span><span class="n">getIdx</span><span class="p">());</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>NOTE:eltwise_injector will avoid allocating special usage registers such as <strong><code class="docutils literal notranslate"><span class="pre">RCX,RDX,RSI,RDI,RSP</span></code></strong>. upper-level op does not need to tell injector the usage information of these registers.</strong>
+<a name="zfFIG"></a>
+step3. Apply the postops where you want and then prepare the LUT at the end of the kernel.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">jit_eltwiseop_t::generate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">preamble</span><span class="p">();</span>
+<span class="w">  </span><span class="n">load_params</span><span class="p">();</span>
+
+<span class="w">  </span><span class="c1">//load data.</span>
+<span class="w">  </span><span class="n">vmovups</span><span class="p">(</span><span class="n">reg_src</span><span class="p">,</span><span class="w"> </span><span class="n">ptr</span><span class="p">[</span><span class="n">addr_src</span><span class="p">]);</span>
+<span class="w">  </span><span class="n">eltwise_injector</span><span class="p">.</span><span class="n">vector_compute</span><span class="p">(</span><span class="n">reg_src</span><span class="p">,</span><span class="w"> </span><span class="n">param_</span><span class="p">.</span><span class="n">postop_attrs</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">//store data.</span>
+<span class="w">  </span><span class="n">vmovups</span><span class="p">(</span><span class="n">ptr</span><span class="p">[</span><span class="n">addr_dst</span><span class="p">],</span><span class="w"> </span><span class="n">reg_src</span><span class="p">);</span>
+
+<span class="w">  </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">postamble</span><span class="p">();</span>
+
+<span class="w">  </span><span class="n">eltwise_injector</span><span class="p">.</span><span class="n">prepare_table</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>NOTE:The postops will be apply <strong><code class="docutils literal notranslate"><span class="pre">in-place</span></code></strong> and storing work is upper op’s task.</strong>
+<a name="rV6bL"></a></p>
+</section>
+<section id="user-s-perspective">
+<h3>User’s Perspective<a class="headerlink" href="#user-s-perspective" title="Link to this heading"></a></h3>
+<p>This is the guide about how to set op-fusion in UT in user’s perspective.
+<a name="IqCA0"></a>
+step0. Prepare the postop_attr</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">postop_attr</span><span class="w"> </span><span class="n">fp32_gelu_attr</span><span class="p">{</span><span class="n">data_type</span><span class="o">::</span><span class="n">fp32</span><span class="p">,</span><span class="w"> </span><span class="n">postop_type</span><span class="o">::</span><span class="n">eltwise</span><span class="p">,</span><span class="w"> </span><span class="n">postop_alg</span><span class="o">::</span><span class="n">gelu</span><span class="p">};</span>
+<span class="n">postop_attr</span><span class="w"> </span><span class="n">bf16_gelu_attr</span><span class="p">{</span><span class="n">data_type</span><span class="o">::</span><span class="n">bf16</span><span class="p">,</span><span class="w"> </span><span class="n">postop_type</span><span class="o">::</span><span class="n">eltwise</span><span class="p">,</span><span class="w"> </span><span class="n">postop_alg</span><span class="o">::</span><span class="n">gelu</span><span class="p">};</span>
+<span class="n">postop_attr</span><span class="w"> </span><span class="n">fp32_gelu_attr</span><span class="p">{</span><span class="n">data_type</span><span class="o">::</span><span class="n">fp32</span><span class="p">,</span><span class="w"> </span><span class="n">postop_type</span><span class="o">::</span><span class="n">eltwise</span><span class="p">,</span><span class="w"> </span><span class="n">postop_alg</span><span class="o">::</span><span class="n">gelu</span><span class="p">};</span>
+<span class="n">postop_attr</span><span class="w"> </span><span class="n">bf16_gelu_attr</span><span class="p">{</span><span class="n">data_type</span><span class="o">::</span><span class="n">bf16</span><span class="p">,</span><span class="w"> </span><span class="n">postop_type</span><span class="o">::</span><span class="n">eltwise</span><span class="p">,</span><span class="w"> </span><span class="n">postop_alg</span><span class="o">::</span><span class="n">gelu</span><span class="p">};</span>
+</pre></div>
+</div>
+<p><a name="kyHEm"></a>
+step1. Gen_case.</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="n">cases</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
+<span class="w">      </span><span class="p">{</span><span class="n">gen_case</span><span class="p">(</span><span class="n">kernel_kind</span><span class="o">::</span><span class="n">eltwiseop</span><span class="p">,</span><span class="w"> </span><span class="n">kernel_prop</span><span class="o">::</span><span class="n">forward_inference</span><span class="p">,</span><span class="w"> </span><span class="n">engine_kind</span><span class="o">::</span><span class="n">cpu</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">data0_desc</span><span class="p">,</span><span class="w"> </span><span class="n">data0_desc</span><span class="p">},</span>
+<span class="w">                </span><span class="p">{{</span><span class="s">&quot;postop_list&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;fp32_gelu+fp32_exp&quot;</span><span class="p">},</span><span class="w"> </span><span class="n">mask_mock1</span><span class="p">,</span><span class="w"> </span><span class="n">reg64_mock1</span><span class="p">,</span><span class="w"> </span><span class="n">zmm_mock1</span><span class="p">},</span>
+<span class="w">                </span><span class="p">{</span><span class="n">fp32_gelu_attr</span><span class="p">,</span><span class="w"> </span><span class="n">fp32_exp_attr</span><span class="p">}),</span>
+<span class="w">       </span><span class="nb">false</span><span class="p">});</span>
+<span class="w">  </span><span class="n">cases</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
+<span class="w">      </span><span class="p">{</span><span class="n">gen_case</span><span class="p">(</span><span class="n">kernel_kind</span><span class="o">::</span><span class="n">eltwiseop</span><span class="p">,</span><span class="w"> </span><span class="n">kernel_prop</span><span class="o">::</span><span class="n">forward_inference</span><span class="p">,</span><span class="w"> </span><span class="n">engine_kind</span><span class="o">::</span><span class="n">cpu</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="n">data1_desc</span><span class="p">,</span><span class="w"> </span><span class="n">data1_desc</span><span class="p">},</span>
+<span class="w">                </span><span class="p">{{</span><span class="s">&quot;postop_list&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;bf16_gelu+bf16_exp&quot;</span><span class="p">},</span><span class="w"> </span><span class="n">mask_mock1</span><span class="p">,</span><span class="w"> </span><span class="n">reg64_mock1</span><span class="p">,</span><span class="w"> </span><span class="n">zmm_mock1</span><span class="p">},</span>
+<span class="w">                </span><span class="p">{</span><span class="n">bf16_gelu_attr</span><span class="p">,</span><span class="w"> </span><span class="n">bf16_exp_attr</span><span class="p">}),</span>
+<span class="w">       </span><span class="nb">false</span><span class="p">});</span>
+</pre></div>
+</div>
+<p><strong>NOTE: please add a pair&lt;”postop_list”,dt1op1+dt2op2+…&gt; in <strong><code class="docutils literal notranslate"><span class="pre">op_attrs</span></code></strong> field for kernel hasing.</strong>
+step2. Check result</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="nf">get_true_data</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">operator_desc</span><span class="o">&amp;</span><span class="w"> </span><span class="n">op_desc</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*&gt;&amp;</span><span class="w"> </span><span class="n">rf_data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">src</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="p">)</span><span class="n">rf_data</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">  </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">dst</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="p">)</span><span class="n">rf_data</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">attr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">op_desc</span><span class="p">.</span><span class="n">apply_postops_list</span><span class="p">();</span>
+
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">num</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">tmp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">your_kernel_logic</span><span class="p">(</span><span class="n">src</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="w">    </span><span class="n">apply_postop_list</span><span class="p">(</span><span class="n">num</span><span class="p">,</span><span class="w"> </span><span class="n">attr</span><span class="p">,</span><span class="w"> </span><span class="n">tmp</span><span class="p">);</span>
+<span class="w">    </span><span class="n">dst</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="n">tmp</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>NOTE: <strong><code class="docutils literal notranslate"><span class="pre">apply_postop_list</span></code></strong> is from head file <strong><code class="docutils literal notranslate"><span class="pre">unit_test_utils.hpp</span></code></strong></strong></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="binaryop_injector.html" class="btn btn-neutral float-left" title="Binary Injectors" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="kernel_vnni.html" class="btn btn-neutral float-right" title="Sparse GEMM VNNI" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da71dc220> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

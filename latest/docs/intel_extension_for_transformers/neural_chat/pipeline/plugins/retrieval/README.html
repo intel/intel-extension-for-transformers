@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div align="center">
+<h1>Retrieval</h3>
+<div align="left"><section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<p>Large Language Models (LLMs) have demonstrated remarkable performance in various Natural Language Processing (NLP) tasks. Compared to earlier pretrained models, LLMs can produce better results on tasks without fine-tuning, reducing the cost of use. The popularity of applications like ChatGPT has attracted many users seeking to address everyday problems. However, some users have encountered a challenge known as “model hallucination,” where LLMs generate incorrect or nonexistent information, raising concerns about content accuracy.</p>
+<p>To improve the accuracy of generated content, two approaches can be considered: expanding the training data or utilizing an external database. Expanding the training data is impractical due to the time and effort required to train a high-performance LLM. It’s challenging to collect and maintain an extensive, up-to-date knowledge corpus. Therefore, we propose an economically efficient alternative: leveraging relevant documents from a local database during content generation. These retrieved documents will be integrated into the input prompt of the LLM to enhance the accuracy and reliability of the generated results.</p>
+<p>The Neural Chat API offers an easy way to create and utilize chatbot models while integrating local documents. Our API simplifies the process of automatically handling and storing local documents in a document store. We provide support for two retrieval methods:</p>
+<ol class="simple">
+<li><p>Dense Retrieval: This method is based on document embeddings, enhancing the accuracy of retrieval. Learn more about <a class="reference external" href="https://medium.com/&#64;aikho/deep-learning-in-information-retrieval-part-ii-dense-retrieval-1f9fecb47de9">here</a> (based on the document embedding)</p></li>
+<li><p>Sparse Retrieval: Using TF-IDF, this method efficiently retrieves relevant information. Explore this approach in detail <a class="reference external" href="https://medium.com/itnext/deep-learning-in-information-retrieval-part-i-introduction-and-sparse-retrieval-12de0423a0b9">here</a>.</p></li>
+</ol>
+<p>The workflow of this plugin consists of three main operations: document indexing, intent detection, and retrieval. The <code class="docutils literal notranslate"><span class="pre">Agent_QA</span></code> initializes itself using the provided <code class="docutils literal notranslate"><span class="pre">input_path</span></code> to construct a local database. During a conversation, the user’s query is first passed to the <code class="docutils literal notranslate"><span class="pre">IntentDetector</span></code> to determine whether the user intends to engage in chitchat or seek answers to specific questions. If the <code class="docutils literal notranslate"><span class="pre">IntentDetector</span></code> determines that the user’s query requires an answer, the retriever is activated to search the database using the user’s query. The documents retrieved from the database serve as reference context in the input prompt, assisting in generating responses using the Large Language Models (LLMs).</p>
+</section>
+<section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
+<p>The most convenient way to use is this plugin is via our <code class="docutils literal notranslate"><span class="pre">build_chatbot</span></code> api as introduced in the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval">example code</a>. The user could refer to it for a simple test.</p>
+<section id="import-the-module-and-set-the-retrieval-config">
+<h2>Import the module and set the retrieval config:<a class="headerlink" href="#import-the-module-and-set-the-retrieval-config" title="Link to this heading"></a></h2>
+<p>The user can download the <a class="reference external" href="https://d1io3yog0oux5.cloudfront.net/_897efe2d574a132883f198f2b119aa39/intel/db/888/8941/file/412439%281%29_12_Intel_AR_WR.pdf">Intel 2022 Annual Report</a> for a test.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">PipelineConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">plugins</span>
+<span class="n">plugins</span><span class="o">.</span><span class="n">retrieval</span><span class="o">.</span><span class="n">enable</span><span class="o">=</span><span class="kc">True</span>
+<span class="n">plugins</span><span class="o">.</span><span class="n">retrieval</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;input_path&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;./Annual_report.pdf&quot;</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span><span class="n">plugins</span><span class="o">=</span><span class="n">plugins</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="build-the-chatbot-and-interact-with-the-chatbot">
+<h2>Build the chatbot and interact with the chatbot:<a class="headerlink" href="#build-the-chatbot-and-interact-with-the-chatbot" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span>
+<span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;What is IDM 2.0?&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Checkout the full example <a class="reference external" href="../../../examples/retrieval/retrieval_chat.py">retrieval_chat.py</a> and have a try!</p>
+</section>
+</section>
+<section id="parameters">
+<h1>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h1>
+<p>The user can costomize the retrieval parameters to meet the personal demmads for better catering the local files. The user can set the specific parameter by plugins.retrieval.args[”xxx”]. Below the description of each available parameters,</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">persist_dir</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">local</span> <span class="n">path</span> <span class="n">to</span> <span class="n">save</span> <span class="n">the</span> <span class="n">processed</span> <span class="n">database</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;./output&quot;</span><span class="o">.</span>
+
+<span class="n">process</span> <span class="p">[</span><span class="nb">bool</span><span class="p">]:</span> <span class="n">Select</span> <span class="n">to</span> <span class="n">process</span> <span class="n">the</span> <span class="n">too</span> <span class="n">long</span> <span class="n">document</span> <span class="n">into</span> <span class="n">small</span> <span class="n">chucks</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;True&quot;</span><span class="o">.</span>
+
+<span class="n">input_path</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">user</span> <span class="n">local</span> <span class="n">path</span> <span class="n">to</span> <span class="n">a</span> <span class="n">file</span> <span class="n">folder</span> <span class="ow">or</span> <span class="n">a</span> <span class="n">specific</span> <span class="n">file</span> <span class="n">path</span><span class="o">.</span> <span class="n">The</span> <span class="n">code</span> <span class="n">itself</span> <span class="n">will</span> <span class="n">check</span> <span class="n">the</span> <span class="n">path</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">folder</span> <span class="ow">or</span> <span class="n">a</span> <span class="n">file</span><span class="o">.</span> <span class="n">If</span> <span class="n">it</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">folder</span><span class="p">,</span> <span class="n">the</span> <span class="n">code</span> <span class="n">will</span> <span class="n">process</span> <span class="nb">all</span> <span class="n">the</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">given</span> <span class="n">folder</span><span class="o">.</span> <span class="n">If</span> <span class="n">it</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">file</span><span class="p">,</span> <span class="n">the</span> <span class="n">code</span> <span class="n">will</span> <span class="n">prcess</span> <span class="n">this</span> <span class="n">single</span> <span class="n">file</span><span class="o">.</span>
+
+<span class="n">embedding_model</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">the</span> <span class="n">user</span> <span class="n">specific</span> <span class="n">document</span> <span class="n">embedding</span> <span class="n">model</span> <span class="k">for</span> <span class="n">dense</span> <span class="n">retrieval</span><span class="o">.</span> <span class="n">The</span> <span class="n">user</span> <span class="n">could</span> <span class="n">selecte</span> <span class="n">a</span> <span class="n">specific</span> <span class="n">embedding</span> <span class="n">model</span> <span class="kn">from</span> <span class="s2">&quot;https://huggingface.co/spaces/mteb/leaderboard&quot;</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;hkunlp/instructor-large&quot;</span><span class="o">.</span> 
+
+<span class="n">max_length</span> <span class="p">[</span><span class="nb">int</span><span class="p">]:</span> <span class="n">The</span> <span class="nb">max</span> <span class="n">context</span> <span class="n">length</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">processed</span> <span class="n">chucks</span><span class="o">.</span> <span class="n">Should</span> <span class="n">be</span> <span class="n">combined</span> <span class="k">with</span> <span class="s2">&quot;process&quot;</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;512&quot;</span><span class="o">.</span>
+
+<span class="n">retrieval_type</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">Select</span> <span class="n">a</span> <span class="n">method</span> <span class="k">for</span> <span class="n">retrieval</span> <span class="kn">from</span> <span class="s2">&quot;dense&quot;</span> <span class="ow">or</span> <span class="s2">&quot;sparse&quot;</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;dense&quot;</span><span class="o">.</span>
+
+<span class="n">document_store</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">Considering</span> <span class="n">the</span> <span class="n">sparse</span> <span class="n">retrieval</span> <span class="n">needs</span> <span class="n">to</span> <span class="n">load</span> <span class="n">the</span> <span class="n">data</span> <span class="n">into</span> <span class="n">memory</span><span class="o">.</span> <span class="n">We</span> <span class="n">provide</span> <span class="s2">&quot;InMemoryDocumentStore&quot;</span> <span class="ow">and</span> <span class="s2">&quot;ElasticsearchDocumentStore&quot;</span> <span class="k">for</span> <span class="n">manage</span> <span class="n">the</span> <span class="n">memory</span> <span class="n">efficiency</span> <span class="k">for</span> <span class="n">sparse</span> <span class="n">retrieval</span><span class="o">.</span> 
+    
+<span class="n">top_k</span> <span class="p">[</span><span class="nb">int</span><span class="p">]:</span> <span class="n">The</span> <span class="n">number</span> <span class="n">of</span> <span class="n">the</span> <span class="n">retrieved</span> <span class="n">documents</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;1&quot;</span><span class="o">.</span>
+
+<span class="n">search_type</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">Select</span> <span class="n">a</span> <span class="n">ranking</span> <span class="n">method</span> <span class="k">for</span> <span class="n">dense</span> <span class="n">retrieval</span> <span class="kn">from</span> <span class="s2">&quot;mmr&quot;</span><span class="p">,</span> <span class="s2">&quot;similarity&quot;</span> <span class="ow">and</span> <span class="s2">&quot;similarity_score_threshold&quot;</span><span class="o">.</span> <span class="s2">&quot;similarity&quot;</span> <span class="n">will</span> <span class="k">return</span> <span class="n">the</span> <span class="n">most</span> <span class="n">similar</span> <span class="n">docs</span> <span class="n">to</span> <span class="n">the</span> <span class="nb">input</span> <span class="n">query</span><span class="o">.</span> <span class="s2">&quot;mmr&quot;</span> <span class="n">will</span> <span class="k">return</span> <span class="n">ranking</span> <span class="n">the</span> <span class="n">docs</span> <span class="n">using</span> <span class="n">the</span> <span class="n">maximal</span> <span class="n">marginal</span> <span class="n">relevance</span> <span class="n">method</span><span class="o">.</span> <span class="s2">&quot;similarity_score_threshold&quot;</span> <span class="n">will</span> <span class="k">return</span> <span class="n">the</span> <span class="n">mosy</span> <span class="n">similar</span> <span class="n">docs</span> <span class="n">that</span> <span class="n">also</span> <span class="n">meet</span> <span class="n">the</span> <span class="n">threshold</span><span class="o">.</span> <span class="n">Deault</span> <span class="n">to</span> <span class="s2">&quot;mmr&quot;</span><span class="o">.</span>
+
+<span class="n">search_kwargs</span> <span class="p">[</span><span class="nb">dict</span><span class="p">]:</span> <span class="n">Used</span> <span class="n">by</span> <span class="n">dense</span> <span class="n">retrieval</span><span class="o">.</span> <span class="n">Should</span> <span class="n">be</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">same</span> <span class="nb">format</span> <span class="n">like</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;fetch_k&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">}</span><span class="o">.</span> <span class="s2">&quot;k&quot;</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">amount</span> <span class="n">of</span> <span class="n">documents</span> <span class="n">to</span> <span class="k">return</span><span class="o">.</span> <span class="s2">&quot;score_threshold&quot;</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">minimal</span> <span class="n">relevance</span> <span class="n">threshold</span> <span class="k">for</span> <span class="s2">&quot;similarity_score_threshold&quot;</span> <span class="n">search</span><span class="o">.</span> <span class="s2">&quot;lambda_mult&quot;</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">diversity</span> <span class="n">of</span> <span class="n">results</span> <span class="n">returned</span> <span class="n">by</span> <span class="s2">&quot;mmr&quot;</span><span class="o">.</span> <span class="s2">&quot;fetch_k&quot;</span> <span class="n">determines</span> <span class="n">the</span> <span class="n">amount</span> <span class="n">of</span> <span class="n">documents</span> <span class="n">to</span> <span class="k">pass</span> <span class="n">to</span> <span class="n">the</span> <span class="s2">&quot;mmr&quot;</span> <span class="n">algorithm</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;fetch_k&quot;</span><span class="p">:</span><span class="mi">5</span><span class="p">}</span><span class="o">.</span>
+</pre></div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da742c670> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

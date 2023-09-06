@@ -1,0 +1,30 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_base`
+================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_base
+
+.. autoapi-nested-parse::
+
+   The class defination for the retriever. Supporting langchain-based and haystack-based retriever.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.retrieval_base.Retriever
+
+
+
+
+.. py:class:: Retriever(retrieval_type='dense', document_store=None, top_k=1, search_type='mmr', search_kwargs={'k': 1, 'fetch_k': 5})
+
+
+   The wrapper for sparse retriever and dense retriever.
+
+

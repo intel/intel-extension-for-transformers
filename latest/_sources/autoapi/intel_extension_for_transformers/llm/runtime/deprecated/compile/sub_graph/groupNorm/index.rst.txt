@@ -1,0 +1,32 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.groupNorm`
+=============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.groupNorm
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.groupNorm.GroupNorm
+
+
+
+
+.. py:class:: GroupNorm
+
+
+
+
+   The input channels are separated into num_groups groups, each containing num_channels /
+   num_groups channels. Each group is calculated like:
+   y = (x - E(X)) / (Var(x) + epsilon) * gamma + beta
+   More info can see: https://pytorch.org/docs/stable/generated/torch.nn.GroupNorm.html
+
+

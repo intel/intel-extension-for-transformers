@@ -1,0 +1,34 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr.AudioSpeechRecognition
+
+
+
+
+.. py:class:: AudioSpeechRecognition(model_name_or_path='openai/whisper-small', bf16=False, device='cpu')
+
+
+   Convert audio to text.
+
+   .. py:method:: audio2text(audio_path)
+
+      Convert audio to text
+
+      audio_path: the path to the input audio, e.g. ~/xxx.mp3
+
+
+

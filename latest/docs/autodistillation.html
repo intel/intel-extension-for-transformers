@@ -4,21 +4,25 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AutoDistillation Design &mdash; Intel® Extension for Transformers 0.1.dev1+g99d458f documentation</title>
+  <title>AutoDistillation Design &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
-    <script src="../_static/js/theme.js"></script>
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Data Augmentation" href="data_augmentation.html" />
@@ -80,6 +84,7 @@
 <li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
 <li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
 </ul>
 
         </div>
@@ -109,7 +114,7 @@
            <div itemprop="articleBody">
              
   <section id="autodistillation-design">
-<h1>AutoDistillation Design<a class="headerlink" href="#autodistillation-design" title="Permalink to this heading"></a></h1>
+<h1>AutoDistillation Design<a class="headerlink" href="#autodistillation-design" title="Link to this heading"></a></h1>
 <ol class="simple">
 <li><p><a class="reference external" href="#autodistillation-design">AutoDistillation Pipeline</a></p></li>
 <li><p><a class="reference external" href="#framework-class-design">Framework Class Design</a></p></li>
@@ -117,7 +122,7 @@
 <li><p><a class="reference external" href="#usage">Usage</a></p></li>
 </ol>
 <section id="autodistillation-pipeline">
-<h2>AutoDistillation Pipeline<a class="headerlink" href="#autodistillation-pipeline" title="Permalink to this heading"></a></h2>
+<h2>AutoDistillation Pipeline<a class="headerlink" href="#autodistillation-pipeline" title="Link to this heading"></a></h2>
 <p>AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation, and Evaluation.
 <br></p>
 <p>In Model Exploration, a search engine will search for a better compressed model from the architecture design space in each iteration.
@@ -130,7 +135,7 @@
 <br></p>
 </section>
 <section id="framework-class-design">
-<h2>Framework Class Design<a class="headerlink" href="#framework-class-design" title="Permalink to this heading"></a></h2>
+<h2>Framework Class Design<a class="headerlink" href="#framework-class-design" title="Link to this heading"></a></h2>
 <p>The framework class is designed for handling the whole pipeline of AutoDistillation.
 <br></p>
 <p>It contains a <em><strong>search_loop</strong></em> method for processing the whole pipeline of iterations for searching the best model architecture.
@@ -161,9 +166,9 @@
 <p><strong>3. train_evaluate</strong> (the process of one search iteration to train and evaluate the model proposed by search algorithm)</p>
 </section>
 <section id="criterion-class-design">
-<h2>Criterion Class Design<a class="headerlink" href="#criterion-class-design" title="Permalink to this heading"></a></h2>
+<h2>Criterion Class Design<a class="headerlink" href="#criterion-class-design" title="Link to this heading"></a></h2>
 <section id="knowledgedistillationloss">
-<h3>KnowledgeDistillationLoss<a class="headerlink" href="#knowledgedistillationloss" title="Permalink to this heading"></a></h3>
+<h3>KnowledgeDistillationLoss<a class="headerlink" href="#knowledgedistillationloss" title="Link to this heading"></a></h3>
 <p>Knowledge distillation is proposed in <a class="reference external" href="https://arxiv.org/abs/1503.02531">Distilling the Knowledge in a Neural Network</a>. It leverages the logits (the input of softmax in the classification tasks) of teacher and student model to minimize the the difference between their predicted class distributions, this can be done by minimizing the below loss function.</p>
 <p>$$L_{KD} = D(z_t, z_s)$$</p>
 <p>Where $D$ is a distance measurement, e.g. Euclidean distance and Kullback–Leibler divergence, $z_t$ and $z_s$ are the logits of teacher and student model, or predicted distributions from softmax of the logits in case the distance is measured in terms of distribution.</p>
@@ -192,7 +197,7 @@
 <br></p>
 </section>
 <section id="intermediatelayersknowledgedistillationloss">
-<h3>IntermediateLayersKnowledgeDistillationLoss<a class="headerlink" href="#intermediatelayersknowledgedistillationloss" title="Permalink to this heading"></a></h3>
+<h3>IntermediateLayersKnowledgeDistillationLoss<a class="headerlink" href="#intermediatelayersknowledgedistillationloss" title="Link to this heading"></a></h3>
 <p>IntermediateLayersKnowledgeDistillationLoss is designed for calculating the knowledge distillation loss of the intermediate layer features.
 <br></p>
 <p>To deal the issue of dimension mismatch between the intermediate layer features of the teacher model and the student model, feature_matchers is provided for matching the features dimension.
@@ -228,11 +233,11 @@
 </section>
 </section>
 <section id="usage">
-<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
 <section id="pytorch">
-<h3>Pytorch<a class="headerlink" href="#pytorch" title="Permalink to this heading"></a></h3>
+<h3>Pytorch<a class="headerlink" href="#pytorch" title="Link to this heading"></a></h3>
 <section id="autodistillation-api-in-trainer">
-<h4>AutoDistillation API in Trainer<a class="headerlink" href="#autodistillation-api-in-trainer" title="Permalink to this heading"></a></h4>
+<h4>AutoDistillation API in Trainer<a class="headerlink" href="#autodistillation-api-in-trainer" title="Link to this heading"></a></h4>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Trainer</span><span class="p">:</span>
 <span class="o">...</span>
     <span class="k">def</span> <span class="nf">autodistillation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">teacher_model</span><span class="p">,</span> \
@@ -366,7 +371,7 @@
 </div>
 </section>
 <section id="flash-distillation-config-example">
-<h4>Flash distillation config example<a class="headerlink" href="#flash-distillation-config-example" title="Permalink to this heading"></a></h4>
+<h4>Flash distillation config example<a class="headerlink" href="#flash-distillation-config-example" title="Link to this heading"></a></h4>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mobilebert_distillation</span>
 <span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytorch</span>
@@ -389,7 +394,7 @@
 </div>
 </section>
 <section id="regular-distillation-config-example">
-<h4>Regular distillation config example<a class="headerlink" href="#regular-distillation-config-example" title="Permalink to this heading"></a></h4>
+<h4>Regular distillation config example<a class="headerlink" href="#regular-distillation-config-example" title="Link to this heading"></a></h4>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mobilebert_distillation</span>
 <span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytorch</span>
@@ -411,7 +416,7 @@
 </div>
 </section>
 <section id="autodistillation-config-example">
-<h4>AutoDistillation config example<a class="headerlink" href="#autodistillation-config-example" title="Permalink to this heading"></a></h4>
+<h4>AutoDistillation config example<a class="headerlink" href="#autodistillation-config-example" title="Link to this heading"></a></h4>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MobileBERT_NAS</span>
 <span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytorch</span>
@@ -458,9 +463,9 @@
 </section>
 </section>
 <section id="tensorflow">
-<h3>Tensorflow<a class="headerlink" href="#tensorflow" title="Permalink to this heading"></a></h3>
+<h3>Tensorflow<a class="headerlink" href="#tensorflow" title="Link to this heading"></a></h3>
 <section id="autodistillation-api-in-optimizer-tf">
-<h4>AutoDistillation API in optimizer_tf<a class="headerlink" href="#autodistillation-api-in-optimizer-tf" title="Permalink to this heading"></a></h4>
+<h4>AutoDistillation API in optimizer_tf<a class="headerlink" href="#autodistillation-api-in-optimizer-tf" title="Link to this heading"></a></h4>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">TFOptimization</span><span class="p">:</span>
   <span class="o">...</span>
 <span class="k">def</span> <span class="nf">autodistill</span><span class="p">(</span>
@@ -534,7 +539,7 @@
 </div>
 </section>
 <section id="distillation-config-example">
-<h4>Distillation config example<a class="headerlink" href="#distillation-config-example" title="Permalink to this heading"></a></h4>
+<h4>Distillation config example<a class="headerlink" href="#distillation-config-example" title="Link to this heading"></a></h4>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mobilebert_distillation</span>
 <span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pytorch</span>
@@ -553,7 +558,7 @@
 </div>
 </section>
 <section id="id1">
-<h4>AutoDistillation config example<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h4>
+<h4>AutoDistillation config example<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">distilbert-base-uncased</span>
 <span class="w">  </span><span class="nt">framework</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tensorflow</span>
@@ -604,7 +609,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+   <jinja2.runtime.BlockReference object at 0x7f0da75a4880> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
 
 </footer>
         </div>

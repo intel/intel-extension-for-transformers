@@ -1,0 +1,129 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.models.base_model`
+========================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.models.base_model
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.models.base_model.BaseModel
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.models.base_model.register_model_adapter
+   intel_extension_for_transformers.neural_chat.models.base_model.get_model_adapter
+
+
+
+.. py:class:: BaseModel
+
+
+
+
+   A base class for LLM.
+
+   .. py:method:: match(model_path: str)
+
+      Check if the provided model_path matches the current model.
+
+      :param model_path: Path to a model.
+      :type model_path: str
+
+      :returns: True if the model_path matches, False otherwise.
+      :rtype: bool
+
+
+   .. py:method:: load_model(kwargs: dict)
+
+      Load the model using the provided arguments.
+
+      :param kwargs: A dictionary containing the configuration parameters for model loading.
+      :type kwargs: dict
+
+      Example 'kwargs' dictionary:
+      {
+          "model_name": "my_model",
+          "tokenizer_name": "my_tokenizer",
+          "device": "cuda",
+          "use_hpu_graphs": True,
+          "cpu_jit": False,
+          "use_cache": True,
+          "peft_path": "/path/to/peft",
+          "use_deepspeed": False
+      }
+
+
+   .. py:method:: predict_stream(query, config=None)
+
+      Predict using a streaming approach.
+
+      :param query: The input query for prediction.
+      :param config: Configuration for prediction.
+
+
+   .. py:method:: predict(query, config=None)
+
+      Predict using a non-streaming approach.
+
+      :param query: The input query for prediction.
+      :param config: Configuration for prediction.
+
+
+   .. py:method:: chat_stream(query, config=None)
+
+      Chat using a streaming approach.
+
+      :param query: The input query for prediction.
+      :param config: Configuration for prediction.
+
+
+   .. py:method:: chat(query, config=None)
+
+      Chat using a non-streaming approach.
+
+      :param query: The input query for conversation.
+      :param config: Configuration for conversation.
+
+
+   .. py:method:: get_default_conv_template(model_path: str) -> fastchat.conversation.Conversation
+
+      Get the default conversation template for the given model path.
+
+      :param model_path: Path to the model.
+      :type model_path: str
+
+      :returns: A default conversation template.
+      :rtype: Conversation
+
+
+   .. py:method:: register_plugin_instance(plugin_name, instance)
+
+      Register a plugin instance.
+
+      :param instance: An instance of a plugin.
+
+
+
+.. py:function:: register_model_adapter(cls)
+
+   Register a model adapter.
+
+
+.. py:function:: get_model_adapter(model_name_path: str) -> BaseModel
+
+   Get a model adapter for a model_name_path.
+
+

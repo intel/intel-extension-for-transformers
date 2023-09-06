@@ -1,0 +1,12 @@
+:py:mod:`fastchat.model.convert_fp16`
+=====================================
+
+.. py:module:: fastchat.model.convert_fp16
+
+.. autoapi-nested-parse::
+
+   Usage:
+   python3 -m fastchat.model.convert_fp16 --in in-folder --out out-folder
+
+
+

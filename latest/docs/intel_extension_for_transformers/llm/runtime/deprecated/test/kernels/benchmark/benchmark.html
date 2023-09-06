@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Benchmark for Kernels &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Benchmark for Kernels</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/test/kernels/benchmark/benchmark.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <ul class="simple">
+<li><p><a class="reference external" href="#benchmark-for-kernels">Benchmark for Kernels</a></p>
+<ul>
+<li><p><a class="reference external" href="#build">Build</a></p></li>
+<li><p><a class="reference external" href="#usage">Usage</a></p>
+<ul>
+<li><p><a class="reference external" href="#sparse_matmul">sparse_matmul</a></p>
+<ul>
+<li><p><a class="reference external" href="#spmm_avx512f">spmm_avx512f</a></p></li>
+<li><p><a class="reference external" href="#spmm_vnni">spmm_vnni</a></p></li>
+<li><p><a class="reference external" href="#spmm_amx_bf16_x16">spmm_amx_bf16_x16</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#eltwiseop">eltwiseop</a></p></li>
+<li><p><a class="reference external" href="#layernorm_ba">layernorm_ba</a></p></li>
+<li><p><a class="reference external" href="#transpose_matmul">transpose_matmul</a></p>
+<ul>
+<li><p><a class="reference external" href="#matmul_avx512f_p2031_p2013">matmul_avx512f_p2031_p2013</a></p></li>
+<li><p><a class="reference external" href="#matmul_vnni_noperm_p2031_p1302">matmul_vnni_noperm_p2031_p1302</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#softmax">softmax</a></p></li>
+<li><p><a class="reference external" href="#attention">attention</a></p></li>
+<li><p><a class="reference external" href="#static-mha">Static MHA</a></p></li>
+<li><p><a class="reference external" href="#dynamic_quant_matmul">dynamic_quant_matmul</a></p></li>
+<li><p><a class="reference external" href="#dynamic_quant">dynamic_quant</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#for-developers">For developers</a></p></li>
+</ul>
+<section id="benchmark-for-kernels">
+<h1>Benchmark for Kernels<a class="headerlink" href="#benchmark-for-kernels" title="Link to this heading"></a></h1>
+<p>This is a tool to perform accuracy test and performance test for kernel in <a class="reference external" href="../../../kernels">kernels</a>.</p>
+<section id="build">
+<h2>Build<a class="headerlink" href="#build" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>&lt;path/to/this/repo&gt;/intel_extension_for_transformers/llm/runtime/deprecated
+mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>-DNE_WITH_SPARSELIB<span class="o">=</span>ON<span class="w"> </span>-DNE_WITH_SPARSELIB_ONLY<span class="o">=</span>ON<span class="w"> </span>-DNE_WITH_SPARSELIB_BENCHMARK<span class="o">=</span>ON
+make<span class="w"> </span>-j
+</pre></div>
+</div>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>&lt;kernel_type&gt;<span class="w"> </span>&lt;kernel_configs&gt;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">mode</span> <span class="pre">=</span> <span class="pre">{perf,acc}</span></code>: <code class="docutils literal notranslate"><span class="pre">perf</span></code> for perfomance test, <code class="docutils literal notranslate"><span class="pre">acc</span></code> for accuracy test, and <code class="docutils literal notranslate"><span class="pre">perf,acc</span></code> for both perfomance test and accuracy test.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel_type</span></code> is one of</p>
+<ul>
+<li><p><a class="reference external" href="#sparse_matmul">sparse_matmul</a></p></li>
+<li><p><a class="reference external" href="#transpose_matmul">transpose_matmul</a></p></li>
+<li><p><a class="reference external" href="#eltwiseop">eltwiseop</a></p></li>
+<li><p><a class="reference external" href="#layernorm_ba">layernorm_ba</a></p></li>
+<li><p><a class="reference external" href="#softmax">softmax</a></p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel_configs</span></code> contains information of the test case, for example tensor shapes. Refer to the kernel introduction for detail.##### Build</p></li>
+<li><p>Environment variables</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">BENCHMARK_ITER</span></code>: how many iterations to run to calculate kernel execution time. The default value is <code class="docutils literal notranslate"><span class="pre">100</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BENCHMARK_NO_REFRESH</span></code>: by default, we refresh data for src tensor in every iteration before executing the kernel. If the value of the variable is set to 1, we use the same src tensor for every iteration.</p></li>
+</ul>
+</li>
+</ul>
+<section id="sparse-matmul">
+<h3>sparse_matmul<a class="headerlink" href="#sparse-matmul" title="Link to this heading"></a></h3>
+<p>Currently we done 2D sparse matrix multiplication: <code class="docutils literal notranslate"><span class="pre">A(MxK)</span> <span class="pre">x</span> <span class="pre">B(KxN)</span> <span class="pre">=</span> <span class="pre">C(MxN)</span></code> where <code class="docutils literal notranslate"><span class="pre">A</span></code> is a sparse matrix.</p>
+<p>Current algorithms for sparse_matmul:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="../../../kernels/docs/kernel_desc/kernel_avx512f.html">spmm_avx512f</a></p></li>
+<li><p><a class="reference external" href="../../../kernels/docs/kernel_desc/kernel_vnni.html">spmm_vnni</a></p></li>
+<li><p><a class="reference external" href="../../../kernels/docs/kernel_desc/kernel_amx.html">spmm_amx_bf16_x16</a></p></li>
+</ul>
+<section id="spmm-avx512f">
+<h4>spmm_avx512f<a class="headerlink" href="#spmm-avx512f" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>sparse_matmul<span class="w"> </span>avx512f<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;sparse_ratio&gt;<span class="w"> </span><span class="o">[</span>&lt;post-op&gt;...<span class="o">]</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">M,K,N</span></code> is the shape of matmul
+<code class="docutils literal notranslate"><span class="pre">sparse_ratio</span></code> is the sparse ratio of weight.
+There can be more than one post-op. Please refer to <a class="reference external" href="#eltwiseop">eltwiseop</a> to see supported <code class="docutils literal notranslate"><span class="pre">algorithm</span></code>.</p>
+<section id="examples">
+<h5>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h5>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>sparse_matmul<span class="w"> </span>avx512f<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">0</span>.7<span class="w"> </span>gelu<span class="w"> </span>exp
+</pre></div>
+</div>
+</section>
+</section>
+<section id="spmm-vnni">
+<h4>spmm_vnni<a class="headerlink" href="#spmm-vnni" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>sparse_matmul<span class="w"> </span>vnni<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;sparse_ratio&gt;<span class="w"> </span>&lt;micro_bs&gt;<span class="w"> </span>&lt;output_fp32&gt;<span class="w"> </span>&lt;has_append_sum&gt;<span class="w"> </span>&lt;micro_oc&gt;<span class="w"> </span>&lt;sub_func_level&gt;<span class="w"> </span><span class="o">[</span>&lt;post-op&gt;...<span class="o">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">M,K,N</span></code> is the shape of matmul.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sparse_ratio</span></code> is the sparse ratio of weight.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">micro_bs</span></code> is used in <a class="reference external" href="../../../kernels/docs/kernel_desc/3D_inference.html">3D_inference</a>, and set to <code class="docutils literal notranslate"><span class="pre">-1</span></code> to avoid to use it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_fp32</span> <span class="pre">=</span> <span class="pre">{0,1}</span></code> set to <code class="docutils literal notranslate"><span class="pre">1</span></code> to output fp32, while set to 0 to output int8.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">has_append_sum</span> <span class="pre">=</span> <span class="pre">{0,1}</span></code>  set to  <code class="docutils literal notranslate"><span class="pre">1</span></code> to append sum on output otherwise set to 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">micro_oc</span></code> is used to specify the data parallel in OC dim, and set to <code class="docutils literal notranslate"><span class="pre">-1</span></code> to automaticlly calculate.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sub_func_level</span></code> is a positive integer up to <code class="docutils literal notranslate"><span class="pre">jd::ssd::subfunc_level::subfunc_level_MAX</span></code>. Higher value means more code folding.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[&lt;post-op&gt;...]</span></code> There can be more than one post-op. Please refer to <a class="reference external" href="#eltwiseop">eltwiseop</a> to see supported <code class="docutils literal notranslate"><span class="pre">algorithm</span></code>.</p></li>
+</ul>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">-1</span></code> to use default config for <code class="docutils literal notranslate"><span class="pre">micro_bs</span></code>, <code class="docutils literal notranslate"><span class="pre">micro_oc</span></code>,<code class="docutils literal notranslate"><span class="pre">sub_func_level</span></code>.</p>
+<section id="id1">
+<h5>Examples<a class="headerlink" href="#id1" title="Link to this heading"></a></h5>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>sparse_matmul<span class="w"> </span>vnni<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">0</span>.7<span class="w"> </span>-1<span class="w"> </span><span class="m">0</span><span class="w"> </span><span class="m">0</span><span class="w"> </span>-1<span class="w"> </span>-1<span class="w"> </span>gelu
+</pre></div>
+</div>
+</section>
+</section>
+<section id="spmm-amx-bf16-x16">
+<h4>spmm_amx_bf16_x16<a class="headerlink" href="#spmm-amx-bf16-x16" title="Link to this heading"></a></h4>
+<blockquote>
+<div><p><strong>Note</strong> Please make sure amx instructions are supported on your machine. You should build a benchmark with amx.</p>
+</div></blockquote>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>-DSPARSE_LIB_USE_AMX<span class="o">=</span>True<span class="w"> </span>-DNE_WITH_SPARSELIB<span class="o">=</span>ON<span class="w"> </span>-DNE_WITH_SPARSELIB_ONLY<span class="o">=</span>ON<span class="w"> </span>-DNE_WITH_SPARSELIB_BENCHMARK<span class="o">=</span>ON
+make<span class="w"> </span>-j
+</pre></div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>sparse_matmul<span class="w"> </span>amx_bf16_x16<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;sparse_ratio&gt;<span class="w"> </span>&lt;micro_bs&gt;<span class="w"> </span>&lt;micro_oc&gt;<span class="w"> </span>&lt;output_bf16&gt;<span class="w"> </span><span class="o">[</span>&lt;post-op&gt;...<span class="o">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">M,K,N</span></code> is the shape of matmul.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sparse_ratio</span></code> is the sparse ratio of weight.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">micro_bs</span></code> is used in <a class="reference external" href="../../../kernels/docs/kernel_desc/3D_inference.html">3D_inference</a>, and set to <code class="docutils literal notranslate"><span class="pre">-1</span></code> to avoid to use it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">micro_oc</span></code> is used to specify the data parallel in OC dim, and set to <code class="docutils literal notranslate"><span class="pre">-1</span></code> to automatically calculate.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_bf16</span> <span class="pre">=</span> <span class="pre">{0,1}</span></code> set to <code class="docutils literal notranslate"><span class="pre">1</span></code> to output bf16, while set to 0 to output fp32.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sub_func_level</span></code> is a positive integer up to <code class="docutils literal notranslate"><span class="pre">jd::ssd::subfunc_level::subfunc_level_MAX</span></code>. Higher value means more code folding.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">[&lt;post-op&gt;...]</span></code> There can be more than one post-op. Please refer to <a class="reference external" href="#eltwiseop">eltwiseop</a> to see supported <code class="docutils literal notranslate"><span class="pre">algorithm</span></code>.</p></li>
+</ul>
+<p>You can use <code class="docutils literal notranslate"><span class="pre">-1</span></code> to use default config for <code class="docutils literal notranslate"><span class="pre">micro_bs</span></code>, <code class="docutils literal notranslate"><span class="pre">micro_oc</span></code>.</p>
+<section id="id2">
+<h5>Examples<a class="headerlink" href="#id2" title="Link to this heading"></a></h5>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>sparse_matmul<span class="w"> </span>amx_bf16_x16<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">0</span>.9<span class="w"> </span><span class="m">64</span><span class="w"> </span>-1<span class="w"> </span>-1<span class="w"> </span><span class="m">1</span><span class="w"> </span>gelu
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="eltwiseop">
+<h3>eltwiseop<a class="headerlink" href="#eltwiseop" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>eltwiseop<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;jd::data_type&gt;_&lt;algorithm&gt;<span class="o">[</span>+&lt;jd::data_type&gt;_&lt;algorithm&gt;<span class="o">[</span>+...<span class="o">]]</span><span class="w"> </span>&lt;ranges&gt;
+</pre></div>
+</div>
+<p>Eltwiseop is a series of element-wise calculation, and we have appended it to sparse GEMM in Kernels. We use 2D shape specification in eltwiseop.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">M,N</span></code> is the shape of input and output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ranges</span></code> specifies the interval where values of src tensor are located. It has the form of <code class="docutils literal notranslate"><span class="pre">&lt;lower_bound&gt;,&lt;upper_bound&gt;</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;jd::data_type&gt;_&lt;algorithm&gt;</span></code> describe a kind of element-wise calculation.There can be more than one postop and they should be concatenated by <code class="docutils literal notranslate"><span class="pre">+</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jd::data_type</span> <span class="pre">=</span> <span class="pre">{bf16,fp32}</span></code> There should be <strong>only one</strong> <code class="docutils literal notranslate"><span class="pre">jd::data_type</span></code> in each test case, for example, <code class="docutils literal notranslate"><span class="pre">fp32_gelu+bf16_exp</span></code> is invalid.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">algorithm</span></code>  Current supported :</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">exp</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gelu</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tanh</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">relu</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">quantize</span></code> : converts <code class="docutils literal notranslate"><span class="pre">fp32</span></code> to <code class="docutils literal notranslate"><span class="pre">u8</span></code>. This <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> doesn’t require a <code class="docutils literal notranslate"><span class="pre">jd::data_type</span></code> prefix.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dequantize</span></code>: converts <code class="docutils literal notranslate"><span class="pre">u8</span></code> to <code class="docutils literal notranslate"><span class="pre">fp32</span></code>. This <code class="docutils literal notranslate"><span class="pre">algorithm</span></code> doesn’t require a <code class="docutils literal notranslate"><span class="pre">jd::data_type</span></code> prefix.</p></li>
+</ul>
+</li>
+</ul>
+<section id="id3">
+<h4>Examples<a class="headerlink" href="#id3" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>eltwiseop<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span>dequantize+fp32_relu+quantize<span class="w"> </span>-10.0,10.0
+</pre></div>
+</div>
+</section>
+</section>
+<section id="layernorm-ba">
+<h3>layernorm_ba<a class="headerlink" href="#layernorm-ba" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>layernorm_ba<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;src_dt&gt;<span class="w"> </span>&lt;dst_dt&gt;
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">layernorm_ba</span></code> is layernorm for tansposed input.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">M,N</span></code> is the shape of input and output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src_dt={fp32}</span></code>is input data type. It only supports fp32 now.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dst_dt={fp32,s8,u8}</span></code>is output data type.</p></li>
+</ul>
+<section id="id4">
+<h4>Examples<a class="headerlink" href="#id4" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>layernorm_ba<span class="w"> </span><span class="m">1024</span><span class="w"> </span><span class="m">1024</span><span class="w"> </span>fp32<span class="w"> </span>fp32
+</pre></div>
+</div>
+</section>
+</section>
+<section id="transpose-matmul">
+<h3>transpose_matmul<a class="headerlink" href="#transpose-matmul" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">transpose_matmul</span></code> are a series 4D matmuls without distinguishing between dense and sparse, they can be calculated with <code class="docutils literal notranslate"><span class="pre">alpha</span> <span class="pre">*</span> <span class="pre">src0(bs0,</span> <span class="pre">bs1,</span> <span class="pre">M,</span> <span class="pre">K)</span> <span class="pre">x</span> <span class="pre">src1(bs0,</span> <span class="pre">bs1,</span> <span class="pre">K,</span> <span class="pre">N)</span> <span class="pre">+</span> <span class="pre">beta</span> <span class="pre">*</span> <span class="pre">scr2(M,</span> <span class="pre">N)</span> <span class="pre">=</span> <span class="pre">dst(bs0,</span> <span class="pre">bs1,</span> <span class="pre">M,</span> <span class="pre">N)</span></code> where <code class="docutils literal notranslate"><span class="pre">alpha,</span> <span class="pre">beta,</span> <span class="pre">src2</span></code> are optional. Refer to <a class="reference external" href="../../../kernels/docs/kernel_desc/kernel_transpose_matmul.html">transpose_matmul</a> for detail.</p>
+<section id="matmul-avx512f-p2031-p2013">
+<h4>matmul_avx512f_p2031_p2013<a class="headerlink" href="#matmul-avx512f-p2031-p2013" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>transpose_matmul<span class="w"> </span>avx512f_p2031_p2013<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;bs0&gt;<span class="w"> </span>&lt;bs1&gt;<span class="w"> </span>&lt;has_binary_add&gt;<span class="w"> </span>&lt;alpha&gt;<span class="w"> </span>&lt;beta&gt;<span class="w"> </span><span class="o">[</span>tile_m<span class="o">]</span><span class="w"> </span><span class="o">[</span>tile_n<span class="o">]</span>
+</pre></div>
+</div>
+<p>The data type of its inputs and output is fp32. The permutation of both input is {2,0,3,1}. Output has no permutation.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">M,K,N,bs0,bs1</span></code> are the shape of inputs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">has_binary_add</span> <span class="pre">=</span> <span class="pre">{0,1}</span></code>  set to  <code class="docutils literal notranslate"><span class="pre">1</span></code> to append binary add, otherwise set to 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha,beta</span></code> are coefficients of matmul and binary_add. <code class="docutils literal notranslate"><span class="pre">beta</span></code> will be not effective if <code class="docutils literal notranslate"><span class="pre">has_binary_add</span> <span class="pre">=</span> <span class="pre">0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tile_m,</span> <span class="pre">tile_n</span></code> are optional. They specify the tile shape when calculating matmul.</p></li>
+</ul>
+<section id="id5">
+<h5>Examples<a class="headerlink" href="#id5" title="Link to this heading"></a></h5>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>transpose_matmul<span class="w"> </span>avx512f_p2031_p2013<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">12</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">0</span>.25<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">2</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="matmul-vnni-noperm-p2031-p1302">
+<h4>matmul_vnni_noperm_p2031_p1302<a class="headerlink" href="#matmul-vnni-noperm-p2031-p1302" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>transpose_matmul<span class="w"> </span>vnni_noperm_p2031_p1302<span class="w"> </span>&lt;M&gt;<span class="w"> </span>&lt;K&gt;<span class="w"> </span>&lt;N&gt;<span class="w"> </span>&lt;bs0&gt;<span class="w"> </span>&lt;bs1&gt;
+</pre></div>
+</div>
+<p>The data type of its inputs and output is int8. The permutation of the second input is {2,0,3,1}. The permutation of the output is {1,3,0,2}.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">M,K,N,bs0,bs1</span></code> are the shape of inputs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">has_binary_add</span> <span class="pre">=</span> <span class="pre">{0,1}</span></code>  set to  <code class="docutils literal notranslate"><span class="pre">1</span></code> to append binary add, otherwise set to 0.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha,beta</span></code> are coefficients of matmul and binary_add. <code class="docutils literal notranslate"><span class="pre">beta</span></code> will be not effective if <code class="docutils literal notranslate"><span class="pre">has_binary_add</span> <span class="pre">=</span> <span class="pre">0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tile_m,</span> <span class="pre">tile_n</span></code> are optional. They specify the tile shape when calculating matmul.</p></li>
+</ul>
+<section id="id6">
+<h5>Examples<a class="headerlink" href="#id6" title="Link to this heading"></a></h5>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>transpose_matmul<span class="w"> </span>vnni_noperm_p2031_p1302<span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="m">32</span><span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">12</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="softmax">
+<h3>softmax<a class="headerlink" href="#softmax" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>softmax<span class="w"> </span>&lt;spec_type&gt;<span class="w"> </span>&lt;input_shape&gt;<span class="w"> </span>&lt;input_dt&gt;<span class="w"> </span>&lt;output_dt&gt;
+</pre></div>
+</div>
+<p>Softmax in Kernels only suuport LUT with int8 input and bf16 output.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">spec_type</span> <span class="pre">=</span> <span class="pre">{lut}</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">input_shape</span> <span class="pre">=</span> <span class="pre">d0xd1x...</span></code>: <code class="docutils literal notranslate"><span class="pre">d0,d1,...</span></code> are the dimensions of input, <code class="docutils literal notranslate"><span class="pre">x</span></code> is the delimiter.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">input_dt</span> <span class="pre">=</span> <span class="pre">{u8}</span></code>: input data type only support unsigned int8 now.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_dt</span> <span class="pre">=</span> <span class="pre">{bf16}</span></code>: output data type only support bf16 now.</p></li>
+</ul>
+<section id="id7">
+<h4>Examples<a class="headerlink" href="#id7" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>softmax<span class="w"> </span>lut<span class="w"> </span>256x256<span class="w"> </span>u8<span class="w"> </span>bf16
+</pre></div>
+</div>
+</section>
+</section>
+<section id="attention">
+<h3>attention<a class="headerlink" href="#attention" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>attention<span class="w"> </span>&lt;head_num&gt;<span class="w"> </span>&lt;head_size&gt;<span class="w"> </span>&lt;batch_size&gt;<span class="w"> </span>&lt;seq_len&gt;<span class="w"> </span>&lt;sparsity&gt;<span class="w"> </span>&lt;dst_type&gt;
+</pre></div>
+</div>
+<section id="id8">
+<h4>Examples<a class="headerlink" href="#id8" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>attention<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">64</span><span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="m">128</span><span class="w"> </span><span class="m">0</span>.5<span class="w"> </span><span class="m">1</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="static-mha">
+<h3>Static MHA<a class="headerlink" href="#static-mha" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>mha_dense<span class="w"> </span>&lt;batch_size&gt;<span class="w"> </span>&lt;seq_len&gt;<span class="w"> </span>&lt;head_num&gt;<span class="w"> </span>&lt;head_size&gt;<span class="w"> </span><span class="o">[</span>dst_type<span class="o">]</span><span class="w"> </span><span class="o">[</span>padding_mask<span class="o">]</span><span class="w"> </span><span class="o">[</span>badd_dim<span class="o">]</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">batch_size</span></code> / <code class="docutils literal notranslate"><span class="pre">seq_len</span></code> / <code class="docutils literal notranslate"><span class="pre">head_num</span></code> / <code class="docutils literal notranslate"><span class="pre">head_size</span></code> are the the problem size.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dst_type</span></code> is the output data type, could be one of <code class="docutils literal notranslate"><span class="pre">u8</span></code> / <code class="docutils literal notranslate"><span class="pre">s8</span></code> / <code class="docutils literal notranslate"><span class="pre">fp32</span></code>; default to <code class="docutils literal notranslate"><span class="pre">u8</span></code> if leave blank.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">padding_mask</span></code> a positive integer which is the length of sequence(s) before padding; leave blank pr set to negative value so that it defaults to <code class="docutils literal notranslate"><span class="pre">seq_len</span></code> (no padding).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">badd_dim</span></code> dimension of the tensor to apply binary_add before performing softmax; leave blank pr set to non-positive value to disable the binary add; set to <code class="docutils literal notranslate"><span class="pre">1</span></code>-<code class="docutils literal notranslate"><span class="pre">4</span></code> to apply the binary_add with broadcasting if necessary.</p></li>
+</ul>
+<section id="id9">
+<h4>Examples<a class="headerlink" href="#id9" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>mha_dense<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">2048</span><span class="w"> </span><span class="m">16</span><span class="w"> </span><span class="m">256</span><span class="w"> </span>u8<span class="w"> </span>-1<span class="w"> </span><span class="m">4</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="dynamic-quant-matmul">
+<h3>dynamic_quant_matmul<a class="headerlink" href="#dynamic-quant-matmul" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>dynamic_quant_matmul<span class="w"> </span>&lt;batch_size&gt;<span class="w"> </span>&lt;m&gt;<span class="w"> </span>&lt;n&gt;<span class="w"> </span>&lt;k&gt;<span class="w"> </span>&lt;large_weight_threshold&gt;<span class="w"> </span>&lt;add_bias&gt;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">batch_size</span></code> / <code class="docutils literal notranslate"><span class="pre">m</span></code> / <code class="docutils literal notranslate"><span class="pre">n</span></code> / <code class="docutils literal notranslate"><span class="pre">k</span></code> are the the problem size.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">large_weight_threshold</span></code> should be 0-1, if weight*large_weight_threshold large than L2-cache size, kernel will select large_wei jit-path.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_bias</span></code> could be one of <code class="docutils literal notranslate"><span class="pre">true</span></code> / <code class="docutils literal notranslate"><span class="pre">false</span></code>, indicate whether add a bias value after gemm.</p></li>
+</ul>
+<p>Please note that dynamic_quant_matmul only supports s8-activation, s8-weight and s8-destination, so the user does not need to specify the data type.</p>
+<section id="id10">
+<h4>Examples<a class="headerlink" href="#id10" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>dynamic_quant_matmul<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">512</span><span class="w"> </span><span class="m">1280</span><span class="w"> </span><span class="m">1280</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="dynamic-quant">
+<h3>dynamic_quant<a class="headerlink" href="#dynamic-quant" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">[</span>&lt;environment_variable&gt;...<span class="o">]</span><span class="w"> </span>./benchmark<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>dynamic_quant<span class="w"> </span>&lt;channel_num&gt;<span class="w"> </span>&lt;quantize_dim_elt_num&gt;<span class="w"> </span>&lt;src_data_type&gt;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">channel_num</span></code> the number of channels in input-tensor.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">quantize_dim_elt_num</span></code> the number of elements in the quantized dim.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src_data_type</span></code> could be one of <code class="docutils literal notranslate"><span class="pre">fp32</span></code> / <code class="docutils literal notranslate"><span class="pre">bf16</span></code>, indicate the data type of input-tensor.</p></li>
+</ul>
+<p>Please note that dynamic_quant only supports per-channel symmetric quantization.</p>
+<section id="id11">
+<h4>Examples<a class="headerlink" href="#id11" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">BENCHMARK_ITER</span><span class="o">=</span><span class="m">10</span><span class="w"> </span><span class="nv">BENCHMARK_NO_REFRESH</span><span class="o">=</span><span class="m">0</span><span class="w"> </span>./benchmark<span class="w"> </span>perf<span class="w"> </span>dynamic_quant<span class="w"> </span><span class="m">1280</span><span class="w"> </span><span class="m">1280</span><span class="w"> </span>bf16
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+</section>
+<section id="for-developers">
+<h1>For developers<a class="headerlink" href="#for-developers" title="Link to this heading"></a></h1>
+<p>To add benchmark support for a newly-added kernel, you may need to follow several steps:</p>
+<ul>
+<li><p>Create a subdir for the kernel under <code class="docutils literal notranslate"><span class="pre">&lt;benchmark_dir&gt;</span></code> and make sure you add files <code class="docutils literal notranslate"><span class="pre">bench_&lt;kernel_name&gt;.hpp</span></code> and <code class="docutils literal notranslate"><span class="pre">bench_&lt;kernel_name&gt;.cpp</span></code>. Implement the <code class="docutils literal notranslate"><span class="pre">test_&lt;kernel_name&gt;</span></code> function as the entrance of benchmark procedure of the kernel. Then Include <code class="docutils literal notranslate"><span class="pre">bench_&lt;kernel_name&gt;.hpp</span></code> in <code class="docutils literal notranslate"><span class="pre">&lt;benchmark_dir&gt;/benchmark.cpp</span></code> and add a branch for the function <code class="docutils literal notranslate"><span class="pre">test_&lt;kernel_name&gt;</span></code> in <code class="docutils literal notranslate"><span class="pre">main</span></code> function.</p></li>
+<li><p>You may want to implement several utility functions in other source files under the subdir for the kernel, for example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_true_data_&lt;kernel_name&gt;</span></code> : to calculate reference output for the kernel.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">check_result_&lt;kernel_name&gt;</span></code> : to compare reference output and kernel output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gen_case_&lt;kernel_name&gt;</span></code> : to use the config input by user to generate test case, i.e. operator descriptors and runtime data.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run_bench_&lt;kernel_name&gt;</span></code> : benchmark procedure of the kernel.</p></li>
+</ul>
+<p>Feel free to add other utility functions if you want.</p>
+</li>
+<li><p>Add a case for the kernel in functions <code class="docutils literal notranslate"><span class="pre">calc_flop</span></code> and <code class="docutils literal notranslate"><span class="pre">get_refresh_data_idx</span></code> in <code class="docutils literal notranslate"><span class="pre">&lt;benchmark_dir&gt;/benchmark_utils.cpp</span></code>.</p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da742f7f0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

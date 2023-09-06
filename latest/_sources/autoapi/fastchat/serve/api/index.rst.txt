@@ -1,0 +1,36 @@
+:py:mod:`fastchat.serve.api`
+============================
+
+.. py:module:: fastchat.serve.api
+
+.. autoapi-nested-parse::
+
+   This module provides a ChatGPT-compatible Restful API for chat completion.
+
+   Usage:
+
+   python3 -m fastchat.serve.api
+
+   Reference: https://platform.openai.com/docs/api-reference/chat/create
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.serve.api.create_chat_completion
+
+
+
+.. py:function:: create_chat_completion(request: fastchat.protocol.chat_completion.ChatCompletionRequest)
+   :async:
+
+   Creates a completion for the chat message
+
+

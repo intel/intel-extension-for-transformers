@@ -4,21 +4,25 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Export to ONNX &mdash; Intel® Extension for Transformers 0.1.dev1+g99d458f documentation</title>
+  <title>Export to ONNX &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
-    <script src="../_static/js/theme.js"></script>
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Metrics" href="metrics.html" />
@@ -79,6 +83,7 @@
 <li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
 <li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
 </ul>
 
         </div>
@@ -108,7 +113,7 @@
            <div itemprop="articleBody">
              
   <section id="export-to-onnx">
-<h1>Export to ONNX<a class="headerlink" href="#export-to-onnx" title="Permalink to this heading"></a></h1>
+<h1>Export to ONNX<a class="headerlink" href="#export-to-onnx" title="Link to this heading"></a></h1>
 <ol>
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
 <li><p><a class="reference external" href="#supported-model-export-matrix">Supported Model Export Matrix</a></p></li>
@@ -119,11 +124,11 @@
 </li>
 </ol>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>We support exporting PyTorch models into ONNX models with our well-desighed API <code class="docutils literal notranslate"><span class="pre">trainer.export_to_onnx</span></code>. Users can get FP32 (Float precision 32 bit), BF16 (Bfloat 16 bit) and INT8 (Integer 8 bit) ONNX model with the same interface.</p>
 </section>
 <section id="supported-model-export-matrix">
-<h2>Supported Model Export Matrix<a class="headerlink" href="#supported-model-export-matrix" title="Permalink to this heading"></a></h2>
+<h2>Supported Model Export Matrix<a class="headerlink" href="#supported-model-export-matrix" title="Link to this heading"></a></h2>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -161,9 +166,9 @@
 </tbody>
 </table></section>
 <section id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h2>
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
 <section id="export-to-fp32-onnx-model">
-<h3>Export to FP32 ONNX Model<a class="headerlink" href="#export-to-fp32-onnx-model" title="Permalink to this heading"></a></h3>
+<h3>Export to FP32 ONNX Model<a class="headerlink" href="#export-to-fp32-onnx-model" title="Link to this heading"></a></h3>
 <p>If <code class="docutils literal notranslate"><span class="pre">export_to_onnx</span></code> is called before quantization, we will fetch the FP32 model and export it into a ONNX model.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">export_to_onnx</span><span class="p">(</span>
     <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
@@ -175,11 +180,11 @@
 </div>
 </section>
 <section id="export-to-bf16-onnx-model">
-<h3>Export to BF16 ONNX Model<a class="headerlink" href="#export-to-bf16-onnx-model" title="Permalink to this heading"></a></h3>
-<p>If the flag: <code class="docutils literal notranslate"><span class="pre">enable_bf16</span></code> is True, you will get an ONNX model with BFloat16 weights for [’MatMul’, ‘Gemm’] node type. This FP32 + BF16 ONNX model can be accelerated by our <a class="reference external" href="../intel_extension_for_transformers/backends/neural_engine/">executor</a> backend.</p>
+<h3>Export to BF16 ONNX Model<a class="headerlink" href="#export-to-bf16-onnx-model" title="Link to this heading"></a></h3>
+<p>If the flag: <code class="docutils literal notranslate"><span class="pre">enable_bf16</span></code> is True, you will get an ONNX model with BFloat16 weights for [’MatMul’, ‘Gemm’] node type. This FP32 + BF16 ONNX model can be accelerated by our <a class="reference external" href="../intel_extension_for_transformers/llm/runtime/deprecated/">executor</a> backend.</p>
 </section>
 <section id="api-usage">
-<h3>API usage<a class="headerlink" href="#api-usage" title="Permalink to this heading"></a></h3>
+<h3>API usage<a class="headerlink" href="#api-usage" title="Link to this heading"></a></h3>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">enable_bf16</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="n">trainer</span><span class="o">.</span><span class="n">export_to_onnx</span><span class="p">(</span>
     <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> 
@@ -191,7 +196,7 @@
 </div>
 </section>
 <section id="export-to-int8-onnx-model">
-<h3>Export to INT8 ONNX Model<a class="headerlink" href="#export-to-int8-onnx-model" title="Permalink to this heading"></a></h3>
+<h3>Export to INT8 ONNX Model<a class="headerlink" href="#export-to-int8-onnx-model" title="Link to this heading"></a></h3>
 <p>If <code class="docutils literal notranslate"><span class="pre">export_to_onnx</span></code> is called after quantization, we will fetch the FP32 PyTorch model, convert it into ONNX model and do onnxruntime quantization based on pytorch quantization configuration.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">export_to_onnx</span><span class="p">(</span>
     <span class="n">save_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -203,7 +208,7 @@
 </div>
 </section>
 <section id="for-executor-backend">
-<h3><strong>For executor backend</strong><a class="headerlink" href="#for-executor-backend" title="Permalink to this heading"></a></h3>
+<h3><strong>For executor backend</strong><a class="headerlink" href="#for-executor-backend" title="Link to this heading"></a></h3>
 <p>Our executor backend provides highly optimized performance for INT8 <code class="docutils literal notranslate"><span class="pre">MatMul</span></code> node type and <code class="docutils literal notranslate"><span class="pre">U8S8</span></code> datatype. Therefore, we suggest users to enable the flag <code class="docutils literal notranslate"><span class="pre">enable_executor</span></code> before export int8 ONNX model for executor backend.</p>
 <div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="n">trainer</span><span class="o">.</span><span class="n">enable_executor</span> <span class="o">=</span> <span class="kc">True</span>
 </pre></div>
@@ -229,7 +234,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+   <jinja2.runtime.BlockReference object at 0x7f0da75a5600> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
 
 </footer>
         </div>

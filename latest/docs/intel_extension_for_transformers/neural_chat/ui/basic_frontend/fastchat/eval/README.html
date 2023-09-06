@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evaluations &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Evaluations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/ui/basic_frontend/fastchat/eval/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="evaluations">
+<h1>Evaluations<a class="headerlink" href="#evaluations" title="Link to this heading"></a></h1>
+<p>This directory contains end-to-end pipelines for AI-enhanced evaluation. We will introduce the evaluation pipeline and the data format in this document.</p>
+<section id="generate-answers">
+<h2>Generate Answers<a class="headerlink" href="#generate-answers" title="Link to this heading"></a></h2>
+<section id="chatgpt-gpt-3-5-turbo">
+<h3>ChatGPT (gpt-3.5-turbo)<a class="headerlink" href="#chatgpt-gpt-3-5-turbo" title="Link to this heading"></a></h3>
+<p>Make sure you have setup the OpenAI API Key in your environment. Then run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>qa_baseline_gpt35.py<span class="w"> </span>--question<span class="w"> </span>table/question.jsonl<span class="w"> </span>--output<span class="w"> </span>table/answer/answer_gpt35.jsonl
+</pre></div>
+</div>
+</section>
+<section id="bard">
+<h3>Bard<a class="headerlink" href="#bard" title="Link to this heading"></a></h3>
+<p>Unfortunately, Bard has not release its public APIs till now. You may have to enter the anwsers manually. Or you could find a third-party project that interfaces with Bard.</p>
+</section>
+<section id="vicuna-and-others">
+<h3>Vicuna and others<a class="headerlink" href="#vicuna-and-others" title="Link to this heading"></a></h3>
+<p>To generate answers with Vicuna or other models, specify path to the model checkpoint, a desired model ID and run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>get_model_answer.py<span class="w"> </span>--model-id<span class="w"> </span><span class="o">[</span>MODEL-ID<span class="o">]</span><span class="w"> </span>--model-path<span class="w"> </span>/model/path<span class="w"> </span>--question-file<span class="w"> </span>table/question.jsonl<span class="w"> </span>--answer-file<span class="w"> </span>table/answer/answer.jsonl<span class="w"> </span>--num-gpus<span class="w"> </span><span class="o">[</span>NUM-GPUS<span class="o">]</span>
+</pre></div>
+</div>
+<p>Then the answers to the questions will be saved in <code class="docutils literal notranslate"><span class="pre">table/answer/answer.jsonl</span></code>.
+Note: we assume the model can be loaded with a single GPU.</p>
+</section>
+</section>
+<section id="evaluate-answers-automatically">
+<h2>Evaluate Answers Automatically<a class="headerlink" href="#evaluate-answers-automatically" title="Link to this heading"></a></h2>
+<section id="generete-reviews-with-gpt-4">
+<h3>Generete Reviews with GPT-4<a class="headerlink" href="#generete-reviews-with-gpt-4" title="Link to this heading"></a></h3>
+<p>Note: Below script requires access to GPT-4 API. If you only have access to GPT-4 on web interface, you can evaluate the answers by manually formatting the prompt. See more details in the <strong>Reviewers</strong> and <strong>Prompts</strong> sections in <strong>Data Format</strong>.
+It is critical to follow the prompt templates; otherwise GPT-4 may not give fair reviews. <code class="docutils literal notranslate"><span class="pre">table/review/*.jsonl</span></code> are some review examples generated by GPT-4 or you can view them on our eval <a class="reference external" href="https://vicuna.lmsys.org/eval/">webpage</a>.</p>
+<p>To use the script for generating reviews with GPT-4, you need to <code class="docutils literal notranslate"><span class="pre">export</span></code> your OpenAI API key in environment variable. Then run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>eval_gpt_review.py<span class="w"> </span>-q<span class="w"> </span>table/question.jsonl<span class="w"> </span>-a<span class="w"> </span>/path/to/answer_1.jsonl<span class="w"> </span>/path/to/answer_2.jsonl<span class="w"> </span>-p<span class="w"> </span>table/prompt.jsonl<span class="w"> </span>-r<span class="w"> </span>table/reviewer.jsonl<span class="w"> </span>-o<span class="w"> </span>/path/to/review_output.jsonl
+</pre></div>
+</div>
+<p>The GPT-4 reviews will be saved in <code class="docutils literal notranslate"><span class="pre">/path/to/review_output.jsonl</span></code>. Note: we implement some simple parsing code to extract the score pairs from GPT-4’s reviews. However, you need to double check whether the parsed score pair are correct. Sometime the parsing logic may fail if GPT-4 doesn’t give a structured answer.</p>
+</section>
+</section>
+<section id="visualize-results">
+<h2>Visualize Results<a class="headerlink" href="#visualize-results" title="Link to this heading"></a></h2>
+<p>You can generate the data for the webpage by running:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>eval/generate_webpage_data_from_table.py
+</pre></div>
+</div>
+<p>Then you can serve a static website in <code class="docutils literal notranslate"><span class="pre">webpage</span></code> to see the results.</p>
+</section>
+<section id="data-format">
+<h2>Data Format<a class="headerlink" href="#data-format" title="Link to this heading"></a></h2>
+<p>If you want to have a deeper understanding of our evaluation pipeline or want to contribute to the evaluation process, you need to learn the data format we used for evaluation.</p>
+<p>Our evaluation data are encoded with <a class="reference external" href="https://jsonlines.org/">JSON Lines</a>.</p>
+<section id="random-id-generation">
+<h3>Random ID Generation<a class="headerlink" href="#random-id-generation" title="Link to this heading"></a></h3>
+<p>We use the <code class="docutils literal notranslate"><span class="pre">shortuuid</span></code> Python library for generating short random UUIDs.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">shortuuid</span>
+<span class="n">shortuuid</span><span class="o">.</span><span class="n">uuid</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</pre></div>
+</div>
+</section>
+<section id="models">
+<h3>Models<a class="headerlink" href="#models" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">model.jsonl</span></code> contains model information we used for generating anwsers.</p>
+<p>Each row contains a record of a model with the following field:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">model_id</span></code> (str): A unique ID for a model. Models with different IDs is supposed to have different performance. This ID is generated by <code class="docutils literal notranslate"><span class="pre">{model_name}:{model_version}</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model_name</span></code> (str): The name of a model. This is not unique, because a model could be trained and updated continuously, but it is still considered as the same model with different versions.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model_version</span></code> (str): The version of a model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model_metadata</span></code> (Any): Any metadata of a model (descriptions etc). This is optional.</p></li>
+</ul>
+<p>For example:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;model_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;vicuna-13b:v1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;vicuna-13b&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;v1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model_metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;learning rate 1e-5, 3 epochs, 13b&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="prompts">
+<h3>Prompts<a class="headerlink" href="#prompts" title="Link to this heading"></a></h3>
+<p>We store prompts in <code class="docutils literal notranslate"><span class="pre">prompt.jsonl</span></code>. Each row contains a record of a prompt with the following field:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">prompt_id</span></code> (int): A unique integer ID for a prompt. Prompts with different IDs are supposed to have different purpose.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">system_prompt</span></code> (str): The system prompt given to a model. This is the prompt that the model sees first.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prompt_template</span></code> (str): The prompt body. This is the user prompt that the model sees after the system prompt. It is a Python f-string template, so that we can fill in the inputs later.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">defaults</span></code> (dict): A dictionary of default values for the prompt template. It can be empty.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code> (str): A description of the functionality of the prompt.</p></li>
+</ul>
+<p>For example:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;prompt_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;system_prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;You are a helpful assistant.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;prompt_template&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[Question]\n{question}\n\n[Assistant 1]\n{answer_1}\n\n[End of Assistant 1]\n\n[Assistant 2]\n{answer_2}\n\n[End of Assistant 2]\n\n[System]\n{prompt}\n\n&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;defaults&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Which assistant is more helpful?&quot;</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Compare two assistants&#39; answers to a question.&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="reviewers">
+<h3>Reviewers<a class="headerlink" href="#reviewers" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">reviewer.jsonl</span></code> contains reviewer information we used for reviewing answers generated by different models. Each row contains a record of a reviewer with the following field:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">reviewer_id</span></code> (str): A unique ID for a reviewer. Reviewers with different IDs is supposed to have different reviewing performance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">prompt_id</span></code> (str): The ID of the prompt given to the reviewer (e.g., an AI assistant). Different prompts could result in different reviewing performance.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metadata</span></code> (dict): Metadata of a reviewer about its configurations.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">description</span></code> (str): A description of the reviewer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">category</span></code> (str): The category that the reviewer belongs to.</p></li>
+</ul>
+<p>For example:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;reviewer_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gpt-4-0328-default&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;prompt_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;temperature&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_tokens&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8192</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GPT-4 for general questions.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;general&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="questions">
+<h3>Questions<a class="headerlink" href="#questions" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">question.jsonl</span></code> contains questions we used for evaluation. Each row contains a record of a question with the following field:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">question_id</span></code> (int): A unique integer for a question. Questions with different IDs is supposed to be different.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">text</span></code> (str): The question text.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">category</span></code> (str): The category of the question. Questions with the same category are supposed to be similar or originate from the same source.</p></li>
+</ul>
+</section>
+<section id="answers">
+<h3>Answers<a class="headerlink" href="#answers" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">answer/xxx.jsonl</span></code> contains answers generated by different models. Each row contains a record of an answer with the following field:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">answer_id</span></code> (str): A unique UUID for an answer. Answers with different IDs is supposed to be different.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">question_id</span></code> (int): The ID of the question the answer is generated for.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">model_id</span></code> (str): The ID of the model the answer is generated by.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">text</span></code> (str): The answer text.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metadata</span></code> (dict): Any metadata of the answer.</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;answer_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[short uuid]&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;model_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;vicuna-13b:v1&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Here are five tips...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="reviews">
+<h3>Reviews<a class="headerlink" href="#reviews" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">review/xxx.jsonl</span></code> contains reviews given by reviewers, comparing peformance between a pair of models. Each row contains a record of a review with the following field:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">review_id</span></code> (str): A unique UUID for a review. Reviews with different IDs is supposed to be different.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">question_id</span></code> (int): The ID of the question the review is given for.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">answer1_id</span></code> (str): The ID of the first answer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">answer2_id</span></code> (str): The ID of the second answer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">text</span></code> (str): The review text.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">score</span></code> (list): A list of scores given by the reviewer. The first score is for the first answer, and the second score is for the second answer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reviewer_id</span></code> (str): The ID of the reviewer.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metadata</span></code> (dict): Any metadata of the review.</p></li>
+</ul>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;review_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[short uuid]&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;question_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;answer1_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[answer1_id]&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;answer2_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;[answer2_id]&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Assistant 2 is better...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">9.0</span><span class="p">,</span><span class="w"> </span><span class="mf">7.5</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;reviewer_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;gpt-4-0328-default&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da7268610> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

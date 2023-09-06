@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.embeddingbag`
+================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.embeddingbag
+
+.. autoapi-nested-parse::
+
+   The EmbeddingBag Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.embeddingbag.EmbeddingBag
+
+
+
+
+.. py:class:: EmbeddingBag
+
+
+
+
+   The EmbeddingBag pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'EmbeddingBag' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

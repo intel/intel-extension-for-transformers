@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.modeling.gpt_neox`
+=========================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.gpt_neox
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   modeling_gpt_neox/index.rst
+
+

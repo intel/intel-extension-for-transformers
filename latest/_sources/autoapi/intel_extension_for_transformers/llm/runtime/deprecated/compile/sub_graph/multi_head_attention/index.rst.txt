@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.multi_head_attention`
+========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.multi_head_attention
+
+

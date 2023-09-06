@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.stableDiffusion_MHAReshape`
+==============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.stableDiffusion_MHAReshape
+
+.. autoapi-nested-parse::
+
+   The StableDiffusion_MHAReshape Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.stableDiffusion_MHAReshape.StableDiffusion_MHAReshape
+
+
+
+
+.. py:class:: StableDiffusion_MHAReshape
+
+
+
+
+   The StableDiffusion_MHAReshape pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'StableDiffusion_MHAReshape' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

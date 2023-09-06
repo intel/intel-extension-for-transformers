@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.gelu`
+========================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.gelu
+
+.. autoapi-nested-parse::
+
+   The Gelu Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.gelu.Gelu
+
+
+
+
+.. py:class:: Gelu
+
+
+
+
+   The Gelu pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'Gelu' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

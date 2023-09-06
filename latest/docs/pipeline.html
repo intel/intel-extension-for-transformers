@@ -4,21 +4,25 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pipeline &mdash; Intel® Extension for Transformers 0.1.dev1+g99d458f documentation</title>
+  <title>Pipeline &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
-    <script src="../_static/js/theme.js"></script>
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Neural Engine" href="../neural_engine.html" />
@@ -78,6 +82,7 @@
 <li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
 <li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
 </ul>
 
         </div>
@@ -107,7 +112,7 @@
            <div itemprop="articleBody">
              
   <section id="pipeline">
-<h1>Pipeline<a class="headerlink" href="#pipeline" title="Permalink to this heading"></a></h1>
+<h1>Pipeline<a class="headerlink" href="#pipeline" title="Link to this heading"></a></h1>
 <ol>
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
 <li><p><a class="reference external" href="#examples">Examples</a></p>
@@ -116,16 +121,16 @@
 </li>
 </ol>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
-<p>The pipeline is inherited from <a class="reference external" href="https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.mdx">huggingface/transformers pipeline</a>, it is simple to use any model from <a class="reference external" href="https://huggingface.co/models">Hub</a> for inference on any language, computer vision, speech, and multimodal tasks. Two features for int8 model inference and model inference on <a class="reference external" href="../intel_extension_for_transformers/backends/neural_engine/">executor backend</a> have been added to the extension.</p>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>The pipeline is inherited from <a class="reference external" href="https://github.com/huggingface/transformers/blob/main/docs/source/en/pipeline_tutorial.htmlx">huggingface/transformers pipeline</a>, it is simple to use any model from <a class="reference external" href="https://huggingface.co/models">Hub</a> for inference on any language, computer vision, speech, and multimodal tasks. Two features for int8 model inference and model inference on <a class="reference external" href="../intel_extension_for_transformers/llm/runtime/deprecated/">executor backend</a> have been added to the extension.</p>
 </section>
 <section id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading"></a></h2>
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
 <section id="pipeline-inference-for-int8-model">
-<h3>Pipeline Inference for INT8 Model<a class="headerlink" href="#pipeline-inference-for-int8-model" title="Permalink to this heading"></a></h3>
+<h3>Pipeline Inference for INT8 Model<a class="headerlink" href="#pipeline-inference-for-int8-model" title="Link to this heading"></a></h3>
 <ol>
 <li><p>Initialize a pipeline instance with a model name and specific task.</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.pipeline</span> <span class="kn">import</span> <span class="n">pipeline</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.pipeline</span> <span class="kn">import</span> <span class="n">pipeline</span>
 <span class="n">text_classifier</span> <span class="o">=</span> <span class="n">pipeline</span><span class="p">(</span>
     <span class="n">task</span><span class="o">=</span><span class="s2">&quot;text-classification&quot;</span><span class="p">,</span>
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;Intel/distilbert-base-uncased-finetuned-sst-2-english-int8-static&quot;</span><span class="p">,</span>
@@ -144,11 +149,11 @@
 </ol>
 </section>
 <section id="pipeline-inference-for-executor-backend">
-<h3>Pipeline Inference for Executor Backend<a class="headerlink" href="#pipeline-inference-for-executor-backend" title="Permalink to this heading"></a></h3>
-<p>For executor, we only accept ONNX model now for pipeline. Users can get ONNX model from PyTorch model with our existing <a class="reference internal" href="export.html"><span class="doc">API</span></a>. Right now, pipeline for executor only supports text-classification task.</p>
+<h3>Pipeline Inference for Executor Backend<a class="headerlink" href="#pipeline-inference-for-executor-backend" title="Link to this heading"></a></h3>
+<p>For executor, we only accept ONNX model now for pipeline. Users can get ONNX model from PyTorch model with our existing <a class="reference external" href="export.html">API</a>. Right now, pipeline for executor only supports text-classification task.</p>
 <ol>
 <li><p>Initialize a pipeline instance with an ONNX model, model config, model tokenizer and specific backend. The MODEL_NAME is the pytorch model name you used for exporting the ONNX model.</p>
-<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.pipeline</span> <span class="kn">import</span> <span class="n">pipeline</span>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.pipeline</span> <span class="kn">import</span> <span class="n">pipeline</span>
 <span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoConfig</span><span class="p">,</span> <span class="n">AutoTokenizer</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">AutoConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">MODEL_NAME</span><span class="p">)</span>
@@ -194,7 +199,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+   <jinja2.runtime.BlockReference object at 0x7f0da709bca0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
 
 </footer>
         </div>

@@ -1,0 +1,46 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors.onnx_extractor`
+===================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors.onnx_extractor
+
+.. autoapi-nested-parse::
+
+   The neural engine onnx extractor file.
+
+   Extract all nodes in the input onnx model and convert them to engine python operators.
+   All these python operators will compose the engine graph in the order of the original onnx
+   calculation graph. Please noticed that the mapping between operators is not one-to-one
+   correspondence. For more related deatils, please refer to 'ops' APIs.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors.onnx_extractor.ONNXExtractor
+
+
+
+
+.. py:class:: ONNXExtractor
+
+
+
+
+   The ONNXExtractor class.
+
+   Decorate the node in model.graph_def, and the new node has the attributes like input_tensors
+   and output_tensors, these tensors record the source/dest op name. All of these nodes
+   (in a list) will compose a graph, which is Graph class, as the return object.
+
+   :param model: ONNXModel
+
+   :returns: Graph class, the new graph object
+   :rtype: Graph
+
+

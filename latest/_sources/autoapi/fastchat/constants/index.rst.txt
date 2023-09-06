@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`fastchat.constants`
+============================
+
+.. py:module:: fastchat.constants
+
+

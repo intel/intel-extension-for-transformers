@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.arangewithreciprocal`
+========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.arangewithreciprocal
+
+.. autoapi-nested-parse::
+
+   The ArangewithReciprocal Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.arangewithreciprocal.ArangewithReciprocal
+
+
+
+
+.. py:class:: ArangewithReciprocal
+
+
+
+
+   The ArangewithReciprocal pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'ArangewithReciprocal' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

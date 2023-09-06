@@ -1,0 +1,51 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.evaluation.lm_eval.models.huggingface`
+====================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.evaluation.lm_eval.models.huggingface
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.evaluation.lm_eval.models.huggingface.AutoCausalLM
+   intel_extension_for_transformers.llm.evaluation.lm_eval.models.huggingface.AutoSeq2SeqLM
+   intel_extension_for_transformers.llm.evaluation.lm_eval.models.huggingface.MultiTokenEOSCriteria
+
+
+
+
+.. py:class:: AutoCausalLM(*args, pretrained, model_format, **kwargs)
+
+
+
+
+   Causal language modeling.
+   You can find a set of supported models in the HF documentation:
+   https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForCausalLM
+
+
+.. py:class:: AutoSeq2SeqLM(*args, pretrained, model_format, **kwargs)
+
+
+
+
+   Seq2Seq language modeling.
+   You can find a set of supported models in the following documentation:
+   https://huggingface.co/docs/transformers/main/model_doc/auto#transformers.AutoModelForSeq2SeqLM
+
+
+.. py:class:: MultiTokenEOSCriteria(sequence: str, tokenizer: transformers.PreTrainedTokenizer, initial_decoder_input_length: int, batch_size: int)
+
+
+
+
+   Criteria to stop on the specified multi-token sequence.
+
+

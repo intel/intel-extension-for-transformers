@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.decoder_attn_reshape`
+========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.decoder_attn_reshape
+
+.. autoapi-nested-parse::
+
+   The DecoderAttnReshape Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.decoder_attn_reshape.DecoderAttnReshape
+
+
+
+
+.. py:class:: DecoderAttnReshape
+
+
+
+
+   The DecoderAttnReshape pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'DecoderAttnReshape' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

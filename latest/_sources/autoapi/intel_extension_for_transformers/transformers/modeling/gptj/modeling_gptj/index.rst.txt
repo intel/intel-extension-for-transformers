@@ -1,0 +1,101 @@
+:py:mod:`intel_extension_for_transformers.transformers.modeling.gptj.modeling_gptj`
+===================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.gptj.modeling_gptj
+
+.. autoapi-nested-parse::
+
+   PyTorch GPT-J model.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.gptj.modeling_gptj.GPTJPreTrainedModel
+   intel_extension_for_transformers.transformers.modeling.gptj.modeling_gptj.GPTJModel
+   intel_extension_for_transformers.transformers.modeling.gptj.modeling_gptj.GPTJForCausalLM
+   intel_extension_for_transformers.transformers.modeling.gptj.modeling_gptj.GPTJForSequenceClassification
+   intel_extension_for_transformers.transformers.modeling.gptj.modeling_gptj.GPTJForQuestionAnswering
+
+
+
+
+.. py:class:: GPTJPreTrainedModel(*inputs, **kwargs)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+
+.. py:class:: GPTJModel(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+
+.. py:class:: GPTJForCausalLM(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.FloatTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.CausalLMOutputWithPast]
+
+      labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
+          `labels = input_ids` Indices are selected in `[-100, 0, ..., config.vocab_size]` All labels set to `-100`
+          are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size]`
+
+
+
+.. py:class:: GPTJForSequenceClassification(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None, attention_mask: Optional[torch.FloatTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.SequenceClassifierOutputWithPast]
+
+      labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+          Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+          config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+          `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+
+
+
+.. py:class:: GPTJForQuestionAnswering(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, start_positions: Optional[torch.LongTensor] = None, end_positions: Optional[torch.LongTensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.QuestionAnsweringModelOutput]
+
+      start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+          Labels for position (index) of the start of the labelled span for computing the token classification loss.
+          Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
+          are not taken into account for computing the loss.
+      end_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+          Labels for position (index) of the end of the labelled span for computing the token classification loss.
+          Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
+          are not taken into account for computing the loss.
+
+
+

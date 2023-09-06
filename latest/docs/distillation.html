@@ -4,21 +4,25 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Distillation &mdash; Intel® Extension for Transformers 0.1.dev1+g99d458f documentation</title>
+  <title>Distillation &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
-    <script src="../_static/js/theme.js"></script>
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Pruning" href="pruning.html" />
@@ -78,6 +82,7 @@
 <li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
 <li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
 </ul>
 
         </div>
@@ -107,7 +112,7 @@
            <div itemprop="articleBody">
              
   <section id="distillation">
-<h1>Distillation<a class="headerlink" href="#distillation" title="Permalink to this heading"></a></h1>
+<h1>Distillation<a class="headerlink" href="#distillation" title="Link to this heading"></a></h1>
 <ol>
 <li><p><a class="reference external" href="#introduction">Introduction</a></p>
 <p>1.1 <a class="reference external" href="#distillation">Distillation</a></p>
@@ -124,32 +129,32 @@
 </li>
 </ol>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <section id="id1">
-<h3>Distillation<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h3>
+<h3>Distillation<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
 <p>Distillation is a widely-used approach to perform network compression, which transfers knowledge from a large model to a smaller one without significant loss of validity. As smaller models are less expensive to evaluate, they can be deployed on less powerful hardware (such as a mobile device). Graph shown below is the workflow of the distillation, the teacher model will take the same input that feed into the student model to produce the output that contains knowledge of the teacher model to instruct the student model.
 <br></p>
 <img src="./imgs/Distillation_workflow.png" alt="Architecture" width=700 height=300>
 <br></section>
 <section id="knowledge-distillation">
-<h3>Knowledge Distillation<a class="headerlink" href="#knowledge-distillation" title="Permalink to this heading"></a></h3>
+<h3>Knowledge Distillation<a class="headerlink" href="#knowledge-distillation" title="Link to this heading"></a></h3>
 <p>Knowledge distillation is proposed in <a class="reference external" href="https://arxiv.org/abs/1503.02531">Distilling the Knowledge in a Neural Network</a>. It leverages the logits (the input of softmax in the classification tasks) of teacher and student model to minimize the the difference between their predicted class distributions, this can be done by minimizing the below loss function.</p>
 <p>$$L_{KD} = D(z_t, z_s)$$</p>
 <p>Where $D$ is a distance measurement, e.g. Euclidean distance and Kullback–Leibler divergence, $z_t$ and $z_s$ are the logits of teacher and student model, or predicted distributions from softmax of the logits in case the distance is measured in terms of distribution.</p>
 </section>
 <section id="intermediate-layer-knowledge-distillation">
-<h3>Intermediate Layer Knowledge Distillation<a class="headerlink" href="#intermediate-layer-knowledge-distillation" title="Permalink to this heading"></a></h3>
+<h3>Intermediate Layer Knowledge Distillation<a class="headerlink" href="#intermediate-layer-knowledge-distillation" title="Link to this heading"></a></h3>
 <p>There are more information contained in the teacher model beside its logits, for example, the output features of the teacher model’s intermediate layers often been used to guide the student model, as in <a class="reference external" href="https://arxiv.org/pdf/1908.09355">Patient Knowledge Distillation for BERT Model Compression</a> and <a class="reference external" href="https://arxiv.org/abs/2004.02984">MobileBERT: a Compact Task-Agnostic BERT for Resource-Limited Devices</a>. The general loss function for this approach can be summarized as follow.</p>
 <p>$$L_{KD} = \sum\limits_i D(T_t^{n_i}(F_t^{n_i}), T_s^{m_i}(F_s^{m_i}))$$</p>
 <p>Where $D$ is a distance measurement as before, $F_t^{n_i}$ the output feature of the $n_i$’s layer of the teacher model, $F_s^{m_i}$ the output feature of the $m_i$’s layer of the student model. Since the dimensions of $F_t^{n_i}$ and $F_s^{m_i}$ are usually different, the transformations $T_t^{n_i}$ and $T_s^{m_i}$ are needed to match dimensions of the two features. Specifically, the transformation can take the forms like identity, linear transformation, 1X1 convolution etc.</p>
 </section>
 </section>
 <section id="usage">
-<h2>usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h2>
+<h2>usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
 <section id="pytorch-script">
-<h3>Pytorch Script:<a class="headerlink" href="#pytorch-script" title="Permalink to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span><span class="p">,</span> <span class="n">DistillationConfig</span><span class="p">,</span> <span class="n">Criterion</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
+<h3>Pytorch Script:<a class="headerlink" href="#pytorch-script" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">metric</span><span class="p">,</span> <span class="n">objectives</span><span class="p">,</span> <span class="n">DistillationConfig</span><span class="p">,</span> <span class="n">Criterion</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.trainer</span> <span class="kn">import</span> <span class="n">NLPTrainer</span>
 <span class="c1"># Replace transformers.Trainer with NLPTrainer</span>
 <span class="c1"># trainer = transformers.Trainer(......)</span>
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">NLPTrainer</span><span class="p">(</span><span class="o">......</span><span class="p">)</span>
@@ -163,9 +168,9 @@
 <p>Please refer to <a class="reference external" href="../examples/huggingface/pytorch/text-classification/distillation/run_glue.py">example</a> for the details.</p>
 </section>
 <section id="tensorflow-script">
-<h3>Tensorflow Script:<a class="headerlink" href="#tensorflow-script" title="Permalink to this heading"></a></h3>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="p">(</span><span class="n">DistillationConfig</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization.distillation</span> <span class="kn">import</span> <span class="n">Criterion</span>
+<h3>Tensorflow Script:<a class="headerlink" href="#tensorflow-script" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="p">(</span><span class="n">DistillationConfig</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.distillation</span> <span class="kn">import</span> <span class="n">Criterion</span>
 
 <span class="n">optimizer</span> <span class="o">=</span> <span class="n">TFOptimization</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 <span class="n">metric_</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
@@ -184,19 +189,19 @@
 <p>Please refer to <a class="reference external" href="../examples/huggingface/tensorflow/text-classification/distillation/run_glue.py">example</a> for the details.</p>
 </section>
 <section id="create-an-instance-of-metric">
-<h3>Create an Instance of Metric<a class="headerlink" href="#create-an-instance-of-metric" title="Permalink to this heading"></a></h3>
+<h3>Create an Instance of Metric<a class="headerlink" href="#create-an-instance-of-metric" title="Link to this heading"></a></h3>
 <p>The Metric defines which metric will be used to measure the performance of tuned models.</p>
 <ul>
 <li><p>example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">metric</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_accuracy&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Please refer to <a class="reference internal" href="metrics.html"><span class="doc">metrics document</span></a> for the details.</p>
+<p>Please refer to <a class="reference external" href="metrics.html">metrics document</a> for the details.</p>
 </li>
 </ul>
 </section>
 <section id="create-an-instance-of-criterion-optional">
-<h3>Create an Instance of Criterion(Optional)<a class="headerlink" href="#create-an-instance-of-criterion-optional" title="Permalink to this heading"></a></h3>
+<h3>Create an Instance of Criterion(Optional)<a class="headerlink" href="#create-an-instance-of-criterion-optional" title="Link to this heading"></a></h3>
 <p>The criterion used in training phase.</p>
 <ul>
 <li><p>arguments:
@@ -216,7 +221,7 @@
 </ul>
 </section>
 <section id="create-an-instance-of-distillationconfig">
-<h3>Create an Instance of DistillationConfig<a class="headerlink" href="#create-an-instance-of-distillationconfig" title="Permalink to this heading"></a></h3>
+<h3>Create an Instance of DistillationConfig<a class="headerlink" href="#create-an-instance-of-distillationconfig" title="Link to this heading"></a></h3>
 <p>The DistillationConfig contains all the information related to the model distillation behavior. If you created Metric and Criterion instance, then you can create an instance of DistillationConfig. Metric and pruner_config is optional.</p>
 <ul>
 <li><p>arguments:
@@ -233,7 +238,7 @@
 </ul>
 </section>
 <section id="distill-with-trainer">
-<h3>Distill with Trainer<a class="headerlink" href="#distill-with-trainer" title="Permalink to this heading"></a></h3>
+<h3>Distill with Trainer<a class="headerlink" href="#distill-with-trainer" title="Link to this heading"></a></h3>
 <ul>
 <li><p>Distill with Trainer
 NLPTrainer inherits from transformers.Trainer, so you can create a trainer as in examples of Transformers. Then you can distill model with trainer.distill function.</p>
@@ -265,7 +270,9 @@ NLPTrainer inherits from transformers.Trainer, so you can create a trainer as in
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+   <jinja2.runtime.BlockReference object at 0x7f0da75eab60> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
 
 </footer>
         </div>

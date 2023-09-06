@@ -1,0 +1,53 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern`
+===========================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern
+
+.. autoapi-nested-parse::
+
+   The supported pattern file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern.Pattern
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern.pattern_registry
+
+
+
+.. py:function:: pattern_registry(pattern_type)
+
+   The class decorator used to register all Algorithm subclasses.
+
+   :param cls: The class of register.
+   :type cls: class
+   :param pattern_type: The pattern registration name
+   :type pattern_type: str
+
+   :returns: The class of register.
+   :rtype: cls
+
+
+.. py:class:: Pattern
+
+
+
+
+   The bass pattern class.
+
+

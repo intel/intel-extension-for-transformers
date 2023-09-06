@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithswish`
+=========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithswish
+
+.. autoapi-nested-parse::
+
+   The InnerproductWithSwish Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithswish.InnerproductWithSwish
+
+
+
+
+.. py:class:: InnerproductWithSwish
+
+
+
+
+   The InnerproductWithSwish pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'InnerproductWithSwish' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

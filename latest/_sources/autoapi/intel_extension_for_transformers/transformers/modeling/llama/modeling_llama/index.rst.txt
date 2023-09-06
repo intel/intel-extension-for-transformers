@@ -1,0 +1,56 @@
+:py:mod:`intel_extension_for_transformers.transformers.modeling.llama.modeling_llama`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.llama.modeling_llama
+
+.. autoapi-nested-parse::
+
+   PyTorch LLaMA model.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.llama.modeling_llama.LlamaAttention
+   intel_extension_for_transformers.transformers.modeling.llama.modeling_llama.LlamaModel
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.llama.modeling_llama.rotate_half
+
+
+
+.. py:function:: rotate_half(x)
+
+   Rotates half the hidden dims of the input.
+
+
+.. py:class:: LlamaAttention(config: transformers.models.llama.configuration_llama.LlamaConfig)
+
+
+
+
+   Multi-headed attention from 'Attention Is All You Need' paper
+
+
+.. py:class:: LlamaModel(config: transformers.models.llama.configuration_llama.LlamaConfig)
+
+
+
+
+   Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`LlamaDecoderLayer`]
+
+   :param config: LlamaConfig
+
+

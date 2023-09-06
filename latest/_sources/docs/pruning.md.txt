@@ -23,8 +23,8 @@ There are three pruning types in Intel® Extension for Transformers:
 ## Usage
 ### Script:
 ```python
-from intel_extension_for_transformers.optimization import metric, objectives, PrunerConfig, PruningConfig,
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import metric, objectives, PrunerConfig, PruningConfig,
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)
@@ -42,7 +42,7 @@ The Metric defines which metric will be used to measure the performance of tuned
     metric = metrics.Metric(name="eval_accuracy")
     ```
 
-    Please refer to [metrics document](metrics.md) for the details.
+    Please refer to [metrics document](metrics.html) for the details.
 
 ### Create list of an instance of PrunerConfig(Optional)
 PrunerConfig defines which pruning algorithm to use and how to apply it during the training process. Intel® Extension for Transformers supports pruning types "BasicMagnitude", "PatternLock", and "GroupLasso". You can create different pruners for different layers.
@@ -57,7 +57,7 @@ PrunerConfig defines which pruning algorithm to use and how to apply it during t
     |prune_type|string|Pruning algorithm                                     |'BasicMagnitude' |
     |method|string|Pruning method                                            |'per_tensor' |
     |names|list of string|List of weight name to be pruned. If no weight is specified, all weights of the model will be pruned|[]|
-    |parameters|dict of string|The hyper-parameters for pruning, refer to [the link](https://github.com/intel/neural-compressor/blob/master/docs/source/pruning.md)|None|
+    |parameters|dict of string|The hyper-parameters for pruning, refer to [the link](https://github.com/intel/neural-compressor/blob/master/docs/source/pruning.html)|None|
 
 - example:
     ```python

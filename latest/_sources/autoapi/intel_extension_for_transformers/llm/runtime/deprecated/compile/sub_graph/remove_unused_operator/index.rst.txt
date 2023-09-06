@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_unused_operator`
+==========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_unused_operator
+
+.. autoapi-nested-parse::
+
+   The RemoveUnusedOperator pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_unused_operator.RemoveUnusedOperator
+
+
+
+
+.. py:class:: RemoveUnusedOperator
+
+
+
+
+   The RemoveUnusedOperator pattern.
+
+   Remove some operators which are not be used after all fusion patterns.
+
+

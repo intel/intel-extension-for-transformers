@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.modeling.bloom`
+======================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.bloom
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   modeling_bloom/index.rst
+
+

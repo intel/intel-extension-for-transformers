@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Static Compressed Buffer &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Static Compressed Buffer</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs/static_compressed_buffer.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="static-compressed-buffer">
+<h1>Static Compressed Buffer<a class="headerlink" href="#static-compressed-buffer" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#static-compressed-buffer">Static Compressed Buffer</a></p>
+<ul>
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#how-to-turn-on-static-compressed-buffer">How to Turn on <code class="docutils literal notranslate"><span class="pre">Static</span> <span class="pre">Compressed</span> <span class="pre">Buffer</span></code></a></p></li>
+<li><p><a class="reference external" href="#more-options">More Options</a></p></li>
+</ul>
+</li>
+</ul>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> use <code class="docutils literal notranslate"><span class="pre">Cycle</span> <span class="pre">Buffer</span></code> as the default memory management tool in the inference session. It maintains a map which stores data pointer life count and size to reuse or malloc memory dynamically. However, the <code class="docutils literal notranslate"><span class="pre">GetMemory</span></code> function would become time-consuming in some ops (like slice). The <code class="docutils literal notranslate"><span class="pre">Cycle</span> <span class="pre">Buffer</span></code> also may lead memory waste when activation-tensor is very large.
+In this case, <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> provides another choice of memory manager which called <code class="docutils literal notranslate"><span class="pre">Static</span> <span class="pre">Compressed</span> <span class="pre">Buffer</span></code>. It will allocate enough memory blocks during warmup process if users specify the maximum input shapes of the model. <code class="docutils literal notranslate"><span class="pre">Static</span> <span class="pre">Compressed</span> <span class="pre">Buffer</span></code> is faster, more stable and economical with very high compress-efficiency.
+We recommend you to turn on this memory management tool if you want to do some optimizations on you big models.</p>
+</section>
+<section id="how-to-turn-on-static-compressed-buffer">
+<h2>How to Turn on <code class="docutils literal notranslate"><span class="pre">Static</span> <span class="pre">Compressed</span> <span class="pre">Buffer</span></code><a class="headerlink" href="#how-to-turn-on-static-compressed-buffer" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># step 1. load an IR or convert a model from other frameworks</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile</span> <span class="kn">import</span> <span class="nb">compile</span>
+<span class="n">model</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+<span class="c1"># setp 2. turn on the related option in graph</span>
+<span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;activation_mem_compression&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">execution_options</span> <span class="o">=</span> <span class="n">options</span>
+<span class="c1"># step 3. set max input shapes</span>
+<span class="c1"># for example, bert-large (input_ids, token_type_ids, attention_mask)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">max_input_shapes_list</span> <span class="o">=</span> <span class="p">[</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">128</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">128</span><span class="p">]]</span> <span class="p">]</span>
+
+<span class="c1"># warm up</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+
+<span class="c1"># inference</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iters</span><span class="p">)</span>
+    <span class="n">graph</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">inputs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The most important part is setting the <code class="docutils literal notranslate"><span class="pre">graph.max_input_shapes_list</span></code>. This a model input shapes list which means it can receive one more input shapes if you don’t know which shapes are the maximum. It’s quite useful in some <code class="docutils literal notranslate"><span class="pre">Decoder-Only</span></code> models which have dynamic input shapes (for example, <a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">LLAMA</a>). For this case, users can pass several optional max input shapes.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># LLAMA 7B</span>
+<span class="c1"># 32 input tokens, 32 new output tokens</span>
+<span class="n">past_k_v_0</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">128</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">64</span><span class="p">)]</span>
+<span class="n">past_k_v_1</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">63</span><span class="p">,</span> <span class="mi">128</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">64</span><span class="p">)]</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">max_input_shapes_list</span> <span class="o">=</span> <span class="p">[</span>
+                                <span class="c1"># first iteration</span>
+                                <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">32</span><span class="p">]]</span> <span class="o">+</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">33</span><span class="p">]]</span> <span class="o">+</span> <span class="n">past_k_v_0</span><span class="p">,</span>
+                                <span class="c1"># the last iteration (beam size=4)</span>
+                                <span class="p">[[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span> <span class="o">+</span> <span class="p">[[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">64</span><span class="p">]]</span> <span class="o">+</span> <span class="n">past_k_v_1</span><span class="p">,</span>
+                                <span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="more-options">
+<h2>More Options<a class="headerlink" href="#more-options" title="Link to this heading"></a></h2>
+<p>For <code class="docutils literal notranslate"><span class="pre">Static</span> <span class="pre">Compressed</span> <span class="pre">Buffer</span></code>, <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> supplies two extra options for debugging. They only works when turn on <code class="docutils literal notranslate"><span class="pre">activation_mem_compression</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;activation_mem_compression&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+           <span class="c1"># optional, save activation dag into the disk (path=&quot;activation_dag.yaml&quot;)</span>
+           <span class="s1">&#39;dump_activation_dag&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+           <span class="c1"># optional, no memory in-place in static compressed buffer</span>
+           <span class="s1">&#39;execution_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;debug&#39;</span>
+           <span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da742c8b0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

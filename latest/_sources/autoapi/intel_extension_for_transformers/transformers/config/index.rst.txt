@@ -1,0 +1,242 @@
+:py:mod:`intel_extension_for_transformers.transformers.config`
+==============================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.config
+
+.. autoapi-nested-parse::
+
+   Config: provide config classes for optimization processes.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.config.Provider
+   intel_extension_for_transformers.transformers.config.DynamicLengthConfig
+   intel_extension_for_transformers.transformers.config.QuantizationConfig
+   intel_extension_for_transformers.transformers.config.PruningConfig
+   intel_extension_for_transformers.transformers.config.DistillationConfig
+   intel_extension_for_transformers.transformers.config.TFDistillationConfig
+   intel_extension_for_transformers.transformers.config.FlashDistillationConfig
+   intel_extension_for_transformers.transformers.config.AutoDistillationConfig
+   intel_extension_for_transformers.transformers.config.NASConfig
+   intel_extension_for_transformers.transformers.config.BenchmarkConfig
+   intel_extension_for_transformers.transformers.config.PrunerV2
+   intel_extension_for_transformers.transformers.config.WeightPruningConfig
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.config.check_value
+
+
+
+.. py:class:: Provider
+
+
+
+
+   Optimization functionalities provider: INC or NNCF.
+
+
+.. py:function:: check_value(name, src, supported_type, supported_value=[])
+
+   Check if the given object is the given supported type and in the given supported value.
+
+   Example::
+
+       def datatype(self, datatype):
+           if check_value('datatype', datatype, list, ['fp32', 'bf16', 'uint8', 'int8']):
+               self._datatype = datatype
+
+
+.. py:class:: DynamicLengthConfig(max_length: int = None, length_config: str = None, const_rate: float = None, num_sandwich: int = 2, length_drop_ratio_bound: float = 0.2, layer_dropout_prob: float = None, layer_dropout_bound: int = 0, dynamic_training: bool = False, load_store_file: str = None, evo_iter: int = 30, population_size: int = 20, mutation_size: int = 30, mutation_prob: float = 0.5, crossover_size: int = 30, num_cpus: int = 48, distributed_world_size: int = 5, latency_constraint: bool = True, evo_eval_metric='eval_f1')
+
+
+
+
+   Configure the dynamic length config for Quantized Length Adaptive Transformer.
+
+   :param max_length: Limit the maximum length of each layer
+   :param length_config: The length number for each layer
+   :param const_rate: Length drop ratio
+   :param num_sandwich: Sandwich num used in training
+   :param length_drop_ratio_bound: Length dropout ratio list
+   :param layer_dropout_prob: The layer dropout with probability
+   :param layer_dropout_bound: Length dropout ratio
+   :param dynamic_training: Whether to use dynamic training
+   :param load_store_file: The path for store file
+   :param evo_iter: Iterations for evolution search
+   :param population_size: Population limitation for evolution search
+   :param mutation_size: Mutation limitation for evolution search
+   :param mutation_prob: Mutation probability used in evolution search
+   :param crossover_size: Crossover limitation for evolution search
+   :param num_cpus: The cpu nums used in evolution search
+   :param distributed_world_size: Distributed world size in evolution search training
+   :param latency_constraint: Latency constraint used in evolution search
+   :param evo_eval_metric: The metric name used in evolution search
+
+
+.. py:class:: QuantizationConfig(framework: str = 'pytorch', approach: str = 'PostTrainingStatic', strategy: str = 'basic', timeout: int = 0, max_trials: int = 100, metrics: Union[intel_extension_for_transformers.transformers.utils.metrics.Metric, List] = None, objectives: Union[intel_extension_for_transformers.transformers.utils.objectives.Objective, List] = performance, config_file: str = None, sampling_size: int = 100, use_bf16: bool = False, recipes: dict = None)
+
+
+
+
+   Configure the quantization process.
+
+   :param framework: Which framework you used
+   :param approach: Which quantization approach to use
+   :param strategy: Which quantization tuning strategy to use
+   :param timeout: Tuning timeout(seconds), 0 means early stop. Combined with max_trials field to decide when to exit
+   :param max_trials: Max tune times
+   :param metrics: Used to evaluate accuracy of tuning model, no need for NoTrainerOptimize
+   :param objectives: Objective with accuracy constraint guaranteed
+   :param config_file: Path to the config file
+   :param sampling_size: How many samples to use
+   :param use_bf16: Whether to use bf16
+   :param recipes: apply recipes for quantization, neural_compressor support below recipes:
+                   'smooth_quant': whether do smooth quant
+                   'smooth_quant_args': parameters for smooth_quant
+                   'fast_bias_correction': whether do fast bias correction
+                   'weight_correction': whether do weight correction
+                   'gemm_to_matmul': whether convert gemm to matmul and add, only valid for onnx models
+                   'graph_optimization_level': support 'DISABLE_ALL', 'ENABLE_BASIC', 'ENABLE_EXTENDED', 'ENABLE_ALL'
+                                             only valid for onnx models
+                   'first_conv_or_matmul_quantization': whether quantize the first conv or matmul
+                   'last_conv_or_matmul_quantization': whether quantize the last conv or matmul
+                   'pre_post_process_quantization': whether quantize the ops in preprocess and postprocess
+                   'add_qdq_pair_to_weight': whether add QDQ pair for weights, only vaild for onnxrt_trt_ep
+                   'optypes_to_exclude_output_quant': don't quantize output of specified optypes
+                   'dedicated_qdq_pair': whether dedicate QDQ pair, only vaild for onnxrt_trt_ep.
+
+
+.. py:class:: PruningConfig(framework: str = 'pytorch', epochs: int = 1, epoch_range: List = [0, 4], initial_sparsity_ratio: float = 0.0, target_sparsity_ratio: float = 0.97, metrics: intel_extension_for_transformers.transformers.utils.metrics.Metric = None, pruner_config: Union[List, neural_compressor.conf.config.Pruner] = None, config_file: str = None)
+
+
+
+
+   Configure the pruning process.
+
+   :param framework: Which framework you used
+   :param epochs: How many epochs to prune
+   :param epoch_range: Epoch range list
+   :param initial_sparsity_ratio: Initial sparsity goal, and not needed if pruner_config argument is defined
+   :param target_sparsity_ratio: Target sparsity goal, and not needed if pruner_config argument is defined
+   :param metrics: Used to evaluate accuracy of tuning model, not needed for NoTrainerOptimizer
+   :param pruner_config: Defined pruning behavior, if it is None, then NLP wil create a default pruner with
+                         'BasicMagnitude' pruning typel
+   :param config_file: Path to the config file
+
+   .. py:method:: init_prune_config()
+
+      Init the pruning config.
+
+
+
+.. py:class:: DistillationConfig(framework: str = 'pytorch', criterion: intel_extension_for_transformers.transformers.distillation.Criterion = None, metrics: intel_extension_for_transformers.transformers.utils.metrics.Metric = None, inc_config=None)
+
+
+
+
+   Configure the distillation process.
+
+   :param framework: Which framework you used
+   :param criterion: Criterion of training, example: "KnowledgeLoss"
+   :param metrics: Metrics for distillation
+   :param inc_config: Distillation config
+
+
+.. py:class:: TFDistillationConfig(loss_types: list = [], loss_weights: list = [], train_steps: list = [], temperature: float = 1.0)
+
+
+
+
+   Configure the distillation process for Tensorflow.
+
+   :param loss_types: Type of loss
+   :param loss_weights: Weight ratio of loss
+   :param train_steps: Steps of training
+   :param temperature: Parameter for KnowledgeDistillationLoss
+
+
+.. py:class:: FlashDistillationConfig(block_names: list = [], layer_mappings_for_knowledge_transfer: list = [], loss_types: list = [], loss_weights: list = [], add_origin_loss: list = [], train_steps: list = [])
+
+
+
+
+   The flash distillation configuration used by AutoDistillationConfig.
+
+
+.. py:class:: AutoDistillationConfig(framework: str = 'pytorch', search_space: dict = {}, search_algorithm: str = 'BO', metrics: Union[List, intel_extension_for_transformers.transformers.utils.metrics.Metric] = None, max_trials: int = None, seed: int = None, knowledge_transfer: FlashDistillationConfig = None, regular_distillation: FlashDistillationConfig = None)
+
+
+
+
+   Configure the auto disillation process.
+
+   :param framework: Which framework you used
+   :param search_space: Search space of NAS
+   :param search_algorithm: Search algorithm used in NAS, e.g. Bayesian Optimization
+   :param metrics: Metrics used to evaluate the performance of the model architecture candidate
+   :param max_trials: Maximum trials in NAS process
+   :param seed: Seed of random process
+   :param knowledge_transfer: Configuration controlling the behavior of knowledge transfer stage
+                              in the autodistillation
+   :param regular_distillation: Configuration controlling the behavior of regular distillation stage
+                                in the autodistillation
+
+
+.. py:class:: NASConfig(framework: str = 'pytorch', approach: str = 'basic', search_space: dict = {}, search_algorithm: str = 'BO', metrics: Union[List, intel_extension_for_transformers.transformers.utils.metrics.Metric] = None, max_trials: int = None, seed: int = None)
+
+
+
+
+   config parser.
+
+   :param approach: The approach of the NAS.
+   :param search_algorithm: The search algorithm for NAS procedure.
+
+
+.. py:class:: BenchmarkConfig(backend: str = 'torch', batch_size: int = 1, warmup: int = 5, iteration: int = 20, cores_per_instance: int = 4, num_of_instance: int = -1, torchscript: bool = False, generate: bool = False, **kwargs)
+
+
+   Config Class for Benchmark.
+
+   :param backend: the backend used for benchmark. Defaults to "torch".
+   :type backend: str, optional
+   :param warmup: skip iters when collecting latency. Defaults to 5.
+   :type warmup: int, optional
+   :param iteration: total iters when collecting latency. Defaults to 20.
+   :type iteration: int, optional
+   :param cores_per_instance: the core number for 1 instance. Defaults to 4.
+   :type cores_per_instance: int, optional
+   :param num_of_instance: the instance number. Defaults to -1.
+   :type num_of_instance: int, optional
+   :param torchscript: Enable it if you want to jit trace it                                       before benchmarking. Defaults to False.
+   :type torchscript: bool, optional
+   :param generate: Enable it if you want to use model.generate                                    when benchmarking. Defaults to False.
+   :type generate: bool, optional
+
+
+.. py:class:: PrunerV2(target_sparsity=None, pruning_type=None, pattern=None, op_names=None, excluded_op_names=None, start_step=None, end_step=None, pruning_scope=None, pruning_frequency=None, min_sparsity_ratio_per_op=None, max_sparsity_ratio_per_op=None, sparsity_decay_type=None, pruning_op_types=None, reg_type=None, criterion_reduce_type=None, parameters=None, resume_from_pruned_checkpoint=None)
+
+
+   similiar to torch optimizer's interface
+
+
+.. py:class:: WeightPruningConfig(pruning_configs=[{}], target_sparsity=0.9, pruning_type='snip_momentum', pattern='4x1', op_names=[], excluded_op_names=[], start_step=0, end_step=0, pruning_scope='global', pruning_frequency=1, min_sparsity_ratio_per_op=0.0, max_sparsity_ratio_per_op=0.98, sparsity_decay_type='exp', pruning_op_types=['Conv', 'Linear'], **kwargs)
+
+
+   Similiar to torch optimizer's interface.
+
+

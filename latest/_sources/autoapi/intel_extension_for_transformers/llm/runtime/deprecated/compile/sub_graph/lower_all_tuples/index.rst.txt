@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.lower_all_tuples`
+====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.lower_all_tuples
+
+.. autoapi-nested-parse::
+
+   The LowerAllTuples Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.lower_all_tuples.LowerAllTuples
+
+
+
+
+.. py:class:: LowerAllTuples
+
+
+
+
+   The LowerAllTuples pattern.
+
+   LowerAllTuples
+
+

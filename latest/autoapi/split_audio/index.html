@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>split_audio &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">split_audio</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/autoapi/split_audio/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-split_audio">
+<span id="split-audio"></span><h1><a class="reference internal" href="#module-split_audio" title="split_audio"><code class="xref py py-mod docutils literal notranslate"><span class="pre">split_audio</span></code></a><a class="headerlink" href="#module-split_audio" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#split_audio.Frame" title="split_audio.Frame"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Frame</span></code></a></p></td>
+<td><p>Represents a &quot;frame&quot; of audio data.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#split_audio.read_wave" title="split_audio.read_wave"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_wave</span></code></a>(path)</p></td>
+<td><p>Reads a .wav file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#split_audio.write_wave" title="split_audio.write_wave"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_wave</span></code></a>(path, audio, sample_rate)</p></td>
+<td><p>Writes a .wav file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#split_audio.frame_generator" title="split_audio.frame_generator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">frame_generator</span></code></a>(frame_duration_ms, audio, sample_rate)</p></td>
+<td><p>Generates audio frames from PCM audio data.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#split_audio.vad_collector" title="split_audio.vad_collector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vad_collector</span></code></a>(sample_rate, frame_duration_ms, ...)</p></td>
+<td><p>Filters out non-voiced audio frames.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="split_audio.read_wave">
+<span class="sig-prename descclassname"><span class="pre">split_audio.</span></span><span class="sig-name descname"><span class="pre">read_wave</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/split_audio.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#split_audio.read_wave" title="Link to this definition"></a></dt>
+<dd><p>Reads a .wav file.</p>
+<p>Takes the path, and returns (PCM audio data, sample rate).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="split_audio.write_wave">
+<span class="sig-prename descclassname"><span class="pre">split_audio.</span></span><span class="sig-name descname"><span class="pre">write_wave</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/split_audio.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#split_audio.write_wave" title="Link to this definition"></a></dt>
+<dd><p>Writes a .wav file.</p>
+<p>Takes path, PCM audio data, and sample rate.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="split_audio.Frame">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">split_audio.</span></span><span class="sig-name descname"><span class="pre">Frame</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">duration</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/split_audio.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#split_audio.Frame" title="Link to this definition"></a></dt>
+<dd><p>Represents a “frame” of audio data.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="split_audio.frame_generator">
+<span class="sig-prename descclassname"><span class="pre">split_audio.</span></span><span class="sig-name descname"><span class="pre">frame_generator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frame_duration_ms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">audio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/split_audio.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#split_audio.frame_generator" title="Link to this definition"></a></dt>
+<dd><p>Generates audio frames from PCM audio data.</p>
+<p>Takes the desired frame duration in milliseconds, the PCM data, and
+the sample rate.</p>
+<p>Yields Frames of the requested duration.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="split_audio.vad_collector">
+<span class="sig-prename descclassname"><span class="pre">split_audio.</span></span><span class="sig-name descname"><span class="pre">vad_collector</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frame_duration_ms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding_duration_ms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vad</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frames</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/split_audio.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#split_audio.vad_collector" title="Link to this definition"></a></dt>
+<dd><p>Filters out non-voiced audio frames.</p>
+<p>Given a webrtcvad.Vad and a source of audio frames, yields only
+the voiced audio.</p>
+<p>Uses a padded, sliding window algorithm over the audio frames.
+When more than 90% of the frames in the window are voiced (as
+reported by the VAD), the collector triggers and begins yielding
+audio frames. Then the collector waits until 90% of the frames in
+the window are unvoiced to detrigger.</p>
+<p>The window is padded at the front and back to provide a small
+amount of silence or the beginnings/endings of speech around the
+voiced frames.</p>
+<p>Arguments:</p>
+<p>sample_rate - The audio sample rate, in Hz.
+frame_duration_ms - The frame duration in milliseconds.
+padding_duration_ms - The amount to pad the window, in milliseconds.
+vad - An instance of webrtcvad.Vad.
+frames - a source of audio frames (sequence or generator).</p>
+<p>Returns: A generator that yields PCM audio data.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0dbcfd1cc0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+:orphan:
+
+:py:mod:`fastchat.data.hardcoded_questions`
+===========================================
+
+.. py:module:: fastchat.data.hardcoded_questions
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.data.hardcoded_questions.identity_questions
+
+
+
+.. py:function:: identity_questions()
+
+   "
+   Adopted from https://github.com/young-geng/koala_data_pipeline/blob/main/process_hard_coded_data.py
+
+

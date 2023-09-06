@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.llama_matmulwithtranspose`
+=============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.llama_matmulwithtranspose
+
+.. autoapi-nested-parse::
+
+   The LlamaMatMulWithTranspose pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.llama_matmulwithtranspose.LlamaMatMulWithTranspose
+
+
+
+
+.. py:class:: LlamaMatMulWithTranspose
+
+
+
+
+   The LlamaMatMulWithTranspose pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'LlamaMatMulWithTranspose' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

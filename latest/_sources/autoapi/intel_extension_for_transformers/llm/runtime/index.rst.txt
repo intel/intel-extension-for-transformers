@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.runtime`
+======================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   deprecated/index.rst
+
+

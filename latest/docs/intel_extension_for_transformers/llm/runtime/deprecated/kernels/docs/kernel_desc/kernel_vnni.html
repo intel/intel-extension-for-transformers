@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sparse GEMM VNNI &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../search.html" />
+    <link rel="next" title="Sparse GEMM AMX" href="kernel_amx.html" />
+    <link rel="prev" title="Element-wise Injector" href="eltwise_injector.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../../../../../../../../kernel_desc.html">Implementation Details</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="3D_inference.html">3D Inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="binaryop_injector.html">Binary Injectors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="eltwise_injector.html">Element-wise Injector</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Sparse GEMM VNNI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_amx.html">Sparse GEMM AMX</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_avx512f.html">Sparse GEMM AVX512F</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_transpose_matmul.html">Transposed MatMul</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_transpose_mha.html">Transposed MHA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_dynamic_quant_matmul.html">Dynamic Quant Matmul</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../kernel.html">Kernels</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../kernel_desc.html">Implementation Details</a></li>
+      <li class="breadcrumb-item active">Sparse GEMM VNNI</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc/kernel_vnni.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sparse-gemm-vnni">
+<h1>Sparse GEMM VNNI<a class="headerlink" href="#sparse-gemm-vnni" title="Link to this heading"></a></h1>
+<p>Sparse patterns must align with its target ISA, especially GEMM instructions.
+VNNI introduces the following GEMM calculation:</p>
+<blockquote>
+<div><p>Description</p>
+<p>Multiply groups of four adjacent pairs of unsigned 8-bit integers in a with corresponding signed 8-bit integers in b, producing 4 intermediate signed 16-bit results. Sum these 4 results with the corresponding 32-bit integer in src, and store the packed 32-bit results in dst.</p>
+<p>Operation</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">FOR</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="mi">15</span>
+<span class="w">    </span><span class="n">tmp1</span><span class="p">.</span><span class="n">word</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">Signed</span><span class="p">(</span><span class="n">ZeroExtend16</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">byte</span><span class="p">[</span><span class="mi">4</span><span class="o">*</span><span class="n">j</span><span class="p">])</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">SignExtend16</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">byte</span><span class="p">[</span><span class="mi">4</span><span class="o">*</span><span class="n">j</span><span class="p">]))</span>
+<span class="w">    </span><span class="n">tmp2</span><span class="p">.</span><span class="n">word</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">Signed</span><span class="p">(</span><span class="n">ZeroExtend16</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">byte</span><span class="p">[</span><span class="mi">4</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">SignExtend16</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">byte</span><span class="p">[</span><span class="mi">4</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">1</span><span class="p">]))</span>
+<span class="w">    </span><span class="n">tmp3</span><span class="p">.</span><span class="n">word</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">Signed</span><span class="p">(</span><span class="n">ZeroExtend16</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">byte</span><span class="p">[</span><span class="mi">4</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">2</span><span class="p">])</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">SignExtend16</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">byte</span><span class="p">[</span><span class="mi">4</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">2</span><span class="p">]))</span>
+<span class="w">    </span><span class="n">tmp4</span><span class="p">.</span><span class="n">word</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">Signed</span><span class="p">(</span><span class="n">ZeroExtend16</span><span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">byte</span><span class="p">[</span><span class="mi">4</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">3</span><span class="p">])</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">SignExtend16</span><span class="p">(</span><span class="n">b</span><span class="p">.</span><span class="n">byte</span><span class="p">[</span><span class="mi">4</span><span class="o">*</span><span class="n">j</span><span class="o">+</span><span class="mi">3</span><span class="p">]))</span>
+<span class="w">    </span><span class="n">dst</span><span class="p">.</span><span class="n">dword</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="n">src</span><span class="p">.</span><span class="n">dword</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tmp1</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tmp2</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tmp3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tmp4</span>
+<span class="n">ENDFOR</span>
+<span class="n">dst</span><span class="p">[</span><span class="n">MAX</span><span class="o">:</span><span class="mi">512</span><span class="p">]</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">0</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>According to our kernel experiments, we defined the so-called <strong>“4x1”</strong> sparse pattern to fully utilize VNNI capability.</p>
+<blockquote>
+<div><p>Note:this kernel performs (transposed) weight multiplies (transposed) activation so that the “4x1” pattern here may be equivalent to the “1x4” pattern in other documents. The benefits of transposition are discussed in <a class="reference external" href="#candidate-patterns">the next section</a>.</p>
+</div></blockquote>
+<p>As shown in the figure below, the sparse pattern in the weight (the left matrix) is 4x1, where 4 is in the output channel dimensions, 1 is in the input channel dimensions. In terms of a typical GEMM, we say that <strong>4</strong> is in <strong>M</strong> dimensions and <strong>1</strong> is in <strong>K</strong> dimension. For the rest part of this doc, we will use GEMM concept which usually uses <strong>M</strong>, <strong>K</strong>, <strong>N</strong> for the first, second and third dimension.</p>
+<p>After compression, we concatenate each <strong>4x1</strong> block in the same row into some <strong>4x4</strong> blocks (there will be some padding in rows where the number of non-zero blocks is not a multiple of 4, as shown in the second and third row of blocks in the image). Then for each row (maybe including paddings) in a <strong>4x4</strong> block, we broadcast them to 4x16 elements, which meet the accumulation and parallelization dimensions of VNNI. For the activation (right) matrix, we pick 4 (or less if we added padding when preparing weight data) 1x16 blocks according to sparse indices and concatenate them into 4x16 blocks in column major. That is the second matrix we prepared for VNNI.</p>
+<p>For a typical GEMM (MxKxN) problem, a high performance GEMM micro-kernel needs to tile in (mxkxn) which means taking m rows of matrix A and n columns of matrix B to improve the density of FMA instructions, therefore reducing bubbles in the assembly line. In the <strong>4x4</strong> block, the <strong>“4”</strong> is corresponding to the <strong>m</strong> in micro-kernels, and the <strong>“4”</strong> by the concatenate along rows is just for VNNI accumulation dimensions.</p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_left_4x11.png" /></p>
+<section id="on-the-fly-activation-reordering">
+<h2>On the fly activation reordering<a class="headerlink" href="#on-the-fly-activation-reordering" title="Link to this heading"></a></h2>
+<p>To use the VNNI instruction, the activation needs to be prepared in zmm registers in the order of 16x4. The following graph demonstrates this process:
+<img alt="4x16_to_vnni_format" src="../../../../../../../../_images/4x16_to_vnni_format1.png" /></p>
+<blockquote>
+<div><p>Cell highlight colors indicate 4x 16-byte vectors.</p>
+</div></blockquote>
+<p>We use <a class="reference external" href="https://stackoverflow.com/a/64417691">a talented solution from a smart guy</a> to perform this transformation, which only uses four load and two swizzle instructions, adding minimal overhead to our kernel.</p>
+</section>
+<section id="candidate-patterns">
+<h2>Candidate patterns<a class="headerlink" href="#candidate-patterns" title="Link to this heading"></a></h2>
+<p>Transposition is not a default option for matrix multiplication but a workaround we found after investigation. Without transposition, activation multiplies weight, and the major dimension of the left matrix (K) must be used for accumulation. Therefore, we need to use the N dim for parallelization which is sparse. Unfortunately, this leads to the difficulty of storing results in a non-consecutive memory location.</p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_right_4x11.png" /></p>
+<p>Adopting the 1x16 pattern and using concatenation to get the accumulation dimension is also a bad idea, as it means loading 4 separate elements in a row on the dense matrix. Therefore, we must apply transposition so that the second dimension of the dense matrix is used for accumulation, leaving the leading dimension for parallelization.</p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_right_1x161.png" /></p>
+<p>Given that transposition is necessary, an alternative pattern is <strong>“1x4”</strong>, where the concatenation cost is saved but missing tiling means lower density of micro-kernels, which will bring more harm for performance.</p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_pattern_left_1x41.png" /></p>
+<blockquote>
+<div><p>Comparison between <strong>“1x4”</strong> and <strong>“4x1”</strong></p>
+<ol class="simple">
+<li><p><strong>“4x1”</strong> tiles along M dimensions, <strong>“1x4”</strong> cannot tile along this dimension.</p></li>
+<li><p><strong>“4x1”</strong> needs concatenation along K dimensions, <strong>“1x4”</strong> doesn’t need concatenation. However, the concatenation happens during the compression, which is offline.</p></li>
+</ol>
+</div></blockquote>
+<p>We performed a simulation by changing the <strong>“4x1”</strong> to <strong>“2x1”</strong>, which means tiling along the M dimensions becomes 2. As a result, the following table demonstrates about 1/3 perf drop, and we expect more performance drop with totally no tiling.</p>
+<p><img alt="image" src="../../../../../../../../_images/kernel_vnni_perf1.png" /></p>
+<p>In conclusion, <strong>“4x1”</strong> brings higher performance which is about ~2(+) times against <strong>“1x4”</strong> (estimated from differences between tiling and no tiling.)</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="eltwise_injector.html" class="btn btn-neutral float-left" title="Element-wise Injector" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="kernel_amx.html" class="btn btn-neutral float-right" title="Sparse GEMM AMX" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da721dc00> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

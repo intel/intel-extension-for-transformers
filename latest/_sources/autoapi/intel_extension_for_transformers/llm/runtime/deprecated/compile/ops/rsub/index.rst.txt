@@ -1,0 +1,39 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.rsub`
+==================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.rsub
+
+.. autoapi-nested-parse::
+
+   The neural engine operator mapping file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.rsub.Rsub
+
+
+
+
+.. py:class:: Rsub
+
+
+
+
+   Register the Tile operator.
+
+   .. py:method:: set_attr(framework, node)
+
+      Extract the node attr from onnxruntime.
+      "aten::rsub(Tensor self, Tensor other, *, Scalar alpha) -> Tensor",
+      "aten::rsub(Tensor self, Scalar other, Scalar alpha) -> Tensor"};
+
+
+

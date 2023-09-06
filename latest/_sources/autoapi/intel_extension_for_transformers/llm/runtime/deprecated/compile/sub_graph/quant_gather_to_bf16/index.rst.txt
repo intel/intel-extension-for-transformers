@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.quant_gather_to_bf16`
+========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.quant_gather_to_bf16
+
+.. autoapi-nested-parse::
+
+   The TorchInsertBF16Node Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.quant_gather_to_bf16.TorchInsertBF16Node
+
+
+
+
+.. py:class:: TorchInsertBF16Node
+
+
+
+
+   The QuantGatherToBF16 pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'QuantGatherToBF16' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

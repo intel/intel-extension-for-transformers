@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Customized Pattern &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="Kernels" href="../../../../../../kernel.html" />
+    <link rel="prev" title="Customized Operators Register" href="operator_register.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="deploy_and_integration.html">Deploy and Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_quantize.html">Quantize a ONNX model to engine low precision/int8 IR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_profiling.html">Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_tuning.html">Engine Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="graph_fusion.html">Graph Fusion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pattern_recognize.html">Pattern Recognize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="operator_register.html">Customized Operators Register</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Add Customized Pattern</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#register-the-nodes-op-types">Register the Nodes’ Op Types</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#set-the-pattern-mapping-config-and-register-the-pattern">Set the Pattern Mapping Config and Register the Pattern</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fuse-pattern-and-set-attributes-of-new-pattern-after-fusion">Fuse Pattern and Set Attributes of New Pattern after Fusion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../neural_engine.html">Neural Engine</a></li>
+      <li class="breadcrumb-item active">Add Customized Pattern</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs/add_customized_pattern.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="add-customized-pattern">
+<h1>Add Customized Pattern<a class="headerlink" href="#add-customized-pattern" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#register-the-nodes-op-types">Register the Nodes’ Op Types</a></p></li>
+<li><p><a class="reference external" href="#set-the-pattern-mapping-config-and-register-the-pattern">Set the Pattern Mapping Config and Register the Pattern</a></p></li>
+<li><p><a class="reference external" href="#fuse-pattern-and-set-attributes-of-new-pattern-after-fusion">Fuse Pattern and Set Attributes of New Pattern after Fusion</a></p></li>
+</ul>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> in <code class="docutils literal notranslate"><span class="pre">Intel®</span> <span class="pre">Extension</span> <span class="pre">for</span> <span class="pre">Transformers</span></code> support user to add customized pattern of model, which means you can compile your own pretrained model to <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> IR (Intermediate Representation) just by adding the specific patterns which the <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a> does not contain.</p>
+<p>The intermediate graph in <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> can be treated as a <code class="docutils literal notranslate"><span class="pre">list</span></code> that stores all nodes of the model under control flow. Some certain nodes may compose a pattern which needs to be fused for speeding up inference. For simplifying the network structure, we also design different attributes attached to fused nodes. To aim at adding a customized pattern, there are three steps: <strong>1. register the nodes’ op_types; 2. set the pattern mapping config and register the pattern; 3. fuse pattern and set attributes of the new pattern after fusion.</strong></p>
+<p><img alt="../../../../../../_images/layernorm_distilbert_base_onnx.png" src="../../../../../../_images/layernorm_distilbert_base_onnx.png" /></p>
+<p>Above is a <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern in the <code class="docutils literal notranslate"><span class="pre">Distilbert_Base</span></code> onnx model. Assume it is a customized pattern in your model that need to be added in <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a>. Follow the steps below to make <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> support this pattern, and fuse these 9 nodes to one node called <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code>.</p>
+</section>
+<section id="register-the-nodes-op-types">
+<h2>Register the Nodes’ Op Types<a class="headerlink" href="#register-the-nodes-op-types" title="Link to this heading"></a></h2>
+<p>First, you should check whether the nodes’ op_types in the pattern are registered in <code class="docutils literal notranslate"><span class="pre">Engine</span></code> or not. If not, you need to add the op_type class for <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a> loading and extracting the origin model. All the ops can be found from the <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile/ops"><code class="docutils literal notranslate"><span class="pre">compile.ops</span></code></a>. For quick check, use the commands below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># make sure you have cloned intel_extension_for_transformers repo and installed intel_extension_for_transformers</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op</span> <span class="kn">import</span> <span class="n">OPERATORS</span>
+<span class="c1"># All the op_type names and objects are stored in `OPERATORS`</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">OPERATORS</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The print result will show all registered ops, for example:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">{</span><span class="s1">&#39;Gelu&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.gelu.Gelu&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;Unsqueeze&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.unsqueeze.Unsqueeze&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;OptimizeDataset&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.optimize_dataset.OptimizeDataset&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;IteratorV2&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.iterator_v2.IteratorV2&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;QuantizeLinear&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.quantize_linear.QuantizeLinear&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;Gather&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.gather.Gather&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;GatherV2&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.gather.GatherV2&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;GatherElements&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.gather_elements.GatherElements&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;Unpack&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.unpack.Unpack&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;MapAndBatchDataset&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.map_and_batch_dataset.MapAndBatchDataset&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;Concat&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.concat.Concat&#39;</span>&gt;,<span class="w"> </span>...<span class="o">}</span>
+</pre></div>
+</div>
+<p>These ops can be roughly divided into two categories, the one is without attributes, like <code class="docutils literal notranslate"><span class="pre">Mul</span></code>, the other one is with attributes, for example, <code class="docutils literal notranslate"><span class="pre">Reshape</span></code> has the attributes <code class="docutils literal notranslate"><span class="pre">dst_shape</span></code>. You can look through the <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a> for more info about the <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code> ops’ attribute settings.</p>
+<p>Assume the <code class="docutils literal notranslate"><span class="pre">Sqrt</span></code> and <code class="docutils literal notranslate"><span class="pre">ReduceMean</span></code> in <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern are new op_types for <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a>. Here are the examples that show how to register them.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Sqrt</span></code> has no attributes. You can add this op class in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/ops/empty_ops.py"><code class="docutils literal notranslate"><span class="pre">compile.ops.empty_ops</span></code></a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># register the &#39;Sqrt&#39; class in OPERATORS</span>
+<span class="nd">@operator_registry</span><span class="p">(</span><span class="n">operator_type</span><span class="o">=</span><span class="s1">&#39;Sqrt&#39;</span><span class="p">)</span>
+<span class="c1"># all ops class will inherit the father class &#39;Operator&#39;</span>
+<span class="k">class</span> <span class="nc">Sqrt</span><span class="p">(</span><span class="n">Operator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ReduceMean</span></code> has <code class="docutils literal notranslate"><span class="pre">keep_dims</span></code> and <code class="docutils literal notranslate"><span class="pre">axis</span></code> two attributes, you need to set them by extracting the node from the origin model.</p>
+<p>Create a python file (for example, name can be <code class="docutils literal notranslate"><span class="pre">reduce_mean.py</span></code>) in <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile/ops"><code class="docutils literal notranslate"><span class="pre">compile.ops</span></code></a> and add the <code class="docutils literal notranslate"><span class="pre">ReduceMean</span></code> op class.</p>
+<p>In this <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern, the <code class="docutils literal notranslate"><span class="pre">ReduceMean</span></code> node in origin onnx model just has <code class="docutils literal notranslate"><span class="pre">axes</span></code> value which is a list, that is the value of <code class="docutils literal notranslate"><span class="pre">axis</span></code> attribute comes from. The <code class="docutils literal notranslate"><span class="pre">keep_dims</span></code> attribute is <code class="docutils literal notranslate"><span class="pre">False</span></code> by default in <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a>, so if the <code class="docutils literal notranslate"><span class="pre">ReduceMean</span></code> node has the <code class="docutils literal notranslate"><span class="pre">keep_dims</span></code> attribute, you should extract and set it. Otherwise, you can just ignore it.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">.op</span> <span class="kn">import</span> <span class="n">Operator</span><span class="p">,</span> <span class="n">operator_registry</span>
+<span class="kn">from</span> <span class="nn">.tensor</span> <span class="kn">import</span> <span class="n">Tensor</span>
+<span class="kn">from</span> <span class="nn">..graph_utils</span> <span class="kn">import</span> <span class="n">list2str</span>
+
+<span class="nd">@operator_registry</span><span class="p">(</span><span class="n">operator_type</span><span class="o">=</span><span class="s1">&#39;ReduceMean&#39;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">ReduceMean</span><span class="p">(</span><span class="n">Operator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+    <span class="c1"># rewrite the &#39;set_attr&#39; function to set the attributes</span>
+    <span class="k">def</span> <span class="nf">set_attr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">framework</span><span class="p">,</span> <span class="n">node</span><span class="p">):</span>
+        <span class="c1"># other frameworks may also have the &#39;ReduceMean&#39; op_type</span>
+        <span class="k">if</span> <span class="n">framework</span> <span class="o">==</span> <span class="s1">&#39;onnxruntime&#39;</span><span class="p">:</span>
+            <span class="c1"># if node has &#39;keep_dims&#39; attribute in origin model</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">attribute</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">axis</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">attribute</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">ints</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_attr</span><span class="p">[</span><span class="s1">&#39;keep_dims&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">attribute</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">i</span><span class="p">)</span>
+            <span class="c1"># if node has not &#39;keep_dims&#39; attribute in origin model</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">node</span><span class="o">.</span><span class="n">attribute</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+               <span class="n">axis</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">attribute</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">ints</span>
+            <span class="c1"># in this &#39;LayerNorm&#39; pattern, the axis just have on element in a list</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_attr</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">axis</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># if the axis list have several element, change the list to string</span>
+            <span class="c1"># for example, [1, 2, 3] --&gt; &#39;1,2,3&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_attr</span><span class="p">[</span><span class="s1">&#39;axis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">list2str</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>After adding the two op classes, you can use the <code class="docutils literal notranslate"><span class="pre">OPERATORS</span></code> to check whether them be added successfully or not. Please do not forget reinstall the <code class="docutils literal notranslate"><span class="pre">intel_extension_for_transformers</span></code> in local for making your code changes effective.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># enter into the &lt;intel_extension_for_transformers&gt; folder</span>
+<span class="nb">cd</span><span class="w"> </span>&lt;you_work_dir&gt;/intel_extension_for_transformers/
+<span class="c1"># reinstall the intel_extension_for_transformers locally</span>
+pip<span class="w"> </span>install<span class="w"> </span>-v<span class="w"> </span>.
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># check your code changes</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op</span> <span class="kn">import</span> <span class="n">OPERATORS</span>
+<span class="s1">&#39;Sqrt&#39;</span> <span class="ow">and</span> <span class="s1">&#39;ReduceMean&#39;</span> <span class="ow">in</span> <span class="n">OPERATORS</span>
+</pre></div>
+</div>
+<p>If nothing wrong, the output result should be <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</section>
+<section id="set-the-pattern-mapping-config-and-register-the-pattern">
+<h2>Set the Pattern Mapping Config and Register the Pattern<a class="headerlink" href="#set-the-pattern-mapping-config-and-register-the-pattern" title="Link to this heading"></a></h2>
+<p>In <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code>, we treat the pattern fusion as the process of pattern mapping: from a group nodes to another group nodes. In this step, you need to provide a config for <code class="docutils literal notranslate"><span class="pre">pattern_mapping</span></code> function and register your pattern, in order to make sure the <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a> implements pattern fusion correctly.</p>
+<ul>
+<li><p>Create a python file (for example, name can be <code class="docutils literal notranslate"><span class="pre">layer_norm.py</span></code>) in <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile/sub_graph"><code class="docutils literal notranslate"><span class="pre">compile.sub_graph</span></code></a> and add the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern mapping config.</p>
+<p>For the above <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern, the config example can be like this:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># LayerNorm in distil_bert_base</span>
+<span class="n">pattern_mapping_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;LayerNorm&#39;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+    <span class="s1">&#39;patterns&#39;</span><span class="p">:</span> <span class="p">{</span>
+                 <span class="s1">&#39;in&#39;</span><span class="p">:</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;ReduceMean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Sub&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Pow&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;ReduceMean&#39;</span><span class="p">),</span>
+                        <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Sqrt&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;Div&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">)]],</span>
+                 <span class="s1">&#39;out&#39;</span><span class="p">:</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;LayerNorm&#39;</span><span class="p">)]]</span>
+                 <span class="p">},</span>
+     <span class="s1">&#39;search_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;op_type&#39;</span><span class="p">,</span>
+     <span class="s1">&#39;node_names&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="mi">0</span><span class="p">:</span> <span class="mi">8</span>
+                   <span class="p">},</span>
+     <span class="s1">&#39;input_tensors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="p">[[{</span>
+                            <span class="mi">0</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="p">},</span> <span class="p">{</span>
+                            <span class="mi">7</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="p">},</span> <span class="p">{</span>
+                            <span class="mi">8</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="p">}],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">3</span><span class="p">]]</span>
+                       <span class="p">},</span>
+     <span class="s1">&#39;output_tensors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="p">[[{</span>
+                            <span class="mi">8</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="p">}],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">]]</span>
+                    <span class="p">},</span>
+     <span class="s1">&#39;returns&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+     <span class="p">},</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The dict in the config will guide the <code class="docutils literal notranslate"><span class="pre">pattern_mapping</span></code> function on how to find all the group nodes that belong to <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern in intermediate graph and how to replace them with new pattern. We use this config to store many dicts because different models (even the same model) could have different representations for a certain pattern. If you want to delve into it, please see <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/pattern_recognize.html">pattern_recognize</a> and <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/graph_fusion.html">graph_fusion</a> docs for more details.</p>
+</li>
+<li><p>Register the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern</p>
+<p>Like the node op_type, the new pattern also need to be registered. You can check the existing pattern classes by the commands below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern</span> <span class="kn">import</span> <span class="n">PATTERNS</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">PATTERNS</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The print result will show all registered patterns, for example:</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="o">{</span><span class="s1">&#39;Gelu&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.gelu.Gelu&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;TokenTypeEmbeddings&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.token_type_embeddings.TokenTypeEmbeddings&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;TransposeBatchMatMul&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transpose_batch_matmul.TransposeBatchMatMul&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;TokenTypeEmbeddingsV1&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.token_type_embeddings_v1.TokenTypeEmbeddingsV1&#39;</span>&gt;,<span class="w"> </span><span class="s1">&#39;LayerNormWithReduceMean&#39;</span>:<span class="w"> </span>&lt;class<span class="w"> </span><span class="s1">&#39;intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.layer_norm_with_reduce_mean.LayerNormWithReduceMean&#39;</span>&gt;,<span class="w"> </span>...<span class="o">}</span>
+</pre></div>
+</div>
+<p>In order to complete the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern registration, write a related classes in the python file you created before and put the pattern mapping config in.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">.pattern</span> <span class="kn">import</span> <span class="n">Pattern</span><span class="p">,</span> <span class="n">pattern_registry</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span><span class="p">,</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">graph_utils</span> <span class="k">as</span> <span class="n">util</span>
+
+<span class="nd">@pattern_registry</span><span class="p">(</span><span class="n">pattern_type</span><span class="o">=</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">LayerNorm</span><span class="p">(</span><span class="n">Pattern</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+
+        <span class="n">pattern_mapping_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;LayerNorm&#39;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="c1"># LayerNorm in distil_bert_base</span>
+                <span class="p">{</span>
+                    <span class="s1">&#39;patterns&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;in&#39;</span><span class="p">:</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;ReduceMean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Sub&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Pow&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;ReduceMean&#39;</span><span class="p">),</span>
+                                <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Sqrt&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;Div&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">)]],</span>
+                        <span class="s1">&#39;out&#39;</span><span class="p">:</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;LayerNorm&#39;</span><span class="p">)]]</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;search_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;op_type&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;node_names&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="mi">8</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;input_tensors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="p">[[{</span>
+                            <span class="mi">0</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="p">},</span> <span class="p">{</span>
+                            <span class="mi">7</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="p">},</span> <span class="p">{</span>
+                            <span class="mi">8</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="p">}],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">3</span><span class="p">]]</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;output_tensors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="p">[[{</span>
+                            <span class="mi">8</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="p">}],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">]]</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;returns&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                <span class="p">},</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+</pre></div>
+</div>
+<p>After save this python file, you can check it by retrieving the <code class="docutils literal notranslate"><span class="pre">PATTERNS</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern</span> <span class="kn">import</span> <span class="n">PATTERNS</span>
+<span class="s1">&#39;LayerNorm&#39;</span> <span class="ow">in</span> <span class="n">PATTERNS</span>
+</pre></div>
+</div>
+<p>If nothing wrong, the output result should be <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+</li>
+</ul>
+</section>
+<section id="fuse-pattern-and-set-attributes-of-new-pattern-after-fusion">
+<h2>Fuse Pattern and Set Attributes of New Pattern after Fusion<a class="headerlink" href="#fuse-pattern-and-set-attributes-of-new-pattern-after-fusion" title="Link to this heading"></a></h2>
+<ul>
+<li><p>Define the pattern fusion order</p>
+<p>Fusing patterns should follow specific order if a model has multiple patterns. For example, if the model has A pattern (nodes: a–&gt;b) and B pattern (nodes: a–&gt;b–&gt;c), and B pattern is actually equivalent to A pattern + c node. So you should fuse A pattern first, then B pattern (more info and details please see the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/graph_fusion.html">graph_fusion</a>).</p>
+<p>There is a list called <code class="docutils literal notranslate"><span class="pre">supported_patterns</span></code> in <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile/sub_graph/pattern.py"><code class="docutils literal notranslate"><span class="pre">compile.sub_graph.pattern</span></code></a>. It controls the order of pattern fusion. You need to add your customized pattern name (the <code class="docutils literal notranslate"><span class="pre">pattern_type</span></code> you register in step 2) into <code class="docutils literal notranslate"><span class="pre">supported_patterns</span></code> at appropriate location (If a pattern does not influence other patterns, you can put it at an arbitrary location).</p>
+<p>For example, change the <code class="docutils literal notranslate"><span class="pre">supported_patterns</span></code> like:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">supported_patterns</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;InputData&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;A pattern&#39;</span>
+    <span class="o">...</span>
+    <span class="s1">&#39;LayerNorm&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;B pattern&#39;</span><span class="p">,</span>
+    <span class="o">...</span>
+    <span class="s1">&#39;OutputData&#39;</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p>Replace the pattern with new pattern</p>
+<p>According to the pattern mapping dict in step 2, add these two lines below to get the intermediate graph after pattern fusion.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># get the above LayerNorm pattern dict</span>
+<span class="n">pattern_dict</span> <span class="o">=</span> <span class="n">pattern_mapping_config</span><span class="p">[</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="c1"># get the intermediate graph (model) after fuse LayerNorm pattern</span>
+<span class="c1"># new_node_name and ret_old_nodes are used for set attributes later</span>
+<span class="n">model</span><span class="p">,</span> <span class="n">new_node_names</span><span class="p">,</span> <span class="n">ret_old_nodes</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">pattern_mapping</span><span class="p">(</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">,</span> <span class="n">pattern_dict</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p>Set the attributes of new pattern</p>
+<p>Every new pattern generated after fusion could have its attributes (when we talk about pattern attributes, it stands for the operator’s attributes in the pattern, which are defined by the <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a> ). As for <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern, the above 9 nodes are fused to one node with op_type <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code>. This operation has an attribute <code class="docutils literal notranslate"><span class="pre">epsilon</span></code> in <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/executor"><code class="docutils literal notranslate"><span class="pre">executor</span></code></a>, which is a value added to the denominator for numerical stability.</p>
+<p>We recommend to write a <code class="docutils literal notranslate"><span class="pre">_set_attr</span></code> function and call it after pattern mapping to set the nodes’ attributes. Here is the example for <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">_set_attr</span><span class="p">(</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">node_names</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="n">attr</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+    <span class="c1"># set the `epsilon` attribute</span>
+    <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;epsilon&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">epsilon</span><span class="p">)</span>
+    <span class="n">ln_node_idx</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_node_id</span><span class="p">(</span><span class="n">node_names</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="c1"># make the LayerNorm node in model have the corresponding attribute</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">ln_node_idx</span><span class="p">]</span><span class="o">.</span><span class="n">attr</span> <span class="o">=</span> <span class="n">attr</span>
+<span class="c1"># LayerNorm pattern mapping</span>
+<span class="n">pattern_dict</span> <span class="o">=</span> <span class="n">pattern_mapping_config</span><span class="p">[</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">model</span><span class="p">,</span> <span class="n">new_node_names</span><span class="p">,</span> <span class="n">ret_old_nodes</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">pattern_mapping</span><span class="p">(</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">,</span> <span class="n">pattern_dict</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+<span class="c1"># if the model has the above LayerNorm pattern</span>
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_node_names</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="c1"># set the LayerNorm node attribute</span>
+    <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_node_names</span><span class="p">)):</span>
+        <span class="c1"># get the epsilon value from the ret_old_nodes</span>
+        <span class="n">epsilon</span> <span class="o">=</span> <span class="n">ret_old_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">input_tensors</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+        <span class="n">_set_attr</span><span class="p">(</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">new_node_names</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">model</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
+</li>
+</ul>
+<p>Here gives the complete code of the <code class="docutils literal notranslate"><span class="pre">LayerNorm</span></code> pattern config, pattern fusion and attributes setting.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">.pattern</span> <span class="kn">import</span> <span class="n">Pattern</span><span class="p">,</span> <span class="n">pattern_registry</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">namedtuple</span><span class="p">,</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">..</span> <span class="kn">import</span> <span class="n">graph_utils</span> <span class="k">as</span> <span class="n">util</span>
+
+<span class="nd">@pattern_registry</span><span class="p">(</span><span class="n">pattern_type</span><span class="o">=</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">LayerNorm</span><span class="p">(</span><span class="n">Pattern</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+
+        <span class="n">pattern_mapping_config</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;LayerNorm&#39;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="c1"># LayerNorm in distil_bert_base</span>
+                <span class="p">{</span>
+                    <span class="s1">&#39;patterns&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s1">&#39;in&#39;</span><span class="p">:</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;ReduceMean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Sub&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Pow&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;ReduceMean&#39;</span><span class="p">),</span>
+                                <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Sqrt&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;Div&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">)]],</span>
+                        <span class="s1">&#39;out&#39;</span><span class="p">:</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;LayerNorm&#39;</span><span class="p">)]]</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;search_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;op_type&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;node_names&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="mi">8</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;input_tensors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="p">[[{</span>
+                            <span class="mi">0</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="p">},</span> <span class="p">{</span>
+                            <span class="mi">7</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="p">},</span> <span class="p">{</span>
+                            <span class="mi">8</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="p">}],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">3</span><span class="p">]]</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;output_tensors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="p">[[{</span>
+                            <span class="mi">8</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="p">}],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">]]</span>
+                    <span class="p">},</span>
+                    <span class="s1">&#39;returns&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                <span class="p">},</span>
+            <span class="p">]</span>
+        <span class="p">}</span>
+
+        <span class="c1"># general LayerNorm node attribute setting function</span>
+        <span class="k">def</span> <span class="nf">_set_attr</span><span class="p">(</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">node_names</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+            <span class="n">attr</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+            <span class="n">attr</span><span class="p">[</span><span class="s1">&#39;epsilon&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">epsilon</span><span class="p">)</span>
+            <span class="n">ln_node_idx</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_node_id</span><span class="p">(</span><span class="n">node_names</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">ln_node_idx</span><span class="p">]</span><span class="o">.</span><span class="n">attr</span> <span class="o">=</span> <span class="n">attr</span>
+        <span class="c1"># use for-loop because you may add other LayerNorm pattern mapping dict</span>
+        <span class="c1"># when meeting other different models</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">pattern_mapping_config</span><span class="p">[</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">])):</span>
+            <span class="c1"># replace all the LayerNorm pattern in the model</span>
+            <span class="n">pattern_dict</span> <span class="o">=</span> <span class="n">pattern_mapping_config</span><span class="p">[</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">model</span><span class="p">,</span> <span class="n">new_node_names</span><span class="p">,</span> <span class="n">ret_old_nodes</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">pattern_mapping</span><span class="p">(</span><span class="s1">&#39;LayerNorm&#39;</span><span class="p">,</span> <span class="n">pattern_dict</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_node_names</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="c1"># set the LayerNorm node attribute</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_node_names</span><span class="p">)):</span>
+                    <span class="n">epsilon</span> <span class="o">=</span> <span class="n">ret_old_nodes</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">input_tensors</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">data</span>
+                    <span class="n">_set_attr</span><span class="p">(</span><span class="n">epsilon</span><span class="p">,</span> <span class="n">new_node_names</span><span class="p">[</span><span class="n">j</span><span class="p">],</span> <span class="n">model</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">model</span>
+        <span class="c1"># if a model has not any LayerNorm pattern in the pattern_mapping config,return</span>
+        <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
+<p>After finishing these three steps in <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a>, reinstall <code class="docutils literal notranslate"><span class="pre">intel_extension_for_transformers</span></code> and then use <a class="reference external" href="/intel_extension_for_transformers/llm/runtime/deprecated/compile"><code class="docutils literal notranslate"><span class="pre">compile</span></code></a> function would compile your model with the customized pattern.</p>
+<blockquote>
+<div><p><strong>Note</strong>:</p>
+<ol class="simple">
+<li><p>The pattern mapping function just supports pattern after fusion is sequence for now, like [a–&gt;b–&gt;c] or [a]. So if the customized pattern after fusion is too complicated, you had better decompose it.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">executor</span></code> may not support the operators’ implementation of the customized pattern after fusion, you need to add them in the <code class="docutils literal notranslate"><span class="pre">executor</span></code> by yourself.</p></li>
+</ol>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="operator_register.html" class="btn btn-neutral float-left" title="Customized Operators Register" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../../../../../kernel.html" class="btn btn-neutral float-right" title="Kernels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da7513c10> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

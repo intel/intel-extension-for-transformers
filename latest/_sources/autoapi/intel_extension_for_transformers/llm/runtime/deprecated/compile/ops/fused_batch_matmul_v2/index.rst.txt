@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.fused_batch_matmul_v2`
+===================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.fused_batch_matmul_v2
+
+.. autoapi-nested-parse::
+
+   The neural engine operator mapping file.
+
+
+

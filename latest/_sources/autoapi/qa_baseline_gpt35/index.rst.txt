@@ -1,0 +1,11 @@
+:py:mod:`qa_baseline_gpt35`
+===========================
+
+.. py:module:: qa_baseline_gpt35
+
+.. autoapi-nested-parse::
+
+   Generate answers with GPT-3.5
+
+
+

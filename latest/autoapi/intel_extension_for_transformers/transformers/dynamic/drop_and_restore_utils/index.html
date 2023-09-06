@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/autoapi/intel_extension_for_transformers/transformers/dynamic/drop_and_restore_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils">
+<span id="intel-extension-for-transformers-transformers-dynamic-drop-and-restore-utils"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils" title="intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils" title="Link to this heading"></a></h1>
+<p>Utils for drop and restore function.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_length_configuration" title="intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_length_configuration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample_length_configuration</span></code></a>(max_seq_length, ...[, ...])</p></td>
+<td><p>Get different sequence length for hidden layers.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_layer_configuration" title="intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_layer_configuration"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample_layer_configuration</span></code></a>(num_hidden_layers[, ...])</p></td>
+<td><p>Get sample layers depends on the set paramaters.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_length_configuration">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.</span></span><span class="sig-name descname"><span class="pre">sample_length_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_seq_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_hidden_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_drop_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_drop_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_drop_ratio_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/dynamic/drop_and_restore_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_length_configuration" title="Link to this definition"></a></dt>
+<dd><p>Get different sequence length for hidden layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>max_seq_length</strong> – A number to set the max sequence length.</p></li>
+<li><p><strong>num_hidden_layers</strong> – A number of total hidden layers.</p></li>
+<li><p><strong>layer_config</strong> – Config to specify layers which use the max_seq_length.</p></li>
+<li><p><strong>length_drop_prob</strong> – Probability to truncate the sequence.</p></li>
+<li><p><strong>length_drop_ratio</strong> – Ratio to truncate the sequence.</p></li>
+<li><p><strong>length_drop_ratio_bound</strong> – The max ratio to truncate the sequence.
+If the ratio set, the length will not less than max_seq_length * ratio.</p></li>
+<li><p><strong>min_length</strong> – The number to set the min sequence length.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The tuple of length configuration for different hidden layers.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(Tuple)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_layer_configuration">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.</span></span><span class="sig-name descname"><span class="pre">sample_layer_configuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_hidden_layers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_dropout_prob</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_dropout_bound</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/transformers/dynamic/drop_and_restore_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_layer_configuration" title="Link to this definition"></a></dt>
+<dd><p>Get sample layers depends on the set paramaters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_hidden_layers</strong> – A number to set the max sequence length.</p></li>
+<li><p><strong>layer_dropout_prob</strong> – Probability to dropout a layer.</p></li>
+<li><p><strong>layer_dropout</strong> – Number of how many layers to dropout.</p></li>
+<li><p><strong>layer_dropout_bound</strong> – The bound of how many layers to dropout.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The tuple to the numbers of which samples are kept.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(Tuple)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0dbe46f730> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

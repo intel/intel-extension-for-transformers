@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.interact_features`
+=====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.interact_features
+
+.. autoapi-nested-parse::
+
+   The InteractFeatures Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.interact_features.InteractFeatures
+
+
+
+
+.. py:class:: InteractFeatures
+
+
+
+
+   The InteractFeatures pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'InteractFeatures' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

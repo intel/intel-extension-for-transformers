@@ -1,0 +1,29 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.security.safety_checker`
+===============================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.security.safety_checker
+
+.. autoapi-nested-parse::
+
+   Function to check the intent of the input user query with LLM.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.security.safety_checker.convert_fullwidth_to_halfwidth
+
+
+
+.. py:function:: convert_fullwidth_to_halfwidth(query)
+
+   Converting Full-width Characters to Half-width Characters.
+
+

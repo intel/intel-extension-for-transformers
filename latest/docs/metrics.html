@@ -4,21 +4,25 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Metrics &mdash; Intel® Extension for Transformers 0.1.dev1+g99d458f documentation</title>
+  <title>Metrics &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
       <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
-  <!--[if lt IE 9]>
-    <script src="../_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
-    <script src="../_static/js/theme.js"></script>
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Objective" href="objectives.html" />
@@ -80,6 +84,7 @@
 <li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
 <li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
 <li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
 </ul>
 
         </div>
@@ -109,7 +114,7 @@
            <div itemprop="articleBody">
              
   <section id="metrics">
-<h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading"></a></h1>
+<h1>Metrics<a class="headerlink" href="#metrics" title="Link to this heading"></a></h1>
 <ol class="simple">
 <li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
 <li><p><a class="reference external" href="#supported-metric">Supported Metric</a></p></li>
@@ -117,15 +122,15 @@
 <li><p><a class="reference external" href="#get-start-with-metrics">Get Start with Metrics</a></p></li>
 </ol>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading"></a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>In terms of evaluating the performance of a specific model, we should have general metrics to measure the performance of different models. The Metric defines which metric will be used to measure the performance of tuned models and how to use the metric, just like: greater is better, performance tolerance … and so on. The Metric only provides the metric name, all metrics class is from <a class="reference external" href="https://github.com/huggingface/datasets/tree/main/metrics">datasets</a>.</p>
 </section>
 <section id="supported-metric">
-<h2>Supported Metric<a class="headerlink" href="#supported-metric" title="Permalink to this heading"></a></h2>
+<h2>Supported Metric<a class="headerlink" href="#supported-metric" title="Link to this heading"></a></h2>
 <p>All metrics be provide by <a class="reference external" href="https://github.com/huggingface/datasets/tree/main/metrics">Huggingface datasets</a>.</p>
 </section>
 <section id="metric-class-summary">
-<h2>Metric Class Summary<a class="headerlink" href="#metric-class-summary" title="Permalink to this heading"></a></h2>
+<h2>Metric Class Summary<a class="headerlink" href="#metric-class-summary" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p>arguments:
 |Argument   |Type       |Description                                        |Default value    |
@@ -138,10 +143,10 @@
 </ul>
 </section>
 <section id="get-start-with-metrics">
-<h2>Get Start with Metrics<a class="headerlink" href="#get-start-with-metrics" title="Permalink to this heading"></a></h2>
+<h2>Get Start with Metrics<a class="headerlink" href="#get-start-with-metrics" title="Link to this heading"></a></h2>
 <ul>
 <li><p>example:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.optimization</span> <span class="kn">import</span> <span class="n">metric</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">metric</span>
 <span class="n">metric</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">greater_is_better</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">weight_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -167,7 +172,9 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+   <jinja2.runtime.BlockReference object at 0x7f0da71de590> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
 
 </footer>
         </div>

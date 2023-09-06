@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Do chatbot inference with Docker &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Do chatbot inference with Docker</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/docker/inference/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p>Intel Neural Chat Inference Dockerfile installer for Ubuntu22.04</p>
+<section id="do-chatbot-inference-with-docker">
+<h1>Do chatbot inference with Docker<a class="headerlink" href="#do-chatbot-inference-with-docker" title="Link to this heading"></a></h1>
+<section id="environment-setup">
+<h2>Environment Setup<a class="headerlink" href="#environment-setup" title="Link to this heading"></a></h2>
+<section id="setup-xeon-spr-environment">
+<h3>Setup Xeon SPR Environment<a class="headerlink" href="#setup-xeon-spr-environment" title="Link to this heading"></a></h3>
+<p>Option 1 (default): you could use docker build to build the docker image in your environment.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="w"> </span><span class="n">build</span><span class="w"> </span><span class="o">--</span><span class="n">network</span><span class="o">=</span><span class="n">host</span><span class="w"> </span><span class="o">--</span><span class="n">tag</span><span class="w"> </span><span class="n">chatbotinfer</span><span class="o">:</span><span class="n">latest</span><span class="w">  </span><span class="p">.</span><span class="o">/</span><span class="w"> </span><span class="o">-</span><span class="n">f</span><span class="w"> </span><span class="n">Dockerfile</span><span class="w">  </span><span class="o">--</span><span class="n">target</span><span class="w"> </span><span class="n">cpu</span>
+</pre></div>
+</div>
+<p>Option 2: If you need to use proxy, please use the following command.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="w"> </span><span class="n">build</span><span class="w"> </span><span class="o">--</span><span class="n">network</span><span class="o">=</span><span class="n">host</span><span class="w"> </span><span class="o">--</span><span class="n">tag</span><span class="w"> </span><span class="n">chatbotinfer</span><span class="o">:</span><span class="n">latest</span><span class="w">  </span><span class="p">.</span><span class="o">/</span><span class="w"> </span><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span><span class="w"> </span><span class="n">http_proxy</span><span class="o">=</span><span class="n">$</span><span class="p">{</span><span class="n">http_proxy</span><span class="p">}</span><span class="w"> </span><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span><span class="w"> </span><span class="n">https_proxy</span><span class="o">=</span><span class="n">$</span><span class="p">{</span><span class="n">http_proxy</span><span class="p">}</span><span class="w"> </span><span class="o">-</span><span class="n">f</span><span class="w"> </span><span class="n">Dockerfile</span><span class="w">  </span><span class="o">--</span><span class="n">target</span><span class="w"> </span><span class="n">cpu</span><span class="w">  </span>
+</pre></div>
+</div>
+<p>Then mount the model files to the docker container using ‘-v’. Make sure using the absolute path for host_dir.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="o">-</span><span class="n">it</span><span class="w"> </span><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="n">$</span><span class="p">{</span><span class="n">host_dir</span><span class="p">}</span><span class="o">:</span><span class="n">$</span><span class="p">{</span><span class="n">mount_dir</span><span class="p">}</span><span class="w"> </span><span class="n">chatbotinfer</span><span class="o">:</span><span class="n">latest</span>
+</pre></div>
+</div>
+<p>Note: <code class="docutils literal notranslate"><span class="pre">${host_dir}</span></code> is your local directory, <code class="docutils literal notranslate"><span class="pre">${mount_dir}</span></code> is the docker’s directory. If you need to use proxy, add <code class="docutils literal notranslate"><span class="pre">-e</span> <span class="pre">http_proxy=${http_proxy}</span> <span class="pre">-e</span> <span class="pre">https_proxy=${https_proxy}</span></code></p>
+</section>
+<section id="setup-habana-gaudi-environment">
+<h3>Setup Habana Gaudi Environment<a class="headerlink" href="#setup-habana-gaudi-environment" title="Link to this heading"></a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">DOCKER_BUILDKIT</span><span class="o">=</span><span class="mi">1</span><span class="w"> </span><span class="n">docker</span><span class="w"> </span><span class="n">build</span><span class="w"> </span><span class="o">--</span><span class="n">network</span><span class="o">=</span><span class="n">host</span><span class="w"> </span><span class="o">--</span><span class="n">tag</span><span class="w"> </span><span class="n">chatbothabana</span><span class="o">:</span><span class="n">latest</span><span class="w">  </span><span class="p">.</span><span class="o">/</span><span class="w"> </span><span class="o">-</span><span class="n">f</span><span class="w"> </span><span class="n">Dockerfile</span><span class="w">  </span><span class="o">--</span><span class="n">target</span><span class="w"> </span><span class="n">hpu</span><span class="w"> </span><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span><span class="w"> </span><span class="n">BASE_NAME</span><span class="o">=</span><span class="s">&quot;base-installer-ubuntu22.04&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span><span class="w"> </span><span class="n">ARTIFACTORY_URL</span><span class="o">=</span><span class="s">&quot;vault.habana.ai&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span><span class="w"> </span><span class="n">VERSION</span><span class="o">=</span><span class="s">&quot;1.10.0&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span><span class="w"> </span><span class="n">REVISION</span><span class="o">=</span><span class="s">&quot;494&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span><span class="w"> </span><span class="n">PT_VERSION</span><span class="o">=</span><span class="s">&quot;2.0.1&quot;</span><span class="w"> </span><span class="o">--</span><span class="n">build</span><span class="o">-</span><span class="n">arg</span><span class="w"> </span><span class="n">OS_NUMBER</span><span class="o">=</span><span class="s">&quot;2204&quot;</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">docker</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="o">-</span><span class="n">it</span><span class="w"> </span><span class="o">--</span><span class="n">runtime</span><span class="o">=</span><span class="n">habana</span><span class="w"> </span><span class="o">-</span><span class="n">e</span><span class="w"> </span><span class="n">HABANA_VISIBLE_DEVICES</span><span class="o">=</span><span class="n">all</span><span class="w"> </span><span class="o">-</span><span class="n">e</span><span class="w"> </span><span class="n">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span><span class="n">none</span><span class="w"> </span><span class="o">--</span><span class="n">cap</span><span class="o">-</span><span class="n">add</span><span class="o">=</span><span class="n">sys_nice</span><span class="w"> </span><span class="o">--</span><span class="n">net</span><span class="o">=</span><span class="n">host</span><span class="w"> </span><span class="o">--</span><span class="n">ipc</span><span class="o">=</span><span class="n">host</span><span class="w"> </span><span class="n">chatbothabana</span><span class="o">:</span><span class="n">latest</span><span class="w"> </span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="run-the-inference">
+<h2>Run the Inference<a class="headerlink" href="#run-the-inference" title="Link to this heading"></a></h2>
+<p>You can use the generate.py script for performing direct inference on Habana Gaudi instance. We have enabled BF16 to speed up the inference. Please use the following command for inference.</p>
+<section id="run-the-inference-on-xeon-spr">
+<h3>Run the Inference on Xeon SPR<a class="headerlink" href="#run-the-inference-on-xeon-spr" title="Link to this heading"></a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">generate</span><span class="p">.</span><span class="n">py</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">base_model_path</span><span class="w"> </span><span class="s">&quot;mosaicml/mpt-7b-chat&quot;</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">use_kv_cache</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">tokenizer_name</span><span class="w"> </span><span class="s">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">instructions</span><span class="w"> </span><span class="s">&quot;Transform the following sentence into one that shows contrast. The tree is rotten.&quot;</span>
+</pre></div>
+</div>
+<p>Note: You can add the flag <code class="docutils literal notranslate"><span class="pre">--jit</span></code> to use jit trace to accelerate generation.</p>
+</section>
+<section id="run-the-inference-on-habana-gaudi">
+<h3>Run the Inference on Habana Gaudi<a class="headerlink" href="#run-the-inference-on-habana-gaudi" title="Link to this heading"></a></h3>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">generate</span><span class="p">.</span><span class="n">py</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">base_model_path</span><span class="w"> </span><span class="s">&quot;mosaicml/mpt-7b-chat&quot;</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">tokenizer_name</span><span class="w"> </span><span class="s">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">habana</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">use_hpu_graphs</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">use_kv_cache</span><span class="w"> </span>\
+<span class="w">        </span><span class="o">--</span><span class="n">instructions</span><span class="w"> </span><span class="s">&quot;Transform the following sentence into one that shows contrast. The tree is rotten.&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da71dea70> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

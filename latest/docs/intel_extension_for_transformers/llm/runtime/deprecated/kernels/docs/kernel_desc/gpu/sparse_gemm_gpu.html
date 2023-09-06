@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc/gpu/sparse_gemm_gpu.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<p>This article describes how to achieve the acceleration of sparse matrices multiplication in the GPU with OpenCL code snippets instead of unintelligible assembly.</p>
+</section>
+<section id="dense-and-sparse">
+<h1>Dense and Sparse<a class="headerlink" href="#dense-and-sparse" title="Link to this heading"></a></h1>
+<p>Before introducing the sparse matrix, let’s first understand how the dense matrix is accelerated on the GPU.</p>
+<section id="naive">
+<h2>Naive<a class="headerlink" href="#naive" title="Link to this heading"></a></h2>
+<p>Let’s first look at one of the most naive GPU implementations</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">__kernel</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">naive_gemm</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">M</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">K</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">B</span><span class="p">,</span>
+<span class="w">                         </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">C</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Thread identifiers</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">globalRow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_global_id</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w">  </span><span class="c1">// Row ID of C (0..M)</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">globalCol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_global_id</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w">  </span><span class="c1">// Col ID of C (0..N)</span>
+
+<span class="w">  </span><span class="c1">// Compute a single element (loop over K)</span>
+<span class="w">  </span><span class="kt">float</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">K</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">acc</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">k</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">globalRow</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">globalCol</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">K</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">k</span><span class="p">];</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// Store the result</span>
+<span class="w">  </span><span class="n">C</span><span class="p">[</span><span class="n">globalCol</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">globalRow</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">acc</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A total of MxN threads are used. Each thread requires K multiplication and addition operations and 2xK load. Obviously not a good kernel.</p>
+</section>
+<section id="tile">
+<h2>Tile<a class="headerlink" href="#tile" title="Link to this heading"></a></h2>
+<p>Next, I use the tiling strategy and local memory to reduce redundant load operations.
+<img alt="gpu_naive_gemm" src="../../../../../../../../../_images/gpu_naive_gemm1.png" />
+In the same working group, Asub and Bsub are shared by threads, which can reduce repeated data load.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">__kernel</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">tile_gemm</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">M</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">K</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">B</span><span class="p">,</span>
+<span class="w">                        </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">C</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Thread identifiers</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_local_id</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w">                   </span><span class="c1">// Local row ID (max: TS)</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_local_id</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w">                   </span><span class="c1">// Local col ID (max: TS)</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">globalRow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">get_group_id</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span><span class="w">  </span><span class="c1">// Row ID of C (0..M)</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">globalCol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">get_group_id</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">col</span><span class="p">;</span><span class="w">  </span><span class="c1">// Col ID of C (0..N)</span>
+
+<span class="w">  </span><span class="c1">// Local memory to fit a tile of TS*TS elements of A and B</span>
+<span class="w">  </span><span class="n">__local</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Asub</span><span class="p">[</span><span class="n">TS</span><span class="p">][</span><span class="n">TS</span><span class="p">];</span>
+<span class="w">  </span><span class="n">__local</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Bsub</span><span class="p">[</span><span class="n">TS</span><span class="p">][</span><span class="n">TS</span><span class="p">];</span>
+
+<span class="w">  </span><span class="c1">// Initialise the accumulation register</span>
+<span class="w">  </span><span class="kt">float</span><span class="w"> </span><span class="n">acc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// Loop over all tiles</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">numTiles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">K</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">TS</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">numTiles</span><span class="p">;</span><span class="w"> </span><span class="n">t</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Load one tile of A and B into local memory</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tiledRow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tiledCol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">col</span><span class="p">;</span>
+<span class="w">    </span><span class="n">Asub</span><span class="p">[</span><span class="n">col</span><span class="p">][</span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">tiledCol</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">globalRow</span><span class="p">];</span>
+<span class="w">    </span><span class="n">Bsub</span><span class="p">[</span><span class="n">col</span><span class="p">][</span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">globalCol</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">K</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tiledRow</span><span class="p">];</span>
+
+<span class="w">    </span><span class="c1">// Synchronise to make sure the tile is loaded</span>
+<span class="w">    </span><span class="n">barrier</span><span class="p">(</span><span class="n">CLK_LOCAL_MEM_FENCE</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Perform the computation for a single tile</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">TS</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">acc</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">Asub</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Bsub</span><span class="p">[</span><span class="n">col</span><span class="p">][</span><span class="n">k</span><span class="p">];</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Synchronise before loading the next tile</span>
+<span class="w">    </span><span class="n">barrier</span><span class="p">(</span><span class="n">CLK_LOCAL_MEM_FENCE</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// Store the final result in C</span>
+<span class="w">  </span><span class="n">C</span><span class="p">[</span><span class="n">globalCol</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">globalRow</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">acc</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>When the weight is a sparse matrix, there must be a large number of all zero blocks. These blocks do not need to participate in computing.</p>
+<p>We assume that there are as many full zero blocks per col as.
+<img alt="gpu_naive_gemm" src="../../../../../../../../../_images/gpu_tile_sparse_gemm1.png" />
+White in the figure represents zero. Compared with dense, the amount of calculation will be reduced by half.
+Of course, the above dense is not very efficient, there are redundant load operations, and the correspondingly improved sparse is not used as our kernel.</p>
+</section>
+</section>
+<section id="efficient-kernel">
+<h1>Efficient kernel<a class="headerlink" href="#efficient-kernel" title="Link to this heading"></a></h1>
+<p>We continue to optimize the dense kernel. Increase the workload of each thread, reduce redundant data loading, use registers instead of local memory, and use prefetch to improve computing efficiency.</p>
+<section id="more-work-per-thread">
+<h2>More work per thread<a class="headerlink" href="#more-work-per-thread" title="Link to this heading"></a></h2>
+<p>In the example above, localmemory is used, but each thread still only computes one element of C. When the size of C is large, thread resources may be tight, so we need to increase the calculation amount of each thread. When the size of C is large, thread resources may be tight, so we need to increase the calculation amount of each thread.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">w</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">w</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">w</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tiledRow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="n">t</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tiledCol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="n">t</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">col</span><span class="p">;</span>
+<span class="w">    </span><span class="n">Asub</span><span class="p">[</span><span class="n">col</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">w</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">][</span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[(</span><span class="n">tiledCol</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">w</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span><span class="o">*</span><span class="n">M</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">globalRow</span><span class="p">];</span>
+<span class="w">    </span><span class="n">Bsub</span><span class="p">[</span><span class="n">col</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">w</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">][</span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="p">[(</span><span class="n">globalCol</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">w</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span><span class="o">*</span><span class="n">K</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tiledRow</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">&lt;</span><span class="n">TS</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">w</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">w</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">w</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">acc</span><span class="p">[</span><span class="n">w</span><span class="p">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">Asub</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Bsub</span><span class="p">[</span><span class="n">col</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">w</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">][</span><span class="n">k</span><span class="p">];</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">w</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">w</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">w</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">C</span><span class="p">[(</span><span class="n">globalCol</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">w</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">)</span><span class="o">*</span><span class="n">M</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">globalRow</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">acc</span><span class="p">[</span><span class="n">w</span><span class="p">];</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Each thread does more load and computing. Only need 1/8 of the number of threads before.
+Of course, the same approach can also be extended to continuous row elements of C.</p>
+</section>
+<section id="prefetch">
+<h2>Prefetch<a class="headerlink" href="#prefetch" title="Link to this heading"></a></h2>
+<p>Pre-fetching. In the case of matrix-multiplication, that means that we are going to load the next tile while we are computing the current tile, such that the latency of the loads can be hidden by computations.
+To implement this, we’ll need twice as much local memory. Use ping-pong to complete data calculation and load at the same time</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="c1">// Ping-pong</span>
+<span class="n">__local</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Asub</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">TS</span><span class="o">*</span><span class="n">TS</span><span class="p">];</span>
+<span class="n">__local</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Bsub</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">TS</span><span class="o">*</span><span class="n">TS</span><span class="p">];</span>
+</pre></div>
+</div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">__kernel</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">gemm</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">M</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">K</span><span class="p">,</span>
+<span class="w">                      </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">A</span><span class="p">,</span>
+<span class="w">                      </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">B</span><span class="p">,</span>
+<span class="w">                      </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">C</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="c1">// Thread identifiers</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tidm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_local_id</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// Local row ID</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tidn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_local_id</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// Local col ID</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="n">get_group_id</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// Work-group offset</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="n">get_group_id</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// Work-group offset</span>
+
+<span class="w">    </span><span class="c1">// Ping-pong local memory</span>
+<span class="w">    </span><span class="n">__local</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Asub</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">TS</span><span class="o">*</span><span class="n">TS</span><span class="p">];</span>
+<span class="w">    </span><span class="n">__local</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Bsub</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">TS</span><span class="o">*</span><span class="n">TS</span><span class="p">];</span>
+
+<span class="w">    </span><span class="c1">// Allocate register space</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">Areg</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">Breg</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">acc</span><span class="p">[</span><span class="mi">8</span><span class="p">][</span><span class="mi">8</span><span class="p">];</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wm</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wn</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">acc</span><span class="p">[</span><span class="n">wm</span><span class="p">][</span><span class="n">wn</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">la</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">la</span><span class="o">&lt;</span><span class="n">LPTA</span><span class="o">/</span><span class="p">;</span><span class="w"> </span><span class="n">la</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">tid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tidn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidm</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">la</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tid</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MOD2</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">TS</span><span class="p">);</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DIV2</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">TS</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Load the values (wide vector load)</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">tiledIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="mi">0</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">col</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">indexA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiledIndex</span><span class="o">*</span><span class="p">(</span><span class="n">M</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">indexB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiledIndex</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">vecA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">indexA</span><span class="p">];</span>
+<span class="w">        </span><span class="kt">float</span><span class="w"> </span><span class="n">vecB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">indexB</span><span class="p">];</span>
+
+<span class="w">        </span><span class="c1">// Store the loaded vectors into local memory</span>
+<span class="w">        </span><span class="n">Asub</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">col</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vecA</span><span class="p">;</span>
+<span class="w">        </span><span class="n">Bsub</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">col</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vecB</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Synchronise</span>
+<span class="w">    </span><span class="n">barrier</span><span class="p">(</span><span class="n">CLK_LOCAL_MEM_FENCE</span><span class="p">);</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Loop over all tiles</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">numTiles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">K</span><span class="o">/</span><span class="n">TS</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">t</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Load the next tile of A and B into local memory</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">tt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tt</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">numTiles</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">la</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">la</span><span class="o">&lt;</span><span class="n">LPTA</span><span class="p">;</span><span class="w"> </span><span class="n">la</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">tid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tidn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidm</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">la</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tid</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MOD2</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">TS</span><span class="p">);</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DIV2</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">TS</span><span class="p">);</span>
+
+<span class="w">                </span><span class="c1">// Load the values (wide vector load)</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">tiledIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="n">tt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">col</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">indexA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiledIndex</span><span class="o">*</span><span class="p">(</span><span class="n">M</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">indexB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiledIndex</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">float</span><span class="w"> </span><span class="n">vecA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">indexA</span><span class="p">];</span>
+<span class="w">                </span><span class="kt">float</span><span class="w"> </span><span class="n">vecB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">indexB</span><span class="p">];</span>
+
+<span class="w">                </span><span class="c1">// Store the loaded vectors into local memory</span>
+<span class="w">                </span><span class="n">Asub</span><span class="p">[</span><span class="n">tt</span><span class="o">%</span><span class="mi">2</span><span class="p">][</span><span class="n">col</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vecA</span><span class="p">;</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="c1">// Loop over the values of a single tile</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">&lt;</span><span class="n">TS</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">            </span><span class="c1">// Cache the values of Bsub in registers</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wn</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tidn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">                </span><span class="n">Breg</span><span class="p">[</span><span class="n">wn</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Bsub</span><span class="p">[</span><span class="n">t</span><span class="o">%</span><span class="mi">2</span><span class="p">][</span><span class="n">k</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">col</span><span class="p">];</span>
+<span class="w">            </span><span class="p">}</span>
+
+<span class="w">            </span><span class="c1">// Perform the computation</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wm</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tidm</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wm</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">                </span><span class="n">Areg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Asub</span><span class="p">[</span><span class="n">t</span><span class="o">%</span><span class="mi">2</span><span class="p">][</span><span class="n">k</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">];</span>
+<span class="w">                </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wn</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                    </span><span class="n">acc</span><span class="p">[</span><span class="n">wm</span><span class="p">][</span><span class="n">wn</span><span class="p">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">Areg</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Breg</span><span class="p">[</span><span class="n">wn</span><span class="p">];</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="c1">// Synchronise</span>
+<span class="w">        </span><span class="n">barrier</span><span class="p">(</span><span class="n">CLK_LOCAL_MEM_FENCE</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Next tile</span>
+<span class="w">        </span><span class="n">t</span><span class="o">++</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">t</span><span class="o">&lt;</span><span class="n">numTiles</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Store the final results in C</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wm</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">globalRow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidm</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wm</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wn</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">globalCol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">            </span><span class="n">C</span><span class="p">[</span><span class="n">globalCol</span><span class="o">*</span><span class="n">M</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">globalRow</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">acc</span><span class="p">[</span><span class="n">wm</span><span class="p">][</span><span class="n">wn</span><span class="p">];</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="sparse-acceleration">
+<h2>Sparse acceleration<a class="headerlink" href="#sparse-acceleration" title="Link to this heading"></a></h2>
+<p>Same as above. We only need the calculation process based on dense, skip the block of all zero.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">__kernel</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">gemm</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">M</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">K</span><span class="p">,</span>
+<span class="w">                      </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">pattern</span><span class="p">,</span>
+<span class="w">                      </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">A</span><span class="p">,</span>
+<span class="w">                      </span><span class="k">const</span><span class="w"> </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">B</span><span class="p">,</span>
+<span class="w">                      </span><span class="n">__global</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">C</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="c1">// Thread identifiers</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tidm</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_local_id</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// Local row ID</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">tidn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_local_id</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// Local col ID</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="n">get_group_id</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span><span class="w"> </span><span class="c1">// Work-group offset</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="n">get_group_id</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="c1">// Work-group offset</span>
+
+<span class="w">    </span><span class="c1">// Ping-pong local memory</span>
+<span class="w">    </span><span class="n">__local</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Asub</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">TS</span><span class="o">*</span><span class="n">TS</span><span class="p">];</span>
+<span class="w">    </span><span class="n">__local</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">Bsub</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">TS</span><span class="o">*</span><span class="n">TS</span><span class="p">];</span>
+
+<span class="w">    </span><span class="c1">// Allocate register space</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">Areg</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">Breg</span><span class="p">[</span><span class="mi">8</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">acc</span><span class="p">[</span><span class="mi">8</span><span class="p">][</span><span class="mi">8</span><span class="p">];</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wm</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="cp">#pragma unroll</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wn</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">acc</span><span class="p">[</span><span class="n">wm</span><span class="p">][</span><span class="n">wn</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.0f</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">la</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">la</span><span class="o">&lt;</span><span class="n">LPTA</span><span class="o">/</span><span class="p">;</span><span class="w"> </span><span class="n">la</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">tid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tidn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidm</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">la</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tid</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MOD2</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">TS</span><span class="p">);</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DIV2</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">TS</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Load the values (wide vector load)</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">tiledIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">col</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">indexA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiledIndex</span><span class="o">*</span><span class="p">(</span><span class="n">M</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">indexB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiledIndex</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pattern</span><span class="p">[</span><span class="n">indexA</span><span class="p">]</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="kt">float</span><span class="w"> </span><span class="n">vecA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">indexA</span><span class="p">];</span>
+<span class="w">          </span><span class="kt">float</span><span class="w"> </span><span class="n">vecB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">indexB</span><span class="p">];</span>
+
+<span class="w">          </span><span class="c1">// Store the loaded vectors into local memory</span>
+<span class="w">          </span><span class="n">Asub</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">col</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vecA</span><span class="p">;</span>
+<span class="w">          </span><span class="n">Bsub</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">col</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vecB</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="c1">// Synchronise</span>
+<span class="w">    </span><span class="n">barrier</span><span class="p">(</span><span class="n">CLK_LOCAL_MEM_FENCE</span><span class="p">);</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="c1">// Loop over all tiles</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">numTiles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">K</span><span class="o">/</span><span class="n">TS</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">t</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+<span class="w">    </span><span class="k">do</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="c1">// Load the next tile of A and B into local memory</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">tt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tt</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">numTiles</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">la</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">la</span><span class="o">&lt;</span><span class="n">LPTA</span><span class="p">;</span><span class="w"> </span><span class="n">la</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">tid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tidn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidm</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">la</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tid</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MOD2</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">TS</span><span class="p">);</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DIV2</span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="n">TS</span><span class="p">);</span>
+
+<span class="w">                </span><span class="c1">// Load the values (wide vector load)</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">tiledIndex</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TS</span><span class="o">*</span><span class="n">tt</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">col</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">indexA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiledIndex</span><span class="o">*</span><span class="p">(</span><span class="n">M</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">indexB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tiledIndex</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">;</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pattern</span><span class="p">[</span><span class="n">indexA</span><span class="p">]</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                  </span><span class="kt">float</span><span class="w"> </span><span class="n">vecA</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">indexA</span><span class="p">];</span>
+<span class="w">                  </span><span class="kt">float</span><span class="w"> </span><span class="n">vecB</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">indexB</span><span class="p">];</span>
+
+<span class="w">                  </span><span class="c1">// Store the loaded vectors into local memory</span>
+<span class="w">                  </span><span class="n">Asub</span><span class="p">[</span><span class="n">tt</span><span class="o">%</span><span class="mi">2</span><span class="p">][</span><span class="n">col</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vecA</span><span class="p">;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="c1">// Loop over the values of a single tile</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">k</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">&lt;</span><span class="n">TS</span><span class="p">;</span><span class="w"> </span><span class="n">k</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">// Cache the values of Bsub in registers</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wn</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">col</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tidn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">                </span><span class="n">Breg</span><span class="p">[</span><span class="n">wn</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Bsub</span><span class="p">[</span><span class="n">t</span><span class="o">%</span><span class="mi">2</span><span class="p">][</span><span class="n">k</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">col</span><span class="p">];</span>
+<span class="w">            </span><span class="p">}</span>
+
+<span class="w">            </span><span class="c1">// Perform the computation</span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">globalRow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidm</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wm</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wm</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">globalCol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">                </span><span class="kt">int</span><span class="w"> </span><span class="n">row</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tidm</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wm</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">                </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">pattern</span><span class="p">[</span><span class="n">globalRow</span><span class="p">][</span><span class="n">globalCol</span><span class="p">])</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="n">Areg</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Asub</span><span class="p">[</span><span class="n">t</span><span class="o">%</span><span class="mi">2</span><span class="p">][</span><span class="n">k</span><span class="o">*</span><span class="n">TS</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">row</span><span class="p">];</span>
+<span class="w">                  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wn</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                      </span><span class="n">acc</span><span class="p">[</span><span class="n">wm</span><span class="p">][</span><span class="n">wn</span><span class="p">]</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">Areg</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">Breg</span><span class="p">[</span><span class="n">wn</span><span class="p">];</span>
+<span class="w">                  </span><span class="p">}</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+
+<span class="w">        </span><span class="c1">// Synchronise</span>
+<span class="w">        </span><span class="n">barrier</span><span class="p">(</span><span class="n">CLK_LOCAL_MEM_FENCE</span><span class="p">);</span>
+
+<span class="w">        </span><span class="c1">// Next tile</span>
+<span class="w">        </span><span class="n">t</span><span class="o">++</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">t</span><span class="o">&lt;</span><span class="n">numTiles</span><span class="p">);</span>
+
+<span class="w">    </span><span class="c1">// Store the final results in C</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wm</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wm</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kt">int</span><span class="w"> </span><span class="n">globalRow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">offsetM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidm</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wm</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">wn</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">&lt;</span><span class="mi">8</span><span class="p">;</span><span class="w"> </span><span class="n">wn</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="kt">int</span><span class="w"> </span><span class="n">globalCol</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">offsetN</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">tidn</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">wn</span><span class="o">*</span><span class="n">TS</span><span class="o">/</span><span class="mi">8</span><span class="p">;</span>
+<span class="w">            </span><span class="n">C</span><span class="p">[</span><span class="n">globalCol</span><span class="o">*</span><span class="n">M</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">globalRow</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">acc</span><span class="p">[</span><span class="n">wm</span><span class="p">][</span><span class="n">wn</span><span class="p">];</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da71df8e0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

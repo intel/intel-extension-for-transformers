@@ -1,0 +1,31 @@
+:orphan:
+
+:py:mod:`fastchat.client`
+=========================
+
+.. py:module:: fastchat.client
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.client.ChatCompletion
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.client.set_baseurl
+
+
+
+
+

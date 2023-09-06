@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torchpaddingsquence`
+=======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torchpaddingsquence
+
+.. autoapi-nested-parse::
+
+   The TorchPaddingSequence pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torchpaddingsquence.TorchPaddingSequence
+
+
+
+
+.. py:class:: TorchPaddingSequence
+
+
+
+
+   The TorchPaddingSequence pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'TorchPaddingSequence' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

@@ -1,0 +1,112 @@
+:py:mod:`intel_extension_for_transformers.transformers.dynamic.evolution`
+=========================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.dynamic.evolution
+
+.. autoapi-nested-parse::
+
+   Evolustion: Provide the evolustionary search for pytorch.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.dynamic.evolution.Evolution
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.dynamic.evolution.approx_ratio
+   intel_extension_for_transformers.transformers.dynamic.evolution.inverse
+   intel_extension_for_transformers.transformers.dynamic.evolution.store2str
+
+
+
+.. py:function:: approx_ratio(x, n=12, l=384)
+
+   Get the approximation ratio.
+
+
+.. py:function:: inverse(x)
+
+   Get the inverse number.
+
+
+.. py:function:: store2str(gene, macs, score, method, parents=None)
+
+   Store the parmaters into string.
+
+
+.. py:class:: Evolution(model, max_seq_length, device, evaluate, lower_constraint=0, upper_constraint=None, eval_metric='eval_f1')
+
+
+
+
+   Class of Evolution supports for evolutionary searching.
+
+   .. py:method:: load_store(store_file)
+
+      Load from a store file.
+
+
+   .. py:method:: save_store(store_file)
+
+      Save into a store file.
+
+
+   .. py:method:: get_store()
+
+      Get store.
+
+
+   .. py:method:: set_lower_constraint(constraint)
+
+      Setter of lower constraint.
+
+
+   .. py:method:: set_upper_constraint(constraint)
+
+      Setter of upper constraint.
+
+
+   .. py:method:: save_population(population_file, population)
+
+      Save population into a file.
+
+
+   .. py:method:: convex_hull()
+
+      The function to calculate convex_hull.
+
+
+   .. py:method:: pareto_frontier()
+
+      The function to calculate population and are.
+
+
+   .. py:method:: add_gene(gene, macs=None, score=None, method=0, parents=None)
+
+      Add gene to evolution.
+
+
+   .. py:method:: mutate(mutation_prob, ray=False)
+
+      Do the mutate.
+
+
+   .. py:method:: crossover(ray=False)
+
+      Do the crossover.
+
+
+

@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.matmul_with_bias`
+====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.matmul_with_bias
+
+.. autoapi-nested-parse::
+
+   The MatMulWithBias pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.matmul_with_bias.MatMulWithBias
+
+
+
+
+.. py:class:: MatMulWithBias
+
+
+
+
+   The MatMulWithBias pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'MatMulWithBias' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

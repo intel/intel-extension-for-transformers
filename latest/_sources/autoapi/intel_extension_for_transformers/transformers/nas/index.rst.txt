@@ -1,0 +1,21 @@
+:py:mod:`intel_extension_for_transformers.transformers.nas`
+===========================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.nas
+
+.. autoapi-nested-parse::
+
+   NAS module.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   basic_nas/index.rst
+   nas/index.rst
+
+

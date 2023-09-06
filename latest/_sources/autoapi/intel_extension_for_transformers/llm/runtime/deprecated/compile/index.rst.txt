@@ -1,0 +1,39 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile`
+=========================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile
+
+.. autoapi-nested-parse::
+
+   The module of compile.
+
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   extractors/index.rst
+   graph/index.rst
+   loaders/index.rst
+   ops/index.rst
+   sub_graph/index.rst
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   compile/index.rst
+   graph_utils/index.rst
+   logger/index.rst
+   onnx_utils/index.rst
+   optimizer/index.rst
+   tf_utils/index.rst
+   torch_utils/index.rst
+
+

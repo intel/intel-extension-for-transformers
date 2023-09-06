@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`chat_completion`
+=========================
+
+.. py:module:: chat_completion
+
+

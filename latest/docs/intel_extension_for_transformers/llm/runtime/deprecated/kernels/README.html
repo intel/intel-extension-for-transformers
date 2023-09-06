@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transformers-Accelerated Libraries &mdash; Intel® Extension for Transformers 0.1.dev1+g8e1c50f documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="Performance" href="../../../../../../kernel_perf.html" />
+    <link rel="prev" title="Kernels" href="../../../../../../kernel.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Transformers-Accelerated Libraries</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#api-reference-for-users">API reference for users</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#supported-matrix">Supported Matrix</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../kernel_desc.html">Implementation Details</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../kernel.html">Kernels</a></li>
+      <li class="breadcrumb-item active">Transformers-Accelerated Libraries</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="transformers-accelerated-libraries">
+<h1>Transformers-Accelerated Libraries<a class="headerlink" href="#transformers-accelerated-libraries" title="Link to this heading"></a></h1>
+<p>===========================================</p>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>Transformers-accelerated Libraries (formerly known as <strong>SparseLib</strong>) is a high-performance operator computing library implemented by assembly. Transformers-accelerated Libraries contains a JIT domain, a kernel domain, and a scheduling proxy framework.</p>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<section id="build">
+<h3>Build<a class="headerlink" href="#build" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>%<span class="o">{</span>workdir<span class="o">}</span>/intel_extension_for_transformers/llm/runtime/deprecated
+mkdir<span class="w"> </span>build
+<span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>-DNE_WITH_TESTS<span class="o">=</span>ON<span class="w">                   </span><span class="c1"># if UT needed</span>
+<span class="w">         </span>-DNE_WITH_SPARSELIB_ONLY<span class="o">=</span>ON<span class="w">          </span><span class="c1"># if kernels only</span>
+<span class="w">         </span>-DNE_WITH_SPARSELIB_BENCHMARK<span class="o">=</span>ON<span class="w">     </span><span class="c1"># if benchmark needed</span>
+make<span class="w"> </span>-j
+</pre></div>
+</div>
+</section>
+<section id="test">
+<h3>Test<a class="headerlink" href="#test" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>build
+cmake<span class="w"> </span>..<span class="w"> </span>-DNE_WITH_TESTS<span class="o">=</span>ON
+make<span class="w"> </span>-j
+./test_spmm_vnni_kernel
+</pre></div>
+</div>
+</section>
+<section id="performance">
+<h3>Performance<a class="headerlink" href="#performance" title="Link to this heading"></a></h3>
+<p>We provide a benchmark tool to measure the performance out of box, please refer to <a class="reference external" href="../test/kernels/benchmark/benchmark.html">benchmark</a> for more details.
+For advanced users, please refer to <a class="reference external" href="docs/profiling.html">profling section</a>.</p>
+</section>
+</section>
+<section id="api-reference-for-users">
+<h2>API reference for users<a class="headerlink" href="#api-reference-for-users" title="Link to this heading"></a></h2>
+<section id="sparse-matmul-kernel">
+<h3>sparse_matmul kernel:<a class="headerlink" href="#sparse-matmul-kernel" title="Link to this heading"></a></h3>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;interface.hpp&quot;</span>
+<span class="w">  </span><span class="p">...</span>
+<span class="w">  </span><span class="n">operator_desc</span><span class="w"> </span><span class="n">op_desc</span><span class="p">(</span><span class="n">ker_kind</span><span class="p">,</span><span class="w"> </span><span class="n">ker_prop</span><span class="p">,</span><span class="w"> </span><span class="n">eng_kind</span><span class="p">,</span><span class="w"> </span><span class="n">ts_descs</span><span class="p">,</span><span class="w"> </span><span class="n">op_attrs</span><span class="p">);</span>
+<span class="w">  </span><span class="n">sparse_matmul_desc</span><span class="w"> </span><span class="nf">spmm_desc</span><span class="p">(</span><span class="n">op_desc</span><span class="p">);</span>
+<span class="w">  </span><span class="n">sparse_matmul</span><span class="w"> </span><span class="nf">spmm_kern</span><span class="p">(</span><span class="n">spmm_desc</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*&gt;</span><span class="w"> </span><span class="n">rt_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">data0</span><span class="p">,</span><span class="w"> </span><span class="n">data1</span><span class="p">,</span><span class="w"> </span><span class="n">data2</span><span class="p">,</span><span class="w"> </span><span class="n">data3</span><span class="p">,</span><span class="w"> </span><span class="n">data4</span><span class="p">};</span>
+<span class="w">  </span><span class="n">spmm_kern</span><span class="p">.</span><span class="n">execute</span><span class="p">(</span><span class="n">rt_data</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Refer to corresponding <a class="reference external" href="../test/gtest/kernels/">unit test</a> for examples.</p>
+</section>
+</section>
+<section id="supported-matrix">
+<h2>Supported Matrix<a class="headerlink" href="#supported-matrix" title="Link to this heading"></a></h2>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Operator</th>
+<th>Type</th>
+<th>ISA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="docs/kernel_desc/kernel_vnni.html">InnerProduct</a></td>
+<td>Dense/Sparse</td>
+<td>VNNI, AMX</td>
+</tr>
+<tr>
+<td>InnerProduct + <a href="docs/kernel_desc/eltwise_injector.html">element-wise</a></td>
+<td>Sparse</td>
+<td>VNNI, AMX</td>
+</tr>
+<tr>
+<td>InnerProduct + <a href="docs/kernel_desc/binaryop_injector.html">residual-add</a></td>
+<td>Sparse</td>
+<td>VNNI, AMX</td>
+</tr>
+<tr>
+<td><a href="docs/kernel_desc/kernel_layernormalized_spmm.html">InnerProduct + layernorm</a></td>
+<td>Sparse</td>
+<td>VNNI, AMX</td>
+</tr>
+<tr>
+<td>SoftMax/GeLU LUT</td>
+<td>NA</td>
+<td>VNNI, AVX512-BF16</td>
+</tr>
+<tr>
+<td>MHA</td>
+<td>Dense</td>
+<td>AMX-INT8</td>
+</tr>
+<tr>
+<td><a href="docs/kernel_desc/kernel_transpose_mha.html">Transposed MHA</a></td>
+<td>Sparse</td>
+<td>AMX-INT8, VNNI</td>
+</tr>
+<tr>
+<td>Transposed Layernorm</td>
+<td>Sparse</td>
+<td>AVX512F</td>
+</tr>
+<tr>
+<td><a href="docs/kernel_desc/kernel_dynamic_quant_matmul.html">Dynamic Quant Matmul</a></td>
+<td>Dense</td>
+<td>AMX-INT8</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../../../../../../kernel.html" class="btn btn-neutral float-left" title="Kernels" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../../../../../../kernel_perf.html" class="btn btn-neutral float-right" title="Performance" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f0da736fa90> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

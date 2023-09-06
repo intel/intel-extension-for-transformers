@@ -1,0 +1,36 @@
+:py:mod:`fastchat.serve.monkey_patch_non_inplace`
+=================================================
+
+.. py:module:: fastchat.serve.monkey_patch_non_inplace
+
+.. autoapi-nested-parse::
+
+   Monkey patch the llama implementation in the huggingface/transformers library.
+   Avoid bugs in mps backend by not using in-place operations.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.serve.monkey_patch_non_inplace.rotate_half
+   fastchat.serve.monkey_patch_non_inplace.replace_llama_attn_with_non_inplace_operations
+
+
+
+.. py:function:: rotate_half(x)
+
+   Rotates half the hidden dims of the input.
+
+
+.. py:function:: replace_llama_attn_with_non_inplace_operations()
+
+   Avoid bugs in mps backend by not using in-place operations.
+
+

@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.qkv_merge`
+=============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.qkv_merge
+
+.. autoapi-nested-parse::
+
+   The QKVMerge Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.qkv_merge.QKVMerge
+
+
+
+
+.. py:class:: QKVMerge
+
+
+
+
+   The QKVMerge pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'QKVMerge' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

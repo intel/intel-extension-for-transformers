@@ -1,0 +1,37 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.padding_sequence`
+==============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.padding_sequence
+
+.. autoapi-nested-parse::
+
+   The neural engine operator mapping file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.padding_sequence.PaddingSequence
+
+
+
+
+.. py:class:: PaddingSequence
+
+
+
+
+   Register the PaddingSequence operator.
+
+   .. py:method:: set_attr(framework, node)
+
+      Extract the node attr.
+
+
+

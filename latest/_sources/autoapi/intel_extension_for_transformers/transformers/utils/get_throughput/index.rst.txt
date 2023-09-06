@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.transformers.utils.get_throughput`
+============================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.utils.get_throughput
+
+.. autoapi-nested-parse::
+
+   Special file for triggering multiple instances for benchmarking.
+
+
+
