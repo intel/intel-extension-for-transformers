@@ -39,6 +39,7 @@ from PIL import Image
 from ner import generate_query_from_prompt
 from deepface import DeepFace
 from typing import List, Dict
+from fastapi import BackgroundTasks
 from utils_image import find_GPS_image, get_address_from_gps, generate_caption, image_to_byte64, byte64_to_image, generate_random_name, transfer_xywh
 
 logger = build_logger("controller", "controller.log")
@@ -890,17 +891,24 @@ def format_image_info(image_info: tuple) -> dict:
     return image_item
 
 
-def process_images_in_background(image_id_list: List[int], user_id: str):
+def process_images_in_background( user_id: str, image_obj_list: List[Dict]):
     try:
-        logger.info(f'======= processing image list {image_id_list} in background =======')
+        logger.info(f'======= processing image list {image_obj_list} in background =======')
         sys.path.append("..")
         from database.mysqldb import MysqlDb
         mysql_db = MysqlDb()
         mysql_db.set_db("ai_photos")
 
-        for image_id in image_id_list:
-            image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE image_id={image_id}', params=None)
-            process_single_image(image_id, image_path[0], user_id)
+        for i in len(image_obj_list):
+            # save image into local path
+            image_id = image_obj_list[i]['img_id']
+            image_path = image_obj_list[i]['img_path']
+            image_obj = image_obj_list[i]['img_obj']
+            image_exif = image_obj_list[i]['exif']
+            image_obj.save(image_path, exif=image_exif)
+            logger.info(f'Image saved into local path {image_path}')
+            # process image and generate infos
+            process_single_image(image_id, image_path, user_id)
     except Exception as e:
         logger.error(e)
         raise ValueError(str(e))
@@ -1275,11 +1283,11 @@ def stable_defusion_func(inputs):
     return forward_req_to_sd_inference_runner(inputs)
 
 
-from concurrent.futures import ThreadPoolExecutor
-executor = ThreadPoolExecutor()
+# from concurrent.futures import ThreadPoolExecutor
+# executor = ThreadPoolExecutor()
 
 @app.post("/v1/aiphotos/uploadImages")
-async def handle_ai_photos_upload_images(request: Request):
+async def handle_ai_photos_upload_images(request: Request, background_tasks: BackgroundTasks):
     user_id = request.client.host
     logger.info(f'user id is: {user_id}')
     res = check_user_ip(user_id)
@@ -1296,8 +1304,8 @@ async def handle_ai_photos_upload_images(request: Request):
     mysql_db = MysqlDb()
     mysql_db.set_db("ai_photos")
 
-    image_id_list = []
     return_list = []
+    image_obj_list = []
 
     for image in image_list:
         img_b64 = image['imgSrc'].split(',')[1]
@@ -1308,11 +1316,9 @@ async def handle_ai_photos_upload_images(request: Request):
         tmp_name = generate_random_name()
         img_name = tmp_name+'.jpg'
         img_path = image_path+'/'+ img_name
-        # save image to local path in form of jpg
+        # save exif info from origin image
         exif = img_obj.info.get('exif', b"")
-        img_obj.save(img_path, exif=exif)
-        logger.info(f'Image saved into local path {img_path}')
-
+        
         # save image info into db
         empty_tags = '{}'
         insert_sql = f"INSERT INTO image_info VALUES(null, '{user_id}', '{img_path}', null, '', \
@@ -1322,7 +1328,6 @@ async def handle_ai_photos_upload_images(request: Request):
         except Exception as e:
             logger.error(e)
             return JSONResponse(content=f'Database insert failed for image {img_path}', status_code=500)
-
 
         # get image id
         fetch_sql = f"SELECT * FROM image_info WHERE image_path='{img_path}';"
@@ -1336,9 +1341,11 @@ async def handle_ai_photos_upload_images(request: Request):
         item = {'img_id': img_id, 'img_path': frontend_path}
         logger.info(f'Image id is {img_id}, image path is {frontend_path}')
         return_list.append(item)
-        image_id_list.append(img_id)
-    
-    executor.submit(process_images_in_background, image_id_list, user_id)
+        obj_item = {"img_obj": img_obj, "exif": exif, "img_path": img_path, "img_id": img_id}
+        image_obj_list.append(obj_item)
+
+    background_tasks.add_task(process_images_in_background, user_id, image_obj_list)
+
     logger.info('Finish image uploading and saving')
     return return_list
 
