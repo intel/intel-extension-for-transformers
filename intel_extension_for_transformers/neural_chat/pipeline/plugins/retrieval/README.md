@@ -8,16 +8,20 @@ Large Language Models (LLMs) have demonstrated remarkable performance in various
 To improve the accuracy of generated content, two approaches can be considered: expanding the training data or utilizing an external database. Expanding the training data is impractical due to the time and effort required to train a high-performance LLM. It's challenging to collect and maintain an extensive, up-to-date knowledge corpus. Therefore, we propose an economically efficient alternative: leveraging relevant documents from a local database during content generation. These retrieved documents will be integrated into the input prompt of the LLM to enhance the accuracy and reliability of the generated results.
 
 The Neural Chat API offers an easy way to create and utilize chatbot models while integrating local documents. Our API simplifies the process of automatically handling and storing local documents in a document store. We provide support for two retrieval methods:
-1. Dense Retrieval: This method is based on document embeddings, enhancing the accuracy of retrieval. Learn more about [here](https://medium.com/@aikho/deep-learning-in-information-retrieval-part-ii-dense-retrieval-1f9fecb47de9) (based on the document embedding) 
+1. Dense Retrieval: This method is based on document embeddings, enhancing the accuracy of retrieval. Learn more about [here](https://medium.com/@aikho/deep-learning-in-information-retrieval-part-ii-dense-retrieval-1f9fecb47de9).
 2. Sparse Retrieval: Using TF-IDF, this method efficiently retrieves relevant information. Explore this approach in detail [here](https://medium.com/itnext/deep-learning-in-information-retrieval-part-i-introduction-and-sparse-retrieval-12de0423a0b9).
 
-The workflow of this plugin consists of three main operations: document indexing, intent detection, and retrieval. The `Agent_QA` initializes itself using the provided `input_path` to construct a local database. During a conversation, the user's query is first passed to the `IntentDetector` to determine whether the user intends to engage in chitchat or seek answers to specific questions. If the `IntentDetector` determines that the user's query requires an answer, the retriever is activated to search the database using the user's query. The documents retrieved from the database serve as reference context in the input prompt, assisting in generating responses using the Large Language Models (LLMs).
+The workflow of this plugin consists of three main operations: document indexing, intent detection, and retrieval. The `Agent_QA` initializes itself using the provided `input_path` to construct a local database. During a conversation, the user's query is first passed to the `IntentDetector` to determine whether the user intends to engage in chitchat or seek answers to specific questions. If the `IntentDetector` determines that the user's query requires an answer, the retriever is activated to search the database using the user's query. The documents retrieved from the database serve as reference context in the input prompt, assisting in generating responses using the Large Language Models (LLMs). 
 
 # Usage
-The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval). The user could refer to it for a simple test.
+The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval). The user could refer to it for a simple test. 
+
+We support multiple file formats for retrieval, including unstructured file formats such as pdf, docx, html, txt, and markdown, as well as structured file formats like jsonl and xlsx. For structured file formats, they must adhere to predefined structures.
+
+In the case of jsonl files, they should be formatted as dictionaries, such as: {"doc": xxx, "doc_id": xxx}. The support for xlsx files is specifically designed for Question-Answer (QA) tasks. Users can input QA pairs for retrieval. Therefore, the table's header should include items labeled as "Question" and "Answer". The reference files could be found [here](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/assets/docs).
 
 ## Import the module and set the retrieval config:
-The user can download the [Intel 2022 Annual Report](https://d1io3yog0oux5.cloudfront.net/_897efe2d574a132883f198f2b119aa39/intel/db/888/8941/file/412439%281%29_12_Intel_AR_WR.pdf) for a test.
+The user can download the [Intel 2022 Annual Report](https://d1io3yog0oux5.cloudfront.net/_897efe2d574a132883f198f2b119aa39/intel/db/888/8941/file/412439%281%29_12_Intel_AR_WR.pdf) for a quick test.
 
 ```python
 from intel_extension_for_transformers.neural_chat import PipelineConfig
@@ -53,7 +57,7 @@ max_length [int]: The max context length in the processed chucks. Should be comb
 
 retrieval_type [str]: Select a method for retrieval from "dense" or "sparse". Default to "dense".
 
-document_store [str]: Considering the sparse retrieval needs to load the data into memory. We provide "InMemoryDocumentStore" and "ElasticsearchDocumentStore" for manage the memory efficiency for sparse retrieval. 
+document_store [str]: Considering the sparse retrieval needs to load the data into memory. We provide "InMemoryDocumentStore" and "ElasticsearchDocumentStore" for manage the memory efficiency for sparse retrieval. Default to "None" for using dense retrieval.
     
 top_k [int]: The number of the retrieved documents. Default to "1".
 
