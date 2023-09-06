@@ -33,7 +33,7 @@ class Agent_QA():
         self.model = None
         self.tokenizer = None
         self.retrieval_type = retrieval_type
-
+        self.retriever = None
         self.intent_detector = IntentDetector()
         if os.path.exists(input_path):
             self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
