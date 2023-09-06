@@ -79,16 +79,8 @@ neuralchat_server start --config_file ./server/config/neuralchat.yaml
 
 Using `curl` command like below to send a request to the chatbot service:
 
-For the Python API code, users have the option to enable different voice chat modes by setting audio_input to True for input or audio_output to True for output.
-
-```python
->>> from intel_extension_for_transformers.neural_chat import PipelineConfig
->>> from intel_extension_for_transformers.neural_chat import build_chatbot, plugins
->>> plugins.tts.enable = True
->>> plugins.tts.args["output_audio_path"]="./output_audio.wav"
->>> pipeline_config = PipelineConfig(plugins=plugins)
->>> chatbot = build_chatbot(config)
->>> result = chatbot.predict(query="./assets/audio/pat.wav")
+```shell
+curl -X POST -H "Content-Type: application/json" -d '{"prompt": "Tell me about Intel Xeon Scalable Processors."}' http://127.0.0.1:80/v1/chat/completions
 ```
 
 ## Advanced Topics

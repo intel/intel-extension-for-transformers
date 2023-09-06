@@ -86,6 +86,7 @@ jobs:
           && pip install python-docx scikit-learn farm-haystack librosa beautifulsoup4 \
           && pip install InstructorEmbedding chromadb pydantic fastapi starlette \
           && pip install yacs uvicorn optimum optimum[habana] \
+          && pip install sentence_transformers unstructured markdown rouge_score \
           && pip install --upgrade accelerate"
 
       - name: Run UT

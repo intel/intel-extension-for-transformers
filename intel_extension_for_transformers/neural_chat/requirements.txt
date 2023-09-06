@@ -1,5 +1,6 @@
 transformers>=4.32.0
 peft
+fschat
 torch
 intel_extension_for_pytorch
 num2words
@@ -18,7 +19,6 @@ scikit-learn
 farm-haystack
 numpy==1.23.5
 librosa
-docx
 beautifulsoup4
 InstructorEmbedding
 chromadb
@@ -29,7 +29,6 @@ yacs
 uvicorn
 optimum
 optimum[habana]
-fschat
 sentence_transformers
 unstructured
 markdown
