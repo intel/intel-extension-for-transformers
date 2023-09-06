@@ -44,7 +44,7 @@ class _BaseAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        import intel_extension_for_transformers.transformers.modeling.modeling_restructure
+        import intel_extension_for_transformers.transformers.modeling.modeling_map
         config = kwargs.pop("config", None)
         trust_remote_code = kwargs.pop("trust_remote_code", None)
         kwargs["_from_auto"] = True
