@@ -31,3 +31,7 @@ uvicorn
 optimum
 optimum[habana]
 fschat
+sentence_transformers
+unstructured
+markdown
+rouge_score

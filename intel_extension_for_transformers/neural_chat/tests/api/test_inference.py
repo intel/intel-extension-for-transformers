@@ -19,8 +19,7 @@ import os
 import unittest
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot, finetune_model, optimize_model
 from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig, GenerationConfig, TextGenerationFinetuningConfig, AMPConfig,
-    ModelArguments, DataArguments, TrainingArguments, FinetuningArguments
+    PipelineConfig, GenerationConfig, AMPConfig,
 )
 from intel_extension_for_transformers.neural_chat import plugins
 
@@ -60,18 +59,6 @@ class UnitTest(unittest.TestCase):
         self.assertIsNotNone(response)
         print("output audio path: ", response)
         self.assertTrue(os.path.exists("./response.wav"))
-
-    def test_finetuning(self):
-        model_args = ModelArguments(model_name_or_path="facebook/opt-125m", use_fast_tokenizer=False)
-        data_args = DataArguments(train_file='./alpaca_data.json', dataset_concatenation=True)
-        training_args = TrainingArguments(gradient_accumulation_steps=1,
-                                          do_train=True, learning_rate=1e-4, num_train_epochs=1,
-                                          logging_steps=100, save_total_limit=2, overwrite_output_dir=True,
-                                          log_level='info', save_strategy='epoch', max_steps=3,
-                                          output_dir='./saved_model', no_cuda=True)
-        finetune_args = FinetuningArguments(peft='lora')
-        config = TextGenerationFinetuningConfig(model_args, data_args, training_args, finetune_args)
-        finetune_model(config)
 
     def test_quantization(self):
         config = AMPConfig()

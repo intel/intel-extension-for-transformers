@@ -112,8 +112,10 @@ For the Python API code, users have the option to enable different voice chat mo
 
 ```python
 >>> from intel_extension_for_transformers.neural_chat import PipelineConfig
->>> from intel_extension_for_transformers.neural_chat import build_chatbot
->>> config = PipelineConfig(audio_input=True, audio_output=True)
+>>> from intel_extension_for_transformers.neural_chat import build_chatbot, plugins
+>>> plugins.tts.enable = True
+>>> plugins.tts.args["output_audio_path"]="./output_audio.wav"
+>>> pipeline_config = PipelineConfig(plugins=plugins)
 >>> chatbot = build_chatbot(config)
 >>> result = chatbot.predict(query="./assets/audio/pat.wav")
 ```
