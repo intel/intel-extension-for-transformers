@@ -30,8 +30,8 @@ jobs:
         include:
           - test_branch: ${{ github.ref }}
             test_name: "PR-test"
-          #- test_branch: "main"
-          #  test_name: "baseline"
+          - test_branch: "main"
+            test_name: "baseline"
     steps:
       - name: Docker Clean Up
         run: |
@@ -94,19 +94,6 @@ jobs:
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
           && bash run_unit_test_neuralchat.sh --test_name=${{ matrix.test_name }}"
-
-      - name: Calculte coverage
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest/coverage \
-                && bash calc_coverage.sh"
-
-      - name: Collect log
-        if: ${{ !cancelled() }}
-        run: |
-          docker exec ${{ env.CONTAINER_NAME }} \
-          bash -c "cd /intel-extension-for-transformers && \
-                   mv /log_dir . "
 
       - name: Collect log
         if: ${{ !cancelled() }}
