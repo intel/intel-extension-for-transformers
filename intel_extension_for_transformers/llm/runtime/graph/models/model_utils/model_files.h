@@ -329,8 +329,8 @@ struct model_file_saver {
       fprintf(stderr, "model.cpp: WARNING: input is an old file that doesn't have scores; will add dummy scores\n");
     }
     uint32_t n_vocab = any_file_loader->hparams.n_vocab;
-    file.write_raw(&any_file_loader->vocab.bos_token_id, sizeof(model_vocab::id));
-    file.write_raw(&any_file_loader->vocab.eos_token_id, sizeof(model_vocab::id));
+    file.write_raw(&(any_file_loader->vocab.bos_token_id), sizeof(model_vocab::id));
+    file.write_raw(&(any_file_loader->vocab.eos_token_id), sizeof(model_vocab::id));
     for (uint32_t i = 0; i < n_vocab; i++) {
       const auto& token_score = any_file_loader->vocab.id_to_token.at(i);
       file.write_u32((uint32_t)token_score.tok.size());
