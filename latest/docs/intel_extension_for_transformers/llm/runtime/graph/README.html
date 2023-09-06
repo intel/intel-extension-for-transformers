@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gb858edc documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g52c623a documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -170,11 +170,10 @@ python<span class="w"> </span>scripts/quant_bin.py<span class="w"> </span>--mode
 | –block_size    | block size (default: 32)                                    |
 | –scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
 | –compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |</p>
-<p>Running GPT-NEOX / MPT / FALCON / / GPT-J / STARCODER model, please use <code class="docutils literal notranslate"><span class="pre">chat_gptneox</span></code> / <code class="docutils literal notranslate"><span class="pre">chat_mpt</span></code> / <code class="docutils literal notranslate"><span class="pre">chat_falcon</span></code> / <code class="docutils literal notranslate"><span class="pre">chat_starcoder</span></code> (Please type <strong>prompt about codes</strong> when use <code class="docutils literal notranslate"><span class="pre">STARCODER</span></code>. For example, <code class="docutils literal notranslate"><span class="pre">-p</span> <span class="pre">&quot;def</span> <span class="pre">fibonnaci(&quot;</span></code>).</p>
 </section>
 <section id="run-models">
 <h3>3. Run Models<a class="headerlink" href="#run-models" title="Link to this heading"></a></h3>
-<p>We supply LLM chat python script to run supported models conveniently.</p>
+<p>We supply LLM running python script to run supported models conveniently.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># recommed to use numactl to bind cores in Intel cpus for better performance</span>
 <span class="c1"># if you use different core numbers, please also  change -t arg value</span>
 <span class="c1"># please type prompt about codes when run `StarCoder`, for example, -p &quot;def fibonnaci(&quot;.</span>
@@ -187,7 +186,7 @@ python<span class="w"> </span>scripts/quant_bin.py<span class="w"> </span>--mode
 <span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>python<span class="w"> </span>scripts/run_llm.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--repeat_penalty<span class="w"> </span><span class="m">1</span>.2
 </pre></div>
 </div>
-<p>Chat script args explanations:
+<p>LLM running script args explanations:
 | arg               | explanation                                                             |
 | ————–    | ———————————————————————– |
 | –model_name      | model name                                                              |
@@ -219,7 +218,7 @@ python<span class="w"> </span>scripts/quant_bin.py<span class="w"> </span>--mode
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9bf2bff610> 
+   <jinja2.runtime.BlockReference object at 0x7f54a6301e10> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
