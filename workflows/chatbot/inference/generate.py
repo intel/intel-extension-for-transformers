@@ -390,24 +390,26 @@ def load_model(
                 file_name="best_model.pt",
             )
     elif re.search("llama", model_name, re.IGNORECASE) and ipex_int8:
-         import intel_extension_for_pytorch as ipex
-         config = AutoConfig.from_pretrained(model_name, torchscript=ipex_int8)
-         model = AutoModelForCausalLM.from_pretrained(
+        import intel_extension_for_pytorch as ipex
+        config = AutoConfig.from_pretrained(model_name, torchscript=ipex_int8)
+        from accelerate import init_empty_weights
+        with init_empty_weights():
+            model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 config=config,
                 low_cpu_mem_usage=True,
                 torch_dtype=torch.float
                 )
-         # calling _optimize_transformers for int8 path
-         model = ipex._optimize_transformers(
+        # calling _optimize_transformers for int8 path
+        model = ipex._optimize_transformers(
              model.eval(), dtype=torch.int8, inplace=True
          )
-         torch._C._jit_set_texpr_fuser_enabled(False)
-         if not hasattr(model, "trace_graph"):
-             print("load_int8_model")
-             self_jit = torch.jit.load(quantized_model_path)
-             self_jit = torch.jit.freeze(self_jit.eval())
-             setattr(model, "trace_graph", self_jit)
+        torch._C._jit_set_texpr_fuser_enabled(False)
+        if not hasattr(model, "trace_graph"):
+            print("load_int8_model")
+            self_jit = torch.jit.load(quantized_model_path)
+            self_jit = torch.jit.freeze(self_jit.eval())
+            setattr(model, "trace_graph", self_jit)
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
