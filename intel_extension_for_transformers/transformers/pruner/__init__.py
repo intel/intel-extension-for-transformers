@@ -25,4 +25,4 @@ if Version(__version__).release >= Version('2.3').release:  # pragma: no cover
     from neural_compressor.training import prepare_pruning
 # pylint: disable=E1101
 if Version(__version__).release > Version('2.1.1').release:  # pragma: no cover
-    from neural_compressor.compression.pruner.model_slim import model_slim, parse_auto_slim_config
+    from neural_compressor.compression.pruner import model_slim, parse_auto_slim_config
