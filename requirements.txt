@@ -1,10 +1,7 @@
-# dependencies required for development
-neural-compressor
-numpy
-packaging
-protobuf --no-binary=protobuf
-transformers==4.30.2
-evaluate
 ninja
---index-url https://download.pytorch.org/whl/cpu
+cmake>=3.16
+py-cpuinfo
+setuptools>=42
+setuptools_scm[toml]>=6.2
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
