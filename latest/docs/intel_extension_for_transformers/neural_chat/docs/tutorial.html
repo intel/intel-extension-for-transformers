@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tutorial &mdash; Intel® Extension for Transformers 0.1.dev1+gb36711a documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/docs/intel_extension_for_transformers/neural_chat/docs/tutorial.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Link to this heading"></a></h1>
+<p>This tutorial is used to introduce how to create a chatbot with NeuralChat in few minutes on different devices.</p>
+<section id="basic-usage">
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h2>
+<p>NeuralChat provides easy-of-use APIs for user to quickly create a chatbot on local mode or server mode.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">## create a chatbot on local mode</span>
+<span class="kn">from</span> <span class="nn">neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span><span class="p">,</span> <span class="n">PipelineConfig</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">()</span>
+<span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="c1">## use chatbot to do prediction</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1">## create a chatbot on server mode</span>
+neuralchat_server<span class="w"> </span>start<span class="w"> </span>--config_file<span class="w"> </span>./server/config/neuralchat.yaml
+</pre></div>
+</div>
+<p>NeuralChat provides a default chatbot configuration in <code class="docutils literal notranslate"><span class="pre">neuralchat.yaml</span></code>. User could customize the behavior of this chatbot by modifying the value of these fields in the configuration file to specify which LLM model and plugins to be used.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Fields</th>
+<th>Sub Fields</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>host</td>
+<td></td>
+<td>0.0.0.0</td>
+</tr>
+<tr>
+<td>port</td>
+<td></td>
+<td>8000</td>
+</tr>
+<tr>
+<td>audio</td>
+<td>audio_output</td>
+<td>TRUE</td>
+</tr>
+<tr>
+<td></td>
+<td>language</td>
+<td>"english"</td>
+</tr>
+<tr>
+<td>retrieval</td>
+<td>retrieval_type</td>
+<td>"dense"</td>
+</tr>
+<tr>
+<td></td>
+<td>retrieval_document_path</td>
+<td>../../assets/docs/</td>
+</tr>
+<tr>
+<td>caching</td>
+<td>cache_chat_config_file</td>
+<td>../../plugins/caching/cache_config.yaml</td>
+</tr>
+<tr>
+<td></td>
+<td>cache_embedding_model_dir</td>
+<td>hkunlp/instructor-large</td>
+</tr>
+<tr>
+<td>model_name</td>
+<td></td>
+<td>meta-llama/Llama-2-7b-chat-hf</td>
+</tr>
+</tbody>
+</table></section>
+<section id="deply-on-different-platforms">
+<h2>Deply on Different Platforms<a class="headerlink" href="#deply-on-different-platforms" title="Link to this heading"></a></h2>
+<section id="intel-xeon-scalable-processors">
+<h3>Intel XEON Scalable Processors<a class="headerlink" href="#intel-xeon-scalable-processors" title="Link to this heading"></a></h3>
+<p>On Intel XEON platforms, especially those having <a class="reference external" href="https://www.intel.com/content/www/us/en/products/docs/accelerator-engines/advanced-matrix-extensions/overview.html">Intel(R) AMX</a> support, user can utilize <code class="docutils literal notranslate"><span class="pre">mixed</span> <span class="pre">precision</span></code> feature to accelerate the inference of NeuralChat on local mode, as shown in the below code.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">## create a chatbot on local mode</span>
+<span class="kn">from</span> <span class="nn">neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span><span class="p">,</span> <span class="n">PipelineConfig</span><span class="p">,</span> <span class="n">AMPConfig</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span>
+            <span class="n">optimization_config</span><span class="o">=</span><span class="n">AMPConfig</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">bfloat16</span><span class="p">)</span>
+            <span class="p">)</span>
+
+<span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="c1">## use chatbot to do prediction</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This way converts the underneath LLM model into <code class="docutils literal notranslate"><span class="pre">bfloat16</span></code> on the fly and fully leverage <code class="docutils literal notranslate"><span class="pre">Intel(R)</span> <span class="pre">AMX</span></code> technology’s power to speed up the inference of the whole working flow.</p>
+</section>
+<section id="nvidia-datacenter-gpu">
+<h3>Nvidia DataCenter GPU<a class="headerlink" href="#nvidia-datacenter-gpu" title="Link to this heading"></a></h3>
+<p>To leverage Nvidia DataCenter GPU for NeuralChat inference on local mode, user can use below code.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">## create a chatbot on local mode</span>
+<span class="kn">from</span> <span class="nn">neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span><span class="p">,</span> <span class="n">PipelineConfig</span><span class="p">,</span> <span class="n">AMPConfig</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span>
+            <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda:0&#39;</span><span class="p">,</span>
+            <span class="n">optimization_config</span><span class="o">=</span><span class="n">AMPConfig</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span><span class="p">)</span>
+            <span class="p">)</span>
+
+
+<span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="c1">## use chatbot to do prediction</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="nvidia-client-gpu">
+<h3>Nvidia Client GPU<a class="headerlink" href="#nvidia-client-gpu" title="Link to this heading"></a></h3>
+<p>For Nvidia Client GPU with limited memory and compute power, user can utilize BitsAndBytes to quantize the NeuralChat and then run inference on local mode, as shown in the below code.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1">## create a chatbot on local mode</span>
+<span class="kn">from</span> <span class="nn">neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span><span class="p">,</span> <span class="n">PipelineConfig</span>
+<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">BitsAndBytesConfig</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span>
+            <span class="n">device</span><span class="o">=</span><span class="s1">&#39;cuda:0&#39;</span><span class="p">,</span>
+            <span class="n">optimization_config</span><span class="o">=</span><span class="n">BitsAndBytesConfig</span><span class="p">(</span>
+                <span class="n">load_in_4bit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">bnb_4bit_quant_type</span><span class="o">=</span><span class="s1">&#39;nf4&#39;</span><span class="p">,</span>
+                <span class="n">bnb_4bit_use_double_quant</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">bnb_4bit_compute_dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float16</span>  <span class="c1"># or torch.bfloat16</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+<span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="c1">## use chatbot to do prediction</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f649b8b3640> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
