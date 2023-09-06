@@ -115,6 +115,6 @@ LLM running script args explanations:
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 
 
-### 4. Tensor Parallism cross nodes/sockets
+### 4. Tensor Parallelism cross nodes/sockets
 
-We support tensor parallism algorithm for distributed inference/training on multi-nodes and sockets.  You can refer to [tensor_parallism.md](./tensor_parallism.md) to enable this feature.
+We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
