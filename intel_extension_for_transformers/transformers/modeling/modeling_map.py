@@ -31,6 +31,7 @@
 # limitations under the License.
 
 
+import transformers
 from .gptj.modeling_gptj import GPTJForCausalLM
 from .llama.modeling_llama import LlamaForCausalLM
 from .bloom.modeling_bloom import BloomForCausalLM
