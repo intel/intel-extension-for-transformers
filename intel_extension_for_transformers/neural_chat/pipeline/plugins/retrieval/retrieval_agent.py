@@ -53,7 +53,10 @@ class Agent_QA():
             prompt = generate_prompt(query)
         else:
             print("Chat with QA agent.")
-            context = self.retriever.get_context(query)
-            prompt = generate_qa_prompt(query, context)
+            if self.retriever:
+                context = self.retriever.get_context(query)
+                prompt = generate_qa_prompt(query, context)
+            else:
+                prompt = generate_prompt(query)
         return prompt
 

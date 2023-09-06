@@ -64,7 +64,9 @@ class TestChatbotBuilder(unittest.TestCase):
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
         gen_config = GenerationConfig(max_new_tokens=64)
-        response = chatbot.predict(query="../../assets/audio/pat.wav", config=gen_config)
+        response = chatbot.predict(
+          query="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/pat.wav",
+          config=gen_config)
         self.assertIsNotNone(response)
         print("output audio path: ", response)
         self.assertTrue(os.path.exists(plugins.tts.args["output_audio_path"]))
