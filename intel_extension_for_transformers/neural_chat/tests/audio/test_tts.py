@@ -55,7 +55,7 @@ class TestTTS(unittest.TestCase):
 
     def test_create_speaker_embedding(self):
         driven_audio_path = \
-           "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/pat.wav"
+           "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
         spk_embed = self.tts.create_speaker_embedding(driven_audio_path)
         self.assertEqual(spk_embed.shape[0], 1)
         self.assertEqual(spk_embed.shape[1], 512)
