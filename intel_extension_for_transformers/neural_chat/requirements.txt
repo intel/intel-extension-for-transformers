@@ -1,6 +1,6 @@
 transformers>=4.31.0
 peft
-fastchat
+fschat
 torch
 intel_extension_for_pytorch
 num2words
@@ -10,7 +10,6 @@ paddlespeech==1.4.1
 shortuuid
 gptcache
 evaluate
-fschat
 pydub
 python-multipart
 PyPDF2
