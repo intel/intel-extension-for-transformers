@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include <iostream>
 #include "common.h"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
@@ -68,107 +69,6 @@ void sigint_handler(int signo) {
   }
 }
 #endif
-
-std::string build_prompt(const std::vector<std::string> &history) {
-    // CHATGLM_CHECK(history.size() % 2 == 1) << "invalid history size " << history.size();
-
-    std::ostringstream oss_prompt;
-    if (history.size() == 1) {
-        oss_prompt << history.front();
-    } else {
-        for (size_t i = 0; i < history.size(); i += 2) {
-            oss_prompt << "[Round " << i / 2 << "]\n问：" << history[i] << "\n答：";
-            if (i < history.size() - 1) {
-                oss_prompt << history[i + 1] << "\n";
-            }
-        }
-    }
-    return oss_prompt.str();
-}
-
-static std::string regex_replace(const std::string &input, const std::regex &regex,
-                                 std::function<std::string(const std::smatch &)> format) {
-    std::ostringstream oss;
-    int last_index = 0;
-    for (auto it = std::sregex_iterator(input.begin(), input.end(), regex); it != std::sregex_iterator(); it++) {
-        oss << it->prefix() << format(*it);
-        last_index = it->position() + it->length();
-    }
-    oss << input.substr(last_index);
-    return oss.str();
-}
-
-std::string preprocess(const std::string &text) {
-    std::string output;
-
-    // newline token
-    {
-        static const std::regex newline_regex("\n");
-        output = std::regex_replace(text, newline_regex, "<n>");
-    }
-    // tab token
-    {
-        static const std::regex tab_regex("\t");
-        output = std::regex_replace(output, tab_regex, "<|tab|>");
-    }
-    // blank tokens
-    {
-        static const std::regex pattern(R"([ ]{2,80})");
-        output = regex_replace(output, pattern, [](const std::smatch &sm) {
-            std::ostringstream oss;
-            oss << "<|blank_" << sm.str().size() << "|>";
-            return oss.str();
-        });
-    }
-
-    return output;
-}
-
-std::string postprocess(const std::string &text) {
-    std::string output;
-
-    // newline token
-    {
-        static const std::regex pattern(R"(<n>)");
-        output = std::regex_replace(text, pattern, "\n");
-    }
-    // tab token
-    {
-        static const std::regex pattern(R"(<\|tab\|>)");
-        output = std::regex_replace(output, pattern, "\t");
-    }
-    // blank tokens
-    {
-        static const std::regex pattern(R"(<\|blank_(\d+)\|>)");
-        output = regex_replace(output, pattern,
-                               [](const std::smatch &sm) { return std::string(std::stoi(sm[1].str()), ' '); });
-    }
-
-    // replace punctuations
-    // reference: https://stackoverflow.com/questions/37989081/how-to-use-unicode-range-in-c-regex
-    {
-        static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-        static const std::vector<std::pair<std::wregex, std::wstring>> punct_map{
-            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]),)")), converter.from_bytes("$1，")},
-            {std::wregex(converter.from_bytes(R"(,([\u4e00-\u9fff]))")), converter.from_bytes("，$1")},
-            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff])!)")), converter.from_bytes("$1！")},
-            {std::wregex(converter.from_bytes(R"(!([\u4e00-\u9fff]))")), converter.from_bytes("！$1")},
-            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]):)")), converter.from_bytes("$1：")},
-            {std::wregex(converter.from_bytes(R"(:([\u4e00-\u9fff]))")), converter.from_bytes("：$1")},
-            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]);)")), converter.from_bytes("$1；")},
-            {std::wregex(converter.from_bytes(R"(;([\u4e00-\u9fff]))")), converter.from_bytes("；$1")},
-            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff])\?)")), converter.from_bytes("$1？")},
-            {std::wregex(converter.from_bytes(R"(\?([\u4e00-\u9fff]))")), converter.from_bytes("？$1")},
-        };
-        std::wstring w_output = converter.from_bytes(output);
-        for (const auto &punct_pair : punct_map) {
-            w_output = std::regex_replace(w_output, punct_pair.first, punct_pair.second);
-        }
-        output = converter.to_bytes(w_output);
-    }
-
-    return output;
-}
 
 int main(int argc, char** argv) {
   gpt_params params;
@@ -289,19 +189,17 @@ int main(int argc, char** argv) {
 
   // tokenize the prompt
   // std::vector<int> embd_inp = ::model_tokenize(ctx, params.prompt, false);
-  std::vector<std::string> prompts;
-  prompts.push_back(params.prompt);
-  std::string no_preprocess_prompt = build_prompt(prompts);
-  std::string prompt = preprocess(no_preprocess_prompt);
+  // std::vector<std::string> prompts;
+  // prompts.push_back(params.prompt);
+  // std::string no_preprocess_prompt = build_prompt(prompts);
+  // std::string prompt = preprocess(no_preprocess_prompt);
 
-  //std::vector<int> embd_inp = ::model_tokenize(ctx, prompt, false);
-  //embd_inp.insert(embd_inp.end(), {130001, 130004}); // special prefix for ChatGLM-1
-  std::vector<int> embd_inp{5, 74874, 130001, 130004};
+  // //std::vector<int> embd_inp = ::model_tokenize(ctx, prompt, false);
+  // //embd_inp.insert(embd_inp.end(), {130001, 130004}); // special prefix for ChatGLM-1
+  // std::vector<int> embd_inp{5, 74874, 130001, 130004};
 
-  // 先写成原本的embd_inp
-  // for (auto &i : embd_inp) {
-  //   std::cout << i << std::endl;
-  // }  
+  std::vector<int> embd_inp = ctx->model.tokenizer->encode_history({params.prompt}, 512);
+  //std::vector<int> embd_inp{5, 74874, 130001, 130004};
 
   const int n_ctx = model_n_ctx(ctx);
 
@@ -466,308 +364,346 @@ int main(int argc, char** argv) {
   const bool penalize_nl = params.penalize_nl;
   model_token id = 0;
 
-  while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
-    // predict
-    if (embd.size() > 0) {
-      // infinite text generation via context swapping
-      // if we run out of context:
-      // - take the n_keep first tokens from the original prompt (via n_past)
-      // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
-      if (n_past + (int)embd.size() > n_ctx) {
-        const int n_left = n_past - params.n_keep;
+  int max_length = 512;
+  // int n_past = 0;
+  int n_eval = embd_inp.size();
+  std::vector<int> curr_input_ids(embd_inp);
+  std::vector<int> output_ids;
+  output_ids.reserve(max_length);
+  int vocab_size = 130528;
 
-        // always keep the first token - BOS
-        n_past = std::max(1, params.n_keep);
-
-        // insert n_left/2 tokens at the start of embd from last_n_tokens
-        embd.insert(embd.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - embd.size(),
-                    last_n_tokens.end() - embd.size());
-
-        // stop saving session if we run out of context
-        path_session.clear();
-
-        // printf("\n---\n");
-        // printf("resetting: '");
-        // for (int i = 0; i < (int) embd.size(); i++) {
-        //     printf("%s", model_token_to_str(ctx, embd[i]));
-        // }
-        // printf("'\n");
-        // printf("\n---\n");
-      }
-
-      // try to reuse a matching prefix from the loaded session instead of re-eval (via n_past)
-      if (n_session_consumed < (int)session_tokens.size()) {
-        size_t i = 0;
-        for (; i < embd.size(); i++) {
-          if (embd[i] != session_tokens[n_session_consumed]) {
-            session_tokens.resize(n_session_consumed);
-            break;
-          }
-
-          n_past++;
-          n_session_consumed++;
-
-          if (n_session_consumed >= (int)session_tokens.size()) {
-            ++i;
-            break;
-          }
-        }
-        if (i > 0) {
-          embd.erase(embd.begin(), embd.begin() + i);
-        }
-      }
-
-      // evaluate tokens in batches
-      // embd is typically prepared beforehand to fit within a batch, but not always
-      for (int i = 0; i < (int)embd.size(); i += params.n_batch) {
-        int n_eval = (int)embd.size() - i;
-        if (n_eval > params.n_batch) {
-          n_eval = params.n_batch;
-        }
-
-        if (model_eval(ctx, &embd[i], n_eval, n_past, params.n_threads)) {
-          fprintf(stderr, "%s : failed to eval\n", __func__);
-          return 1;
-        }
-        n_past += n_eval;
-      }
-
-      {
-        auto logits = model_get_logits(ctx);
-        auto n_vocab = model_n_vocab(ctx);
-
-        // Apply params.logit_bias map
-        for (auto it = params.logit_bias.begin(); it != params.logit_bias.end(); it++) {
-          logits[it->first] += it->second;
-        }
-
-        std::vector<model_token_data> candidates;
-        candidates.reserve(n_vocab);
-        std::ofstream outFile("logits.txt", std::ios::app);
-        for (model_token token_id = 0; token_id < n_vocab; token_id++) {
-          outFile << logits[token_id] << " ";
-          candidates.emplace_back(model_token_data{token_id, logits[token_id], 0.0f});
-        }
-        outFile << "\n";
-
-        model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
-
-        // Apply penalties
-        float nl_logit = logits[model_token_nl()];
-        auto last_n_repeat = std::min(std::min((int)last_n_tokens.size(), repeat_last_n), n_ctx);
-        model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-                                        last_n_repeat, repeat_penalty);
-        model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
-                                                      last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-                                                      last_n_repeat, alpha_frequency, alpha_presence);
-        if (!penalize_nl) {
-          logits[model_token_nl()] = nl_logit;
-        }
-
-        if (temp <= 0) {
-          // Greedy sampling
-          id = model_sample_token_greedy(ctx, &candidates_p);
-        } else {
-          if (mirostat == 1) {
-            static float mirostat_mu = 2.0f * mirostat_tau;
-            const int mirostat_m = 100;
-            model_sample_temperature(ctx, &candidates_p, temp);
-            id = model_sample_token_mirostat(ctx, &candidates_p, mirostat_tau, mirostat_eta, mirostat_m, &mirostat_mu);
-          } else if (mirostat == 2) {
-            static float mirostat_mu = 2.0f * mirostat_tau;
-            model_sample_temperature(ctx, &candidates_p, temp);
-            id = model_sample_token_mirostat_v2(ctx, &candidates_p, mirostat_tau, mirostat_eta, &mirostat_mu);
-          } else {
-            // Temperature sampling
-            model_sample_top_k(ctx, &candidates_p, top_k, 1);
-            model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
-            model_sample_typical(ctx, &candidates_p, typical_p, 1);
-            model_sample_top_p(ctx, &candidates_p, top_p, 1);
-            model_sample_temperature(ctx, &candidates_p, temp);
-            id = model_sample_token(ctx, &candidates_p);
-          }
-        }
-        // printf("`%d`", candidates_p.size);
-
-        if (embd.size() > 0 && !path_session.empty()) {
-          session_tokens.insert(session_tokens.end(), embd.begin(), embd.end());
-          n_session_consumed = session_tokens.size();
-        }
-      }
-
-      embd.clear();
-
-      if ((int)embd_inp.size() <= n_consumed && !is_interacting) {
-        // optionally save the session on first sample (for faster prompt loading next time)
-        if (!path_session.empty() && need_to_save_session) {
-          need_to_save_session = false;
-          model_save_session_file(ctx, path_session.c_str(), session_tokens.data(), session_tokens.size());
-        }
-
-        last_n_tokens.erase(last_n_tokens.begin());
-        last_n_tokens.push_back(id);
-      }
-
-      // replace end of text token with newline token when in interactive mode
-      if (id == model_token_eos() && params.interactive && !params.instruct) {
-        id = model_token_newline.front();
-        if (params.antiprompt.size() != 0) {
-          // tokenize and inject first reverse prompt
-          const auto first_antiprompt = ::model_tokenize(ctx, params.antiprompt.front(), false);
-          embd_inp.insert(embd_inp.end(), first_antiprompt.begin(), first_antiprompt.end());
-        }
-      }
-
-      // add it to the context
-      embd.push_back(id);
-
-      // echo this to console
-      input_echo = true;
-
-      // decrement remaining sampling budget
-      --n_remain;
-    } else {
-      // some user input remains from prompt or interaction, forward it to processing
-      while ((int)embd_inp.size() > n_consumed) {
-        embd.push_back(embd_inp[n_consumed]);
-        last_n_tokens.erase(last_n_tokens.begin());
-        last_n_tokens.push_back(embd_inp[n_consumed]);
-        ++n_consumed;
-        if ((int)embd.size() >= params.n_batch) {
-          break;
-        }
-      }
-    }
-
-    // display text
-    static bool is_prompt = true;
-    if (input_echo) {
-        if (is_prompt == true) {
-          is_prompt = false;
-          continue;
-        }
-      for (auto id : embd) {
-        printf("%s", model_token_to_str(ctx, id));
-        // std::string s(model_token_to_str(ctx, id));
-        // s = postprocess(s);
-        // std::cout << s;
-      }
-      fflush(stdout);
-    }
-    // reset color to default if we there is no pending user input
-    if (input_echo && (int)embd_inp.size() == n_consumed) {
-      console_set_color(con_st, CONSOLE_COLOR_DEFAULT);
-    }
-
-    // if not currently processing queued inputs;
-    if ((int)embd_inp.size() <= n_consumed) {
-      // check for reverse prompt
-      if (params.antiprompt.size()) {
-        std::string last_output;
-        for (auto id : last_n_tokens) {
-          last_output += model_token_to_str(ctx, id);
-        }
-
-        is_antiprompt = false;
-        // Check if each of the reverse prompts appears at the end of the output.
-        // If we're not running interactively, the reverse prompt might be tokenized with some following characters
-        // so we'll compensate for that by widening the search window a bit.
-        for (std::string& antiprompt : params.antiprompt) {
-          size_t extra_padding = params.interactive ? 0 : 2;
-          size_t search_start_pos =
-              last_output.length() > static_cast<size_t>(antiprompt.length() + extra_padding)
-                  ? last_output.length() - static_cast<size_t>(antiprompt.length() + extra_padding)
-                  : 0;
-
-          if (last_output.find(antiprompt.c_str(), search_start_pos) != std::string::npos) {
-            if (params.interactive) {
-              is_interacting = true;
-              console_set_color(con_st, CONSOLE_COLOR_USER_INPUT);
-            }
-            is_antiprompt = true;
-            fflush(stdout);
-            break;
-          }
-        }
-      }
-
-      if (n_past > 0 && is_interacting) {
-        if (params.instruct) {
-          printf("\n> ");
-        }
-
-        std::string buffer;
-        if (!params.input_prefix.empty()) {
-          buffer += params.input_prefix;
-          printf("%s", buffer.c_str());
-        }
-
-        std::string line;
-        bool another_line = true;
-        do {
-          another_line = console_readline(con_st, line);
-          buffer += line;
-        } while (another_line);
-
-        // done taking input, reset color
-        console_set_color(con_st, CONSOLE_COLOR_DEFAULT);
-
-        // Add tokens to embd only if the input buffer is non-empty
-        // Entering a empty line lets the user pass control back
-        if (buffer.length() > 1) {
-          // append input suffix if any
-          if (!params.input_suffix.empty()) {
-            buffer += params.input_suffix;
-            printf("%s", params.input_suffix.c_str());
-          }
-
-          // instruct mode: insert instruction prefix
-          if (params.instruct && !is_antiprompt) {
-            n_consumed = embd_inp.size();
-            embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
-          }
-
-          auto line_inp = ::model_tokenize(ctx, buffer, false);
-          embd_inp.insert(embd_inp.end(), line_inp.begin(), line_inp.end());
-
-          // instruct mode: insert response suffix
-          if (params.instruct) {
-            embd_inp.insert(embd_inp.end(), inp_sfx.begin(), inp_sfx.end());
-          }
-
-          n_remain -= line_inp.size();
-        }
-
-        input_echo = false;  // do not echo this again
-      }
-
-      if (n_past > 0) {
-        is_interacting = false;
-      }
-    }
-
-    // end of text token
-    //std::cout << "embd.back() = "  << embd.back() << std::endl;
-    if (!embd.empty() && embd.back() == 130005) {
-      if (params.instruct) {
-        is_interacting = true;
-      } else {
-        fprintf(stderr, " [end of text]\n");
-        break;
-      }
-    }
-
-    // In interactive mode, respect the maximum number of tokens and drop back to user input when reached.
-    if (params.interactive && n_remain <= 0 && params.n_predict != -1) {
-      n_remain = params.n_predict;
-      is_interacting = true;
-    }
+  for (auto &i : curr_input_ids) {
+    std::cout << "i = " << i << std::endl;
   }
 
-  if (!path_session.empty() && params.prompt_cache_all) {
-    fprintf(stderr, "\n%s: saving final output to session file '%s'\n", __func__, path_session.c_str());
-    model_save_session_file(ctx, path_session.c_str(), session_tokens.data(), session_tokens.size());
+  std::cout << "int)output_ids.size()  = " << output_ids.size() << std::endl;
+    std::cout << "n_remain  = " << n_remain << std::endl;
+
+  while ((int)output_ids.size() < 500) {
+    model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+    n_past += curr_input_ids.size();
+
+    float* logits = model_get_logits(ctx);
+    int next_token_id = std::max_element(logits, logits + vocab_size) - logits;
+    curr_input_ids = {next_token_id};
+
+    output_ids.emplace_back(next_token_id);
+    printf("%s", ctx->model.tokenizer->decode({next_token_id}).c_str());
+
+    fflush(stdout);
+
+    if (next_token_id == ctx->model.tokenizer->eos_token_id) {
+      break;
+    }
   }
+  printf("\n");
+
+  // while ((n_remain != 0 && !is_antiprompt) || params.interactive) {
+  //   // predict
+  //   if (embd.size() > 0) {
+  //     // infinite text generation via context swapping
+  //     // if we run out of context:
+  //     // - take the n_keep first tokens from the original prompt (via n_past)
+  //     // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
+  //     if (n_past + (int)embd.size() > n_ctx) {
+  //       const int n_left = n_past - params.n_keep;
+
+  //       // always keep the first token - BOS
+  //       n_past = std::max(1, params.n_keep);
+
+  //       // insert n_left/2 tokens at the start of embd from last_n_tokens
+  //       embd.insert(embd.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - embd.size(),
+  //                   last_n_tokens.end() - embd.size());
+
+  //       // stop saving session if we run out of context
+  //       path_session.clear();
+
+  //       // printf("\n---\n");
+  //       // printf("resetting: '");
+  //       // for (int i = 0; i < (int) embd.size(); i++) {
+  //       //     printf("%s", model_token_to_str(ctx, embd[i]));
+  //       // }
+  //       // printf("'\n");
+  //       // printf("\n---\n");
+  //     }
+
+  //     // try to reuse a matching prefix from the loaded session instead of re-eval (via n_past)
+  //     if (n_session_consumed < (int)session_tokens.size()) {
+  //       size_t i = 0;
+  //       for (; i < embd.size(); i++) {
+  //         if (embd[i] != session_tokens[n_session_consumed]) {
+  //           session_tokens.resize(n_session_consumed);
+  //           break;
+  //         }
+
+  //         n_past++;
+  //         n_session_consumed++;
+
+  //         if (n_session_consumed >= (int)session_tokens.size()) {
+  //           ++i;
+  //           break;
+  //         }
+  //       }
+  //       if (i > 0) {
+  //         embd.erase(embd.begin(), embd.begin() + i);
+  //       }
+  //     }
+
+  //     // evaluate tokens in batches
+  //     // embd is typically prepared beforehand to fit within a batch, but not always
+  //     for (int i = 0; i < (int)embd.size(); i += params.n_batch) {
+  //       int n_eval = (int)embd.size() - i;
+  //       if (n_eval > params.n_batch) {
+  //         n_eval = params.n_batch;
+  //       }
+
+  //       if (model_eval(ctx, &embd[i], n_eval, n_past, params.n_threads)) {
+  //         fprintf(stderr, "%s : failed to eval\n", __func__);
+  //         return 1;
+  //       }
+  //       n_past += n_eval;
+  //     }
+
+  //     {
+  //       auto logits = model_get_logits(ctx);
+  //       auto n_vocab = model_n_vocab(ctx);
+
+  //       // Apply params.logit_bias map
+  //       for (auto it = params.logit_bias.begin(); it != params.logit_bias.end(); it++) {
+  //         logits[it->first] += it->second;
+  //       }
+
+  //       std::vector<model_token_data> candidates;
+  //       candidates.reserve(n_vocab);
+  //       std::ofstream outFile("logits.txt", std::ios::app);
+  //       for (model_token token_id = 0; token_id < n_vocab; token_id++) {
+  //         outFile << logits[token_id] << " ";
+  //         candidates.emplace_back(model_token_data{token_id, logits[token_id], 0.0f});
+  //       }
+  //       outFile << "\n";
+
+  //       model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
+
+  //       // Apply penalties
+  //       float nl_logit = logits[model_token_nl()];
+  //       auto last_n_repeat = std::min(std::min((int)last_n_tokens.size(), repeat_last_n), n_ctx);
+  //       model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
+  //                                       last_n_repeat, repeat_penalty);
+  //       model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
+  //                                                     last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
+  //                                                     last_n_repeat, alpha_frequency, alpha_presence);
+  //       if (!penalize_nl) {
+  //         logits[model_token_nl()] = nl_logit;
+  //       }
+
+  //       if (temp <= 0) {
+  //         // Greedy sampling
+  //         id = model_sample_token_greedy(ctx, &candidates_p);
+  //       } else {
+  //         if (mirostat == 1) {
+  //           static float mirostat_mu = 2.0f * mirostat_tau;
+  //           const int mirostat_m = 100;
+  //           model_sample_temperature(ctx, &candidates_p, temp);
+  //           id = model_sample_token_mirostat(ctx, &candidates_p, mirostat_tau, mirostat_eta, mirostat_m, &mirostat_mu);
+  //         } else if (mirostat == 2) {
+  //           static float mirostat_mu = 2.0f * mirostat_tau;
+  //           model_sample_temperature(ctx, &candidates_p, temp);
+  //           id = model_sample_token_mirostat_v2(ctx, &candidates_p, mirostat_tau, mirostat_eta, &mirostat_mu);
+  //         } else {
+  //           // Temperature sampling
+  //           model_sample_top_k(ctx, &candidates_p, top_k, 1);
+  //           model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
+  //           model_sample_typical(ctx, &candidates_p, typical_p, 1);
+  //           model_sample_top_p(ctx, &candidates_p, top_p, 1);
+  //           model_sample_temperature(ctx, &candidates_p, temp);
+  //           id = model_sample_token(ctx, &candidates_p);
+  //         }
+  //       }
+  //       // printf("`%d`", candidates_p.size);
+
+  //       if (embd.size() > 0 && !path_session.empty()) {
+  //         session_tokens.insert(session_tokens.end(), embd.begin(), embd.end());
+  //         n_session_consumed = session_tokens.size();
+  //       }
+  //     }
+
+  //     embd.clear();
+
+  //     if ((int)embd_inp.size() <= n_consumed && !is_interacting) {
+  //       // optionally save the session on first sample (for faster prompt loading next time)
+  //       if (!path_session.empty() && need_to_save_session) {
+  //         need_to_save_session = false;
+  //         model_save_session_file(ctx, path_session.c_str(), session_tokens.data(), session_tokens.size());
+  //       }
+
+  //       last_n_tokens.erase(last_n_tokens.begin());
+  //       last_n_tokens.push_back(id);
+  //     }
+
+  //     // replace end of text token with newline token when in interactive mode
+  //     if (id == model_token_eos() && params.interactive && !params.instruct) {
+  //       id = model_token_newline.front();
+  //       if (params.antiprompt.size() != 0) {
+  //         // tokenize and inject first reverse prompt
+  //         const auto first_antiprompt = ::model_tokenize(ctx, params.antiprompt.front(), false);
+  //         embd_inp.insert(embd_inp.end(), first_antiprompt.begin(), first_antiprompt.end());
+  //       }
+  //     }
+
+  //     // add it to the context
+  //     embd.push_back(id);
+
+  //     // echo this to console
+  //     input_echo = true;
+
+  //     // decrement remaining sampling budget
+  //     --n_remain;
+  //   } else {
+  //     // some user input remains from prompt or interaction, forward it to processing
+  //     while ((int)embd_inp.size() > n_consumed) {
+  //       embd.push_back(embd_inp[n_consumed]);
+  //       last_n_tokens.erase(last_n_tokens.begin());
+  //       last_n_tokens.push_back(embd_inp[n_consumed]);
+  //       ++n_consumed;
+  //       if ((int)embd.size() >= params.n_batch) {
+  //         break;
+  //       }
+  //     }
+  //   }
+
+  //   // display text
+  //   static bool is_prompt = true;
+  //   if (input_echo) {
+  //       if (is_prompt == true) {
+  //         is_prompt = false;
+  //         continue;
+  //       }
+  //     for (auto id : embd) {
+  //       //std::cout << ctx->model.tokenizer->decode({id});
+  //       printf("%s", model_token_to_str(ctx, id));
+  //       // std::string s(model_token_to_str(ctx, id));
+  //       // s = postprocess(s);
+  //       // std::cout << s;
+  //     }
+  //     fflush(stdout);
+  //   }
+  //   // reset color to default if we there is no pending user input
+  //   if (input_echo && (int)embd_inp.size() == n_consumed) {
+  //     console_set_color(con_st, CONSOLE_COLOR_DEFAULT);
+  //   }
+
+  //   // if not currently processing queued inputs;
+  //   if ((int)embd_inp.size() <= n_consumed) {
+  //     // check for reverse prompt
+  //     if (params.antiprompt.size()) {
+  //       std::string last_output;
+  //       for (auto id : last_n_tokens) {
+  //         last_output += model_token_to_str(ctx, id);
+  //       }
+
+  //       is_antiprompt = false;
+  //       // Check if each of the reverse prompts appears at the end of the output.
+  //       // If we're not running interactively, the reverse prompt might be tokenized with some following characters
+  //       // so we'll compensate for that by widening the search window a bit.
+  //       for (std::string& antiprompt : params.antiprompt) {
+  //         size_t extra_padding = params.interactive ? 0 : 2;
+  //         size_t search_start_pos =
+  //             last_output.length() > static_cast<size_t>(antiprompt.length() + extra_padding)
+  //                 ? last_output.length() - static_cast<size_t>(antiprompt.length() + extra_padding)
+  //                 : 0;
+
+  //         if (last_output.find(antiprompt.c_str(), search_start_pos) != std::string::npos) {
+  //           if (params.interactive) {
+  //             is_interacting = true;
+  //             console_set_color(con_st, CONSOLE_COLOR_USER_INPUT);
+  //           }
+  //           is_antiprompt = true;
+  //           fflush(stdout);
+  //           break;
+  //         }
+  //       }
+  //     }
+
+  //     if (n_past > 0 && is_interacting) {
+  //       if (params.instruct) {
+  //         printf("\n> ");
+  //       }
+
+  //       std::string buffer;
+  //       if (!params.input_prefix.empty()) {
+  //         buffer += params.input_prefix;
+  //         printf("%s", buffer.c_str());
+  //       }
+
+  //       std::string line;
+  //       bool another_line = true;
+  //       do {
+  //         another_line = console_readline(con_st, line);
+  //         buffer += line;
+  //       } while (another_line);
+
+  //       // done taking input, reset color
+  //       console_set_color(con_st, CONSOLE_COLOR_DEFAULT);
+
+  //       // Add tokens to embd only if the input buffer is non-empty
+  //       // Entering a empty line lets the user pass control back
+  //       if (buffer.length() > 1) {
+  //         // append input suffix if any
+  //         if (!params.input_suffix.empty()) {
+  //           buffer += params.input_suffix;
+  //           printf("%s", params.input_suffix.c_str());
+  //         }
+
+  //         // instruct mode: insert instruction prefix
+  //         if (params.instruct && !is_antiprompt) {
+  //           n_consumed = embd_inp.size();
+  //           embd_inp.insert(embd_inp.end(), inp_pfx.begin(), inp_pfx.end());
+  //         }
+
+  //         auto line_inp = ::model_tokenize(ctx, buffer, false);
+  //         embd_inp.insert(embd_inp.end(), line_inp.begin(), line_inp.end());
+
+  //         // instruct mode: insert response suffix
+  //         if (params.instruct) {
+  //           embd_inp.insert(embd_inp.end(), inp_sfx.begin(), inp_sfx.end());
+  //         }
+
+  //         n_remain -= line_inp.size();
+  //       }
+
+  //       input_echo = false;  // do not echo this again
+  //     }
+
+  //     if (n_past > 0) {
+  //       is_interacting = false;
+  //     }
+  //   }
+
+  //   // end of text token
+  //   //std::cout << "embd.back() = "  << embd.back() << std::endl;
+  //   if (!embd.empty() && embd.back() == 130005) {
+  //     if (params.instruct) {
+  //       is_interacting = true;
+  //     } else {
+  //       fprintf(stderr, " [end of text]\n");
+  //       break;
+  //     }
+  //   }
+
+  //   // In interactive mode, respect the maximum number of tokens and drop back to user input when reached.
+  //   if (params.interactive && n_remain <= 0 && params.n_predict != -1) {
+  //     n_remain = params.n_predict;
+  //     is_interacting = true;
+  //   }
+  // }
+
+
+
+
+  // if (!path_session.empty() && params.prompt_cache_all) {
+  //   fprintf(stderr, "\n%s: saving final output to session file '%s'\n", __func__, path_session.c_str());
+  //   model_save_session_file(ctx, path_session.c_str(), session_tokens.data(), session_tokens.size());
+  // }
 
   model_print_timings(ctx);
   model_free(ctx);
