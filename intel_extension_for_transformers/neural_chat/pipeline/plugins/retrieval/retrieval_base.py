@@ -17,11 +17,11 @@
 
 """The class defination for the retriever. Supporting langchain-based and haystack-based retriever."""
 
-from .bm25_retrieval import SparseBM25Retriever
-from .chroma_retrieval import ChromaRetriever
+from .retrieval_bm25 import SparseBM25Retriever
+from .retrieval_chroma import ChromaRetriever
 
 class Retriever():
-    """Retrieve the document database with BM25 sparse algorithm."""
+    """The wrapper for sparse retriever and dense retriever."""
 
     def __init__(self, retrieval_type="dense", document_store=None,
                  top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}):
