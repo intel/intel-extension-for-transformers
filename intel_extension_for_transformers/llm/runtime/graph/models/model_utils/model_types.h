@@ -65,9 +65,17 @@
 extern "C" {
 #endif
 
-enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, 
-                   MODEL_OPT, MODEL_BLOOM};
-
+enum model_archs {
+  MODEL_UNKNOWN,
+  MODEL_LLAMA,
+  MODEL_GPTJ,
+  MODEL_MPT,
+  MODEL_GPTNEOX,
+  MODEL_STARCODER,
+  MODEL_FALCON,
+  MODEL_OPT,
+  MODEL_BLOOM
+};
 
 static const size_t MB = 1024 * 1024;
 
@@ -80,7 +88,6 @@ typedef enum KV_MEM_TYPE {  // Memory kv data type
 struct model_scratch {
   size_t scratch0;
   size_t scratch1;
-  size_t kv_self;
   size_t eval;
 };
 
@@ -109,12 +116,12 @@ struct model_hparams {
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;
-  int32_t max_seq_len = 0;  // for mpt
-  float alibi_bias_max = 0; // for mpt
-  float clip_qkv = 0;  // for mpt
-  int32_t par_res = 1;  // for neox 1 = true, 0 = false
-  uint32_t word_embed_proj_dim = 0;  // for opt
-  bool do_layer_norm_before = false; // for opt
+  int32_t max_seq_len = 0;            // for mpt
+  float alibi_bias_max = 0;           // for mpt
+  float clip_qkv = 0;                 // for mpt
+  int32_t par_res = 1;                // for neox 1 = true, 0 = false
+  uint32_t word_embed_proj_dim = 0;   // for opt
+  bool do_layer_norm_before = false;  // for opt
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
@@ -196,8 +203,8 @@ struct model_vocab {
 
   std::unordered_map<token, id> token_to_id;
   std::vector<token_score> id_to_token;
-  id bos_token_id = -1; //The default value is -1
-  id eos_token_id = -1; //The default value is -1
+  id bos_token_id = -1;  // The default value is -1
+  id eos_token_id = -1;  // The default value is -1
 };
 
 // reference: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
@@ -362,9 +369,9 @@ class model_name_to_arch {
   model_name_to_arch() {}
   // update this table if has new cpp model
   std::unordered_map<std::string, model_archs> name2arch_ = {
-      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ}, {"mpt", MODEL_MPT}, {"opt", MODEL_OPT},
-      {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
-      {"bloom", MODEL_BLOOM},
+      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},     {"gptj", MODEL_GPTJ},     {"mpt", MODEL_MPT},
+      {"opt", MODEL_OPT},         {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER},
+      {"falcon", MODEL_FALCON},   {"bloom", MODEL_BLOOM},
   };
 };
 

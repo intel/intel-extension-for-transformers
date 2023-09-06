@@ -37,17 +37,17 @@ enum opt_model {
 static const model_scratch opt_mem_req(int n_layers) {
   switch (n_layers) {
     case 12:  // OPT_125M
-      return {512ull * MB, 512ull * MB, 1024ull * MB, 768ull * MB};
+      return {512ull * MB, 512ull * MB, 1024ull * MB};
     case 24:  // OPT_350M, OPT_1DOT3B
-      return {1024ull * MB, 1024ull * MB, 2048ull * MB, 1536ull * MB};
+      return {1024ull * MB, 1024ull * MB, 2048ull * MB};
     case 32:  // OPT_2DOT7B OPT_6DOT7B
-      return {2048ull * MB, 2048ull * MB, 4096ull * MB, 3072ull * MB};
+      return {2048ull * MB, 2048ull * MB, 4096ull * MB};
     case 40:
-      return {2560ull * MB, 2560ull * MB, 5120ull * MB, 3840ull * MB};
+      return {2560ull * MB, 2560ull * MB, 5120ull * MB};
     case 48:
-      return {3072ull * MB, 3072ull * MB, 6144ull * MB, 4608ull * MB};
+      return {3072ull * MB, 3072ull * MB, 6144ull * MB};
     case 64:
-      return {4096ull * MB, 4096ull * MB, 8192ull * MB, 6144ull * MB};
+      return {4096ull * MB, 4096ull * MB, 8192ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
@@ -56,7 +56,7 @@ static const model_scratch opt_mem_req(int n_layers) {
 
 class OPT : public IModel {
  private:
-  model_archs arch  = MODEL_OPT;
+  model_archs arch = MODEL_OPT;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab, word_embed_proj_dim, max_seq_len;
   bool do_layer_norm_before = true;
@@ -66,8 +66,8 @@ class OPT : public IModel {
   model_scratch scratch;
 
  public:
-  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, ne_type memory_type_,
-            bool use_mmap_, bool use_mlock_, bool vocab_only_) override;
+  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
+            bool vocab_only_) override;
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };
 

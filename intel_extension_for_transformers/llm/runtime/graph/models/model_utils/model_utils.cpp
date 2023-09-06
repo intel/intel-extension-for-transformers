@@ -135,11 +135,11 @@ int64_t model_time_us() { return ne_time_us(); }
 //
 
 static bool model_load(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
-                       ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
-                       model_progress_callback progress_callback, void* progress_callback_user_data) {
+                       bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+                       void* progress_callback_user_data) {
   try {
-    model_load_internal(fname, arch, lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only,
-                        progress_callback, progress_callback_user_data);
+    model_load_internal(fname, arch, lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
+                        progress_callback_user_data);
     return true;
   } catch (const std::string& err) {
     fprintf(stderr, "error loading model: %s\n", err.c_str());
@@ -1057,16 +1057,11 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->rng = std::mt19937(params.seed);
   ctx->logits_all = params.logits_all;
   ctx->batch_size = params.batch_size;
-
-  // TODO(Yi): Check MHA availability when params.kv_type == KV_MEM_TYPE_AUTO
-  ne_type memory_type = params.kv_type == KV_MEM_TYPE_F16    ? NE_TYPE_F16
-                        : params.kv_type == KV_MEM_TYPE_F32  ? NE_TYPE_F32
-                        : params.kv_type == KV_MEM_TYPE_AUTO ? NE_TYPE_JBLAS
-                                                             : (assert(false), NE_TYPE_COUNT);
   model_archs arch = params.arch;
 
-  if (!model_load(path_model, arch, *ctx, params.n_ctx, params.n_gpu_layers, memory_type, params.use_mmap,
-                  params.use_mlock, params.vocab_only, params.progress_callback, params.progress_callback_user_data)) {
+  // the type so that kv-cache allocated according to this type must be large enough
+  if (!model_load(path_model, arch, *ctx, params.n_ctx, params.n_gpu_layers, params.use_mmap, params.use_mlock,
+                  params.vocab_only, params.progress_callback, params.progress_callback_user_data)) {
     fprintf(stderr, "%s: failed to load model\n", __func__);
     model_free(ctx);
     return nullptr;
@@ -1079,6 +1074,24 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
       ctx->beam_size = params.beam_size;
       ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
     }
+
+    const auto& hparams = ctx->model.hparams;
+
+    const attn_shape_t attn_shape = {
+        /* .batch_size = */ ctx->batch_size * ctx->beam_size,
+        /* .head_num = */ static_cast<int>(hparams.n_head),
+        /* .head_size = */ static_cast<int>(hparams.n_embd / hparams.n_head),
+        /* .sl_q = */ 1,  // for next-token inference
+        /* .sl_kv = */ static_cast<int>(hparams.n_ctx),
+    };
+    const ne_type memory_type =
+        params.kv_type == KV_MEM_TYPE_F16   ? NE_TYPE_F16
+        : params.kv_type == KV_MEM_TYPE_F32 ? NE_TYPE_F32
+        : params.kv_type == KV_MEM_TYPE_AUTO
+            ? (jblas_reordered_attn_fp32_support(&attn_shape) ? NE_TYPE_JBLAS : NE_TYPE_F16)  // fall back to fp16
+            : NE_TYPE_COUNT;
+    NE_ASSERT(memory_type != NE_TYPE_COUNT);
+
     if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size)) {
       fprintf(stderr, "%s: kv_cache_init() failed for self-attention cache\n", __func__);
       model_free(ctx);
@@ -1091,8 +1104,6 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
                                      : ne_nbytes(ctx->model.kv_self.k) + ne_nbytes(ctx->model.kv_self.v);
       fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
     }
-
-    const auto& hparams = ctx->model.hparams;
 
     // resized during inference
     if (params.logits_all) {
@@ -1416,8 +1427,7 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
       /* .sl_q = */ 1,  // Note: make sure that jblas reordered attn supports next token inferencing
       /* .sl_kv = */ static_cast<int>(model_hparams.n_ctx),
   };
-  NE_ASSERT(params.memory_type != KV_MEM_TYPE_AUTO  //
-            || jblas_reordered_attn_fp32_support(&attn_shape));
+  NE_ASSERT(lctx->model.kv_self.k->type != NE_TYPE_JBLAS || jblas_reordered_attn_fp32_support(&attn_shape));
 
   if (lctx == NULL) {
     fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model.c_str());

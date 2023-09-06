@@ -40,22 +40,21 @@
 #include "models/models.h"
 
 void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
-                         ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
-                         model_progress_callback progress_callback, void* progress_callback_user_data) {
+                         bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+                         void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
   std::unique_ptr<IModel> ms(new BLOOM());
-  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only);
+  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void BLOOM::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, ne_type memory_type_,
-                bool use_mmap_, bool use_mlock_, bool vocab_only_) {
+void BLOOM::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
+                 bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
-  memory_type = memory_type_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
   vocab_only = vocab_only_;
@@ -133,8 +132,8 @@ void BLOOM::load(model_context& lctx, model_progress_callback progress_callback,
     layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);
 
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, 3*n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {3*n_embd}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, 3 * n_embd}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {3 * n_embd}, backend);
     layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
     layer.attn[3] = ml->get_tensor(layers_i + ".self_attention.dense.bias", {n_embd}, backend);
 
@@ -147,26 +146,18 @@ void BLOOM::load(model_context& lctx, model_progress_callback progress_callback,
     layer.ffn[5] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.bias", {n_embd}, backend);
 
     if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) + ne_nbytes(layer.attn[2]) +
-		    ne_nbytes(layer.attn[3]) +
+      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) + ne_nbytes(layer.attn[0]) +
+                    ne_nbytes(layer.attn[1]) + ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
                     ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.ffn[2]) +
-		    ne_nbytes(layer.ffn[3]) + ne_nbytes(layer.ffn[4]) + ne_nbytes(layer.ffn[5]);
+                    ne_nbytes(layer.ffn[3]) + ne_nbytes(layer.ffn[4]) + ne_nbytes(layer.ffn[5]);
     }
   }
 
   // print memory requirements
-  const size_t scale = memory_type == NE_TYPE_F32 ? 2 : 1;
-
   // this is the total memory required to run the inference
   const size_t mem_required = ctx_size + mmapped_size - vram_total +  // weights in VRAM not in memory
                               scratch.scratch0 + scratch.scratch1 + scratch.eval;
-
-  // this is the memory required by one model_state
-  const size_t mem_required_state = scale * scratch.kv_self;
-
-  fprintf(stderr, "%s: mem required  = %7.2f MB (+ %7.2f MB per state)\n", __func__, mem_required / 1024.0 / 1024.0,
-          mem_required_state / 1024.0 / 1024.0);
+  fprintf(stderr, "%s: mem required  = %7.2f MB (+ memory per state)\n", __func__, mem_required / 1024.0 / 1024.0);
 
   (void)n_gpu_layer;
 
@@ -185,7 +176,6 @@ void BLOOM::load(model_context& lctx, model_progress_callback progress_callback,
 }
 
 #undef MODEL_BACKEND_OFFLOAD
-
 
 class bloom_quant_layer : public quant_layer_base {
  public:

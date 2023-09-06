@@ -70,11 +70,11 @@ struct gpt_params {
   std::string lora_adapter = "";  // lora adapter path
   std::string lora_base = "";     // base model path for the lora adapter
 
-  KV_MEM_TYPE memory_type = KV_MEM_TYPE_F16;  // Memory kv data type
-  bool random_prompt = false;                 // do not randomize prompt if none provided
-  bool use_color = false;                     // use color to distinguish generations and inputs
-  bool interactive = false;                   // interactive mode
-  bool prompt_cache_all = false;              // save user input and generations to prompt cache
+  KV_MEM_TYPE memory_type = KV_MEM_TYPE_AUTO;  // Memory kv data type
+  bool random_prompt = false;                  // do not randomize prompt if none provided
+  bool use_color = false;                      // use color to distinguish generations and inputs
+  bool interactive = false;                    // interactive mode
+  bool prompt_cache_all = false;               // save user input and generations to prompt cache
 
   bool embedding = false;          // get only sentence embedding
   bool interactive_first = false;  // wait for user input immediately
@@ -83,7 +83,7 @@ struct gpt_params {
   bool instruct = false;        // instruction mode (used for Alpaca models)
   bool penalize_nl = true;      // consider newlines as a repeatable token
   bool perplexity = false;      // compute perplexity over the prompt
-  bool use_mmap = false;         // use mmap for faster loads
+  bool use_mmap = false;        // use mmap for faster loads
   bool use_mlock = false;       // use mlock to keep model in memory
   bool mem_test = false;        // compute maximum memory usage
   bool verbose_prompt = false;  // print prompt tokens before generation
