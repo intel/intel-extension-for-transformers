@@ -59,6 +59,7 @@ compile_quant(quant_dolly     quant_model.cpp dolly     gptneox)
 compile_quant(quant_llama     quant_model.cpp llama     llama)
 compile_quant(quant_mpt       quant_model.cpp mpt       mpt)
 compile_quant(quant_starcoder quant_model.cpp starcoder starcoder)
+compile_quant(quant_opt       quant_model.cpp opt       opt)
 compile_quant(quant_bloom     quant_model.cpp bloom     bloom)
 
 # all models running
@@ -80,4 +81,5 @@ compile_run(run_dolly     main_run.cpp dolly     gptneox)
 compile_run(run_llama     main_run.cpp llama     llama)
 compile_run(run_mpt       main_run.cpp mpt       mpt)
 compile_run(run_starcoder main_run.cpp starcoder starcoder)
+compile_run(run_opt       main_run.cpp opt       opt)
 compile_run(run_bloom     main_run.cpp bloom     bloom)
