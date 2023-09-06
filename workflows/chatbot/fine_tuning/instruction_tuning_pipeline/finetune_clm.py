@@ -683,8 +683,7 @@ def main():
 
         if finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model.eval()
-            from intel_extension_for_transformers.evaluation.lm_eval import evaluate
-
+            from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
