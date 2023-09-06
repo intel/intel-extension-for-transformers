@@ -18,7 +18,7 @@
 
 import transformers
 import torch
-from ..prompts import generate_intent_prompt
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt import generate_intent_prompt
 from intel_extension_for_transformers.llm.inference import predict
 
 class IntentDetector:
