@@ -91,9 +91,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   ne_cgraph gf = {};
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
-  const bool kv_mem_jblas = kv_self.k->type == NE_TYPE_JBLAS;
+  const bool run_mha_reordered = kv_self.k->type == NE_TYPE_JBLAS;
   kv_cache_info_t kv_cache_info = {0, 0};
-  if (kv_mem_jblas) {
+  if (run_mha_reordered) {
     NE_ASSERT(kv_self.v->type == NE_TYPE_JBLAS);  // kv type should be the same
     attn_shape_t attn_shape = {
         /* .batch_size = */ 1,
@@ -149,7 +149,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
           ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 1 * N * n_embd * ne_element_size(QKVcur)),
                         n_embd / n_head, n_head, N),
           n_past, n_rot, 0);
-      if (!kv_mem_jblas) {
+      if (!run_mha_reordered) {
         Vcur = ne_transpose(
             ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
                                 n_embd, N));
@@ -165,7 +165,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       Kcur = ne_rope_inplace(
           ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N),
           n_past, n_rot, 0);
-      if (!kv_mem_jblas) {
+      if (!run_mha_reordered) {
         Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd, N));
       } else {
         Vcur = ne_rope_inplace(
@@ -177,7 +177,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     ne_set_name(Kcur, "Kcur");
     ne_set_name(Vcur, "Vcur");
     // self-attention
-    if (!kv_mem_jblas) {
+    if (!run_mha_reordered) {
       // store key and value to memory
       {
         struct ne_tensor* k =

@@ -1756,6 +1756,11 @@ void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp3
   // return jblas_fusion_attn_forward_ref(*reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
 }
 
+bool blas_fusion_attn_fp16_support(const attn_shape_t* params) {
+  GetCPUDevice();
+  // TODO check K V's layout
+  return _cd->AMX_BF16();
+}
 void jblas_fusion_attn_fp16_forward(const attn_fp16_fwd_args_t* params) {
   return jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(
       *reinterpret_cast<const attn_fwd_args_t<fp16, fp16, fp16, fp16>*>(params));

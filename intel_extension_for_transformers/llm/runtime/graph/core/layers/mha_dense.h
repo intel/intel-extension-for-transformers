@@ -98,6 +98,7 @@ typedef struct attn_fp16_fwd_args_t {
   int step_v_bs, step_v_head_num, step_v_sl, step_v_head_size;
   int step_dst_bs, step_dst_head_num, step_dst_sl;
 } attn_fp16_fwd_args_t;
+bool jblas_fusion_attn_fp16_support(const attn_shape_t* params);
 void jblas_fusion_attn_fp16_forward(const attn_fp16_fwd_args_t* params);
 
 typedef struct attn_int8_fwd_args_t {
