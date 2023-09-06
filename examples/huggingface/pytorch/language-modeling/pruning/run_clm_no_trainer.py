@@ -20,24 +20,25 @@ Here is the full list of checkpoints on the hub that can be fine-tuned by this s
 https://huggingface.co/models?filter=text-generation
 """
 # You can also adapt this script on your own causal language modeling task. Pointers for this are left as comments.
-
+from accelerate.utils import set_seed
+set_seed(42)
+from accelerate import Accelerator, DistributedType
+from accelerate.logging import get_logger
 import argparse
 import json
 import logging
 import math
 import os
 import sys
+sys.path.insert(0, './neural-compressor')
 sys.path.insert(0, './')
-sys.path.insert(0, './neural-compressor/')
 import random
 from itertools import chain
 from pathlib import Path
 
 import datasets
 import torch
-from accelerate import Accelerator, DistributedType
-from accelerate.logging import get_logger
-from accelerate.utils import set_seed
+torch.use_deterministic_algorithms(True, warn_only=True)
 from datasets import load_dataset
 from huggingface_hub import Repository, create_repo
 from torch.utils.data import DataLoader
@@ -54,17 +55,14 @@ from transformers import (
     SchedulerType,
     default_data_collator,
     get_scheduler,
-    T5ForConditionalGeneration
 )
 from transformers.utils import check_min_version, get_full_repo_name, send_example_telemetry
 from transformers.utils.versions import require_version
+from timers import CPUTimer, GPUTimer
 from intel_extension_for_transformers.transformers.pruner import (WeightPruningConfig,
                                                                   prepare_pruning,
                                                                   model_slim,
                                                                   parse_auto_slim_config)
-from timers import CPUTimer, GPUTimer
-set_seed(42)
-
 
     
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
