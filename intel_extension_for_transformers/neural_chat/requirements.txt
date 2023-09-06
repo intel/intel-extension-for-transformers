@@ -9,7 +9,6 @@ paddlespeech==1.4.1
 shortuuid
 gptcache
 evaluate
-fschat
 pydub
 python-multipart
 PyPDF2

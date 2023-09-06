@@ -24,7 +24,7 @@ from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plug
 from .config import DeviceOptions
 from .models.base_model import get_model_adapter
 from .utils.common import get_device_type
-from .pipeline.plugins.caching.cache import init_similar_cache_from_config
+from .pipeline.plugins.caching.cache import CachePlugin
 from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from .pipeline.plugins.audio.tts import TextToSpeech
