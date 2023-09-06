@@ -29,9 +29,8 @@ class UnitTest(unittest.TestCase):
                     --model_name_or_path "facebook/opt-125m"'
         result = None
         try:
-            result = subprocess.run(command, shell=True, check=True,
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    universal_newlines=True)
+            result = subprocess.run(command, capture_output = True, check=True,
+                                    universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
         self.assertIn("model loaded", result.stdout)
@@ -41,9 +40,8 @@ class UnitTest(unittest.TestCase):
         command = 'neuralchat help'
         result = None
         try:
-            result = subprocess.run(command, shell=True, check=True,
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    universal_newlines=True)
+            result = subprocess.run(command, capture_output = True, check=True,
+                                    universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
         self.assertIn("Show help for neuralchat commands.", result.stdout)
@@ -56,9 +54,8 @@ class UnitTest(unittest.TestCase):
                     --model_name_or_path "facebook/opt-125m"'
         result = None
         try:
-            result = subprocess.run(command, shell=True, check=True,
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                    universal_newlines=True)
+            result = subprocess.run(command, capture_output = True, check=True,
+                                    universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
         self.assertIn("model loaded", result.stdout)

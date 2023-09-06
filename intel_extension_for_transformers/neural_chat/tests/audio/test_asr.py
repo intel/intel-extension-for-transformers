@@ -29,14 +29,14 @@ class TestASR(unittest.TestCase):
             self.asr_bf16 = AudioSpeechRecognition("openai/whisper-small", bf16=True)
 
     def test_audio2text(self):
-        audio_path = "../../assets/audio/welcome.wav"
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
         text = self.asr.audio2text(audio_path)
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
     def test_audio2text_bf16(self):
         if torch.cuda.is_available():
             return
-        audio_path = "../../assets/audio/welcome.wav"
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
         text = self.asr_bf16.audio2text(audio_path)
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
