@@ -57,6 +57,7 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
   const int N = n_tokens;
 
   const int batch_size = lctx.batch_size;
+  
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
 
