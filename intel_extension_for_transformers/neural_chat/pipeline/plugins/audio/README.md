@@ -13,11 +13,14 @@ The Audio Processing and Text-to-Speech (TTS) Plugin is a software component des
 
 # Install System Dependency
 
+Ubuntu Command:
 ```bash
 sudo apt-get install ffmpeg
 wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 sudo dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 ```
+
+For other operating systems such as CentOS, you will need to make slight adjustments.
 
 # English Automatic Speech Recognition (ASR)
 
