@@ -1,5 +1,6 @@
 transformers>=4.32.0
 peft
+fschat
 torch
 intel_extension_for_pytorch
 num2words
@@ -28,7 +29,6 @@ yacs
 uvicorn
 optimum
 optimum[habana]
-fschat
 sentence_transformers
 unstructured
 markdown
