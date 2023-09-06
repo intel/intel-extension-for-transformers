@@ -21,6 +21,7 @@ from packaging.version import Version
 from neural_compressor import __version__
 from neural_compressor.training import prepare_compression
 from neural_compressor.training import WeightPruningConfig
+# pylint: disable=E0611
 if Version(__version__).release >= Version('2.3').release:  # pragma: no cover
     from neural_compressor.training import prepare_pruning
 # pylint: disable=E1101
