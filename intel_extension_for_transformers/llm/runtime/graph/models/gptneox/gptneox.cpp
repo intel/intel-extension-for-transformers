@@ -31,17 +31,20 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
+#include "core/ne_jblas.h"
+#include "core/layers/mha_dense.h"
+#include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-#define FFN_FUSION 1
-
 // feed-forward network
-struct ne_tensor* gpt_neox_ff(const model_layer& layer, ne_context* ctx0, ne_tensor* inp) {
+struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, const int N, ne_context* ctx0, ne_tensor* inp) {
   struct ne_tensor* cur = ne_norm(ctx0, inp);
 
   cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.norm[2], cur), cur), ne_repeat(ctx0, layer.norm[3], cur));
-    if (layer.ffn[0]->type == NE_TYPE_JBLAS && layer.ffn[2]->type == NE_TYPE_JBLAS && FFN_FUSION ) {
+    if (jblas_fusion_FFN_Add_GeLu_f32f32_support(layer.ffn[0]->data, layer.ffn[2]->data,
+                                                 N * batch_size, cur->ne[0], layer.ffn[0]->ne[1],
+                                                 layer.ffn[2]->ne[1]) ) {
       cur = ne_ffn_add_gelu(ctx0, layer.ffn[0], layer.ffn[2], layer.ffn[1],
                           layer.ffn[3], cur);
     } else {
@@ -81,6 +84,8 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
+
+  const int batch_size = lctx.batch_size;
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -211,7 +216,7 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
     if (hparams.par_res == 0) {
       struct ne_tensor* inpFF = ne_add(ctx0, cur, inpL);
 
-      cur = gpt_neox_ff(model.layers[il], ctx0, inpFF);
+      cur = gpt_neox_ff(model.layers[il], N, batch_size, ctx0, inpFF);
 
       // input for next layer
       inpL = ne_add(ctx0, cur, inpFF);
@@ -220,7 +225,7 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
 
       // this is independent of the self-attention result, so it could be done in parallel to the self-attention
       // note here we pass inpL instead of cur
-      cur = gpt_neox_ff(model.layers[il], ctx0, inpL);
+      cur = gpt_neox_ff(model.layers[il], N, batch_size, ctx0, inpL);
 
       // layer input + FF
       cur = ne_add(ctx0, cur, inpFF);

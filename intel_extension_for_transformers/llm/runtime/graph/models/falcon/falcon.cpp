@@ -31,10 +31,12 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
+#include "core/ne_jblas.h"
+#include "core/layers/mha_dense.h"
+#include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-#define FFN_FUSION 1
 
 // evaluate the transformer
 //
@@ -55,6 +57,8 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
+
+  const int batch_size = lctx.batch_size;
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -202,7 +206,9 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
     // FFN (pre_layer_norm output)
     {
       // FFN FUSION
-      if (model.layers[il].ffn[0]->type == NE_TYPE_JBLAS && model.layers[il].ffn[1]->type == NE_TYPE_JBLAS && FFN_FUSION) {
+      if (jblas_fusion_FFN_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[2]->data,
+                                                 N * batch_size, cur->ne[0], model.layers[il].ffn[0]->ne[1],
+                                                 model.layers[il].ffn[2]->ne[1])) {
       cur = ne_ffn_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1],  inpFF);
     } else {
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], inpFF);
