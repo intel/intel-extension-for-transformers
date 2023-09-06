@@ -17,7 +17,7 @@
 
 
 import logging
-import torch.nn as nn
+import torch
 from accelerate import init_empty_weights
 from neural_compressor import quantization
 from neural_compressor.config import PostTrainingQuantConfig
@@ -48,7 +48,10 @@ def replace_linear(model, modules_to_not_convert=None, current_key_name=None, qu
 
 def get_weight_type_from_config(config):
     if config.weight_dtype == "int8":
-        weight_type = "s8"
+        if config.scale_dtype == "fp32":
+            weight_type = "s8_scalef32"
+        else:
+            raise Exception("scale_dtype only support fp32 now!")
     elif config.weight_dtype == "int4_fullrange":
         if config.scale_dtype == "fp32":
             weight_type = "s4fullrange_scalef32"
@@ -74,6 +77,19 @@ def get_weight_type_from_config(config):
             weight_type = "nf4_scalef32"
         else:
             raise Exception("scale_dtype only support fp32 now!")
+    return weight_type
+
+
+def convert_dtype_2_str(dtype):
+    if dtype == torch.float32:
+        string = "fp32"
+    elif dtype == torch.bfloat16:
+        string = "bf16"
+    elif dtype == torch.int8:
+        string = "int8"
+    else:
+        string = "Unspport dtype"
+    return string
 
 
 def _replace_linear(
@@ -90,7 +106,7 @@ def _replace_linear(
             current_key_name = []
         current_key_name.append(name)
 
-        if isinstance(module, nn.Linear) and name not in modules_to_not_convert:
+        if isinstance(module, torch.nn.Linear) and name not in modules_to_not_convert:
             # Check if the current key is not in the `modules_to_not_convert`
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
@@ -151,7 +167,7 @@ def _replace_linear(
 def convert_to_quantized_model(model, config):
     bits = 1  # only for int8
     if config.weight_dtype == "int8":
-        dtype = "int"
+        dtype = "int8"
         bits = 8
     elif "int4" in config.weight_dtype:
         dtype = "int4"

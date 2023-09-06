@@ -16,10 +16,14 @@
 # limitations under the License.
 
 
+import logging
 import torch
 import transformers
 from ...llm.quantization.config import WeightOnlyConfig
-from ...llm.quantization.utils import convert_to_quantized_model
+from ...llm.quantization.utils import convert_to_quantized_model, convert_dtype_2_str
+
+
+logger = logging.getLogger(__name__)
 
 
 class _BaseQBitsAutoModelClass:
@@ -39,7 +43,7 @@ class _BaseQBitsAutoModelClass:
             else:
                 assert "4" in quantization_config.weight_dtype and quantization_config.compute_dtype == torch_dtype, \
                 f"Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
-                f"'fp4_e2m1', 'fp4_e2m1_bnb' or 'int8' and compute_dtype should be {torch_dtype}."
+                f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
         elif load_in_8bit:
             if quantization_config is None:
                 quantization_config = WeightOnlyConfig(compute_dtype=torch_dtype, weight_dtype="int8")
@@ -47,8 +51,8 @@ class _BaseQBitsAutoModelClass:
                 assert quantization_config.weight_dtype == "int8" and quantization_config.compute_dtype == torch_dtype, \
                 f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
         elif quantization_config is not None:
-            assert quantization_config.compute_dtype == torch_dtype, \
-                f"Quantization_config.compute_dtype should be {torch_dtype}."
+            if quantization_config.compute_dtype != convert_dtype_2_str(torch_dtype):
+                logger.warning(f"Quantization_config.compute_dtype should be align with {torch_dtype}.")
 
         model = cls.ORIG_MODEL.from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
         if quantization_config is not None:
