@@ -23,7 +23,6 @@ from transformers.utils.versions import require_version
 from dataclasses import dataclass
 
 from .plugins import plugins
-from .utils.dotdict import DotDict
 
 from enum import Enum, auto
 
@@ -425,10 +424,9 @@ class PipelineConfig:
                  model_name_or_path="meta-llama/Llama-2-7b-hf",
                  tokenizer_name_or_path=None,
                  device="auto",
-                 plugins=DotDict({}),
+                 plugins=plugins,
                  loading_config=None,
                  optimization_config=None):
-        plugins = DotDict({})
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.device = device
