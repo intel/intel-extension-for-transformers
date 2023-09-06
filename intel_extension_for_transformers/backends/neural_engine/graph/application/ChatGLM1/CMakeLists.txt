@@ -12,10 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+include_directories(third_party/sentencepiece/src)
+
 set(TARGET main_chatglm1)
 add_executable_w_warning(${TARGET} main_chatglm.cpp)
 target_link_libraries(${TARGET} PUBLIC ne_layers chatglm1 common ${CMAKE_THREAD_LIBS_INIT})
-target_compile_features(${TARGET} PRIVATE cxx_std_11)
+target_compile_features(${TARGET} PRIVATE cxx_std_17)
 if(TARGET BUILD_INFO)
   add_dependencies(${TARGET} BUILD_INFO)
 endif()
@@ -23,7 +25,7 @@ endif()
 set(TARGET quant_chatglm1)
 add_executable_w_warning(${TARGET} quant_chatglm.cpp)
 target_link_libraries(${TARGET} PUBLIC ne_layers chatglm1 common ${CMAKE_THREAD_LIBS_INIT})
-target_compile_features(${TARGET} PRIVATE cxx_std_11)
+target_compile_features(${TARGET} PRIVATE cxx_std_17)
 if(TARGET BUILD_INFO)
   add_dependencies(${TARGET} BUILD_INFO)
 endif()

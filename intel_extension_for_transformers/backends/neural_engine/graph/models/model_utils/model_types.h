@@ -18,6 +18,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <regex>
+#include <codecvt>
+#include <sentencepiece_processor.h>
+
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -60,6 +64,151 @@
 #define MODEL_FILE_MAGIC_UNVERSIONED MODEL_FILE_MAGIC_NE
 #define MODEL_SESSION_MAGIC MODEL_FILE_MAGIC_GGSN
 #define MODEL_SESSION_VERSION 1
+
+class ChatGLMTokenizer {
+  public:
+    ChatGLMTokenizer(std::string_view serialized_model_proto) {
+    const auto status = sp.LoadFromSerializedProto(serialized_model_proto);
+
+    bos_token_id = sp.PieceToId("<sop>");
+    eos_token_id = sp.PieceToId("<eop>");
+    mask_token_id = sp.PieceToId("[MASK]");
+    gmask_token_id = sp.PieceToId("[gMASK]");
+    pad_token_id = sp.PieceToId("<pad>");
+    }
+
+    std::vector<int> encode(const std::string &text) {
+          std::string input = preprocess(text);
+      std::vector<int> ids;
+      sp.Encode(input, &ids);
+      ids.insert(ids.end(), {gmask_token_id, bos_token_id});
+      return ids;
+      }
+
+      std::string decode(const std::vector<int> &ids) {
+            std::string text;
+      sp.Decode(ids, &text);
+      text = postprocess(text);
+      return text;
+    }
+
+    std::vector<int> encode_history(const std::vector<std::string> &history, int max_length) {
+      std::string prompt = build_prompt(history);
+      std::vector<int> input_ids = encode(prompt);
+      if ((int)input_ids.size() > max_length) {
+          // sliding window: always take the last max_length tokens
+          input_ids.erase(input_ids.begin(), input_ids.end() - max_length);
+      }
+      return input_ids;
+    }
+
+    static std::string build_prompt(const std::vector<std::string> &history){
+      std::ostringstream oss_prompt;
+      if (history.size() == 1) {
+          oss_prompt << history.front();
+      } else {
+          for (size_t i = 0; i < history.size(); i += 2) {
+              oss_prompt << "[Round " << i / 2 << "]\n问：" << history[i] << "\n答：";
+              if (i < history.size() - 1) {
+                  oss_prompt << history[i + 1] << "\n";
+              }
+          }
+      }
+      return oss_prompt.str();
+    }
+
+    static std::string regex_replace(const std::string &input, const std::regex &regex,
+                                    std::function<std::string(const std::smatch &)> format) {
+        std::ostringstream oss;
+        int last_index = 0;
+        for (auto it = std::sregex_iterator(input.begin(), input.end(), regex); it != std::sregex_iterator(); it++) {
+            oss << it->prefix() << format(*it);
+            last_index = it->position() + it->length();
+        }
+        oss << input.substr(last_index);
+        return oss.str();
+    }
+    static std::string preprocess(const std::string &text) {
+          std::string output;
+
+    // newline token
+    {
+        static const std::regex newline_regex("\n");
+        output = std::regex_replace(text, newline_regex, "<n>");
+    }
+    // tab token
+    {
+        static const std::regex tab_regex("\t");
+        output = std::regex_replace(output, tab_regex, "<|tab|>");
+    }
+    // blank tokens
+    {
+        static const std::regex pattern(R"([ ]{2,80})");
+        output = regex_replace(output, pattern, [](const std::smatch &sm) {
+            std::ostringstream oss;
+            oss << "<|blank_" << sm.str().size() << "|>";
+            return oss.str();
+        });
+    }
+
+    return output;
+    }
+
+    static std::string postprocess(const std::string &text) {
+          std::string output;
+
+    // newline token
+    {
+        static const std::regex pattern(R"(<n>)");
+        output = std::regex_replace(text, pattern, "\n");
+    }
+    // tab token
+    {
+        static const std::regex pattern(R"(<\|tab\|>)");
+        output = std::regex_replace(output, pattern, "\t");
+    }
+    // blank tokens
+    {
+        static const std::regex pattern(R"(<\|blank_(\d+)\|>)");
+        output = regex_replace(output, pattern,
+                               [](const std::smatch &sm) { return std::string(std::stoi(sm[1].str()), ' '); });
+    }
+
+    // replace punctuations
+    // reference: https://stackoverflow.com/questions/37989081/how-to-use-unicode-range-in-c-regex
+    {
+        static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+        static const std::vector<std::pair<std::wregex, std::wstring>> punct_map{
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]),)")), converter.from_bytes("$1，")},
+            {std::wregex(converter.from_bytes(R"(,([\u4e00-\u9fff]))")), converter.from_bytes("，$1")},
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff])!)")), converter.from_bytes("$1！")},
+            {std::wregex(converter.from_bytes(R"(!([\u4e00-\u9fff]))")), converter.from_bytes("！$1")},
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]):)")), converter.from_bytes("$1：")},
+            {std::wregex(converter.from_bytes(R"(:([\u4e00-\u9fff]))")), converter.from_bytes("：$1")},
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff]);)")), converter.from_bytes("$1；")},
+            {std::wregex(converter.from_bytes(R"(;([\u4e00-\u9fff]))")), converter.from_bytes("；$1")},
+            {std::wregex(converter.from_bytes(R"(([\u4e00-\u9fff])\?)")), converter.from_bytes("$1？")},
+            {std::wregex(converter.from_bytes(R"(\?([\u4e00-\u9fff]))")), converter.from_bytes("？$1")},
+        };
+        std::wstring w_output = converter.from_bytes(output);
+        for (const auto &punct_pair : punct_map) {
+            w_output = std::regex_replace(w_output, punct_pair.first, punct_pair.second);
+        }
+        output = converter.to_bytes(w_output);
+    }
+
+    return output;
+    }
+
+  public:
+    sentencepiece::SentencePieceProcessor sp;
+    int bos_token_id;
+    int eos_token_id;
+    int mask_token_id;
+    int gmask_token_id;
+    int pad_token_id;
+    int proto_size;
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -158,6 +307,8 @@ struct model_struct {
 
   model_hparams hparams;
   model_scratch scratchs;
+
+  ChatGLMTokenizer *tokenizer;
 
   struct ne_tensor* others[MODEL_MAX_OTHERS];
   std::vector<model_layer> layers;

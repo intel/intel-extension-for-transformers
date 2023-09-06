@@ -24,5 +24,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include(FindOpenMP)
 target_link_libraries(${PROJECT_NAME} INTERFACE OpenMP::OpenMP_CXX OpenMP::OpenMP_C)
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 

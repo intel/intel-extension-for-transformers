@@ -37,6 +37,8 @@
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 
+#include <sentencepiece_processor.h>
+
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <signal.h>
 #include <unistd.h>
