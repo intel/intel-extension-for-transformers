@@ -30,4 +30,4 @@ yacs
 uvicorn
 optimum
 optimum[habana]
-fastchat
+fschat[model_worker]
