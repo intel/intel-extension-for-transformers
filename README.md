@@ -38,7 +38,8 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 *  Optimized Transformer-based model packages such as [Stable Diffusion](examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion), [GPT-J-6B](examples/huggingface/pytorch/text-generation/deployment), [GPT-NEOX](examples/huggingface/pytorch/language-modeling/quantization#2-validated-model-list), [BLOOM-176B](examples/huggingface/pytorch/language-modeling/inference#BLOOM-176B), [T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list), [Flan-T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list) and end-to-end workflows such as [SetFit-based text classification](docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](workflows/dlsa) 
 
-*  [NeuralChat](workflows/chatbot), a custom Chatbot trained on Intel CPUs through parameter-efficient fine-tuning [PEFT](https://github.com/huggingface/peft) on domain knowledge
+*  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of plugins and SOTA optimizations
+
 
 *  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatFALCON)
 
@@ -108,7 +109,7 @@ output = model(**input).logits.argmax().item()
 <tbody>
   <tr>
     <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
-    <td colspan="2" align="center"><a href="workflows/chatbot">NeuralChat</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs">Neural Engine</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/README.md">Kernel Libraries</a></td>
   </tr>
