@@ -114,3 +114,7 @@ LLM running script args explanations:
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 
+
+### 4. Tensor Parallism cross nodes/sockets
+
+We support tensor parallism algorithm for distributed inference/training on multi-nodes and sockets.  You can refer to [tensor_parallism.md](./tensor_parallism.md) to enable this feature.
