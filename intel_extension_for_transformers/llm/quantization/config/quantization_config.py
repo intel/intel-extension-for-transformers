@@ -20,6 +20,7 @@ import copy
 import json
 import os
 import torch
+from ..utils import convert_dtype_2_str
 from typing import Any, Dict, Union
 
 
@@ -52,11 +53,11 @@ class WeightOnlyConfig:
         else:
             self.group_size = group_size
         if compute_dtype is None:
-            self.compute_dtype = torch.float32
+            self.compute_dtype = "fp32"
         elif isinstance(compute_dtype, str):
-            self.compute_dtype = getattr(torch, compute_dtype)
-        elif isinstance(compute_dtype, torch.dtype):
             self.compute_dtype = compute_dtype
+        elif isinstance(compute_dtype, torch.dtype):
+            self.compute_dtype = convert_dtype_2_str(compute_dtype)
         else:
             raise ValueError("bit4_compute_dtype must be a string or a torch.dtype")
 
@@ -70,14 +71,15 @@ class WeightOnlyConfig:
         if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
-        if self.compute_dtype is not None and not isinstance(self.compute_dtype, torch.dtype):
-            raise ValueError("compute_dtype must be torch.dtype")
+        if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'bf16', 'int8']:
+            raise ValueError("compute_dtype must be 'fp32', 'bf16', 'int8'.")
 
-        if not isinstance(self.weight_dtype, str):
-            raise ValueError("quant_dtype must be a string")
+        if self.weight_dtype not in ['int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1']:
+            raise ValueError(f"weight_dtype must be a string in "
+                             f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1'")
 
-        if not isinstance(self.scale_dtype, str):
-            raise ValueError("scale_dtype must be a string")
+        if self.scale_dtype not in ["fp32"]:
+            raise ValueError("scale_dtype must be a string in 'fp32'")
 
         if not isinstance(self.mse_range, bool):
             raise ValueError("mse_range must be a boolean")
