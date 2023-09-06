@@ -64,7 +64,7 @@ from intel_extension_for_transformers.transformers.pruner import (WeightPruningC
                                                                   parse_auto_slim_config)
 from timers import CPUTimer, GPUTimer
 set_seed(42)
-    
+
 
     
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -721,7 +721,7 @@ def main():
         end_step=pruning_end,
     )
     
-    pruning = prepare_pruning(configs, model, dataloader=train_dataloader)
+    pruning = prepare_pruning(model, configs, dataloader=train_dataloader)
     
     model.eval()
     if args.evaluation_dataset_name != None:

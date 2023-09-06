@@ -20,8 +20,8 @@ from .pruning import Pruning
 from packaging.version import Version
 from neural_compressor import __version__
 from neural_compressor.config import WeightPruningConfig
-# pylint: disable=E1101
-from neural_compressor.compression.pruner import prepare_pruning
 # pylint: disable=E0611
+from neural_compressor.compression.pruner import prepare_pruning
+# pylint: disable=E1101
 if Version(__version__).release > Version('2.1.1').release:  # pragma: no cover
     from neural_compressor.compression.pruner.model_slim import model_slim, parse_auto_slim_config
