@@ -8,7 +8,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀 Latest News
-<b> <span style="color:orange" > NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is available for you to create your own chatbot within minutes on multiple architectures.</span></b>
+<b> <span style="color:orange" > NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is now available for you to create your own chatbot within minutes on multiple architectures.</span></b>
 
 NeuralChat offers a rich set of plugins to allow your personalized chatbot smarter with knowledge retrieval, more interactive through speech, faster through query caching, and more secure with guardrails.
 
