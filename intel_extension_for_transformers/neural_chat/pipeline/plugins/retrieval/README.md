@@ -16,7 +16,9 @@ The workflow of this plugin consists of three main operations: document indexing
 # Usage
 The most convenient way to use is this plugin is via our `build_chatbot` api as introduced in the [example code](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval). The user could refer to it for a simple test. 
 
-The supported file format for retrieval including the unstructure file format: pdf, docx, html, txt and markdown; and the structure file format: jsonl and xlsx. The structured file format should follow the predefined file structure. For the jsonll file, it should be a dict file like "{"doc":xxx, "doc_id":xxx}". The support for xlsx file is specially designed for QA tasks, the user can input the QA pairs for the retrieval. Therefore, the head of the table should contains "Question" and "Answer" item.
+We support multiple file formats for retrieval, including unstructured file formats such as pdf, docx, html, txt, and markdown, as well as structured file formats like jsonl and xlsx. For structured file formats, they must adhere to predefined structures.
+
+In the case of jsonl files, they should be formatted as dictionaries, such as: {"doc": xxx, "doc_id": xxx}. The support for xlsx files is specifically designed for Question-Answer (QA) tasks. Users can input QA pairs for retrieval. Therefore, the table's header should include items labeled as "Question" and "Answer".
 
 ## Import the module and set the retrieval config:
 The user can download the [Intel 2022 Annual Report](https://d1io3yog0oux5.cloudfront.net/_897efe2d574a132883f198f2b119aa39/intel/db/888/8941/file/412439%281%29_12_Intel_AR_WR.pdf) for a easy test.
