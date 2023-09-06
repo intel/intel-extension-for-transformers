@@ -4,8 +4,25 @@ Intel® Extension for Transformers
 ===========================
 <h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
 
-[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
+
+## 🚀 Latest News
+<b> <span style="color:orange" > NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is available for you to create your own chatbot within minutes on multiple architectures.</span></b>
+
+NeuralChat offers a rich set of plugins to allow your personalized chatbot more smart with knowledge retrieval, more interactive through speech, faster through response caching, and more secure with guardrails.
+
+* [Plugins] [Knowledge Retrieval](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/examples/retrieval), Speech Interaction, Response Caching, Security Guardrail
+* [Architectures] Intel® Xeon® Scalable Processors, Habana Gaudi® Accelerator, and others
+
+Check out the below sample code and have a try now!
+
+```python
+# follow the installation instructions
+from intel_extension_for_transformers.neural_chat import build_chatbot
+chatbot = build_chatbot()
+response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+```
 
 ---
 <div align="left">
