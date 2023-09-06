@@ -42,9 +42,9 @@
 #include "models/model_utils/util.h"
 
 #define MODEL_MAX_NORM 4
-#define MODEL_MAX_ATTN 4
-#define MODEL_MAX_FFN 4
-#define MODEL_MAX_OTHERS 5
+#define MODEL_MAX_ATTN 8
+#define MODEL_MAX_FFN 6
+#define MODEL_MAX_OTHERS 7
 
 #define MODEL_USE_SCRATCH
 #define MODEL_MAX_SCRATCH_BUFFERS 16
@@ -64,7 +64,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, MODEL_CHATGLM2, MODEL_CHATGLM1};
+
+enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, 
+                   MODEL_OPT, MODEL_BLOOM, MODEL_CHATGLM2, MODEL_CHATGLM1};
 
 static const size_t MB = 1024 * 1024;
 
@@ -100,10 +102,12 @@ struct model_hparams {
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;
-  int32_t max_seq_len = 0;   // for mpt
-  float alibi_bias_max = 0;  // for mpt
-  float clip_qkv = 0;        // for mpt
-  int32_t par_res = 1;       // for neox 1 = true, 0 = false
+  int32_t max_seq_len = 0;  // for mpt
+  float alibi_bias_max = 0; // for mpt
+  float clip_qkv = 0;  // for mpt
+  int32_t par_res = 1;  // for neox 1 = true, 0 = false
+  uint32_t word_embed_proj_dim = 0;  // for opt
+  bool do_layer_norm_before = false; // for opt
 
   // ChatGLM-1 & 2 tokenizer
   int32_t bos_token_id = 0;
@@ -201,8 +205,23 @@ struct model_vocab {
 
   std::unordered_map<token, id> token_to_id;
   std::vector<token_score> id_to_token;
+  id bos_token_id = -1; //The default value is -1
+  id eos_token_id = -1; //The default value is -1
 };
 
+// reference: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
+struct generation_config {
+  uint32_t max_new_tokens;  // n_predict there
+  uint32_t min_new_tokens = 0;
+  // Exponential penalty to the length that is used with beam-based generation. It is applied as an exponent to
+  // the sequence length, which in turn is used to divide the score of the sequence. Since the score is the log
+  // likelihood of the sequence (i.e. negative), `length_penalty` > 0.0 promotes longer sequences, while
+  // `length_penalty` < 0.0 encourages shorter sequences. (default = 1.0)
+  float length_penalty = 1.0f;
+  bool do_early_stopping = false;  // TODO
+};
+
+class beam_search_kv_cache_reorder;  //  forward declaration
 struct model_context {
   std::mt19937 rng;
 
@@ -225,6 +244,8 @@ struct model_context {
   bool beam_search = false;
   int beam_size = 1;
   int kv_n_ctx_block = 1;
+  generation_config generation_conf;
+  std::shared_ptr<beam_search_kv_cache_reorder> bs_kv_reorder;
   std::vector<std::vector<std::string>> tensors_name;
 
   size_t mem_per_token = 0;
@@ -350,9 +371,9 @@ class model_name_to_arch {
   model_name_to_arch() {}
   // update this table if has new cpp model
   std::unordered_map<std::string, model_archs> name2arch_ = {
-      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ},           {"mpt", MODEL_MPT},
+      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ}, {"mpt", MODEL_MPT}, {"opt", MODEL_OPT},
       {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
-      {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1},
+      {"bloom", MODEL_BLOOM},{"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1}
   };
 };
 

@@ -32,13 +32,13 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
-#include "core/layers/inner_product.h"
+#include "core/ne_jblas.h"
 #include "core/layers/mha_dense.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-#define MHA_FUSION 1
+#define MHA_FUSION 0  //  turn it off for naive beam_search kv cache reorder
 
 // evaluate the transformer
 //

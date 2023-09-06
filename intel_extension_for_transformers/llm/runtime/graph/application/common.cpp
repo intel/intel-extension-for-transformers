@@ -12,7 +12,6 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #include "common.h"
-#include "jblas/jblas/jit_blas_weight_compression.h"
 
 #ifndef _WIN32
 #include <ext/alloc_traits.h>

@@ -4,8 +4,25 @@ Intel® Extension for Transformers
 ===========================
 <h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
 
-[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./workflows/chatbot)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
+
+## 🚀 Latest News
+<b> <span style="color:orange" > NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is available for you to create your own chatbot within minutes on multiple architectures.</span></b>
+
+NeuralChat offers a rich set of plugins to allow your personalized chatbot smarter with knowledge retrieval, more interactive through speech, faster through query caching, and more secure with guardrails.
+
+* [Plugins] [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md)
+* [Architectures] Intel® Xeon® Scalable Processors, Habana Gaudi® Accelerator, and others
+
+Check out the below sample code and have a try now!
+
+```python
+# follow the installation instructions
+from intel_extension_for_transformers.neural_chat import build_chatbot
+chatbot = build_chatbot()
+response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+```
 
 ---
 <div align="left">
@@ -92,8 +109,8 @@ output = model(**input).logits.argmax().item()
   <tr>
     <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
     <td colspan="2" align="center"><a href="workflows/chatbot">NeuralChat</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs">Neural Engine</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/README.md">Kernel Libraries</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs">Neural Engine</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/README.md">Kernel Libraries</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">MODEL COMPRESSION</th>
@@ -114,18 +131,18 @@ output = model(**input).logits.argmax().item()
     <th colspan="8" align="center">NEURAL ENGINE</th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/onnx_compile.md">Model Compilation</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/add_customized_pattern.md">Custom Pattern</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/deploy_and_integration.md">Deployment</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/engine_profiling.md">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/onnx_compile.md">Model Compilation</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/add_customized_pattern.md">Custom Pattern</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/deploy_and_integration.md">Deployment</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/engine_profiling.md">Profiling</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">KERNEL LIBRARIES</th>
   </tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/profiling.md">Profiling</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/profiling.md">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
   <tr>
     <th colspan="8" align="center">ALGORITHMS</th>
   </tr>
@@ -139,8 +156,8 @@ output = model(**input).logits.argmax().item()
   <tr>
     <td colspan="2" align="center"><a href="docs/tutorials/pytorch">Tutorials</a></td>
     <td colspan="2" align="center"><a href="docs/examples.md">Supported Models</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/docs/validated_model.md">Model Performance</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/kernels/docs/validated_data.md">Kernel Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/validated_data.md">Kernel Performance</a></td>
   </tr>
 </tbody>
 </table>
@@ -154,14 +171,8 @@ output = model(**input).logits.argmax().item()
 * Arxiv: [An Efficient Sparse Inference Software Accelerator for Transformer-based Language Models on CPUs](https://arxiv.org/abs/2306.16601) (June 2023)
 * Blog published on Medium: [Simplify Your Custom Chatbot Deployment](https://medium.com/intel-analytics-software/simplify-your-custom-chatbot-deployment-on-intel-platforms-c8a911d906cf) (June 2023)
 * Blog published on Medium: [Create Your Own Custom Chatbot](https://medium.com/intel-analytics-software/create-your-own-chatbot-on-cpus-b8d186cfefb2) (April 2023)
-* Blog of Tech-Innovation Artificial-Intelligence(AI): [Intel® Xeon® Processors Are Still the Only CPU With MLPerf Results, Raising the Bar By 5x - Intel Communities](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/Intel-Xeon-Processors-Are-Still-the-Only-CPU-With-MLPerf-Results/post/1472750) (April 2023)
-* Blog published on Medium: [MLefficiency — Optimizing transformer models for efficiency](https://medium.com/@kawapanion/mlefficiency-optimizing-transformer-models-for-efficiency-a9e230cff051) (Dec 2022)
-* NeurIPS'2022: [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) (Nov 2022)
-* NeurIPS'2022: [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114) (Nov 2022)
-* Blog published by Cohere: [Top NLP Papers—November 2022](https://txt.cohere.ai/top-nlp-papers-november-2022/) (Nov 2022)
-* Blog published by Alibaba: [Deep learning inference optimization for Address Purification](https://zhuanlan.zhihu.com/p/552484413) (Aug 2022)
-* NeurIPS'2021: [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754) (Nov 2021)
 
+> View [Full Publication List](./docs/publication.md).
 ## Additional Content
 
 * [Release Information](./docs/release.md)

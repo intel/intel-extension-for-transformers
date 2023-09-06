@@ -17,6 +17,7 @@
 
 #include <immintrin.h>
 #include <cstdint>
+#include <utility>
 
 #if __AVX512F__
 typedef __m512 fp32x16;

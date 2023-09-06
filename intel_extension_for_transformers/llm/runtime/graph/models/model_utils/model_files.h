@@ -212,6 +212,9 @@ struct model_file_loader {
     file.read_raw(&hparams.clip_qkv, sizeof(float));
     hparams.par_res = file.read_u32();
 
+    hparams.word_embed_proj_dim = file.read_u32();
+    hparams.do_layer_norm_before = bool(file.read_u32());
+    
     // For ChatGLM-1 & 2 tokenizer
     hparams.bos_token_id = file.read_u32();
     hparams.eos_token_id = file.read_u32();
@@ -220,9 +223,12 @@ struct model_file_loader {
     hparams.multi_query_group_num = file.read_u32();
     hparams.ffn_hidden_size = file.read_u32();
     hparams.inner_hidden_size = file.read_u32();
+
   }
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
+    file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
 
     for (uint32_t i = 0; i < hparams.n_vocab; i++) {
       uint32_t len = file.read_u32();
@@ -239,6 +245,7 @@ struct model_file_loader {
       tok_score.tok = std::move(word);
       tok_score.score = score;
     }
+
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
@@ -325,6 +332,8 @@ struct model_file_saver {
     file.write_raw(&hparams.alibi_bias_max, sizeof(float));
     file.write_raw(&hparams.clip_qkv, sizeof(float));
     file.write_u32(hparams.par_res);
+    file.write_u32(hparams.word_embed_proj_dim);
+    file.write_u32(static_cast<int>(hparams.do_layer_norm_before));
 
     file.write_u32(hparams.bos_token_id);
     file.write_u32(hparams.eos_token_id);
@@ -333,12 +342,15 @@ struct model_file_saver {
     file.write_u32(hparams.multi_query_group_num);
     file.write_u32(hparams.ffn_hidden_size);
     file.write_u32(hparams.inner_hidden_size);
+
   }
   void write_vocab() {
     if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
       fprintf(stderr, "model.cpp: WARNING: input is an old file that doesn't have scores; will add dummy scores\n");
     }
     uint32_t n_vocab = any_file_loader->hparams.n_vocab;
+    file.write_raw(&(any_file_loader->vocab.bos_token_id), sizeof(model_vocab::id));
+    file.write_raw(&(any_file_loader->vocab.eos_token_id), sizeof(model_vocab::id));
     for (uint32_t i = 0; i < n_vocab; i++) {
       const auto& token_score = any_file_loader->vocab.id_to_token.at(i);
       file.write_u32((uint32_t)token_score.tok.size());
@@ -425,13 +437,15 @@ struct model_model_loader {
         if (it == tensors_map.name_to_idx.end()) {
           it = tensors_map.name_to_idx.find("model/wte");
           if (it == tensors_map.name_to_idx.end()) {
-            // ChatGLM-1
-            it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");
+            it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight"); // ChatGLM-1
             if (it == tensors_map.name_to_idx.end()) {
-              // ChatGLM-2
-              it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");
+              it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight"); // ChatGLM-2
               if (it == tensors_map.name_to_idx.end()) {
-                throw std::string("missing tok_embeddings.weight");
+                it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
+                if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
+                if (it == tensors_map.name_to_idx.end()) {
+                  throw std::string("missing tok_embeddings.weight");
+                }
               }
             }
           }
