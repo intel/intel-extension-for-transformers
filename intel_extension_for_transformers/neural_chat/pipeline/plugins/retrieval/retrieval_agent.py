@@ -18,9 +18,9 @@
 import os
 import torch
 import transformers
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval import Retriever
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector import IntentDetector
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing import DocumentIndexing
+from .retrieval_base import Retriever
+from .detector import IntentDetector
+from .indexing import DocumentIndexing
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt import generate_qa_prompt, generate_prompt
 from intel_extension_for_transformers.neural_chat.plugins import register_plugin
 
@@ -33,7 +33,7 @@ class Agent_QA():
         self.model = None
         self.tokenizer = None
         self.retrieval_type = retrieval_type
-
+        self.retriever = None
         self.intent_detector = IntentDetector()
         if os.path.exists(input_path):
             self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
@@ -53,7 +53,10 @@ class Agent_QA():
             prompt = generate_prompt(query)
         else:
             print("Chat with QA agent.")
-            context = self.retriever.get_context(query)
-            prompt = generate_qa_prompt(query, context)
+            if self.retriever:
+                context = self.retriever.get_context(query)
+                prompt = generate_qa_prompt(query, context)
+            else:
+                prompt = generate_prompt(query)
         return prompt
 

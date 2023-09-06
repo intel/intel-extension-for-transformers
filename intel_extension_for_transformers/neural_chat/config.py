@@ -22,14 +22,6 @@ from transformers import TrainingArguments, BitsAndBytesConfig
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
 
-from .pipeline.plugins.audio.asr import AudioSpeechRecognition
-from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
-from .pipeline.plugins.audio.tts import TextToSpeech
-from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-from .pipeline.plugins.retrieval.indexing import DocumentIndexing
-from .pipeline.plugins.retrieval import SparseBM25Retriever, ChromaRetriever
-from .pipeline.plugins.retrieval.detector import IntentDetector
-from .pipeline.plugins.security import SafetyChecker
 from .plugins import plugins
 
 from enum import Enum, auto
