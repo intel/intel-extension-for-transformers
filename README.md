@@ -12,7 +12,7 @@ Intel® Extension for Transformers
 
 NeuralChat offers a rich set of plugins to allow your personalized chatbot more smart with knowledge retrieval, more interactive through speech, faster through query caching, and more secure with guardrails.
 
-* [Plugins] [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), Speech Interaction, Response Caching, [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md)
+* [Plugins] [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), Speech Interaction, Query Caching, [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md)
 * [Architectures] Intel® Xeon® Scalable Processors, Habana Gaudi® Accelerator, and others
 
 Check out the below sample code and have a try now!
