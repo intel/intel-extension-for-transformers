@@ -188,6 +188,19 @@ struct model_vocab {
   std::vector<token_score> id_to_token;
 };
 
+// reference: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
+struct generation_config {
+  uint32_t max_new_tokens;  // n_predict there
+  uint32_t min_new_tokens = 0;
+  // Exponential penalty to the length that is used with beam-based generation. It is applied as an exponent to
+  // the sequence length, which in turn is used to divide the score of the sequence. Since the score is the log
+  // likelihood of the sequence (i.e. negative), `length_penalty` > 0.0 promotes longer sequences, while
+  // `length_penalty` < 0.0 encourages shorter sequences. (default = 1.0)
+  float length_penalty = 1.0f;
+  bool do_early_stopping = false;  // TODO
+};
+
+class beam_search_kv_cache_reorder;  //  forward declaration
 struct model_context {
   std::mt19937 rng;
 
@@ -210,6 +223,8 @@ struct model_context {
   bool beam_search = false;
   int beam_size = 1;
   int kv_n_ctx_block = 1;
+  generation_config generation_conf;
+  std::shared_ptr<beam_search_kv_cache_reorder> bs_kv_reorder;
   std::vector<std::vector<std::string>> tensors_name;
 
   size_t mem_per_token = 0;

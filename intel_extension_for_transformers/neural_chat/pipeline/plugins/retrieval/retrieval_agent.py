@@ -18,15 +18,16 @@
 import os
 import torch
 import transformers
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.intent_detector import IntentDetector
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrievals.indexing import DocumentIndexing
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.retrievals.retrieval import Retriever
+from .retrieval_base import Retriever
+from .detector import IntentDetector
+from .indexing import DocumentIndexing
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt import generate_qa_prompt, generate_prompt
 from intel_extension_for_transformers.neural_chat.plugins import register_plugin
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompts import generate_qa_prompt, generate_prompt
+
 
 @register_plugin("retrieval")
-class QA_Client():
-    def __init__(self, persist_dir="./output", process=False, input_path=None,
+class Agent_QA():
+    def __init__(self, persist_dir="./output", process=True, input_path=None,
                  embedding_model="hkunlp/instructor-large", max_length=512, retrieval_type="dense",
                  document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}):
         self.model = None

@@ -73,7 +73,7 @@ def read_docx(doc_path):
 
 def read_md(md_path):
     """Read docx file."""
-    loader = UnstructuredMarkdownLoader("instruction_data.md")
+    loader = UnstructuredMarkdownLoader(md_path)
     text = loader.load()[0].page_content
     return text
 

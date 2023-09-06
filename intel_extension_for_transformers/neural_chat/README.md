@@ -2,16 +2,16 @@
 
 NeuralChat
 ===========================
-<h3> An open-source Python library that empowers you to customize your chatbot with a diverse range of plugins.</h3>
+<h3> A customizable chatbot framework that empowers you to personalize your chatbot with a diverse range of plugins</h3>
 
 ---
 <div align="left">
 
-NeuralChat is a general chat framework designed to create your own chatbot that can be efficiently deployed on Intel CPU/GPU, Habana HPU and Nvidia GPU. NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning and LLM inference with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot and deploy on Intel platforms rapidly. Here is the flow of NeuralChat:
+NeuralChat is a customizable chat framework designed to create your own chatbot that can be efficiently deployed on multiple architectures such as Intel CPU/GPU, Habana HPU and Nvidia GPU. NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, response caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on your favorite platform. Here is the flow of NeuralChat:
 
 <a target="_blank" href="./assets/pictures/neuralchat.png">
 <p align="center">
-  <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=200>
+  <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=250>
 </p>
 </a>
 
@@ -112,8 +112,10 @@ For the Python API code, users have the option to enable different voice chat mo
 
 ```python
 >>> from intel_extension_for_transformers.neural_chat import PipelineConfig
->>> from intel_extension_for_transformers.neural_chat import build_chatbot
->>> config = PipelineConfig(audio_input=True, audio_output=True)
+>>> from intel_extension_for_transformers.neural_chat import build_chatbot, plugins
+>>> plugins.tts.enable = True
+>>> plugins.tts.args["output_audio_path"]="./output_audio.wav"
+>>> pipeline_config = PipelineConfig(plugins=plugins)
 >>> chatbot = build_chatbot(config)
 >>> result = chatbot.predict(query="./assets/audio/pat.wav")
 ```
