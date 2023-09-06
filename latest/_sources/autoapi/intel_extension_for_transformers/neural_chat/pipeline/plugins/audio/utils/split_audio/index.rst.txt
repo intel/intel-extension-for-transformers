@@ -1,0 +1,92 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.split_audio`
+===============================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.split_audio
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.split_audio.Frame
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.split_audio.read_wave
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.split_audio.write_wave
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.split_audio.frame_generator
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.split_audio.vad_collector
+
+
+
+.. py:function:: read_wave(path)
+
+   Reads a .wav file.
+
+   Takes the path, and returns (PCM audio data, sample rate).
+
+
+.. py:function:: write_wave(path, audio, sample_rate)
+
+   Writes a .wav file.
+
+   Takes path, PCM audio data, and sample rate.
+
+
+.. py:class:: Frame(bytes, timestamp, duration)
+
+
+
+
+   Represents a "frame" of audio data.
+
+
+.. py:function:: frame_generator(frame_duration_ms, audio, sample_rate)
+
+   Generates audio frames from PCM audio data.
+
+   Takes the desired frame duration in milliseconds, the PCM data, and
+   the sample rate.
+
+   Yields Frames of the requested duration.
+
+
+.. py:function:: vad_collector(sample_rate, frame_duration_ms, padding_duration_ms, vad, frames)
+
+   Filters out non-voiced audio frames.
+
+   Given a webrtcvad.Vad and a source of audio frames, yields only
+   the voiced audio.
+
+   Uses a padded, sliding window algorithm over the audio frames.
+   When more than 90% of the frames in the window are voiced (as
+   reported by the VAD), the collector triggers and begins yielding
+   audio frames. Then the collector waits until 90% of the frames in
+   the window are unvoiced to detrigger.
+
+   The window is padded at the front and back to provide a small
+   amount of silence or the beginnings/endings of speech around the
+   voiced frames.
+
+   Arguments:
+
+   sample_rate - The audio sample rate, in Hz.
+   frame_duration_ms - The frame duration in milliseconds.
+   padding_duration_ms - The amount to pad the window, in milliseconds.
+   vad - An instance of webrtcvad.Vad.
+   frames - a source of audio frames (sequence or generator).
+
+   Returns: A generator that yields PCM audio data.
+
+

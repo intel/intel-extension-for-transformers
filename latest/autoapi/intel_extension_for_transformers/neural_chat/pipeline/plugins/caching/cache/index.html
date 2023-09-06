@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache &mdash; Intel® Extension for Transformers 0.1.dev1+g1436bdc documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache &mdash; Intel® Extension for Transformers 0.1.dev1+g9b81f05 documentation</title>
       <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
@@ -88,104 +88,6 @@
              
   <section id="module-intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache">
 <span id="intel-extension-for-transformers-neural-chat-pipeline-plugins-caching-cache"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache" title="Link to this heading"></a></h1>
-<section id="module-contents">
-<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
-<section id="functions">
-<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
-<table class="autosummary longtable docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.put" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.put"><code class="xref py py-obj docutils literal notranslate"><span class="pre">put</span></code></a>(→ None)</p></td>
-<td><p>put api, put qa pair information to GPTCache</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.get" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.get"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get</span></code></a>(→ Any)</p></td>
-<td><p>get api, get the cache data according to the <cite>prompt</cite></p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.init_similar_cache" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.init_similar_cache"><code class="xref py py-obj docutils literal notranslate"><span class="pre">init_similar_cache</span></code></a>([data_dir, cache_obj, pre_func, ...])</p></td>
-<td><p>Provide a quick way to initialize cache for api service</p></td>
-</tr>
-</tbody>
-</table>
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.put">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.</span></span><span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../../../../cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/cache.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.put" title="Link to this definition"></a></dt>
-<dd><p>put api, put qa pair information to GPTCache
-Please make sure that the <cite>pre_embedding_func</cite> param is <cite>get_prompt</cite> when initializing the cache</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>prompt</strong> (<em>str</em>) – the cache data key, usually question text</p></li>
-<li><p><strong>data</strong> (<em>Any</em>) – the cache data value, usually answer text</p></li>
-<li><p><strong>kwargs</strong> (<em>Dict</em>) – list of user-defined parameters</p></li>
-</ul>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gptcache.adapter.api</span> <span class="kn">import</span> <span class="n">put</span>
-<span class="kn">from</span> <span class="nn">gptcache.processor.pre</span> <span class="kn">import</span> <span class="n">get_prompt</span>
-
-<span class="n">cache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">pre_embedding_func</span><span class="o">=</span><span class="n">get_prompt</span><span class="p">)</span>
-<span class="n">put</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.get">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.</span></span><span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/cache.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.get" title="Link to this definition"></a></dt>
-<dd><p>get api, get the cache data according to the <cite>prompt</cite>
-Please make sure that the <cite>pre_embedding_func</cite> param is <cite>get_prompt</cite> when initializing the cache</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>prompt</strong> (<em>str</em>) – the cache data key, usually question text</p></li>
-<li><p><strong>kwargs</strong> (<em>Dict</em>) – list of user-defined parameters</p></li>
-</ul>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gptcache.adapter.api</span> <span class="kn">import</span> <span class="n">put</span><span class="p">,</span> <span class="n">get</span>
-<span class="kn">from</span> <span class="nn">gptcache.processor.pre</span> <span class="kn">import</span> <span class="n">get_prompt</span>
-
-<span class="n">cache</span><span class="o">.</span><span class="n">init</span><span class="p">(</span><span class="n">pre_embedding_func</span><span class="o">=</span><span class="n">get_prompt</span><span class="p">)</span>
-<span class="n">put</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">))</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.init_similar_cache">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.</span></span><span class="sig-name descname"><span class="pre">init_similar_cache</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'api_cache'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">gptcache.Cache</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">get_prompt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">gptcache.embedding.base.BaseEmbedding</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">gptcache.manager.data_manager.DataManager</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">evaluation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">gptcache.similarity_evaluation.SimilarityEvaluation</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">temperature_softmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">gptcache.Config</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Config()</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/cache.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache.init_similar_cache" title="Link to this definition"></a></dt>
-<dd><p>Provide a quick way to initialize cache for api service</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data_dir</strong> (<em>str</em>) – cache data storage directory</p></li>
-<li><p><strong>cache_obj</strong> (<em>Optional</em><em>[</em><em>Cache</em><em>]</em>) – specify to initialize the Cache object, if not specified, initialize the global object</p></li>
-<li><p><strong>pre_func</strong> (<em>Callable</em>) – pre-processing of the cache input text</p></li>
-<li><p><strong>embedding</strong> (<em>BaseEmbedding</em>) – embedding object</p></li>
-<li><p><strong>data_manager</strong> (<em>DataManager</em>) – data manager object</p></li>
-<li><p><strong>evaluation</strong> (<em>SimilarityEvaluation</em>) – similarity evaluation object</p></li>
-<li><p><strong>post_func</strong> (<em>Callable</em><em>[</em><em>[</em><em>List</em><em>[</em><em>Any</em><em>]</em><em>]</em><em>, </em><em>Any</em><em>]</em>) – post-processing of the cached result list, the most similar result is taken by default</p></li>
-<li><p><strong>config</strong> (<em>Config</em>) – cache configuration, the core is similar threshold</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>None</p>
-</dd>
-</dl>
-<p class="rubric">Example</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">gptcache.adapter.api</span> <span class="kn">import</span> <span class="n">put</span><span class="p">,</span> <span class="n">get</span><span class="p">,</span> <span class="n">init_similar_cache</span>
-
-<span class="n">init_similar_cache</span><span class="p">()</span>
-<span class="n">put</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="s2">&quot;foo&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;hello&quot;</span><span class="p">))</span>
-</pre></div>
-</div>
-</dd></dl>
-
-</section>
-</section>
 </section>
 
 
@@ -202,7 +104,7 @@ Please make sure that the <cite>pre_embedding_func</cite> param is <cite>get_pro
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fec0f1e6a70> 
+   <jinja2.runtime.BlockReference object at 0x7f90ffc9c760> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

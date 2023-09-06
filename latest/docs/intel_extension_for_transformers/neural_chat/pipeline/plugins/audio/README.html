@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Install System Dependency &mdash; Intel® Extension for Transformers 0.1.dev1+g9b81f05 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "neural-compressor"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Install System Dependency</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <p>The Audio Processing and Text-to-Speech (TTS) Plugin is a software component designed to enhance audio-related functionality in Neural Chat, specially for TalkingBot. This plugin offers a range of capabilities, primarily focused on processing audio data and converting text into spoken language. Here is a general overview of its key features:</p>
+<ul class="simple">
+<li><p><strong>Audio Processing</strong>: This component includes a suite of tools and algorithms for manipulating audio data. It can perform tasks such as cut Video, split audio, convert video to audio, noise reduction, equalization, pitch shifting, and audio synthesis, enabling developers to improve audio quality and add various audio effects to their applications.</p></li>
+<li><p><strong>Text-to-Speech (TTS) Conversion</strong>: The TTS plugin can convert written text into natural-sounding speech by synthesizing human-like voices. Users can customize the voice, tone, and speed of the generated speech to suit their specific requirements.</p></li>
+<li><p><strong>Speech Recognition</strong>: The ASR plugin support speech recognition, allowing it to transcribe spoken words into text. This can be used for applications like voice commands, transcription services, and voice-controlled interfaces. It supports both English and Chinese.</p></li>
+<li><p><strong>Multi-Language Support</strong>: The plugin typically supports multiple languages and accents, making it versatile for global applications and catering to diverse user bases. It supports both English and Chinese now.</p></li>
+<li><p><strong>Integration</strong>: Developers can easily integrate this plugin into their applications or systems using APIs.</p></li>
+</ul>
+<section id="install-system-dependency">
+<h1>Install System Dependency<a class="headerlink" href="#install-system-dependency" title="Link to this heading"></a></h1>
+<p>Ubuntu Command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>ffmpeg
+wget<span class="w"> </span>http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_.html64.deb
+sudo<span class="w"> </span>dpkg<span class="w"> </span>-i<span class="w"> </span>libssl1.1_1.1.1f-1ubuntu2.19_.html64.deb
+</pre></div>
+</div>
+<p>For other operating systems such as CentOS, you will need to make slight adjustments.</p>
+</section>
+<section id="english-automatic-speech-recognition-asr">
+<h1>English Automatic Speech Recognition (ASR)<a class="headerlink" href="#english-automatic-speech-recognition-asr" title="Link to this heading"></a></h1>
+<section id="dependencies-installation">
+<h2>Dependencies Installation<a class="headerlink" href="#dependencies-installation" title="Link to this heading"></a></h2>
+<p>To use the English ASR module, you need to install the necessary dependencies. You can do this by running the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>transformers<span class="w"> </span>datasets<span class="w"> </span>pydub
+</pre></div>
+</div>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<p>The AudioSpeechRecognition class provides functionality for converting English audio to text. Here’s how to use it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio</span> <span class="kn">import</span> <span class="n">AudioSpeechRecognition</span>
+<span class="n">asr</span> <span class="o">=</span> <span class="n">AudioSpeechRecognition</span><span class="p">()</span>
+<span class="n">audio_path</span> <span class="o">=</span> <span class="s2">&quot;~/audio.wav&quot;</span>  <span class="c1"># Replace with the path to your English audio file (supports MP3 and WAV)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">asr</span><span class="o">.</span><span class="n">audio2text</span><span class="p">(</span><span class="n">audio_path</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ASR Result:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="chinese-automatic-speech-recognition-asr">
+<h1>Chinese Automatic Speech Recognition (ASR)<a class="headerlink" href="#chinese-automatic-speech-recognition-asr" title="Link to this heading"></a></h1>
+<section id="id1">
+<h2>Dependencies Installation<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<p>To use the Chinese ASR module, you need to install the necessary dependencies. You can do this by running the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>paddlespeech<span class="w"> </span>paddlepaddle
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h2>Usage<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<p>The ChineseAudioSpeechRecognition class provides functionality for converting Chinese audio to text. Here’s how to use it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio</span> <span class="kn">import</span> <span class="n">ChineseAudioSpeechRecognition</span>
+<span class="n">asr</span> <span class="o">=</span> <span class="n">ChineseAudioSpeechRecognition</span><span class="p">()</span>
+<span class="n">audio_path</span> <span class="o">=</span> <span class="s2">&quot;~/audio.wav&quot;</span>  <span class="c1"># Replace with the path to your audio file</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">asr</span><span class="o">.</span><span class="n">audio2text</span><span class="p">(</span><span class="n">audio_path</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ASR Result:&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="english-text-to-speech-tts">
+<h1>English Text-to-Speech (TTS)<a class="headerlink" href="#english-text-to-speech-tts" title="Link to this heading"></a></h1>
+<section id="id3">
+<h2>Dependencies Installation<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<p>To use the English TTS module, you need to install the required dependencies. Run the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>transformers<span class="w"> </span>soundfile<span class="w"> </span>speechbrain
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h2>Usage<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<p>The TextToSpeech class in your module provides the capability to convert English text to speech. Here’s how to use it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio</span> <span class="kn">import</span> <span class="n">TextToSpeech</span>
+<span class="n">tts</span> <span class="o">=</span> <span class="n">TextToSpeech</span><span class="p">()</span>
+<span class="n">text_to_speak</span> <span class="o">=</span> <span class="s2">&quot;Hello, this is a sample text.&quot;</span>  <span class="c1"># Replace with your text</span>
+<span class="n">output_audio_path</span> <span class="o">=</span> <span class="s2">&quot;./output.wav&quot;</span>  <span class="c1"># Replace with the desired output audio path</span>
+<span class="n">voice</span> <span class="o">=</span> <span class="s2">&quot;default&quot;</span>  <span class="c1"># You can choose between &quot;default,&quot; &quot;pat,&quot; or a custom voice</span>
+<span class="n">tts</span><span class="o">.</span><span class="n">text2speech</span><span class="p">(</span><span class="n">text_to_speak</span><span class="p">,</span> <span class="n">output_audio_path</span><span class="p">,</span> <span class="n">voice</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="chinese-text-to-speech-tts">
+<h1>Chinese Text-to-Speech (TTS)<a class="headerlink" href="#chinese-text-to-speech-tts" title="Link to this heading"></a></h1>
+<section id="id5">
+<h2>Dependencies Installation<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<p>To use the Chinese TTS module, you need to install the required dependencies. Run the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>paddlespeech<span class="w"> </span>paddlepaddle
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h2>Usage<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
+<p>The ChineseTextToSpeech class within your module provides functionality for TTS. Here’s how to use it:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.audio</span> <span class="kn">import</span> <span class="n">ChineseTextToSpeech</span>
+<span class="c1"># Initialize the TTS module</span>
+<span class="n">tts</span> <span class="o">=</span> <span class="n">ChineseTextToSpeech</span><span class="p">()</span>
+<span class="c1"># Define the text you want to convert to speech</span>
+<span class="n">text_to_speak</span> <span class="o">=</span> <span class="s2">&quot;你好，这是一个示例文本。&quot;</span>  <span class="c1"># Replace with your Chinese text</span>
+<span class="c1"># Specify the output audio path</span>
+<span class="n">output_audio_path</span> <span class="o">=</span> <span class="s2">&quot;./output.wav&quot;</span>  <span class="c1"># Replace with your desired output audio path</span>
+<span class="c1"># Perform text-to-speech conversion</span>
+<span class="n">tts</span><span class="o">.</span><span class="n">text2speech</span><span class="p">(</span><span class="n">text_to_speak</span><span class="p">)</span>
+
+<span class="c1"># If you want to stream the generation of audio from a text generator (e.g., a language model),</span>
+<span class="c1"># you can use the following method:</span>
+<span class="c1"># audio_generator = your_text_generator_function()  # Replace with your text generator</span>
+<span class="c1"># tts.stream_text2speech(audio_generator)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f90e8093e20> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
