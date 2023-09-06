@@ -46,8 +46,8 @@ if not SKIP_RUNTIME:
 cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
-install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
-opt_install_requires_list = ['neural_compressor', 'transformers', 'optimum-intel']
+install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml', 'evaluate']
+opt_install_requires_list = ['neural_compressor', 'transformers', 'optimum-intel', 'peft']
 project_name = "intel_extension_for_transformers"
 
 packages_list = find_packages()
