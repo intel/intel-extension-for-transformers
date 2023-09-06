@@ -12,6 +12,7 @@ $BOLD_YELLOW && echo "---------------- run python setup.py sdist bdist_wheel ---
 export PYTHONPATH=`pwd`
 #$BOLD_YELLOW && echo "---------------- pip install binary -------------" && $RESET
 #pip install dist/intel_extension_for_transformers*.whl
+
 pip list
 
 cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
