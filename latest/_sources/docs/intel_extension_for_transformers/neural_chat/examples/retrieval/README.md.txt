@@ -14,7 +14,7 @@ The Neural Chat API offers an easy way to create and utilize chatbot models whil
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
 plugins.retrieval.enable=True
-plugins.retrieval.args["input_path"]="./Annual_report.pdf"
+plugins.retrieval.args["input_path"]="./Annual_Report.pdf"
 config = PipelineConfig(plugins=plugins)
 ```
 
@@ -30,3 +30,12 @@ response = chatbot.predict("What is IDM 2.0?")
 ```shell
 python retrieval_chat.py
 ```
+
+## Performance acceleration on Intel® Xeon SPR
+You can utilize the following script to execute the code on Intel® Xeon SPR processor to accelerate the inference.
+```bash
+conda install jemalloc gperftools -c conda-forge -y
+bash run_retrieval_on_cpu.sh
+```
+
+

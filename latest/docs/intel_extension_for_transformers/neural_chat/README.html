@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g39400f2 documentation</title>
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g2651bd8 documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
@@ -102,12 +102,13 @@
 <p>3.2.2 <a class="reference external" href="#access-server">Access Server</a></p>
 </li>
 <li><p><a class="reference external" href="#advanced-topics">Advanced Topics</a></p></li>
+<li><p><a class="reference external" href="#validated-model-list">Validated Model List</a></p></li>
 <li><p><a class="reference external" href="#jupyter-notebooks">Jupyter Notebooks</a></p></li>
 </ol>
 </section>
 <section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
-<p>NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel© Xeon© Scalable processors, Habana Gaudi© AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.</p>
+<p>NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.</p>
 <a target="_blank" href="./assets/pictures/neuralchat.png">
 <p align="center">
   <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=250>
@@ -134,6 +135,7 @@ neuralchat<span class="w"> </span>predict<span class="w"> </span>--query<span cl
 <span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span>
 <span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">()</span>
 <span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -218,6 +220,17 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
 </div>
 </section>
 </section>
+<section id="validated-model-list">
+<h2>Validated Model List<a class="headerlink" href="#validated-model-list" title="Link to this heading"></a></h2>
+<p>The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
+|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation |
+|————————————|—|—|— | — |
+|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
+|LLaMA series| ✅| ✅|✅| ✅
+|LLaMA2 series| ✅| ✅|✅| ✅
+|MPT series| ✅| ✅|✅| ✅
+|FLAN-T5 series| ✅ | <strong>WIP</strong>| <strong>WIP</strong> | <strong>WIP</strong>|</p>
+</section>
 <section id="jupyter-notebooks">
 <h2>Jupyter Notebooks<a class="headerlink" href="#jupyter-notebooks" title="Link to this heading"></a></h2>
 <p>Check out the latest notebooks to know how to build and customize a chatbot on different platforms.</p>
@@ -263,7 +276,7 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f3019df19c0> 
+   <jinja2.runtime.BlockReference object at 0x7f397ebc4cd0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

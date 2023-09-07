@@ -16,8 +16,7 @@ Classes
 
    intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand
    intel_extension_for_transformers.neural_chat.cli.cli_commands.HelpCommand
-   intel_extension_for_transformers.neural_chat.cli.cli_commands.TextChatExecutor
-   intel_extension_for_transformers.neural_chat.cli.cli_commands.VoiceChatExecutor
+   intel_extension_for_transformers.neural_chat.cli.cli_commands.TextVoiceChatExecutor
    intel_extension_for_transformers.neural_chat.cli.cli_commands.FinetuingExecutor
 
 
@@ -67,12 +66,12 @@ Classes
       
 
 
-.. py:class:: TextChatExecutor
+.. py:class:: TextVoiceChatExecutor
 
 
 
 
-   TextChatExecutor class for executing text-based conversations with a chatbot.
+   TextVoiceChatExecutor class for executing text-based or voice-based conversations with a chatbot.
 
    This class extends the BaseCommandExecutor class and provides functionality for
    interacting with a chatbot through the command line or the Python API. It initializes
@@ -103,7 +102,6 @@ Classes
    .. py:method:: execute(argv: List[str]) -> bool
 
       Command line entry point.
-
 
 
 
