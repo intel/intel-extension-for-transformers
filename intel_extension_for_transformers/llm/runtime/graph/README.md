@@ -122,3 +122,22 @@ You can use the following script to run, including convertion, quantization and 
 ```
 python scripts/one_click_run.py EleutherAI/gpt-j-6b --weight_dtype int4 -p "She opened the door and see"
 ```
+
+LLM one-click running script args explanations:
+| arg               | explanation                                                             |
+| --------------    | ----------------------------------------------------------------------- |
+| model           | directory containing model file or model id                 |
+| --weight_dtype  | data type of quantized weight (default: int4)         |
+| --alg           | quantization algorithm to use: sym/asym (default: sym)      |
+| --block_size    | block size (default: 32)                                    |
+| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
+| --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
+| -p / --prompt     | prompt to start generation with (default: empty)                        |
+| -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
+| -t / --threads    | number of threads to use during computation (default: 56)               |
+| -b / --batch_size | batch size for prompt processing (default: 512)                         |
+| -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                |
+| -s / --seed       | NG seed (default: -1, use random seed for < 0)                          |
+| --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
+| --color           | colorise output to distinguish prompt and user input from generations   |
+| --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
