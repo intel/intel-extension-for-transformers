@@ -114,3 +114,11 @@ LLM running script args explanations:
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 
+
+### 4. One-click Script 
+
+You can use the following script to run, including convertion, quantization and inference. Please refer to [2. Convert LLM](#2-convert-llm) and [3. Run Models](#3-run-models) for the args of executing `one_click_run` script.
+
+```
+python scripts/one_click_run.py EleutherAI/gpt-j-6b --weight_dtype int4 -p "Once upon a time, "
+```
