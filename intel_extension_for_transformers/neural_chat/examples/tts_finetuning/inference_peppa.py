@@ -1,3 +1,20 @@
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from transformers import SpeechT5Processor, SpeechT5ForTextToSpeech
 from datasets import load_dataset, Audio, Dataset, Features, ClassLabel
 import os
@@ -35,7 +52,6 @@ speaker_embeddings = torch.tensor(sembeddings).unsqueeze(0)
 vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").cuda()
 
 def correct_abbreviation(text):
-    # formula: if one word is all capital letters, then correct this whole word
     correct_dict = {
         "A": "Eigh",
         "B": "bee",
@@ -67,7 +83,7 @@ def correct_abbreviation(text):
     words = text.split()
     results = []
     for idx, word in enumerate(words):
-        if word.isupper(): # W3C is also upper
+        if word.isupper():
             for c in word:
                 if c in correct_dict:
                     results.append(correct_dict[c])
@@ -82,7 +98,7 @@ def correct_number(text):
     words = text.split()
     results = []
     for idx, word in enumerate(words):
-        if word.isdigit(): # if word is positive integer, it must can be num2words
+        if word.isdigit():
             try:
                 word = num2words(word)
             except Exception as e:
