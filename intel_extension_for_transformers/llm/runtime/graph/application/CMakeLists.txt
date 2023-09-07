@@ -62,7 +62,7 @@ compile_quant(quant_starcoder quant_model.cpp starcoder starcoder)
 compile_quant(quant_opt       quant_model.cpp opt       opt)
 compile_quant(quant_bloom     quant_model.cpp bloom     bloom)
 
-compile_quant(quant_chatglm1  quant_model.cpp chatglm1   chatglm1)
+#compile_quant(quant_chatglm1  quant_model.cpp chatglm1   chatglm1)
 compile_quant(quant_chatglm2  quant_model.cpp chatglm2   chatglm2)
 
 # all models running
@@ -86,3 +86,4 @@ compile_run(run_mpt       main_run.cpp mpt       mpt)
 compile_run(run_starcoder main_run.cpp starcoder starcoder)
 compile_run(run_opt       main_run.cpp opt       opt)
 compile_run(run_bloom     main_run.cpp bloom     bloom)
+compile_run(run_chatglm2  main_run.cpp chatglm2  chatglm2)

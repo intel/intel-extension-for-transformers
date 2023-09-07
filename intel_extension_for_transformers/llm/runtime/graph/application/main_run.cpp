@@ -51,8 +51,6 @@ static model_context** g_ctx;
 static bool is_interacting = false;
 
 std::string build_prompt(const std::vector<std::string> &history) {
-    // CHATGLM_CHECK(history.size() % 2 == 1) << "invalid history size " << history.size();
-
     std::ostringstream oss_prompt;
     for (size_t i = 0; i < history.size(); i += 2) {
         oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
@@ -89,10 +87,10 @@ int main(int argc, char** argv) {
   }
 
   model_archs mt = model_name_to_arch::init().find(params.model_name);
-  // if (mt == MODEL_UNKNOWN) {
-  //   fprintf(stderr, "error, please set model_name \n");
-  //   exit(0);
-  // }
+  if (mt == MODEL_UNKNOWN) {
+    fprintf(stderr, "error, please set model_name \n");
+    exit(0);
+  }
   params.model_arch = mt;
 
   // save choice to use color for later
