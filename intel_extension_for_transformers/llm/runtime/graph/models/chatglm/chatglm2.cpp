@@ -45,12 +45,6 @@
 
 static bool chatglm_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                      const int n_past, const int n_threads) {
-  // // enforce that the first token is BOS
-  // if (n_past == 0 && tokens[0] != model_token_bos()) {
-  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
-  //   return false;
-  // }
-
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -107,20 +101,16 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     // self-attention
     cur = ne_rms_norm(ctx0, inpL);
     cur = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur);
-    //cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
     {
       // compute QKV
-      //rintf(" model.layers[il].attn[0]->ne[0] = %d, model.layers[il].attn[0]->ne[1] = %d  ", model.layers[il].attn[0]->ne[0], model.layers[il].attn[0]->ne[1]);
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].attn[1], cur), cur);
-      //cur = ne_add(ctx0, cur, model.layers[il].attn[1]);
 
       struct ne_tensor *query_layer =
         ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
                      0); // [qlen, heads, head_size]
       ne_set_name(query_layer, "query_layer");
       query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0, 0);
-      //query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0, 0);
       query_layer = ne_cont(ctx0, ne_permute(ctx0, query_layer, 0, 2, 1, 3)); // [heads, qlen, head_size]
       query_layer = ne_reshape_3d(ctx0, query_layer, head_size, mqa_scale * qlen,
                                   num_kv_heads); // [kv_heads, mqa_scale * qlen, head_size]
@@ -130,7 +120,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
                      hidden_size * ne_element_size(cur)); // [qlen, kv_heads, head_size]
       ne_set_name(key_layer, "key_layer");
       key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 0, 0);
-      //key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 0, 0);
       key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3); // [kv_heads, qlen, head_size]
 
       struct ne_tensor *value_layer =
@@ -140,7 +129,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       value_layer = ne_permute(ctx0, value_layer, 1, 2, 0, 3);                           // [kv_heads, head_size, qlen]
 
       // store key and value to memory
-      // printf("qlen: %d, head_size: %d, num_kv_heads: %d\n", qlen, head_size, num_kv_heads);
       {
 
         struct ne_tensor *k_cache_view =
@@ -184,7 +172,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       context_layer = ne_cont(ctx0, ne_permute(ctx0, context_layer, 0, 2, 1, 3)); // [qlen, heads, head_size]
       context_layer = ne_reshape_2d(ctx0, context_layer, hidden_size, qlen); // [qlen, hidden]
 
-      // struct ne_tensor *attn_output = dense.forward(ctx0, context_layer);
       cur = ne_mul_mat(ctx0, model.layers[il].attn[2], context_layer);
     }
 
@@ -259,11 +246,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       logits_out.resize(n_vocab);
       memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
     }
-    // printf("logits_out: ");
-    // for (int i = 0; i < 20; i++) {
-    //   printf("%f, ", logits_out[i]);
-    // }
-    // printf("\n");
   }
 
   // extract embeddings
@@ -309,46 +291,3 @@ int model_eval(struct model_context* ctx, const model_token* tokens, int n_token
 
   return 0;
 }
-
-// TODO: not great allocating this every time
-// std::vector<model_token> model_tokenize(struct model_context* ctx, const std::string& text, bool add_bos) {
-//   // initialize to prompt numer of chars, since n_tokens <= n_prompt_chars
-//   std::vector<model_token> res(text.size() + (int)add_bos);
-//   const int n = model_tokenize(ctx, text.c_str(), res.data(), res.size(), add_bos);
-//   assert(n >= 0);
-//   res.resize(n);
-
-//   return res;
-// }
-
-// struct model_context* model_init_from_gpt_params(const gpt_params& params) {
-//   auto lparams = model_context_default_params();
-
-//   lparams.arch = params.model_arch;
-//   lparams.n_ctx = params.n_ctx;
-//   lparams.n_gpu_layers = params.n_gpu_layers;
-//   lparams.seed = params.seed;
-//   lparams.f16_kv = params.memory_f16;
-//   lparams.use_mmap = params.use_mmap;
-//   lparams.use_mlock = params.use_mlock;
-//   lparams.logits_all = params.perplexity;
-//   lparams.embedding = params.embedding;
-
-//   model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
-
-//   if (lctx == NULL) {
-//     fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model.c_str());
-//     return NULL;
-//   }
-
-//   if (!params.lora_adapter.empty()) {
-//     int err = model_apply_lora_from_file(lctx, params.lora_adapter.c_str(),
-//                                          params.lora_base.empty() ? NULL : params.lora_base.c_str(), params.n_threads);
-//     if (err != 0) {
-//       fprintf(stderr, "%s: error: failed to apply lora adapter\n", __func__);
-//       return NULL;
-//     }
-//   }
-
-//   return lctx;
-// }
