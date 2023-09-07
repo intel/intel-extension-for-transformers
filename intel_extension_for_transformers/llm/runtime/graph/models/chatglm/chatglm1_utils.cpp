@@ -40,7 +40,7 @@
 #include "models/models.h"
 
 void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
-                         ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
+                         bool use_mmap, bool use_mlock, bool vocab_only,
                          model_progress_callback progress_callback, void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
@@ -51,7 +51,7 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void CHATGLM1::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, ne_type memory_type_,
+void CHATGLM1::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_,
                 bool use_mmap_, bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;

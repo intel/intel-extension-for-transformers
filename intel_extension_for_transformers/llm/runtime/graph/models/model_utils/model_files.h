@@ -215,7 +215,7 @@ struct model_file_loader {
     hparams.word_embed_proj_dim = file.read_u32();
     hparams.do_layer_norm_before = bool(file.read_u32());
     
-    // For ChatGLM-1 & 2 tokenizer
+    // For ChatGLM-1 & 2
     hparams.bos_token_id = file.read_u32();
     hparams.eos_token_id = file.read_u32();
     hparams.pad_token_id = file.read_u32();
@@ -223,8 +223,8 @@ struct model_file_loader {
     hparams.multi_query_group_num = file.read_u32();
     hparams.ffn_hidden_size = file.read_u32();
     hparams.inner_hidden_size = file.read_u32();
-
   }
+  
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
     file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
