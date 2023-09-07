@@ -132,9 +132,7 @@ class Silu {
     float alpha = -1.f;
     typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
     static SiluKernel ker;
-    auto COffset = M_offset * _param.ldc + N_offset;
-    auto cptr = _param.C + COffset;
-    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
+    auto ret = ker.forward(cacheptr, cachestep, M_offset, N_offset, M, N, param);
     return JblasSuccess;
   }
 };
