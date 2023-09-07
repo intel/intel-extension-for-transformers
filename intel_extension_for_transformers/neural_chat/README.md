@@ -25,7 +25,7 @@ NeuralChat
 
 4. [Advanced Topics](#advanced-topics)
 
-5. [Verified Model List](#verified-model-list)
+5. [Validated Model List](#validated-model-list)
 
 6. [Jupyter Notebooks](#jupyter-notebooks)
 
@@ -158,14 +158,15 @@ pipeline_cfg = PipelineConfig(optimization_config=AMPConfig())
 chatbot = build_chatbot(pipeline_cfg)
 ```
 
-## Verified Model List
-| Model Name                      | Model Card                                          |
-| ----------                      | --------------------------------------------------- |
-| Intel/neural-chat-7b-v1-1       | https://huggingface.co/Intel/neural-chat-7b-v1-1    |
-| meta-llama/Llama-2-7b-chat-hf   | https://huggingface.co/meta-llama/Llama-2-7b-chat-hf|
-| decapoda-research/llama-7b-hf   | https://huggingface.co/decapoda-research/llama-7b-hf|
-| mosaicml/mpt-7b-chat            | https://huggingface.co/mosaicml/mpt-7b-chat         |
-| EleutherAI/gpt-j-6b             | https://huggingface.co/EleutherAI/gpt-j-6b          |
+## Validated Model List
+The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
+|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation | 
+|------------------------------------|---|---|--- | --- |
+|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
+|LLaMA series| ✅| ✅|✅| ✅
+|LLaMA2 series| ✅| ✅|✅| ✅
+|MPT series| ✅| ✅|✅| ✅
+|FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
 
 ## Jupyter Notebooks 
 

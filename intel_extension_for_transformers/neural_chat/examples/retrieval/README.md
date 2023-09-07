@@ -30,3 +30,12 @@ response = chatbot.predict("What is IDM 2.0?")
 ```shell
 python retrieval_chat.py
 ```
+
+## Performance acceleration on Intel® Xeon SPR
+You can utilize the following script to execute the code on an Intel® Xeon SPR processor, enhancing inference speed.
+```bash
+conda install jemalloc gperftools -c conda-forge -y
+bash run_retrieval_on_cpu.sh
+```
+
+
