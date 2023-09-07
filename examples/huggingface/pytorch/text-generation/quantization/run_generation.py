@@ -7,7 +7,7 @@ import pathlib
 import torch
 import types
 from pathlib import Path
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, PretrainedConfig
@@ -61,14 +61,25 @@ args = parser.parse_args()
 calib_size = 1
 
 # model
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-user_model = AutoModelForCausalLM.from_pretrained(
-    args.model,
-    torchscript=True
-    if args.ipex
-    else False,  # torchscript will force `return_dict=False` to avoid jit errors
-    trust_remote_code=args.trust_remote_code,
-    revision=args.revision
+if re.search("mpt", args.model.lower()):
+    from intel_extension_for_transformers.transformers.modeling.mpt import MPTForCausalLM
+    user_model = MPTForCausalLM.from_pretrained(
+       args.model,
+       torchscript=True
+       if args.ipex
+       else False,  # torchscript will force `return_dict=False` to avoid jit errors
+       trust_remote_code=args.trust_remote_code,
+       revision=args.revision
+       )
+else:
+    from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+    user_model = AutoModelForCausalLM.from_pretrained(
+       args.model,
+       torchscript=True
+       if args.ipex
+       else False,  # torchscript will force `return_dict=False` to avoid jit errors
+       trust_remote_code=args.trust_remote_code,
+       revision=args.revision
 )
 tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
