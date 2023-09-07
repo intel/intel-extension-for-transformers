@@ -91,6 +91,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", hparams["hidden_size"]))  # n_embd
     fout.write(struct.pack("i", 0))  # n_mult
     fout.write(struct.pack("i", hparams["num_attention_heads"]))  # n_head
+    fout.write(struct.pack("i", hparams.get("n_head_kv", 0)))  # multi-query attention
     fout.write(struct.pack("i", hparams["num_hidden_layers"]))  # n_layers
     fout.write(struct.pack("i", 0))  # n_rot
     fout.write(struct.pack("i", ftype))  # ftype

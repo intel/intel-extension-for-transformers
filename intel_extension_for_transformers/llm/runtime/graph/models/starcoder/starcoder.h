@@ -29,11 +29,11 @@ enum starcoder_model {
 static const model_scratch starcoder_mem_req(int n_layers) {
   switch (n_layers) {
     case 24:
-      return {8192ull * MB, 8192ull * MB, 8192ull * MB, 8192ull * MB};
+      return {8192ull * MB, 8192ull * MB, 8192ull * MB};
     case 36:
-      return {8192ull * MB, 8192ull * MB, 8192ull * MB, 8192ull * MB};
+      return {8192ull * MB, 8192ull * MB, 8192ull * MB};
     case 40:
-      return {32768ull * MB, 32768ull * MB, 32768ull * MB, 32768ull * MB};
+      return {32768ull * MB, 32768ull * MB, 32768ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
@@ -46,13 +46,12 @@ class STARCODER : public IModel {
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;
-  ne_type memory_type;
   bool use_mmap, use_mlock, vocab_only;
   model_scratch scratch;
 
  public:
-  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, ne_type memory_type_,
-            bool use_mmap_, bool use_mlock_, bool vocab_only_) override;
+  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
+            bool vocab_only_) override;
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };
 
