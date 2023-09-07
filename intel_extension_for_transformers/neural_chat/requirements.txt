@@ -33,3 +33,4 @@ sentence_transformers
 unstructured
 markdown
 rouge_score
+openpyxl

@@ -21,10 +21,11 @@ export KMP_SETTINGS=1
 export KMP_AFFINITY=granularity=fine,compact,1,0
 
 # OMP
-export OMP_NUM_THREADS=56
+export OMP_NUM_THREADS=56 # number of physical cores on single socket
 export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
 
 # tc malloc
 export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 
+# Use the cores on single socket
 numactl -l -C 0-55 python retrieval_chat.py
