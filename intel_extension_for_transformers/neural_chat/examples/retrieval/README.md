@@ -32,7 +32,7 @@ python retrieval_chat.py
 ```
 
 ## Performance acceleration on Intel® Xeon SPR
-You can utilize the following script to execute the code on an Intel® Xeon SPR processor, enhancing inference speed.
+You can utilize the following script to execute the code on Intel® Xeon SPR processor to accelerate the inference.
 ```bash
 conda install jemalloc gperftools -c conda-forge -y
 bash run_retrieval_on_cpu.sh
