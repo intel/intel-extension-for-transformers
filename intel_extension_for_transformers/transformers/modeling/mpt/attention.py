@@ -33,7 +33,8 @@ def _reset_is_causal(
     if original_is_causal and num_query_tokens != num_key_tokens:
         if num_query_tokens != 1:
             raise NotImplementedError(
-                "MPT does not support query and key with different number of tokens, unless number of query tokens is 1."
+                "MPT does not support query and key with different number of tokens,"
+                + "unless number of query tokens is 1."
             )
         else:
             return False
@@ -143,7 +144,7 @@ def flash_attn_fn(
     multiquery=False,
 ):
     try:
-        from flash_attn import bert_padding, flash_attn_interface
+        from flash_attn import bert_padding, flash_attn_interface    # disable pylint: E0401
     except:
         raise RuntimeError("Please install flash-attn==1.0.3.post0")
     check_valid_inputs(query, key, value)
@@ -224,7 +225,7 @@ def triton_flash_attn_fn(
         if version.parse(torch.__version__) < version.parse("2.0.0"):
             _installed = True
             try:
-                from flash_attn.flash_attn_triton import flash_attn_func
+                from flash_attn.flash_attn_triton import flash_attn_func  # disable pylint: E0401
             except:
                 _installed = False
         if not _installed:
@@ -448,7 +449,7 @@ class MultiQueryAttention(nn.Module):
     ):
         qkv = self.Wqkv(x)
         if self.clip_qkv:
-            qkv.clamp_(min=-self.clip_qkv, max=self.clip_qkv)
+            qkv.clamp_(min=-self.clip_qkv, max=self.clip_qkv) # disable pylint: E1130
         (query, key, value) = qkv.split(
             [self.d_model, self.head_dim, self.head_dim], dim=2
         )

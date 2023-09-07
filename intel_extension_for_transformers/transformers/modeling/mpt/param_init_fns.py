@@ -113,7 +113,7 @@ def generic_param_init_fn_(
             else:
                 if lim == 0:
                     warnings.warn(f"Embedding layer initialized to 0.")
-                lim = [-lim, lim]
+                lim = [-lim, lim] #disable pylint: E1130
             (a, b) = lim
             emb_init_fn_ = partial(torch.nn.init.uniform_, a=a, b=b)
             if verbose > 1:
@@ -271,8 +271,10 @@ def neox_param_init_fn_(
     """From section 2.3.1 of GPT-NeoX-20B:
 
     An Open-Source AutoregressiveLanguage Model — Black et. al. (2022)
-    see https://github.com/EleutherAI/gpt-neox/blob/9610391ab319403cef079b438edd016a2443af54/megatron/model/init_functions.py#L151
+    see https://github.com/EleutherAI/gpt-neox/blob/9610391ab319403cef079b438edd016a2443af54/megatron/model/
+    init_functions.py#L151
     and https://github.com/EleutherAI/gpt-neox/blob/main/megatron/model/transformer.py
+
     """
     del kwargs
     residual_div = n_layers / math.sqrt(10)

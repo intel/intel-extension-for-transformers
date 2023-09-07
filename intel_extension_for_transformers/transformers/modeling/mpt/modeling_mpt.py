@@ -67,7 +67,8 @@ class MPTModel(MPTPreTrainedModel):
         if config.norm_type.lower() not in NORM_CLASS_REGISTRY.keys():
             norm_options = " | ".join(NORM_CLASS_REGISTRY.keys())
             raise NotImplementedError(
-                f"Requested norm type ({config.norm_type}) is not implemented within this repo (Options: {norm_options})."
+                f"Requested norm type ({config.norm_type}) is not implemented within this repo" +
+                 "(Options: {norm_options})."
             )
         norm_class = NORM_CLASS_REGISTRY[config.norm_type.lower()]
         self.embedding_fraction = config.embedding_fraction
@@ -88,7 +89,8 @@ class MPTModel(MPTPreTrainedModel):
         self.norm_f = norm_class(config.d_model, device=config.init_device)
         if config.init_device != "meta":
             print(
-                f'You are using config.init_device={config.init_device!r}, but you can also use config.init_device="meta" with Composer + FSDP for fast initialization.'
+                f'You are using config.init_device={config.init_device!r},' +
+                'but you can also use config.init_device="meta" with Composer + FSDP for fast initialization.'
             )
             self.apply(self.param_init_fn)
         self.is_causal = not self.prefix_lm
@@ -265,8 +267,9 @@ class MPTModel(MPTPreTrainedModel):
                 )
             elif self.attn_uses_sequence_id is False and sequence_id is not None:
                 warnings.warn(
-                    "MPT received non-None input for `sequence_id` but is configured with attn_uses_sequence_id=False. "
-                    + "This input will be ignored. If you want the model to use `sequence_id`, set attn_uses_sequence_id to True."
+                    "MPT received non-None input for `sequence_id` but is configured with attn_uses_sequence_id=False."
+                    + "This input will be ignored. If you want the model to use `sequence_id`," 
+                    + "set attn_uses_sequence_id to True."
                 )
         S = input_ids.size(1)
         assert (
@@ -281,14 +284,17 @@ class MPTModel(MPTPreTrainedModel):
                 if len(past_key_values) != self.config.n_layers:
                     raise ValueError(
                         f"past_key_values must provide a past_key_value for each attention "
-                        + f"layer in the network (len(past_key_values)={len(past_key_values)!r}; self.config.n_layers={self.config.n_layers!r})."
+                        + f"layer in the network (len(past_key_values)={len(past_key_values)!r};"
+                        + "self.config.n_layers={self.config.n_layers!r})."
                     )
                 past_position = past_key_values[0][0].size(1)
                 if self.attn_impl == "torch":
                     past_position = past_key_values[0][0].size(3)
             if S + past_position > self.config.max_seq_len:
                 raise ValueError(
-                    f"Cannot forward input with past sequence length {past_position} and current sequence length {S + 1}, this model only supports total sequence length <= {self.config.max_seq_len}."
+                    f"Cannot forward input with past sequence length {past_position}" +
+                     "and current sequence length {S + 1}," +
+                     " this model only supports total sequence length <= {self.config.max_seq_len}."
                 )
             pos = torch.arange(
                 past_position,
@@ -299,7 +305,7 @@ class MPTModel(MPTPreTrainedModel):
             if attention_mask is not None:
                 pos = torch.clamp(
                     pos
-                    - torch.cumsum((~attention_mask).to(torch.int32), dim=1)[
+                    - torch.cumsum((~attention_mask).to(torch.int32), dim=1)[    #disable pylint: E1130
                         :, past_position:
                     ],
                     min=0,
@@ -385,7 +391,8 @@ class MPTForCausalLM(MPTPreTrainedModel):
                     logit_scale = 1 / math.sqrt(config.d_model)
                 else:
                     raise ValueError(
-                        f"logit_scale={logit_scale!r} is not recognized as an option; use numeric value or 'inv_sqrt_d_model'."
+                        f"logit_scale={logit_scale!r} is not recognized as an option;" +
+                         "use numeric value or 'inv_sqrt_d_model'."
                     )
             self.logit_scale = logit_scale
 
@@ -443,7 +450,8 @@ class MPTForCausalLM(MPTPreTrainedModel):
         if self.logit_scale is not None:
             if self.logit_scale == 0:
                 warnings.warn(
-                    f"Multiplying logits by self.logit_scale={self.logit_scale!r}. This will produce uniform (uninformative) outputs."
+                    f"Multiplying logits by self.logit_scale={self.logit_scale!r}." +
+                     "This will produce uniform (uninformative) outputs."
                 )
             logits *= self.logit_scale
         loss = None
@@ -516,7 +524,8 @@ class MPTForCausalLM(MPTPreTrainedModel):
     def _reorder_cache(past_key_values, beam_idx):
         """Used by HuggingFace generate when using beam search with kv-caching.
 
-        See https://github.com/huggingface/transformers/blob/3ec7a47664ebe40c40f4b722f6bb1cd30c3821ec/src/transformers/models/gpt2/modeling_gpt2.py#L1122-L1133
+        See https://github.com/huggingface/transformers/blob/3ec7a47664ebe40c40f4b722f6bb1cd30c3821ec/src/
+        transformers/models/gpt2/modeling_gpt2.py#L1122-L1133
         for an example in transformers.
         """
         reordered_past = []

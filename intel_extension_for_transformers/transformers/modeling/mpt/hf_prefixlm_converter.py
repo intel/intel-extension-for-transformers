@@ -454,7 +454,7 @@ def _convert_bloom_causal_lm_to_prefix_lm(model: BloomForCausalLM) -> BloomForCa
     setattr(model.transformer, "forward", MethodType(forward, model.transformer))
     KeyValueT = Tuple[torch.Tensor, torch.Tensor]
 
-    def forward(
+    def forward(                # disable pylint: E0102
         self: BloomForCausalLM,
         input_ids: Optional[torch.LongTensor] = None,
         past_key_values: Optional[Tuple[KeyValueT, ...]] = None,
@@ -579,7 +579,7 @@ def _convert_opt_causal_lm_to_prefix_lm(model: OPTForCausalLM) -> OPTForCausalLM
                     device=inputs_embeds.device,
                 )
             else:
-                combined_attention_mask = _make_causal_mask_opt(
+                combined_attention_mask = _make_causal_mask_opt( #disable pylint: E1120
                     input_shape,
                     inputs_embeds.dtype,
                     past_key_values_length=past_key_values_length,

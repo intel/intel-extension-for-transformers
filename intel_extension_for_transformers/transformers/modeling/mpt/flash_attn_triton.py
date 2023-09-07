@@ -16,14 +16,16 @@
 # limitations under the License.
 
 """
-Copied from https://github.com/HazyResearch/flash-attention/blob/eff9fe6b8076df59d64d7a3f464696738a3c7c24/flash_attn/flash_attn_triton.py
+Copied from https://github.com/HazyResearch/flash-attention/blob/eff9fe6b8076df59d64d7a3f464696738a3c7c24/
+flash_attn/flash_attn_triton.py
 update imports to use 'triton_pre_mlir'
 
 *Experimental* implementation of FlashAttention in Triton.
 Tested with triton==2.0.0.dev20221202.
 Triton 2.0 has a new backend (MLIR) but seems like it doesn't yet work for head dimensions
 other than 64:
-https://github.com/openai/triton/blob/d376020f90002757eea3ea9475d4f7cfc2ec5ead/python/triton/ops/flash_attention.py#L207
+https://github.com/openai/triton/blob/d376020f90002757eea3ea9475d4f7cfc2ec5ead/python/triton/
+ops/flash_attention.py#L207
 We'll update this implementation with the new Triton backend once this is fixed.
 
 We use the FlashAttention implementation from Phil Tillet a starting point.
@@ -60,8 +62,8 @@ than CUDA forward + backward.
 """
 import math
 import torch
-import triton_pre_mlir as triton
-import triton_pre_mlir.language as tl
+import triton_pre_mlir as triton       # disable pylint: E0401
+import triton_pre_mlir.language as tl  # disable pylint: E0401
 
 
 @triton.heuristics(
