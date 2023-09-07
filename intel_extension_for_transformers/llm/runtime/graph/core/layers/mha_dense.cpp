@@ -1323,7 +1323,6 @@ class MHAStableInterface {
     const auto m_tiles = updiv(p.sl_q, M_TILE);
     const auto num_tasks = num_heads * m_tiles;
     parl.update(num_tasks, 1, 1, 1, cb.mNumThreads);
-#if CompileFP16()
 
 #pragma omp parallel
     {
@@ -1451,9 +1450,6 @@ class MHAStableInterface {
       }
     }
     return JblasSuccess;
-#else
-    return JblasNotSupport;
-#endif
   }
 
  protected:
@@ -1484,7 +1480,8 @@ void jblas_fusion_attn_forward<bf16, bf16, bf16, bf16>(const attn_fwd_args_t<bf1
       WeightPackBatchBf16Bf16NonTr,                          //
       ::ScaleWriteBackFp32Bf16>;
   static MHAInterface<GemmKernelBF16ExpSum, GemmKernelBF16> kernel;
-  kernel.compute(p);
+  [[maybe_unused]] const auto ret = kernel.compute(p);
+  assert(ret == JblasSuccess);
 }
 
 template <class GEMM_T, JBLAS_ISA ISA_T>
@@ -1508,10 +1505,9 @@ void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<f
         ::WeightBase,                                         //
         jblas::epilogue::gemm::AccumulatorWriteBackFp16Fp32>;
     static MHAStableInterface<GemmKernelFP16TrackMax, GemmKernelFP16> kernel;
-    kernel.compute(params);
-    return;
-  }
-  if (_cd->AMX_BF16()) {
+    [[maybe_unused]] const auto ret = kernel.compute(params);
+    assert(ret == JblasSuccess);
+  } else if (_cd->AMX_BF16()) {
     if (params.step_k_head_size == 1) {
       using GemmKernelFP32FP16BF16ExpSum = ::GemmLauncherPackWeightOff<  //
           JblasAMX_BF16,                                                 //
@@ -1526,8 +1522,8 @@ void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<f
           WeightPackBatchFp16Bf16NonTr,                                  //
           ::ScaleWriteBackFp32Fp32>;
       static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
-      kernel.compute(params);
-      return;
+      [[maybe_unused]] const auto ret = kernel.compute(params);
+      assert(ret == JblasSuccess);
     } else if (params.step_k_sl == 1) {
       using GemmKernelFP32FP16BF16ExpSum = ::GemmLauncherPackWeightOff<  //
           JblasAMX_BF16,                                                 //
@@ -1542,8 +1538,8 @@ void jblas_fusion_attn_forward<float, fp16, fp16, float>(const attn_fwd_args_t<f
           WeightPackBatchFp16Bf16NonTr,                                  //
           ::ScaleWriteBackFp32Fp32>;
       static MHAInterface<GemmKernelFP32FP16BF16ExpSum, GemmKernelBF16FP16FP32> kernel;
-      kernel.compute(params);
-      return;
+      [[maybe_unused]] const auto ret = kernel.compute(params);
+      assert(ret == JblasSuccess);
     }
   }
   assert(false);  // no suitbale launcher
@@ -1566,7 +1562,8 @@ void jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(const attn_fwd_args_t<fp1
         ::WeightBase,                                         //
         jblas::epilogue::gemm::AccumulatorWriteBackFp16>;
     static MHAStableInterface<GemmKernelFP16TrackMax, GemmKernelFP16> kernel;
-    kernel.compute(params);
+    [[maybe_unused]] const auto ret = kernel.compute(params);
+    assert(ret == JblasSuccess);
   } else {
     assert(0);
   }
@@ -1590,7 +1587,8 @@ void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(
         ::WeightForwardNTile48,                                //
         ::ScaleWriteBackS32S8>;                                //
     static MHAStableInterface<GemmKernelInt32TrackMax, GemmKernelInt32> mha;
-    mha.compute(params);
+    [[maybe_unused]] const auto ret = mha.compute(params);
+    assert(ret == JblasSuccess);
   } else if (_cd->AVX512_VNNI()) {
     // using GemmKernelInt32TrackMax = ::GemmLauncherBaseWeight<  //
     //     JblasAMX_INT8,                                         // TODO(Yi): s8s8 vnni kernel?
@@ -1605,7 +1603,8 @@ void jblas_fusion_attn_forward<int8_t, int8_t, int8_t, int8_t>(
     //     ::WeightForwardNTile48,                                          //
     //     ::ScaleWriteBackS32S8>;                                //
     // static MHAStableInterface<GemmKernelInt32TrackMax, GemmKernelInt32> mha;
-    // mha.compute(params);
+    // [[maybe_unused]] const auto ret = mha.compute(params);
+    // assert(ret == JblasSuccess);
     assert(0);
   } else {
     assert(0);
@@ -1629,7 +1628,8 @@ void jblas_fusion_attn_forward<float, bf16, bf16, float>(const attn_fwd_args_t<f
         ::WeightForwardNTile48,                               //
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>;     //
     static MHAStableInterface<GemmKernelBF16TrackMax, GemmKernelBF16> mha;
-    mha.compute(params);
+    [[maybe_unused]] const auto ret = mha.compute(params);
+    assert(ret == JblasSuccess);
   } else {
     assert(0);
   }
@@ -1747,9 +1747,12 @@ void jblas_fusion_attn_bf16_forward(const attn_bf16_fwd_args_t* params) {
 }
 
 bool jblas_fusion_attn_fp32_fp16_fp16_fp32_support(const attn_shape_t* params) {
+#if CompileBF16()
   GetCPUDevice();
   // TODO check K V's layout
   return _cd->AMX_BF16();
+#endif
+  return false;
 }
 void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp32_fwd_args_t* params) {
   return jblas_fusion_attn_forward(*reinterpret_cast<const attn_fwd_args_t<float, fp16, fp16, float>*>(params));
@@ -1757,9 +1760,12 @@ void jblas_fusion_attn_fp32_fp16_fp16_fp32_forward(const attn_fp32_fp16_fp16_fp3
 }
 
 bool blas_fusion_attn_fp16_support(const attn_shape_t* params) {
+#if CompileFP16()
   GetCPUDevice();
   // TODO check K V's layout
   return _cd->AMX_BF16();
+#endif
+  return false;
 }
 void jblas_fusion_attn_fp16_forward(const attn_fp16_fwd_args_t* params) {
   return jblas_fusion_attn_forward<fp16, fp16, fp16, fp16>(
@@ -1775,9 +1781,12 @@ size_t jblas_fusion_attn_workspace_size(const attn_shape_t* params) {
 }
 
 bool jblas_reordered_attn_fp32_support(const attn_shape_t* params) {
+#if CompileBF16()
   GetCPUDevice();
   // TODO check K V's layout
   return _cd->AMX_BF16();
+#endif
+  return false;
 }
 // kv cache sizes in bytes per layer per batch per beam for;
 void jblas_reordered_attn_fp32_batch_kv_info(const kv_shape_t* params, kv_cache_info_t* out) {
