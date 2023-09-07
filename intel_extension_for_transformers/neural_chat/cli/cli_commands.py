@@ -30,7 +30,7 @@ from ..pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from ..pipeline.plugins.audio.tts import TextToSpeech
 from ..pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 
-__all__ = ['BaseCommand', 'HelpCommand', 'TextChatExecutor', 'VoiceChatExecutor', 'FinetuingExecutor']
+__all__ = ['BaseCommand', 'HelpCommand', 'TextVoiceChatExecutor', 'FinetuingExecutor']
 
 neuralchat_commands = NeuralChatCommandDict()
 
@@ -221,7 +221,7 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
             print(res)
             return True
         except Exception as e:
-            print("TextChatExecutor Exception: ", e)
+            print("TextVoiceChatExecutor Exception: ", e)
             return False
 
     def __call__(
