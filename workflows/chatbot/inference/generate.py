@@ -397,7 +397,6 @@ def load_model(
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
                 config=config,
-                low_cpu_mem_usage=True,
                 torch_dtype=torch.float
                 )
         # calling _optimize_transformers for int8 path
