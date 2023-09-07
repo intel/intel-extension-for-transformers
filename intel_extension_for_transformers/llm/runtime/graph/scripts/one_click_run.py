@@ -27,10 +27,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     # quantization related arguments.
     parser.add_argument(
-        "--bits",
-        type=int,
-        help="number of bits to use for quantization (default: 4)",
-        default=4,
+        "--weight_dtype",
+        choices=["int4", "int8"],
+        help="weight data type, default: int4",
+        default="int4",
     )
     parser.add_argument(
         "--alg",
@@ -60,7 +60,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         "--prompt",
         type=str,
         help="prompt to start generation with (default: empty)",
-        default="",
+        default="Once upon a time, there existed a ",
     )
     parser.add_argument(
         "-n",
@@ -146,8 +146,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     quant_cmd = ["python", path]
     quant_cmd.extend(["--model_name", model_type])
     quant_cmd.extend(["--model_file", Path(work_path, "ne_{}_f32.bin".format(model_type))])
-    quant_cmd.extend(["--out_file", Path(work_path, "ne_{}_{}.bin".format(model_type, args.bits, args.block_size))])
-    quant_cmd.extend(["--bits", str(args.bits)])
+    quant_cmd.extend(["--out_file", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.block_size))])
+    quant_cmd.extend(["--weight_dtype", args.weight_dtype])
     quant_cmd.extend(["--block_size", str(args.block_size)])
     quant_cmd.extend(["--scale_dtype", args.scale_dtype])
     quant_cmd.extend(["--compute_type", args.compute_type])
@@ -155,10 +155,10 @@ def main(args_in: Optional[List[str]] = None) -> None:
     subprocess.run(quant_cmd)
 
     # 3. inference
-    path = Path(parent_path, "chat_llm.py")
+    path = Path(parent_path, "run_llm.py")
     infer_cmd = ["python", path]
     infer_cmd.extend(["--model_name", model_type])
-    infer_cmd.extend(["-m", Path(work_path, "ne_{}_{}.bin".format(model_type, args.bits, args.block_size))])
+    infer_cmd.extend(["-m", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.block_size))])
     infer_cmd.extend(["--prompt", args.prompt])
     infer_cmd.extend(["--n_predict",      str(args.n_predict)])
     infer_cmd.extend(["--threads",        str(args.threads)])
