@@ -230,7 +230,6 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                n_ctx * ne_element_size(kv_self.v) * n_embd,
                                ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block +
                                 i * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
-          ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
         }
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
