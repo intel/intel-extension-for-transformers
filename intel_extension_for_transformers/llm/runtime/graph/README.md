@@ -119,7 +119,7 @@ LLM running script args explanations:
 
 You can use the following script to run, including convertion, quantization and inference.
 ```
-python scripts/one_click_run.py EleutherAI/gpt-j-6b --weight_dtype int4 -p "She opened the door and see"
+python scripts/one_click_run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
 LLM one-click running script args explanations:
