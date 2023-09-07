@@ -1,13 +1,15 @@
 import argparse
 import os
+import sys
+sys.path.append('./')
 import time
 import json
 import re
 import torch
 from datasets import load_dataset
+import datasets
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -32,7 +34,15 @@ parser.add_argument("--approach", type=str, default='static',
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto",
                     help="Smooth quant parameter.")
-parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
+# ============gptq configs===============
+parser.add_argument("--gptq_actorder", action="store_true", help="Whether to apply the activation order GPTQ heuristic.")
+parser.add_argument('--gptq_percdamp', type=float, default=.01, help='Percent of the average Hessian diagonal to use for dampening.')
+parser.add_argument('--gptq_block_size', type=int, default=128, help='Block size. sub weight matrix size to run GPTQ.')
+parser.add_argument('--gptq_nsamples', type=int, default=128, help='Number of calibration data samples.')
+parser.add_argument('--gptq_use_max_length', action="store_true", help='Set all sequence length to be same length of args.gptq_pad_max_length')
+parser.add_argument('--gptq_pad_max_length', type=int, default=2048, help='Calibration dataset sequence max length, this should align with your model config, and your dataset builder args: args.pad_max_length')
+# =======================================
+parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', 'GPTQ'], 
                     help="Weight-only parameter.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument("--ipex", action="store_true", help="Use intel extension for pytorch.")
@@ -52,6 +62,7 @@ parser.add_argument("--weight_only_bits", type=int, default=8)
 parser.add_argument("--weight_only_group", type=int, default=-1)
 parser.add_argument("--weight_only_scheme", default="sym")
 parser.add_argument("--weight_only_sym_full_range", action="store_true")
+parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_or_path of peft model")
 
 args = parser.parse_args()
 if args.ipex:
@@ -134,6 +145,7 @@ class Evaluator:
         print("Latency: ", latency)
         return acc
 
+
 def get_user_model():
     from transformers import AutoModelForCausalLM, AutoModel, AutoTokenizer
     torchscript = False
@@ -185,16 +197,24 @@ def get_user_model():
         )
         tokenizer = AutoTokenizer.from_pretrained(args.model)
 
+    # Set model's seq_len when GPTQ calibration is enabled.
+    if args.weight_only_algo == 'GPTQ':
+        user_model.seqlen = args.gptq_pad_max_length
+
+    if args.peft_model_id is not None:
+        from peft import PeftModel
+        user_model = PeftModel.from_pretrained(user_model, args.peft_model_id)
+
     # to channels last
     user_model = user_model.to(memory_format=torch.channels_last)
     user_model.eval()
     return user_model, tokenizer
 
-
 if args.quantize:
     # dataset
     user_model, tokenizer = get_user_model()
     calib_dataset = load_dataset(args.dataset, split="train")
+    # calib_dataset = datasets.load_from_disk('/your/local/dataset/pile-10k/') # use this if trouble with connecting to HF
     calib_dataset = calib_dataset.shuffle(seed=42)
     calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
     calib_dataloader = DataLoader(
@@ -247,6 +267,30 @@ if args.quantize:
             op_type_dict=op_type_dict,
             recipes=recipes,
         )
+    elif args.weight_only_algo == "GPTQ":
+        recipes = {
+            'gptq_args': {
+                'percdamp': args.gptq_percdamp, 
+                'act_order':args.gptq_actorder, 
+                'block_size': args.gptq_block_size, 
+                'nsamples': args.gptq_nsamples, 
+                'use_max_length': args.gptq_use_max_length
+            }
+        }
+        conf = PostTrainingQuantConfig(
+            backend="ipex" if args.ipex else "default",
+            approach=args.approach,
+            excluded_precisions=excluded_precisions,
+            op_type_dict=op_type_dict,
+            op_name_dict={
+                '.*lm_head':{ 	# re.match
+                    "weight": {
+                        'dtype': 'fp32'
+                    },
+                },
+            },
+            recipes=recipes,
+        )
     else:
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
@@ -256,6 +300,9 @@ if args.quantize:
             recipes=recipes,
         )
 
+    # when GPTQ is enabled: use assistive functions to modify calib_dataloader and calib_func
+    if args.weight_only_algo == "GPTQ":
+        calib_func = None
     if args.weight_only_algo == 'TEQ':
         # set calib_func=None, use default training func as calib_func
         calib_func = None
@@ -292,7 +339,7 @@ else:
 
 if args.accuracy:
     user_model.eval()
-    from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',

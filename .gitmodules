@@ -1,95 +1,81 @@
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/yaml-cpp"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/yaml-cpp
-	url = https://github.com/jbeder/yaml-cpp.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/pybind11"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/pybind11
-	url = https://github.com/pybind/pybind11.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/googletest"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/googletest
-	url = https://github.com/google/googletest.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/glog"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/glog
-	url = https://github.com/google/glog.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/gflags"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/gflags
-	url = https://github.com/gflags/gflags.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/jemalloc"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/jemalloc
-	url = https://github.com/jemalloc/jemalloc.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/xbyak"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/xbyak
+[submodule "intel_extension_for_transformers/llm/library/xbyak"]
+	path = intel_extension_for_transformers/llm/library/xbyak
 	url = https://github.com/herumi/xbyak.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/assert"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/assert
-	url = https://github.com/boostorg/assert.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/core"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/core
-	url = https://github.com/boostorg/core.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/move"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/move
-	url = https://github.com/boostorg/move.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/config"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/config
-	url = https://github.com/boostorg/config.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/container"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/container
-	url = https://github.com/boostorg/container.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/intrusive"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/intrusive
-	url = https://github.com/boostorg/intrusive.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/static_assert"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/static_assert
-	url = https://github.com/boostorg/static_assert.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/type_traits"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/type_traits
-	url = https://github.com/boostorg/type_traits.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/interprocess"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/interprocess
-	url = https://github.com/boostorg/interprocess.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/unordered"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/unordered
-	url = https://github.com/boostorg/unordered.git
-	branch = 1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/container_hash"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/container_hash
-	url = https://github.com/boostorg/container_hash.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/preprocessor"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/preprocessor
-	url = https://github.com/boostorg/preprocessor.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/throw_exception"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/throw_exception
-	url = https://github.com/boostorg/throw_exception.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/tuple"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/tuple
-	url = https://github.com/boostorg/tuple.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/predef"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/predef
-	url = https://github.com/boostorg/predef.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/mp11"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/mp11
-	url = https://github.com/boostorg/mp11.git
-	branch = boost-1.80.0
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/winapi"]
-	branch = boost-1.80.0
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/boost/libs/winapi
-	url = https://github.com/boostorg/winapi.git
-[submodule "intel_extension_for_transformers/backends/neural_engine/third_party/cereal"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/cereal
-	url = https://github.com/USCiLab/cereal
-[submodule "oneDNN"]
-	path = intel_extension_for_transformers/backends/neural_engine/third_party/oneDNN
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/oneDNN"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/oneDNN
 	url = https://github.com/oneapi-src/oneDNN.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/yaml-cpp"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/pybind11"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/googletest"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/googletest
+	url = https://github.com/google/googletest.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/glog"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/glog
+	url = https://github.com/google/glog.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/gflags"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/gflags
+	url = https://github.com/gflags/gflags.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/jemalloc"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/jemalloc
+	url = https://github.com/jemalloc/jemalloc.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/cereal"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/cereal
+	url = https://github.com/USCiLab/cereal
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/assert"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/assert
+	url = https://github.com/boostorg/assert.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/core"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/core
+	url = https://github.com/boostorg/core.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/move"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/move
+	url = https://github.com/boostorg/move.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/config"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/config
+	url = https://github.com/boostorg/config.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/container"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/container
+	url = https://github.com/boostorg/container.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/intrusive"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/intrusive
+	url = https://github.com/boostorg/intrusive.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/static_assert"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/static_assert
+	url = https://github.com/boostorg/static_assert.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/type_traits"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/type_traits
+	url = https://github.com/boostorg/type_traits.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/interprocess"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/interprocess
+	url = https://github.com/boostorg/interprocess.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/unordered"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/unordered
+	url = https://github.com/boostorg/unordered.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/container_hash"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/container_hash
+	url = https://github.com/boostorg/container_hash.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/preprocessor"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/preprocessor
+	url = https://github.com/boostorg/preprocessor.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/throw_exception"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/throw_exception
+	url = https://github.com/boostorg/throw_exception.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/tuple"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/tuple
+	url = https://github.com/boostorg/tuple.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/predef"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/predef
+	url = https://github.com/boostorg/predef.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/mp11"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/mp11
+	url = https://github.com/boostorg/mp11.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/boost/libs/winapi"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/boost/libs/winapi
+	url = https://github.com/boostorg/winapi.git
+[submodule "intel_extension_for_transformers/llm/runtime/third_party/xbyak"]
+	path = intel_extension_for_transformers/llm/runtime/deprecated/third_party/xbyak
+	url = https://github.com/herumi/xbyak.git

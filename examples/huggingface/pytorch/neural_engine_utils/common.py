@@ -19,8 +19,8 @@ import os
 import logging
 import sys
 import numpy as np
-from intel_extension_for_transformers.backends.neural_engine.compile import compile, autocast
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 from tqdm import tqdm
 import time
 

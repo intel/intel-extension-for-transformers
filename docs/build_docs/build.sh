@@ -86,6 +86,12 @@ rm -rf ./source/build_docs
 #cp -f "../README.md" "./source/docs/Welcome.md"
 cp -f "../SECURITY.md" "./source/docs/SECURITY.md"
 
+all_md_files=`find ./source/docs -name "*.md"`
+for md_file in ${all_md_files}
+do
+  sed -i 's/.md/.html/g' ${md_file}
+done
+
 
 sed -i 's/docs\/imgs/.\/imgs/g' ./source/docs/Welcome.md
 sed -i 's/.md/.html/g; s/.\/docs\/source\//.\/docs/g' ./source/docs/Welcome.md
@@ -125,8 +131,8 @@ if [[ ${UPDATE_VERSION_FOLDER} -eq 1 ]]; then
   cp -r ${SRC_FOLDER}/* ${DST_FOLDER}
   python update_html.py ${DST_FOLDER} ${VERSION}
   cp -r ./source/docs/imgs ${DST_FOLDER}/docs
-  cp -r ./source/docs/intel_extension_for_transformers/backends/neural_engine/docs/imgs ${DST_FOLDER}/docs/intel_extension_for_transformers/backends/neural_engine/docs
-  cp -r ./source/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/imgs ${DST_FOLDER}/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs
+  cp -r ./source/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs/imgs ${DST_FOLDER}/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs
+  cp -r ./source/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/imgs ${DST_FOLDER}/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs
   cp source/_static/index.html ${DST_FOLDER}
 else
   echo "skip to create ${DST_FOLDER}"
@@ -139,8 +145,8 @@ if [[ ${UPDATE_LATEST_FOLDER} -eq 1 ]]; then
   cp -r ${SRC_FOLDER}/* ${LATEST_FOLDER}
   python update_html.py ${LATEST_FOLDER} ${VERSION}
   cp -r ./source/docs/imgs ${LATEST_FOLDER}/docs
-  cp -r ./source/docs/intel_extension_for_transformers/backends/neural_engine/docs/imgs ${LATEST_FOLDER}/docs/intel_extension_for_transformers/backends/neural_engine/docs
-  cp -r ./source/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs/imgs ${LATEST_FOLDER}/docs/intel_extension_for_transformers/backends/neural_engine/kernels/docs
+  cp -r ./source/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs/imgs ${LATEST_FOLDER}/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs
+  cp -r ./source/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/imgs ${LATEST_FOLDER}/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs
   cp source/_static/index.html ${LATEST_FOLDER}
 else
   echo "skip to create ${LATEST_FOLDER}"

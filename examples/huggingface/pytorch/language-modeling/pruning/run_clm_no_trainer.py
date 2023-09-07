@@ -59,7 +59,7 @@ from transformers import (
 )
 from transformers.utils import check_min_version, get_full_repo_name, send_example_telemetry
 from transformers.utils.versions import require_version
-from intel_extension_for_transformers.optimization.pruner import (WeightPruningConfig,
+from intel_extension_for_transformers.transformers.pruner import (WeightPruningConfig,
                                                                   Pruning,
                                                                   model_slim,
                                                                   parse_auto_slim_config)

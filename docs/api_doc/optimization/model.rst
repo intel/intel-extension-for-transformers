@@ -3,4 +3,4 @@ Model
 
 .. autoapisummary::
 
-   intel_extension_for_transformers.optimization.model
+   intel_extension_for_transformers.transformers.modeling

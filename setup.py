@@ -5,13 +5,8 @@ import sys
 import time
 from io import open
 from pathlib import Path
-
-from cmake import CMAKE_BIN_DIR
-from cpuinfo import get_cpu_info
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
-
-cpu_flags = get_cpu_info()['flags']
 
 
 def check_env_flag(name: str, default: bool = False) -> bool:
@@ -21,23 +16,32 @@ def check_env_flag(name: str, default: bool = False) -> bool:
         return os.getenv(name, "").upper() in ["ON", "1", "TRUE", "YES", "Y"]
 
 
-BACKENDS_ONLY = check_env_flag("BACKENDS_ONLY", False)
+SKIP_RUNTIME = check_env_flag("SKIP_RUNTIME", False)
+""" Whether to only packaging optimization """
+
+RUNTIME_ONLY = check_env_flag("RUNTIME_ONLY", False)
 """ Whether to only packaging backends """
 
-CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
-""" Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
+if not SKIP_RUNTIME:
+    from cmake import CMAKE_BIN_DIR
+    from cpuinfo import get_cpu_info
+    cpu_flags = get_cpu_info()['flags']
 
-CMAKE_GENERATOR = os.environ.get("CMAKE_GENERATOR", "Ninja")
-""" The CMake generator to be used; default to Ninja """
 
-CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
-""" Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
+    CMAKE_BUILD_TYPE = os.environ.get("CMAKE_BUILD_TYPE", "Release")
+    """ Whether to build with -O0 / -O3 / -g; could be one of Debug / Release / RelWithDebInfo; default to Release """
 
-CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "")
-""" Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
+    CMAKE_GENERATOR = os.environ.get("CMAKE_GENERATOR", "Ninja")
+    """ The CMake generator to be used; default to Ninja """
 
-NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
-""" Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF """
+    CMAKE_ARGS = os.environ.get("CMAKE_ARGS", "")
+    """ Adding CMake arguments set as environment variable (needed e.g. to build for GPU support on conda-forge) """
+
+    CMAKE_BUILD_PARALLEL_LEVEL = os.environ.get("CMAKE_BUILD_PARALLEL_LEVEL", "")
+    """ Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level across all generators """
+
+    NE_WITH_AVX2 = check_env_flag("NE_WITH_AVX2", 'avx512f' not in cpu_flags)
+    """ Whether to limit the max ISA used to AVX2; otherwise AVX512 will be used; set to ON/OFF """
 
 cwd = os.path.dirname(os.path.abspath(__file__))
 
@@ -46,16 +50,8 @@ install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
 opt_install_requires_list = ['neural_compressor', 'transformers']
 project_name = "intel_extension_for_transformers"
 
-if BACKENDS_ONLY:
-    project_name += "_backends"
-    packages_list = find_packages(include=[
-        "intel_extension_for_transformers",
-        "intel_extension_for_transformers.backends",
-        "intel_extension_for_transformers.backends.*",
-    ])
-else:
-    packages_list = find_packages()
-    install_requires_list.extend(opt_install_requires_list)
+packages_list = find_packages()
+install_requires_list.extend(opt_install_requires_list)
 
 
 class CMakeExtension(Extension):
@@ -242,7 +238,11 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    check_submodules()
+    if not SKIP_RUNTIME:
+        check_submodules()
+        ext_modules=[CMakeExtension(
+            "intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/")]
+        cmdclass={'build_ext': CMakeBuild}
 
     setup(
         name=project_name,
@@ -254,20 +254,22 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/intel-extension-for-transformers",
-        ext_modules=[CMakeExtension(
-            "intel_extension_for_transformers.neural_engine_py", 'intel_extension_for_transformers/backends/neural_engine/')],
-        packages=packages_list,
+        ext_modules = ext_modules if not SKIP_RUNTIME else [],
+        packages=find_packages(),
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
         include_package_data=False,
         package_data={
             '': ['*.yaml'],
         },
-        cmdclass={'build_ext': CMakeBuild},
+        cmdclass = cmdclass if not SKIP_RUNTIME else {},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [
-                'neural_engine = intel_extension_for_transformers.backends.neural_engine:neural_engine_bin',
+                'neural_engine = intel_extension_for_transformers.llm.runtime.deprecated:neural_engine_bin',
+                'neuralchat = intel_extension_for_transformers.neural_chat.cli.cli_commands:neuralchat_execute',
+                'neuralchat_server = intel_extension_for_transformers.neural_chat.server.server_commands:neuralchat_server_execute',
+                'neuralchat_client = intel_extension_for_transformers.neural_chat.server.server_commands:neuralchat_client_execute'
             ]
         },
         python_requires='>=3.7.0',

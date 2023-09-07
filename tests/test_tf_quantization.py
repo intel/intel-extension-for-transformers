@@ -1,16 +1,16 @@
 import numpy as np
 import os
 import shutil
-import tensorflow as tf
+#import tensorflow as tf
 import unittest
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     metrics,
     objectives,
     QuantizationConfig,
     TFOptimization
 )
-# from intel_extension_for_transformers.optimization import metrics, objectives
+# from intel_extension_for_transformers.transformers import metrics, objectives
 from transformers import (
     AutoTokenizer,
     DefaultDataCollator,
@@ -88,7 +88,7 @@ class TestTFQuantization(unittest.TestCase):
         )
         quantized_model = self.optimizer.quantize(quant_config=quantization_config,
             train_dataset=self.dummy_dataset, eval_dataset=self.dummy_dataset)
-        loaded_model = tf.saved_model.load(args[0].output_dir)
+        #loaded_model = tf.saved_model.load(args[0].output_dir)
 
         def eval_func(model):
             return 1

@@ -2,8 +2,8 @@ import logging
 import os
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
-from intel_extension_for_transformers.optimization import OptimizedModel
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import OptimizedModel
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from argparse import ArgumentParser
 from transformers import (
     AutoConfig,

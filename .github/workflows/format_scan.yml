@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - intel_extension_for_transformers/**
+      - neural_chat/**
+      - workflows/**
       - setup.py
       - .github/workflows/format_scan.yml
       - .github/workflows/script/formatScan/**

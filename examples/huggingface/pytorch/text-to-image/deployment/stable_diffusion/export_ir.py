@@ -16,7 +16,7 @@
 # limitations under the License.
 
 import argparse
-from intel_extension_for_transformers.backends.neural_engine.compile import compile, autocast
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
 
 text_encoder_pattern_config = {
     'pattern_switch': {
