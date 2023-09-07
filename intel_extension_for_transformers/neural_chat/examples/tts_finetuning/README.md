@@ -28,4 +28,4 @@ Then you can enter your text in the console and press ENTER on your keyboard to 
 
 Here is one example output audio with the input text "Hello, I am peppa pig. Nice to meet you.":
 
-<audio controls="" preload="none"><source src="output_sample.wav"></audio>
+https://github.com/intel/intel-extension-for-transformers/assets/39623753/2da220ab-3a06-4cc9-9757-8b9b84ba1061
