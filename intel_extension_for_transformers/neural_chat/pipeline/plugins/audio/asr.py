@@ -21,6 +21,7 @@ from datasets import load_dataset, Audio, Dataset
 import time
 import contextlib
 from pydub import AudioSegment
+import numpy as np
 
 from ....plugins import register_plugin
 
@@ -36,6 +37,18 @@ class AudioSpeechRecognition():
         if self.bf16:
             import intel_extension_for_pytorch as ipex
             self.model = ipex.optimize(self.model, dtype=torch.bfloat16)
+
+    def _audiosegment_to_librosawav(self, audiosegment):
+        # https://github.com/jiaaro/pydub/blob/master/API.markdown#audiosegmentget_array_of_samples
+        # This way is faster than librosa.load or HuggingFace Dataset wrapper
+        channel_sounds = audiosegment.split_to_mono()[:1]   # only select the first channel
+        samples = [s.get_array_of_samples() for s in channel_sounds]
+
+        fp_arr = np.array(samples).T.astype(np.float32)
+        fp_arr /= np.iinfo(samples[0].typecode).max
+        fp_arr = fp_arr.reshape(-1)
+
+        return fp_arr
 
     def _convert_audio_type(self, audio_path):
         print("[ASR WARNING] Recommend to use mp3 or wav input audio type!")
@@ -53,8 +66,15 @@ class AudioSpeechRecognition():
             audio_path = self._convert_audio_type(audio_path)
         elif audio_path.split(".")[-1] not in ['mp3', 'wav']:
             raise Exception("[ASR ERROR] Audio format not supported!")
-        audio_dataset = Dataset.from_dict({"audio": [audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
-        waveform = audio_dataset[0]["audio"]['array']
+
+        try:
+            waveform = AudioSegment.from_file(audio_path).set_frame_rate(16000)
+            waveform = self._audiosegment_to_librosawav(waveform)
+        except Exception as e:
+            print(f"[ASR] audiosegment to librosa wave fail: {e}")
+            audio_dataset = Dataset.from_dict({"audio": [audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
+            waveform = audio_dataset[0]["audio"]['array']
+
         # pylint: disable=E1101
         inputs = self.processor.feature_extractor(waveform, return_tensors="pt",
                         sampling_rate=16_000).input_features.to(self.device)

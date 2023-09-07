@@ -125,26 +125,59 @@ class Silu {
     _T* C;
     int ldc;
   };
+  using SiluKernel = jblas::epilogue::gemm::CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, SWISH>;
 
   JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
-    auto COffset = M_offset * _param.ldc + N_offset;
-    auto cptr = _param.C + COffset;
-#if __AVX512F__
-    if (jblas::utils::isa_base<ISA_T>::avx512f) {
-      // TODO
-    }
-#endif
-    for (int i = 0; i < M; i++) {
-      for (int j = 0; j < N; j++) {
-        cptr[i * _param.ldc + j] = ne_silu_f32(cacheptr[i * cachestep + j]);
-      }
-    }
+    float alpha = -1.f;
+    typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
+    static SiluKernel ker;
+    auto ret = ker.forward(cacheptr, cachestep, M_offset, N_offset, M, N, param);
     return JblasSuccess;
   }
 };
 template <JBLAS_ISA ISA_T>
 using SiluFp32 = Silu<ISA_T, float>;
+
+template <JBLAS_ISA ISA_T>
+class DequantSiluFp32 : protected jblas::epilogue::gemm::DequantInt32ToFp32<ISA_T> {
+ public:
+  using Parent = jblas::epilogue::gemm::DequantInt32ToFp32<ISA_T>;
+  using Param = typename Parent::Param;
+  using SiluKernel = jblas::epilogue::gemm::CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, SWISH>;
+
+  JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param) {
+    float alpha = -1.f;
+    typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
+    Parent::forward(cacheptr, cachestep, M_offset, N_offset, M, N, _param);
+    static SiluKernel ker;
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto cptr = _param.C + COffset;
+    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
+    return JblasSuccess;
+  }
+};
+
+template <JBLAS_ISA ISA_T>
+class ZpDequantSiluFp32 : protected jblas::epilogue::gemm::ZpDequantInt32ToFp32<ISA_T> {
+ public:
+  using Parent = jblas::epilogue::gemm::ZpDequantInt32ToFp32<ISA_T>;
+  using Param = typename Parent::Param;
+  using SiluKernel = jblas::epilogue::gemm::CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, SWISH>;
+
+  JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
+                     const int N, const Param& _param) {
+    float alpha = -1.f;
+    typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
+    Parent::forward(cacheptr, cachestep, M_offset, N_offset, M, N, _param);
+    static SiluKernel ker;
+    auto COffset = M_offset * _param.ldc + N_offset;
+    auto cptr = _param.C + COffset;
+    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
+    return JblasSuccess;
+  }
+};
 
 template <JBLAS_ISA ISA_T, typename _T>
 class Gelu {
@@ -156,16 +189,10 @@ class Gelu {
 
   JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
-    auto COffset = M_offset * _param.ldc + N_offset;
-    auto cptr = _param.C + COffset;
-    // for (int i = 0; i < M; i++) {
-    //   ne_vec_gelu_f32(N, cptr + i * _param.ldc, cacheptr + i * cachestep);
-    // }
-    for (int i = 0; i < M; i++) {
-      for (int j = 0; j < N; j++) {
-        cptr[i * _param.ldc + j] = ne_gelu_f32(cacheptr[i * cachestep + j]);
-      }
-    }
+    using GeluKernel = jblas::epilogue::gemm::AccumulatorWriteBackWithGeluFp32<ISA_T>;
+    static GeluKernel ker;
+    typename GeluKernel::Param param{_param.C, _param.ldc, NULL};
+    auto ret = ker.forward(cacheptr, cachestep, M_offset, N_offset, M, N, param);
     return JblasSuccess;
   }
 };
@@ -274,7 +301,7 @@ class Add_Gelu {
       // ne_vec_gelu_f32(N, cptr + i * _param.ldc, cptr + i * _param.ldc);
     }
     using GeluKernel = jblas::epilogue::gemm::AccumulatorWriteBackWithGeluFp32<ISA_T>;
-    GeluKernel ker;
+    static GeluKernel ker;
     typename GeluKernel::Param param{_param.C, _param.ldc, NULL};
     auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
     return ret;
@@ -367,6 +394,98 @@ class FFNFusedInterface {
     Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
     _paral.update(_param.Seq, _param.FMid, _param.Fin, bptr->mBlockSize, cb.mNumThreads);
     _paral2.update(_param.Seq, _param.FOut, _param.FMid, bptr->mBlockSize, cb.mNumThreads);
+
+    omp_set_num_threads(cb.mNumThreads);
+#pragma omp parallel
+    {
+      int tidx = omp_get_thread_num();
+      mLauncher.mProA.launch(_param.paramA, tidx, paraA);
+#pragma omp barrier
+      {
+        int colidx, rowidx, rowsize, colsize;
+        _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+        if (rowsize > 0 && colsize > 0) {
+          ActConfig _actconfig{
+              rowidx, colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(), cb.mL2Cache};
+          Config _config{rowidx,     colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
+                         cb.mL2Cache};
+          mActLauncher.launch(
+              _actconfig, {_param.Seq, _param.FMid, _param.Fin, _param.paramA, _param.paramW1, _param.param1, NULL});
+          mLauncher.launch(_config,
+                           {_param.Seq, _param.FMid, _param.Fin, _param.paramA, _param.paramW3, _param.param3, NULL});
+          int row_r = jblas::utils::remainsize(rowidx, _paral.mRows, rowsize);
+          int col_r = jblas::utils::remainsize(colidx, _paral.mCols, colsize);
+
+          // TODO(Yu): replace the naive inplace eltwise mul
+          for (int i = 0; i < row_r; i++) {
+            for (int j = 0; j < col_r; j++) {
+              _param.param1.C[(rowidx + i) * _param.param1.ldc + colidx + j] *=
+                  _param.param3.C[(rowidx + i) * _param.param3.ldc + colidx + j];
+            }
+          }
+        }
+      }
+#pragma omp barrier
+      mLauncher.mProA.launch(_param.paramA2, tidx, paraA2);
+#pragma omp barrier
+      {
+        int colidx, rowidx, rowsize, colsize;
+        _paral2.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+        if (rowsize > 0 && colsize > 0) {
+          Config _config{
+              rowidx,     colidx, rowsize, colsize, _paral2.getMStep(), _paral2.getNStep(), _paral2.getKStep(),
+              cb.mL2Cache};
+          mLauncher.launch(_config,
+                           {_param.Seq, _param.FOut, _param.FMid, _param.paramA2, _param.paramW2, _param.param2, NULL});
+        }
+      }
+    }
+    return JblasSuccess;
+  }
+
+ protected:
+  _Launcher_T mLauncher;
+  _SiluLauncher_T mActLauncher;
+};
+
+template <class _SiluLauncher_T, class _Launcher_T>
+class FFNFusedInterfacePerN {
+ public:
+  static_assert(std::is_same<typename _Launcher_T::AParam, typename _SiluLauncher_T::AParam>::value,
+                "Prologue A param of the 2 Launcher (w/wo SILU) should be the same.");
+  struct Arguments {
+    const int Seq, Fin, FMid, FOut;
+    const typename _Launcher_T::AParam paramA;
+    const typename _Launcher_T::AParam paramA2;
+    const typename _SiluLauncher_T::BParam paramW1;
+    const typename _Launcher_T::BParam paramW2, paramW3;
+    const typename _SiluLauncher_T::EpiParam param1;
+    const typename _Launcher_T::EpiParam param2, param3;
+  };
+  using Config = typename _Launcher_T::ParallelConfig;
+  using ActConfig = typename _SiluLauncher_T::ParallelConfig;
+  using ActivationType = typename _Launcher_T::PrologueA;
+  using WeightType = typename _Launcher_T::PrologueB;
+  using GemmCore = typename _Launcher_T::GemmCore;
+  using LArguments = typename _Launcher_T::Param;
+  using CParam = typename _Launcher_T::EpiParam;
+  using Parallel = jblas::utils::parallel::Parallel2DGemm<GemmCore>;
+  ActivationType* getActivationPtr() { return &mLauncher.mProA; }
+  // forward=packB+compute
+  JBLAS_CODE compute(const Arguments& _param) {
+    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    if (bptr == nullptr) {
+      return JblasInvalidParam;
+    }
+    // dynamic quantization: Seq*Fin
+    auto cb = jblas::utils::CpuBase();
+    auto paraA = mLauncher.mProA.createParallel(_param.Seq, _param.Fin);
+    auto paraA2 = mLauncher.mProA.createParallel(_param.Seq, _param.FMid);
+
+    Parallel _paral = Parallel();   // w1&w3 from Seq* Fin=>FMid
+    Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
+    _paral.update(_param.Seq, _param.FMid, _param.Fin, cb.mNumThreads);
+    _paral2.update(_param.Seq, _param.FOut, _param.FMid, cb.mNumThreads);
 
     omp_set_num_threads(cb.mNumThreads);
 #pragma omp parallel
@@ -665,6 +784,8 @@ using GeluGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::
 using AddGeluGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::AddFp32>;
 
+using GemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, jblas::epilogue::gemm::ZpDequantInt32ToFp32>;
+using SiluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantSiluFp32>;
 using AddGeluGemmDynamicSPerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
 using AddGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantAddFp32>;
 
@@ -693,6 +814,8 @@ using GeluGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::
 using AddGeluGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::AddFp32>;
 
+using GemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, jblas::epilogue::gemm::DequantInt32ToFp32>;
+using SiluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::DequantSiluFp32>;
 using AddGeluGemmDynamicSPerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::Dequant_Add_GeluFp32>;
 using AddGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::DequantAddFp32>;
 }  // namespace amx_int8

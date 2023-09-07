@@ -347,7 +347,7 @@ def main():
         parser = HfArgumentParser(
             (ModelArguments, DataArguments, GaudiTrainingArguments, FinetuneArguments)
         )
-    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+    if len(sys.argv) == 2 and sys.argv[1].endswith(".json") and os.path.exists(sys.argv[1]):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
         model_args, data_args, training_args, finetune_args = parser.parse_json_file(
@@ -683,8 +683,7 @@ def main():
 
         if finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model.eval()
-            from intel_extension_for_transformers.evaluation.lm_eval import evaluate
-
+            from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():

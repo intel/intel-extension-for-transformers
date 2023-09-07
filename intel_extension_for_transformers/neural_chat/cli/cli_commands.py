@@ -20,7 +20,7 @@ import argparse
 from typing import List
 from ..utils.command import NeuralChatCommandDict
 from .base_executor import BaseCommandExecutor
-from ..config import PipelineConfig, FinetuningConfig, GenerationConfig
+from ..config import PipelineConfig, TextGenerationFinetuningConfig, GenerationConfig
 from ..config import ModelArguments, DataArguments, FinetuningArguments
 from ..plugins import plugins
 from transformers import TrainingArguments
@@ -311,7 +311,7 @@ class FinetuingExecutor(BaseCommandExecutor):
         training_args = TrainingArguments(output_dir="./output")
         finetune_args= FinetuningArguments()
 
-        self.finetuneCfg = FinetuningConfig(model_args, data_args, training_args, finetune_args)
+        self.finetuneCfg = TextGenerationFinetuningConfig(model_args, data_args, training_args, finetune_args)
         try:
             res = self()
             print(res)
@@ -336,4 +336,4 @@ for com, info in specific_commands.items():
     command_register(
         name='neuralchat.{}'.format(com),
         description=info[0],
-        cls='neural_chat.cli.cli_commands.{}'.format(info[1]))
+        cls='intel_extension_for_transformers.neural_chat.cli.cli_commands.{}'.format(info[1]))

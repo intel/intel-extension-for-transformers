@@ -31,8 +31,12 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
+#include "core/ne_jblas.h"
+#include "core/layers/mha_dense.h"
+#include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
+
 
 // evaluate the transformer
 //
@@ -53,6 +57,8 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
+
+  const int batch_size = lctx.batch_size;
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -85,6 +91,9 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   // otherwise, the threads are spin-lock waiting for the BLAS calls and are degrading the performance
   ne_cgraph gf = {};
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
+
+  const bool kv_mem_jblas = kv_self.k->type == NE_TYPE_JBLAS;
+  NE_ASSERT(("jblas managed kv-cache is not yet supported; use `--memory-f16 / --memory-f32` instead", kv_mem_jblas));
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
@@ -199,9 +208,16 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
 
     // FFN (pre_layer_norm output)
     {
+      // FFN FUSION
+      if (jblas_fusion_FFN_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
+                                                 N * batch_size, cur->ne[0], model.layers[il].ffn[0]->ne[1],
+                                                 model.layers[il].ffn[1]->ne[1])) {
+      cur = ne_ffn_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1],  inpFF);
+    } else {
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], inpFF);
       cur = ne_gelu(ctx0, cur);
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
+    }
     }
 
     cur = ne_add(ctx0, cur, attn_out);

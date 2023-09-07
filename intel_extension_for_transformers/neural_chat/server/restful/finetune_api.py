@@ -26,7 +26,7 @@ from intel_extension_for_transformers.neural_chat.config import (
     ModelArguments,
     DataArguments,
     FinetuningArguments,
-    FinetuningConfig,
+    TextGenerationFinetuningConfig,
 )
 from intel_extension_for_transformers.neural_chat.server.restful.request import FinetuneRequest
 
@@ -66,7 +66,7 @@ class FinetuneAPIRouter(APIRouter):
                 overwrite_output_dir=request.overwrite_output_dir
             )
             finetune_args = FinetuningArguments(peft=request.peft)
-            finetune_cfg = FinetuningConfig(
+            finetune_cfg = TextGenerationFinetuningConfig(
                 model_args=model_args,
                 data_args=data_args,
                 training_args=training_args,

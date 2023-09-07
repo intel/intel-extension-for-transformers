@@ -1,0 +1,6 @@
+1. put below env variable in '.env' file under action runner directory.
+ACTIONS_RUNNER_HOOK_JOB_STARTED=<absolute path>/hpu-check/run_check.sh
+
+2. restart action runner.
+
+3. run_check.sh will be executed first before each workflow job.

@@ -1,4 +1,4 @@
-import os
+import os, re
 from langchain.llms import HuggingFacePipeline
 from langchain.prompts import PromptTemplate
 from langchain.memory import ConversationBufferWindowMemory
@@ -45,6 +45,10 @@ def inference(args, query, memory):
     print("inference cost {} seconds.".format(end_time - start_time))
     return result, memory
 
+def is_safe_input(input_text):
+    # Define a regular expression pattern to match safe input
+    safe_pattern = r'^[a-zA-Z0-9\s,.!?]+$'
+    return re.match(safe_pattern, input_text) is not None
 
 if __name__ == "__main__":
 
@@ -63,7 +67,7 @@ if __name__ == "__main__":
         "max_length": args.max_length,
         "device_map": "auto",
         "repetition_penalty": args.penalty,
-    }
+    })
     if args.memory_type == "buffer_window":
         memory = ConversationBufferWindowMemory(memory_key="chat_history", k=3)
     elif args.memory_type == "buffer":
@@ -74,8 +78,19 @@ if __name__ == "__main__":
 
     while True:
         query = input("Enter input (or 'exit' to quit): ").strip()
-        if query == 'exit':
+        if query.lower() == 'exit':
             print('exit')
             break
+
+        # Validate user input
+        if not query:
+            print('Input cannot be empty. Please try again.')
+            continue
+
+        # Perform input validation
+        if not is_safe_input(query):
+            print('Invalid characters in input. Please use only letters, numbers, and common punctuation.')
+            continue
+
         result, memory = inference(args, query, memory)
         print("Input:" + query + '\nResponse:' + result + '\n')
