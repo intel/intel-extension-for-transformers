@@ -25,11 +25,13 @@ NeuralChat
 
 4. [Advanced Topics](#advanced-topics)
 
-5. [Jupyter Notebooks](#jupyter-notebooks)
+5. [Verified Model List](#verified-model-list)
+
+6. [Jupyter Notebooks](#jupyter-notebooks)
 
 ## Introduction
 
-NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel© Xeon© Scalable processors, Habana Gaudi© AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.
+NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.
 
 <a target="_blank" href="./assets/pictures/neuralchat.png">
 <p align="center">
@@ -61,6 +63,7 @@ neuralchat predict --query "Tell me about Intel Xeon Scalable Processors."
 from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+print(response)
 ```
 
 ### Server Mode
@@ -154,6 +157,15 @@ from intel_extension_for_transformers.neural_chat import build_chatbot, AMPConfi
 pipeline_cfg = PipelineConfig(optimization_config=AMPConfig())
 chatbot = build_chatbot(pipeline_cfg)
 ```
+
+## Verified Model List
+| Model Name                      | Model Card                                          |
+| ----------                      | --------------------------------------------------- |
+| Intel/neural-chat-7b-v1-1       | https://huggingface.co/Intel/neural-chat-7b-v1-1    |
+| meta-llama/Llama-2-7b-chat-hf   | https://huggingface.co/meta-llama/Llama-2-7b-chat-hf|
+| decapoda-research/llama-7b-hf   | https://huggingface.co/decapoda-research/llama-7b-hf|
+| mosaicml/mpt-7b-chat            | https://huggingface.co/mosaicml/mpt-7b-chat         |
+| EleutherAI/gpt-j-6b             | https://huggingface.co/EleutherAI/gpt-j-6b          |
 
 ## Jupyter Notebooks 
 
