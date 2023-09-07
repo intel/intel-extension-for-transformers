@@ -21,14 +21,12 @@ try:
     import habana_frameworks.torch.hpu as hthpu
     is_hpu_available = True
 except ImportError:
-    print("Package 'habana_frameworks.torch.hpu' is not installed.")
     is_hpu_available = False
 
 try:
     import intel_extension_for_pytorch as intel_ipex
     is_ipex_available = True
 except ImportError:
-    print("Package 'intel_extension_for_pytorch' is not installed.")
     is_ipex_available = False
 
 def get_device_type():

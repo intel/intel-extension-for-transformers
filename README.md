@@ -8,21 +8,16 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀 Latest News
-<b> <span style="color:orange" > NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is now available for you to create your own chatbot within minutes on multiple architectures.</span></b>
-
-NeuralChat offers a rich set of plugins to allow your personalized chatbot smarter with knowledge retrieval, more interactive through speech, faster through query caching, and more secure with guardrails.
-
-* [Plugins] [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md)
-* [Architectures] Intel® Xeon® Scalable Processors, Habana Gaudi® Accelerator, and others
-
-Check out the below sample code and have a try now!
+* <b>NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is now available for you to create your own chatbot within minutes!</b> It supports a rich set of plugins [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md), and multiple architectures such as Intel® Xeon® Scalable Processors and Habana Gaudi® Accelerator.</b> Check out the below sample code and have a try now!
 
 ```python
-# follow the installation instructions
+# pip install intel-extension-for-transformers
 from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
+
+* <b>[NeuralChat v1.1](https://huggingface.co/Intel/neural-chat-7b-v1-1), a fine-tuned chat model based on [MPT-7B](https://huggingface.co/mosaicml/mpt-7b) using a mixed set of instruction datasets, is available on Hugging Face, together with the release of INT8 quantization recipes and benchmark results.</b>
 
 ---
 <div align="left">
