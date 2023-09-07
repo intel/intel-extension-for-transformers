@@ -336,4 +336,4 @@ for com, info in specific_commands.items():
     command_register(
         name='neuralchat.{}'.format(com),
         description=info[0],
-        cls='neural_chat.cli.cli_commands.{}'.format(info[1]))
+        cls='intel_extension_for_transformers.neural_chat.cli.cli_commands.{}'.format(info[1]))

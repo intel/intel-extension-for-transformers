@@ -31,7 +31,7 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().tearDown()
 
     def test_build_chatbot_with_AMP(self):
-        config = PipelineConfig()
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
@@ -39,7 +39,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_weight_only_quant(self):
-        config = PipelineConfig(
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
             optimization_config=WeightOnlyQuantizationConfig()
         )
         chatbot = build_chatbot(config)
@@ -51,6 +51,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_bitsandbytes_quant(self):
         if is_bitsandbytes_available() and torch.cuda.is_available():
             config = PipelineConfig(
+                model_name_or_path="facebook/opt-125m",
                 device='cuda',
                 optimization_config=BitsAndBytesConfig(
                         load_in_4bit=True,

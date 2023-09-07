@@ -1,6 +1,6 @@
 #!/bin/bash
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
-export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.coveragerc"
+export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.engine-coveragerc"
 LOG_DIR=/log_dir
 mkdir -p ${LOG_DIR}
 WORKING_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/deprecated"
@@ -86,7 +86,13 @@ function gtest() {
 
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
-    echo "test on ${test_name}"
+    cd ${WORKING_DIR}/test/pytest || exit 1
+    if [ -f "requirements.txt" ]; then
+        python -m pip install --default-timeout=100 -r requirements.txt
+        pip list
+    else
+        echo "Not found requirements.txt file."
+    fi
     if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"
         gtest

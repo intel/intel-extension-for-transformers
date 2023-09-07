@@ -86,6 +86,12 @@ rm -rf ./source/build_docs
 #cp -f "../README.md" "./source/docs/Welcome.md"
 cp -f "../SECURITY.md" "./source/docs/SECURITY.md"
 
+all_md_files=`find ./source/docs -name "*.md"`
+for md_file in ${all_md_files}
+do
+  sed -i 's/.md/.html/g' ${md_file}
+done
+
 
 sed -i 's/docs\/imgs/.\/imgs/g' ./source/docs/Welcome.md
 sed -i 's/.md/.html/g; s/.\/docs\/source\//.\/docs/g' ./source/docs/Welcome.md
