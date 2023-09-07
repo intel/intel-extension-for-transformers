@@ -43,12 +43,15 @@ class DequanS8F32 {
       int row, col;
       int srcstride, dststride;
       float* scales;
+      int8_t* zps;
     };
     typedef long long (*func_t)(params*);
     static int constexpr VBytes = 64;
     static int constexpr RegScale = 0;
-    static int constexpr RegTmp = RegScale + 4;
-    MicroKernelAVX512F() {
+    static int constexpr RegZP = 4;
+    static int constexpr RegTmp = RegScale + 8;
+    MicroKernelAVX512F(bool is_sym_) {
+      is_sym = is_sym_;
       generate();
       this->ready();
       mKernel = this->getCode<func_t>();
@@ -57,8 +60,8 @@ class DequanS8F32 {
     void generate() {
       inLocalLabel();  // use local label for multiple instance
       int SF_TmpSize = 64;
-      int SF_TmpPos = 16 * 10;
-      Xbyak::util::StackFrame st(this, 1, 13, 16 * 10 + SF_TmpSize);
+      int SF_TmpPos = 16 * 14;
+      Xbyak::util::StackFrame st(this, 1, 13, SF_TmpPos + SF_TmpSize);
       parambase = st.p[0];
       reg_srcptr = st.t[0];
       reg_dstptr = st.t[1];
@@ -88,6 +91,13 @@ class DequanS8F32 {
       load32(reg_rowsize, ptr[parambase + OFFSET(row)]);
       xor_(reg_itercol, reg_itercol);
 
+      // reuse parambase reg
+      if (!is_sym) {
+        mov(reg_tmp1, ptr[parambase + OFFSET(zps)]);
+        mov(reg_zpptr, reg_tmp1);
+        xor_(reg_tmp1, reg_tmp1);
+      }
+
       L(".colloop");
       mov(reg_tmp, reg_colsize);
       sub(reg_tmp, reg_itercol);
@@ -98,6 +108,7 @@ class DequanS8F32 {
       add(reg_srcptr, 1 * 64);
       add(reg_dstptr, 4 * 64);
       add(reg_scaleptr, 4 * 64);
+      if (!is_sym) add(reg_zpptr, 1 * 64);
       jmp(".colend", T_NEAR);
 
       L(".proc48");
@@ -108,6 +119,7 @@ class DequanS8F32 {
       add(reg_srcptr, 1 * 48);
       add(reg_dstptr, 4 * 48);
       add(reg_scaleptr, 4 * 48);
+      if (!is_sym) add(reg_zpptr, 1 * 48);
       jmp(".colend", T_NEAR);
 
       L(".proc32");
@@ -116,6 +128,7 @@ class DequanS8F32 {
       add(reg_srcptr, 1 * 32);
       add(reg_dstptr, 4 * 32);
       add(reg_scaleptr, 4 * 32);
+      if (!is_sym) add(reg_zpptr, 1 * 32);
 
       L(".colend");
       cmp(reg_itercol, reg_colsize);
@@ -129,6 +142,9 @@ class DequanS8F32 {
     void generateNTile(int N) {
       for (int i = 0; i < N; i++) {
         vmovups(Xbyak::Zmm(RegScale + i), ptr[reg_scaleptr + i * 64]);
+        if (!is_sym) {
+          vpmovsxbd(Xbyak::Zmm(RegZP + i), ptr[reg_zpptr + i * 16]);
+        }
       }
       inLocalLabel();
       xor_(reg_iterrow, reg_iterrow);
@@ -137,6 +153,9 @@ class DequanS8F32 {
       L(".rowloop");
       for (int i = 0; i < N; i++) {
         vpmovsxbd(Xbyak::Zmm(RegTmp), ptr[reg_tmp + i * 16]);
+        if (!is_sym) {
+          vpsubd(Xbyak::Zmm(RegTmp), Xbyak::Zmm(RegTmp), Xbyak::Zmm(RegZP + i));
+        }
         vcvtdq2ps(Xbyak::Zmm(RegTmp), Xbyak::Zmm(RegTmp));
         vmulps(Xbyak::Zmm(RegTmp), Xbyak::Zmm(RegScale + i));
         vmovups(ptr[reg_tmp1 + i * 64], Xbyak::Zmm(RegTmp));
@@ -165,12 +184,20 @@ class DequanS8F32 {
     Xbyak::Reg64 reg_tmpdst;
     Xbyak::Reg64 reg_tmp1;
     Xbyak::Reg64 reg_ret;
+    Xbyak::Reg64 reg_zpptr = reg_ret;
+    bool is_sym;
   };
-  static void forward_avx512f(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst, float* scales) {
-    static MicroKernelAVX512F mAVX512F;
+  static void forward_avx512f(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst, float* scales,
+                              int8_t* zero_points) {
+    static MicroKernelAVX512F mAVX512FSym(true);
+    static MicroKernelAVX512F mAVX512FASym(false);
     auto param = MicroKernelAVX512F::params{
-        srcptr, dstptr, row, col, int(ld_src * sizeof(int8_t)), int(ld_dst * sizeof(float)), scales};
-    mAVX512F.mKernel(&param);
+        srcptr, dstptr, row, col, int(ld_src * sizeof(int8_t)), int(ld_dst * sizeof(float)), scales, zero_points};
+    if (zero_points == nullptr) {
+      mAVX512FSym.mKernel(&param);
+    } else {
+      mAVX512FASym.mKernel(&param);
+    }
   }
 };
 
@@ -178,7 +205,7 @@ class DequanKBlockS8F32 {
  public:
   template <typename _ST>
   static inline JBLAS_CODE forward_avx512f(int8_t* srcptr, float* dstptr, int row, int col, int ld_src, int ld_dst,
-                                           _ST* scales, int k_offset, int kblock, int NPad) {
+                                           _ST* scales, int8_t* zero_points, int k_offset, int kblock, int NPad) {
     int row0 = kblock - k_offset % kblock;
     row0 = row0 == kblock ? 0 : row0;
     row0 = row0 > row ? row : row0;
@@ -186,20 +213,24 @@ class DequanKBlockS8F32 {
     int row1_blk = utils::padto_le(row1, kblock);
     int row2 = row - row1_blk - row0;
     auto sptr = scales + k_offset / kblock * NPad;
+    int8_t* zptr = nullptr;
+    if (zero_points != nullptr) zptr = zero_points + k_offset / kblock * NPad;
     if (row0 > 0) {
-      DequanS8F32::forward_avx512f(srcptr, dstptr, row0, col, ld_src, ld_dst, sptr);
+      DequanS8F32::forward_avx512f(srcptr, dstptr, row0, col, ld_src, ld_dst, sptr, zptr);
       srcptr += row0 * ld_src;
       dstptr += row0 * ld_dst;
       sptr += NPad;
+      if (zero_points != nullptr) zptr += NPad;
     }
     for (int i = 0; i < row1_blk; i += kblock) {
-      DequanS8F32::forward_avx512f(srcptr, dstptr, kblock, col, ld_src, ld_dst, sptr);
+      DequanS8F32::forward_avx512f(srcptr, dstptr, kblock, col, ld_src, ld_dst, sptr, zptr);
       srcptr += kblock * ld_src;
       dstptr += kblock * ld_dst;
       sptr += NPad;
+      if (zero_points != nullptr) zptr += NPad;
     }
     if (row2 > 0) {
-      DequanS8F32::forward_avx512f(srcptr, dstptr, row2, col, ld_src, ld_dst, sptr);
+      DequanS8F32::forward_avx512f(srcptr, dstptr, row2, col, ld_src, ld_dst, sptr, zptr);
     }
     return JblasNotSupport;
   }
