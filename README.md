@@ -8,10 +8,7 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀 Latest News
-* <b>NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is now available for you to create your own chatbot within minutes on multiple architectures. Check out the below sample code and have a try now!</b>
-
-** [Plugins] [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md)
-** [Architectures] Intel® Xeon® Scalable Processors, Habana Gaudi® Accelerator, and others
+* <b>NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is now available for you to create your own chatbot within minutes, with the support of plugins [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md), and multiple architectures such as Intel® Xeon® Scalable Processors and Habana Gaudi® Accelerator.</b> Check out the below sample code and have a try now!
 
 ```python
 # follow the installation instructions
