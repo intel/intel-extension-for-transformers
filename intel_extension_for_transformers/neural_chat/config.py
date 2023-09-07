@@ -375,7 +375,7 @@ SummarizationFinetuningConfig = BaseFinetuningConfig
 CodeGenerationFinetuningConfig = BaseFinetuningConfig
 
 @dataclass
-class TTSFinetuningConfig(BaseFinetuningConfig):
+class TTSFinetuningConfig:
     dataset_args: TTSDatasetArguments
     model_args: TTSModelArguments
 

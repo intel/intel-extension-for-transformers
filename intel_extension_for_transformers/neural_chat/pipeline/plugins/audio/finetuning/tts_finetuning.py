@@ -84,7 +84,7 @@ class TTSFinetuning:
             raise(f"Please make sure that your texts under {self.text_folder_path} are named like 1.txt, 2.txt...")
         texts = []
         for p in text_paths:
-            with open(p) as f:
+            with open(os.path.join(self.text_folder_path, p)) as f:
                 texts.append(f.read())
         normalized_texts = [i.lower().replace(",","").replace(".", "") + "." for i in texts]
         return texts, normalized_texts
@@ -95,6 +95,7 @@ class TTSFinetuning:
                                  key=lambda i: int(os.path.splitext(os.path.basename(i))[0]))
         except ValueError as e:
             raise(f"Please make sure that your audios under {self.audio_folder_path} are named like 1.wav, 2.wav...")
+        audio_paths = [os.path.join(self.audio_folder_path, i) for i in audio_paths]
         return audio_paths
     
     def _construct_finetuning_dataset(self):
@@ -131,8 +132,8 @@ class TTSFinetuning:
             fp16=True,
             evaluation_strategy="steps",
             per_device_eval_batch_size=8,
-            save_steps=1000,
-            eval_steps=1000,
+            save_steps=self.step,
+            eval_steps=self.step,
             logging_steps=25,
             load_best_model_at_end=True,
             greater_is_better=False,
@@ -170,7 +171,7 @@ class TTSFinetuning:
         example["labels"] = example["labels"][0]
 
         # use SpeechBrain to obtain x-vector
-        example["speaker_embeddings"] = self.create_speaker_embedding(audio["array"])
+        example["speaker_embeddings"] = self._create_speaker_embedding(audio["array"])
 
         return example
 
