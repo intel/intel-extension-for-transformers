@@ -35,7 +35,6 @@ from intel_extension_for_transformers.transformers.utils.metrics import Metric
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from packaging import version
 from transformers import PreTrainedModel
-from transformers.training_args_tf import TFTrainingArguments
 from typing import Callable, Optional, List
 from .utils.utility_tf import TFDataloader, TMPPATH, TEACHERPATH, get_filepath
 
@@ -50,7 +49,7 @@ class TFOptimization:
     """TFOptimization is the entry class for Tensorflow to use the optimization techniques in neural compressor."""
     def __init__(self,
                  model: PreTrainedModel,
-                 args: TFTrainingArguments,
+                 args,
                  train_dataset=None,
                  eval_dataset=None,
                  compute_metrics: Optional[Callable] = None,
