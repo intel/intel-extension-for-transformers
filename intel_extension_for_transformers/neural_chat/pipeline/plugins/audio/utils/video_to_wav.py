@@ -51,9 +51,11 @@ def convert_video_to_wav(path, output_sample_rate, is_mono=True):
         elif filename_suffix == '.mp4' or filename_suffix == '.mp3':
             # file name should not contain space.
             if is_mono:
-                cmd = "ffmpeg -i {} -ac 1 -ar {} -f wav {}".format(input_file_path, output_sample_rate, output_file_path)
+                cmd = "ffmpeg -i {} -ac 1 -ar {} -f wav {}".format(
+                    input_file_path, output_sample_rate, output_file_path)
             else:
-                cmd = "ffmpeg -i {} -ac 2 -ar {} -f wav {}".format(input_file_path, output_sample_rate, output_file_path)
+                cmd = "ffmpeg -i {} -ac 2 -ar {} -f wav {}".format(
+                    input_file_path, output_sample_rate, output_file_path)
             try:
                 subprocess.run(cmd, check=True)
             except subprocess.CalledProcessError as e:

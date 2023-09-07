@@ -38,7 +38,8 @@ class TextToSpeech():
     2) Finetuned voice (Fine-tuned offline model of specific person, such as Pat's voice + corresponding embedding)
     3) Customized voice (Original model + User's customized input voice embedding)
     """
-    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu"):
+    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu", 
+      asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
         self.original_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
@@ -56,8 +57,13 @@ class TextToSpeech():
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        default_speaker_embedding_path = os.path.join(script_dir,
-                                                      '../../../assets/speaker_embeddings/spk_embed_default.pt')
+        if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
+            default_speaker_embedding_path = os.path.join(script_dir,
+                                                '../../../assets/speaker_embeddings/spk_embed_default.pt')
+        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
+            default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
+        else:
+            print("Warning! Need to prepare speaker_embeddings")
         # load the default speaker embedding
         self.default_speaker_embedding = torch.load(default_speaker_embedding_path)
 
@@ -70,6 +76,8 @@ class TextToSpeech():
         pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_pat.pt')
         if os.path.exists(pat_speaker_embedding_path):
             self.pat_speaker_embeddings = torch.load(pat_speaker_embedding_path)
+        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt')):
+            self.pat_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt'))
 
         self.cpu_pool = None
         if not torch.cuda.is_available():
@@ -96,12 +104,16 @@ class TextToSpeech():
             speaker_embeddings = speaker_embeddings[0] # [1,512]
         return speaker_embeddings.cpu()
 
-    def _lookup_voice_embedding(self, voice):
+    def _lookup_voice_embedding(self, voice, 
+      asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         if os.path.exists(f"speaker_embeddings/spk_embed_{voice}.pt") == False:
             print("No customized speaker embedding is found! Use the default one")
-            default_speaker_embedding_path = os.path.join(script_dir,
-                                        '../../../assets/speaker_embeddings/spk_embed_default.pt')
+            if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
+                default_speaker_embedding_path = os.path.join(script_dir,
+                                                    '../../../assets/speaker_embeddings/spk_embed_default.pt')
+            elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
+                default_speaker_embedding_path = (asset_path, 'speaker_embeddings/spk_embed_default.pt')
             return default_speaker_embedding_path
         else:
             specific_speaker_embedding_path = os.path.join(script_dir,

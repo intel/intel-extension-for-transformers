@@ -90,9 +90,9 @@ def cut_video(args, outdir):
                 name, _ = os.path.splitext(file_name)
                 name = str(name) + "_" + str(mark)
                 mark += 1
-                command = 'ffmpeg -i {} -ss {}:{}:{} -to {}:{}:{} -ac 1 -ar {} -f wav {}'.format(os.path.join(path,file_name),
-                                                start_hour, start_min, start_sec, end_hour, end_min, end_sec, shlex.quote(args.sr),
-                                                os.path.join(save_path, str(name))+'.wav')
+                command = 'ffmpeg -i {} -ss {}:{}:{} -to {}:{}:{} -ac 1 -ar {} -f wav {}'.format(
+                    os.path.join(path,file_name), start_hour, start_min, start_sec, end_hour,
+                    end_min, end_sec, shlex.quote(args.sr), os.path.join(save_path, str(name))+'.wav')
                 print(start_hour, start_min, start_sec)
                 print(end_hour, end_min, end_sec)
                 try:
