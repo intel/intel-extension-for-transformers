@@ -161,7 +161,11 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
       }
       params.n_ctx = std::stoi(argv[i]);
     } else if (arg == "--memory-f32") {
-      params.memory_f16 = false;
+      params.memory_type = KV_MEM_TYPE_F32;
+    } else if (arg == "--memory-f16") {
+      params.memory_type = KV_MEM_TYPE_F16;
+    } else if (arg == "--memory-auto") {
+      params.memory_type = KV_MEM_TYPE_AUTO;
     } else if (arg == "--top-p") {
       if (++i >= argc) {
         invalid_param = true;
@@ -446,7 +450,9 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   fprintf(stderr,
           "  --ignore-eos          ignore end of stream token and continue generating (implies --logit-bias 2-inf)\n");
   fprintf(stderr, "  --no-penalize-nl      do not penalize newline token\n");
-  fprintf(stderr, "  --memory-f32          use f32 instead of f16 for memory key+value\n");
+  fprintf(stderr, "  --memory-f32          use f32 for memory key+value\n");
+  fprintf(stderr, "  --memory-f16          use f16 for memory key+value\n");
+  fprintf(stderr, "  --memory-auto         use internal format for memory key+value\n");
   fprintf(stderr, "  --temp N              temperature (default: %.1f)\n", (double)params.temp);
   fprintf(stderr, "  -b N, --batch-size-truncate N  batch size for prompt processing (default: %d)\n", params.n_batch);
   fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");

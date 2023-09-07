@@ -56,7 +56,7 @@ class TestFinetuning(unittest.TestCase):
             max_steps=3,
             overwrite_output_dir=True
         )
-        finetune_args = FinetuningArguments()
+        finetune_args = FinetuningArguments(device='cpu')
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,
@@ -74,7 +74,7 @@ class TestFinetuning(unittest.TestCase):
             max_steps=3,
             overwrite_output_dir=True
         )
-        finetune_args = FinetuningArguments()
+        finetune_args = FinetuningArguments(device='cpu')
         finetune_cfg = TextGenerationFinetuningConfig(
             model_args=model_args,
             data_args=data_args,

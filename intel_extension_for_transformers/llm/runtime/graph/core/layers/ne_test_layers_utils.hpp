@@ -23,25 +23,30 @@ static_assert(false, "Only include this header file for testing!");
 #endif
 
 template <typename T>
-void init_vector(std::vector<T>* v, float range1 = -10, float range2 = 10, int seed = 5489u) {
-  float low_value = std::max(range1, static_cast<float>(std::numeric_limits<T>::lowest()) + 1);
+inline void init_vector(T* v, size_t size, float v_min = -10, float v_max = 10, int seed = 5489u) {
+  float low_value = std::max(v_min, static_cast<float>(std::numeric_limits<T>::lowest()) + 1);
   std::mt19937 gen(seed);
-  std::uniform_real_distribution<float> u(low_value, range2);
-  for (size_t i = 0; i < v->size(); ++i) (*v)[i] = u(gen);
+  std::uniform_real_distribution<float> u(low_value, v_max);
+  for (size_t i = 0; i < size; ++i) v[i] = u(gen);
 }
 
 template <>
-void init_vector<jblas::utils::bf16>(std::vector<jblas::utils::bf16>* v, float range1, float range2, int seed) {
+inline void init_vector<jblas::utils::bf16>(jblas::utils::bf16* v, size_t size, float v_min, float v_max, int seed) {
   std::mt19937 gen(seed);
-  std::uniform_real_distribution<float> u(range1, range2);
-  for (size_t i = 0; i < v->size(); ++i) (*v)[i] = jblas::utils::bf16(u(gen));
+  std::uniform_real_distribution<float> u(v_min, v_max);
+  for (size_t i = 0; i < size; ++i) v[i] = jblas::utils::bf16(u(gen));
 }
 
 template <>
-void init_vector<jblas::utils::fp16>(std::vector<jblas::utils::fp16>* v, float range1, float range2, int seed) {
+inline void init_vector<jblas::utils::fp16>(jblas::utils::fp16* v, size_t size, float v_min, float v_max, int seed) {
   std::mt19937 gen(seed);
-  std::uniform_real_distribution<float> u(range1, range2);
-  for (size_t i = 0; i < v->size(); ++i) (*v)[i] = jblas::utils::fp16(u(gen));
+  std::uniform_real_distribution<float> u(v_min, v_max);
+  for (size_t i = 0; i < size; ++i) v[i] = jblas::utils::fp16(u(gen));
+}
+
+template <typename T>
+inline void init_vector(std::vector<T>* v, float v_min = -10, float v_max = 10, int seed = 5489u) {
+  init_vector<T>(v->data(), v->size(), v_min, v_max, seed);
 }
 
 template <typename T>

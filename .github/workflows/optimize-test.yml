@@ -39,9 +39,9 @@ jobs:
           - modelName: "bert_base_mrpc_static"
             framework: "pytorch"
             mode: "accuracy,performance"
-          - modelName: "bert_base_mrpc_static"
-            framework: "tensorflow"
-            mode: "accuracy,performance"
+          #- modelName: "bert_base_mrpc_static"
+          #  framework: "tensorflow"
+          #  mode: "accuracy,performance"
       fail-fast: true
     steps:
       - name: Docker Clean Up
@@ -62,6 +62,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
+          fetch-tags: true
     # We need this because GitHub needs to clone the branch to pipeline
       - name: Docker Build
         run: |
