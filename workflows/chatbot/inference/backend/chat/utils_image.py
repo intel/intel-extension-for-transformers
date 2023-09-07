@@ -110,9 +110,9 @@ def byte64_to_image(img_b64):
     img = Image.open(bytes_stream)
     return img
 
-
+# UPDATEEEEEEEEEEEEEEEE
 def generate_random_name():
-    nowTime=datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    nowTime=datetime.datetime.now().strftime("%Y%m%dT%H%M%S%f")
     randomNum=random.randint(0,100)
     if randomNum<=10:
         randomNum=str(0)+str(randomNum)
