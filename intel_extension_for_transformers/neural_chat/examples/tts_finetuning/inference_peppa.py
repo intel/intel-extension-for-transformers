@@ -12,7 +12,7 @@ from num2words import num2words
 
 workdir = os.getcwd()
 
-model = torch.load("peppa_2000.pt")
+model = torch.load("peppa.pt")
 processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
 
 spk_model_name = "speechbrain/spkrec-xvect-voxceleb"
