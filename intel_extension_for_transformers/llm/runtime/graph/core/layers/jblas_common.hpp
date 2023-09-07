@@ -125,15 +125,14 @@ class Silu {
     _T* C;
     int ldc;
   };
+  using SiluKernel = jblas::epilogue::gemm::CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, SWISH>;
 
   JBLAS_CODE forward(const float* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
-    using SiluKernel = jblas::epilogue::gemm::CustomAccumulatorWriteBackWithEltop<ISA_T, float, float, SWISH>;
+    float alpha = -1.f;
+    typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
     static SiluKernel ker;
-    typename SiluKernel::Param param{_param.C, _param.ldc, NULL};
-    auto COffset = M_offset * _param.ldc + N_offset;
-    auto cptr = _param.C + COffset;
-    auto ret = ker.forward(cptr, _param.ldc, M_offset, N_offset, M, N, param);
+    auto ret = ker.forward(cacheptr, cachestep, M_offset, N_offset, M, N, param);
     return JblasSuccess;
   }
 };
@@ -149,7 +148,7 @@ class DequantSiluFp32 : protected jblas::epilogue::gemm::DequantInt32ToFp32<ISA_
 
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
-    float alpha = 1.f;
+    float alpha = -1.f;
     typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
     Parent::forward(cacheptr, cachestep, M_offset, N_offset, M, N, _param);
     static SiluKernel ker;

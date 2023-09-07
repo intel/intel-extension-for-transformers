@@ -29,13 +29,13 @@ enum llama_model {
 static const model_scratch llama_mem_req(int n_layers) {
   switch (n_layers) {
     case 32:
-      return {512ull * MB, 512ull * MB, 1026ull * MB, 768ull * MB};
+      return {512ull * MB, 512ull * MB, 1026ull * MB};
     case 40:
-      return {512ull * MB, 512ull * MB, 1608ull * MB, 1024ull * MB};
+      return {512ull * MB, 512ull * MB, 1608ull * MB};
     case 60:
-      return {512ull * MB, 512ull * MB, 3124ull * MB, 1280ull * MB};
+      return {512ull * MB, 512ull * MB, 3124ull * MB};
     case 80:
-      return {1024ull * MB, 1024ull * MB, 5120ull * MB, 1536ull * MB};
+      return {1024ull * MB, 1024ull * MB, 5120ull * MB};
     default:
       MODEL_ASSERT(false);
   }
@@ -47,13 +47,12 @@ class Llama : public IModel {
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;
-  ne_type memory_type;
   bool use_mmap, use_mlock, vocab_only;
   model_scratch scratch;
 
  public:
-  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, ne_type memory_type_,
-            bool use_mmap_, bool use_mlock_, bool vocab_only_) override;
+  void init(const char* path_model, model_context& lctx, int n_ctx, int n_gpu_layers, bool use_mmap_, bool use_mlock_,
+            bool vocab_only_) override;
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };
 
