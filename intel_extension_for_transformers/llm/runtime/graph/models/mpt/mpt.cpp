@@ -31,6 +31,9 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
+#include "core/ne_jblas.h"
+#include "core/layers/mha_dense.h"
+#include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
@@ -53,6 +56,8 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
 
   const int N = n_tokens;
 
+  const int batch_size = lctx.batch_size;
+  
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
 
@@ -187,6 +192,12 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
 
     // n = self.mlp(m)
     {
+      // FFN FUSION
+      if (jblas_fusion_FFN_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
+                                                 N * batch_size, cur->ne[0], model.layers[il].ffn[0]->ne[1],
+                                                 model.layers[il].ffn[1]->ne[1]) ) {
+      cur = ne_ffn_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1],  cur);
+    } else {
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], cur);
 
       // GELU activation
@@ -195,6 +206,7 @@ static bool mpt_model_eval_internal(model_context& lctx, const model_token* toke
       // projection
       // cur = proj_w*cur + proj_b
       cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
+    }
     }
 
     // x = x + n
