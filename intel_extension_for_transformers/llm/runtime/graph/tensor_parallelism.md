@@ -49,11 +49,23 @@ make -j
 
 ```
 
+### Download the model weights and quantize to q4_0 format.
+First you should download and convert the model to f32 format. You can also quantize the model to q4_0 format, but it is optional.
+
+```shell
+python scripts/convert_model.py --outtype f32 --outfile EleutherAI/gpt-j-6b
+```
+Then quantize the model to q4_0 format(optional).
+
+```shell
+python scripts/quant_bin.py --model_name gptj --model_file /path/to/your/ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
+```
+
 ## Examples
 
 We can config the `mpirun` to start parallel programs. Here is an example about running tensor pallelsim on 2 sockets in CPU.
 ```shell
-mpirun -np 2 -bind-to=socket ./build/bin/main_gptj -m gptj_q4_0.bin --seed 1234 -t 56 -c 68 -n 32 -p "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun." --no_mmap
+mpirun -np 2 -bind-to=socket ./build/bin/main_gptj -m ne-q4_0.bin --seed 1234 -t 56 -c 68 -n 32 -p "Once upon a time, there existed a little girl, who liked to have adventures. She wanted to go to places and meet new people, and have fun." --no_mmap
 ```
 We only add `mpirun -np 2 -bind-to=socket` to the original command to enable 2 processes to run parallel. If you want to bind specific core to each process. You can write the original command to a shell script and use command like below.
 
