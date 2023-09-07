@@ -24,7 +24,7 @@ There are three pruning types in Intel® Extension for Transformers:
 ### Script:
 ```python
 
-from intel_extension_for_transformers.transformers import metric, objectives, PrunerConfig, PruningConfig,
+from intel_extension_for_transformers.transformers import metrics, objectives, PrunerConfig, PruningConfig,
 from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
