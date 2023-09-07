@@ -167,15 +167,17 @@ struct model_load_tensor {
         break;
 #ifdef NE_TP_MODEL
       case TP_1D_ROW:
-	MODEL_ASSERT(first_shard.ne.size() > 1);
+        MODEL_ASSERT(first_shard.ne.size() > 1);
+        MODEL_ASSERT(first_shard.ne[1] % world_size == 0);
         ne = {first_shard.ne[0], first_shard.ne[1] / world_size};
         break;
       case TP_1D_COLUMN:
-	if (first_shard.ne.size() == 1) {
+        MODEL_ASSERT(first_shard.ne[0] % world_size == 0);
+        if (first_shard.ne.size() == 1) {
           ne = {first_shard.ne[0] / world_size};
-	} else {
+        } else {
           ne = {first_shard.ne[0] / world_size, first_shard.ne[1]};
-	}
+        }
         break;
 #endif
     }
