@@ -162,7 +162,7 @@ Check out the latest notebooks to know how to build and customize a chatbot on d
 | **Notebook** | **Description** |
 | :----------: | :-------------: |
 | [build chatbot on Intel Xeon Platforms](./docs/notebooks/chatbot_on_intel_cpu.ipynb) | create a chatbot on Intel Xeon Platforms|
-| [build chatbot on Intel Habana Platforms](./docs/notebooks/chatbot_on_intel_habana_gpu.ipynb) | create a chatbot on Intel Habana Platforms|
+| [build chatbot on Intel Habana Platforms](./docs/notebooks/chatbot_on_intel_habana_hpu.ipynb) | create a chatbot on Intel Habana Platforms|
 | [build chatbot on Nvidia GPU Platforms](./docs/notebooks/chatbot_on_nv_gpu.ipynb) | create a chatbot on Nvidia GPU Platforms|
 | [finetune on Nvidia GPU Platforms](./examples/instruction_tuning/finetune_on_Nvidia_GPU.ipynb) | fine-tune LLaMA2 and MPT on Nvidia GPU Platforms|
 
