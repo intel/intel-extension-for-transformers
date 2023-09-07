@@ -20,6 +20,7 @@ from __future__ import division
 import os
 from ....plugins import register_plugin
 
+doc_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/pipeline/plugins/security/"
 def convert_fullwidth_to_halfwidth(query):
     """Converting Full-width Characters to Half-width Characters."""
     content = ""
@@ -37,9 +38,19 @@ class SafetyChecker:
     def __init__(self, dict_path=None, matchType=2):
         if dict_path == None or (not os.path.exists(dict_path)):
             dict_path = os.path.dirname(os.path.abspath(__file__))
-        f = open(os.path.join(dict_path, "stopword.txt"), encoding="utf8")
+        if os.path.exists(os.path.join(dict_path, "stopword.txt")):
+            f = open(os.path.join(dict_path, "stopword.txt"), encoding="utf8")
+        elif os.path.exists(os.path.join(doc_path, "stopword.txt")):
+            f = open(os.path.join(doc_path, "stopword.txt"), encoding="utf8")
+        else:
+            print("Can't find stopword.txt")
         self.Stopwords = [i.split('\n')[0] for i in f.readlines()]
-        f1 = open(os.path.join(dict_path, "dict.txt"), encoding="utf8")
+        if os.path.exists(os.path.join(dict_path, "dict.txt")):
+            f1 = open(os.path.join(dict_path, "dict.txt"), encoding="utf8")
+        elif os.path.exists(os.path.join(doc_path, "dict.txt")):
+            f1 = open(os.path.join(doc_path, "dict.txt"), encoding="utf8")
+        else:
+            print("Can't find dict.txt")
         lst = f1.readlines()
         self.sensitiveWordSet = [i.split("\n")[0].split("\t") for i in lst]
         self.sensitiveWordMap = self._initSensitiveWordMap()

@@ -1,0 +1,141 @@
+name: NeuralChat Unit Test
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - intel_extension_for_transformers/neural_chat/tests/**
+      - .github/workflows/unit-test-neuralchat.yml
+      - .github/workflows/script/unitTest/**
+  workflow_dispatch:
+
+# If there is a new commit, the previous jobs will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOCKER_CONFIG_NAME: "commonDockerConfig"
+  REPO_NAME: "intel-extension-for-transformers"
+  REPO_TAG: "py38"
+  DOCKER_FILE_NAME: "devel"
+  CONTAINER_NAME: "utTest"
+  EXTRA_CONTAINER_NAME: "modelTest"
+
+jobs:
+  unit-test:
+    runs-on: [self-hosted, Linux, X64, itrex-node]
+    strategy:
+      matrix:
+        include:
+          - test_branch: ${{ github.ref }}
+            test_name: "PR-test"
+          - test_branch: "main"
+            test_name: "baseline"
+    steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+              docker start ${{ env.CONTAINER_NAME }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
+              docker start ${{ env.EXTRA_CONTAINER_NAME }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
+
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+          ref: ${{ matrix.test_branch }}
+          fetch-tags: true
+
+      - name: Docker Build
+        run: |
+          docker build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+
+      - name: Docker Run
+        run: |
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
+            docker stop ${{ env.CONTAINER_NAME }}
+            docker rm -vf ${{ env.CONTAINER_NAME }} || true
+          fi
+          docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          -v ${{ github.workspace }}:/intel-extension-for-transformers \
+          ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
+
+      - name: Env build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
+
+      - name: Binary build
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
+          && bash install_binary.sh \
+          && pip install intel_extension_for_pytorch wget sentencepiece \
+          && pip install transformers>=4.32.0 \
+          && pip install peft torch num2words speechbrain paddlepaddle \
+          && pip install paddlespeech==1.4.1 shortuuid gptcache evaluate \
+          && pip install fschat pydub python-multipart PyPDF2  langchain \
+          && pip install python-docx scikit-learn farm-haystack librosa beautifulsoup4 \
+          && pip install InstructorEmbedding chromadb pydantic fastapi starlette \
+          && pip install yacs uvicorn optimum optimum[habana] \
+          && pip install sentence_transformers unstructured markdown rouge_score \
+          && pip install --upgrade accelerate"
+
+      - name: Run UT
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
+          && bash run_unit_test_neuralchat.sh --test_name=${{ matrix.test_name }}"
+
+      - name: Collect log
+        if: ${{ !cancelled() }}
+        run: |
+          docker exec ${{ env.CONTAINER_NAME }} \
+          bash -c "cd /intel-extension-for-transformers && \
+                 mv /log_dir . "
+      
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: "UnitTest${{ matrix.test_name }}"
+          path: ${{ github.workspace }}/log_dir
+           
+           
+  Genreate-Report:
+    runs-on: itrex-node-spell
+    needs: [unit-test]
+    steps:
+      - name: Checkout out Repo
+        uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+        
+      - name: Download UT PR Log
+        uses: actions/download-artifact@v3
+        with:
+          path: ${{ github.workspace }}/log_dir
+           
+      - name: Display structure of downloaded files
+        run: cd ${{ github.workspace }}/log_dir && ls -R
+        
+      - name: Calculte coverage
+        run: |
+          cd ${{ github.workspace }}/.github/workflows/script/unitTest/coverage
+          /usr/bin/bash calc_coverage.sh ${{ github.workspace }}/log_dir
+
+      - name: Publish pipeline artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: Neural Chat Unit Test
+          path: ${{ github.workspace }}/log_dir
+          retention-days: 5

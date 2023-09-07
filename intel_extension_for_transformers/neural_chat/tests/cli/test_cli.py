@@ -26,34 +26,39 @@ class UnitTest(unittest.TestCase):
         logger.info(f'Testing CLI request === Text Chat ===')
         command = 'neuralchat textchat \
                     --query "Tell me about Intel." \
-                    --model_name_or_path "./Llama-2-7b-chat-hf"'
+                    --model_name_or_path "facebook/opt-125m"'
+        result = None
         try:
-            result = subprocess.run(command, check=True)
+            result = subprocess.run(command, capture_output = True, check=True,
+                                    universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
-        print(result.stdout)
-        self.assertEqual(result.stdout, 0, msg="Textchat command line test failed.")
+        self.assertIn("model loaded", result.stdout)
 
     def test_help(self):
         logger.info(f'Testing CLI request === Help ===')
         command = 'neuralchat help'
+        result = None
         try:
-            result = subprocess.run(command, check=True)
+            result = subprocess.run(command, capture_output = True, check=True,
+                                    universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
-        self.assertEqual(result.stdout, 0, msg="Textchat command line test failed.")
+        self.assertIn("Show help for neuralchat commands.", result.stdout)
 
     def test_voice_chat(self):
         logger.info(f'Testing CLI request === Voice Chat ===')
         command = 'neuralchat voicechat \
                     --query "Tell me about Intel Xeon Scalable Processors." \
                     --audio_output_path "./response.wav" \
-                    --model_name_or_path "./Llama-2-7b-chat-hf"'
+                    --model_name_or_path "facebook/opt-125m"'
+        result = None
         try:
-            result = subprocess.run(command, check=True)
+            result = subprocess.run(command, capture_output = True, check=True,
+                                    universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
-        self.assertEqual(result.stdout, 0, msg="Textchat command line test failed.")
+        self.assertIn("model loaded", result.stdout)
 
 
 if __name__ == "__main__":

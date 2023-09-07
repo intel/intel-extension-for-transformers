@@ -42,9 +42,9 @@
 #include "models/model_utils/util.h"
 
 #define MODEL_MAX_NORM 4
-#define MODEL_MAX_ATTN 4
+#define MODEL_MAX_ATTN 8
 #define MODEL_MAX_FFN 6
-#define MODEL_MAX_OTHERS 6
+#define MODEL_MAX_OTHERS 7
 
 #define MODEL_USE_SCRATCH
 #define MODEL_MAX_SCRATCH_BUFFERS 16
@@ -64,8 +64,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON,
-                   MODEL_BLOOM };
+
+enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, 
+                   MODEL_OPT, MODEL_BLOOM};
+
 
 static const size_t MB = 1024 * 1024;
 
@@ -101,10 +103,12 @@ struct model_hparams {
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;
-  int32_t max_seq_len = 0;   // for mpt
-  float alibi_bias_max = 0;  // for mpt
-  float clip_qkv = 0;        // for mpt
-  int32_t par_res = 1;       // for neox 1 = true, 0 = false
+  int32_t max_seq_len = 0;  // for mpt
+  float alibi_bias_max = 0; // for mpt
+  float clip_qkv = 0;  // for mpt
+  int32_t par_res = 1;  // for neox 1 = true, 0 = false
+  uint32_t word_embed_proj_dim = 0;  // for opt
+  bool do_layer_norm_before = false; // for opt
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
@@ -186,6 +190,8 @@ struct model_vocab {
 
   std::unordered_map<token, id> token_to_id;
   std::vector<token_score> id_to_token;
+  id bos_token_id = -1; //The default value is -1
+  id eos_token_id = -1; //The default value is -1
 };
 
 // reference: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
@@ -350,7 +356,7 @@ class model_name_to_arch {
   model_name_to_arch() {}
   // update this table if has new cpp model
   std::unordered_map<std::string, model_archs> name2arch_ = {
-      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ},           {"mpt", MODEL_MPT},
+      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ}, {"mpt", MODEL_MPT}, {"opt", MODEL_OPT},
       {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
       {"bloom", MODEL_BLOOM},
   };
