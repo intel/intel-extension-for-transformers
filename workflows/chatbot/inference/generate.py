@@ -25,6 +25,13 @@ from checkpoint_utils import (
     model_on_meta,
     write_checkpoints_json,
 )
+from .checkpoint_utils import (
+    get_ds_injection_policy,
+    get_repo_root,
+    model_is_optimized,
+    model_on_meta,
+    write_checkpoints_json,
+)
 
 # Set necessary env variables
 os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
@@ -366,7 +373,11 @@ def load_model(
     elif re.search("flan-t5", model_name, re.IGNORECASE):
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
-                model_name, low_cpu_mem_usage=True, use_auth_token=hf_access_token
+                model_name,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
+                use_auth_token=hf_access_token,
+                quantization_config=bitsandbytes_quant_config,
             )
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
@@ -439,7 +450,6 @@ def load_model(
                 use_hpu_graphs=use_hpu_graphs,
                 is_meta=load_to_meta,
             )
-
     else:
         if peft_path:
             from peft import PeftModel
@@ -447,7 +457,7 @@ def load_model(
             model = PeftModel.from_pretrained(model, peft_path)
             model = model.to(torch.bfloat16) if dtype == torch.bfloat16 else model.to(torch.float32)
 
-        if dtype == torch.bfloat16:
+        if device == "cpu" and torch_dtype == torch.bfloat16:
             import intel_extension_for_pytorch as intel_ipex
 
             model = intel_ipex.optimize(
@@ -457,11 +467,9 @@ def load_model(
                 level="O1",
                 auto_kernel_selection=True,
             )
-            if cpu_jit and (
-                re.search("mpt-7b", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-            ):
-                from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
+            if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
+                            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
+                from .models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
 
                 model.config.use_cache = use_cache
                 model = jit_trace_mpt_7b(model)
