@@ -117,8 +117,7 @@ LLM running script args explanations:
 
 ### 4. One-click Script 
 
-You can use the following script to run, including convertion, quantization and inference. Please refer to [2. Convert LLM](#2-convert-llm) and [3. Run Models](#3-run-models) for the args of executing `one_click_run` script.
-
+You can use the following script to run, including convertion, quantization and inference.
 ```
 python scripts/one_click_run.py EleutherAI/gpt-j-6b --weight_dtype int4 -p "She opened the door and see"
 ```
