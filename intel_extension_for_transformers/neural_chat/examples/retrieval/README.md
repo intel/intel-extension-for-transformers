@@ -14,7 +14,7 @@ The Neural Chat API offers an easy way to create and utilize chatbot models whil
 from intel_extension_for_transformers.neural_chat import PipelineConfig
 from intel_extension_for_transformers.neural_chat import plugins
 plugins.retrieval.enable=True
-plugins.retrieval.args["input_path"]="./Annual_report.pdf"
+plugins.retrieval.args["input_path"]="./Annual_Report.pdf"
 config = PipelineConfig(plugins=plugins)
 ```
 
