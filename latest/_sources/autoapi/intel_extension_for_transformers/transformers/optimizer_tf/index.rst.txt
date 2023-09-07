@@ -22,7 +22,7 @@ Classes
 
 
 
-.. py:class:: TFOptimization(model: transformers.PreTrainedModel, args: transformers.training_args_tf.TFTrainingArguments, train_dataset=None, eval_dataset=None, compute_metrics: Optional[Callable] = None, criterion=None, optimizer=None, task_type=None, task_id=None, strategy=None)
+.. py:class:: TFOptimization(model: transformers.PreTrainedModel, args, train_dataset=None, eval_dataset=None, compute_metrics: Optional[Callable] = None, criterion=None, optimizer=None, task_type=None, task_id=None, strategy=None)
 
 
    TFOptimization is the entry class for Tensorflow to use the optimization techniques in neural compressor.
