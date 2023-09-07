@@ -68,6 +68,7 @@ struct bf16 {
   bf16() : x(0) {}
 
 #if CompileBF16()
+#pragma GCC push_options
 #pragma GCC target("avx512vl", "avx512bf16")
   explicit bf16(float vf32) : x(bit_cast<uint16_t>(_mm_cvtness_sbh(vf32))) {}
 #else
@@ -148,7 +149,7 @@ struct fp16 {
 #endif
   }
   explicit operator bf16() const {
-#if CompileBF16()
+#if CompileBF16() && CompileFP16()
     return bf16(static_cast<float>(bit_cast<_Float16>(this->x)));
 #else
     // Extract the exponent, and mantissa from the fp16 value.

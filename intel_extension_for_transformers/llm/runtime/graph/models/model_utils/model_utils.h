@@ -50,8 +50,8 @@
 #define MODEL_SESSION_VERSION 1
 
 void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
-                         ne_type memory_type, bool use_mmap, bool use_mlock, bool vocab_only,
-                         model_progress_callback progress_callback, void* progress_callback_user_data);
+                         bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+                         void* progress_callback_user_data);
 
 #ifdef __cplusplus
 extern "C" {
@@ -307,7 +307,8 @@ class beam_search_kv_cache_reorder {
   ~beam_search_kv_cache_reorder() {}
 
   virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
-                      const std::unordered_map<int, int>& kv_reorder_indices = {}, const std::vector<beam>& next_beams = {});
+                      const std::unordered_map<int, int>& kv_reorder_indices = {},
+                      const std::vector<beam>& next_beams = {});
 
  private:
   model_context* ctx = nullptr;
