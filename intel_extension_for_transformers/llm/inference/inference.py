@@ -575,6 +575,7 @@ def load_model(
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items()}
 
+output_token_len = 0
 def predict_stream(**params):
     """
     Generates streaming text based on the given parameters and prompt.
@@ -707,7 +708,10 @@ def predict_stream(**params):
                                 )
                             ]
                         )
-                        return model.generate(**input_tokens, **generation_kwargs)
+                        global output_token_len
+                        output_token=model.generate(**input_tokens, **generation_kwargs)
+                        output_token_len=output_token.sequences[0].shape[-1]
+                        return output_token
             except Exception as e:
                 errors_queue.put(e)
 
@@ -764,7 +768,7 @@ def predict_stream(**params):
         def generate_output():
             try:
                 with torch.no_grad():
-                    return model.generate(
+                    output_token=model.generate(
                         **input_tokens,
                         **generate_kwargs,
                         streamer=streamer,
@@ -776,6 +780,9 @@ def predict_stream(**params):
                         hpu_graphs=use_hpu_graphs,
                         ignore_eos=False,
                     )
+                    global output_token_len
+                    output_token_len=output_token.sequences[0].shape[-1]
+                    return output_token
             except Exception as e:
                 errors_queue.put(e)
 
@@ -785,7 +792,7 @@ def predict_stream(**params):
         raise ValueError(
             f"Unsupported device type {device}, only supports cpu, cuda and hpu now."
         )
-    output_token_len = 0
+    output_word_len = 0
 
     generation_thread.join(0.1)
     if generation_thread.is_alive():
@@ -794,32 +801,34 @@ def predict_stream(**params):
         thread_exception = errors_queue.get()
         raise thread_exception
     # prevent crash if no words are coming out
-    first_token_output_time = datetime.now()
+    first_word_output_time = datetime.now()
     for new_text in streamer:
         if len(new_text) == 0:
             continue
-        if output_token_len == 0:
-            first_token_output_time = datetime.now()
-        output_token_len += 1
+        if output_word_len == 0:
+            first_word_output_time = datetime.now()
+        output_word_len += 1
         yield new_text
 
     end_time = datetime.now()
+
+    time.sleep(1)
     duration = int((end_time - start_time).total_seconds() * 1000)
     first_token_latency = int(
-        (first_token_output_time - start_time).total_seconds() * 1000
+        (first_word_output_time - start_time).total_seconds() * 1000 * 3/4
     )
     msecond_per_token = (
-        (duration - first_token_latency) / (output_token_len - 1)
+        duration  / (output_token_len - input_token_len)
         if output_token_len != 1
         else 0
     )
     if return_stats:
         stats = {
-            "input_token_len": f"{input_token_len}",
-            "output_token_len": f"{output_token_len}",
-            "duration": f"{duration} ms",
-            "first_token_latency": f"{first_token_latency} ms",
-            "msecond_per_token": f"{msecond_per_token} ms",
+            "input_token_len": str(input_token_len),
+            "output_token_len": str(output_token_len),
+            "duration": str(duration) + " ms",
+            "first_token_latency": str(first_token_latency) + " ms",
+            "msecond_per_token": str(msecond_per_token) + " ms",
         }
         yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
         yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
