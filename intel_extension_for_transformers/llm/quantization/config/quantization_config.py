@@ -103,9 +103,9 @@ class WeightOnlyConfig:
         r"""
         This method returns the quantization method used for the model.
         """
-        if self.quant_bits == 8:
+        if self.weight_dtype == 8:
             return "s8"
-        elif self.quant_bits == 4 and self.quant_dtype == "s4fullrange":
+        elif self.weight_dtype == 4 and self.weight_dtype == "s4fullrange":
             return "s4fullrange"
         else:
             raise ValueError("Only support int8 and int4 quantization now!")

@@ -48,8 +48,9 @@ class _BaseQBitsAutoModelClass:
             if quantization_config is None:
                 quantization_config = WeightOnlyConfig(compute_dtype=torch_dtype, weight_dtype="int8")
             else:
-                assert quantization_config.weight_dtype == "int8" and quantization_config.compute_dtype == torch_dtype, \
-                f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
+                assert quantization_config.weight_dtype == "int8" \
+                    and quantization_config.compute_dtype == torch_dtype, \
+                        f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
         elif quantization_config is not None:
             if quantization_config.compute_dtype != convert_dtype_2_str(torch_dtype):
                 logger.warning(f"Quantization_config.compute_dtype should be align with {torch_dtype}.")

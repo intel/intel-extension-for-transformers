@@ -22,11 +22,21 @@ from peft.tuners.lora import LoraLayer
 from ..autograd import matmul_4bit
 
 
-torch.ops.load_library(os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../..", "libweight_only_jblasop.so"))
+torch.ops.load_library(
+    os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../..", "libweight_only_jblasop.so")
+)
 
 
 class ParamsQBits(torch.nn.Parameter):
-    def __new__(cls, data=None, requires_grad=True, quant_state=None, blocksize=32, compress_statistics=True, quant_dtype='int8'):
+    def __new__(
+            cls,
+            data=None,
+            requires_grad=True,
+            quant_state=None,
+            blocksize=32,
+            compress_statistics=True,
+            quant_dtype='int8'
+    ):
         if data is None:
             data = torch.empty(0)
 
@@ -39,7 +49,15 @@ class ParamsQBits(torch.nn.Parameter):
         return self
 
 # class Params4Bits(torch.nn.Parameter):
-    # def __new__(cls, data=None, requires_grad=True, quant_state=None, blocksize=32, compress_statistics=True, quant_dtype='nf4'):
+    # def __new__(
+    #         cls,
+    #         data=None,
+    #         requires_grad=True,
+    #         quant_state=None,
+    #         blocksize=32,
+    #         compress_statistics=True,
+    #         quant_dtype='nf4'
+    # ):
     #     if data is None:
     #         data = torch.empty(0)
 
@@ -157,10 +175,12 @@ class QuantizedLinearINT4(QuantizedLinearQBits, LoraLayer):
         return out
 
     def set_weights_bias(self, weight_data, bias=None):
+        weight = torch.ops.weight_only_jblasop.qbits_quantize(
+            weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
         self.weight = ParamsQBits(
-            weight_data, requires_grad=False, compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
+            data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
+            compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
         )
-        torch.ops.weight_only_jblasop.jblas_symqdq_weight(self.weight, False, 4, 32) # TODO: change to 4bit quantize instead of qdq
         self.weight.requires_grad = False
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
@@ -183,4 +203,4 @@ class QuantizedLinearINT8(QuantizedLinearQBits):
         device=None,
     ):
         super().__init__(input_features, output_features, bias, compute_dtype, compress_statistics,
-                         "s8", blocksize, scheme, device)
+                         "s8_scalef32", blocksize, scheme, device)
