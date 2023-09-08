@@ -1,8 +1,13 @@
 <h1 align="center" id="title"><img align="center" src="./src/lib/assets/favicon.png" alt="project-image">Talking Bot</h1>
 
-<h2>🚀 Demo</h2>
+### 📸 Project Screenshots
 
-[https://neuralstudio.eglb.intel.com](https://neuralstudio.eglb.intel.com)
+![project-screenshot](https://i.imgur.com/YKGXQKU.png)
+![project-screenshot](https://i.imgur.com/S5Zljt1.png)
+![project-screenshot](https://i.imgur.com/hWB7BDb.png)
+![project-screenshot](https://i.imgur.com/DYNPdSE.png)
+![project-screenshot](https://i.imgur.com/9518rja.png)
+![project-screenshot](https://i.imgur.com/VClUBR4.png)
 
 
 <h2>🧐 Features</h2>
