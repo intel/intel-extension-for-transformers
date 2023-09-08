@@ -99,6 +99,7 @@ static void mempool_enlarge(struct malloc_mempool* pool, size_t increase_size) {
   if (pool->start_addr != NULL) {
 #ifdef _WIN32
     free(pool->start_addr);
+    pool->start_addr = NULL;
     int ret = 0;
 #else
     int ret = munmap(pool->start_addr, pool->total_size);
