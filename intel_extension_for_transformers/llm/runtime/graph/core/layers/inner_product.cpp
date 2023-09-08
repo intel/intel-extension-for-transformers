@@ -64,6 +64,7 @@ using PerNFp32Fp32 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
                                                              jblas::prologue::gemm::ActivationFp32SymS8Quantize, ProB,
                                                              jblas::epilogue::gemm::DequantInt32ToFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
+
 }  // namespace amx_int8
 
 namespace avx512_vnni {
@@ -173,6 +174,31 @@ static JBLAS_CODE jblas_s8fp32perN_f32f32_forward(float* activation, SS8Fp32PerN
   return ret;
 }
 
+static JBLAS_CODE jblas_s4fp32perN_f32f32_forward(float* activation, SS4Fp32PerN* weiptr, float* output, int _m, int _n,
+                                                  int _k, int lda, int ldo, void* workspace) {
+  GetCPUDevice();
+  auto ret = JblasRuntimeError;
+  assert(weiptr->mBlockSize == _k);
+  if (weiptr->mCoreType == GcCompInt8::TYPE) {
+    if (_cd->AMX_INT8()) {
+      using GemmKernel = amx_int8::PerNFp32Fp32<WeiS4ClipFp32PerN>;
+      static GemmKernel kernel;
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, (int8_t*)workspace);
+      ret = kernel.compute<true, false>(
+          {_m, _n, _k, activation, lda, quanA, weiptr, output, ldo, quanA->mSPtr, quanA->lds, weiptr->mSPtr});
+      delete quanA;
+    } else if (_cd->AVX512_VNNI()) {
+      using GemmKernel = avx512_vnni::PerNFp32Fp32<WeiS4ClipFp32PerN>;
+      static GemmKernel kernel;
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, (int8_t*)workspace);
+      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo, quanA->mZPtr,
+                                         quanA->mSPtr, quanA->lds, weiptr->mRPtr, weiptr->mSPtr});
+      delete quanA;
+    }
+  }
+  return ret;
+}
+
 // f32f32: activation & output dtype
 void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m, int _n, int _k, int lda, int ldo,
                           void* workspace) {
@@ -188,6 +214,9 @@ void jblas_f32f32_forward(float* activation, void* weiptr, float* output, int _m
                                               workspace);
     } else if (wtmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
       ret = jblas_s8fp32perN_f32f32_forward(activation, dynamic_cast<SS8Fp32PerN*>(wtmp), output, _m, _n, _k, lda, ldo,
+                                            workspace);
+    } else if (wtmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+      ret = jblas_s4fp32perN_f32f32_forward(activation, dynamic_cast<SS4Fp32PerN*>(wtmp), output, _m, _n, _k, lda, ldo,
                                             workspace);
     }
   }
