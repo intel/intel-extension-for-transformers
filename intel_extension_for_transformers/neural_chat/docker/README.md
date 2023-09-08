@@ -2,6 +2,7 @@ Intel Neural Chat Dockerfile
 
 # Fine-tuning
 
+
 We provide a comprehensive pipeline on fine-tuning a customized model in Docker using [Dockerfile](./fine_tuning/Dockerfile). It covers the process of generating custom instruction datasets, instruction templates, fine-tuning the model with these datasets, and leveraging an RLHF (Reinforcement Learning from Human Feedback) pipeline for efficient LLM fine-tuning. For detailed information and step-by-step instructions, please consult this [README file](./fine_tuning/README.md).
 
 
