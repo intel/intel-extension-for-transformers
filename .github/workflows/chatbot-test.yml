@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - './requirements.txt'
-      - '.github/workflows/chatbot-test.yml'
+      #- '.github/workflows/chatbot-test.yml'
       - '.github/workflows/chatbot-inference-llama-2-7b-chat-hf.yml'
       - '.github/workflows/chatbot-inference-mpt-7b-chat.yml'
       - '.github/workflows/chatbot-finetune-mpt-7b-chat.yml'
