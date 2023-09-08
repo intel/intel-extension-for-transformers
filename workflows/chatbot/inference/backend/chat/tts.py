@@ -12,6 +12,7 @@ import intel_extension_for_pytorch as ipex
 import time
 import numpy as np
 from torch.utils.data import DataLoader
+import tempfile
 
 class TextToSpeech:
     """Convert text to speech with a driven speaker embedding
@@ -28,11 +29,12 @@ class TextToSpeech:
         self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
         self.device = "cpu"
         self.spk_model_name = "speechbrain/spkrec-xvect-voxceleb"
-        self.speaker_model = EncoderClassifier.from_hparams(
-            source=self.spk_model_name,
-            run_opts={"device": self.device},
-            savedir=os.path.join("/tmp", self.spk_model_name)
-        )
+        with tempfile.TemporaryFile(dir=os.path.join("/tmp", self.spk_model_name), mode="w+") as file:
+            self.speaker_model = EncoderClassifier.from_hparams(
+                source=self.spk_model_name,
+                run_opts={"device": self.device},
+                savedir=file.name
+            )
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
         self.vocoder.eval()
         self.default_speaker_embedding = torch.load('speaker_embeddings/spk_embed_default.pt') # load the default speaker embedding
