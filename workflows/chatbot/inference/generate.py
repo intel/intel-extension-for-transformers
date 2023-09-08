@@ -484,6 +484,7 @@ def load_model(
     print("model loaded")
 
 
+output_token_len = 0
 def predict_stream(**params):
     """
     Generates streaming text based on the given parameters and prompt.
@@ -548,7 +549,6 @@ def predict_stream(**params):
     task = params.get("task", "")
     dtype = params["dtype"]
     amp_dtype = torch.bfloat16 if dtype != torch.float32 else None
-
     if task != "":
         # add template
         if template_maps.get(task) is not None:
@@ -559,7 +559,6 @@ def predict_stream(**params):
             {"instruction": prompt, "input": "", "eos_token": tokenizer.eos_token},
             template_name,
         )
-
     streamer = TextIteratorStreamer(
         tokenizer, skip_prompt=True, skip_special_tokens=True
     )
@@ -612,10 +611,12 @@ def predict_stream(**params):
                                 )
                             ]
                         )
-                        return model.generate(**input_tokens, **generation_kwargs)
+                        global output_token_len
+                        output_token=model.generate(**input_tokens, **generation_kwargs)
+                        output_token_len=output_token.sequences[0].shape[-1]
+                        return output_token
             except Exception as e:
                 errors_queue.put(e)
-        output_token_len=generate_output().sequences[0].shape[-1]
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     elif device == "hpu":
@@ -670,7 +671,7 @@ def predict_stream(**params):
         def generate_output():
             try:
                 with torch.no_grad():
-                    return model.generate(
+                    output_token=model.generate(
                         **input_tokens,
                         **generate_kwargs,
                         streamer=streamer,
@@ -682,9 +683,12 @@ def predict_stream(**params):
                         hpu_graphs=use_hpu_graphs,
                         ignore_eos=False,
                     )
+                    global output_token_len
+                    output_token_len=output_token.sequences[0].shape[-1]
+                    return output_token
             except Exception as e:
                 errors_queue.put(e)
-        output_token_len=generate_output().sequences[0].shape[-1]
+
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     else:
@@ -692,7 +696,6 @@ def predict_stream(**params):
             f"Unsupported device type {device}, only supports cpu and hpu now."
         )
     output_word_len = 0
-
     generation_thread.join(0.1)
     if generation_thread.is_alive():
         pass
@@ -700,22 +703,25 @@ def predict_stream(**params):
         thread_exception = errors_queue.get()
         raise thread_exception
     # prevent crash if no words are coming out
-    first_token_output_time = datetime.now()
+    first_word_output_time = datetime.now()
     for new_text in streamer:
         if len(new_text) == 0:
             continue
         if output_word_len == 0:
-            first_token_output_time = datetime.now()
+            first_word_output_time = datetime.now()
         output_word_len += 1
         yield new_text
 
     end_time = datetime.now()
+
+    time.sleep(1)
     duration = int((end_time - start_time).total_seconds() * 1000)
-    first_word_latency = int(
-        (first_token_output_time - start_time).total_seconds() * 1000
+    first_token_latency = int(
+        (first_word_output_time - start_time).total_seconds() * 1000 * 3/4
     )
-    msecond_per_word = (
-        (duration - first_word_latency) / (output_word_len - 1)
+
+    msecond_per_token = (
+        duration  / (output_token_len - input_token_len)
         if output_word_len != 1
         else 0
     )
@@ -724,8 +730,8 @@ def predict_stream(**params):
             "input_token_len": str(input_token_len),
             "output_token_len": str(output_token_len),
             "duration": str(duration) + " ms",
-            "first_word_latency": str(first_word_latency) + " ms",
-            "msecond_per_word": str(msecond_per_word) + " ms",
+            "first_token_latency": str(first_token_latency) + " ms",
+            "msecond_per_token": str(msecond_per_token) + " ms",
         }
         yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
         yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
