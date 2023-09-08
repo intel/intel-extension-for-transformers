@@ -50,15 +50,15 @@ static model_context** g_ctx;
 
 static bool is_interacting = false;
 
-std::string build_prompt(const std::vector<std::string> &history) {
-    std::ostringstream oss_prompt;
-    for (size_t i = 0; i < history.size(); i += 2) {
-        oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
-        if (i < history.size() - 1) {
-            oss_prompt << history[i + 1] << "\n\n";
-        }
+std::string build_prompt(const std::vector<std::string>& history) {
+  std::ostringstream oss_prompt;
+  for (size_t i = 0; i < history.size(); i += 2) {
+    oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
+    if (i < history.size() - 1) {
+      oss_prompt << history[i + 1] << "\n\n";
     }
-    return oss_prompt.str();
+  }
+  return oss_prompt.str();
 }
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__)) || defined(_WIN32)
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
   gpt_params params;
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
-  std::cout << "Welcome to use the " << params.model_name << " on the ITREX! "<< std::endl;
+  std::cout << "Welcome to use the " << params.model_name << " on the ITREX! " << std::endl;
 #endif
   if (gpt_params_parse(argc, argv, params) == false) {
     return 1;
@@ -210,16 +210,16 @@ int main(int argc, char** argv) {
   if (params.model_arch == MODEL_LLAMA) {
     add_bos = true;
   }
-  
+
   std::vector<int> embd_inp;
   if (params.model_arch == MODEL_CHATGLM2 || params.model_arch == MODEL_CHATGLM1) {
-      std::vector<std::string> prompts;
-      prompts.push_back(params.prompt);
-      std::string prompt = build_prompt(prompts);
-      embd_inp = ::model_tokenize(ctx, prompt, false);
-      embd_inp.insert(embd_inp.begin(), {64790, 64792}); // special prefix
+    std::vector<std::string> prompts;
+    prompts.push_back(params.prompt);
+    std::string prompt = build_prompt(prompts);
+    embd_inp = ::model_tokenize(ctx, prompt, false);
+    embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
   } else {
-      embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
+    embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
   }
 
   const int n_ctx = model_n_ctx(ctx);
