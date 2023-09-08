@@ -1,0 +1,24 @@
+[run]
+branch = True
+
+[report]
+omit =
+ */**/fake*yaml
+ */**/fake.py
+ */intel_extension_for_transformers/llm/amp/**
+ */intel_extension_for_transformers/llm/evaluation/**
+ */intel_extension_for_transformers/llm/quantization/**
+ */intel_extension_for_transformers/llm/library/**
+ */intel_extension_for_transformers/llm/operator/**
+ */intel_extension_for_transformers/llm/runtime/**
+ */intel_extension_for_transformers/transformers/**
+exclude_lines =
+ pragma: no cover
+ raise NotImplementedError
+ raise TypeError
+ if self.device == "gpu":
+ if device == "gpu":
+ except ImportError:
+ except Exception as e:
+ onnx_version < ONNX18_VERSION
+ onnx_version >= ONNX18_VERSION

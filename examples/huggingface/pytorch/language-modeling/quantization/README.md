@@ -43,7 +43,6 @@ python run_clm_no_trainer.py \
 
 ```bash
 # "--approach weight_only" is used to enable weight only quantization.
-# Default algorithm is RTN. Use with "--awq" to enable AWQ algorithm.
 python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \

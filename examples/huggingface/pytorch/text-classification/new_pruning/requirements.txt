@@ -1,5 +1,5 @@
 datasets
-transformers==4.30.2
+transformers
 accelerate
 datasets
 sentencepiece
