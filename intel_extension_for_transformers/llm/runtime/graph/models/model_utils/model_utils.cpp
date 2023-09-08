@@ -819,7 +819,6 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
             kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
           }
         }
-        
       } else if (params.compute_type == quant_comp::fp32) {
         using Kernel = WeiS4ClipFp32<GcCompFp32, JblasAVX512_FP16>;
         using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
