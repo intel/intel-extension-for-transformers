@@ -16,8 +16,6 @@
 # limitations under the License.
 """Check the intent of the input user query with LLM."""
 
-import transformers
-import torch
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt import generate_intent_prompt
 from intel_extension_for_transformers.llm.inference import predict
 

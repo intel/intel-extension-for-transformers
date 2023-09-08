@@ -436,8 +436,3 @@ class PipelineConfig:
         assert type(self.optimization_config) in [AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of AMPConfig, WeightOnlyQuantizationConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
-        for plugin_name, plugin_value in self.plugins.items():
-            if plugin_value['enable']:
-                print(f"create {plugin_name} plugin instance...")
-                print(f"plugin parameters: ", plugin_value['args'])
-                plugins[plugin_name]["instance"] = plugin_value['class'](**plugin_value['args'])

@@ -17,11 +17,10 @@
 """Wrapper for parsing the uploaded user file and then make document indexing."""
 
 import os
-import re, json
 from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumentStore
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
-from langchain.embeddings import HuggingFaceEmbeddings, HuggingFaceInstructEmbeddings
+from langchain.embeddings import HuggingFaceInstructEmbeddings
 from langchain.vectorstores import Chroma
 from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data

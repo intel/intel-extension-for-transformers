@@ -16,11 +16,11 @@
 # limitations under the License.
 
 # pylint: disable=wrong-import-position
-from typing import Any, Optional, Callable
+from typing import Any
 
 import gptcache.processor.post
 import gptcache.processor.pre
-from gptcache import Cache, cache, Config
+from gptcache import Cache, Config
 from gptcache.adapter.adapter import adapt
 from gptcache.embedding import (
     Onnx,
@@ -36,9 +36,7 @@ from gptcache.embedding import (
     PaddleNLP,
     UForm,
 )
-from gptcache.embedding.base import BaseEmbedding
 from gptcache.manager import manager_factory
-from gptcache.manager.data_manager import DataManager
 from gptcache.processor.context import (
     SummarizationContextProcess,
     SelectiveContextProcess,
@@ -51,15 +49,12 @@ from gptcache.similarity_evaluation import (
     NumpyNormEvaluation,
     OnnxModelEvaluation,
     ExactMatchEvaluation,
-    KReciprocalEvaluation,
-    SimilarityEvaluation,
+    KReciprocalEvaluation
 )
 from gptcache.utils import import_ruamel
 import time
-import sys
-sys.path.append("..")
 
-class CachePlugin:
+class ChatCache:
     def __init__(self):
         self.cache_obj = Cache()
 
