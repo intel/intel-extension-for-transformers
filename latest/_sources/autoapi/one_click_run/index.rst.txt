@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`one_click_run`
+=======================
+
+.. py:module:: one_click_run
+
+

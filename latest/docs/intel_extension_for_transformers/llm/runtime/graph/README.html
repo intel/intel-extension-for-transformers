@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g802ec0d documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g11cecb7 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -202,8 +202,33 @@ python<span class="w"> </span>scripts/quant_bin.py<span class="w"> </span>--mode
 | –color           | colorise output to distinguish prompt and user input from generations   |
 | –keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |</p>
 </section>
+<section id="one-click-script">
+<h3>4. One-click Script<a class="headerlink" href="#one-click-script" title="Link to this heading"></a></h3>
+<p>You can use the following script to run, including convertion, quantization and inference.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">scripts</span><span class="o">/</span><span class="n">one_click_run</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="n">model</span><span class="o">-</span><span class="n">path</span><span class="w"> </span><span class="o">--</span><span class="n">weight_dtype</span><span class="w"> </span><span class="n">int4</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="s">&quot;She opened the door and see&quot;</span>
+</pre></div>
+</div>
+<p>LLM one-click running script args explanations:
+| arg               | explanation                                                             |
+| ————–    | ———————————————————————– |
+| model           | directory containing model file or model id                 |
+| –weight_dtype  | data type of quantized weight (default: int4)         |
+| –alg           | quantization algorithm to use: sym/asym (default: sym)      |
+| –block_size    | block size (default: 32)                                    |
+| –scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
+| –compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
+| -p / –prompt     | prompt to start generation with (default: empty)                        |
+| -n / –n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
+| -t / –threads    | number of threads to use during computation (default: 56)               |
+| -b / –batch_size | batch size for prompt processing (default: 512)                         |
+| -c / –ctx_size   | size of the prompt context (default: 512, can not be larger than specific model’s context window length)                                                                                |
+| -s / –seed       | NG seed (default: -1, use random seed for &lt; 0)                          |
+| –repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
+| –color           | colorise output to distinguish prompt and user input from generations   |
+| –keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |</p>
+</section>
 <section id="tensor-parallelism-cross-nodes-sockets">
-<h3>4. Tensor Parallelism cross nodes/sockets<a class="headerlink" href="#tensor-parallelism-cross-nodes-sockets" title="Link to this heading"></a></h3>
+<h3>5. Tensor Parallelism cross nodes/sockets<a class="headerlink" href="#tensor-parallelism-cross-nodes-sockets" title="Link to this heading"></a></h3>
 <p>We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to <a class="reference external" href="./tensor_parallelism.html">tensor_parallelism.html</a> to enable this feature.</p>
 </section>
 </section>
@@ -223,7 +248,7 @@ python<span class="w"> </span>scripts/quant_bin.py<span class="w"> </span>--mode
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f940c282140> 
+   <jinja2.runtime.BlockReference object at 0x7f977e86e470> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
