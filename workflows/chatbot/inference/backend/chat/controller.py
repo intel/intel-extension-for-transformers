@@ -37,6 +37,7 @@ import pandas as pd
 from io import BytesIO
 from PIL import Image
 from ner import generate_query_from_prompt
+from ner_new import inference as inference_ner
 from deepface import DeepFace
 from typing import List, Dict
 from fastapi import BackgroundTasks
@@ -833,6 +834,7 @@ def update_image_tags(image):
         elif key == 'location' and value != image_info[8]:
             update_sql_list.append(f' address="{value}" ')
             tag_name_list.append('location')
+            
     for tag_name in tag_name_list:
         tags.pop(tag_name)
     old_tags.update(tags)
@@ -935,7 +937,7 @@ def process_images_in_background( user_id: str, image_obj_list: List[Dict]):
             try:
                 process_single_image(image_id, image_path, user_id)
             except Exception as e:
-                logger.error("[backgroud] "+e)
+                logger.error("[backgroud] "+str(e))
                 logger.error(f'[backgroud] error occurred, delete image.')
                 delete_single_image(user_id, image_id)
 
@@ -989,7 +991,7 @@ def process_single_image(img_id, img_path, user_id):
     try:
         result_caption = generate_caption(img_path)
     except Exception as e:
-        logger.error("[background - single] "+e)
+        logger.error("[background - single] "+str(e))
     if result_caption:
         logger.info(f'[background - single] Image caption: {result_caption}')
         update_image_attr(image={"image_id": img_id, "caption": result_caption}, attr='caption')
@@ -1005,7 +1007,7 @@ def process_single_image(img_id, img_path, user_id):
     try:
         mysql_db.update(sql=f"UPDATE image_info SET process_status='ready' WHERE image_id={img_id}", params=None)
     except Exception as e:
-        logger.error("[background - single] "+e)
+        logger.error("[background - single] "+str(e))
     logger.info(f"[background - single] ----- finish image {img_path} processing -----")
 
 
@@ -1039,7 +1041,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
     if os.path.exists(pkl_path):
         logger.info(f'[background - face] pkl file already exists, delete it.')
         os.remove(pkl_path)
-    dfs = DeepFace.find(img_path=image_path, db_path=db_path, model_name='Facenet')
+    dfs = DeepFace.find(img_path=image_path, db_path=db_path, model_name='Facenet', enforce_detection=False)
     logger.info(f'[background - face] Finding match faces in image database.')
     assert face_cnt == len(dfs)
     logger.info(f'[background - face] dfs: {dfs}')
@@ -1062,7 +1064,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
         try:
             img_face_list = mysql_db.fetch_all(sql=find_face_sql)
         except Exception as e:
-            logger.error("[background - face] "+e)
+            logger.error("[background - face] "+str(e))
             raise Exception(f"Exception ocurred while selecting info from image_face: {e}")
         logger.info(f"[background - face] reference image and faces: {img_face_list}")
         # verify face xywh of ref image
@@ -1083,7 +1085,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
         try:
             mysql_db.insert(sql=insert_img_face_sql, params=None)
         except Exception as e:
-            logger.error("[background - face] "+e)
+            logger.error("[background - face] "+str(e))
             raise Exception(f"Exception ocurred while inserting info into image_face: {e}")
         # current face matched and saved into db, delete from face_xywh_list
         logger.info(f'[background - face] image_face data inserted: {insert_img_face_sql}')
@@ -1105,7 +1107,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
         try:
             mysql_db.insert(sql=face_sql, params=None)
         except Exception as e:
-            logger.error("[background - face] "+e)
+            logger.error("[background - face] "+str(e))
             raise Exception(f"Exception ocurred while inserting new face into face_info: {e}")
         logger.info(f"[background - face] face {tag} inserted into db.")
         face_id = mysql_db.fetch_one(f"SELECT * FROM face_info WHERE face_tag='{tag}';")[0]
@@ -1114,7 +1116,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
         try:
             mysql_db.insert(sql=img_face_sql, params=None)
         except Exception as e:
-            logger.error("[background - face] "+e)
+            logger.error("[background - face] "+str(e))
             raise Exception(f"Exception ocurred while inserting new face into image_face: {e}")
         logger.info(f"[background - face] img_face {img_face_sql} inserted into db.")
     logger.info(f"[background - face] Image {image_id} face process finished.")
@@ -1239,60 +1241,76 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str) -> List[Dict]:
     mysql_db = MysqlDb()
     mysql_db.set_db("ai_photos")
 
-    logger.info(f'start query from ner results')
-    query_sql = "SELECT image_id, image_path FROM image_info WHERE "
+    logger.info(f'[NER query] start query from ner results')
+    query_sql = "SELECT image_info.image_id, image_info.image_path FROM image_info INNER JOIN image_face On image_info.image_id=image_face.image_id WHERE "
+
+    # get location query
     if not ner_result.get('location', None):
-        logger.info(f'no location in query')
+        logger.info(f'[NER query] no location in query')
     else:
         locations = ner_result['location']
         sql_conditions = []
         for loc in locations:
-            sql_conditions.append(f' address LIKE "%{loc}%" ')
+            sql_conditions.append(f' image_info.address LIKE "%{loc}%" ')
         sql = 'OR'.join(sql_conditions)
         query_sql += '('+sql+')'
-        
-    if 'time' in ner_result.keys():
-        if ner_result['time'] == []:
-            logger.info(f'no time in query')
-        else:
-            time_points = ner_result['time']
-            sql_conditions = []
-            for loc in time_points:
-                sql_conditions.append(f' captured_time LIKE "%{loc}%" ')
-            sql = 'OR'.join(sql_conditions)
-            if query_sql[-1] == ')':
-                query_sql += ' AND '
-            query_sql += '('+sql+')'
+
+    # get person name query
+    if ner_result['name']:
+        names = ner_result['name']
+        sql_conditions = []
+        for name in names:
+            sql_conditions.append(f' image_face.face_tag LIKE "%{name}%" ')
+        sql = 'OR'.join(sql_conditions)
+        query_sql += '('+sql+')'
     else:
-        if ner_result['period'] == []:
-            logger.info(f'no time period in query')
-        else:
-            periods = ner_result['period']
-            sql_conditions = []
-            for period in periods:
-                from_time = period['from']
-                to_time = period['to']
-                sql_conditions.append(f' captured_time BETWEEN "{from_time}" AND "{to_time}" ')
-            sql = 'OR'.join(sql_conditions)
-            if query_sql[-1] == ')':
-                query_sql += ' AND '
-            query_sql += '('+sql+')'
-    if query_sql == "SELECT image_id, image_path FROM image_info WHERE ":
-        logger.info(f'no compatible data for current query')
+        logger.info(f'[NER query] no person name in ner query')
+        
+    # get time query
+    if ner_result['time'] == []:
+        logger.info(f'[NER query] no time in query')
+    else:
+        time_points = ner_result['time']
+        sql_conditions = []
+        for loc in time_points:
+            sql_conditions.append(f' image_info.captured_time LIKE "%{loc}%" ')
+        sql = 'OR'.join(sql_conditions)
+        if query_sql[-1] == ')':
+            query_sql += ' AND '
+        query_sql += '('+sql+')'
+
+    # get time period query
+    if ner_result['period'] == []:
+        logger.info(f'[NER query] no time period in query')
+    else:
+        periods = ner_result['period']
+        logger.info(f'[NER query] periods: {periods}')
+        sql_conditions = []
+        for period in periods:
+            from_time = period['from']
+            to_time = period['to']
+            sql_conditions.append(f' image_info.captured_time BETWEEN "{from_time}" AND "{to_time}" ')
+        sql = 'OR'.join(sql_conditions)
+        if query_sql[-1] == ')':
+            query_sql += ' AND '
+        query_sql += '('+sql+')'
+    
+    if query_sql == "SELECT image_info.image_id, image_info.image_path FROM image_info INNER JOIN image_face On image_info.image_id=iamge_face.image_id WHERE ":
+        logger.info(f'[NER query] no compatible data for current query')
         return []
-    query_sql += f' AND user_id="{user_id}" AND exist_status="active";'
+    query_sql += f' AND image_info.user_id="{user_id}" AND exist_status="active";'
 
     try:
         query_result = mysql_db.fetch_all(sql=query_sql, params=None)
     except Exception as e:
-        raise Exception(e)
+        raise Exception("[NER query] "+str(e))
     result_image_list = []
     for res in query_result:
         image_name = res[1].split('/')[-1]
         image_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + image_name
         item = {"image_id": res[0], "imgSrc": image_path}
         result_image_list.append(item)
-    logger.info(f'result: {result_image_list}')
+    logger.info(f'[NER query] result: {result_image_list}')
     return result_image_list
 
 
@@ -1318,7 +1336,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
     user_id = request.client.host
     logger.info(f'<uploadImages> user id is: {user_id}')
     res = check_user_ip(user_id)
-    logger.info("<uploadImages> "+res)
+    logger.info("<uploadImages> "+str(res))
 
     params = await request.json()
     image_list = params['image_list']
@@ -1351,7 +1369,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
         try:
             mysql_db.insert(sql=insert_sql, params=None)
         except Exception as e:
-            logger.error("<uploadImages> "+e)
+            logger.error("<uploadImages> "+str(e))
             return JSONResponse(content=f'Database insert failed for image {img_path}', status_code=500)
 
         # get image id
@@ -1359,7 +1377,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
         try:
             result = mysql_db.fetch_one(sql=fetch_sql)
         except Exception as e:
-            logger.info("<uploadImages> "+e)
+            logger.info("<uploadImages> "+str(e))
             return JSONResponse(content=f'Database select failed for image {img_path}', status_code=500)
         img_id = result[0]
         frontend_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + img_name
@@ -1462,7 +1480,7 @@ async def handle_ai_photos_get_image_detail(request: Request):
     try:
         image_info = mysql_db.fetch_one(sql=f'SELECT * FROM image_info WHERE image_id={image_id} AND user_id="{user_id}" AND exist_status="active";', params=None)
     except Exception as e:
-        logger.error("<getImageDetail> "+e)
+        logger.error("<getImageDetail> "+str(e))
         return JSONResponse(content=f'Exception {e} occurred when selecting image {image_id} from MySQL.')
     
     if image_info:
@@ -1486,7 +1504,7 @@ async def handel_ai_photos_delete_Image(request: Request):
     try:
         delete_single_image(user_id, image_id)
     except Exception as e:
-        logger.error("<deleteImage> "+e)
+        logger.error("<deleteImage> "+str(e))
         return Response(content=e, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     logger.info(f'<deleteImage> Image {image_id} successfully deleted.')
@@ -1549,7 +1567,7 @@ async def handel_ai_photos_update_tags(request: Request):
             update_image_tags(image)
 
     except Exception as e:
-        logger.error("<updateTags> "+e)
+        logger.error("<updateTags> "+str(e))
         return Response(content=str(e), status_code=status.HTTP_400_BAD_REQUEST)
     else:
         logger.info('<updateTags> Image tags updated successfully.')
@@ -1571,7 +1589,7 @@ async def handel_ai_photos_update_caption(request: Request):
         try:
             update_image_attr(image, 'caption')
         except Exception as e:
-            logger.error("<updateCaption> "+e)
+            logger.error("<updateCaption> "+str(e))
             return Response(content=str(e), status_code=status.HTTP_400_BAD_REQUEST)
 
     return "Succeed"
@@ -1588,16 +1606,16 @@ async def handle_ai_photos_chat_to_image(request: Request):
     logger.info(f'<chatWithImage> generating chat to image for user {user_id} with query: {query}')
 
     try:
-        result = generate_query_from_prompt(query)
+        result = inference_ner(query)
     except Exception as e:
-        logger.error("<chatWithImage> "+e)
+        logger.error("<chatWithImage> "+str(e))
         raise Exception(e)
     logger.info(f'<chatWithImage> NER result: {result}')
 
     try:
         result_image_list = get_image_list_by_ner_query(result, user_id)
     except Exception as e:
-        logger.error("<chatWithImage> "+e)
+        logger.error("<chatWithImage> "+str(e))
         raise Exception(e)
     return "No query result" if result_image_list==[] else result_image_list
 
