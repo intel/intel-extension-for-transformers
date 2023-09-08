@@ -17,6 +17,7 @@ Create a python environment, optionally with autoconf for jemalloc support.
 conda create -n <env name> python=3.8 [autoconf]
 conda activate <env name>
 ```
+>**Note**: Make sure pip <=23.2.2
 
 Check that `gcc` version is higher than 9.0.
 ```shell
@@ -37,11 +38,9 @@ Install required dependencies for this example
 ```shell
 cd <intel_extension_for_transformers_folder>/examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion
 
-# Please update the requirements.txt manually to install the transformers==4.28.1
 pip install -r requirements.txt
+pip install transformers==4.28.1
 ```
->**Note**: Recommend install protobuf <= 3.20.0 if use onnxruntime <= 1.11
-
 
 ## Environment Variables (Optional)
 ```shell
@@ -76,11 +75,10 @@ By setting --bf16 to export FP32 and BF16 models.
 python prepare_model.py --input_model=CompVis/stable-diffusion-v1-4 --output_path=./model --bf16
 ```
 
-By setting --qat_int8 to export INT8 models, **only support runwayml/stable-diffusion-v1-5**.
-
-**NOTE**: You should get a fake_quantized_model_qinit.pt before prepare qat models. Please refer the [link](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-to-image/quantization/qat/README.md).
+For INT8 quantized mode, we **only support runwayml/stable-diffusion-v1-5** for now.
+You need throught QAT to get a quantize int8 model at first, Please refer the [link](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-to-image/quantization/qat/README.md).
+Then by setting --qat_int8 to export INT8 models, to export INT8 model.
 ```python
-# Don't forget to get a fake_quantized_model_qinit.pt first.
 python prepare_model.py --input_model=runwayml/stable-diffusion-v1-5 --output_path=./model --qat_int8
 ```
 
@@ -103,13 +101,11 @@ bash export_model.sh --input_model=model --precision=bf16
 Export mixed FP32 & dynamic quantized Int8 IR.
 
 ```bash
-# running the follow comand to get mixed FP32 & dynamic quantized Int8 IR.
 bash export_model.sh --input_model=model --precision=fp32 --cast_type=dynamic_int8
 ```
 
 Export mixed BF16 & QAT quantized Int8 IR.
 ```bash
-# running the follow comand to get mixed BF16 & QAT quantized Int8 IR.
 bash export_model.sh --input_model=model --precision=qat_int8
 ```
 
@@ -120,7 +116,7 @@ Python API command as follows:
 # FP32 IR
 python run_executor.py --ir_path=./fp32_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
 
-# mixed FP32 & dynamic quantized Int8 IR.
+# Mixed FP32 & dynamic quantized Int8 IR.
 python run_executor.py --ir_path=./fp32_dynamic_int8_ir --mode=latency --input_model=CompVis/stable-diffusion-v1-4
 
 # BF16 IR
@@ -139,7 +135,7 @@ Python API command as follows:
 # FP32 IR
 python run_executor.py --ir_path=./fp32_ir --mode=accuracy --input_model=CompVis/stable-diffusion-v1-4
 
-# mixed FP32 & dynamic quantized Int8 IR
+# Mixed FP32 & dynamic quantized Int8 IR
 python run_executor.py --ir_path=./fp32_dynamic_int8_ir --mode=accuracy --input_model=CompVis/stable-diffusion-v1-4
 
 # BF16 IR
