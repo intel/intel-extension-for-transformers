@@ -37,7 +37,6 @@
 #define CompileAVX512F() _MSC_VER && (_MSC_VER >= 1911)
 #define CompileAVX2() _MSC_VER && (_MSC_VER >= 1900)
 #define CompileAMX() 0
-#define CompileBF16Kernel() 0
 #define CompileBF16() 0
 #define CompileFP16() 0
 #define CompileAMXBF16() 0
