@@ -790,7 +790,7 @@ using AddGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::A
 
 using GemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, jblas::epilogue::gemm::ZpDequantInt32ToFp32>;
 using SiluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantSiluFp32>;
-using AddGeluGemmDynamicSPerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
+using AddGeluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
 using AddGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantAddFp32>;
 
 using GemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, jblas::epilogue::gemm::ZpDequantInt32ToFp32>;
