@@ -22,6 +22,7 @@ from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig, GenerationConfig, AMPConfig, LoadingModelConfig
 )
+from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream
 
 
 def parse_args():
