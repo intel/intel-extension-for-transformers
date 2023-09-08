@@ -447,7 +447,7 @@ if __name__ == "__main__":
         "--cache-chat-config-file", default="llmcache/cache_config.yml", help="the cache config file"
     )
     parser.add_argument(
-        "--cache-embedding-model-dir", default="chat/instructor-large", help="the cache embedding model directory"
+        "--cache-embedding-model-dir", default="hkunlp/instructor-large", help="the cache embedding model directory"
     )
     args = parser.parse_args()
     logger.info(f"args: {args}")

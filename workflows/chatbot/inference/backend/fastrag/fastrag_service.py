@@ -548,6 +548,21 @@ async def get_cache(request: QueryRequest):
 
         return StreamingResponse(stream_results(), media_type="text/event-stream")
 
+@router.post("/v1/chat/feedback")
+def save_chat_response_to_db(request: FeedbackRequest) -> None:
+    logger.info(f'fastrag feedback received.')
+    mysql_db = MysqlDb()
+    question, answer, feedback = request.question, request.answer, request.feedback
+    feedback_str = 'dislike' if int(feedback) else 'like'
+    logger.info(f'feedback question: [{question}], answer: [{answer}], feedback: [{feedback_str}]')
+    sql = f"INSERT INTO feedback VALUES(null, '{question}', '{answer}', {feedback})"
+    try:
+        mysql_db.insert(sql, None)
+    except:
+        raise Exception("Exception occurred when inserting data into MySQL, please check the db session and your syntax.")
+    else:
+        logger.info('feedback inserted.')
+        return "Succeed"
 
 app.include_router(router)
 
