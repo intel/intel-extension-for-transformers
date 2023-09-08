@@ -187,10 +187,12 @@ struct int4x2 : bit4x2 {
   int4x2(int8_t v) : bit4x2(v) {}
   int4x2() : bit4x2() {}
   static int8_t convert(int8_t src) {
-    int16_t dst = src;
-    dst += 7;
-    dst >>= 4;
-    return dst > 7 ? 7 : dst;
+    int32_t dst = src;
+    dst = dst >= 0 ? dst + 8 : dst - 8;
+    dst = dst / 16;
+    dst = dst > 7 ? 7 : dst;
+    dst = dst < -8 ? -8 : dst;
+    return dst;
   }
 };
 
