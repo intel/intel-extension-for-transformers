@@ -76,7 +76,7 @@ python prepare_model.py --input_model=CompVis/stable-diffusion-v1-4 --output_pat
 ```
 
 For INT8 quantized mode, we **only support runwayml/stable-diffusion-v1-5** for now.
-You need throught QAT to get a quantize int8 model at first, Please refer the [link](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-to-image/quantization/qat/README.md).
+You need to get a quantized INT8 model first through QAT, Please refer the [link](https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-to-image/quantization/qat/README.md).
 Then by setting --qat_int8 to export INT8 models, to export INT8 model.
 ```python
 python prepare_model.py --input_model=runwayml/stable-diffusion-v1-5 --output_path=./model --qat_int8
