@@ -28,6 +28,7 @@ else
 fi
 # install packages
 pip install accelerate nlpaug nltk schema optimum-intel
+
 pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
 
 echo "[DEBUG] list pipdeptree..."
