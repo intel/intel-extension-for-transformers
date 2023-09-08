@@ -37,7 +37,6 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 
-
 // evaluate the transformer
 //
 //   - lctx:      model context
@@ -93,7 +92,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
   const bool kv_mem_jblas = kv_self.k->type == NE_TYPE_JBLAS;
-  NE_ASSERT(("jblas managed kv-cache is not yet supported; use `--memory-f16 / --memory-f32` instead", kv_mem_jblas));
+  NE_ASSERT(("jblas managed kv-cache is not yet supported; use `--memory-f16 / --memory-f32` instead", !kv_mem_jblas));
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
@@ -210,14 +209,14 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
     {
       // FFN FUSION
       if (jblas_fusion_FFN_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
-                                                 N * batch_size, cur->ne[0], model.layers[il].ffn[0]->ne[1],
-                                                 model.layers[il].ffn[1]->ne[1])) {
-      cur = ne_ffn_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1],  inpFF);
-    } else {
-      cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], inpFF);
-      cur = ne_gelu(ctx0, cur);
-      cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
-    }
+                                               N * batch_size, cur->ne[0], model.layers[il].ffn[0]->ne[1],
+                                               model.layers[il].ffn[1]->ne[1])) {
+        cur = ne_ffn_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], inpFF);
+      } else {
+        cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], inpFF);
+        cur = ne_gelu(ctx0, cur);
+        cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
+      }
     }
 
     cur = ne_add(ctx0, cur, attn_out);

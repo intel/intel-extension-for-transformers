@@ -56,7 +56,7 @@ RUN apt-get install default-jdk -y
 
 # Install and upgrade node and npm for frontend
 RUN apt-get install npm -y && \
-    npm install -g n && \
+    npm install -g n --ignore-scripts && \
     n stable && \
     hash -r && \
     npm install -g npm@latest

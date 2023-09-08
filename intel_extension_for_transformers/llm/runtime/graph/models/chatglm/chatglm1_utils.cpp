@@ -40,8 +40,8 @@
 #include "models/models.h"
 
 void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
-                         bool use_mmap, bool use_mlock, bool vocab_only,
-                         model_progress_callback progress_callback, void* progress_callback_user_data) {
+                         bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+                         void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
   std::unique_ptr<IModel> ms(new CHATGLM1());
@@ -51,8 +51,8 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void CHATGLM1::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_,
-                bool use_mmap_, bool use_mlock_, bool vocab_only_) {
+void CHATGLM1::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
+                    bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
   memory_type = memory_type_;
@@ -132,11 +132,11 @@ void CHATGLM1::load(model_context& lctx, model_progress_callback progress_callba
     auto& layer = model.layers[i];
     std::string layers_i = "transformer.layers." + std::to_string(i);
     // norm: cur = ln_1_g*cur + ln_1_b
-    layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);          // [4096]
-    layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);            // [4096]
-    layer.norm[2] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend); // [4096]
-    layer.norm[3] = ml->get_tensor(layers_i + ".post_attention_layernorm.bias", {n_embd}, backend);   // [4096]
-  
+    layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);           // [4096]
+    layer.norm[1] = ml->get_tensor(layers_i + ".input_layernorm.bias", {n_embd}, backend);             // [4096]
+    layer.norm[2] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);  // [4096]
+    layer.norm[3] = ml->get_tensor(layers_i + ".post_attention_layernorm.bias", {n_embd}, backend);    // [4096]
+
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".attention.query_key_value.weight", {n_embd, 3 * n_embd}, backend);
     layer.attn[1] = ml->get_tensor(layers_i + ".attention.query_key_value.bias", {3 * n_embd}, backend);
@@ -157,7 +157,7 @@ void CHATGLM1::load(model_context& lctx, model_progress_callback progress_callba
     //                 ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
     //                 ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
     //                 ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
-    //                 ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) + 
+    //                 ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) +
     //                 ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
     // }
   }

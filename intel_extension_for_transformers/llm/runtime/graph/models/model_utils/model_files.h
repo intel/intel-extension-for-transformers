@@ -70,7 +70,7 @@ struct model_load_tensor_shard {
   void calc_size() { size = model_calc_tensor_size(ne, type); }
 };
 
-enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS, TP_1D_ROW, TP_1D_COLUMN};
+enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS, TP_1D_ROW, TP_1D_COLUMN };
 
 struct model_load_tensor {
   std::vector<model_load_tensor_shard> shards;
@@ -129,15 +129,13 @@ struct model_load_tensor {
 
 #ifdef NE_TP_MODEL
     if (enable_tp) {
-      if (name.find(".attn.q_proj.weight") != std::string::npos || 
+      if (name.find(".attn.q_proj.weight") != std::string::npos ||
           name.find(".attn.k_proj.weight") != std::string::npos ||
           name.find(".attn.v_proj.weight") != std::string::npos ||
           name.find(".mlp.fc_in.weight") != std::string::npos) {
-        
         split_type = TP_1D_ROW;
-      } 
-      if (name.find(".mlp.fc_in.bias") != std::string::npos ||
-          name.find(".mlp.fc_out.weight") != std::string::npos) {
+      }
+      if (name.find(".mlp.fc_in.bias") != std::string::npos || name.find(".mlp.fc_out.weight") != std::string::npos) {
         split_type = TP_1D_COLUMN;
       }
     }
@@ -255,7 +253,7 @@ struct model_file_loader {
 
     hparams.word_embed_proj_dim = file.read_u32();
     hparams.do_layer_norm_before = bool(file.read_u32());
-    
+
     // For ChatGLM-1 & 2
     hparams.bos_token_id = file.read_u32();
     hparams.eos_token_id = file.read_u32();
@@ -265,7 +263,7 @@ struct model_file_loader {
     hparams.ffn_hidden_size = file.read_u32();
     hparams.inner_hidden_size = file.read_u32();
   }
-  
+
   void read_vocab() {
     vocab.id_to_token.resize(hparams.n_vocab);
     file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
@@ -286,7 +284,6 @@ struct model_file_loader {
       tok_score.tok = std::move(word);
       tok_score.score = score;
     }
-
   }
   void read_tensor_metadata(size_t file_idx, model_load_tensors_map& tensors_map) {
     while (file.tell() < file.size) {
@@ -383,7 +380,6 @@ struct model_file_saver {
     file.write_u32(hparams.multi_query_group_num);
     file.write_u32(hparams.ffn_hidden_size);
     file.write_u32(hparams.inner_hidden_size);
-
   }
   void write_vocab() {
     if (any_file_loader->file_version == MODEL_FILE_VERSION_NE) {
@@ -478,9 +474,9 @@ struct model_model_loader {
         if (it == tensors_map.name_to_idx.end()) {
           it = tensors_map.name_to_idx.find("model/wte");
           if (it == tensors_map.name_to_idx.end()) {
-            it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight"); // ChatGLM-1
+            it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");  // ChatGLM-1
             if (it == tensors_map.name_to_idx.end()) {
-              it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight"); // ChatGLM-2
+              it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
               if (it == tensors_map.name_to_idx.end()) {
                 it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
                 if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
@@ -514,7 +510,8 @@ struct model_model_loader {
 #ifdef NE_TP_MODEL
     if (lt.enable_tp && (lt.split_type == TP_1D_ROW || lt.split_type == TP_1D_COLUMN)) {
       // check the split dim
-      size_t split_dim_size = lt.ne.size() == 1 ? lt.ne.at(0) : (lt.split_type == TP_1D_ROW ? lt.ne.at(1) : lt.ne.at(0));
+      size_t split_dim_size =
+          lt.ne.size() == 1 ? lt.ne.at(0) : (lt.split_type == TP_1D_ROW ? lt.ne.at(1) : lt.ne.at(0));
       size_t origin_dim_size = ne.size() == 1 ? ne.at(0) : (lt.split_type == TP_1D_ROW ? ne.at(1) : ne.at(0));
       MODEL_ASSERT(split_dim_size == origin_dim_size / lt.world_size);
       return get_tensor_for(lt, backend);
@@ -646,7 +643,9 @@ struct model_model_loader {
       // only copy part of weight form the tmp_buf of origin file
       memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
     } else if (lt.split_type == TP_1D_COLUMN) {
-      if (lt.size == 0) { return; }
+      if (lt.size == 0) {
+        return;
+      }
       model_load_tensor_shard& shard = lt.shards.at(0);
       model_buffer tmp_buf;
       model_file& file = file_loaders.at(shard.file_idx)->file;
@@ -658,9 +657,9 @@ struct model_model_loader {
       // different data type may have differnet per_row_size
       size_t per_row_size = lt.size / num_rows;
       for (size_t i = 0; i < num_rows; ++i) {
-        memcpy(lt.data + offset,
-               tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size, per_row_size);
-	offset += per_row_size;
+        memcpy(lt.data + offset, tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size,
+               per_row_size);
+        offset += per_row_size;
       }
       MODEL_ASSERT(offset == lt.size);
     }
