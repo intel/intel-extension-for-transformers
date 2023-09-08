@@ -793,6 +793,11 @@ using SiluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::Z
 using AddGeluGemmDynamicSPerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
 using AddGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantAddFp32>;
 
+using GemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, jblas::epilogue::gemm::ZpDequantInt32ToFp32>;
+using SiluGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequantSiluFp32>;
+using AddGeluGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
+using AddGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequantAddFp32>;
+
 }  // namespace avx512_vnni
 namespace amx_int8 {
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
@@ -820,30 +825,35 @@ using AddGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::A
 
 using GemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, jblas::epilogue::gemm::DequantInt32ToFp32>;
 using SiluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::DequantSiluFp32>;
-using AddGeluGemmDynamicSPerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::Dequant_Add_GeluFp32>;
+using AddGeluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::Dequant_Add_GeluFp32>;
 using AddGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::DequantAddFp32>;
+
+using GemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, jblas::epilogue::gemm::DequantInt32ToFp32>;
+using SiluGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::DequantSiluFp32>;
+using AddGeluGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::Dequant_Add_GeluFp32>;
+using AddGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::DequantAddFp32>;
 }  // namespace amx_int8
 namespace avx512f {
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
-using DefualtGemmFp32 =
+using DefaultGemmFp32 =
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<JblasAVX512F, jblas::gemm::GemmCore_Row_NN_8x48_AVX512F,
                                                              jblas::prologue::gemm::ActivationBase, ProB, Epi>;
-using AddGeluGemmS8KBlock = DefualtGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
-using AddGemmS8KBlock = DefualtGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
+using AddGeluGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
 
-using AddGeluGemmS4KBlock = DefualtGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
-using AddGemmS4KBlock = DefualtGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
+using AddGeluGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
 }  // namespace avx512f
 namespace amx_bf16 {
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
-using DefualtGemmFp32 =
+using DefaultGemmFp32 =
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<JblasAMX_BF16, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
                                                              jblas::prologue::gemm::ActivationConverterFp32, ProB, Epi>;
-using AddGeluGemmS8KBlock = DefualtGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
-using AddGemmS8KBlock = DefualtGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
+using AddGeluGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
 
-using AddGeluGemmS4KBlock = DefualtGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
-using AddGemmS4KBlock = DefualtGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
+using AddGeluGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
 }  // namespace amx_bf16
 }  // namespace kblock
 }  // namespace wrapper
