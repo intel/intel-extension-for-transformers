@@ -38,27 +38,25 @@
 #include "models/model_utils/util.h"
 
 // feed-forward network
-struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, const int N, ne_context* ctx0, ne_tensor* inp) {
+struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, const int N, ne_context* ctx0,
+                              ne_tensor* inp) {
   struct ne_tensor* cur = ne_norm(ctx0, inp);
 
   cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.norm[2], cur), cur), ne_repeat(ctx0, layer.norm[3], cur));
-    if (jblas_fusion_FFN_Add_GeLu_f32f32_support(layer.ffn[0]->data, layer.ffn[2]->data,
-                                                 N * batch_size, cur->ne[0], layer.ffn[0]->ne[1],
-                                                 layer.ffn[2]->ne[1]) ) {
-      cur = ne_ffn_add_gelu(ctx0, layer.ffn[0], layer.ffn[2], layer.ffn[1],
-                          layer.ffn[3], cur);
-    } else {
+  if (jblas_fusion_FFN_Add_GeLu_f32f32_support(layer.ffn[0]->data, layer.ffn[2]->data, N * batch_size, cur->ne[0],
+                                               layer.ffn[0]->ne[1], layer.ffn[2]->ne[1])) {
+    cur = ne_ffn_add_gelu(ctx0, layer.ffn[0], layer.ffn[2], layer.ffn[1], layer.ffn[3], cur);
+  } else {
+    cur = ne_mul_mat(ctx0, layer.ffn[0], cur);
 
-  cur = ne_mul_mat(ctx0, layer.ffn[0], cur);
+    cur = ne_add(ctx0, ne_repeat(ctx0, layer.ffn[1], cur), cur);
 
-  cur = ne_add(ctx0, ne_repeat(ctx0, layer.ffn[1], cur), cur);
+    // GELU activation
+    cur = ne_gelu(ctx0, cur);
 
-  // GELU activation
-  cur = ne_gelu(ctx0, cur);
-
-  // projection
-  // cur = proj_w*cur + proj_b
-  cur = ne_mul_mat(ctx0, layer.ffn[2], cur);
+    // projection
+    // cur = proj_w*cur + proj_b
+    cur = ne_mul_mat(ctx0, layer.ffn[2], cur);
   }
 
   cur = ne_add(ctx0, ne_repeat(ctx0, layer.ffn[3], cur), cur);
@@ -152,8 +150,8 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
                                                         cur->nb[1], 2 * sizeof(float) * n_embd / n_head));
 
       // using mode = 2 for GPT-NeoX mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2);
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2);
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2, 0);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2, 0);
 
       // store key and value to memory
       {

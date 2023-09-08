@@ -74,7 +74,9 @@ enum model_archs {
   MODEL_STARCODER,
   MODEL_FALCON,
   MODEL_OPT,
-  MODEL_BLOOM
+  MODEL_BLOOM,
+  MODEL_CHATGLM2,
+  MODEL_CHATGLM1
 };
 
 static const size_t MB = 1024 * 1024;
@@ -123,6 +125,19 @@ struct model_hparams {
   uint32_t word_embed_proj_dim = 0;   // for opt
   bool do_layer_norm_before = false;  // for opt
 
+  // ChatGLM-1 & 2 tokenizer
+  int32_t bos_token_id = 0;
+  int32_t eos_token_id = 0;
+  int32_t pad_token_id = 0;
+  int32_t sep_token_id = 0;
+
+  // ChatGLM-2
+  int32_t multi_query_group_num = 0;
+  int32_t ffn_hidden_size = 0;
+
+  // ChatGLM-1
+  int32_t inner_hidden_size = 0;
+
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
   }
@@ -137,6 +152,9 @@ struct model_layer {
 
   // ff
   struct ne_tensor* ffn[MODEL_MAX_FFN];
+
+  struct ne_tensor* k_cache;
+  struct ne_tensor* v_cache;
 };
 
 struct model_kv_cache {
@@ -240,6 +258,7 @@ struct model_context {
   model_vocab vocab;
   int batch_size = 1;
   bool beam_search = false;
+  bool support_jblas_kv = false;  // whether the model graph supports jblas-kvcache
   int beam_size = 1;
   int kv_n_ctx_block = 1;
   generation_config generation_conf;
@@ -369,10 +388,12 @@ class model_name_to_arch {
   model_name_to_arch() {}
   // update this table if has new cpp model
   std::unordered_map<std::string, model_archs> name2arch_ = {
-      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},     {"gptj", MODEL_GPTJ},     {"mpt", MODEL_MPT},
-      {"opt", MODEL_OPT},         {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER},
-      {"falcon", MODEL_FALCON},   {"bloom", MODEL_BLOOM},
-  };
+      {"unknown", MODEL_UNKNOWN},   {"llama", MODEL_LLAMA},
+      {"gptj", MODEL_GPTJ},         {"mpt", MODEL_MPT},
+      {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
+      {"dolly", MODEL_GPTNEOX},     {"starcoder", MODEL_STARCODER},
+      {"falcon", MODEL_FALCON},     {"bloom", MODEL_BLOOM},
+      {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1}};
 };
 
 #ifdef __cplusplus

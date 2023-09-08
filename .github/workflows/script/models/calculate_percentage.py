@@ -10,7 +10,7 @@ def calculate_mean(data):
 
 def parse_output_file(file_path):
     predictions = []
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='UTF-8', errors='ignore') as file:
         for line in file:
             match = re.search(r"time: (\d+\.\d+)ms", line)
             if match:
@@ -19,12 +19,16 @@ def parse_output_file(file_path):
     return predictions
 def parse_memory_file(memory_file):
     memory_values = []
-    with open(memory_file, 'r') as file:
-        for line in file:
-            match = re.search(r"Private \s+\d+\.\d+\s+ \d+\.\d+\s+ (\d+\.\d+)", line)
-            if match:
-                memory_value = float(match.group(1))
-                memory_values.append(memory_value)
+    if os.path.exists(memory_file):
+        with open(memory_file, 'r') as file:
+            for line in file:
+                match = re.search(r"Private \s+\d+\.\d+\s+ \d+\.\d+\s+ (\d+\.\d+)", line)
+                if match:
+                    memory_value = float(match.group(1))
+                    memory_values.append(memory_value)
+    else:
+        print("memory_file is not exist")
+        memory_values.append(0.0)
     return memory_values
 
 

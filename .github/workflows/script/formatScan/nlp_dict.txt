@@ -2288,3 +2288,5 @@ llm
 Gaudi
 Habana
 customizable
+mosaicml
+mpt
