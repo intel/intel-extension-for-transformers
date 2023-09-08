@@ -462,9 +462,7 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
     fprintf(stderr, "  --mlock               force system to keep model in RAM rather than swapping or compressing\n");
   }
   if (model_mmap_supported()) {
-    fprintf(
-        stderr,
-        "  --use-mmap             use memory-map model (faster load but may have NUMA issue)\n");
+    fprintf(stderr, "  --use-mmap             use memory-map model (faster load but may have NUMA issue)\n");
   }
   fprintf(stderr, "  -ngl N, --n-gpu-layers N\n");
   fprintf(stderr, "                        number of layers to store in VRAM\n");

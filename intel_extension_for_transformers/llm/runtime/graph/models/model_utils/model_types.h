@@ -388,10 +388,12 @@ class model_name_to_arch {
   model_name_to_arch() {}
   // update this table if has new cpp model
   std::unordered_map<std::string, model_archs> name2arch_ = {
-      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ}, {"mpt", MODEL_MPT}, {"opt", MODEL_OPT},
-      {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
-      {"bloom", MODEL_BLOOM},{"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1}
-  };
+      {"unknown", MODEL_UNKNOWN},   {"llama", MODEL_LLAMA},
+      {"gptj", MODEL_GPTJ},         {"mpt", MODEL_MPT},
+      {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
+      {"dolly", MODEL_GPTNEOX},     {"starcoder", MODEL_STARCODER},
+      {"falcon", MODEL_FALCON},     {"bloom", MODEL_BLOOM},
+      {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1}};
 };
 
 #ifdef __cplusplus
