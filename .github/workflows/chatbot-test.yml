@@ -18,7 +18,7 @@ on:
       - 'intel_extension_for_transformers/**'
       - 'workflows/chatbot/inference/**'
       - '!intel_extension_for_transformers/llm/runtime/deprecated/docs/**'
-      - '! **.md'
+      - '! **/**/README.md'
 
   workflow_dispatch:
 
