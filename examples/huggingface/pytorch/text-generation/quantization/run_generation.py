@@ -10,7 +10,9 @@ from pathlib import Path
 from datasets import load_dataset, load_from_disk
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-from transformers import AutoTokenizer, PretrainedConfig
+from transformers import AutoConfig, AutoTokenizer, PretrainedConfig
+from transformers.utils import check_min_version
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 import transformers
 import numpy as np
 from itertools import chain
@@ -22,7 +24,7 @@ parser.add_argument(
     "--model", nargs="?", default="EleutherAI/gpt-j-6B", const="EleutherAI/gpt-j-6B"
 )
 parser.add_argument("--revision", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=True)
+parser.add_argument("--trust_remote_code", default=False)
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
@@ -61,9 +63,7 @@ args = parser.parse_args()
 calib_size = 1
 
 # model
-if re.search("mpt", args.model.lower()):
-    from intel_extension_for_transformers.transformers.modeling.mpt import MPTForCausalLM
-    user_model = MPTForCausalLM.from_pretrained(
+config = AutoConfig.from_pretrained(
        args.model,
        torchscript=True
        if args.ipex
@@ -71,15 +71,14 @@ if re.search("mpt", args.model.lower()):
        trust_remote_code=args.trust_remote_code,
        revision=args.revision
        )
-else:
-    from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-    user_model = AutoModelForCausalLM.from_pretrained(
+# transformers version >= 4.32.0 contained the mpt modeling definition.
+# https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
+if config.model_type == "mpt":
+    check_min_version("4.32.0")
+
+user_model = AutoModelForCausalLM.from_pretrained(
        args.model,
-       torchscript=True
-       if args.ipex
-       else False,  # torchscript will force `return_dict=False` to avoid jit errors
-       trust_remote_code=args.trust_remote_code,
-       revision=args.revision
+       config=config
 )
 tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
@@ -111,12 +110,6 @@ if args.quantize:
                 else:
                     new_shape = [input_bs * num_attention_heads, 1, d_k]
                 pkv = pkv + (torch.ones(size=new_shape),)
-        elif user_model.config.model_type == "mpt":
-            new_key_shape = [input_bs, num_attention_heads, d_k, 1]
-            new_value_shape = [input_bs, num_attention_heads, 1, d_k]
-            dummy_key_tensor = torch.ones(size=new_key_shape)
-            dummy_value_tensor = torch.ones(size=new_value_shape)
-            pkv= tuple([dummy_key_tensor, dummy_value_tensor])
         else:
             new_shape = [input_bs, num_attention_heads, 1, d_k]
             dummy_tensor = torch.ones(size=new_shape)
@@ -192,11 +185,7 @@ if args.quantize:
     past_key_values = generate_dummy_past_key_values(input_bs, user_model)
     attention_mask = torch.ones(input_bs, input_len + 1)
     attention_mask[:,0] = 0
-    example_inputs = (
-        input_ids,
-        tuple(past_key_values),
-        attention_mask,
-    )
+    example_inputs = (input_ids, tuple(past_key_values), attention_mask)
     # do inference to check example_inputs formats
     user_model(*example_inputs)
 
