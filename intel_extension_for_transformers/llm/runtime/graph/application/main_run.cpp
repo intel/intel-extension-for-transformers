@@ -212,12 +212,20 @@ int main(int argc, char** argv) {
   }
 
   std::vector<int> embd_inp;
-  if (params.model_arch == MODEL_CHATGLM2 || params.model_arch == MODEL_CHATGLM1) {
+  if (params.model_arch == MODEL_CHATGLM2) {
     std::vector<std::string> prompts;
     prompts.push_back(params.prompt);
     std::string prompt = build_prompt(prompts);
     embd_inp = ::model_tokenize(ctx, prompt, false);
     embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
+  } else if (params.model_arch == MODEL_CHATGLM1) {
+    //std::vector<std::string> prompts;
+    //prompts.push_back(params.prompt);
+    //std::string prompt = build_prompt(prompts);
+    //embd_inp = ::model_tokenize(ctx, prompt, false);
+    //embd_inp.insert(embd_inp.end(), {130001, 130004});  // special postfix
+    printf("-------------------\n");
+    embd_inp.insert(embd_inp.begin(), {5, 74874, 130001, 130004});  // special postfix
   } else {
     embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
   }
