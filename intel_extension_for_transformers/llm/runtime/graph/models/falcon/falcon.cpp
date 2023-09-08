@@ -92,7 +92,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
   const bool kv_mem_jblas = kv_self.k->type == NE_TYPE_JBLAS;
-  NE_ASSERT(("jblas managed kv-cache is not yet supported; use `--memory-f16 / --memory-f32` instead", kv_mem_jblas));
+  NE_ASSERT(("jblas managed kv-cache is not yet supported; use `--memory-f16 / --memory-f32` instead", !kv_mem_jblas));
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
