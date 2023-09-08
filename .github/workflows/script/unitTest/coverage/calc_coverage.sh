@@ -1,12 +1,9 @@
 #!/bin/bash
-source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
-WORKSPACE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage"
-export COVERAGE_RCFILE="/intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/.coveragerc"
-LOG_DIR=/log_dir
+source ../../change_color.sh
+LOG_DIR=$1
 coverage_compare="${LOG_DIR}/coverage_compare.html"
-cat ${COVERAGE_RCFILE}
-coverage_log_pr="${LOG_DIR}/coverage_pr"
-coverage_log_base="${LOG_DIR}/coverage_base"
+coverage_log_pr="${LOG_DIR}/UnitTestPR-test/coverage_pr"
+coverage_log_base="${LOG_DIR}/UnitTestbaseline/coverage_base"
 
 function get_coverage_data() {
     # Input argument
@@ -90,18 +87,22 @@ function check_coverage_status() {
             $BOLD_RED && echo "Unit Test failed with ${item} coverage decrease ${decrease}%" && $RESET
         done
         $BOLD_RED && echo "compare coverage to give detail info" && $RESET
-        bash -x /intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/compare_coverage.sh ${coverage_compare} ${coverage_log_pr}/coverage.log ${coverage_log_base}/coverage.log "FAILED" ${coverage_PR_lines_rate} ${coverage_base_lines_rate} ${coverage_PR_branches_rate} ${coverage_base_branches_rate}
+        bash compare_coverage.sh ${coverage_compare} ${coverage_log_pr}/coverage.log ${coverage_log_base}/coverage.log "FAILED" ${coverage_PR_lines_rate} ${coverage_base_lines_rate} ${coverage_PR_branches_rate} ${coverage_base_branches_rate}
         exit 1
     else
         $BOLD_GREEN && echo "Unit Test success with coverage lines: ${coverage_PR_lines_rate}%, branches: ${coverage_PR_branches_rate}%" && $RESET
         $BOLD_GREEN && echo "compare coverage to give detail info" && $RESET
-        bash -x /intel-extension-for-transformers/.github/workflows/script/unitTest/coverage/compare_coverage.sh ${coverage_compare} ${coverage_log_pr}/coverage.log ${coverage_log_base}/coverage.log "SUCCESS" ${coverage_PR_lines_rate} ${coverage_base_lines_rate} ${coverage_PR_branches_rate} ${coverage_base_branches_rate}
+        bash compare_coverage.sh ${coverage_compare} ${coverage_log_pr}/coverage.log ${coverage_log_base}/coverage.log "SUCCESS" ${coverage_PR_lines_rate} ${coverage_base_lines_rate} ${coverage_PR_branches_rate} ${coverage_base_branches_rate}
     fi
 }
 
 function main() {
     compare_coverage
     check_coverage_status
+    $BOLD_BLUE && echo "PR lines coverage: $lines_PR_covered/$lines_PR_valid ($coverage_PR_lines_rate%)" && $RESET
+    $BOLD_BLUE && echo "PR branches coverage: $branches_PR_covered/$branches_PR_valid ($coverage_PR_branches_rate%)" && $RESET
+    $BOLD_BLUE && echo "BASE lines coverage: $lines_base_covered/$lines_base_valid ($coverage_base_lines_rate%)" && $RESET
+    $BOLD_BLUE && echo "BASE branches coverage: $branches_base_covered/$branches_base_valid ($coverage_base_branches_rate%)" && $RESET
 }
 
 main

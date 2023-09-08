@@ -418,7 +418,6 @@ def load_model(
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
     if device == "hpu":
-
         if peft_path:
             from peft import PeftModel
             model = PeftModel.from_pretrained(model, peft_path)
@@ -444,31 +443,32 @@ def load_model(
             from peft import PeftModel
 
             model = PeftModel.from_pretrained(model, peft_path)
-            model = model.to(torch.bfloat16)
+            model = model.to(torch.bfloat16) if dtype == torch.bfloat16 else model.to(torch.float32)
 
-        import intel_extension_for_pytorch as intel_ipex
+        if dtype == torch.bfloat16:
+            import intel_extension_for_pytorch as intel_ipex
 
-        model = intel_ipex.optimize(
-            model.eval(),
-            dtype=torch.bfloat16,
-            inplace=True,
-            level="O1",
-            auto_kernel_selection=True,
-        )
-        if cpu_jit and (
-            re.search("mpt-7b", model_name, re.IGNORECASE)
-            or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
-        ):
-            from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
-
-            model.config.use_cache = use_cache
-            model = jit_trace_mpt_7b(model)
-            config = AutoConfig.from_pretrained(
-                model_name, use_auth_token=hf_access_token
+            model = intel_ipex.optimize(
+                model.eval(),
+                dtype=torch.bfloat16,
+                inplace=True,
+                level="O1",
+                auto_kernel_selection=True,
             )
-            model = MPTTSModelForCausalLM(
-                model, config, use_cache=use_cache, model_dtype=torch.bfloat16
-            )
+            if cpu_jit and (
+                re.search("mpt-7b", model_name, re.IGNORECASE)
+                or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
+            ):
+                from models.mpt.mpt_trace import jit_trace_mpt_7b, MPTTSModelForCausalLM
+
+                model.config.use_cache = use_cache
+                model = jit_trace_mpt_7b(model)
+                config = AutoConfig.from_pretrained(
+                    model_name, use_auth_token=hf_access_token
+                )
+                model = MPTTSModelForCausalLM(
+                    model, config, use_cache=use_cache, model_dtype=torch.bfloat16
+                )
 
     if not model.config.is_encoder_decoder:
         tokenizer.padding_side = "left"
@@ -510,6 +510,7 @@ def predict_stream(**params):
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
         `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `dtype`(object): default is torch.bfloat16
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -543,6 +544,8 @@ def predict_stream(**params):
     tokenizer = MODELS[model_name]["tokenizer"]
     errors_queue = Queue()
     task = params.get("task", "")
+    dtype = params["dtype"]
+    amp_dtype = torch.bfloat16 if dtype != torch.float32 else None
 
     if task != "":
         # add template
@@ -585,12 +588,13 @@ def predict_stream(**params):
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
         )
+        amp_enabled = True if dtype != torch.float32 else False
 
         def generate_output():
             try:
                 with torch.no_grad():
                     with torch.cpu.amp.autocast(
-                        enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                        enabled=amp_enabled, dtype=amp_dtype, cache_enabled=amp_enabled
                     ):
                         generation_kwargs = dict(
                             streamer=streamer,
@@ -752,6 +756,7 @@ def predict(**params):
         `force_words_ids` (list or None): Contains a list of token IDs that must be included in the generated text.
         `use_hpu_graphs` (bool): Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `dtype`(object): default is torch.bfloat16
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -781,6 +786,8 @@ def predict(**params):
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
+    dtype = params["dtype"]
+    amp_dtype = torch.bfloat16 if dtype != torch.float32 else None
 
     task = params.get("task", "")
 
@@ -822,10 +829,11 @@ def predict(**params):
             use_cache=use_cache,
             num_return_sequences=num_return_sequences,
         )
+        amp_enabled = True if dtype != torch.float32 else False
 
         with torch.no_grad():
             with torch.cpu.amp.autocast(
-                enabled=True, dtype=torch.bfloat16, cache_enabled=True
+                enabled=amp_enabled, dtype=amp_dtype, cache_enabled=amp_enabled
             ):
                 generation_kwargs = dict(
                     generation_config=generation_config, return_dict_in_generate=True
@@ -989,6 +997,7 @@ def main():
         use_hpu_graphs=args.use_hpu_graphs,
         use_cache=args.use_kv_cache,
         num_return_sequences=args.num_return_sequences,
+        dtype=datatype
     ):
         if args.local_rank in [-1, 0]:
             print(new_text, end="", flush=True)
@@ -1015,6 +1024,7 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            dtype=datatype
         ):
             if args.local_rank in [-1, 0]:
                 print(new_text, end="", flush=True)
@@ -1044,6 +1054,7 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            dtype=datatype
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")

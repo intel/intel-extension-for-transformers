@@ -18,45 +18,37 @@ If you don't have a fine-tuned model, please remove the 'peft_model_path' parame
 
 ```bash
 # chat task
-python generate.py \
+# recommended settings (e.g., -m 0 -C 0-55)
+numactl -m <node N> -C <cpu list> python generate.py \
         --base_model_path "mosaicml/mpt-7b-chat" \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --use_kv_cache \
         --task chat \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten." \
         --jit
-
 ```
 
 To enable FP32 inference, you can add the parameter `--dtype "float32"`.
 
 ## LLama2 BF16 Inference
-For Llama, use the below command line to chat with it.
+For Llama2, use the below command line to chat with it.
 If you encounter a failure with the Llama fast tokenizer while using the latest transformers, add the option "--use_slow_tokenizer".
 The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`.
 The `architectures` in `config.json` should be changed from `LLaMAForCausalLM` to `LlamaForCausalLM`.
 
 ```bash
-python generate.py \
+# recommended settings (e.g., -m 0 -C 0-55)
+numactl -m <node N> -C <cpu list> python generate.py \
         --base_model_path "meta-llama/Llama-2-7b-chat-hf" \
-        --use_slow_tokenizer \
         --use_kv_cache \
+        --task chat \
         --instructions "Transform the following sentence into one that shows contrast. The tree is rotten."
 ```
 
 To enable FP32 inference, you can add the parameter `--dtype "float32"`.
 
 ## LLama2 INT8 Inference
-[Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference demostrates in [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) branch and need install Intel-extension-for-pytorch [llm_feature_branch](https://github.com/intel/intel-extension-for-pytorch/tree/llm_feature_branch) branch. Please checkout to int8_llama2 branch first, and then follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
-```bash
-git clone https://github.com/intel/intel-extension-for-transformers.git
-cd intel_extension_for_transformers
-git checkout int8_llama2
-python setup.py install
-cd intel_extension_for_transformers/workflows/chatbot/inference
-# then setup the environment following the README.md mentioned.
-```
-then please follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
+[Llama2](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf) int8 inference demostrates in [int8_llama2](https://github.com/intel/intel-extension-for-transformers/tree/int8_llama2/workflows/chatbot/inference) branch and need install Intel-extension-for-pytorch [llm_feature_branch](https://github.com/intel/intel-extension-for-pytorch/tree/llm_feature_branch) branch. Please follow the [README.md](https://github.com/intel/intel-extension-for-transformers/blob/81a4484dcc93f09d7609e6896fe3fbc22756975b/workflows/chatbot/inference/README.md) to setup the environments and make quantization.
 
 # Inference on Habana Gaudi
 

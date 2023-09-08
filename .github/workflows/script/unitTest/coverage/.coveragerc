@@ -1,8 +1,0 @@
-[run]
-branch = True
-
-[report]
-omit =
- */**/fake*yaml
-exclude_lines =
- pragma: no cover

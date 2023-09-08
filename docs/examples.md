@@ -1,31 +1,30 @@
 # Examples
 
-1. [Quantization](#Quantization)
+1. [Quantization](#quantization)
 
-    1.1 [Stock PyTorch Examples](#Stock-PyTorch-Examples)
+    1.1 [Stock PyTorch Examples](#stock-pytorch-examples)
 
-    1.2 [Intel Extension for Pytorch (IPEX) Examples](#Intel-Extension-for-Pytorch-IPEX-Examples)
+    1.2 [Intel Extension for Pytorch (IPEX) Examples](#intel-extension-for-pytorch-ipex-examples)
 
-    1.3 [Intel TensorFlow Examples](#Intel-TensorFlow-Examples)
+    1.3 [Intel TensorFlow Examples](#intel-tensorflow-examples)
 
-2. [Length Adaptive Transformers](#Length-Adaptive-Transformers)
+2. [Length Adaptive Transformers](#length-adaptive-transformers)
 
-3. [Pruning](#Pruning)
+3. [Pruning](#pruning)
 
-4. [Distillation](#Distillation)
+4. [Distillation](#distillation)
 
-    4.1 [Knowledge Distillation](#Knowledge-Distillation)
+    4.1 [Knowledge Distillation](#knowledge-distillation)
 
-    4.2 [Auto Distillation (NAS Based)](#Auto-Distillation-NAS-Based)
+    4.2 [Auto Distillation (NAS Based)](#auto-distillation-nas-based)
 
-5. [Orchestrate](#Orchestrate)
+5. [Orchestrate](#orchestrate)
 
-6. [Reference Deployment on Neural Engine](#Reference-Deployment-Neural-Engine)
+6. [Reference Deployment on Neural Engine](#reference-deployment-on-neural-engine)
 
-   6.1 [Dense Reference](#Dense-Reference-Deployment-Neural-Engine)
+   6.1 [Dense Reference](#dense-reference-deployment-on-neural-engine)
 
-   6.2 [Sparse Reference](#Sparse-Reference-Deployment-Neural-Engine)
-
+   6.2 [Sparse Reference](#sparse-reference-deployment-on-neural-engine)
 
 
 Intel Extension for Transformers is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile Intel Extension for Transformers provides Transformers-accelerated Neural Engine, an optimized backend for NLP models to demonstrate the deployment.

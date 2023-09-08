@@ -50,6 +50,23 @@
 #define NE_MAX_OPT 4
 #define NE_DEFAULT_N_THREADS 4
 
+#define NE_UNUSED(x) (void)(x)
+#define NE_TENSOR_LOCALS_1(type, prefix, pointer, array) \
+    const type prefix##0 = (pointer)->array[0]; \
+    NE_UNUSED(prefix##0);
+#define NE_TENSOR_LOCALS_2(type, prefix, pointer, array) \
+    NE_TENSOR_LOCALS_1    (type, prefix, pointer, array) \
+    const type prefix##1 = (pointer)->array[1]; \
+    NE_UNUSED(prefix##1);
+#define NE_TENSOR_LOCALS_3(type, prefix, pointer, array) \
+    NE_TENSOR_LOCALS_2    (type, prefix, pointer, array) \
+    const type prefix##2 = (pointer)->array[2]; \
+    NE_UNUSED(prefix##2);
+#define NE_TENSOR_LOCALS(type, prefix, pointer, array) \
+    NE_TENSOR_LOCALS_3  (type, prefix, pointer, array) \
+    const type prefix##3 = (pointer)->array[3]; \
+    NE_UNUSED(prefix##3);
+
 #define NE_ASSERT(x)                                                     \
   do {                                                                   \
     if (!(x)) {                                                          \
@@ -164,6 +181,16 @@ NE_API struct ne_tensor* ne_acc(struct ne_context* ctx, struct ne_tensor* a, str
 
 NE_API struct ne_tensor* ne_acc_inplace(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b, size_t nb1,
                                         size_t nb2, size_t nb3, size_t offset);
+#ifdef NE_TP_MODEL
+NE_API struct ne_tensor* ne_split(struct ne_context * ctx, struct ne_tensor* a, enum parallel_mode p_mode, bool trans);
+
+NE_API struct ne_tensor* ne_all_reduce(struct ne_context* ctx, struct ne_tensor* a);
+
+NE_API struct ne_tensor* ne_tp_concat(struct ne_context* ctx, struct ne_tensor* a, enum parallel_mode  p_mode);
+
+NE_API struct ne_tensor* ne_dump_tensor(struct ne_context* ctx, struct ne_tensor* a);
+
+#endif
 
 NE_API struct ne_tensor* ne_sub(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
@@ -204,6 +231,8 @@ NE_API struct ne_tensor* ne_relu(struct ne_context* ctx, struct ne_tensor* a);
 
 // TODO: double-check this computation is correct
 NE_API struct ne_tensor* ne_gelu(struct ne_context* ctx, struct ne_tensor* a);
+
+NE_API struct ne_tensor* ne_gelu_inplace(struct ne_context* ctx, struct ne_tensor* a);
 
 NE_API struct ne_tensor* ne_silu(struct ne_context* ctx, struct ne_tensor* a);
 
@@ -349,10 +378,10 @@ NE_API struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_t
 // if mode & 1 == 1, skip n_past elements
 // if mode & 2 == 1, GPT-NeoX style
 // TODO: avoid creating a new tensor every time
-NE_API struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode);
+NE_API struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx);
 
 // in-place, returns view(a)
-NE_API struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode);
+NE_API struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx);
 
 // rotary position embedding backward, i.e compute dx from dy
 // a - dy
@@ -376,6 +405,10 @@ NE_API struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor*
 
 NE_API struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k,
                                        struct ne_tensor* v, float scale, bool masked);
+NE_API struct ne_tensor* ne_flash_attn_update_k(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
+                                                int n_past);
+NE_API struct ne_tensor* ne_flash_attn_update_v(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
+                                                int n_past);
 
 NE_API struct ne_tensor* ne_flash_ff(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b0,
                                      struct ne_tensor* b1, struct ne_tensor* c0, struct ne_tensor* c1);

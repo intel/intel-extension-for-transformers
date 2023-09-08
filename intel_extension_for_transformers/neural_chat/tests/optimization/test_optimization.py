@@ -19,8 +19,9 @@ import unittest
 import torch
 from transformers import BitsAndBytesConfig
 from transformers.utils.bitsandbytes import is_bitsandbytes_available
-from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
-from intel_extension_for_transformers.neural_chat.config import PipelineConfig, OptimizationConfig, WeightOnlyQuantizationConfig
+from intel_extension_for_transformers.neural_chat import build_chatbot
+from intel_extension_for_transformers.neural_chat.config import PipelineConfig, WeightOnlyQuantizationConfig
+
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
@@ -29,11 +30,17 @@ class TestChatbotBuilder(unittest.TestCase):
     def tearDown(self) -> None:
         return super().tearDown()
 
+    def test_build_chatbot_with_AMP(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        self.assertIsNotNone(response)
+
     def test_build_chatbot_with_weight_only_quant(self):
-        config = PipelineConfig(
-            optimization_config=OptimizationConfig(
-                weight_only_quant_config=WeightOnlyQuantizationConfig()
-            )
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+            optimization_config=WeightOnlyQuantizationConfig()
         )
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
@@ -44,14 +51,13 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_bitsandbytes_quant(self):
         if is_bitsandbytes_available() and torch.cuda.is_available():
             config = PipelineConfig(
+                model_name_or_path="facebook/opt-125m",
                 device='cuda',
-                optimization_config=OptimizationConfig(
-                    bitsandbytes_config=BitsAndBytesConfig(
+                optimization_config=BitsAndBytesConfig(
                         load_in_4bit=True,
                         bnb_4bit_quant_type='nf4',
                         bnb_4bit_use_double_quant=True,
                         bnb_4bit_compute_dtype="bfloat16"
-                    )
                 )
             )
             chatbot = build_chatbot(config)

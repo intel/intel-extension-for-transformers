@@ -1,6 +1,6 @@
 torch
 numpy
-transformers==4.30.2
+transformers
 datasets
 evaluate
 argparse-range

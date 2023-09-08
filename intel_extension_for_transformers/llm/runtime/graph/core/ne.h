@@ -32,6 +32,9 @@
 
 #include "core/data_types.h"
 #include "layers/Ops.h"
+#ifdef NE_TP_MODEL
+#include "core/parallel_context.h"
+#endif
 
 #define NE_FILE_MAGIC 0x67676d6c  // "ne"
 #define NE_FILE_VERSION 1
