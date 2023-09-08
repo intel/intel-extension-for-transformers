@@ -17,8 +17,8 @@ on:
       - '.github/workflows/sample_data/**'
       - 'intel_extension_for_transformers/**'
       - 'workflows/chatbot/inference/**'
-      - 'workflows/dlsa/**'
-      - 'workflows/hf_finetuning_and_inference_nlp/**'
+      - '!intel_extension_for_transformers/llm/runtime/deprecated/docs/**'
+      - '! **.md'
 
   workflow_dispatch:
 
