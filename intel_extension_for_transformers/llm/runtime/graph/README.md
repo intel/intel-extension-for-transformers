@@ -25,7 +25,6 @@ We support the following models:
 |[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
 |[BLOOM-7B](https://huggingface.co/bigscience/bloomz-7b1)| ✅ | ✅ |
 |[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |  
-|[ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |
 
 ### Code generation models
 | model name | INT8 | INT4|

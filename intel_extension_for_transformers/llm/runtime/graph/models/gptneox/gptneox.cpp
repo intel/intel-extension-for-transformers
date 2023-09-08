@@ -152,8 +152,8 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
                                                         cur->nb[1], 2 * sizeof(float) * n_embd / n_head));
 
       // using mode = 2 for GPT-NeoX mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2, 0);
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2, 0);
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, n_rot, 2);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, n_rot, 2);
 
       // store key and value to memory
       {

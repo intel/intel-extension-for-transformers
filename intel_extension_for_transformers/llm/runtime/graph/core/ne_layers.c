@@ -2929,7 +2929,7 @@ struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* 
 // ne_rope
 
 struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                               int n_ctx, bool inplace) {
+                               bool inplace) {
   NE_ASSERT(n_past >= 0);
   bool is_node = false;
 
@@ -2946,7 +2946,6 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_dims;
   ((int32_t*)b->data)[2] = mode;
-  ((int32_t*)b->data)[3] = n_ctx;
 
   ne_scratch_load(ctx);
 
@@ -2958,12 +2957,12 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   return result;
 }
 
-struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, n_ctx, false);
+struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, false);
 }
 
-struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, n_ctx, true);
+struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, true);
 }
 
 // ne_rope_back
@@ -5791,19 +5790,11 @@ static void ne_compute_forward_gelu(const struct ne_compute_params* params, cons
 }
 
 // ne_compute_forward_silu
-static inline bool ne_is_contiguous_except_dim_1(const struct ne_tensor * tensor) {
-    static_assert(NE_MAX_DIMS == 4, "NE_MAX_DIMS is not 4 - update this function");
-
-    return
-        tensor->nb[0] == NE_TYPE_SIZE[tensor->type] &&
-        tensor->nb[2] == tensor->nb[1]*tensor->ne[1] &&
-        tensor->nb[3] == tensor->nb[2]*tensor->ne[2];
-}
 
 static void ne_compute_forward_silu_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                         struct ne_tensor* dst) {
-  NE_ASSERT(ne_is_contiguous_except_dim_1(src0));
-  NE_ASSERT(ne_is_contiguous_except_dim_1(dst));
+  NE_ASSERT(ne_is_contiguous(src0));
+  NE_ASSERT(ne_is_contiguous(dst));
   NE_ASSERT(ne_are_same_shape(src0, dst));
 
   if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
@@ -7705,135 +7696,116 @@ static void ne_compute_forward_clamp(const struct ne_compute_params* params, con
 }
 
 // ne_compute_forward_rope
-#define NE_TENSOR_UNARY_OP_LOCALS \
-    NE_TENSOR_LOCALS(int64_t, ne0, src0, ne); \
-    NE_TENSOR_LOCALS(size_t,  nb0, src0, nb); \
-    NE_TENSOR_LOCALS(int64_t, ne,  dst,  ne); \
-    NE_TENSOR_LOCALS(size_t,  nb,  dst,  nb);
 
-static void ne_compute_forward_rope_f32(
-        const struct ne_compute_params * params,
-        const struct ne_tensor * src0,
-        const struct ne_tensor* src1,
-        struct ne_tensor * dst) {
+static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                        const struct ne_tensor* src1, struct ne_tensor* dst) {
+  NE_ASSERT(src1->type == NE_TYPE_I32);
+  NE_ASSERT(ne_nelements(src1) == 3);
 
-    if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
-        return;
-    }
+  if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) {
+    return;
+  }
 
-    float freq_base = 10000.0f;
-    float freq_scale = 1.0f;
+  const int n_past = ((int32_t*)src1->data)[0];
+  const int n_dims = ((int32_t*)src1->data)[1];
+  const int mode = ((int32_t*)src1->data)[2];
 
-    const int64_t n_past = ((int32_t*)src1->data)[0];
-    const int64_t n_dims = ((int32_t*)src1->data)[1];
-    const int64_t mode = ((int32_t*)src1->data)[2];
-    const int64_t n_ctx  = ((int32_t*)src1->data)[3];
+  assert(n_past >= 0);
 
-    assert(n_past >= 0);
+  const size_t nb00 = src0->nb[0];
+  const size_t nb01 = src0->nb[1];
+  const size_t nb02 = src0->nb[2];
+  const size_t nb03 = src0->nb[3];
 
-    NE_TENSOR_UNARY_OP_LOCALS;
+  const int64_t ne0 = dst->ne[0];
+  const int64_t ne1 = dst->ne[1];
+  const int64_t ne2 = dst->ne[2];
+  const int64_t ne3 = dst->ne[3];
 
-    NE_ASSERT(nb00 == sizeof(float));
+  const size_t nb0 = dst->nb[0];
+  const size_t nb1 = dst->nb[1];
+  const size_t nb2 = dst->nb[2];
+  const size_t nb3 = dst->nb[3];
 
-    const int ith = params->ith;
-    const int nth = params->nth;
+  // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
+  // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
 
-    const int nr = ne_nrows(dst);
+  NE_ASSERT(nb00 == sizeof(float));
 
-    NE_ASSERT(n_dims <= ne0);
-    NE_ASSERT(n_dims % 2 == 0);
+  const int ith = params->ith;
+  const int nth = params->nth;
 
-    // rows per thread
-    const int dr = (nr + nth - 1)/nth;
+  const int nr = ne_nrows(dst);
 
-    // row range for this thread
-    const int ir0 = dr*ith;
-    const int ir1 = MIN(ir0 + dr, nr);
+  NE_ASSERT(n_dims <= ne0);
+  NE_ASSERT(n_dims % 2 == 0);
 
-    // row index used to determine which thread to use
-    int ir = 0;
+  // rows per thread
+  const int dr = (nr + nth - 1) / nth;
 
-    const float theta_scale = powf(freq_base, -2.0f/n_dims);
+  // row range for this thread
+  const int ir0 = dr * ith;
+  const int ir1 = MIN(ir0 + dr, nr);
 
-    const bool is_neox = mode & 2;
-    const bool is_glm  = mode & 4;
+  // row index used to determine which thread to use
+  int ir = 0;
 
-    for (int64_t i3 = 0; i3 < ne3; i3++) {
-        for (int64_t i2 = ((mode & 1) == 0 ? 0 : n_past); i2 < ne2; i2++) {
-            const int64_t p = ((mode & 1) == 0 ? n_past + i2 : i2);
-            for (int64_t i1 = 0; i1 < ne1; i1++) {
-                if (ir++ < ir0) continue;
-                if (ir   > ir1) break;
+  const float theta_scale = powf(10000.0, -2.0f / n_dims);
 
-                float theta = freq_scale * (float)p;
+  const bool is_neox = mode & 2;
 
-                if (is_glm) {
-                    theta = MIN(p, n_ctx - 2);
-                    float block_theta = MAX(p - (n_ctx - 2), 0);
-                    for (int64_t i0 = 0; i0 < ne0 / 4; i0++) {
-                        const float cos_theta = cosf(theta);
-                        const float sin_theta = sinf(theta);
-                        const float cos_block_theta = cosf(block_theta);
-                        const float sin_block_theta = sinf(block_theta);
+  for (int64_t i3 = 0; i3 < ne3; i3++) {
+    for (int64_t i2 = ((mode & 1) == 0 ? 0 : n_past); i2 < ne2; i2++) {
+      const int64_t p = ((mode & 1) == 0 ? n_past + i2 : i2);
+      for (int64_t i1 = 0; i1 < ne1; i1++) {
+        if (ir++ < ir0) continue;
+        if (ir > ir1) break;
 
-                        theta *= theta_scale;
-                        block_theta *= theta_scale;
+        float theta = (float)p;
 
-                        const float * const src = (float *)((char *) src0->data + i3*nb03 + i2*nb02 + i1*nb01 + i0*nb00);
-                              float * dst_data  = (float *)((char *)  dst->data +  i3*nb3 + i2*nb2  + i1*nb1  + i0*nb0);
+        if (!is_neox) {
+          for (int64_t i0 = 0; i0 < ne0; i0 += 2) {
+            const float cos_theta = cosf(theta);
+            const float sin_theta = sinf(theta);
 
-                        const float x0 = src[0];
-                        const float x1 = src[n_dims/2];
-                        const float x2 = src[n_dims];
-                        const float x3 = src[n_dims/2*3];
+            theta *= theta_scale;
 
-                        dst_data[0]          = x0*cos_theta - x1*sin_theta;
-                        dst_data[n_dims/2]   = x0*sin_theta + x1*cos_theta;
-                        dst_data[n_dims]     = x2*cos_block_theta - x3*sin_block_theta;
-                        dst_data[n_dims/2*3] = x2*sin_block_theta + x3*cos_block_theta;
-                    }
-                } else if (!is_neox) {
-                    for (int64_t i0 = 0; i0 < ne0; i0 += 2) {
-                        const float cos_theta = cosf(theta);
-                        const float sin_theta = sinf(theta);
+            const float* const src = (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01 + i0 * nb00);
+            float* dst_data = (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1 + i0 * nb0);
 
-                        theta *= theta_scale;
+            const float x0 = src[0];
+            const float x1 = src[1];
 
-                        const float * const src = (float *)((char *) src0->data + i3*nb03 + i2*nb02 + i1*nb01 + i0*nb00);
-                              float * dst_data  = (float *)((char *)  dst->data + i3*nb3  + i2*nb2  + i1*nb1  + i0*nb0);
+            dst_data[0] = x0 * cos_theta - x1 * sin_theta;
+            dst_data[1] = x0 * sin_theta + x1 * cos_theta;
+          }
+        } else {
+          // TODO: this is probably wrong, but I can't figure it out ..
+          // ref:
+          // https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_neox/modeling_gpt_neox.py#LL251C1-L294C28
+          for (int64_t ib = 0; ib < ne0 / n_dims; ++ib) {
+            for (int64_t ic = 0; ic < n_dims; ic += 2) {
+              const float cos_theta = cosf(theta);
+              const float sin_theta = sinf(theta);
 
-                        const float x0 = src[0];
-                        const float x1 = src[1];
+              theta *= theta_scale;
 
-                        dst_data[0] = x0*cos_theta - x1*sin_theta;
-                        dst_data[1] = x0*sin_theta + x1*cos_theta;
-                    }
-                } else {
-                    // TODO: this is probably wrong, but I can't figure it out ..
-                    // ref:  https://github.com/huggingface/transformers/blob/main/src/transformers/models/gpt_neox/modeling_gpt_neox.py#LL251C1-L294C28
-                    for (int64_t ib = 0; ib < ne0/n_dims; ++ib) {
-                        for (int64_t ic = 0; ic < n_dims; ic += 2) {
-                            const float cos_theta = cosf(theta);
-                            const float sin_theta = sinf(theta);
+              const int64_t i0 = ib * n_dims + ic / 2;
 
-                            theta *= theta_scale;
+              const float* const src = (float*)((char*)src0->data + i3 * nb03 + i2 * nb02 + i1 * nb01 + i0 * nb00);
+              float* dst_data = (float*)((char*)dst->data + i3 * nb3 + i2 * nb2 + i1 * nb1 + i0 * nb0);
 
-                            const int64_t i0 = ib*n_dims + ic/2;
+              const float x0 = src[0];
+              const float x1 = src[n_dims / 2];
 
-                            const float * const src = (float *)((char *) src0->data + i3*nb03 + i2*nb02 + i1*nb01 + i0*nb00);
-                                  float * dst_data  = (float *)((char *)  dst->data + i3*nb3  + i2*nb2  + i1*nb1  + i0*nb0);
-
-                            const float x0 = src[0];
-                            const float x1 = src[n_dims/2];
-
-                            dst_data[0]        = x0*cos_theta - x1*sin_theta;
-                            dst_data[n_dims/2] = x0*sin_theta + x1*cos_theta;
-                        }
-                    }
-                }
+              dst_data[0] = x0 * cos_theta - x1 * sin_theta;
+              dst_data[n_dims / 2] = x0 * sin_theta + x1 * cos_theta;
             }
+          }
         }
+      }
     }
+  }
 }
 
 static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -10259,7 +10231,7 @@ static void ne_compute_backward(struct ne_context* ctx, struct ne_tensor* tensor
         const int n_past = ((int32_t*)src1->data)[0];
         const int n_dims = ((int32_t*)src1->data)[1];
         const int mode = ((int32_t*)src1->data)[2];
-        src0->grad = ne_add_impl(ctx, src0->grad, ne_rope(ctx, tensor->grad, n_past, n_dims, mode, 0), inplace);
+        src0->grad = ne_add_impl(ctx, src0->grad, ne_rope(ctx, tensor->grad, n_past, n_dims, mode), inplace);
       }
       if (src1->grad) {
         // noop
