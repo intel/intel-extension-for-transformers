@@ -13,7 +13,7 @@
 //  limitations under the License.
 #pragma once
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -21,31 +21,31 @@ extern "C" {
 typedef struct parallel_context parallel_context;
 
 enum parallel_mode {
-    TENSOR_NO_CHANGE,
-    TENSOR_1D_ROW,
-    TENSOR_1D_COL,
-    TENSOR_2D_ROW,
-    TENSOR_2D_COL,
+  TENSOR_NO_CHANGE,
+  TENSOR_1D_ROW,
+  TENSOR_1D_COL,
+  TENSOR_2D_ROW,
+  TENSOR_2D_COL,
 
-    TENSOR_3D_INPUT,
-    TENSOR_3D_WEIGHT,
-    TENSOR_3D_OUTPUT,
-    TENSOR_3D_INPUT_X_WEIGHT,
-    TENSOR_3D_OUTPUT_X_WEIGHT,
+  TENSOR_3D_INPUT,
+  TENSOR_3D_WEIGHT,
+  TENSOR_3D_OUTPUT,
+  TENSOR_3D_INPUT_X_WEIGHT,
+  TENSOR_3D_OUTPUT_X_WEIGHT,
 
-    TENSOR_2P5D_ROW,
-    TENSOR_2P5D_COL,
-    TENSOR_2P5D_DEP
+  TENSOR_2P5D_ROW,
+  TENSOR_2P5D_COL,
+  TENSOR_2P5D_DEP
 };
 parallel_context* init_parallel_context();
 int get_tp_size(parallel_context* p);
 int get_tp_rank(parallel_context* p);
 bool is_master(parallel_context* p);
 void barrier(parallel_context* p);
-void broadcast(parallel_context* p, float *buffer, size_t count);
-void alltoall(parallel_context* p, float *send_buffer, float *recv_buffer, size_t count);
-void reduce_add(parallel_context* p, float *send_buffer, float *recv_buffer, size_t count);
+void broadcast(parallel_context* p, float* buffer, size_t count);
+void alltoall(parallel_context* p, float* send_buffer, float* recv_buffer, size_t count);
+void reduce_add(parallel_context* p, float* send_buffer, float* recv_buffer, size_t count);
 
-#ifdef  __cplusplus
+#ifdef __cplusplus
 }
 #endif

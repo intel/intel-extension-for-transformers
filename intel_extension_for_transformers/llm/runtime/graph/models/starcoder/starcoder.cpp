@@ -268,31 +268,31 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
       // [3072, N]
       // FFN FUSION
       if (jblas_fusion_FFN_Add_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[2]->data,
-                                                 N * batch_size, cur->ne[0], model.layers[il].ffn[0]->ne[1],
-                                                 model.layers[il].ffn[2]->ne[1])) {
-      cur = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2], model.layers[il].ffn[1],
-                            model.layers[il].ffn[3], cur);
-    } else {
-      cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], cur);
+                                                   N * batch_size, cur->ne[0], model.layers[il].ffn[0]->ne[1],
+                                                   model.layers[il].ffn[2]->ne[1])) {
+        cur = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2], model.layers[il].ffn[1],
+                              model.layers[il].ffn[3], cur);
+      } else {
+        cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], cur);
 
-      cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[1], cur), cur);
+        cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[1], cur), cur);
 
-      // GELU activation
-      // [3072, N]
-      cur = ne_gelu(ctx0, cur);
+        // GELU activation
+        // [3072, N]
+        cur = ne_gelu(ctx0, cur);
 
-      // projection
-      // [ 768, 3072] - model.layers[il].c_mlp_proj_w
-      // [ 768,    1] - model.layers[il].c_mlp_proj_b
-      // [3072,    N] - cur (in)
-      // [ 768,    N] - cur (out)
-      //
-      // cur = proj_w*cur + proj_b
-      // [768, N]
-      cur = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
+        // projection
+        // [ 768, 3072] - model.layers[il].c_mlp_proj_w
+        // [ 768,    1] - model.layers[il].c_mlp_proj_b
+        // [3072,    N] - cur (in)
+        // [ 768,    N] - cur (out)
+        //
+        // cur = proj_w*cur + proj_b
+        // [768, N]
+        cur = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
 
-      cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], cur), cur);
-    }
+        cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], cur), cur);
+      }
     }
 
     // input for next layer
