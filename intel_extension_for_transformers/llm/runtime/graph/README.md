@@ -23,6 +23,9 @@ We support the following models:
 |[Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)| ✅ | ✅ | 
 |[MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| ✅ | ✅ | 
 |[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| ✅ | ✅ | 
+|[BLOOM-7B](https://huggingface.co/bigscience/bloomz-7b1)| ✅ | ✅ |
+|[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |  
+|[ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |
 
 ### Code generation models
 | model name | INT8 | INT4|
@@ -43,7 +46,6 @@ ninja
 
 ### 2. Convert LLM
 LLM Runtime assumes the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
-
 
 ```bash
 # download fp32 model (e.g., LLAMA2) from Hugging Face
@@ -80,11 +82,10 @@ quantization args explanations:
 | --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
 | --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
 
-Running GPT-NEOX / MPT / FALCON / / GPT-J / STARCODER model, please use `chat_gptneox` / `chat_mpt` / `chat_falcon` / `chat_starcoder` (Please type **prompt about codes** when use `STARCODER`. For example, `-p "def fibonnaci("`).
 
 ### 3. Run Models
 
-We supply LLM chat python script to run supported models conveniently.
+We supply LLM running python script to run supported models conveniently.
 
 ```bash
 # recommed to use numactl to bind cores in Intel cpus for better performance
@@ -99,7 +100,7 @@ OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name l
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
 ```
 
-Chat script args explanations:
+LLM running script args explanations:
 | arg               | explanation                                                             |
 | --------------    | ----------------------------------------------------------------------- |
 | --model_name      | model name                                                              |
@@ -113,4 +114,35 @@ Chat script args explanations:
 | --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
+
+
+### 4. One-click Script 
+
+You can use the following script to run, including convertion, quantization and inference.
+```
+python scripts/one_click_run.py model-path --weight_dtype int4 -p "She opened the door and see"
+```
+
+LLM one-click running script args explanations:
+| arg               | explanation                                                             |
+| --------------    | ----------------------------------------------------------------------- |
+| model           | directory containing model file or model id                 |
+| --weight_dtype  | data type of quantized weight (default: int4)         |
+| --alg           | quantization algorithm to use: sym/asym (default: sym)      |
+| --block_size    | block size (default: 32)                                    |
+| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
+| --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
+| -p / --prompt     | prompt to start generation with (default: empty)                        |
+| -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
+| -t / --threads    | number of threads to use during computation (default: 56)               |
+| -b / --batch_size | batch size for prompt processing (default: 512)                         |
+| -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                |
+| -s / --seed       | NG seed (default: -1, use random seed for < 0)                          |
+| --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
+| --color           | colorise output to distinguish prompt and user input from generations   |
+| --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
+
+### 5. Tensor Parallelism cross nodes/sockets
+
+We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
 

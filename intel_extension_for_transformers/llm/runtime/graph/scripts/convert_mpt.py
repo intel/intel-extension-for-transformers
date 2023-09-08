@@ -93,6 +93,20 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("f", hparams["attn_config"]["alibi_bias_max"]))
     fout.write(struct.pack("f", hparams["attn_config"]["clip_qkv"] or 0.0))
     fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
+    fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
+
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
+
+    fout.write(struct.pack("i", int(-1 if (hparams.get("bos_token_id", -1)) is None else (hparams.get("bos_token_id", -1)))))
+    fout.write(struct.pack("i", int(-1 if (hparams.get("eos_token_id", -1)) is None else (hparams.get("eos_token_id", -1)))))
 
     vocab_size = hparams["vocab_size"]
 

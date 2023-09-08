@@ -32,11 +32,16 @@ jobs:
             framework: "engine"
             mode: "latency"
             precision: "bf16,int8"
+          - modelName: "gptj-6b"
+            framework: "engine"
+            mode: "latency"
+            precision: "bf16,int8"
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
+          fetch-tags: true
 
       - name: Env build
         run: |

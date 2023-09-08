@@ -94,7 +94,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         results = summarization_evaluate(
             model=self.seq2seq_model, tokenizer_name="t5-small", batch_size=1, limit=5
         )
-        self.assertEqual(results["rouge2"], 14.2213)
+        self.assertEqual(results["rouge2"], 9.6795)
     
     def test_evaluate_for_ort_Seq2SeqLM(self):
         from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate

@@ -21,7 +21,7 @@ import subprocess
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
 
 def main(args_in: Optional[List[str]] = None) -> None:
-    parser = argparse.ArgumentParser(description="main program for chatting with llm")
+    parser = argparse.ArgumentParser(description="main program llm running")
     parser.add_argument("--model_name", type=str, help="model name", required=True)
     parser.add_argument("-m", "--model", type=Path, help="path ne model", required=True)
     parser.add_argument(
@@ -88,7 +88,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     print(args)
     model_name = model_maps.get(args.model_name, args.model_name)
     path = Path(
-        Path(__file__).parent.absolute(), "../build/bin/chat_{}".format(model_name)
+        Path(__file__).parent.absolute(), "../build/bin/run_{}".format(model_name)
     )
     if not path.exists():
         print("Please build graph first or select the correct model name.")

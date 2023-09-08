@@ -30,7 +30,7 @@ from ..pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
 from ..pipeline.plugins.audio.tts import TextToSpeech
 from ..pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 
-__all__ = ['BaseCommand', 'HelpCommand', 'TextChatExecutor', 'VoiceChatExecutor', 'FinetuingExecutor']
+__all__ = ['BaseCommand', 'HelpCommand', 'TextVoiceChatExecutor', 'FinetuingExecutor']
 
 neuralchat_commands = NeuralChatCommandDict()
 
@@ -170,11 +170,9 @@ class VersionCommand:
         return True
 
 
-
-
-class TextChatExecutor(BaseCommandExecutor):
+class TextVoiceChatExecutor(BaseCommandExecutor):
     """
-    TextChatExecutor class for executing text-based conversations with a chatbot.
+    TextVoiceChatExecutor class for executing text-based or voice-based conversations with a chatbot.
 
     This class extends the BaseCommandExecutor class and provides functionality for
     interacting with a chatbot through the command line or the Python API. It initializes
@@ -191,7 +189,7 @@ class TextChatExecutor(BaseCommandExecutor):
     """
     def __init__(self):
         """
-        Initializes the TextChatExecutor class.
+        Initializes the TextVoiceChatExecutor class.
 
         This constructor sets up the necessary components for the chatbot executor.
         It creates a command-line argument parser, initializes the configuration,
@@ -199,9 +197,9 @@ class TextChatExecutor(BaseCommandExecutor):
         """
         super().__init__()
         self.parser = argparse.ArgumentParser(
-            prog='neuralchat.textchat', add_help=True)
+            prog='neuralchat.predict', add_help=True)
         self.parser.add_argument(
-            '--query', type=str, default=None, help='Prompt text.')
+            '--query', type=str, default=None, help='Prompt text or audio file.')
         self.parser.add_argument(
             '--model_name_or_path', type=str, default=None, help='Model name or path.')
 
@@ -223,7 +221,7 @@ class TextChatExecutor(BaseCommandExecutor):
             print(res)
             return True
         except Exception as e:
-            print("TextChatExecutor Exception: ", e)
+            print("TextVoiceChatExecutor Exception: ", e)
             return False
 
     def __call__(
@@ -233,59 +231,6 @@ class TextChatExecutor(BaseCommandExecutor):
             Python API to call an executor.
         """
         result = self.chatbot.chat(prompt)
-        return result
-
-class VoiceChatExecutor(BaseCommandExecutor):
-    def __init__(self):
-        super().__init__()
-        self.parser = argparse.ArgumentParser(
-            prog='neuralchat.voicechat', add_help=True)
-        self.parser.add_argument(
-            '--audio_input_path', type=str, default=None, help='Input aduio path.')
-        self.parser.add_argument(
-            '--audio_output_path', type=str, default=None, help='Output aduio path.')
-        self.parser.add_argument(
-            '--query', type=str, default=None, help='Input text.')
-        self.parser.add_argument(
-            '--model_name_or_path', type=str, default=None, help='Model name or path.')
-
-    def execute(self, argv: List[str]) -> bool:
-        """
-            Command line entry.
-        """
-        parser_args = self.parser.parse_args(argv)
-
-        audio_input_path = parser_args.audio_input_path
-        audio_output_path = parser_args.audio_output_path
-        query = parser_args.query
-        model_name = parser_args.model_name_or_path
-        plugins.tts.enable = True
-        plugins.tts.args["output_audio_path"]=parser_args.audio_output_path
-        if model_name:
-            config = PipelineConfig(plugins=plugins,
-                                    model_name_or_path=model_name)
-        else:
-            config = PipelineConfig(plugins=plugins)
-        self.chatbot = build_chatbot(config)
-        try:
-            if audio_input_path:
-                res = self(audio_input_path, audio_output_path)
-            else:
-                res = self(query, audio_output_path)
-            print(res)
-            return True
-        except Exception as e:
-            print("VoiceChatExecutor Exception: ", e)
-            return False
-
-    def __call__(self,
-                 input: str,
-                 output: str):
-        """
-            Python API to call an executor.
-        """
-        config = GenerationConfig(audio_output_path=output, max_new_tokens=64)
-        result = self.chatbot.chat(input, config=config)
         return result
 
 class FinetuingExecutor(BaseCommandExecutor):
@@ -327,8 +272,7 @@ class FinetuingExecutor(BaseCommandExecutor):
         finetune_model(self.finetuneCfg)
 
 specific_commands = {
-    'textchat': ['neuralchat text chat command', 'TextChatExecutor'],
-    'voicechat': ['neuralchat voice chat command', 'VoiceChatExecutor'],
+    'predict': ['neuralchat text/voice chat command', 'TextVoiceChatExecutor'],
     'finetune': ['neuralchat finetuning command', 'FinetuingExecutor'],
 }
 
@@ -336,4 +280,4 @@ for com, info in specific_commands.items():
     command_register(
         name='neuralchat.{}'.format(com),
         description=info[0],
-        cls='neural_chat.cli.cli_commands.{}'.format(info[1]))
+        cls='intel_extension_for_transformers.neural_chat.cli.cli_commands.{}'.format(info[1]))

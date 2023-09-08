@@ -21,6 +21,7 @@ from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat import PipelineConfig, GenerationConfig
 from intel_extension_for_transformers.neural_chat import plugins
 
+# All UT cases use 'facebook/opt-125m' to reduce test time.
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
         return super().setUp()
@@ -29,14 +30,17 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().tearDown()
 
     def test_build_chatbot_with_default_config(self):
-        chatbot = build_chatbot()
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_customized_pipelinecfg(self):
-        config = PipelineConfig(model_name_or_path="mosaicml/mpt-7b-chat")
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                tokenizer_name_or_path="EleutherAI/gpt-neox-20b",
+                                device="cpu")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
@@ -44,7 +48,8 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_customized_generationcfg(self):
-        chatbot = build_chatbot()
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         config = GenerationConfig(max_new_tokens=512, temperature=0.1)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.", config=config)
@@ -54,18 +59,22 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_audio_plugin(self):
         plugins.tts.enable = True
         plugins.tts.args["output_audio_path"]="./output_audio.wav"
-        pipeline_config = PipelineConfig(plugins=plugins)
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
         gen_config = GenerationConfig(max_new_tokens=64)
-        response = chatbot.predict(query="../../assets/audio/pat.wav", config=gen_config)
+        response = chatbot.predict(query= \
+          "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav", \
+          config=gen_config)
         self.assertIsNotNone(response)
         print("output audio path: ", response)
         self.assertTrue(os.path.exists(plugins.tts.args["output_audio_path"]))
 
     def test_build_chatbot_with_safety_checker_plugin(self):
         plugins.safety_checker.enable = True
-        pipeline_config = PipelineConfig(plugins=plugins)
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="蔡英文是谁？")
@@ -74,11 +83,12 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_retrieval_plugin(self):
         plugins.retrieval.enable = True
-        plugins.retrieval.args["input_path"] = "../../assets/docs/"
-        pipeline_config = PipelineConfig(plugins=plugins)
+        plugins.retrieval.args["input_path"] = "../../../../README.md"
+        pipeline_config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                         plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
-        response = chatbot.predict(query="What are total cores of Intel® Xeon® Platinum 8480+ Processor?")
+        response = chatbot.predict(query="What is Intel extension for transformers?")
         print("response: ", response)
 
 if __name__ == '__main__':

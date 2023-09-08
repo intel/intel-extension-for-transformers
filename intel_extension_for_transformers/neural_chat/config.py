@@ -22,14 +22,6 @@ from transformers import TrainingArguments, BitsAndBytesConfig
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
 
-from .pipeline.plugins.audio.asr import AudioSpeechRecognition
-from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
-from .pipeline.plugins.audio.tts import TextToSpeech
-from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-from .pipeline.plugins.retrievals.indexing import DocumentIndexing
-from .pipeline.plugins.retrievals.retrieval import SparseBM25Retriever, ChromaRetriever
-from .pipeline.plugins.intent_detector import IntentDetector
-from .pipeline.plugins.security import SafetyChecker
 from .plugins import plugins
 
 from enum import Enum, auto
@@ -209,7 +201,7 @@ class DataArguments:
         metadata={"help": "The list of special tokens to add in tokenizer."}
     )
     max_source_length: Optional[int] = field(
-        default=512,
+        default=384,
         metadata={
             "help": (
                 "The maximum total input sequence length after tokenization. Sequences longer "
@@ -218,13 +210,25 @@ class DataArguments:
         },
     )
     max_target_length: Optional[int] = field(
-        default=256,
+        default=128,
         metadata={
             "help": (
                 "The maximum total sequence length for target text after tokenization. Sequences longer "
                 "than this will be truncated, sequences shorter will be padded."
             )
         },
+    )
+    num_beams: Optional[int] = field(
+        default=4,
+        metadata={
+            "help": (
+                "Number of beams to use for evaluation. This argument will be passed to ``model.generate``, "
+                "which is used during ``evaluate`` and ``predict``."
+            )
+        },
+    )
+    eval_dataset_size: int = field(
+        default=500, metadata={"help": "Size of validation dataset."}
     )
     streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
     preprocessing_num_workers: Optional[int] = field(
@@ -300,7 +304,7 @@ class FinetuningArguments:
         metadata={"help": "if False, masks out inputs in loss"},
     )
     device: str = field(
-        default="cpu",
+        default="auto",
         metadata={
             "help": "What device to use for finetuning.",
             "choices": ["cpu", "cuda", "habana", "auto"],
@@ -310,13 +314,67 @@ class FinetuningArguments:
         default=False,
         metadata={"help": "if True, will add adaptor for all linear for lora finetuning"},
     )
+    task: Optional[str] = field(
+        default="completion",
+        metadata={"help": "task name, different task means different data format.",
+            "choices": ["completion", "chat", "summarization"]
+            },
+    )
+    do_lm_eval: bool = field(
+        default=False,
+        metadata={"help": "whether to run the LM evaluation with EleutherAI/lm-evaluation-harness"},
+    )
+    lm_eval_tasks: Optional[List[str]] = field(
+        default_factory=lambda: ["truthfulqa_mc"],
+        metadata={"help": "tasks list for accuracy validation with EleutherAI/lm-evaluation-harness."},
+    )
+    qlora: bool = field(
+        default=False,
+        metadata={"help": "whether use qlora for finetuning"},
+    )
+    double_quant: bool = field(
+        default=True,
+        metadata={"help": "Compress the quantization statistics through double quantization."}
+    )
+    quant_type: str = field(
+        default="nf4",
+        metadata={"help": "Quantization data type to use. Should be one of `fp4` or `nf4`."}
+    )
+    bits: int = field(
+        default=4,
+        metadata={"help": "How many bits to use."}
+    )
 
 @dataclass
-class FinetuningConfig:
+class TTSDatasetArguments:
+    audio_paths: Optional[str] = field(default=None, metadata={"help": "The path of audios."})
+    gender: Optional[str] = field(default=None, metadata={"help": "Gender."})
+    language: Optional[str] = field(default="English", metadata={"help": "Language."})
+
+@dataclass
+class TTSModelArguments:
+    step: int = field(default=0, metadata={"help": "TTS model step."})
+    warmup_step: int = field(default=0, metadata={"help": "TTS model warmup step."})
+    learning_rate: float = field(default=5e-5, metadata={"help": "Learning rate."})
+ 
+@dataclass
+class BaseFinetuningConfig:
     model_args: ModelArguments
     data_args: DataArguments
     training_args: TrainingArguments
     finetune_args: FinetuningArguments
+
+TextGenerationFinetuningConfig = BaseFinetuningConfig
+
+SummarizationFinetuningConfig = BaseFinetuningConfig
+
+CodeGenerationFinetuningConfig = BaseFinetuningConfig
+
+@dataclass
+class TTSFinetuningConfig(BaseFinetuningConfig):
+    training_args: TrainingArguments
+    dataset_args: TTSDatasetArguments
+    model_args: TTSModelArguments
 
 @dataclass
 class GenerationConfig:
@@ -361,12 +419,6 @@ class WeightOnlyQuantizationConfig:
 class AMPConfig:
     dtype: str = 'bfloat16'
 
-@dataclass
-class OptimizationConfig:
-    amp_config: AMPConfig = AMPConfig()
-    weight_only_quant_config: WeightOnlyQuantizationConfig = None
-    bitsandbytes_config: BitsAndBytesConfig = None
-
 class PipelineConfig:
     def __init__(self,
                  model_name_or_path="meta-llama/Llama-2-7b-hf",
@@ -380,7 +432,10 @@ class PipelineConfig:
         self.device = device
         self.plugins = plugins
         self.loading_config = loading_config if loading_config is not None else LoadingModelConfig()
-        self.optimization_config = optimization_config if optimization_config is not None else OptimizationConfig()
+        self.optimization_config = optimization_config if optimization_config is not None else AMPConfig()
+        assert type(self.optimization_config) in [AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig], \
+            f"Expect optimization_config be an object of AMPConfig, WeightOnlyQuantizationConfig" + \
+            " or BitsAndBytesConfig,got {type(self.optimization_config)}."
         for plugin_name, plugin_value in self.plugins.items():
             if plugin_value['enable']:
                 print(f"create {plugin_name} plugin instance...")

@@ -7,11 +7,11 @@ on:
       - ".github/workflows/deploy-test.yml"
       - ".github/workflows/script/models/run_deploy.sh"
       - "intel_extension_for_transformers/backends/**"
-      - "!intel_extension_for_transformers/llm/runtime/kernels/**"
-      - "!intel_extension_for_transformers/llm/runtime/test/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
       - "!intel_extension_for_transformers/llm/runtime/graph/**"
-      - "!intel_extension_for_transformers/llm/runtime/third_party/**"
-      - "!intel_extension_for_transformers/llm/runtime/docs/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
 
   workflow_dispatch:
 
@@ -65,6 +65,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
+          fetch-tags: true
       # We need this because GitHub needs to clone the branch to pipeline
       - name: Docker Build
         run: |

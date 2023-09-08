@@ -62,6 +62,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
+          fetch-tags: true
     # We need this because GitHub needs to clone the branch to pipeline
       - name: Docker Build
         run: |
