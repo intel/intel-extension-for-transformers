@@ -22,6 +22,7 @@ jobs:
         run: |
           cd workflows/chatbot/inference/docker
           docker build ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f ./Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
+
       - name: Start Docker Container
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer")
