@@ -19,7 +19,7 @@ function main() {
         quant_script="./build/bin/quant_llama"
         infer_cmd="./build/bin/run_llama"
         input_model="/tf_dataset2/models/nlp_toolkit/llama-7b-hf"
-        precision_list=("q4")
+        precision_list=("q4_j_vnni_b128" "q4_j_vnni_b32" "q4_0")
     elif [[ "${model}" == "gpt-neox-20b" ]]; then
         convert_script="${working_dir}/scripts/convert_gptneox.py"
         quant_script="./build/bin/quant_gptneox"
