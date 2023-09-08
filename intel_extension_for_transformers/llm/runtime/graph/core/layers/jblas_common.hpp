@@ -98,11 +98,15 @@ using WeiS8Fp32 = jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32<T
 template <class T, JBLAS_ISA ISA>
 using WeiS8Fp32PerN = jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN<T, ISA>;
 
+template <class T, JBLAS_ISA ISA>
+using WeiS4ClipFp32PerN = jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32PerN<T, ISA>;
+
 using WeightCompType = jblas::prologue::weight_comp::gemm_kblcok::WeightCompType;
 
 using SS4Fp32 = jblas::prologue::weight_comp::gemm_kblcok::StorageWeightS4ScaleFp32;
 using SS8Fp32 = jblas::prologue::weight_comp::gemm_kblcok::StorageWeightS8ScaleFp32;
 using SS8Fp32PerN = jblas::prologue::weight_comp::gemm_kblcok::StorageWeightS8ScaleFp32PerChannelN;
+using SS4Fp32PerN = jblas::prologue::weight_comp::gemm_kblcok::StorageWeightS4ScaleFp32PerChannelN;
 
 using GcCompFp32 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512F;
 using GcCompInt8KBlock = jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK;

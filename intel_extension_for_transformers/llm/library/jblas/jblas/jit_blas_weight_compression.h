@@ -1363,6 +1363,11 @@ class PackedWeightParser {
           ptr->deserializeBuffer(rptr, memalloc);
           return ptr;
         }
+        case WeightCompType::WeightS4ClipScaleFp32PerChannelN: {
+          auto ptr = new StorageWeightS4ScaleFp32PerChannelN(jblas::gemm::GemmCoreType::Undef);
+          ptr->deserializeBuffer(rptr, memalloc);
+          return ptr;
+        }
         default:
           return nullptr;
       }
