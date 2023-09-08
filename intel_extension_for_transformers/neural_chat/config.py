@@ -347,15 +347,19 @@ class FinetuningArguments:
 
 @dataclass
 class TTSDatasetArguments:
-    audio_paths: Optional[str] = field(default=None, metadata={"help": "The path of audios."})
+    audio_folder_path: Optional[str] = field(default=None, metadata={"help": "The path to the directory of audios."})
+    text_folder_path: Optional[str] = field(default=None, metadata={"help": "The path to the directory of texts."})
     gender: Optional[str] = field(default=None, metadata={"help": "Gender."})
-    language: Optional[str] = field(default="English", metadata={"help": "Language."})
+    language: Optional[str] = field(default="en", metadata={"help": "Language. \
+                                                            Shoule be one of 'en', 'de', 'fr', 'es', 'pl', 'it', 'ro' \
+                                                            'hu', 'cs', 'nl', 'fi', 'hr', 'sk', 'sl', 'et', 'lt', \
+                                                            'en_accented'"})
 
 @dataclass
 class TTSModelArguments:
     step: int = field(default=0, metadata={"help": "TTS model step."})
     warmup_step: int = field(default=0, metadata={"help": "TTS model warmup step."})
-    learning_rate: float = field(default=5e-5, metadata={"help": "Learning rate."})
+    learning_rate: float = field(default=1e-5, metadata={"help": "Learning rate."})
  
 @dataclass
 class BaseFinetuningConfig:
@@ -371,8 +375,7 @@ SummarizationFinetuningConfig = BaseFinetuningConfig
 CodeGenerationFinetuningConfig = BaseFinetuningConfig
 
 @dataclass
-class TTSFinetuningConfig(BaseFinetuningConfig):
-    training_args: TrainingArguments
+class TTSFinetuningConfig:
     dataset_args: TTSDatasetArguments
     model_args: TTSModelArguments
 
@@ -413,7 +416,7 @@ class WeightOnlyQuantizationConfig:
     bits: int = 8
     group_size: int = -1
     scheme: str = 'sym'
-    sym_full_range: bool = True
+    enable_full_range: bool = True
 
 @dataclass
 class AMPConfig:
