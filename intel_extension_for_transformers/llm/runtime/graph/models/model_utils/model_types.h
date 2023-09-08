@@ -65,16 +65,29 @@
 extern "C" {
 #endif
 
-enum model_archs { MODEL_UNKNOWN, MODEL_LLAMA, MODEL_GPTJ, MODEL_MPT, MODEL_GPTNEOX, MODEL_STARCODER, MODEL_FALCON, 
-                   MODEL_OPT, MODEL_BLOOM};
-
+enum model_archs {
+  MODEL_UNKNOWN,
+  MODEL_LLAMA,
+  MODEL_GPTJ,
+  MODEL_MPT,
+  MODEL_GPTNEOX,
+  MODEL_STARCODER,
+  MODEL_FALCON,
+  MODEL_OPT,
+  MODEL_BLOOM
+};
 
 static const size_t MB = 1024 * 1024;
+
+typedef enum KV_MEM_TYPE {  // Memory kv data type
+  KV_MEM_TYPE_AUTO,         // Try with jblas flash attn managed format; fall back to fp16 if failed
+  KV_MEM_TYPE_F16,          // Use F16 for memory kv
+  KV_MEM_TYPE_F32,          // Use F32 for memory kv
+} KV_MEM_TYPE;
 
 struct model_scratch {
   size_t scratch0;
   size_t scratch1;
-  size_t kv_self;
   size_t eval;
 };
 
@@ -103,12 +116,12 @@ struct model_hparams {
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;
-  int32_t max_seq_len = 0;  // for mpt
-  float alibi_bias_max = 0; // for mpt
-  float clip_qkv = 0;  // for mpt
-  int32_t par_res = 1;  // for neox 1 = true, 0 = false
-  uint32_t word_embed_proj_dim = 0;  // for opt
-  bool do_layer_norm_before = false; // for opt
+  int32_t max_seq_len = 0;            // for mpt
+  float alibi_bias_max = 0;           // for mpt
+  float clip_qkv = 0;                 // for mpt
+  int32_t par_res = 1;                // for neox 1 = true, 0 = false
+  uint32_t word_embed_proj_dim = 0;   // for opt
+  bool do_layer_norm_before = false;  // for opt
 
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
@@ -190,8 +203,8 @@ struct model_vocab {
 
   std::unordered_map<token, id> token_to_id;
   std::vector<token_score> id_to_token;
-  id bos_token_id = -1; //The default value is -1
-  id eos_token_id = -1; //The default value is -1
+  id bos_token_id = -1;  // The default value is -1
+  id eos_token_id = -1;  // The default value is -1
 };
 
 // reference: https://huggingface.co/docs/transformers/main_classes/text_generation#transformers.GenerationConfig
@@ -227,6 +240,7 @@ struct model_context {
   model_vocab vocab;
   int batch_size = 1;
   bool beam_search = false;
+  bool support_jblas_kv = false;  // whether the model graph supports jblas-kvcache
   int beam_size = 1;
   int kv_n_ctx_block = 1;
   generation_config generation_conf;
@@ -307,19 +321,19 @@ typedef struct model_token_data_array {
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
 struct model_context_params {
-  model_archs arch;   // arch of models (GPT-J, LLAMA)
-  int n_ctx;         // text context
-  int n_gpu_layers;  // number of layers to store in VRAM
-  int seed;          // RNG seed, -1 for random
-  bool f16_kv;       // use fp16 for KV cache
-  bool logits_all;   // the model_eval() call computes all logits, not just the last one
-  bool vocab_only;   // only load the vocabulary, no weights
-  bool use_mmap;     // use mmap if possible
-  bool use_mlock;    // force system to keep model in RAM
-  bool embedding;    // embedding mode only
-  int batch_size;    // batch_size of prompt
-  bool beam_search;  // beam search or not
-  int beam_size;     // number of beams for beam search
+  model_archs arch;     // arch of models (GPT-J, LLAMA)
+  int n_ctx;            // text context
+  int n_gpu_layers;     // number of layers to store in VRAM
+  int seed;             // RNG seed, -1 for random
+  KV_MEM_TYPE kv_type;  // KV cache type specification
+  bool logits_all;      // the model_eval() call computes all logits, not just the last one
+  bool vocab_only;      // only load the vocabulary, no weights
+  bool use_mmap;        // use mmap if possible
+  bool use_mlock;       // force system to keep model in RAM
+  bool embedding;       // embedding mode only
+  int batch_size;       // batch_size of prompt
+  bool beam_search;     // beam search or not
+  int beam_size;        // number of beams for beam search
 
   // called with a progress value between 0 and 1, pass NULL to disable
   model_progress_callback progress_callback;
@@ -356,9 +370,9 @@ class model_name_to_arch {
   model_name_to_arch() {}
   // update this table if has new cpp model
   std::unordered_map<std::string, model_archs> name2arch_ = {
-      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},   {"gptj", MODEL_GPTJ}, {"mpt", MODEL_MPT}, {"opt", MODEL_OPT},
-      {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER}, {"falcon", MODEL_FALCON},
-      {"bloom", MODEL_BLOOM},
+      {"unknown", MODEL_UNKNOWN}, {"llama", MODEL_LLAMA},     {"gptj", MODEL_GPTJ},     {"mpt", MODEL_MPT},
+      {"opt", MODEL_OPT},         {"gptneox", MODEL_GPTNEOX}, {"dolly", MODEL_GPTNEOX}, {"starcoder", MODEL_STARCODER},
+      {"falcon", MODEL_FALCON},   {"bloom", MODEL_BLOOM},
   };
 };
 

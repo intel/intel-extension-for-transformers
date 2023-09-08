@@ -70,11 +70,21 @@ struct model_load_tensor_shard {
   void calc_size() { size = model_calc_tensor_size(ne, type); }
 };
 
-enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS };
+enum model_split_type { SPLIT_NONE, SPLIT_BY_COLUMNS, SPLIT_BY_ROWS, TP_1D_ROW, TP_1D_COLUMN};
 
 struct model_load_tensor {
   std::vector<model_load_tensor_shard> shards;
 
+#ifdef NE_TP_MODEL
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  int32_t rank = get_tp_rank(p_ctx);
+  bool enable_tp = world_size > 1 ? true : false;
+
+  // int32_t world_size = 2;
+  // int32_t rank = 1;
+  // bool enable_tp =true;
+#endif
   std::string name;
   enum ne_type type = NE_TYPE_F32;
   model_split_type split_type = SPLIT_NONE;
@@ -116,6 +126,22 @@ struct model_load_tensor {
     } else {
       split_type = SPLIT_BY_ROWS;
     }
+
+#ifdef NE_TP_MODEL
+    if (enable_tp) {
+      if (name.find(".attn.q_proj.weight") != std::string::npos || 
+          name.find(".attn.k_proj.weight") != std::string::npos ||
+          name.find(".attn.v_proj.weight") != std::string::npos ||
+          name.find(".mlp.fc_in.weight") != std::string::npos) {
+        
+        split_type = TP_1D_ROW;
+      } 
+      if (name.find(".mlp.fc_in.bias") != std::string::npos ||
+          name.find(".mlp.fc_out.weight") != std::string::npos) {
+        split_type = TP_1D_COLUMN;
+      }
+    }
+#endif
   }
 
   void calc_ne() {
@@ -139,6 +165,21 @@ struct model_load_tensor {
       case SPLIT_BY_ROWS:
         ne = {first_shard.ne[0], checked_mul<uint32_t>(first_shard.ne[1], n_shards)};
         break;
+#ifdef NE_TP_MODEL
+      case TP_1D_ROW:
+        MODEL_ASSERT(first_shard.ne.size() > 1);
+        MODEL_ASSERT(first_shard.ne[1] % world_size == 0);
+        ne = {first_shard.ne[0], first_shard.ne[1] / world_size};
+        break;
+      case TP_1D_COLUMN:
+        MODEL_ASSERT(first_shard.ne[0] % world_size == 0);
+        if (first_shard.ne.size() == 1) {
+          ne = {first_shard.ne[0] / world_size};
+        } else {
+          ne = {first_shard.ne[0] / world_size, first_shard.ne[1]};
+        }
+        break;
+#endif
     }
   }
 
@@ -447,6 +488,15 @@ struct model_model_loader {
       throw format("model.cpp: tensor '%s' is missing from model", name.c_str());
     }
     model_load_tensor& lt = tensors_map.tensors.at(it->second);
+#ifdef NE_TP_MODEL
+    if (lt.enable_tp && (lt.split_type == TP_1D_ROW || lt.split_type == TP_1D_COLUMN)) {
+      // check the split dim
+      size_t split_dim_size = lt.ne.size() == 1 ? lt.ne.at(0) : (lt.split_type == TP_1D_ROW ? lt.ne.at(1) : lt.ne.at(0));
+      size_t origin_dim_size = ne.size() == 1 ? ne.at(0) : (lt.split_type == TP_1D_ROW ? ne.at(1) : ne.at(0));
+      MODEL_ASSERT(split_dim_size == origin_dim_size / lt.world_size);
+      return get_tensor_for(lt, backend);
+    }
+#endif
     if (lt.ne != ne) {
       throw format("model.cpp: tensor '%s' has wrong shape; expected %s, got %s", name.c_str(),
                    model_format_tensor_shape(ne).c_str(), model_format_tensor_shape(lt.ne).c_str());
@@ -562,6 +612,36 @@ struct model_model_loader {
       }
       MODEL_ASSERT(out_offset == lt.size);
     }
+#ifdef NE_TP_MODEL
+    else if (lt.split_type == TP_1D_ROW) {
+      model_load_tensor_shard& shard = lt.shards.at(0);
+      model_buffer tmp_buf;
+      model_file& file = file_loaders.at(shard.file_idx)->file;
+      file.seek(shard.file_off, SEEK_SET);
+      tmp_buf.resize(lt.size * lt.world_size);
+      file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
+      // only copy part of weight form the tmp_buf of origin file
+      memcpy(lt.data, tmp_buf.addr + lt.rank * lt.size, lt.size);
+    } else if (lt.split_type == TP_1D_COLUMN) {
+      if (lt.size == 0) { return; }
+      model_load_tensor_shard& shard = lt.shards.at(0);
+      model_buffer tmp_buf;
+      model_file& file = file_loaders.at(shard.file_idx)->file;
+      file.seek(shard.file_off, SEEK_SET);
+      tmp_buf.resize(lt.size * lt.world_size);
+      file.read_raw(tmp_buf.addr, lt.size * lt.world_size);
+      size_t offset = 0;
+      size_t num_rows = lt.ne.size() == 1 ? 1 : lt.ne.at(1);
+      // different data type may have differnet per_row_size
+      size_t per_row_size = lt.size / num_rows;
+      for (size_t i = 0; i < num_rows; ++i) {
+        memcpy(lt.data + offset,
+               tmp_buf.addr + lt.rank * per_row_size + i * lt.world_size * per_row_size, per_row_size);
+	offset += per_row_size;
+      }
+      MODEL_ASSERT(offset == lt.size);
+    }
+#endif
     if (0) {
       print_checksum(lt);
     }

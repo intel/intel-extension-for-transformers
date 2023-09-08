@@ -25,11 +25,13 @@ NeuralChat
 
 4. [Advanced Topics](#advanced-topics)
 
-5. [Jupyter Notebooks](#jupyter-notebooks)
+5. [Validated Model List](#validated-model-list)
+
+6. [Jupyter Notebooks](#jupyter-notebooks)
 
 ## Introduction
 
-NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel© Xeon© Scalable processors, Habana Gaudi© AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.
+NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.
 
 <a target="_blank" href="./assets/pictures/neuralchat.png">
 <p align="center">
@@ -61,6 +63,7 @@ neuralchat predict --query "Tell me about Intel Xeon Scalable Processors."
 from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+print(response)
 ```
 
 ### Server Mode
@@ -155,6 +158,16 @@ pipeline_cfg = PipelineConfig(optimization_config=AMPConfig())
 chatbot = build_chatbot(pipeline_cfg)
 ```
 
+## Validated Model List
+The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
+|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation | 
+|------------------------------------|---|---|--- | --- |
+|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
+|LLaMA series| ✅| ✅|✅| ✅
+|LLaMA2 series| ✅| ✅|✅| ✅
+|MPT series| ✅| ✅|✅| ✅
+|FLAN-T5 series| ✅ | **WIP**| **WIP** | **WIP**|
+
 ## Jupyter Notebooks 
 
 Check out the latest notebooks to know how to build and customize a chatbot on different platforms.
@@ -162,7 +175,7 @@ Check out the latest notebooks to know how to build and customize a chatbot on d
 | **Notebook** | **Description** |
 | :----------: | :-------------: |
 | [build chatbot on Intel Xeon Platforms](./docs/notebooks/chatbot_on_intel_cpu.ipynb) | create a chatbot on Intel Xeon Platforms|
-| [build chatbot on Intel Habana Platforms](./docs/notebooks/chatbot_on_intel_habana_gpu.ipynb) | create a chatbot on Intel Habana Platforms|
+| [build chatbot on Intel Habana Platforms](./docs/notebooks/chatbot_on_intel_habana_hpu.ipynb) | create a chatbot on Intel Habana Platforms|
 | [build chatbot on Nvidia GPU Platforms](./docs/notebooks/chatbot_on_nv_gpu.ipynb) | create a chatbot on Nvidia GPU Platforms|
 | [finetune on Nvidia GPU Platforms](./examples/instruction_tuning/finetune_on_Nvidia_GPU.ipynb) | fine-tune LLaMA2 and MPT on Nvidia GPU Platforms|
 
