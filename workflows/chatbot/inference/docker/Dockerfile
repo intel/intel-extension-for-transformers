@@ -70,9 +70,10 @@ RUN source activate && conda activate chatbot-demo && \
     pip install transformers diffusers accelerate SentencePiece peft evaluate nltk datasets && \
     pip install uvicorn sse_starlette bottle gevent pymysql && \
     pip install schema && \
-    pip install datasets torch transformers sentencepiece peft evaluate nltk rouge_score && \
+    pip install datasets torch sentencepiece peft evaluate nltk rouge_score && \
     cd /root/chatbot && git clone https://github.com/intel/intel-extension-for-transformers.git \
-    && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ && pip install -r requirements.txt
+    && cd ./intel-extension-for-transformers/ && pip install -v . \
+    && cd ./workflows/chatbot/inference/ && pip install -r requirements.txt
 
 ENV KMP_BLOCKTIME=1
 ENV KMP_SETTINGS=1
