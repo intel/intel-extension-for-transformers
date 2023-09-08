@@ -15,10 +15,13 @@ on:
       - '.github/workflows/chatbot-finetune-mpt-7b-chat-hpu.yml'
       - '.github/workflows/script/chatbot/**'
       - '.github/workflows/sample_data/**'
-      - 'intel_extension_for_transformers/**'
+      - 'intel_extension_for_transformers/neural_chat/**'
+      - 'intel_extension_for_transformers/llm/evaluation/**'
+      - 'intel_extension_for_transformers/llm/finetuning/**'
+      - 'intel_extension_for_transformers/llm/inference/**'
+      - 'intel_extension_for_transformers/llm/quantization/**'
+      - 'workflows/chatbot/fine_tuning/**'
       - 'workflows/chatbot/inference/**'
-      - 'workflows/dlsa/**'
-      - 'workflows/hf_finetuning_and_inference_nlp/**'
 
   workflow_dispatch:
 
