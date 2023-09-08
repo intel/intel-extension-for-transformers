@@ -115,3 +115,7 @@ LLM running script args explanations:
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 
+
+### 4. Tensor Parallelism cross nodes/sockets
+
+We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.

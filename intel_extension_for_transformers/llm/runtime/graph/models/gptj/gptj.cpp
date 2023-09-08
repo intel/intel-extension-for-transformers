@@ -122,6 +122,22 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     memcpy(static_cast<model_token*>(embd->data) + i * N, tokens + i * N, N * ne_element_size(embd));
   }
 
+  bool enable_tp = false;
+#ifdef NE_TP_MODEL
+  parallel_context* p_ctx = init_parallel_context();
+  int32_t world_size = get_tp_size(p_ctx);
+  int32_t rank = get_tp_rank(p_ctx);
+  enable_tp = world_size > 1 ? true : false;
+
+  // int32_t world_size = 2;
+  // int32_t rank = 0;
+  // bool enable_tp =true;
+  if (enable_tp) {
+    // need to broadcast the ids
+    broadcast(p_ctx, (float*)embd->data,  N * batch_size * ne_element_size(embd));
+  }
+#endif
+
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
   for (int il = 0; il < n_layer; ++il) {
@@ -167,15 +183,42 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       }
 
     } else {
-      Qcur = ne_rope_inplace(
-          ctx0,
-          ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), n_embd / n_head, n_head, N, batch_size),
-          n_past, n_rot, 0, 0);
-      Kcur = ne_rope_inplace(
-          ctx0,
-          ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N, batch_size),
-          n_past, n_rot, 0, 0);
-      Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
+      if (!enable_tp) {
+        // printf("\n\n\n work into attention split,\n\n\n");
+        Qcur = ne_rope_inplace(
+            ctx0,
+            ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), n_embd / n_head, n_head, N, batch_size),
+            n_past, n_rot, 0, 0);
+        Kcur = ne_rope_inplace(
+            ctx0,
+            ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N, batch_size),
+            n_past, n_rot, 0, 0);
+        Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
+      }
+#ifdef NE_TP_MODEL
+      else {
+        struct ne_tensor* Qpartial = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
+        struct ne_tensor* Kpartial = ne_mul_mat(ctx0, model.layers[il].attn[1], cur);
+        struct ne_tensor* Vpartial = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
+        
+        // pack the partial result and reduce to the full output tensor
+        struct ne_tensor* Qfull = ne_tp_concat(ctx0, Qpartial, TENSOR_1D_COL);
+        struct ne_tensor* Kfull = ne_tp_concat(ctx0, Kpartial, TENSOR_1D_COL);
+        struct ne_tensor* Vfull = ne_tp_concat(ctx0, Vpartial, TENSOR_1D_COL);
+        // // dump tensor for the accuracy debuging
+        // if (il == 1) {
+        //   Vfull = ne_dump_tensor(ctx0, Vfull);
+        // }
+
+        Qfull = ne_all_reduce(ctx0, Qfull);
+        Kfull = ne_all_reduce(ctx0, Kfull);
+        Vfull = ne_all_reduce(ctx0, Vfull);
+
+        Qcur = ne_rope_inplace(ctx0, ne_reshape_3d(ctx0, Qfull, n_embd/n_head, n_head, N), n_past, n_rot, 0, 0);
+        Kcur = ne_rope_inplace(ctx0, ne_reshape_3d(ctx0, Kfull, n_embd/n_head, n_head, N), n_past, n_rot, 0, 0);
+        Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vfull, n_embd, N));
+      }
+#endif
     }
     ne_set_name(Qcur, "Qcur");
     ne_set_name(Kcur, "Kcur");
@@ -230,7 +273,6 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                n_ctx * ne_element_size(kv_self.v) * n_embd,
                                ((il * n_ctx) * ne_element_size(kv_self.v) * n_embd * kv_n_ctx_block +
                                 i * n_ctx * n_embd * ne_element_size(kv_self.v) + n_past * ne_element_size(kv_self.v)));
-          ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
         }
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
@@ -362,7 +404,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
 
     lctx.use_buf(ctx0, 1);
     struct ne_tensor* inpFF = KQV_out;
-
+ 
     // feed-forward network
     // disable ffn fusion because fp32 support not ready
     if (jblas_fusion_FFN_Add_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[2]->data,
@@ -382,6 +424,10 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       struct ne_tensor* FFN_out = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
       ne_set_name(FFN_out, "FFN_out");
 
+#ifdef NE_TP_MODEL
+      // if tp model then all reduce as the weight has been split
+      if (enable_tp) { FFN_out = ne_all_reduce(ctx0, FFN_out);};
+#endif
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], FFN_out), FFN_out);
     }
     cur = ne_add(ctx0, cur, inpFF);

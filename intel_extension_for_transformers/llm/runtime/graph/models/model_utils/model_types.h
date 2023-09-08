@@ -258,6 +258,7 @@ struct model_context {
   model_vocab vocab;
   int batch_size = 1;
   bool beam_search = false;
+  bool support_jblas_kv = false;  // whether the model graph supports jblas-kvcache
   int beam_size = 1;
   int kv_n_ctx_block = 1;
   generation_config generation_conf;
