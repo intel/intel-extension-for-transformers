@@ -40,8 +40,8 @@
 #include "models/models.h"
 
 void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
-                         bool use_mmap, bool use_mlock, bool vocab_only,
-                         model_progress_callback progress_callback, void* progress_callback_user_data) {
+                         bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
+                         void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
   std::unique_ptr<IModel> ms(new CHATGLM2());
@@ -51,8 +51,8 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void CHATGLM2::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_,
-                bool use_mmap_, bool use_mlock_, bool vocab_only_) {
+void CHATGLM2::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
+                    bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
@@ -133,25 +133,29 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
     // norm: cur = ln_1_g*cur + ln_1_b
     layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
     layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
-  
+
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".self_attention.query_key_value.weight", {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".self_attention.query_key_value.bias", {n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
+    layer.attn[0] = ml->get_tensor(
+        layers_i + ".self_attention.query_key_value.weight",
+        {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
+    layer.attn[1] =
+        ml->get_tensor(layers_i + ".self_attention.query_key_value.bias",
+                       {n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
     layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, model.hparams.ffn_hidden_size * 2}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {model.hparams.ffn_hidden_size, n_embd}, backend);
+    layer.ffn[0] =
+        ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, model.hparams.ffn_hidden_size * 2}, backend);
+    layer.ffn[1] =
+        ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight", {model.hparams.ffn_hidden_size, n_embd}, backend);
 
     layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096 / 32, 32768, 2);
     layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 32768, 4096 / 32, 2);
     if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
-                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
-                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
-                    ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) + 
+      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) + ne_nbytes(layer.norm[2]) +
+                    ne_nbytes(layer.norm[3]) + ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
+                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) + ne_nbytes(layer.ffn[0]) +
+                    ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) +
                     ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
     }
   }
@@ -184,7 +188,8 @@ class chatglm2_quant_layer : public quant_layer_base {
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
     bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
-    if (layername == "transformer.embedding.word_embeddings.weight" || layername == "transformer.word_embeddings.weight") {
+    if (layername == "transformer.embedding.word_embeddings.weight" ||
+        layername == "transformer.word_embeddings.weight") {
       // special layer process, can be loaded by config file
       return quant_params_internal();  // return q4_0 to cover the usage of getrow
     }

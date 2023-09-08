@@ -173,12 +173,10 @@ class ql_registerer {
   }
 };
 
-#define REGISTER_QUANT_LAYER_CREATOR(type, creator)                       \
-  static ql_registerer ql_creator_##type(#type, creator);
+#define REGISTER_QUANT_LAYER_CREATOR(type, creator) static ql_registerer ql_creator_##type(#type, creator);
 
-#define REGISTER_QUANT_LAYER_CLASS(type)                                  \
-  std::shared_ptr<quant_layer_base> creator_##type##_quant_layer()        \
-  {                                                                       \
-    return std::shared_ptr<quant_layer_base> (new type##_quant_layer());  \
-  }                                                                       \
+#define REGISTER_QUANT_LAYER_CLASS(type)                                \
+  std::shared_ptr<quant_layer_base> creator_##type##_quant_layer() {    \
+    return std::shared_ptr<quant_layer_base>(new type##_quant_layer()); \
+  }                                                                     \
   REGISTER_QUANT_LAYER_CREATOR(type, creator_##type##_quant_layer)
