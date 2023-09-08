@@ -5,3 +5,4 @@ packaging
 protobuf --no-binary=protobuf
 transformers
 evaluate
+optimum-intel
