@@ -47,6 +47,12 @@ using QKVGemmDynamicS8Fp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePa
         jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
         jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
+using QKVGemmDynamicS4ClipFp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
+        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32PerN,
+        jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
+    jblas::utils::parallel::Parallel2DGemm>;
 }  // namespace avx512_vnni
 namespace amx_int8 {
 static JBLAS_ISA constexpr DefaultISA = JblasAMX_INT8;
@@ -69,6 +75,12 @@ using QKVGemmDynamicS8Fp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePa
         jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
         jblas::epilogue::gemm::DequantInt32ToFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
+using QKVGemmDynamicS4ClipFp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8, jblas::prologue::gemm::ActivationFp32SymS8Quantize,
+        jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32PerN,
+        jblas::epilogue::gemm::DequantInt32ToFp32>,
+    jblas::utils::parallel::Parallel2DGemm>;
 }  // namespace amx_int8
 }  // namespace transformer
 }  // namespace
@@ -87,7 +99,8 @@ bool jblas_fusion_QKV_f32f32_support(void* wqptr, void* wkptr, void* wvptr, int 
         constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
         support = contains(wqtmp->mCoreType, GcCompInt8KBlockSet, EleNum);
         support &= hasISA(GcCompInt8KBlockSet, EleNum);
-      } else if (wqtmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
+      } else if (wqtmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
+                 wqtmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
         constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
         support = contains(wqtmp->mCoreType, GcCompInt8Set, EleNum);
         support &= hasISA(GcCompInt8Set, EleNum);
@@ -227,6 +240,49 @@ JBLAS_CODE jblas_QKVs8fp32pern_f32f32_forward(float* activation, SS8Fp32PerN* wq
   return ret;
 }
 
+JBLAS_CODE jblas_QKVs4clipfp32pern_f32f32_forward(float* activation, SS4Fp32PerN* wqptr, SS4Fp32PerN* wkptr,
+                                                  SS4Fp32PerN* wvptr, float* output, int _m, int _n, int _k, int lda,
+                                                  int ldo, void* workspace) {
+  GetCPUDevice();
+  auto ret = JblasRuntimeError;
+  if (wqptr->mCoreType == GcCompInt8::TYPE) {
+    if (_cd->AMX_INT8()) {
+      using GemmKernel = transformer::amx_int8::QKVGemmDynamicS4ClipFp32PerN;
+      static GemmKernel kernel;
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, (int8_t*)workspace);
+      GemmKernel::WeightType::Param wparams[3]{
+          wqptr,
+          wkptr,
+          wvptr,
+      };
+      GemmKernel::CParam oparams[3]{
+          {output, ldo, quanA->mSPtr, quanA->lds, wqptr->mSPtr},
+          {output + _m * _n, ldo, quanA->mSPtr, quanA->lds, wkptr->mSPtr},
+          {output + 2 * _m * _n, ldo, quanA->mSPtr, quanA->lds, wvptr->mSPtr},
+      };
+      ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
+      delete quanA;
+    } else if (_cd->AVX512_VNNI()) {
+      using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS4ClipFp32PerN;
+      static GemmKernel kernel;
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, (int8_t*)workspace);
+      GemmKernel::WeightType::Param wparams[3]{
+          wqptr,
+          wkptr,
+          wvptr,
+      };
+      GemmKernel::CParam oparams[3]{
+          {output, ldo, quanA->mZPtr, quanA->mSPtr, quanA->lds, wqptr->mRPtr, wqptr->mSPtr},
+          {output + _m * _n, ldo, quanA->mZPtr, quanA->mSPtr, quanA->lds, wkptr->mRPtr, wkptr->mSPtr},
+          {output + 2 * _m * _n, ldo, quanA->mZPtr, quanA->mSPtr, quanA->lds, wvptr->mRPtr, wvptr->mSPtr},
+      };
+      ret = kernel.compute<true, false>({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
+      delete quanA;
+    }
+  }
+  return ret;
+}
+
 // f32f32: activation & output dtype
 void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr, void* wvptr, float* output, int _m,
                                      int _n, int _k, int lda, int ldo, void* workspace) {
@@ -246,6 +302,10 @@ void jblas_fusion_QKV_f32f32_forward(float* activation, void* wqptr, void* wkptr
     ret = jblas_QKVs8fp32pern_f32f32_forward(activation, dynamic_cast<SS8Fp32PerN*>(wqtmp),
                                              dynamic_cast<SS8Fp32PerN*>(wktmp), dynamic_cast<SS8Fp32PerN*>(wvtmp),
                                              output, _m, _n, _k, lda, ldo, workspace);
+  } else if (wqtmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+    ret = jblas_QKVs4clipfp32pern_f32f32_forward(activation, dynamic_cast<SS4Fp32PerN*>(wqtmp),
+                                                 dynamic_cast<SS4Fp32PerN*>(wktmp), dynamic_cast<SS4Fp32PerN*>(wvtmp),
+                                                 output, _m, _n, _k, lda, ldo, workspace);
   }
   assert(ret == JblasSuccess);
   safe_delete(wqtmp);
