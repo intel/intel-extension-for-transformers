@@ -48,14 +48,21 @@ python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \
     --approach weight_only \
-    --output_dir "saved_results" \
+    --woq_bits 4 \
+    --woq_group_size 128 \
+    --woq_scheme asym  \
+    --woq_algo RTN \
+    --woq_mse_range \
+    --output_dir "saved_results"
 ```
-**Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN/AWQ[1]/GPTQ[2] algorithms. You can try it with `--approach weight_only`. `--awq` will trigger AWQ algorithm. `--gptq` will trigger GPTQ algorithm. For example, to run a GPTQ example, try the following command.
+**Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN, GPTQ[1], AWQ[2], TEQ algorithms. For more details, please refer to [link](https://github.com/intel/neural-compressor/blob/master/docs/source/quantization_weight_only.md)
+
+
 ```bash
 python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
-    --weight_only_algo GPTQ \
-    --weight_only_bits 4 \
+    --woq_algo GPTQ \
+    --woq_bits 4 \
     --quantize \
     --pad_max_length 2048 \
     --gptq_pad_max_length 2048 \
@@ -242,5 +249,5 @@ python run_mlm.py \
     --overwrite_output_dir
 ```
 
-[1]. Lin, Ji, et al. "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration." arXiv preprint arXiv:2306.00978 (2023).
-[2]. Elias, Frantar, et al. "GPTQ: Accurate Post-training Compression for Generative Pretrained Transformers." arXiv preprint arXiv:2210.17323 (2023).
+[1]. Elias, Frantar, et al. "GPTQ: Accurate Post-training Compression for Generative Pretrained Transformers." arXiv preprint arXiv:2210.17323 (2023).
+[2]. Lin, Ji, et al. "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration." arXiv preprint arXiv:2306.00978 (2023).
