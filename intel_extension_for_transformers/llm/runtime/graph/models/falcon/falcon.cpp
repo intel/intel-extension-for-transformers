@@ -139,8 +139,8 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
                                           fused_qkv_row_nb, (n_embd + n_head_kv * head_dim) * ne_element_size(cur));
 
       // using mode = 2 for neox mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2);
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2);
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2, 0);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2, 0);
 
       // store key and value to memory
       {

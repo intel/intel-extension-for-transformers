@@ -40,6 +40,12 @@ option(NE_ALL_WARNINGS           "neural_engine: enable all compiler warnings"  
 option(NE_ALL_WARNINGS_3RD_PARTY "neural_engine: enable all compiler warnings in 3rd party libs" OFF)
 option(NE_GPROF                  "neural_engine: enable gprof"                                   OFF)
 
+# tensor parallism
+option(NE_TP                     "neural_engine: enable tensor parallism"                        OFF)
+if (NE_TP)
+  add_compile_definitions(NE_TP_MODEL)
+endif()
+
 # sanitizers
 option(NE_SANITIZE_THREAD        "neural_engine: enable thread sanitizer"                        OFF)
 option(NE_SANITIZE_ADDRESS       "neural_engine: enable address sanitizer"                       OFF)

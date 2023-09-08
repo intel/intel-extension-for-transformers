@@ -1084,12 +1084,12 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
         /* .sl_q = */ 1,  // for next-token inference
         /* .sl_kv = */ static_cast<int>(hparams.n_ctx),
     };
-    const ne_type memory_type =
-        params.kv_type == KV_MEM_TYPE_F16   ? NE_TYPE_F16
-        : params.kv_type == KV_MEM_TYPE_F32 ? NE_TYPE_F32
-        : params.kv_type == KV_MEM_TYPE_AUTO
-            ? (jblas_reordered_attn_fp32_support(&attn_shape) ? NE_TYPE_JBLAS : NE_TYPE_F16)  // fall back to fp16
-            : NE_TYPE_COUNT;
+    const bool support_jblas_kv = ctx->support_jblas_kv && jblas_reordered_attn_fp32_support(&attn_shape);
+    const ne_type memory_type = params.kv_type == KV_MEM_TYPE_F16   ? NE_TYPE_F16
+                                : params.kv_type == KV_MEM_TYPE_F32 ? NE_TYPE_F32
+                                : params.kv_type == KV_MEM_TYPE_AUTO
+                                    ? (support_jblas_kv ? NE_TYPE_JBLAS : NE_TYPE_F16)  // fall back to fp16
+                                    : NE_TYPE_COUNT;
     NE_ASSERT(memory_type != NE_TYPE_COUNT);
 
     if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size)) {
