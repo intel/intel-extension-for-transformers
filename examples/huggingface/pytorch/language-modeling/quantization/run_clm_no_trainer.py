@@ -1,13 +1,15 @@
 import argparse
 import os
+import sys
+sys.path.append('./')
 import time
 import json
 import re
 import torch
 from datasets import load_dataset
+import datasets
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -29,11 +31,6 @@ parser.add_argument(
 )
 parser.add_argument("--approach", type=str, default='static', 
                     help="Select from ['dynamic', 'static', 'weight-only']")
-parser.add_argument("--sq", action="store_true")
-parser.add_argument("--alpha", default="auto",
-                    help="Smooth quant parameter.")
-parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
-                    help="Weight-only parameter.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument("--ipex", action="store_true", help="Use intel extension for pytorch.")
 parser.add_argument("--accuracy", action="store_true")
@@ -48,10 +45,28 @@ parser.add_argument("--calib_iters", default=512, type=int,
 parser.add_argument("--tasks", nargs='+', default=["lambada_openai",
     "hellaswag","winogrande","piqa","wikitext"],
     type=str, help="tasks list for accuracy validation")
-parser.add_argument("--weight_only_bits", type=int, default=8)
-parser.add_argument("--weight_only_group", type=int, default=-1)
-parser.add_argument("--weight_only_scheme", default="sym")
-parser.add_argument("--weight_only_sym_full_range", action="store_true")
+parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_or_path of peft model")
+# ============SmoothQuant configs==============
+parser.add_argument("--sq", action="store_true")
+parser.add_argument("--alpha", default="auto", help="Smooth quant parameter.")
+# ============WeightOnly configs===============
+parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', 'GPTQ'], 
+                    help="Weight-only parameter.")
+parser.add_argument("--woq_bits", type=int, default=8)
+parser.add_argument("--woq_group_size", type=int, default=-1)
+parser.add_argument("--woq_scheme", default="sym")
+parser.add_argument("--woq_mse_range", action="store_true")
+parser.add_argument("--woq_sym_full_range", action="store_true")
+# =============GPTQ configs====================
+parser.add_argument("--gptq_actorder", action="store_true", help="Whether to apply the activation order GPTQ heuristic.")
+parser.add_argument('--gptq_percdamp', type=float, default=.01, help='Percent of the average Hessian diagonal to use for dampening.')
+parser.add_argument('--gptq_block_size', type=int, default=128, help='Block size. sub weight matrix size to run GPTQ.')
+parser.add_argument('--gptq_nsamples', type=int, default=128, help='Number of calibration data samples.')
+parser.add_argument('--gptq_use_max_length', action="store_true", help='Set all sequence length to be same length of args.gptq_pad_max_length')
+parser.add_argument('--gptq_pad_max_length', type=int, default=2048, help='Calibration dataset sequence max length, \
+                                                                           this should align with your model config, \
+                                                                           and your dataset builder args: args.pad_max_length')
+# =======================================
 
 args = parser.parse_args()
 if args.ipex:
@@ -73,7 +88,7 @@ class Evaluator:
 
     @torch.no_grad()
     def tokenize_function(self, examples):
-        if args.weight_only_algo in ['TEQ']:
+        if args.woq_algo in ['TEQ']:
             if self.tokenizer.pad_token is None:
                 self.tokenizer.pad_token = self.tokenizer.eos_token
             example = self.tokenizer(examples["text"], padding="max_length", max_length=self.pad_max)
@@ -134,10 +149,11 @@ class Evaluator:
         print("Latency: ", latency)
         return acc
 
+
 def get_user_model():
     from transformers import AutoModelForCausalLM, AutoModel, AutoTokenizer
     torchscript = False
-    if args.sq or args.weight_only_algo in ['AWQ', 'TEQ']:
+    if args.sq or args.woq_algo in ['AWQ', 'TEQ']:
         torchscript = True
     if re.search("llama", args.model.lower()):
         import transformers
@@ -185,16 +201,24 @@ def get_user_model():
         )
         tokenizer = AutoTokenizer.from_pretrained(args.model)
 
+    # Set model's seq_len when GPTQ calibration is enabled.
+    if args.woq_algo == 'GPTQ':
+        user_model.seqlen = args.gptq_pad_max_length
+
+    if args.peft_model_id is not None:
+        from peft import PeftModel
+        user_model = PeftModel.from_pretrained(user_model, args.peft_model_id)
+
     # to channels last
     user_model = user_model.to(memory_format=torch.channels_last)
     user_model.eval()
     return user_model, tokenizer
 
-
 if args.quantize:
     # dataset
     user_model, tokenizer = get_user_model()
     calib_dataset = load_dataset(args.dataset, split="train")
+    # calib_dataset = datasets.load_from_disk('/your/local/dataset/pile-10k/') # use this if trouble with connecting to HF
     calib_dataset = calib_dataset.shuffle(seed=42)
     calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
     calib_dataloader = DataLoader(
@@ -211,20 +235,46 @@ if args.quantize:
             prepared_model(calib_input[0])
 
     recipes = {}
+    eval_func = None
     from neural_compressor import PostTrainingQuantConfig, quantization
+    # specify the op_type_dict and op_name_dict
     if args.approach == 'weight_only':
         op_type_dict = {
             '.*':{ 	# re.match
                 "weight": {
-                    'bits': args.weight_only_bits, # 1-8 bits 
-                    'group_size': args.weight_only_group,  # -1 (per-channel)
-                    'scheme': args.weight_only_scheme, # sym/asym
-                    'algorithm': args.weight_only_algo, # RTN/AWQ/TEQ
+                    'bits': args.woq_bits, # 1-8 bits 
+                    'group_size': args.woq_group_size,  # -1 (per-channel)
+                    'scheme': args.woq_scheme, # sym/asym
+                    'algorithm': args.woq_algo, # RTN/AWQ/TEQ
                 },
             },
         }
-        if args.weight_only_sym_full_range:
-            recipes.update({"rtn_args": {"sym_full_range": True}})
+        op_name_dict={
+            'lm_head':{"weight": {'dtype': 'fp32'},},
+            'embed_out':{"weight": {'dtype': 'fp32'},},  # for dolly_v2
+        }
+        recipes["rtn_args"] = {
+            "mse_range": args.woq_mse_range,
+            "sym_full_range": args.woq_sym_full_range,
+        }
+        recipes['gptq_args'] = {
+                'percdamp': args.gptq_percdamp, 
+                'act_order':args.gptq_actorder, 
+                'block_size': args.gptq_block_size, 
+                'nsamples': args.gptq_nsamples, 
+                'use_max_length': args.gptq_use_max_length
+            }
+        # GPTQ: use assistive functions to modify calib_dataloader and calib_func
+        # TEQ: set calib_func=None, use default training func as calib_func
+        if args.woq_algo in ["GPTQ", "TEQ"]:
+            calib_func = None
+
+        conf = PostTrainingQuantConfig(
+            approach=args.approach,
+            op_type_dict=op_type_dict,
+            op_name_dict=op_name_dict,
+            recipes=recipes,
+        )
     else:
         if re.search("gpt", user_model.config.model_type):
             op_type_dict = {
@@ -232,22 +282,15 @@ if args.quantize:
             }
         else:
             op_type_dict = {}
-    excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    if args.sq:
-        # alpha can be a float number of a list of float number.
-        args.alpha = args.alpha if args.alpha == "auto" else eval(args.alpha)
-        if re.search("falcon", user_model.config.model_type):
-            recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha, 'folding': False}}
-        else:
-            recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha}}
-        conf = PostTrainingQuantConfig(
-            backend="ipex" if args.ipex else "default",
-            approach=args.approach,
-            excluded_precisions=excluded_precisions,
-            op_type_dict=op_type_dict,
-            recipes=recipes,
-        )
-    else:
+        excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
+        if args.sq:
+            # alpha can be a float number of a list of float number.
+            args.alpha = args.alpha if args.alpha == "auto" else eval(args.alpha)
+            if re.search("falcon", user_model.config.model_type):
+                recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha, 'folding': False}}
+            else:
+                recipes = {"smooth_quant": True, "smooth_quant_args": {'alpha': args.alpha}}
+
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
             approach=args.approach,
@@ -256,17 +299,13 @@ if args.quantize:
             recipes=recipes,
         )
 
-    if args.weight_only_algo == 'TEQ':
-        # set calib_func=None, use default training func as calib_func
-        calib_func = None
-
-    eval_dataset = load_dataset('lambada', split='validation')
-    evaluator = Evaluator(eval_dataset, tokenizer)
-    def eval_func(model):
-        acc = evaluator.evaluate(model)
-        return acc
-    # eval_func should be set when tuning alpha.
-    eval_func = eval_func if isinstance(args.alpha, list) else None
+        # eval_func should be set when tuning alpha.
+        if isinstance(args.alpha, list):
+            eval_dataset = load_dataset('lambada', split='validation')
+            evaluator = Evaluator(eval_dataset, tokenizer)
+            def eval_func(model):
+                acc = evaluator.evaluate(model)
+                return acc
 
     q_model = quantization.fit(
         user_model,
@@ -292,7 +331,7 @@ else:
 
 if args.accuracy:
     user_model.eval()
-    from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',

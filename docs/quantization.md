@@ -134,8 +134,8 @@ Quantization methods include the following three types:
 ## Get Started
 ### Script:
 ```python
-from intel_extension_for_transformers.optimization import metric, objectives, QuantizationConfig
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import metric, objectives, QuantizationConfig
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 # Replace transformers.Trainer with NLPTrainer
 # trainer = transformers.Trainer(......)
 trainer = NLPTrainer(......)

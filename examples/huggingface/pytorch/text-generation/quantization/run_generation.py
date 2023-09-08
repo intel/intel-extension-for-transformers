@@ -7,26 +7,16 @@ import pathlib
 import torch
 import types
 from pathlib import Path
-from datasets import load_dataset
+from datasets import load_dataset, load_from_disk
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
+from transformers import AutoConfig, AutoTokenizer, PretrainedConfig
+from transformers.utils import check_min_version
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 import transformers
-from modeling_gptj import GPTJForCausalLM
-from modeling_llama import LlamaForCausalLM
-from modeling_bloom import BloomForCausalLM
-from modeling_gpt_neox import GPTNeoXForCausalLM
-from modeling_opt import OPTForCausalLM
-from optimum.utils import NormalizedConfigManager
-
-# to use modeling gptj modification base transformers 4.28.1:
-transformers.models.gptj.modeling_gptj.GPTJForCausalLM = GPTJForCausalLM
-transformers.models.llama.modeling_llama.LlamaForCausalLM = LlamaForCausalLM
-transformers.models.bloom.modeling_bloom.BloomForCausalLM = BloomForCausalLM
-transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM = GPTNeoXForCausalLM
-transformers.models.opt.modeling_opt.OPTForCausalLM = OPTForCausalLM
 import numpy as np
 from itertools import chain
+from optimum.utils import NormalizedConfigManager
 
 
 parser = argparse.ArgumentParser()
@@ -34,7 +24,7 @@ parser.add_argument(
     "--model", nargs="?", default="EleutherAI/gpt-j-6B", const="EleutherAI/gpt-j-6B"
 )
 parser.add_argument("--revision", default=None, type=str)
-parser.add_argument("--trust_remote_code", default=True)
+parser.add_argument("--trust_remote_code", default=False)
 parser.add_argument(
     "--dataset", nargs="?", default="NeelNanda/pile-10k", const="NeelNanda/pile-10k"
 )
@@ -73,38 +63,24 @@ args = parser.parse_args()
 calib_size = 1
 
 # model
-if re.search("llama", args.model.lower()):
-    from transformers import LlamaForCausalLM, LlamaTokenizer
+config = AutoConfig.from_pretrained(
+       args.model,
+       torchscript=True
+       if args.ipex
+       else False,  # torchscript will force `return_dict=False` to avoid jit errors
+       trust_remote_code=args.trust_remote_code,
+       revision=args.revision
+       )
+# transformers version >= 4.32.0 contained the mpt modeling definition.
+# https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
+if config.model_type == "mpt":
+    check_min_version("4.32.0")
 
-    user_model = LlamaForCausalLM.from_pretrained(
-        args.model,
-        torchscript=True
-        if args.sq
-        else False,  # torchscript will force `return_dict=False` to avoid jit errors
-    )
-    tokenizer = LlamaTokenizer.from_pretrained(args.model)
-elif re.search("mpt", args.model.lower()):
-    from mpt_7b.modeling_mpt import MPTForCausalLM
-    user_model = MPTForCausalLM.from_pretrained(
-        args.model,
-        torchscript=True
-        if args.sq
-        else False,  # torchscript will force `return_dict=False` to avoid jit errors
-        trust_remote_code=args.trust_remote_code,
-        revision=args.revision
-    )
-    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
-    user_model.config.use_cache = True
-else:
-    user_model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        torchscript=True
-        if args.ipex
-        else False,  # torchscript will force `return_dict=False` to avoid jit errors
-        trust_remote_code=args.trust_remote_code,
-        revision=args.revision
-    )
-    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+user_model = AutoModelForCausalLM.from_pretrained(
+       args.model,
+       config=config
+)
+tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 # to channels last
 user_model = user_model.to(memory_format=torch.channels_last)
@@ -134,12 +110,6 @@ if args.quantize:
                 else:
                     new_shape = [input_bs * num_attention_heads, 1, d_k]
                 pkv = pkv + (torch.ones(size=new_shape),)
-        elif user_model.config.model_type == "mpt":
-            new_key_shape = [input_bs, num_attention_heads, d_k, 1]
-            new_value_shape = [input_bs, num_attention_heads, 1, d_k]
-            dummy_key_tensor = torch.ones(size=new_key_shape)
-            dummy_value_tensor = torch.ones(size=new_value_shape)
-            pkv= tuple([dummy_key_tensor, dummy_value_tensor])
         else:
             new_shape = [input_bs, num_attention_heads, 1, d_k]
             dummy_tensor = torch.ones(size=new_shape)
@@ -215,11 +185,9 @@ if args.quantize:
     past_key_values = generate_dummy_past_key_values(input_bs, user_model)
     attention_mask = torch.ones(input_bs, input_len + 1)
     attention_mask[:,0] = 0
-    example_inputs = (
-        input_ids,
-        tuple(past_key_values),
-        attention_mask,
-    )
+    example_inputs = (input_ids, tuple(past_key_values), attention_mask)
+    # do inference to check example_inputs formats
+    user_model(*example_inputs)
 
     def calib_func(prepared_model):
         for i, (input_ids, last_ind) in enumerate(calib_dataloader):
@@ -329,7 +297,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
     results = evaluate(
         model="hf-causal",
         model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',

@@ -6,8 +6,8 @@ on:
     paths:
        - '.github/workflows/cpp-graph-test.yml'
        - '.github/workflows/script/models/cpp_graph_inference.sh'
-       - 'intel_extension_for_transformers/backends/neural_engine/graph/**'
-       - '!intel_extension_for_transformers/backends/neural_engine/graph/README.md'
+       - 'intel_extension_for_transformers/llm/runtime/graph/**'
+       - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -19,6 +19,7 @@ env:
   OUT_SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script/models
   SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script
   WORKING_DIR: ${{ github.workspace }}
+  CONTAINER_NAME: "codeScan"
 
 
 jobs:
@@ -36,6 +37,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
+          fetch-tags: true
 
       - name: Env build
         run: |
@@ -68,6 +70,14 @@ jobs:
     runs-on: itrex-node-spell
     needs: [CPP-Graph-Workflow]
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.CONTAINER_NAME }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
         with:

@@ -74,30 +74,47 @@ RUN source activate && conda activate chatbot-demo && \
     cd /root/chatbot && git clone https://github.com/intel/intel-extension-for-transformers.git \
     && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ && pip install -r requirements.txt
 
+ENV KMP_BLOCKTIME=1
+ENV KMP_SETTINGS=1
+ENV KMP_AFFINITY=granularity=fine,compact,1,0
+ENV LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
+ENV LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
+
 WORKDIR /root/chatbot/intel-extension-for-transformers/workflows/chatbot/inference/
 
 
 # HABANA environment
-FROM vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
+FROM vault.habana.ai/gaudi-docker/1.11.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
 
-RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd ./optimum-habana/examples/text-generation/ && \
-    pip install -r requirements.txt && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
-RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
+COPY 0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
+
+RUN git clone https://github.com/huggingface/optimum-habana.git && \
+    cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
+    cd ./optimum-habana/examples/text-generation/ && \
+    pip install -r requirements.txt && \
+    cd / && \
     pip install peft && \
     pip install einops && \
     pip install datasets && \
-    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
+    git clone https://github.com/HabanaAI/DeepSpeed.git && \
+    cd DeepSpeed && \
+    git checkout -b v1.11 origin/1.11.0 && \
+    git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
+    pip install -e . 
 
 RUN git clone https://github.com/intel/intel-extension-for-transformers.git \
     && cd ./intel-extension-for-transformers/workflows/chatbot/inference/ \
-    && pip install -r requirements.txt
+    && pip install -r requirements.txt \
+    && pip install transformers==4.32.0 \
+    && pip install accelerate==0.22.0  \
+    && pip uninstall -y intel_extension_for_pytorch
+
 
 WORKDIR /intel-extension-for-transformers/workflows/chatbot/inference/
