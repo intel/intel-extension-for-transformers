@@ -146,7 +146,7 @@ class TTSFinetuning:
             warmup_steps=self.warmup_step,
             max_steps=self.step,
             gradient_checkpointing=True,
-            fp16=True,
+            fp16=True if self.device == "cuda" else False,
             evaluation_strategy="steps",
             per_device_eval_batch_size=8,
             save_steps=self.step,

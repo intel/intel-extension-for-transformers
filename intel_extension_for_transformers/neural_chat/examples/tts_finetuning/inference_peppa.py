@@ -49,7 +49,7 @@ def create_speaker_embedding(waveform):
 audio_dataset = Dataset.from_dict({"audio": [os.path.join(workdir, "audios/4.mp3")]}).cast_column("audio", Audio(sampling_rate=16000))
 sembeddings = create_speaker_embedding(audio_dataset[0]["audio"]['array'])
 speaker_embeddings = torch.tensor(sembeddings).unsqueeze(0)
-vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").cuda()
+vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(device)
 
 def correct_abbreviation(text):
     correct_dict = {
@@ -123,7 +123,7 @@ while True:
         text = correct_abbreviation(text)
         text = correct_number(text)
         inputs = processor(text=text, return_tensors="pt")
-        spectrogram = model.generate_speech(inputs["input_ids"].cuda(), speaker_embeddings.cuda())
+        spectrogram = model.generate_speech(inputs["input_ids"].to(device), speaker_embeddings.to(device))
         with torch.no_grad():
             speech = vocoder(spectrogram)
         now = datetime.now()
