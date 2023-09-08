@@ -714,7 +714,7 @@ def predict_stream(**params):
 
     end_time = datetime.now()
 
-    time.sleep(1)
+    time.sleep(0.1)
     duration = int((end_time - start_time).total_seconds() * 1000)
     first_token_latency = int(
         (first_word_output_time - start_time).total_seconds() * 1000 * 3/4
