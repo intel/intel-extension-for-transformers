@@ -17,7 +17,6 @@ langchain
 python-docx
 scikit-learn
 farm-haystack
-numpy==1.23.5
 librosa
 beautifulsoup4
 InstructorEmbedding
@@ -34,3 +33,4 @@ unstructured
 markdown
 rouge_score
 openpyxl
+numpy==1.23.5
