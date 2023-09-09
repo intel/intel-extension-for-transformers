@@ -32,6 +32,10 @@ jobs:
             framework: "engine"
             mode: "latency"
             precision: "bf16,int8"
+          - modelName: "gptj-6b"
+            framework: "engine"
+            mode: "latency"
+            precision: "bf16,int8"
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
@@ -48,7 +52,7 @@ jobs:
           cd ${{ github.workspace }}
           conda activate cpp-graph-test || source activate cpp-graph-test 
           pip install build --upgrade
-          python -m build -s -w
+          python setup.py sdist bdist_wheel
           pip install dist/intel_extension_for_transformers*.whl
           pip list
 

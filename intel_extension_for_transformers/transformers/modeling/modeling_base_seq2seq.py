@@ -53,7 +53,8 @@ logger = logging.getLogger(__name__)
     """,
 )
 class INCBaseModelForSeq2SeqLM(OptimizedModel):
-    _AUTOMODELS_TO_TASKS = {cls_name: task for task, cls_name in TasksManager._TASKS_TO_AUTOMODELS.items()}
+    _AUTOMODELS_TO_TASKS = {cls_name: task for task,
+                                               cls_name in TasksManager._TRANSFORMERS_TASKS_TO_MODEL_LOADERS.items()}
     base_model_prefix = "inc_model"
     auto_model_class = AutoModel
     export_feature = "text2text-generation"

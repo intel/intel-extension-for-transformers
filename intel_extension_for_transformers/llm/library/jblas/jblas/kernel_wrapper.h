@@ -289,6 +289,18 @@ class DecompressKBlockS4FP {
   }
 };
 
+template <typename _DST_T, typename _Z_T = int8_t>  // zero points always be int8_t, not compressed
+class DecompressPerNS4FP {
+ public:
+  template <JBLAS_ISA ISA_T, typename _T, JBLAS_SIGN_INT_TYPE S4_T>
+  static inline JBLAS_CODE forward(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                   _T* scales, int8_t* zero_points, int k_offset, int kblock, int NPad) {
+    JBLAS_CODE ret = JblasNotSupport;
+    return ref::decompress_pern_s4_fp<S4_T, _DST_T, _T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
+                                                        k_offset, kblock, NPad);
+  }
+};
+
 template <typename _DST_T>
 class DecompressKBlockS4FPPackRow {
  public:
@@ -298,6 +310,18 @@ class DecompressKBlockS4FPPackRow {
     JBLAS_CODE ret = JblasNotSupport;
     return ref::decompress_kblock_s4_fp_packrow<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
                                                       k_offset, kblock, NPad, packrow);
+  }
+};
+
+template <typename _DST_T>
+class DecompressPerNS4FPPackRow {
+ public:
+  template <JBLAS_ISA ISA_T, typename _T, JBLAS_SIGN_INT_TYPE S4_T>
+  static inline JBLAS_CODE forward(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
+                                   _T* scales, int8_t* zero_points, int k_offset, int kblock, int NPad, int packrow) {
+    JBLAS_CODE ret = JblasNotSupport;
+    return ref::decompress_pern_s4_fp_packrow<S4_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points,
+                                                    k_offset, kblock, NPad, packrow);
   }
 };
 
@@ -439,6 +463,15 @@ class QuantS8RowReduceSum {
   static inline JBLAS_CODE forward(const int8_t* srcptr, int ldsrc, const float* scales, const int8_t* zero_points,
                                    int row, int col, _RT* reduce) {
     return ref::quant_s8_row_reduce_sum(srcptr, ldsrc, scales, zero_points, row, col, reduce);
+  }
+};
+
+template <typename _RT>
+class RowReduceSum {
+ public:
+  template <JBLAS_ISA ISA_T>
+  static inline JBLAS_CODE forward(const _RT* srcptr, int ldsrc, int row, int col, _RT* reduce) {
+    return ref::row_reduce_sum<_RT>(srcptr, ldsrc, row, col, reduce);
   }
 };
 
