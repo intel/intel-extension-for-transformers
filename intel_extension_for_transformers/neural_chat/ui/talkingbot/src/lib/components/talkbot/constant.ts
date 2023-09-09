@@ -13,7 +13,7 @@ import PatVoice from "./assets/welcome_pat.wav"
 import WeiVoice from "./assets/welcome_wei.wav"
 
 import humaAvatar from "$lib/components/talkbot/imgs/huma.jpg";
-import JohnAvatar from "$lib/components/talkbot/imgs/John-Avatar.jpg";
+import JohnAvatar from "$lib/components/talkbot/imgs/John.jpg";
 import annAvatar from "$lib/components/talkbot/imgs/wei.jpg";
 
 
