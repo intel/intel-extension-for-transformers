@@ -31,7 +31,7 @@ Feel free to refer to the README files for the Basic Frontend and the Advanced F
 Talking bot is NeuralChat's voice chat bot. Support user voice and robot communication.
 
 ### 📸 Project Screenshots
-![project-screenshot](https://i.imgur.com/VClUBR4.png)
+![project-screenshot](https://i.imgur.com/aMQjHB5.png)
 
 For detailed information, please refer to the [README](./talkingbot/README.md).
 

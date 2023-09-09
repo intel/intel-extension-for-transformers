@@ -14,7 +14,6 @@ async function fetchAudio(file, voice, knowledgeId) {
 
     const init: RequestInit = {
         method: "POST",
-        // mode: 'no-cors',
         body: formData,
     };
 	
@@ -22,7 +21,6 @@ async function fetchAudio(file, voice, knowledgeId) {
 		let response = await fetch(url, init);
 		if (!response.ok) throw response.status
 		return await response.blob()
-		// return await response.json();
 	} catch (error) {
 		console.error('network error: ', error);
 		return undefined
@@ -35,14 +33,12 @@ async function fetchAudioText(file) {
 	formData.append('file', file)
     const init: RequestInit = {
         method: "POST",
-        // mode: 'no-cors',
         body: formData,
     };
 	
 	try {
 		let response = await fetch(url, init);
 		if (!response.ok) throw response.status
-		// console.log('response', response.blob())
 		return await response.json();
 	} catch (error) {
 		console.error('network error: ', error);
@@ -70,7 +66,6 @@ export async function fetchAudioEmbedding(audio) {
 	try {
 		let response = await fetch(url, init);
 		if (!response.ok) throw response.status
-		// console.log('response', response.blob())
 		return await response.json();
 
 	} catch (error) {
@@ -91,7 +86,6 @@ export async function fetchKnowledgeBaseId(file) {
 	try {
 		let response = await fetch(url, init);
 		if (!response.ok) throw response.status
-		// console.log('response', response.blob())
 		return await response.json();
 
 	} catch (error) {

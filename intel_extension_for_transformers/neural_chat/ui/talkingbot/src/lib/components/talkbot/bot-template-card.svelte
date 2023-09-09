@@ -54,7 +54,7 @@
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="relative w-full rounded-2xl shadow-[0_2px_30px_0_rgba(0,0,0,0.2)]" on:click>
+<div class="relative w-full rounded-2xl shadow-[0_2px_30px_0_rgba(0,0,0,0.2)] p-2" on:click>
     {#if notLibrary}
 		<svg
 			class="absolute right-0 top-0 hover:opacity-70"

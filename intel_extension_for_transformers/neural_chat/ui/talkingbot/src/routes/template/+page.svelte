@@ -93,7 +93,7 @@
                 </form>
             </div> -->
 		</div>
-		<div class="grid grid-cols-2 gap-5 md:grid-cols-4">
+		<div class="grid grid-cols-2 gap-5 md:grid-cols-3">
 			{#each TalkingTemplateLibrary as opt, i}
 				<button
 					class:ring={$currentAvaTar.collection ===

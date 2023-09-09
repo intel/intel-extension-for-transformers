@@ -91,24 +91,6 @@
 			>
 				Avatar Library
 			</h2>
-			<!-- <div class="text-end">
-				<form class="flex w-full space-x-3">
-					<div class=" relative">
-						<input
-							type="text"
-							id="form-subscribe-Filter"
-							class=" w-full flex-1 appearance-none rounded-lg border border-gray-300 border-transparent bg-white px-4 py-2 text-base placeholder-gray-400 shadow-sm focus:border-transparent focus:outline-none focus:ring-1 focus:ring-purple-600"
-							placeholder="name"
-						/>
-					</div>
-					<button
-						class="flex-shrink-0 rounded-lg bg-gray-600 px-4 py-2 text-base font-semibold text-white shadow-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-purple-200"
-						type="submit"
-					>
-						Filter
-					</button>
-				</form>
-			</div> -->
 		</div>
 		<div class="flex gap-7 overflow-auto px-2 py-4 text-[#0F172A]">
 			{#each TalkingPhotoLibrary as opt, i (opt.name + i)}

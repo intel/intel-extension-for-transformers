@@ -44,22 +44,7 @@
 			{/if}
 		</span>
 	</div>
-	<!-- {#if needChangeName}
-		<input
-			type="text"
-			bind:value={name}
-			bind:this={inputEl}
-			class="mt-2 w-full text-center text-xs text-gray-600 focus-visible:outline-[#ccc] dark:text-gray-400"
-		/>
-	{:else} -->
+
 	<span class="relative mt-2 text-xs text-gray-600 dark:text-gray-400  text-ellipsis overflow-hidden whitespace-nowrap">{name}</span>
-		<!-- <span
-			class="relative mt-2 text-xs text-gray-600 dark:text-gray-400  text-ellipsis overflow-hidden whitespace-nowrap"
-			on:dblclick|capture={changeName}>
-			{name}
-			{#if notLibrary}
-				<span class="absolute -right-3 -top-1"><EditIcon on:changeName={changeName} /></span>
-			{/if}
-		</span> -->
-	<!-- {/if} -->
+
 </div>

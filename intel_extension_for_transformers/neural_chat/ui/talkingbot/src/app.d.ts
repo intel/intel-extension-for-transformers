@@ -5,9 +5,6 @@ declare namespace App {
 	interface Locals {
 		user?: User;
 	}
-	// interface PageData { }
-	// interface PageError {}
-	// interface Platform {}
 }
 
 interface ChatAdapter {

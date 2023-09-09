@@ -77,7 +77,7 @@
 				<div class="flex justify-between">
 					<h3 class="mb-6 text-xl font-medium text-[#051F61]">Template</h3>
 				</div>
-				<div class="grid grid-cols-2 gap-5 md:grid-cols-4">
+				<div class="grid grid-cols-2 gap-5 md:grid-cols-3">
 					{#each allTemplates as opt, i}
 						<button
 							class="w-full"

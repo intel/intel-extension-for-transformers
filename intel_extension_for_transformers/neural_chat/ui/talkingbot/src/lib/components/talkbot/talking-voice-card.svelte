@@ -2,7 +2,6 @@
 	import VoiceButton from "./imgs/voice-button.svelte";
 	import stopRecordingIcon from "$lib/assets/stop-recording.svg";
 	import { afterUpdate, createEventDispatcher, onMount } from "svelte";
-	import EditIcon from "./imgs/Edit.svelte";
 	import DeleteIcon from "./imgs/Delete.svelte";
 	export let name: string;
 	export let audio: string;
@@ -70,24 +69,6 @@
 	{#if notLibrary}
 		<DeleteIcon on:DeleteAvatar={() => dispatch("delete")} />
 	{/if}
-	<!-- {#if needChangeName}
-		<input
-			type="text"
-			bind:value={name}
-			bind:this={inputEl}
-			class="mt-2 w-full text-center text-sm text-gray-600 focus-visible:outline-[#ccc] dark:text-gray-400 "
-		/>
-	{:else}
-		<span
-			class="relative mt-2 w-9/12 text-sm text-gray-600 dark:text-gray-400  text-ellipsis overflow-hidden whitespace-nowrap"
-			on:dblclick|capture={changeName}
-		>
-			{name}
-			{#if notLibrary}
-				<span class="absolute -right-2 -top-1"><EditIcon on:changeName={changeName} /></span>
-			{/if}
-		</span>
-	{/if} -->
 	<span
 		class="relative mt-2 w-9/12 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-600 dark:text-gray-400"
 	>
