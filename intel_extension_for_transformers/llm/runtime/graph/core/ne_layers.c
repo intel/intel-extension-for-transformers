@@ -3727,38 +3727,23 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
           }
         }
       } else if (dst->type == NE_TYPE_F16) {
-        if (ne_is_contiguous(src0)) {  // fp32->fp16 conversion
-          int nele = ne_nelements(src0);
-          // number of rows per thread
-          int dn = (nele + nth - 1) / nth;
-          // row range for this thread
-          int in0 = dn * ith;
-          int in1 = MIN(in0 + dn, nele);
-          float* srcptr = (float*)src0->data;
-          ne_fp16_t* dstptr = (ne_fp16_t*)dst->data;
-          for (int i = in0; i < in1; i++) {
-            dstptr[i] = NE_FP32_TO_FP16(srcptr[i]);
-          }
-        } else {
-          size_t id = 0;
-          ne_fp16_t* dst_ptr = (ne_fp16_t*)dst->data;
-          for (int i03 = 0; i03 < ne03; i03++) {
-            for (int i02 = 0; i02 < ne02; i02++) {
-              id += ne00 * ir0;
-              for (int i01 = ir0; i01 < ir1; i01++) {
-                for (int i00 = 0; i00 < ne00; i00++) {
-                  const float* src0_ptr =
-                      (float*)((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
+        size_t id = 0;
+        ne_fp16_t* dst_ptr = (ne_fp16_t*)dst->data;
 
-                  dst_ptr[id] = NE_FP32_TO_FP16(*src0_ptr);
-                  id++;
-                }
+        for (int i03 = 0; i03 < ne03; i03++) {
+          for (int i02 = 0; i02 < ne02; i02++) {
+            id += ne00 * ir0;
+            for (int i01 = ir0; i01 < ir1; i01++) {
+              for (int i00 = 0; i00 < ne00; i00++) {
+                const float* src0_ptr = (float*)((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
+
+                dst_ptr[id] = NE_FP32_TO_FP16(*src0_ptr);
+                id++;
               }
-              id += ne00 * (ne01 - ir1);
             }
+            id += ne00 * (ne01 - ir1);
           }
         }
-
       } else if (ne_is_quantized(dst->type)) {
         quantize_row_q_t const quantize_row_q = quantize_fns[dst->type].quantize_row_q;
 
@@ -3888,78 +3873,57 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
       }
     }
   } else if (dst->type == NE_TYPE_F16) {
-    bool dst_contiguous = nb0 < nb1 && nb1 < nb2 && nb2 < nb3;
-    bool src_perm1203 = nb01 < nb02 && nb02 < nb00 && nb00 < nb03;
-    if (dst_contiguous && src_perm1203) {  // number of rows per thread
-      int nele = ne1 * ne2;
-      int dn = (nele + nth - 1) / nth;
-      // row range for this thread
-      int in0 = dn * ith;
-      int in1 = MIN(in0 + dn, nele);
-
-      for (int ib = 0; ib < ne3; ib++) {
-        float* srcptr = (float*)((char*)src0->data + ib * nb03);
-        ne_fp16_t* dstptr = (ne_fp16_t*)((char*)dst->data + ib * nb3);
-        for (int j = 0; j < ne0; j++) {
-          for (int i = in0; i < in1; i++) {
-            dstptr[i * nb1 / sizeof(*dstptr) + j] = NE_FP32_TO_FP16(srcptr[i + j * nb00 / sizeof(*srcptr)]);
-          }
-        }
-      }
-    } else {
-      for (int64_t i03 = 0; i03 < ne03; i03++) {
-        for (int64_t i02 = 0; i02 < ne02; i02++) {
-          i10 += ne00 * ir0;
-          while (i10 >= ne0) {
-            i10 -= ne0;
-            if (++i11 == ne1) {
-              i11 = 0;
-              if (++i12 == ne2) {
-                i12 = 0;
-                if (++i13 == ne3) {
-                  i13 = 0;
-                }
+    for (int64_t i03 = 0; i03 < ne03; i03++) {
+      for (int64_t i02 = 0; i02 < ne02; i02++) {
+        i10 += ne00 * ir0;
+        while (i10 >= ne0) {
+          i10 -= ne0;
+          if (++i11 == ne1) {
+            i11 = 0;
+            if (++i12 == ne2) {
+              i12 = 0;
+              if (++i13 == ne3) {
+                i13 = 0;
               }
             }
           }
-          for (int64_t i01 = ir0; i01 < ir1; i01++) {
-            for (int64_t i00 = 0; i00 < ne00; i00++) {
-              const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
-              char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
+        }
+        for (int64_t i01 = ir0; i01 < ir1; i01++) {
+          for (int64_t i00 = 0; i00 < ne00; i00++) {
+            const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
+            char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
 
-              *(ne_fp16_t*)dst_ptr = NE_FP32_TO_FP16(*(const float*)src0_ptr);
+            *(ne_fp16_t*)dst_ptr = NE_FP32_TO_FP16(*(const float*)src0_ptr);
 
-              if (++i10 == ne0) {
-                i10 = 0;
-                if (++i11 == ne1) {
-                  i11 = 0;
-                  if (++i12 == ne2) {
-                    i12 = 0;
-                    if (++i13 == ne3) {
-                      i13 = 0;
-                    }
+            if (++i10 == ne0) {
+              i10 = 0;
+              if (++i11 == ne1) {
+                i11 = 0;
+                if (++i12 == ne2) {
+                  i12 = 0;
+                  if (++i13 == ne3) {
+                    i13 = 0;
                   }
                 }
               }
             }
           }
-          i10 += ne00 * (ne01 - ir1);
-          while (i10 >= ne0) {
-            i10 -= ne0;
-            if (++i11 == ne1) {
-              i11 = 0;
-              if (++i12 == ne2) {
-                i12 = 0;
-                if (++i13 == ne3) {
-                  i13 = 0;
-                }
+        }
+        i10 += ne00 * (ne01 - ir1);
+        while (i10 >= ne0) {
+          i10 -= ne0;
+          if (++i11 == ne1) {
+            i11 = 0;
+            if (++i12 == ne2) {
+              i12 = 0;
+              if (++i13 == ne3) {
+                i13 = 0;
               }
             }
           }
         }
       }
     }
-
   } else {
     NE_ASSERT(false);  // TODO: implement
   }
