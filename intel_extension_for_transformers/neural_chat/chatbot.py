@@ -23,7 +23,6 @@ from .config import BaseFinetuningConfig
 from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from .config import DeviceOptions
 from .models.base_model import get_model_adapter
-from .utils.common import get_device_type
 from .pipeline.plugins.caching.cache import CachePlugin
 from .pipeline.plugins.audio.asr import AudioSpeechRecognition
 from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
@@ -56,9 +55,6 @@ def build_chatbot(config: PipelineConfig=None):
     if config.device not in [option.name.lower() for option in DeviceOptions]:
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
-
-    if config.device == "auto":
-        config.device = get_device_type()
 
     # get model adapter
     adapter = get_model_adapter(config.model_name_or_path)

@@ -21,7 +21,6 @@ from pydantic import BaseModel
 from typing import Optional
 from fastapi import APIRouter
 from ...cli.log import logger
-from ...config import GenerationConfig
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
 
 
@@ -75,8 +74,7 @@ class TextChatAPIRouter(APIRouter):
 
         try:
             logger.info(f"Predicting chat completion using prompt '{request.prompt}'")
-            config = GenerationConfig(max_new_tokens=64)
-            response = chatbot.predict(query=request.prompt, config=config)
+            response = chatbot.predict(query=request.prompt)
         except Exception as e:
             raise Exception(e)
         else:
