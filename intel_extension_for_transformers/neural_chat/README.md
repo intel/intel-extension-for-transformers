@@ -170,12 +170,36 @@ The table below displays the validated model list in NeuralChat for both inferen
 
 ## Jupyter Notebooks 
 
-Check out the latest notebooks to know how to build and customize a chatbot on different platforms.
+Welcome to use Jupyter Notebooks to explore how to build and customize chatbots across a wide range of platforms, including Intel Xeon CPU(ICX and SPR), Intel XPU, Intel Habana Gaudi1/Gaudi2, and Nvidia GPU. Dive into our detailed guide to discover how to develop chatbots on these various computing platforms.
 
-| **Notebook** | **Description** |
-| :----------: | :-------------: |
-| [build chatbot on Intel Xeon Platforms](./docs/notebooks/chatbot_on_intel_cpu.ipynb) | create a chatbot on Intel Xeon Platforms|
-| [build chatbot on Intel Habana Platforms](./docs/notebooks/chatbot_on_intel_habana_hpu.ipynb) | create a chatbot on Intel Habana Platforms|
-| [build chatbot on Nvidia GPU Platforms](./docs/notebooks/chatbot_on_nv_gpu.ipynb) | create a chatbot on Nvidia GPU Platforms|
-| [finetune on Nvidia GPU Platforms](./examples/instruction_tuning/finetune_on_Nvidia_GPU.ipynb) | fine-tune LLaMA2 and MPT on Nvidia GPU Platforms|
+| Chapter | Section                                       | Description                                                | Notebook Link                                           |
+| ------- | --------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
+| 1       | Building a Chatbot on different Platforms   |                                                            |                                                         |
+| 1.1     | Building a Chatbot on Intel CPU ICX         | Learn how to create a chatbot on ICX.                      | [Notebook](./docs/notebooks/build_chatbot_on_icx.ipynb) |
+| 1.2     | Building a Chatbot on Intel CPU SPR         | Learn how to create a chatbot on SPR.                      | [Notebook](./docs/notebooks/build_chatbot_on_spr.ipynb) |
+| 1.3     | Building a Chatbot on Intel XPU             | Learn how to create a chatbot on XPU.                      | [Notebook](./docs/notebooks/build_chatbot_on_xpu.ipynb) |
+| 1.4     | Building a Chatbot on Habana Gaudi1/Gaudi2  | Instructions for building a chatbot on Intel Habana Gaudi1/Gaudi2. | [Notebook](./docs/notebooks/build_chatbot_on_habana_gaudi.ipynb) |
+| 1.5     | Building a Chatbot on Nvidia A100           | Learn how to create a chatbot on Nvidia A100 platforms.   | [Notebook](./docs/notebooks/build_chatbot_on_nv_a100.ipynb)   |
+| 2       | Deploying Chatbots as Services on Different Platforms |                                                  |                                                         |
+| 2.1     | Deploying a Chatbot on Intel CPU ICX        | Instructions for deploying a chatbot on ICX.               | [Notebook](./docs/notebooks/deploy_chatbot_on_icx.ipynb) |
+| 2.2     | Deploying a Chatbot on Intel CPU SPR        | Instructions for deploying a chatbot on SPR.               | [Notebook](./docs/notebooks/deploy_chatbot_on_spr.ipynb) |
+| 2.3     | Deploying a Chatbot on Intel XPU            | Learn how to deploy a chatbot on Intel XPU.                | [Notebook](./docs/notebooks/deploy_chatbot_on_xpu.ipynb) |
+| 2.4     | Deploying a Chatbot on Habana Gaudi1/Gaudi2 | Instructions for deploying a chatbot on Intel Habana Gaudi1/Gaudi2. | [Notebook](./docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb) |
+| 2.5     | Deploying a Chatbot on Nvidia A100          | Learn how to deploy a chatbot as a service on Nvidia A100 platforms. | [Notebook](./docs/notebooks/deploy_chatbot_on_nv_a100.ipynb) |
+| 3       | Optimizing Chatbots on Different Platforms  |                                                            |                                                         |
+| 3.1     | AMP Optimization on SPR                     | Optimize your chatbot using Automatic Mixed Precision (AMP) on SPR platforms. | [Notebook](./docs/notebooks/amp_optimization_on_spr.ipynb) |
+| 3.2     | AMP Optimization on Habana Gaudi1/Gaudi2    | Learn how to optimize your chatbot with AMP on Intel Habana Gaudi1/Gaudi2 platforms. | [Notebook](./docs/notebooks/amp_optimization_on_habana_gaudi.ipynb) |
+| 3.3     | Weight-Only Optimization on Nvidia A100     | Optimize your chatbot using Weight-Only optimization on Nvidia A100. | [Notebook](./docs/notebooks/weight_only_optimization_on_nv_a100.ipynb) |
+| 4       | Fine-Tuning Chatbots on Different Platforms |                                                            |                                                         |
+| 4.1     | Multi-Node Fine-Tuning on SPR                | Fine-tune your chatbot on SPR platforms using multiple nodes. | [Notebook](./docs/notebooks/multi_node_finetuning_on_spr.ipynb) |
+| 4.2     | Single-Card Fine-Tuning on Habana Gaudi1/Gaudi2 | Instructions for single-card fine-tuning on Intel Habana Gaudi1/Gaudi2. | [Notebook](./docs/notebooks/single_card_finetuning_on_habana_gaudi.ipynb) |
+| 4.3     | Multi-Card Fine-Tuning on Habana Gaudi1/Gaudi2 | Learn how to perform multi-card fine-tuning on Intel Habana Gaudi1/Gaudi2. | [Notebook](./docs/notebooks/multi_card_finetuning_on_habana_gaudi.ipynb) |
+| 4.4     | Fine-Tuning on Nvidia A100                  | Fine-tune your chatbot on Nvidia A100 platforms.          | [Notebook](./docs/notebooks/finetuning_on_nv_a100.ipynb) |
+| 5       | Customizing Chatbots on Different Platforms |                                                            |                                                         |
+| 5.1     | Using Plugins to Customize Chatbots         | Customize your chatbot using plugins.                      | [Notebook](./docs/notebooks/customize_chatbot_with_plugins.ipynb) |
+| 5.2     | Registering New Models to Customize Chatbots |                                                            |                                                         |
+| 5.2.1   | Using Fine-Tuned Models to Customize Chatbots | Instructions for using fine-tuned models to customize chatbots. | [Notebook](./docs/notebooks/customize_chatbot_with_finetuned_models.ipynb) |
+| 5.2.2   | Using Optimized Models to Customize Chatbots | Customize chatbots using optimized models.                | [Notebook](./docs/notebooks/customize_chatbot_with_optimized_models.ipynb) |
+| 5.2.3   | Using New LLM Models to Customize Chatbots  | Learn how to use new LLM models for chatbot customization. | [Notebook](./docs/notebooks/customize_chatbot_with_new_llm_models.ipynb) |
+
 
