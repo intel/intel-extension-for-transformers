@@ -61,6 +61,7 @@ function main() {
     else
         echo "Not found requirements.txt file."
     fi
+    pip install --upgrade --force-reinstall torch
     echo "test on ${test_name}"
     if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"
