@@ -1,0 +1,13 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "setuptools_scm[toml]>=6.2",
+    "wheel",
+    "ninja",
+    "cmake>=3.16",
+    "py-cpuinfo",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "intel_extension_for_transformers/_version.py"
