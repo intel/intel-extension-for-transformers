@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prerequisite​ &mdash; Intel® Extension for Transformers 0.1.dev1+gf4384ca documentation</title>
+  <title>Prerequisite​ &mdash; Intel® Extension for Transformers 0.1.dev1+gb70e38c documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -117,7 +117,7 @@
 <h2>3. Prepare Dockerfile<a class="headerlink" href="#prepare-dockerfile" title="Link to this heading"></a></h2>
 <p>Assuming you have downloaded the model and dataset to your workspace /path/to/workspace/
 Please clone a ITREX repo to this path.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/intel/intel-extension-for-transformers.git
 </pre></div>
 </div>
 </section>
@@ -126,13 +126,23 @@ Please clone a ITREX repo to this path.</p>
 <p>| Note: If your docker daemon is too big and cost long time to build docker image, you could create a <code class="docutils literal notranslate"><span class="pre">.dockerignore</span></code> file including useless files to reduce the daemon size.</p>
 <section id="on-xeon-spr-environment">
 <h3>On Xeon SPR Environment<a class="headerlink" href="#on-xeon-spr-environment" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-f<span class="w">  </span>/path/to/workspace/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/chatbot/fine_tuning/docker/Dockerfile<span class="w"> </span>-t<span class="w"> </span>chatbot_finetune<span class="w"> </span>.<span class="w">   </span>--target<span class="w"> </span>cpu
+<p>If you need to set proxy settings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w"> </span>-f<span class="w">  </span>/path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile<span class="w"> </span>-t<span class="w"> </span>chatbot_finetune<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>cpu
+</pre></div>
+</div>
+<p>If you don’t need to set proxy settings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span>-f<span class="w"> </span>/path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile<span class="w"> </span>-t<span class="w"> </span>chatbot_finetune<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>cpu
 </pre></div>
 </div>
 </section>
 <section id="on-habana-gaudi-environment">
 <h3>On Habana Gaudi Environment<a class="headerlink" href="#on-habana-gaudi-environment" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">DOCKER_BUILDKIT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>--tag<span class="w"> </span>chatbot_finetuning:latest<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w">  </span>./<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w">  </span>--target<span class="w"> </span>hpu
+<p>If you need to set proxy settings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">DOCKER_BUILDKIT</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>--network<span class="o">=</span>host<span class="w"> </span>--tag<span class="w"> </span>chatbot_finetuning:latest<span class="w">  </span>--build-arg<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$https_proxy</span><span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$http_proxy</span><span class="w">  </span>./<span class="w"> </span>-f<span class="w"> </span>/path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile<span class="w">  </span>--target<span class="w"> </span>hpu
+</pre></div>
+</div>
+<p>If you don’t need to set proxy settings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">UBUNTU_VER</span><span class="o">=</span><span class="m">22</span>.04<span class="w"> </span>-f<span class="w"> </span>/path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile<span class="w"> </span>-t<span class="w"> </span>chatbot_finetune<span class="w"> </span>.<span class="w"> </span>--target<span class="w"> </span>hpu
 </pre></div>
 </div>
 </section>
@@ -201,7 +211,7 @@ Please clone a ITREX repo to this path.</p>
 <span class="w">        </span>--use_fast_tokenizer<span class="w"> </span><span class="nb">false</span>
 </pre></div>
 </div>
-<p>For <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a>, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.</p>
+<p>For <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a>, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;mosaicml/mpt-7b&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
@@ -220,7 +230,6 @@ Please clone a ITREX repo to this path.</p>
 <span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--output_dir<span class="w"> </span>./mpt_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--trust_remote_code<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--tokenizer_name<span class="w"> </span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
 </pre></div>
@@ -233,7 +242,43 @@ see https://github.com/huggingface/peft. Note for FLAN-T5/MPT, only LoRA is supp
 </section>
 <section id="multi-node-fine-tuning-in-xeon-spr">
 <h2>2. Multi-node Fine-tuning in Xeon SPR<a class="headerlink" href="#multi-node-fine-tuning-in-xeon-spr" title="Link to this heading"></a></h2>
-<p>We also supported Distributed Data Parallel finetuning on single node and multi-node settings. To use Distributed Data Parallel to speedup training, the bash command needs a small adjustment.</p>
+<p>We also supported Distributed Data Parallel finetuning on single node and multi-node settings. To use Distributed Data Parallel to speedup training, the bash command needs a small adjustment.
+<br>
+For example, to finetune FLAN-T5 through Distributed Data Parallel training, bash command will look like the following, where
+<br>
+<em><code class="docutils literal notranslate"><span class="pre">&lt;MASTER_ADDRESS&gt;</span></code></em> is the address of the master node, it won’t be necessary for single node case,
+<br>
+<em><code class="docutils literal notranslate"><span class="pre">&lt;NUM_PROCESSES_PER_NODE&gt;</span></code></em> is the desired processes to use in current node, for node with GPU, usually set to number of GPUs in this node, for node without GPU and use CPU for training, it’s recommended set to 1,
+<br>
+<em><code class="docutils literal notranslate"><span class="pre">&lt;NUM_NODES&gt;</span></code></em> is the number of nodes to use,
+<br>
+<em><code class="docutils literal notranslate"><span class="pre">&lt;NODE_RANK&gt;</span></code></em> is the rank of the current node, rank starts from 0 to <em><code class="docutils literal notranslate"><span class="pre">&lt;NUM_NODES&gt;</span></code></em><code class="docutils literal notranslate"><span class="pre">-1</span></code>.
+<br></p>
+<blockquote>
+<div><p>Also please note that to use CPU for training in each node with multi-node settings, argument <code class="docutils literal notranslate"><span class="pre">--no_cuda</span></code> is mandatory, and <code class="docutils literal notranslate"><span class="pre">--ddp_backend</span> <span class="pre">ccl</span></code> is required if to use ccl as the distributed backend. In multi-node setting, following command needs to be launched in each node, and all the commands should be the same except for <em><code class="docutils literal notranslate"><span class="pre">&lt;NODE_RANK&gt;</span></code></em>, which should be integer from 0 to <em><code class="docutils literal notranslate"><span class="pre">&lt;NUM_NODES&gt;</span></code></em><code class="docutils literal notranslate"><span class="pre">-1</span></code> assigned to each node.</p>
+</div></blockquote>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mpirun<span class="w"> </span>-f<span class="w"> </span>nodefile<span class="w"> </span>-n<span class="w"> </span><span class="m">16</span><span class="w"> </span>-ppn<span class="w"> </span><span class="m">4</span><span class="w"> </span>-genv<span class="w"> </span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>python3<span class="w"> </span>instruction_tuning_pipeline/finetune_seq2seq.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;google/flan-t5-xl&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--train_file<span class="w"> </span><span class="s2">&quot;stanford_alpaca/alpaca_data.json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--per_device_train_batch_size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--do_train<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--learning_rate<span class="w"> </span><span class="m">1</span>.0e-5<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--warmup_ratio<span class="w"> </span><span class="m">0</span>.03<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--weight_decay<span class="w"> </span><span class="m">0</span>.0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--num_train_epochs<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--logging_steps<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--save_steps<span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output_dir<span class="w"> </span>./flan-t5-xl_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--no_cuda<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--ddp_backend<span class="w"> </span>ccl<span class="w"> </span><span class="se">\</span>
+</pre></div>
+</div>
 <p>If you have enabled passwordless SSH in cpu clusters, you could also use mpirun in master node to start the DDP finetune. Take llama alpaca finetune for example. follow the <a class="reference external" href="https://huggingface.co/docs/transformers/perf_train_cpu_many">hugginface guide</a> to install Intel® oneCCL Bindings for PyTorch, IPEX</p>
 <p>oneccl_bindings_for_pytorch is installed along with the MPI tool set. Need to source the environment before using it.</p>
 <p>for Intel® oneCCL &gt;= 1.12.0</p>
@@ -258,29 +303,6 @@ see https://github.com/huggingface/peft. Note for FLAN-T5/MPT, only LoRA is supp
 <p>Now, run the following command in node0 and <strong>4DDP</strong> will be enabled in node0 and node1 with BF16 auto mixed precision:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">CCL_WORKER_COUNT</span><span class="o">=</span><span class="m">1</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">MASTER_ADDR</span><span class="o">=</span>xxx.xxx.xxx.xxx<span class="w"> </span><span class="c1">#node0 ip</span>
-
-<span class="c1">## to finetune FLAN-T5 through Distributed Data Parallel training</span>
-mpirun<span class="w"> </span>-f<span class="w"> </span>nodefile<span class="w"> </span>-n<span class="w"> </span><span class="m">16</span><span class="w"> </span>-ppn<span class="w"> </span><span class="m">4</span><span class="w"> </span>-genv<span class="w"> </span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>python3<span class="w"> </span>finetune_seq2seq.py<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;google/flan-t5-xl&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--train_file<span class="w"> </span><span class="s2">&quot;stanford_alpaca/alpaca_data.json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--per_device_train_batch_size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--per_device_eval_batch_size<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--gradient_accumulation_steps<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--do_train<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--learning_rate<span class="w"> </span><span class="m">1</span>.0e-5<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--warmup_ratio<span class="w"> </span><span class="m">0</span>.03<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--weight_decay<span class="w"> </span><span class="m">0</span>.0<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--num_train_epochs<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--logging_steps<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--save_steps<span class="w"> </span><span class="m">2000</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--save_total_limit<span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--overwrite_output_dir<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--output_dir<span class="w"> </span>./flan-t5-xl_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--no_cuda<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--ddp_backend<span class="w"> </span>ccl<span class="w"> </span><span class="se">\</span>
-
 <span class="c1">## for DDP ptun for LLama</span>
 mpirun<span class="w"> </span>-f<span class="w"> </span>nodefile<span class="w"> </span>-n<span class="w"> </span><span class="m">16</span><span class="w"> </span>-ppn<span class="w"> </span><span class="m">4</span><span class="w"> </span>-genv<span class="w"> </span><span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>python3<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--model_name_or_path<span class="w"> </span>decapoda-research/llama-7b-hf<span class="w"> </span><span class="se">\</span>
@@ -325,7 +347,6 @@ mpirun<span class="w"> </span>-f<span class="w"> </span>nodefile<span class="w">
 <span class="w">    </span>--group_by_length<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--dataset_concatenation<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--do_train<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--trust_remote_code<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--tokenizer_name<span class="w"> </span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--no_cuda<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--ddp_backend<span class="w"> </span>ccl<span class="w"> </span><span class="se">\</span>
@@ -362,7 +383,7 @@ see https://github.com/huggingface/peft</p>
 <span class="w">        </span>--use_lazy_mode<span class="w"> </span><span class="se">\</span>
 </pre></div>
 </div>
-<p>For <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a>, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.</p>
+<p>For <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT</a>, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>finetune_clm.py<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--model_name_or_path<span class="w"> </span><span class="s2">&quot;mosaicml/mpt-7b&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--bf16<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
@@ -381,7 +402,6 @@ see https://github.com/huggingface/peft</p>
 <span class="w">        </span>--save_strategy<span class="w"> </span>epoch<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--output_dir<span class="w"> </span>./mpt_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>--trust_remote_code<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--tokenizer_name<span class="w"> </span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--habana<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--use_habana<span class="w"> </span><span class="se">\</span>
@@ -410,7 +430,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f17e6ba19c0> 
+   <jinja2.runtime.BlockReference object at 0x7f1b54e94370> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
