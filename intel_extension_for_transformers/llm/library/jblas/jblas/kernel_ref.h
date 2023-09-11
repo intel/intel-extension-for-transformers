@@ -786,7 +786,7 @@ inline JBLAS_CODE quantize_f32_sign_int_rowblock(const float* srcptr, int8_t* ds
       float minval = 0.f;
       for (size_t ij = 0; ij < blocksize; ij++) {
         maxval = std::max(maxval, srcptr[(j + ij) * ld_src + i]);
-        minval = std::min(maxval, srcptr[(j + ij) * ld_src + i]);
+        minval = std::min(minval, srcptr[(j + ij) * ld_src + i]);
       }
       float scale = (maxval - minval) / 255;
       float rscale = 1.f / scale;

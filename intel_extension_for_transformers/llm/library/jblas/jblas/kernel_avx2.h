@@ -111,8 +111,10 @@ JBLAS_CODE dequant_kblock_s8_f32_fwd(int8_t* srcptr, float* dstptr, int row, int
     int j = 0;
     for (; j < simd_process_num; j += Vlen) {
       auto s8_ymm_v = _mm_loadu_si64(srcptr + i * ld_src + j);
-      if constexpr (WITH_ZP) s8_ymm_v = _mm_add_epi8(s8_ymm_v, _mm_loadu_si64(zero_points + kpos * NPad + j));
       auto s32_ymm_v = _mm256_cvtepi8_epi32(s8_ymm_v);
+      if constexpr (WITH_ZP) {
+        s32_ymm_v = _mm256_sub_epi32(s32_ymm_v, _mm256_cvtepi8_epi32(_mm_loadu_si64(zero_points + kpos * NPad + j)));
+      }
       auto f32_ymm_v = _mm256_cvtepi32_ps(s32_ymm_v);
       f32_ymm_v = _mm256_mul_ps(f32_ymm_v, _mm256_loadu_ps(sptr + j));
       _mm256_storeu_ps(dstptr + i * ld_dst + j, f32_ymm_v);
