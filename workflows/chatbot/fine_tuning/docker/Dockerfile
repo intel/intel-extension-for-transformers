@@ -114,6 +114,7 @@ RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
     
 # Build ITREX
 RUN cd /itrex && pip install -v . && \
+    pip install -r intel_extension_for_transformers/neural_chat/requirements.txt && \
     pip install transformers==4.32.0 && \
     pip install accelerate==0.22.0
 
