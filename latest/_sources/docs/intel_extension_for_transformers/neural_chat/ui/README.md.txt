@@ -8,7 +8,7 @@ The TextBot is a frontend component for the simple chatbot demo. It provides a s
 
 ![project-screenshot](https://i.imgur.com/Kjsw5Pb.png)
 
-For detailed information, please refer to the [README](./basic_frontend/README.html).
+For detailed information, please refer to the [README](./textbot/README.html).
 
 ## 🚀 Advanced Frontend
 
