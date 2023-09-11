@@ -5828,6 +5828,14 @@ static void ne_compute_forward_silu_f32(const struct ne_compute_params* params, 
     }
 #endif
   }
+  printf("lj.ne_compute_forward_silu = %f", *(float*)dst->data);
+
+    for (int i = 1; i < 3; i++) {
+
+      printf("   %f", ((float*)dst->data)[i]);
+
+    }
+
 }
 
 static void ne_compute_forward_silu(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6024,7 +6032,7 @@ static void ne_compute_forward_rms_norm_f32(const struct ne_compute_params* para
       }
     }
   }
-      printf("xzz.ne_compute_forward_add_f32 = %f", *(float*)dst->data);
+      printf("lj.ne_compute_forward_rms_f32 = %f", *(float*)dst->data);
 
     for (int i = 1; i < 3; i++) {
 
@@ -6326,6 +6334,14 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
       ne_vec_dot_f32(ne00, &dst_col[ir], (float*)(src0_row + ir * nb01), (float*)src1_col);
     }
   }
+  printf("lj.ne_compute_forward_mul = %f", *(float*)dst->data);
+
+    for (int i = 1; i < 3; i++) {
+
+      printf("   %f", ((float*)dst->data)[i]);
+
+    }
+
 }
 
 static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7385,6 +7401,14 @@ static void ne_compute_forward_diag_mask_f32(const struct ne_compute_params* par
       }
     }
   }
+  printf("lj.ne_compute_forward_mask = %f", *(float*)dst->data);
+
+    for (int i = 1; i < 3; i++) {
+
+      printf("   %f", ((float*)dst->data)[i]);
+
+    }
+
 }
 
 static void ne_compute_forward_diag_mask_inf(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7480,6 +7504,14 @@ static void ne_compute_forward_soft_max_f32(const struct ne_compute_params* para
     }
 #endif
   }
+  printf("lj.ne_compute_forward_softmax = %f", *(float*)dst->data);
+
+    for (int i = 1; i < 3; i++) {
+
+      printf("   %f", ((float*)dst->data)[i]);
+
+    }
+
 }
 
 static void ne_compute_forward_soft_max(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7832,6 +7864,14 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
       }
     }
   }
+  printf("lj.ne_compute_forward_rope = %f", *(float*)dst->data);
+
+    for (int i = 1; i < 3; i++) {
+
+      printf("   %f", ((float*)dst->data)[i]);
+
+    }
+
 }
 
 static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, const struct ne_tensor* src0,
