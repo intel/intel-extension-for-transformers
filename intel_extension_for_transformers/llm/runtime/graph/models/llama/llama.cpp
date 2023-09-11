@@ -149,14 +149,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
           ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 1 * N * n_embd * ne_element_size(QKVcur)),
                         n_embd / n_head, n_head, N),
           n_past, n_rot, 0, 0);
-      if (!run_mha_reordered) {
-        Vcur = ne_transpose(
-            ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
-                                n_embd, N));
-      } else {
-        Vcur = ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
-                             n_embd / n_head, n_head, N);
-      }
+      Vcur = ne_transpose(
+          ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
+                              n_embd, N));
 
     } else {
       Qcur = ne_rope_inplace(
@@ -165,13 +160,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       Kcur = ne_rope_inplace(
           ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd / n_head, n_head, N),
           n_past, n_rot, 0, 0);
-      if (!run_mha_reordered) {
-        Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd, N));
-      } else {
-        Vcur = ne_rope_inplace(
-            ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd / n_head, n_head, N),
-            n_past, n_rot, 0, 0);
-      }
+      Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_embd, N));
     }
     ne_set_name(Qcur, "Qcur");
     ne_set_name(Kcur, "Kcur");
@@ -258,7 +247,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
                                         head_size, n_ctx, n_head,  // ne
                                         0, 0,                      // nb (jblas managed)
                                         il * v_size);              // offset
-        ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past));
+        // jblas alway view V as (D, n_head, seq)
+        const auto Vcur_plain = ne_reshape_3d(ctx0, ne_view_1d(ctx0, Vcur, n_embd * N, 0), n_embd / n_head, n_head, N);
+        ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past));
       }
 
       struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
