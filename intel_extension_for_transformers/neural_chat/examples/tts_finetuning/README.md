@@ -1,4 +1,4 @@
-# Voice Cloning by finetuning a Text-To-Speech(TTS) model
+# Voice Cloning by finetuning a Text-To-Speech (TTS) model
 
 This example shows you how to clone an arbitrary person's voice by finetuning SpeechT5.
 
@@ -39,9 +39,7 @@ For simplicity in this example, we have already generated the texts of the afore
 
 ## Finetuning
 
-After we have prepare the dataset, we can begin finetuning.
-
-We can just run the following command and the finetuned model is by default named `finetuned_model.pt`.
+After preparing the dataset, we can start finetuning. We can just run the following command and the finetuned model is by default named `finetuned_model.pt`.
 
 ```
 python finetune.py
