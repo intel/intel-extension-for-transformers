@@ -66,78 +66,6 @@ struct check_store_type {
             && (payload_t::tile_desc::register_layout == reg_layout::tiled));
 };
 
-template <typename tile_t, typename payload_t>
-inline constexpr void check_store_condition() {
-    using dtype = typename payload_t::dtype;
-    if constexpr (check_store_type<tile_t, payload_t>::is_global_2d_xe) {
-        using load_store_attr =
-                typename arch_attr_t<payload_t::arch_tag>::load_store_attr;
-
-        constexpr int32_t max_block_width
-                = load_store_attr::max_load_width_in_bytes / sizeof(dtype);
-        static_assert(
-                (max_block_width % payload_t::tile_desc::block_size_x) == 0,
-                "max_block_width should be a multiply of block size x.");
-
-    } else if constexpr (check_store_type<tile_t,
-                                 payload_t>::is_global_block_1d_xe) {
-
-        static_assert(sizeof(typename payload_t::mem_dtype) >= 4,
-                "store size should at least DW aligned");
-
-    } else if constexpr (check_store_type<tile_t,
-                                 payload_t>::is_global_atomic_xe) {
-        static_assert(std::is_same<remove_const_t<dtype>, uint32_t>::value
-                        || std::is_same<remove_const_t<dtype>, uint64_t>::value
-                        || std::is_same<remove_const_t<dtype>, int>::value
-                        || std::is_same<remove_const_t<dtype>, float>::value
-                        || std::is_same<remove_const_t<dtype>, double>::value,
-                "for global atomic add, we only support fp32 and fp64, "
-                "uin32_t, uint64_t, int");
-        static_assert(
-                ((payload_t::tile_bytes % payload_t::min_store_bytes) == 0
-                        && (payload_t::block_bytes % payload_t::min_store_bytes)
-                                == 0),
-                "currently, we are not able to handle the corner case");
-        static_assert((payload_t::num_channel_x > 0)
-                        && (payload_t::num_channel_x <= payload_t::num_channel),
-                "The number of simd channel x should be greater than 0 and "
-                "less "
-                "than num_channel");
-        static_assert(sizeof(dtype) >= 4, "Only support DW and QW atomic add");
-
-    } else if constexpr (check_store_type<tile_t,
-                                 payload_t>::is_local_scatter_xe) {
-        static_assert(((payload_t::tile_bytes % payload_t::min_bytes) == 0
-                              && (payload_t::block_bytes % payload_t::min_bytes)
-                                      == 0),
-                "currently, we are not able to handle the corner case");
-        static_assert((payload_t::num_channel_x > 0)
-                        && (payload_t::num_channel_x <= payload_t::num_channel),
-                "The number of simd channel x should be greater than 0 and "
-                "less "
-                "than num_channel");
-
-    } else if constexpr (check_store_type<tile_t,
-                                 payload_t>::is_local_scatter_vnni_col_xe) {
-        static_assert(
-                ((payload_t::tile_bytes % payload_t::min_store_bytes) == 0
-                        && (payload_t::block_bytes % payload_t::min_store_bytes)
-                                == 0),
-                "currently, we are not able to handle the corner case");
-
-        static_assert((payload_t::num_channel_x > 0)
-                        && (payload_t::num_channel_x <= payload_t::num_channel),
-                "The number of simd channel x should be greater than 0 and "
-                "less "
-                "than num_channel");
-    } else if constexpr (check_store_type<tile_t,
-                                 payload_t>::is_local_block_1d_xe) {
-        static_assert(sizeof(typename payload_t::mem_dtype) >= 4,
-                "store size should at least DW aligned");
-    }
-}
-
 } // namespace detail
 
 /// @brief Is the func storing data from register file to global memory.
@@ -156,9 +84,13 @@ template <cache_hint L1 = cache_hint::write_back,
 __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_global_2d_xe>
 tile_store(tile_t &tile, payload_t &payload) {
-    detail::check_store_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
+    using store_dtype = typename payload_t::mem_dtype;
+    using check_store
+            = subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::
+                    template global_2d<payload_t::tile_desc::block_size_x>;
+
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
     static constexpr uint32_t tile_size_y = tile_desc::tile_size_y;
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
@@ -329,9 +261,11 @@ template <cache_hint L1 = cache_hint::write_back,
 __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_global_block_1d_xe>
 tile_store(tile_t &tile, payload_t &payload) {
-    detail::check_store_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using store_dtype = typename payload_t::mem_dtype;
+    using check_store = subgroup::check_store<gpu_arch::Xe, dtype,
+            store_dtype>::global_1d;
+
     static constexpr uint32_t tile_size_x = tile_t::tile_size_x;
     static constexpr uint32_t scale_factor = payload_t::scale_factor;
 
@@ -375,9 +309,13 @@ __XETLA_API typename std::enable_if_t<
 tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
     constexpr bool oob_check = std::is_same<oob_check_tag,
             global_atomic_oob_check_on_tag>::value;
-    detail::check_store_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
+    using check_store = subgroup::check_store<gpu_arch::Xe,
+            dtype>::template global_atomic<payload_t::tile_bytes,
+            payload_t::min_store_bytes, payload_t::block_bytes,
+            payload_t::num_channel_x, payload_t::num_channel>;
+
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
     static constexpr uint32_t tile_size_y = tile_desc::tile_size_y;
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
@@ -477,10 +415,14 @@ template <cache_hint L1 = cache_hint::write_back,
 __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_local_scatter_xe>
 tile_store(tile_t &tile, payload_t &payload) {
-    detail::check_store_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using store_dtype = typename payload_t::mem_dtype;
+    using check_store = subgroup::check_store<gpu_arch::Xe, dtype,
+            store_dtype>::template local_scatter<payload_t::tile_bytes,
+            payload_t::min_bytes, payload_t::block_bytes,
+            payload_t::num_channel_x, payload_t::num_channel>;
+
     constexpr uint32_t num_channel_y = payload_t::num_channel_y;
     constexpr uint32_t store_elems = num_channel_y * tile_desc::block_size_x;
 #pragma unroll
@@ -546,10 +488,14 @@ template <cache_hint L1 = cache_hint::write_back,
 __XETLA_API typename std::enable_if_t<detail::check_store_type<tile_t,
         payload_t>::is_local_scatter_vnni_col_xe>
 tile_store(tile_t &tile, payload_t &payload) {
-    detail::check_store_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using store_dtype = typename payload_t::store_dtype;
+    using check_store = subgroup::check_store<gpu_arch::Xe, dtype,
+            store_dtype>::template local_scatter_vnni_col<payload_t::tile_bytes,
+            payload_t::min_store_bytes, payload_t::block_bytes,
+            payload_t::num_channel_x, payload_t::num_channel>;
+
     constexpr uint32_t vnni_scale_factor = payload_t::vnni_scale_factor;
     constexpr uint32_t num_vector_size = payload_t::num_vector_size;
     constexpr uint32_t num_channel_y = payload_t::num_channel_y;
@@ -621,10 +567,12 @@ __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_local_block_1d_xe
         && tile_t::block_size_y != 1>
 tile_store(tile_t &tile, payload_t &payload) {
-    detail::check_store_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using store_dtype = typename payload_t::mem_dtype;
+    using check_store
+            = subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::local_1d;
+
     constexpr uint32_t vector_size
             = payload_t::bytes_per_row / sizeof(store_dtype);
 
@@ -694,10 +642,12 @@ __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_local_block_1d_xe
         && tile_t::tile_size_y == 1 && tile_t::block_size_y == 1>
 tile_store(tile_t &tile, payload_t &payload) {
-    detail::check_store_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using tile_desc = typename payload_t::tile_desc;
     using store_dtype = typename payload_t::mem_dtype;
+    using check_store
+            = subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::local_1d;
+
     constexpr uint32_t scale_factor = payload_t::scale_factor;
     constexpr uint32_t store_len = tile_desc::tile_size_x / scale_factor;
     if constexpr (store_len >= 64) {

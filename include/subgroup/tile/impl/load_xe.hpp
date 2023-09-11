@@ -50,61 +50,6 @@ struct check_load_type {
                     && (payload_t::arch_tag == gpu_arch::Xe));
 };
 
-template <typename tile_t, typename payload_t>
-inline constexpr void check_load_condition() {
-    using dtype = typename payload_t::dtype;
-    if constexpr (check_load_type<tile_t, payload_t>::is_global_2d_xe) {
-        using tile_desc = typename payload_t::tile_desc;
-        constexpr bool reg_transpose = tile_desc::reg_transpose;
-        constexpr reg_layout reg_layout_ = tile_desc::register_layout;
-        constexpr bool mem_transpose = payload_t::mem_transpose;
-
-        using load_store_attr =
-                typename arch_attr_t<payload_t::arch_tag>::load_store_attr;
-        constexpr int32_t max_vnni_block_width
-                = load_store_attr::max_vnni_load_width_in_elems;
-        static_assert(!payload_t::mem_transform
-                        || tile_desc::block_size_x <= max_vnni_block_width,
-                "For VNNI transform, the maximum block width is 16 width.");
-        constexpr int32_t max_block_width
-                = load_store_attr::max_load_width_in_bytes / sizeof(dtype);
-        static_assert((max_block_width % tile_desc::block_size_x) == 0,
-                "max_block_width should be a multiply of block size x.");
-
-    } else if constexpr (check_load_type<tile_t,
-                                 payload_t>::is_global_block_1d_xe) {
-        static_assert(sizeof(typename payload_t::mem_dtype) >= 4,
-                "store size should at least DW aligned");
-
-    } else if constexpr (check_load_type<tile_t,
-                                 payload_t>::is_local_scatter_xe) {
-        static_assert(payload_t::memory_layout == mem_layout::row_major,
-                "only support row major in local load, you can use local store "
-                "to "
-                "do the transpose");
-        static_assert(sizeof(typename payload_t::mem_dtype) >= 4,
-                "load size should at least DW aligned");
-        static_assert((payload_t::tile_desc::block_size_x * sizeof(dtype)
-                              % sizeof(typename payload_t::mem_dtype))
-                        == 0,
-                "bytes per row should be a multiply of sizeof load_dtype");
-        static_assert(((payload_t::tile_bytes % payload_t::min_bytes) == 0
-                              && (payload_t::block_bytes % payload_t::min_bytes)
-                                      == 0),
-                "currently, we are not able to handle the corner case");
-        static_assert((payload_t::num_channel_x > 0)
-                        && (payload_t::num_channel_x <= payload_t::num_channel),
-                "The number of simd channel x should be greater than 0 and "
-                "less "
-                "than num_channel");
-
-    } else if constexpr (check_load_type<tile_t,
-                                 payload_t>::is_local_block_1d_xe) {
-        static_assert(sizeof(typename payload_t::mem_dtype) >= 4,
-                "store size should at least DW aligned");
-    }
-}
-
 } // namespace detail
 
 /// @brief This function loads data from 2D memory surface.
@@ -124,10 +69,13 @@ template <cache_hint L1 = cache_hint::cached,
 __XETLA_API typename std::enable_if_t<
         detail::check_load_type<tile_t, payload_t>::is_global_2d_xe>
 tile_load(tile_t &tile, payload_t &payload) {
-    detail::check_load_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using load_dtype = typename payload_t::mem_dtype;
     using tile_desc = typename tile_t::tile_desc;
+    using check_load = subgroup::check_load<gpu_arch::Xe, dtype,
+            load_dtype>::template global_2d<payload_t::mem_transform,
+            tile_desc::block_size_x>;
+
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
     static constexpr uint32_t tile_size_y = tile_desc::tile_size_y;
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
@@ -415,13 +363,15 @@ template <cache_hint L1 = cache_hint::cached,
 __XETLA_API typename std::enable_if_t<
         detail::check_load_type<tile_t, payload_t>::is_global_block_1d_xe>
 tile_load(tile_t &tile, payload_t &payload) {
-    detail::check_load_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using load_dtype = typename payload_t::mem_dtype;
+    using check_load
+            = subgroup::check_load<gpu_arch::Xe, dtype, load_dtype>::global_1d;
+
     static constexpr uint32_t tile_size_x = tile_t::tile_size_x;
     static constexpr uint32_t scale_factor = payload_t::scale_factor;
-
     constexpr uint32_t load_len = tile_size_x / scale_factor;
+
     if constexpr (load_len >= 64) {
 #pragma unroll
         for (int i = 0; i < load_len / 64; i++) {
@@ -457,13 +407,19 @@ template <cache_hint L1 = cache_hint::cached,
 __XETLA_API typename std::enable_if_t<
         detail::check_load_type<tile_t, payload_t>::is_local_scatter_xe>
 tile_load(tile_t &tile, payload_t &payload) {
-    detail::check_load_condition<tile_t, payload_t>();
     using dtype = typename payload_t::dtype;
     using tile_desc = typename payload_t::tile_desc;
     using load_dtype = typename payload_t::mem_dtype;
+    using check_load = subgroup::check_load<gpu_arch::Xe, dtype,
+            load_dtype>::template local_scatter<payload_t::memory_layout,
+            payload_t::tile_desc::block_size_x, payload_t::tile_bytes,
+            payload_t::min_bytes, payload_t::block_bytes,
+            payload_t::num_channel_x, payload_t::num_channel>;
+
     constexpr uint32_t num_channel_y = payload_t::num_channel_y;
     constexpr uint32_t load_elems = num_channel_y * tile_desc::block_size_x;
     static constexpr bool mem_transform = payload_t::mem_transform;
+
 #pragma unroll
     for (int i = 0; i < tile_desc::tile_size_y / tile_desc::block_size_y; i++) {
         uint32_t offset_y = i * tile_desc::block_size_y;
@@ -533,10 +489,12 @@ template <cache_hint L1 = cache_hint::cached,
 __XETLA_API typename std::enable_if_t<
         detail::check_load_type<tile_t, payload_t>::is_local_block_1d_xe>
 tile_load(tile_t &tile, payload_t &payload) {
-    detail::check_load_condition<tile_t, payload_t>();
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using load_dtype = typename payload_t::mem_dtype;
+    using check_load
+            = subgroup::check_load<gpu_arch::Xe, dtype, load_dtype>::local_1d;
+
     constexpr uint32_t scale_factor = payload_t::scale_factor;
     constexpr uint32_t load_len = tile_desc::tile_size_x / scale_factor;
     if constexpr (load_len >= 64) {

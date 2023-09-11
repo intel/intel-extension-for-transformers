@@ -10,10 +10,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake")
 find_package(MKL REQUIRED)
 
 # debug option
-set(DEBUG "off" CACHE STRING "set debug version")
-message(STATUS "debug is set to " ${DEBUG})
-if (${DEBUG} STREQUAL "on")
-    add_compile_options(-debug=minimal -Rno-debug-disables-optimization -DDEBUG)
+message(STATUS "'DEBUG' is set to " ${DEBUG})
+if (${DEBUG})
+add_compile_options(-debug=minimal -Rno-debug-disables-optimization -DDEBUG=${DEBUG})
 endif ()
 
 add_compile_options(-fsycl)

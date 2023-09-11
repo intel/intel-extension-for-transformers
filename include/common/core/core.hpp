@@ -71,6 +71,7 @@
 #include "common/core/base_ops.hpp"
 #include "common/core/base_types.hpp"
 #include "common/core/bit_mask_manipulation.hpp"
+#include "common/core/debug.hpp"
 #include "common/core/explicit_conv.hpp"
 #include "common/core/math_fma.hpp"
 #include "common/core/math_general.hpp"

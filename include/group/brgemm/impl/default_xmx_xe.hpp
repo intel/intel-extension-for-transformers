@@ -69,8 +69,9 @@ private:
     using dtype_mma_a = typename compute_policy::dtype_mma_a;
     using dtype_mma_b = typename compute_policy::dtype_mma_b;
 
-    using check_dtype = limitation<gpu_arch::Xe>::brgemm::default_xmx::
-            check_dtype_default<dtype_a, dtype_b, dtype_mma_a, dtype_mma_b>;
+    using check_dtype
+            = group::brgemm<gpu_arch::Xe>::default_xmx::check_dtype_default<
+                    dtype_a, dtype_b, dtype_mma_a, dtype_mma_b>;
 
     /******** set memory attribute **********/
     static constexpr mem_space mem_space_a = mem_desc_a_t::space;
@@ -85,9 +86,9 @@ private:
             ? tdesc_update_dir::x_dir
             : tdesc_update_dir::y_dir;
 
-    using check_memory = limitation<gpu_arch::Xe>::brgemm::default_xmx::
-            check_memory_default<mem_layout_a, mem_layout_b, mem_space_a,
-                    mem_space_b>;
+    using check_memory
+            = group::brgemm<gpu_arch::Xe>::default_xmx::check_memory_default<
+                    mem_layout_a, mem_layout_b, mem_space_a, mem_space_b>;
 
     static constexpr uint32_t stages = compute_policy::stages;
     static constexpr uint32_t sync_freq = compute_policy::sync_freq;
@@ -108,11 +109,11 @@ private:
     static constexpr uint32_t block_size_y_b = compute_policy::block_size_y_b;
 
     using arch_attr = arch_attr_t<arch_tag>;
-    using check_tile_size = limitation<gpu_arch::Xe>::brgemm::default_xmx::
-            check_tile_size_default<arch_attr, dtype_mma_a, tile_size_x_a,
-                    tile_size_y_a, block_size_x_a, block_size_y_a,
-                    tile_size_x_b, tile_size_y_b, block_size_x_b,
-                    block_size_y_b>;
+    using check_tile_size
+            = group::brgemm<gpu_arch::Xe>::default_xmx::check_tile_size_default<
+                    arch_attr, dtype_mma_a, tile_size_x_a, tile_size_y_a,
+                    block_size_x_a, block_size_y_a, tile_size_x_b,
+                    tile_size_y_b, block_size_x_b, block_size_y_b>;
 
     /******** set tile  **********/
     static constexpr reg_layout reg_layout_a = reg_layout::tiled;

@@ -50,6 +50,8 @@ using remove_const_t = typename std::remove_const<T>::type;
 #define __ESIMD_NS sycl::ext::intel::esimd
 #endif
 
+#define XETLA_MARKER(message) [[deprecated(message)]]
+
 __XETLA_API int32_t xetla_get_hw_thread_id() {
     return __ESIMD_ENS::get_hw_thread_id();
 }
@@ -57,123 +59,6 @@ __XETLA_API int32_t xetla_get_hw_thread_id() {
 __XETLA_API int32_t xetla_get_subdevice_id() {
     return __ESIMD_ENS::get_subdevice_id();
 }
-
-#ifdef DEBUG
-static constexpr size_t reg_start = 128 * 64; // start from GRF128 and down
-
-#if 0 // has bug in current driver, will open this in next driver
-static constexpr size_t eot_offset = reg_start - 8 * sizeof(int);
-ESIMD_PRIVATE ESIMD_REGISTER(eot_offset) __ESIMD_NS::simd<int, 8> eot;
-ESIMD_INLINE void esimd_abort() {
-    constexpr uint32_t exDesc = 0x0;
-    constexpr uint32_t desc = 0x02000010;
-    constexpr uint8_t execSize = 0x83;
-    constexpr uint8_t sfid = 0x3;
-    constexpr uint8_t numSrc0 = 0x1;
-    constexpr uint8_t numSrc1 = 0x0;
-    constexpr uint8_t isEOT = 0x1;
-    return sycl::ext::intel::experimental::esimd::raw_send(
-            eot, exDesc, desc, execSize, sfid, numSrc0, isEOT);
-}
-#endif
-
-namespace debug_ctx {
-namespace nd_item {
-using element_type = uint16_t;
-static constexpr size_t element_num = 8;
-static constexpr size_t max_dims = 3;
-static constexpr size_t dims_pos = 0;
-static constexpr size_t dims_global_start = 1;
-static constexpr size_t dims_local_start = 1 + max_dims;
-
-static constexpr size_t nd_item_offset
-        = reg_start - element_num * sizeof(element_type);
-ESIMD_PRIVATE ESIMD_REGISTER(nd_item_offset)
-        __ESIMD_NS::simd<element_type, element_num> saved_nd_item;
-
-template <size_t dims>
-static inline void set(sycl::nd_item<dims> item) {
-    static_assert(dims <= max_dims);
-
-    saved_nd_item[dims_pos] = dims;
-
-#pragma unroll
-    for (auto i = 0; i < dims; i++) {
-        saved_nd_item[dims_global_start + i] = item.get_group(i);
-    }
-
-#pragma unroll
-    for (auto i = 0; i < dims; i++) {
-        saved_nd_item[dims_local_start + i] = item.get_local_id(i);
-    }
-}
-
-static inline uint16_t get_dims() {
-    return saved_nd_item[dims_pos];
-}
-
-static inline int16_t get_group_id(size_t dim) {
-    return saved_nd_item[dims_global_start + dim];
-}
-
-static inline int16_t get_local_id(size_t dim) {
-    return saved_nd_item[dims_local_start + dim];
-}
-}; // namespace nd_item
-}; // namespace debug_ctx
-#endif
-
-#define XETLA_MARKER(message) [[deprecated(message)]]
-
-#define STR_APPEND(a, b, c) a b c
-
-#ifdef __SYCL_DEVICE_ONLY__
-#ifdef DEBUG
-#define XETLA_PRINTF(s, ...) \
-    do { \
-        const __attribute__((opencl_constant)) char f[] = STR_APPEND( \
-                "[XeTLA] [KERNEL] [group(%d, %d, %d), local(%d, " \
-                "%d, %d)] : ", \
-                s, "\n"); \
-        sycl::ext::oneapi::experimental::printf(f, \
-                debug_ctx::nd_item::get_group_id(0), \
-                debug_ctx::nd_item::get_group_id(1), \
-                debug_ctx::nd_item::get_group_id(2), \
-                debug_ctx::nd_item::get_local_id(0), \
-                debug_ctx::nd_item::get_local_id(1), \
-                debug_ctx::nd_item::get_local_id(2), ##__VA_ARGS__); \
-    } while (0)
-#else
-#define XETLA_PRINTF(s, ...) \
-    do { \
-        const __attribute__((opencl_constant)) char f[] \
-                = STR_APPEND("[XeTLA] [KERNEL] : ", s, "\n"); \
-        sycl::ext::oneapi::experimental::printf(f, ##__VA_ARGS__); \
-    } while (0)
-#endif
-
-#define XETLA_ASSERT(c, s, ...) \
-    do { \
-        if (!(c)) { XETLA_PRINTF(s, ##__VA_ARGS__); } \
-    } while (0)
-#else
-#define XETLA_PRINTF(s, ...) \
-    do { \
-        const char *f = STR_APPEND("[XeTLA] [HOST] : ", s, "\n"); \
-        printf(f, ##__VA_ARGS__); \
-    } while (0)
-
-#ifdef DEBUG
-#define XETLA_ASSERT(c, s, ...) \
-    do { \
-        if (!(c)) { XETLA_PRINTF(s, ##__VA_ARGS__); } \
-    } while (0)
-#else
-#define XETLA_ASSERT(c, s, ...) \
-    do { \
-    } while (0)
-#endif
-#endif
 
 namespace gpu::xetla {
 

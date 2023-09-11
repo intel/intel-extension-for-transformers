@@ -180,10 +180,10 @@ template <typename Ty, uint32_t N, cache_hint L1H = cache_hint::none,
         cache_hint L3H = cache_hint::none, bool transpose = false,
         bool transform = false>
 __XETLA_API xetla_vector<Ty, N> xetla_tload_global(xetla_tdescriptor tdesc) {
-#ifdef DEBUG
-    limitation<gpu_arch::Xe>::block_2d<Ty>::template check_load<transpose,
-            transform>(tdesc);
-#endif
+    DEBUG_INVOKE(dbg_level::core,
+            core::block_2d<gpu_arch::Xe, Ty>::template check_load<transpose,
+                    transform>(tdesc));
+
     constexpr uint32_t numDst = 31 < ((N * sizeof(Ty) + 63) / 64)
             ? 31
             : ((N * sizeof(Ty) + 63) / 64);
@@ -224,9 +224,9 @@ template <typename Ty, uint32_t N, cache_hint L1H = cache_hint::none,
         cache_hint L3H = cache_hint::none>
 __XETLA_API void xetla_tstore_global(
         xetla_tdescriptor tdesc, xetla_vector<Ty, N> data) {
-#ifdef DEBUG
-    limitation<gpu_arch::Xe>::block_2d<Ty>::check_store(tdesc);
-#endif
+    DEBUG_INVOKE(dbg_level::core,
+            core::block_2d<gpu_arch::Xe, Ty>::check_store(tdesc));
+
     uint32_t msg_desc = 7; // store operation
     msg_desc |= detail::get_element_size_code<sizeof(Ty)>() << 9;
     msg_desc |= detail::get_store_cache_hint_code<L1H, L3H>() << 17;

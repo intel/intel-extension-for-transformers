@@ -224,33 +224,40 @@ public:
     static bool can_implement(arguments_t &args) {
         bool implementable = true;
         if (brgemm_t::is_2d_block_a) {
-            implementable &= limitation<gpu_arch::Xe>::block_2d<
-                    dtype_a>::check_tensor((uint64_t)(args.matA_base.base),
-                    brgemm_t::is_col_major_a ? args.matrix_m : args.matrix_k,
-                    brgemm_t::is_col_major_a ? args.matrix_k : args.matrix_m,
-                    args.matA_ld);
+            implementable
+                    &= core::block_2d<gpu_arch::Xe, dtype_a>::check_tensor(
+                            (uint64_t)(args.matA_base.base),
+                            brgemm_t::is_col_major_a ? args.matrix_m
+                                                     : args.matrix_k,
+                            brgemm_t::is_col_major_a ? args.matrix_k
+                                                     : args.matrix_m,
+                            args.matA_ld);
         } else {
-            implementable &= limitation<gpu_arch::Xe>::block_1d<
+            implementable &= kernel::general_1d<gpu_arch::Xe,
                     dtype_a>::check_alignment(args.matA_base.base,
                     args.matA_ld);
         }
         if (brgemm_t::is_2d_block_b) {
-            implementable &= limitation<gpu_arch::Xe>::block_2d<
-                    dtype_b>::check_tensor((uint64_t)(args.matB_base.base),
-                    brgemm_t::is_col_major_b ? args.matrix_k : args.matrix_n,
-                    brgemm_t::is_col_major_b ? args.matrix_n : args.matrix_k,
-                    args.matB_ld);
+            implementable
+                    &= core::block_2d<gpu_arch::Xe, dtype_b>::check_tensor(
+                            (uint64_t)(args.matB_base.base),
+                            brgemm_t::is_col_major_b ? args.matrix_k
+                                                     : args.matrix_n,
+                            brgemm_t::is_col_major_b ? args.matrix_n
+                                                     : args.matrix_k,
+                            args.matB_ld);
         } else {
-            implementable &= limitation<gpu_arch::Xe>::block_1d<
+            implementable &= kernel::general_1d<gpu_arch::Xe,
                     dtype_b>::check_alignment(args.matB_base.base,
                     args.matB_ld);
         }
         if (epilogue_t::is_2d_block_c) {
-            implementable &= limitation<gpu_arch::Xe>::block_2d<
-                    dtype_c>::check_tensor((uint64_t)(args.matC_base.base),
-                    args.matrix_n, args.matrix_m, args.matC_ld);
+            implementable
+                    &= core::block_2d<gpu_arch::Xe, dtype_c>::check_tensor(
+                            (uint64_t)(args.matC_base.base), args.matrix_n,
+                            args.matrix_m, args.matC_ld);
         } else {
-            implementable &= limitation<gpu_arch::Xe>::block_1d<
+            implementable &= kernel::general_1d<gpu_arch::Xe,
                     dtype_c>::check_alignment(args.matC_base.base,
                     args.matC_ld);
         }
