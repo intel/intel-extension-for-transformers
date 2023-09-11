@@ -5109,6 +5109,15 @@ static void ne_compute_forward_mul_f32(const struct ne_compute_params* params, c
       }
     }
   }
+    printf("lj.ne_compute_forward_mul = %f", *(float*)dst->data);
+
+    for (int i = 1; i < 3; i++) {
+
+      printf("   %f", ((float*)dst->data)[i]);
+
+    }
+
+    printf("\n");
 }
 
 static void ne_compute_forward_mul(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6015,6 +6024,15 @@ static void ne_compute_forward_rms_norm_f32(const struct ne_compute_params* para
       }
     }
   }
+      printf("xzz.ne_compute_forward_add_f32 = %f", *(float*)dst->data);
+
+    for (int i = 1; i < 3; i++) {
+
+      printf("   %f", ((float*)dst->data)[i]);
+
+    }
+
+    printf("\n");
 }
 
 static void ne_compute_forward_rms_norm(const struct ne_compute_params* params, const struct ne_tensor* src0,
