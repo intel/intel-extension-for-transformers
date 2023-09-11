@@ -1,4 +1,4 @@
-# Voice Cloning by finetuning a Text-To-Speech(TTS) model
+# Voice Cloning by finetuning a Text-To-Speech (TTS) model
 
 This example shows you how to clone an arbitrary person's voice by finetuning SpeechT5.
 
@@ -23,8 +23,7 @@ texts/
 ```
 
 
-Users can use their own audios and corresponding texts, or they can download from the Internet. In this example, we use FeiFei Li's
-audio samples extracted from https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi.
+Users can use their own audios and corresponding texts, or they can download from the Internet. Here are the [audio samples](https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi) that we use in this example.
 
 Following the above format, we should rename the audio file names to 1.mp3, 2.mp3 and so on.
 
@@ -36,13 +35,11 @@ python asr.py -i audios/1.mp3 -m openai/whisper-tiny
 
 Again, make sure the text file names are formatted as 1.txt, 2.txt and so on.
 
-For simplicity in this example, we have already generated the texts of the audios from https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi under the `texts/` folder.
+For simplicity in this example, we have already generated the texts of the aforementioned audio samples under the `texts/` folder.
 
 ## Finetuning
 
-After we have prepare the dataset, we can begin finetuning.
-
-We can just run the following command and the finetuned model is by default named `finetuned_model.pt`.
+After preparing the dataset, we can start finetuning. We can just run the following command and the finetuned model is by default named `finetuned_model.pt`.
 
 ```
 python finetune.py
