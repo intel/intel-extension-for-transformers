@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <limits>
 
 #include "application/common.h"
 #include "models/model_utils/model_config.h"
@@ -259,19 +260,33 @@ MODEL_API const char* model_print_system_info(void);
 #endif
 
 /*  beam search utils  */
+#define NEG_INF -std::numeric_limits<float>::max()
+
+typedef struct beam_top_k_res {
+  model_token id;  // token id
+  float score;     // score of the token
+  int beam_idx;    // token in which beam
+} beam_top_k_res;
+
+MODEL_API std::vector<beam_top_k_res> beam_top_k(const model_context* ctx,
+                                                 const std::vector<std::vector<float>>& token_scores,
+                                                 const std::vector<int>& num_beams, const std::vector<int> beam_indices,
+                                                 const int& sample_scale = 2, const int& dim = -1);
+
 struct beam {
   const model_context* ctx = nullptr;
   std::vector<model_token> token_ids;
   // Cumulative beam score (log-softmax here)
   float score;
+  float eos_score;
   // record inference batch indice
   int infer_bs_id;
   // end-of-text
   const bool eos() const { return !token_ids.empty() && token_ids.back() == 50256; }  // TODO ctx->vocab.eos_id
   void print() const {
-    printf("score: %0.6f, eos: %d, tokens: ", score, eos());
+    printf("length: %d, score: %0.6f, eos: %d, tokens:\n", token_ids.size(), score, eos());
     for (const auto& id : token_ids) {
-      printf("%s", model_token_to_str(ctx, id));
+      printf("%d: %s, ", id, model_token_to_str(ctx, id));
     }
     printf("\n");
   }
@@ -284,8 +299,10 @@ class logits_processor {
   explicit logits_processor(model_context* lctx) : ctx(lctx), min_new_tokens(lctx->generation_conf.min_new_tokens) {}
   ~logits_processor() {}
 
-  void process(const uint32_t& cur_len, const model_vocab::id& eos_token_id);
-  void min_new_tokens_logits_process(const uint32_t& cur_len, const model_vocab::id& eos_token_id);
+  void process(const uint32_t& cur_len, std::vector<std::vector<float>>& token_scores,
+               const model_vocab::id& eos_token_id);
+  void min_new_tokens_logits_process(const uint32_t& cur_len, std::vector<std::vector<float>>& token_scores,
+                                     const model_vocab::id& eos_token_id);
 
  private:
   model_context* ctx = nullptr;
@@ -324,7 +341,7 @@ class beam_search_flow {
   explicit beam_search_flow(model_context* lctx) : ctx(lctx), beam_size(lctx->beam_size), lp(logits_processor(lctx)) {
     cur_beams.reserve(beam_size);
     next_beams.reserve(beam_size);
-    cur_beams.push_back({ctx, {}, 1.0f});
+    cur_beams.push_back({ctx, {}, 0.0f});
   }
   ~beam_search_flow() {}
 
