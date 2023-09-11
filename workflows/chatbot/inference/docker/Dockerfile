@@ -74,7 +74,7 @@ RUN source activate && conda activate chatbot-demo && \
     pip install schema && \
     pip install datasets torch sentencepiece peft evaluate nltk rouge_score && \
     cd /root/chatbot && git clone https://github.com/intel/intel-extension-for-transformers.git \
-    && cd ./intel-extension-for-transformers/ && pip install -r requirements.txt && pip install -v . \
+    && cd ./intel-extension-for-transformers/ && git checkout xinyuye/nc_migrate && pip install -r requirements.txt && pip install -v . \
     && cd ./intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt
 
 ENV KMP_BLOCKTIME=1
@@ -115,7 +115,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install -e . 
 
 RUN git clone https://github.com/intel/intel-extension-for-transformers.git \
-    && cd ./intel-extension-for-transformers/ && pip install -r requirements.txt && pip install -v . \
+    && cd ./intel-extension-for-transformers/ && git checkout xinyuye/nc_migrate && pip install -r requirements.txt && pip install -v . \
     && cd ./intel_extension_for_transformers/neural_chat/ \
     && pip install -r requirements.txt \
     && pip install transformers==4.32.0 \
