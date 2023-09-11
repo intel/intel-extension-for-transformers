@@ -18,9 +18,9 @@
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
 
-enum chatglm1_model {
-  CHATGLM1_UNKNOWN,
-  CHATGLM1_6B,
+enum chatglm_model {
+  CHATGLM_UNKNOWN,
+  CHATGLM_6B,
 };
 
 static const model_scratch chatglm_mem_req(int n_layers) {
@@ -33,9 +33,9 @@ static const model_scratch chatglm_mem_req(int n_layers) {
   }
 }
 
-class CHATGLM1 : public IModel {
+class CHATGLM : public IModel {
  private:
-  model_archs name = MODEL_CHATGLM1;
+  model_archs name = MODEL_CHATGLM;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;

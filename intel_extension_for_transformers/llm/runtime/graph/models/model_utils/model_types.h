@@ -76,7 +76,7 @@ enum model_archs {
   MODEL_OPT,
   MODEL_BLOOM,
   MODEL_CHATGLM2,
-  MODEL_CHATGLM1
+  MODEL_CHATGLM
 };
 
 static const size_t MB = 1024 * 1024;
@@ -393,7 +393,7 @@ class model_name_to_arch {
       {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
       {"dolly", MODEL_GPTNEOX},     {"starcoder", MODEL_STARCODER},
       {"falcon", MODEL_FALCON},     {"bloom", MODEL_BLOOM},
-      {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1}};
+      {"chatglm2", MODEL_CHATGLM2}, {"chatglm", MODEL_CHATGLM}};
 };
 
 #ifdef __cplusplus
