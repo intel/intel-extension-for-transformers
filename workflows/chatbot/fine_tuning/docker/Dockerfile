@@ -42,7 +42,9 @@ RUN apt-get update \
     && apt-get install -y wget numactl git \
     && apt-get install -y openssh-server \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb \
+    && dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 
 # Download ITREX code
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex
@@ -91,7 +93,9 @@ ENV PYTHONPATH=/root:/usr/lib/habanalabs/
 
 RUN apt-get update && \
     apt-get install git-lfs && \
-    git-lfs install
+    git-lfs install && \
+    wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb && \
+    dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 
 # Install optimum-habana
 RUN git clone https://github.com/huggingface/optimum-habana.git && \

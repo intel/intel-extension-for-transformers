@@ -43,7 +43,9 @@ RUN apt-get update \
     && apt-get install git \
     && apt-get install git-lfs \
     && git-lfs install \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb \
+    && dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 
 # Install miniconda
 ENV CONDA_DIR /opt/conda
@@ -92,7 +94,9 @@ ENV PYTHONPATH=/root:/usr/lib/habanalabs/
 
 RUN apt-get update && \
     apt-get install git-lfs && \
-    git-lfs install
+    git-lfs install && \
+    wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb && \
+    dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 
 COPY 0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
 
