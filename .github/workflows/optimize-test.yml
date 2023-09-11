@@ -4,9 +4,10 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'intel_extension_for_transformers/optimization/**'
-      - 'intel_extension_for_transformers/evaluation/**'
-      - 'intel_extension_for_transformers/preprocessing/**'
+      - intel_extension_for_transformers/transformers/**
+      - intel_extension_for_transformers/utils/**
+      - intel_extension_for_transformers/llm/evaluation/**
+      - intel_extension_for_transformers/llm/quantization/**
       - '.github/workflows/optimize-test.yml'
       - '.github/workflows/script/models/run_optimize.sh'
 
