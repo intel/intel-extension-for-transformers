@@ -18,10 +18,24 @@ from rich.live import Live
 
 from fastchat.serve.inference import chat_loop, ChatIO
 
+def is_safe_input(input_text):
+    # Define a regular expression pattern to match safe input
+    safe_pattern = r'^[a-zA-Z0-9\s,.!?]+$'
+    return re.match(safe_pattern, input_text) is not None
 
 class SimpleChatIO(ChatIO):
     def prompt_for_input(self, role) -> str:
-        return input(f"{role}: ").strip()
+        query = input(f"{role}: ").strip()
+        # Validate user input
+        if not query:
+            print('Input cannot be empty. Please try again.')
+            return None
+
+        # Perform input validation
+        if not is_safe_input(query):
+            print('Invalid characters in input. Please use only letters, numbers, and common punctuation.')
+            return None
+        return query
 
     def prompt_for_output(self, role: str):
         print(f"{role}: ", end="", flush=True)

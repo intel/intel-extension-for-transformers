@@ -56,7 +56,7 @@ RUN apt-get install default-jdk -y
 
 # Install and upgrade node and npm for frontend
 RUN apt-get install npm -y && \
-    npm install -g n && \
+    npm install -g n --ignore-scripts && \
     n stable && \
     hash -r && \
     npm install -g npm@latest
@@ -82,19 +82,23 @@ RUN conda init bash && \
     export PATH=$CONDA_DIR/bin/:${PATH} && \
     conda config --add channels intel && \
     conda create -yn chatbot-demo python=3.9 && \
-    echo "conda activate chatbot-demo" >> ~/.bashrc
+    echo "conda activate chatbot-demo" >> ~/.bashrc && \
+    source ~/.bashrc
 
-SHELL ["/bin/bash", "--login", "-c", "conda", "run", "-n", "chatbot-demo"]
-
-RUN conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
+RUN source activate && conda activate chatbot-demo && \
+    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
     conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
-    pip install farm-haystack==1.14.0 && \
+    conda install git-lfs && \
+    pip install 'farm-haystack[inference]' && \
     pip install intel_extension_for_pytorch && \
-    pip install transformers diffusers accelerate SentencePiece peft evaluate nltk datasets && \
+    pip install transformers diffusers accelerate && \
+    pip install einops SentencePiece peft evaluate nltk datasets && \
     pip install fastapi uvicorn sse_starlette bottle gevent pymysql && \
-    pip install schema && \
-    pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers==1.0.0.dev20230602
+    pip install schema python-multipart speechbrain soundfile gptcache pydub && \
+    pip install -i https://test.pypi.org/simple/ intel-extension-for-transformers==1.0.0.dev20230602 && \
+    pip uninstall sentence_transformers -y && \
+    pip install git+https://github.com/UKPLab/sentence-transformers.git
 
 
 # Add user
@@ -113,4 +117,4 @@ ADD https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.17.10-l
 # Switch to root user
 USER root
 
-WORKDIR /itrex/workflows/chatbot/demo/
+WORKDIR /itrex/workflows/chatbot/

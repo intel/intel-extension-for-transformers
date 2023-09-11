@@ -15,29 +15,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.neural_chat.config import OptimizationConfig
+from typing import Union
+from intel_extension_for_transformers.neural_chat.config import (
+    AMPConfig,
+    WeightOnlyQuantizationConfig,
+    BitsAndBytesConfig
+)
 
 class Optimization:
-    def __init__(self, optimization_config: OptimizationConfig):
+    def __init__(
+            self,
+            optimization_config: Union[AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig]
+        ):
         self.optimization_config = optimization_config
 
     def optimize(self, model):
         optimized_model = model
         config = self.optimization_config
-        if config.weight_only_quant_config:
+        if isinstance(config, WeightOnlyQuantizationConfig):
             print("Applying Weight Only Quantization.")
             from neural_compressor import PostTrainingQuantConfig, quantization
             op_type_dict = {
                 '.*':{ 	# re.match
                     "weight": {
-                        'bits': config.weight_only_quant_config.bits, # 1-8 bits
-                        'group_size': config.weight_only_quant_config.group_size,  # -1 (per-channel)
-                        'scheme': config.weight_only_quant_config.scheme, # sym/asym
-                        'algorithm': config.weight_only_quant_config.algorithm, # RTN/AWQ/TEQ
+                        'bits': config.bits, # 1-8 bits
+                        'group_size': config.group_size,  # -1 (per-channel)
+                        'scheme': config.scheme, # sym/asym
+                        'algorithm': config.algorithm, # RTN/AWQ/TEQ
                     },
                 },
             }
-            recipes = {"rtn_args": {"sym_full_range": config.weight_only_quant_config.sym_full_range}}
+            recipes = {"rtn_args": {"enable_full_range": config.weight_only_quant_config.enable_full_range}}
             conf = PostTrainingQuantConfig(
                 approach='weight_only',
                 op_type_dict=op_type_dict,

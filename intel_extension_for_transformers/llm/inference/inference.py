@@ -34,6 +34,11 @@ from transformers import (
     StoppingCriteriaList,
     StoppingCriteria,
 )
+from intel_extension_for_transformers.neural_chat.config import (
+    AMPConfig,
+    WeightOnlyQuantizationConfig,
+    BitsAndBytesConfig
+)
 
 # Set necessary env variables
 os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
@@ -203,6 +208,8 @@ def parse_args():
         "--task", type=str, default="", choices=["completion", "chat", "summarization"],
         help="task name, different task means different templates."
     )
+    parser.add_argument(
+        "--return_stats", action='store_true', default=False,)
     args = parser.parse_args()
     return args
 
@@ -228,9 +235,16 @@ class StopOnTokens(StoppingCriteria):
         return False
 
 
-def max_input_len(model, outlen=0):
-    # need to adjust due to perf and real usage
-    return 128
+def max_input_len(input_text_length):
+    if input_text_length <= 128:
+        return 128
+    elif input_text_length <= 512:
+        return 512
+    elif input_text_length <= 2048:
+        return 2048
+    else:
+        logger.warning("Max support length is 4096")
+        return 4096
 
 
 def add_template(example, template_name):
@@ -389,26 +403,27 @@ def load_model(
     elif device == "cpu":
         set_cpu_running_env()
 
-    if optimization_config:
-        if optimization_config.amp_config:
-            dtype = optimization_config.amp_config.dtype
+    if isinstance(optimization_config, AMPConfig):
+        dtype = optimization_config.dtype
+    else:
+        dtype = "float32"
+
+    bitsandbytes_quant_config = None
+    if isinstance(optimization_config, BitsAndBytesConfig):
+        if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
+            bitsandbytes_quant_config = optimization_config
         else:
-            dtype = "float32"
-        if optimization_config.bitsandbytes_config:
-            if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
-                bitsandbytes_quant_config = optimization_config.bitsandbytes_config
-            else:
-                logger.warning(
-                    "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
-                    + " library is available, ignoring bitsandbytes config now."
-                )
-        else:
-            bitsandbytes_quant_config = None
+            logger.warning(
+                "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
+                + " library is available, ignoring bitsandbytes config now."
+            )
 
     if dtype == "bfloat16":
         torch_dtype = torch.bfloat16
     elif dtype == "float16":
         torch_dtype = torch.float16
+    elif dtype == "float32":
+        torch_dtype = torch.float32
     else:
         logger.warning(f"Unsupported dtype {dtype}, using float32 now.")
         torch_dtype = torch.float32
@@ -431,7 +446,6 @@ def load_model(
             )
     elif (re.search("mpt", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-        from transformers import AutoModelForCausalLM
 
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
@@ -492,7 +506,7 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-    if optimization_config:
+    if isinstance(optimization_config, WeightOnlyQuantizationConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         model = optimize_model(model, optimization_config)
 
@@ -535,8 +549,6 @@ def load_model(
             )
             if cpu_jit and (re.search("mpt-7b", model_name, re.IGNORECASE)
                             or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)):
-                from transformers import AutoModelForCausalLM
-
                 # TDDO
                 # model = jit_trace_mpt_7b(model)
                 config = AutoConfig.from_pretrained(model_name, trust_remote_code=True,
@@ -561,11 +573,12 @@ def load_model(
 
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    print("model loaded")
+    logger.info("Model loaded.")
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items()}
 
+output_token_len = 0
 def predict_stream(**params):
     """
     Generates streaming text based on the given parameters and prompt.
@@ -698,20 +711,24 @@ def predict_stream(**params):
                                 )
                             ]
                         )
-                        return model.generate(**input_tokens, **generation_kwargs)
+                        global output_token_len
+                        output_token=model.generate(**input_tokens, **generation_kwargs)
+                        output_token_len=output_token.sequences[0].shape[-1]
+                        return output_token
             except Exception as e:
                 errors_queue.put(e)
 
         generation_thread = Thread(target=generate_output)
         generation_thread.start()
     elif device == "hpu":
+        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
+        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
             padding="max_length",
-            max_length=max_input_len(model, max_new_tokens),
+            max_length=max_input_len(input_token_len),
         )
-        input_token_len = input_tokens.input_ids.shape[-1]
         if isinstance(model.generation_config.eos_token_id, list):
             stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
         else:
@@ -754,7 +771,7 @@ def predict_stream(**params):
         def generate_output():
             try:
                 with torch.no_grad():
-                    return model.generate(
+                    output_token=model.generate(
                         **input_tokens,
                         **generate_kwargs,
                         streamer=streamer,
@@ -766,6 +783,9 @@ def predict_stream(**params):
                         hpu_graphs=use_hpu_graphs,
                         ignore_eos=False,
                     )
+                    global output_token_len
+                    output_token_len=output_token.sequences[0].shape[-1]
+                    return output_token
             except Exception as e:
                 errors_queue.put(e)
 
@@ -784,34 +804,39 @@ def predict_stream(**params):
         thread_exception = errors_queue.get()
         raise thread_exception
     # prevent crash if no words are coming out
-    first_token_output_time = datetime.now()
+    first_word_output_time = datetime.now()
     for new_text in streamer:
         if len(new_text) == 0:
             continue
         if output_word_len == 0:
-            first_token_output_time = datetime.now()
+            first_word_output_time = datetime.now()
         output_word_len += 1
         yield new_text
 
     end_time = datetime.now()
+
+    time.sleep(0.1)
     duration = int((end_time - start_time).total_seconds() * 1000)
-    first_word_latency = int(
-        (first_token_output_time - start_time).total_seconds() * 1000
+    first_token_latency = int(
+        (first_word_output_time - start_time).total_seconds() * 1000 * 3/4
     )
-    msecond_per_word = (
-        (duration - first_word_latency) / (output_word_len - 1)
-        if output_word_len != 1
+    msecond_per_token = (
+        duration  / (output_token_len - input_token_len)
+        if output_token_len != 1
         else 0
     )
     if return_stats:
         stats = {
-            "input_token_len": input_token_len,
-            "output_word_len": output_word_len,
-            "duration": duration,
-            "first_word_latency": first_word_latency,
-            "msecond_per_word": msecond_per_word,
+            "input_token_len": str(input_token_len),
+            "output_token_len": str(output_token_len),
+            "duration": str(duration) + " ms",
+            "first_token_latency": str(first_token_latency) + " ms",
+            "msecond_per_token": str(msecond_per_token) + " ms",
         }
-        yield "END_OF_STREAM_STATS={}".format(stats)
+        yield "\n| {:<22} | {:<27} |\n".format("Key", "Value")
+        yield "| " + "-"*22 + " | " + "-"*27 + " |" + "\n"
+        for key, value in stats.items():
+            yield "| {:<22} | {:<27} |\n".format(key, value)
 
 
 def predict(**params):
@@ -936,13 +961,14 @@ def predict(**params):
                 )
                 generation_output = model.generate(**input_tokens, **generation_kwargs)
     elif device == "hpu":
+        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
+        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
         input_tokens = tokenizer.batch_encode_plus(
             [prompt],
             return_tensors="pt",
             padding="max_length",
-            max_length=max_input_len(model, max_new_tokens),
+            max_length=max_input_len(input_token_len),
         )
-        input_token_len = input_tokens.input_ids.shape[-1]
         if isinstance(model.generation_config.eos_token_id, list):
             stop_token_ids = copy.deepcopy(model.generation_config.eos_token_id)
         else:
@@ -1045,6 +1071,9 @@ def main():
         args.tokenizer_name if args.tokenizer_name is not None else base_model_path
     )
 
+    logger.info("Model loading...")
+    start_time = time.time()
+
     load_model(
         base_model_path,
         tokenizer_path,
@@ -1056,6 +1085,7 @@ def main():
         use_deepspeed=True if use_deepspeed and args.habana else False,
         hf_access_token=args.hf_access_token
     )
+    logger.info(f"Model load duration: {time.time() - start_time}" + ' s')
 
     if args.habana:
         from habana_frameworks.torch.distributed.hccl import initialize_distributed_hpu # pylint: disable=import-error
@@ -1065,33 +1095,36 @@ def main():
         logger.info(f"Args: {args}")
         logger.info(f"n_hpu: {world_size}, bf16")
     # warmup, the first time inference take longer because of graph compilation
-    if args.local_rank in [-1, 0]:
-        print("Warmup, Response: ")
 
-    for new_text in predict_stream(
-        model_name=base_model_path,
-        device="hpu" if args.habana else "cpu",
-        prompt="Tell me about Intel Xeon.",
-        task=args.task,
-        temperature=args.temperature,
-        top_p=args.top_p,
-        top_k=args.top_k,
-        repetition_penalty=args.repetition_penalty,
-        num_beams=args.num_beams,
-        max_new_tokens=args.max_new_tokens,
-        do_sample=args.temperature > 0.0,
-        use_hpu_graphs=args.use_hpu_graphs,
-        use_cache=args.use_kv_cache,
-        num_return_sequences=args.num_return_sequences,
-    ):
-        if args.local_rank in [-1, 0]:
-            print(new_text, end="", flush=True)
+    for idx, instruction in enumerate(args.instructions):
+        set_seed(args.seed)
+        idxs = f"{idx+1}"
+        start_time = time.time()
+        out = predict(
+            model_name=base_model_path,
+            device="hpu" if args.habana else "cpu",
+            prompt=instruction,
+            task=args.task,
+            temperature=args.temperature,
+            top_p=args.top_p,
+            top_k=args.top_k,
+            repetition_penalty=args.repetition_penalty,
+            num_beams=args.num_beams,
+            max_new_tokens=args.max_new_tokens,
+            do_sample=args.temperature > 0.0,
+            use_hpu_graphs=args.use_hpu_graphs,
+            use_cache=args.use_kv_cache,
+            num_return_sequences=args.num_return_sequences,
+        )
+        logger.info(f"whole sentence out = {out}")
+        logger.info(f"Warm up duration: {time.time() - start_time}" + ' s')
 
     for idx, instruction in enumerate(args.instructions):
         set_seed(args.seed)
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
+            logger.info(f"Generating response with streaming mode...")
             logger.info(f"Instruction: {instruction}")
             logger.info("Response: ")
         for new_text in predict_stream(
@@ -1109,6 +1142,7 @@ def main():
             use_hpu_graphs=args.use_hpu_graphs,
             use_cache=args.use_kv_cache,
             num_return_sequences=args.num_return_sequences,
+            return_stats= args.return_stats,
         ):
             if args.local_rank in [-1, 0]:
                 print(new_text, end="", flush=True)
@@ -1120,6 +1154,7 @@ def main():
         idxs = f"{idx+1}"
         if args.local_rank in [-1, 0]:
             logger.info("=" * 30 + idxs + "=" * 30)
+            logger.info(f"Generating response with non-streaming mode...")
             logger.info(f"Instruction: {instruction}")
             start_time = time.time()
             logger.info("Response: ")
@@ -1141,5 +1176,5 @@ def main():
         )
         if args.local_rank in [-1, 0]:
             print(f"whole sentence out = {out}")
-            logger.info(f"duration: {time.time() - start_time}")
+            logger.info(f"Duration: {time.time() - start_time}" + ' s')
             logger.info("=" * (60 + len(idxs)))

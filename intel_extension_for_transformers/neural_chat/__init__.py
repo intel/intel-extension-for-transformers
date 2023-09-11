@@ -17,8 +17,12 @@
 
 from .config import PipelineConfig
 from .config import GenerationConfig
-from .config import FinetuningConfig
-from .config import OptimizationConfig
+from .config import (
+    TextGenerationFinetuningConfig,
+    SummarizationFinetuningConfig,
+    CodeGenerationFinetuningConfig,
+    TTSFinetuningConfig
+)
 from .chatbot import build_chatbot
 from .chatbot import finetune_model
 from .chatbot import optimize_model

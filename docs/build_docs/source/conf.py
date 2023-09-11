@@ -48,7 +48,7 @@ autoapi_add_toctree_entry = False
 autosummary_generate = True
 autoapi_options = ['members',
                    'show-module-summary' ]
-autoapi_ignore = ['*/intel_extension_for_transformers/llm/runtime/third_party/*']
+autoapi_ignore = ['*/intel_extension_for_transformers/llm/runtime/deprecated/third_party/*']
 
 templates_path = ['_templates']
 
@@ -59,7 +59,7 @@ source_suffix = ['.rst', '.md']
 # The master toctree document.
 master_doc = 'index'
 
-exclude_patterns = ['_build_doxygen', '*/intel_extension_for_transformers/llm/runtime/third_party/*']
+exclude_patterns = ['_build_doxygen', '*/intel_extension_for_transformers/llm/runtime/deprecated/third_party/*']
 
 pygments_style = 'sphinx'
 
@@ -70,6 +70,7 @@ pygments_style = 'sphinx'
 html_theme = 'sphinx_rtd_theme'
 
 html_static_path = ['_static']
+templates_path = ["_templates"]
 
 
 def skip_util_classes(app, what, name, obj, skip, options):

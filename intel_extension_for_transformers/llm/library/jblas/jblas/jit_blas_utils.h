@@ -68,6 +68,7 @@ struct bf16 {
   bf16() : x(0) {}
 
 #if CompileBF16()
+#pragma GCC push_options
 #pragma GCC target("avx512vl", "avx512bf16")
   explicit bf16(float vf32) : x(bit_cast<uint16_t>(_mm_cvtness_sbh(vf32))) {}
 #else
@@ -148,7 +149,7 @@ struct fp16 {
 #endif
   }
   explicit operator bf16() const {
-#if CompileBF16()
+#if CompileBF16() && CompileFP16()
     return bf16(static_cast<float>(bit_cast<_Float16>(this->x)));
 #else
     // Extract the exponent, and mantissa from the fp16 value.
@@ -185,10 +186,12 @@ struct int4x2 : bit4x2 {
   int4x2(int8_t v) : bit4x2(v) {}
   int4x2() : bit4x2() {}
   static int8_t convert(int8_t src) {
-    int16_t dst = src;
-    dst += 7;
-    dst >>= 4;
-    return dst > 7 ? 7 : dst;
+    int32_t dst = src;
+    dst = dst >= 0 ? dst + 8 : dst - 8;
+    dst = dst / 16;
+    dst = dst > 7 ? 7 : dst;
+    dst = dst < -8 ? -8 : dst;
+    return dst;
   }
 };
 
@@ -507,12 +510,12 @@ class CpuDevice {
 
 #define GetCPUDevice() auto _cd = jblas::utils::parallel::CpuDevice::getInstance();
 
-#define CheckISA(ISA)                       \
-  {                                         \
-    GetCPUDevice() if (!_cd->ISA()) {       \
+#define CheckISA(ISA)                         \
+  {                                           \
+    GetCPUDevice() if (!_cd->ISA()) {         \
       printf("Wrong Device ISA: " #ISA "\n"); \
-      return;                               \
-    }                                       \
+      return;                                 \
+    }                                         \
   }
 
 struct Parallel2D {

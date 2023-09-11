@@ -93,7 +93,7 @@ struct quant_params_internal {
   quant_comp compute_type = quant_comp::ggml;
   bool valid() const {
     return bits != quant_bits::count && alg != quant_alg::count && scale_dtype != quant_sdtype::count &&
-           compute_type != quant_comp::count && block_size > 0;
+           compute_type != quant_comp::count;
   }
   std::string getstr() {
     return std::to_string(int(bits)) + "_" + std::to_string(int(alg)) + "_" + std::to_string(block_size) + "_" +
@@ -173,12 +173,10 @@ class ql_registerer {
   }
 };
 
-#define REGISTER_QUANT_LAYER_CREATOR(type, creator)                       \
-  static ql_registerer ql_creator_##type(#type, creator);
+#define REGISTER_QUANT_LAYER_CREATOR(type, creator) static ql_registerer ql_creator_##type(#type, creator);
 
-#define REGISTER_QUANT_LAYER_CLASS(type)                                  \
-  std::shared_ptr<quant_layer_base> creator_##type##_quant_layer()        \
-  {                                                                       \
-    return std::shared_ptr<quant_layer_base> (new type##_quant_layer());  \
-  }                                                                       \
+#define REGISTER_QUANT_LAYER_CLASS(type)                                \
+  std::shared_ptr<quant_layer_base> creator_##type##_quant_layer() {    \
+    return std::shared_ptr<quant_layer_base>(new type##_quant_layer()); \
+  }                                                                     \
   REGISTER_QUANT_LAYER_CREATOR(type, creator_##type##_quant_layer)

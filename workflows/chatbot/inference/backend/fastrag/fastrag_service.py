@@ -13,6 +13,7 @@ import shutil
 import base64
 import os
 import re
+import tempfile
 from typing import Any, Dict
 from threading import Thread
 from haystack.telemetry import send_event_if_public_demo
@@ -48,19 +49,18 @@ logger.info(f"args: {args}")
 
 def ask_gm_documents_dense_embedding(folder_path, process_content=False):
     documents = []
-    for dirpath, dirnames, filenames in os.walk(folder_path):
-        for filename in filenames:
-            if filename.endswith(".json"):
-                documents = doc_index.d_load_jsonl_file(os.path.join(dirpath, filename), process_content, documents)
-            elif filename.endswith(".xlsx"):
-                documents = doc_index.d_load_xlsx(os.path.join(dirpath, filename), process_content)
-            else:
-                print("{} is ignored. Will support this file format soon.".format(filename))
-                continue
-    doc_index.persist_embedding(documents, "/tmp/ask_gm_dense_retrieval_chinese",
-                                model_path="shibing624/text2vec-large-chinese")
-    doc_index.persist_embedding(documents, "/tmp/ask_gm_dense_retrieval_english",
-                                model_path="hkunlp/instructor-large")
+    with tempfile.TemporaryDirectory(dir="/tmp/my_subdirectory") as temp_dir:
+        for dirpath, dirnames, filenames in os.walk(folder_path):
+            for filename in filenames:
+                if filename.endswith(".json"):
+                    documents = doc_index.d_load_jsonl_file(os.path.join(dirpath, filename), process_content, documents)
+                elif filename.endswith(".xlsx"):
+                    documents = doc_index.d_load_xlsx(os.path.join(dirpath, filename), process_content)
+                else:
+                    print("{} is ignored. Will support this file format soon.".format(filename))
+                    continue
+        doc_index.persist_embedding(documents, temp_dir, model_path="shibing624/text2vec-large-chinese")
+        doc_index.persist_embedding(documents, temp_dir, model_path="hkunlp/instructor-large")
 
 def ask_gm_documents_sparse_embedding(folder_path, process_content=False):
     document_store = ElasticsearchDocumentStore(host="localhost", index="elastic_askgm_sparse",
@@ -142,26 +142,30 @@ stop_token_ids.append(langchain_tok("。", return_tensors="pt").input_ids)
 stop_token_ids.append(langchain_tok("！", return_tensors="pt").input_ids)
 langchain_tok.pad_token = langchain_tok.eos_token
 langchain_tok.add_special_tokens({'pad_token': '[PAD]'})
-if not os.path.exists("/tmp/young_pat_dense_retrieval"):
-    documents = doc_index.d_load_young_pat_xlsx("./doc/young_pat/pat.xlsx", True)
-    doc_index.persist_embedding(documents, "/tmp/young_pat_dense_retrieval", model_path="hkunlp/instructor-large")
+with tempfile.TemporaryDirectory(dir="/tmp/my_subdirectory") as temp_dir:
+    if not os.path.exists(temp_dir):
+        documents = doc_index.d_load_young_pat_xlsx("./doc/young_pat/pat.xlsx", True)
+        doc_index.persist_embedding(documents, temp_dir, model_path="hkunlp/instructor-large")
 
-english_embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-large")
-chinese_embeddings = HuggingFaceInstructEmbeddings(model_name="shibing624/text2vec-base-chinese")
-young_pat_vectordb = Chroma(persist_directory="/tmp/young_pat_dense_retrieval",
-                            embedding_function=english_embeddings)
-young_pat_dense_retriever = young_pat_vectordb.as_retriever(search_type = "mmr",
-                                                      search_kwargs = {"k": 2, "fetch_k": 5})
+with tempfile.TemporaryDirectory(dir="/tmp/my_subdirectory") as temp_dir:
+    english_embeddings = HuggingFaceInstructEmbeddings(model_name="hkunlp/instructor-large")
+    chinese_embeddings = HuggingFaceInstructEmbeddings(model_name="shibing624/text2vec-base-chinese")
+    
+    young_pat_vectordb = Chroma(persist_directory=temp_dir,
+                                embedding_function=english_embeddings)
+    young_pat_dense_retriever = young_pat_vectordb.as_retriever(search_type="mmr",
+                                                                search_kwargs={"k": 2, "fetch_k": 5})
 
-ask_gm_eng_vectordb = Chroma(persist_directory='/tmp/ask_gm_dense_retrieval_english',
+    ask_gm_eng_vectordb = Chroma(persist_directory=temp_dir,
                                  embedding_function=english_embeddings)
-ask_gm_eng_retriever = ask_gm_eng_vectordb.as_retriever(search_type = "mmr",
-                                                                search_kwargs = {"k": 2, "fetch_k": 5})
+    ask_gm_eng_retriever = ask_gm_eng_vectordb.as_retriever(search_type="mmr",
+                                                            search_kwargs={"k": 2, "fetch_k": 5})
 
-ask_gm_chn_vectordb = Chroma(persist_directory='/tmp/ask_gm_dense_retrieval_chinese',
+    ask_gm_chn_vectordb = Chroma(persist_directory=temp_dir,
                                  embedding_function=chinese_embeddings)
-ask_gm_chn_retriever = ask_gm_chn_vectordb.as_retriever(search_type = "mmr",
-                                                                search_kwargs = {"k": 2, "fetch_k": 5})
+    ask_gm_chn_retriever = ask_gm_chn_vectordb.as_retriever(search_type="mmr",
+                                                            search_kwargs={"k": 2, "fetch_k": 5})
+
 
 class StopOnTokens(StoppingCriteria):
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
@@ -457,7 +461,8 @@ def query(request: QueryRequest):
         if request.blob:
             file_content = base64.b64decode(request.blob)
             random_suffix = str(uuid.uuid4().hex)
-            file_path = f"/tmp/customized_doc_{random_suffix}" + request.filename
+            sanitized_filename = os.path.basename(request.filename)
+            file_path = f"/tmp/customized_doc_{random_suffix}_{sanitized_filename}"
             with open(file_path, "wb") as f:
                 f.write(file_content)
 
