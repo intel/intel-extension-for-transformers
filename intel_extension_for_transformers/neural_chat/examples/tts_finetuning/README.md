@@ -23,7 +23,7 @@ texts/
 ```
 
 
-Users can use their own audios and corresponding texts, or they can download from the Internet. Here are the [audio samples](https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi).
+Users can use their own audios and corresponding texts, or they can download from the Internet. Here are the [audio samples](https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi) that we use in this example.
 
 Following the above format, we should rename the audio file names to 1.mp3, 2.mp3 and so on.
 
