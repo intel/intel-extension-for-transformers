@@ -12,6 +12,7 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #pragma once
+#include "jblas/jit_blas.h"
 #include "kernel_ref.h"
 #include "jit_blas_utils.h"
 #if CompileAVX2()
@@ -158,8 +159,9 @@ static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr,
       dstptr[i + 0] = jblas::kernel::ref::get_s8<S4_T>(tmp.x);
       dstptr[i + 1] = jblas::kernel::ref::get_s8<S4_T>(tmp.y);
     }
+    return JblasSuccess;
   }
-  return JblasSuccess;
+  return JblasNotSupport;
 }
 
 template <int N, typename _DST_T, JBLAS_F4_TYPE F4_T>
@@ -248,6 +250,7 @@ static inline JBLAS_CODE decompress_kblock_bit4_fp32(utils::bit4x2* srcptr, floa
   } else {
     assert(0);
   }
+  return JblasNotSupport;
 }
 
 template <typename _ST>
