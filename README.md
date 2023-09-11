@@ -22,6 +22,14 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ---
 <div align="left">
 
+## 🌱Installation
+### Quick Install from Pypi
+```bash
+pip install intel-extension-for-transformers
+```
+> For more installation method, please refer to [Installation Page](docs/installation.md)
+
+## 🌟Introudction
 Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the below key features and examples:
 
 
@@ -38,13 +46,6 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 *  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatFALCON)
 
-
-## Installation
-### Install from Pypi
-```bash
-pip install intel-extension-for-transformers
-```
-> For more installation method, please refer to [Installation Page](docs/installation.md)
 
 ## Getting Started
 ### Sentiment Analysis with Quantization
@@ -94,7 +95,7 @@ output = model(**input).logits.argmax().item()
 
 
 
-## Documentation
+## 📖Documentation
 <table>
 <thead>
   <tr>
@@ -159,7 +160,7 @@ output = model(**input).logits.argmax().item()
 </table>
 
 
-## Selected Publications/Events
+## 📃Selected Publications/Events
 * Blog published on Medium: [Faster Stable Diffusion Inference with Intel Extension for Transformers](https://medium.com/intel-analytics-software/faster-stable-diffusion-inference-with-intel-extension-for-transformers-on-intel-platforms-7e0f563186b0) (July 2023)
 * Blog of Intel Developer News: [The Moat Is Trust, Or Maybe Just Responsible AI](https://www.intel.com/content/www/us/en/developer/articles/technical/moat-is-trust-minimizing-risks-generative-ai.html) (July 2023)
 * Blog of Intel Developer News: [Create Your Own Custom Chatbot](https://www.intel.com/content/www/us/en/developer/articles/technical/train-large-language-models-create-custom-chatbot.html) (July 2023)
@@ -176,6 +177,6 @@ output = model(**input).logits.argmax().item()
 * [Legal Information](./docs/legal.md)
 * [Security Policy](SECURITY.md)
 
-## Collaborations
+## 💁Collaborations
 
 Welcome to raise any interesting ideas on model compression techniques and LLM-based chatbot development! Feel free to reach [us](mailto:inc.maintainers@intel.com) and look forward to our collaborations on Intel Extension for Transformers!
