@@ -41,19 +41,18 @@ class TextToSpeech():
       asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
-        self.original_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
-        self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
         self.device = device
+        self.original_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts").to(self.device)
+        self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
         self.voice = voice
         self.output_audio_path = output_audio_path
         self.stream_mode = stream_mode
         self.spk_model_name = "speechbrain/spkrec-xvect-voxceleb"
         self.speaker_model = EncoderClassifier.from_hparams(
             source=self.spk_model_name,
-            run_opts={"device": self.device},
-            savedir=os.path.join("/tmp", self.spk_model_name)
-        )
-        self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
+            run_opts={"device": "cpu"},
+            savedir=os.path.join("/tmp", self.spk_model_name))
+        self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
         if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
@@ -81,7 +80,7 @@ class TextToSpeech():
         self.cpu_pool = None
         if not torch.cuda.is_available():
             # ipex IOMP hardware resources
-            if 'LD_PRELOAD' in os.environ and 'libiomp' in os.environ['LD_PRELOAD']:
+            if self.device == 'cpu' and 'LD_PRELOAD' in os.environ and 'libiomp' in os.environ['LD_PRELOAD']:
                 import intel_extension_for_pytorch as ipex
                 self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
             else:
@@ -98,10 +97,10 @@ class TextToSpeech():
             [driven_audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
         waveform = audio_dataset[0]["audio"]['array']
         with torch.no_grad():
-            speaker_embeddings = self.speaker_model.encode_batch(torch.tensor(waveform))
+            speaker_embeddings = self.speaker_model.encode_batch(torch.tensor(waveform).to("cpu"))
             speaker_embeddings = torch.nn.functional.normalize(speaker_embeddings, dim=2) # [1,1,512]
             speaker_embeddings = speaker_embeddings[0] # [1,512]
-        return speaker_embeddings.cpu()
+        return speaker_embeddings.to(self.device)
 
     def _lookup_voice_embedding(self, voice, 
       asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
@@ -181,7 +180,7 @@ class TextToSpeech():
             inputs = self.processor(text=text_in, return_tensors="pt")
             with torch.no_grad():
                 with ipex.cpu.runtime.pin(self.cpu_pool) if self.cpu_pool else contextlib.nullcontext():
-                    spectrogram = model.generate_speech(inputs["input_ids"], speaker_embeddings)
+                    spectrogram = model.generate_speech(inputs["input_ids"].to(self.device), speaker_embeddings.to(self.device))
                 speech = self.vocoder(spectrogram)
                 all_speech = np.concatenate([all_speech, speech.cpu().numpy()])
                 all_speech = np.concatenate([all_speech, np.array([0 for i in range(8000)])])  # pad after each end

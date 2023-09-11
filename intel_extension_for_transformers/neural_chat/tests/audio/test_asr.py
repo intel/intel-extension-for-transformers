@@ -34,11 +34,11 @@ class TestASR(unittest.TestCase):
         except ImportError:
             self.is_ipex_available = False
         if self.is_hpu_available:
-            self.device = torch.device("hpu")
+            self.device = "hpu"
         else:
-            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
-        if self.device.type == "cpu" and self.is_ipex_available:
+        if self.device == "cpu" and self.is_ipex_available:
             self.asr_bf16 = AudioSpeechRecognition("openai/whisper-small", bf16=True)
         else:
             self.asr_bf16 = None

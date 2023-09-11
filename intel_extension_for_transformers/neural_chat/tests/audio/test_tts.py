@@ -26,8 +26,23 @@ import torch
 class TestTTS(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.tts = TextToSpeech(device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-        self.asr = AudioSpeechRecognition("openai/whisper-small")
+        try:
+            import habana_frameworks.torch.hpu as hthpu
+            self.is_hpu_available = True
+        except ImportError:
+            self.is_hpu_available = False
+        try:
+            import intel_extension_for_pytorch as ipex
+            self.is_ipex_available = True
+        except ImportError:
+            self.is_ipex_available = False
+        if self.is_hpu_available:
+            self.device = "hpu"
+        else:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.tts = TextToSpeech(device=self.device)
+        self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
+        shutil.rmtree('./tmp_audio', ignore_errors=True)
         os.mkdir('./tmp_audio')
 
     @classmethod
