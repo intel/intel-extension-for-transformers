@@ -33,7 +33,7 @@ class UnitTest(unittest.TestCase):
                                     universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
-        self.assertIn("model loaded", result.stdout)
+        self.assertIn("Loading model", result.stdout)
 
     def test_help(self):
         logger.info(f'Testing CLI request === Help ===')
@@ -64,7 +64,7 @@ class UnitTest(unittest.TestCase):
                                     universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
-        self.assertIn("model loaded", result.stdout)
+        self.assertIn("Loading model", result.stdout)
 
 
 if __name__ == "__main__":
