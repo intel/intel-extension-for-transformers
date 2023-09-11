@@ -159,7 +159,7 @@ static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr,
       dstptr[i + 1] = jblas::kernel::ref::get_s8<S4_T>(tmp.y);
     }
   }
-  return JblasNotSupport;
+  return JblasSuccess;
 }
 
 template <int N, typename _DST_T, JBLAS_F4_TYPE F4_T>
