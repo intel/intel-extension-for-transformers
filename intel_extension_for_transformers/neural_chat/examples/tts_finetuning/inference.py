@@ -46,7 +46,7 @@ def create_speaker_embedding(waveform):
         speaker_embeddings = speaker_embeddings.squeeze().cpu().numpy()
     return speaker_embeddings
 
-audio_dataset = Dataset.from_dict({"audio": [os.path.join(workdir, "audios/1.mp3")]}).cast_column("audio", Audio(sampling_rate=16000))
+audio_dataset = Dataset.from_dict({"audio": [os.path.join(workdir, "audios/samples_mp3_ted_speakers_FeiFeiLi_sample-0.mp3")]}).cast_column("audio", Audio(sampling_rate=16000))
 sembeddings = create_speaker_embedding(audio_dataset[0]["audio"]['array'])
 speaker_embeddings = torch.tensor(sembeddings).unsqueeze(0)
 vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(device)

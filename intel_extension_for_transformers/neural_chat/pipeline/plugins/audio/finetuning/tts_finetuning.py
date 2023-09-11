@@ -81,8 +81,7 @@ class TTSFinetuning:
         )
         self.audio_folder_path = self.dataset_args.audio_folder_path
         self.text_folder_path = self.dataset_args.text_folder_path
-        self.gender = self.dataset_args.gender
-        self.language = self.dataset_args.language
+
         self.step = self.model_args.step
         self.warmup_step = self.model_args.warmup_step
         self.learning_rate = self.model_args.learning_rate
@@ -91,28 +90,23 @@ class TTSFinetuning:
         self.model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.language_lst = ['en', 'de', 'fr', 'es', 'pl', 'it', 'ro', 
-                            'hu', 'cs', 'nl', 'fi', 'hr', 'sk', 'sl', 'et', 'lt', 'en_accented']
+
     def _construct_text_list(self):
-        try:
-            text_paths = sorted(os.listdir(self.text_folder_path),
-                    key=lambda i: int(os.path.splitext(os.path.basename(i))[0]))
-        except ValueError as e:
-            raise(f"Please make sure that your texts under {self.text_folder_path} are named like 1.txt, 2.txt...")
+        audio_names = os.listdir(self.audio_folder_path)
         texts = []
-        for p in text_paths:
-            with open(os.path.join(self.text_folder_path, p)) as f:
-                texts.append(f.read())
+        for audio_name in audio_names:
+            if audio_name.split(".")[-1] in ["mp3", "wav"]:
+                text_name = f"{audio_name.split('.')[0]}.txt"
+                with open(os.path.join(self.text_folder_path, text_name)) as f:
+                    texts.append(f.read())
+            else:
+                raise Exception("Check your audio folder! Currently only mp3 or wav files are supported!")
         normalized_texts = [i.lower().replace(",","").replace(".", "") + "." for i in texts]
         return texts, normalized_texts
 
     def _construct_audio_list(self):
-        try:
-            audio_paths = sorted(os.listdir(self.audio_folder_path),
-                                 key=lambda i: int(os.path.splitext(os.path.basename(i))[0]))
-        except ValueError as e:
-            raise(f"Please make sure that your audios under {self.audio_folder_path} are named like 1.wav, 2.wav...")
-        audio_paths = [os.path.join(self.audio_folder_path, i) for i in audio_paths]
+        audio_names = os.listdir(self.audio_folder_path)
+        audio_paths = [os.path.join(self.audio_folder_path, i) for i in audio_names]
         return audio_paths
     
     def _construct_finetuning_dataset(self):
@@ -123,18 +117,10 @@ class TTSFinetuning:
         L = len(audio_paths)
         dataset = Dataset.from_dict({
             "audio_id": [f"id{i+1}" for i in range(L)],
-            "language": [self.language_lst.index(self.language) for i in range(L)],
             "audio": audio_paths,
             'raw_text': raw_texts,
-            'normalized_text': normalized_texts,
-            'gender': [self.gender for i in range(L)],
-            'speaker_id': ['10001' for i in range(L)],
-            "is_gold_transcript": [True for i in range(L)],
-            "accent": ["None" for i in range(L)]}).cast_column(
-                "audio", Audio(sampling_rate=16000)).cast_column(
-                    "language", ClassLabel(names=['en', 'de', 'fr', 'es', 'pl', 'it', 'ro', 
-                                                    'hu', 'cs', 'nl', 'fi', 'hr', 'sk', 'sl', 'et', 'lt', 
-                                                    'en_accented'], id=None))
+            'normalized_text': normalized_texts,}).cast_column(
+                "audio", Audio(sampling_rate=16000))
         return dataset
 
     def _construct_training_arguments(self):

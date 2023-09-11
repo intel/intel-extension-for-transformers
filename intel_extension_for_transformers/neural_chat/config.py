@@ -349,11 +349,6 @@ class FinetuningArguments:
 class TTSDatasetArguments:
     audio_folder_path: Optional[str] = field(default=None, metadata={"help": "The path to the directory of audios."})
     text_folder_path: Optional[str] = field(default=None, metadata={"help": "The path to the directory of texts."})
-    gender: Optional[str] = field(default=None, metadata={"help": "Gender."})
-    language: Optional[str] = field(default="en", metadata={"help": "Language. \
-                                                            Shoule be one of 'en', 'de', 'fr', 'es', 'pl', 'it', 'ro' \
-                                                            'hu', 'cs', 'nl', 'fi', 'hr', 'sk', 'sl', 'et', 'lt', \
-                                                            'en_accented'"})
 
 @dataclass
 class TTSModelArguments:
