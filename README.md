@@ -29,7 +29,7 @@ pip install intel-extension-for-transformers
 ```
 > For more installation method, please refer to [Installation Page](docs/installation.md)
 
-## 🌟Introudction
+## 🌟Introuduction
 Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the below key features and examples:
 
 
