@@ -60,6 +60,27 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
+#if 1  // debug   print input_ids
+
+  static int p = 1;
+
+  if (p++ == 1) {
+
+    printf("\n n_tokens: %d \n", n_tokens);
+
+    printf("input ids: \n");
+
+    for (int j = 0; j < n_tokens; ++j) {
+
+      printf("%d, ", *(tokens+j));
+
+    }
+
+    printf("\n");
+
+  }
+
+#endif
 
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
@@ -121,7 +142,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
-  for (int il = 0; il < n_layer; ++il) {
+
+  for (int il = 0; il < 1; ++il) {
     struct ne_tensor* inpSA = inpL;
 
     struct ne_tensor* cur;
@@ -327,13 +349,14 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 
     // input for next layer
     inpL = cur;
+    printf(" Final inpL = %f  \n", *(float*)inpL->data);
   }
 
   lctx.use_buf(ctx0, 0);
 
   // used at the end to optionally extract the embeddings
   struct ne_tensor* embeddings = NULL;
-
+  
   // norm
   {
     inpL = ne_rms_norm(ctx0, inpL);
