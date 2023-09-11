@@ -7,33 +7,31 @@ This example shows you how to clone an arbitrary person's voice by finetuning Sp
 Under this `tts_finetuning` example directory, please make sure there exist two directories: `audios/` and `texts/`, 
 where the former contains all the audio files and the latter contains all the texts corresponding to each audio file.
 
-The audio and text file names should be formatted as following:
+The audio and text file names should be formatted like following (We just need to make sure every audio file has the same name with its text file):
 
 ```
 audios/
-    1.mp3
-    2.mp3
-    3.mp3
+    <audio_name_0>.mp3
+    <audio_name_1>.mp3
+    <audio_name_2>.mp3
     ...
 
 texts/
-    1.txt
-    2.txt
-    3.txt
+    <audio_name_0>.txt
+    <audio_name_1>.txt
+    <audio_name_2>.txt
+    ...
 ```
 
 
 Users can use their own audios and corresponding texts, or they can download from the Internet. Here are the [audio samples](https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi) that we use in this example.
 
-Following the above format, we should rename the audio file names to 1.mp3, 2.mp3 and so on.
-
 Then, we can prepare the texts of those audio files by just listening and writing the texts manually, or running one audio-speech-recognition (ASR) model by using Intel Extension For Transformers ASR interface:
 
+```python
+# Replace <xxxxx_sample-0> with your input audio name
+python asr.py -i audios/<xxxxx_sample-0>.mp3 -m openai/whisper-tiny
 ```
-python asr.py -i audios/1.mp3 -m openai/whisper-tiny
-```
-
-Again, make sure the text file names are formatted as 1.txt, 2.txt and so on.
 
 For simplicity in this example, we have already generated the texts of the aforementioned audio samples under the `texts/` folder.
 
