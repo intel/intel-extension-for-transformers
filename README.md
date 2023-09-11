@@ -22,7 +22,7 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ---
 <div align="left">
 
-## 🌱Installation
+## 🏃Installation
 ### Quick Install from Pypi
 ```bash
 pip install intel-extension-for-transformers
@@ -47,7 +47,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 *  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatFALCON)
 
 
-## 🏃Getting Started
+## 🌱Getting Started
 ### Sentiment Analysis with Quantization
 #### Prepare Dataset
 ```python
@@ -83,7 +83,7 @@ output = model(**input).logits.argmax().item()
 
 > For more quick samples, please refer to [Get Started Page](docs/get_started.md). For more validated examples, please refer to [Support Model Matrix](docs/examples.md)
 
-## 📈🎯Validated Performance
+## 🎯Validated Performance
 
 
 | Model |  FP32 | BF16 | INT8 |
