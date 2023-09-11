@@ -297,16 +297,16 @@ int main(int argc, char** argv) {
     embd_inp = ::model_tokenize(ctx, prompt, false);
     embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
   } else if (params.model_arch == MODEL_CHATGLM) {
-    std::vector<std::string> prompts;
-    prompts.push_back(params.prompt);
-
-    std::string no_preprocess_prompt = build_prompt_glm1(prompts);
-    std::string prompt = preprocess(no_preprocess_prompt);
-
-    embd_inp = ::model_tokenize(ctx, prompt, false);
-    embd_inp.insert(embd_inp.end(), {130001, 130004});  // special postfix
-    //printf("-------------------\n");
-    //embd_inp.insert(embd_inp.begin(), {5, 74874, 130001, 130004});  // special postfix
+    // std::vector<std::string> prompts;
+    // prompts.push_back(params.prompt.c_str());
+    // std::string no_preprocess_prompt = build_prompt_glm1(prompts);
+    // std::string prompt = preprocess(no_preprocess_prompt);
+    // std::string prompt = build_prompt_glm1(prompts);
+    // embd_inp = ::model_tokenize(ctx, " \"", false);
+    // embd_inp.insert(embd_inp.end(), {130001, 130004});  // special postfix
+    for (auto &i : params.ids) {
+      embd_inp.emplace_back(i);
+    }
   } else {
     embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
   }
