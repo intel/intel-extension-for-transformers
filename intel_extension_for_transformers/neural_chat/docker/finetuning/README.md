@@ -25,7 +25,7 @@ The instruction-following dataset is needed for the finetuning. We select two ki
 Assuming you have downloaded the model and dataset to your workspace /path/to/workspace/
 Please clone a ITREX repo to this path.
 ```bash
-git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git
+git clone https://github.com/intel/intel-extension-for-transformers.git
 ```
 
 
@@ -33,13 +33,33 @@ git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-n
 | Note: If your docker daemon is too big and cost long time to build docker image, you could create a `.dockerignore` file including useless files to reduce the daemon size.
 
 ### On Xeon SPR Environment
+
+If you need to set proxy settings:
+
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  /path/to/workspace/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/chatbot/fine_tuning/docker/Dockerfile -t chatbot_finetune .   --target cpu
+docker build --build-arg UBUNTU_VER=22.04 --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target cpu
 ```
+
+If you don't need to set proxy settings:
+
+```bash
+docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target cpu
+```
+
 ### On Habana Gaudi Environment
+
+If you need to set proxy settings:
+
 ```bash
-DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f Dockerfile  --target hpu
+DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile  --target hpu
 ```
+
+If you don't need to set proxy settings:
+
+```bash
+docker build --build-arg UBUNTU_VER=22.04 -f /path/to/workspace/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/finetuning/Dockerfile -t chatbot_finetune . --target hpu
+```
+
 ## 5. Create Docker Container
 Before creating your docker container, make sure the model has been downloaded to local. 
 
@@ -103,7 +123,7 @@ python finetune_clm.py \
         --peft lora \
         --use_fast_tokenizer false
 ```
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python finetune_clm.py \
@@ -124,7 +144,6 @@ python finetune_clm.py \
         --save_strategy epoch \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --no_cuda \
 ```
@@ -140,7 +159,41 @@ Add option **"--use_fast_tokenizer False"** when using latest transformers if yo
 ## 2. Multi-node Fine-tuning in Xeon SPR
 
 We also supported Distributed Data Parallel finetuning on single node and multi-node settings. To use Distributed Data Parallel to speedup training, the bash command needs a small adjustment.
+<br>
+For example, to finetune FLAN-T5 through Distributed Data Parallel training, bash command will look like the following, where
+<br>
+*`<MASTER_ADDRESS>`* is the address of the master node, it won't be necessary for single node case,
+<br>
+*`<NUM_PROCESSES_PER_NODE>`* is the desired processes to use in current node, for node with GPU, usually set to number of GPUs in this node, for node without GPU and use CPU for training, it's recommended set to 1,
+<br>
+*`<NUM_NODES>`* is the number of nodes to use,
+<br>
+*`<NODE_RANK>`* is the rank of the current node, rank starts from 0 to *`<NUM_NODES>`*`-1`.
+<br>
+> Also please note that to use CPU for training in each node with multi-node settings, argument `--no_cuda` is mandatory, and `--ddp_backend ccl` is required if to use ccl as the distributed backend. In multi-node setting, following command needs to be launched in each node, and all the commands should be the same except for *`<NODE_RANK>`*, which should be integer from 0 to *`<NUM_NODES>`*`-1` assigned to each node.
 
+``` bash
+mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 instruction_tuning_pipeline/finetune_seq2seq.py \
+    --model_name_or_path "google/flan-t5-xl" \
+    --bf16 True \
+    --train_file "stanford_alpaca/alpaca_data.json" \
+    --per_device_train_batch_size 2 \
+    --per_device_eval_batch_size 2 \
+    --gradient_accumulation_steps 1 \
+    --do_train \
+    --learning_rate 1.0e-5 \
+    --warmup_ratio 0.03 \
+    --weight_decay 0.0 \
+    --num_train_epochs 5 \
+    --logging_steps 10 \
+    --save_steps 2000 \
+    --save_total_limit 2 \
+    --overwrite_output_dir \
+    --output_dir ./flan-t5-xl_peft_finetuned_model \
+    --peft lora \
+    --no_cuda \
+    --ddp_backend ccl \
+```
 If you have enabled passwordless SSH in cpu clusters, you could also use mpirun in master node to start the DDP finetune. Take llama alpaca finetune for example. follow the [hugginface guide](https://huggingface.co/docs/transformers/perf_train_cpu_many) to install Intel® oneCCL Bindings for PyTorch, IPEX
 
 oneccl_bindings_for_pytorch is installed along with the MPI tool set. Need to source the environment before using it.
@@ -171,29 +224,6 @@ Now, run the following command in node0 and **4DDP** will be enabled in node0 an
 ``` bash
 export CCL_WORKER_COUNT=1
 export MASTER_ADDR=xxx.xxx.xxx.xxx #node0 ip
-
-## to finetune FLAN-T5 through Distributed Data Parallel training
-mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_seq2seq.py \
-    --model_name_or_path "google/flan-t5-xl" \
-    --bf16 True \
-    --train_file "stanford_alpaca/alpaca_data.json" \
-    --per_device_train_batch_size 2 \
-    --per_device_eval_batch_size 2 \
-    --gradient_accumulation_steps 1 \
-    --do_train \
-    --learning_rate 1.0e-5 \
-    --warmup_ratio 0.03 \
-    --weight_decay 0.0 \
-    --num_train_epochs 5 \
-    --logging_steps 10 \
-    --save_steps 2000 \
-    --save_total_limit 2 \
-    --overwrite_output_dir \
-    --output_dir ./flan-t5-xl_peft_finetuned_model \
-    --peft lora \
-    --no_cuda \
-    --ddp_backend ccl \
-
 ## for DDP ptun for LLama
 mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py \
     --model_name_or_path decapoda-research/llama-7b-hf \
@@ -238,7 +268,6 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --group_by_length True \
     --dataset_concatenation \
     --do_train \
-    --trust_remote_code True \
     --tokenizer_name "EleutherAI/gpt-neox-20b" \
     --no_cuda \
     --ddp_backend ccl \
@@ -278,7 +307,7 @@ python finetune_clm.py \
         --use_lazy_mode \
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python finetune_clm.py \
@@ -299,7 +328,6 @@ python finetune_clm.py \
         --save_strategy epoch \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
         --use_habana \
