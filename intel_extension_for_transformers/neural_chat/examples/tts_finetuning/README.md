@@ -23,8 +23,7 @@ texts/
 ```
 
 
-Users can use their own audios and corresponding texts, or they can download from the Internet. In this example, we use FeiFei Li's
-audio samples extracted from https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi.
+Users can use their own audios and corresponding texts, or they can download from the Internet. Here are the [audio samples](https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi).
 
 Following the above format, we should rename the audio file names to 1.mp3, 2.mp3 and so on.
 
@@ -36,7 +35,7 @@ python asr.py -i audios/1.mp3 -m openai/whisper-tiny
 
 Again, make sure the text file names are formatted as 1.txt, 2.txt and so on.
 
-For simplicity in this example, we have already generated the texts of the audios from https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi under the `texts/` folder.
+For simplicity in this example, we have already generated the texts of the aforementioned audio samples under the `texts/` folder.
 
 ## Finetuning
 
