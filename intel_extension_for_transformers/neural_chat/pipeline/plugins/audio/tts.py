@@ -75,12 +75,6 @@ class TextToSpeech():
         elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt')):
             self.pat_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt'))
 
-        self.cpu_pool = None
-        if self.device == 'cpu':
-            # ipex IOMP hardware resources
-            import intel_extension_for_pytorch as ipex
-            self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
-
         self.normalizer = EnglishNormalizer()
 
     def create_speaker_embedding(self, driven_audio_path):
@@ -174,14 +168,8 @@ class TextToSpeech():
         for text_in in texts:
             inputs = self.processor(text=text_in, return_tensors="pt")
             with torch.no_grad():
-                if self.cpu_pool:   # pragma: no cover
-                    import intel_extension_for_pytorch as ipex
-                    with ipex.cpu.runtime.pin(self.cpu_pool):
-                        spectrogram = model.generate_speech(
-                            inputs["input_ids"].to(self.device), speaker_embeddings.to(self.device))
-                else:
-                    spectrogram = model.generate_speech(
-                        inputs["input_ids"].to(self.device), speaker_embeddings.to(self.device))
+                spectrogram = model.generate_speech(
+                    inputs["input_ids"].to(self.device), speaker_embeddings.to(self.device))
                 speech = self.vocoder(spectrogram)
                 all_speech = np.concatenate([all_speech, speech.cpu().numpy()])
                 all_speech = np.concatenate([all_speech, np.array([0 for i in range(8000)])])  # pad after each end
