@@ -868,12 +868,18 @@ def update_image_attr(image, attr):
         logger.info(f'Image {attr} updated successfully.')
 
 
+def format_image_path(user_id: str, image_name: str) -> str:
+    server_ip = "54.147.152.170"
+    image_path = "http://"+server_ip+"/ai_photos/user"+user_id+'/'+image_name
+    return image_path
+
+
 def format_image_info(image_info: tuple) -> dict:
     image_item = {}
     image_item['image_id'] = image_info[0]
     image_item['user_id'] = image_info[1]
     image_name = image_info[2].split('/')[-1]
-    image_item['image_path'] = 'http://54.172.226.11/ai_photos/user'+image_info[1]+'/'+image_name
+    image_item['image_path'] = format_image_path(image_info[1], image_name)
     image_item['caption'] = image_info[4]
     image_item['checked'] = True if image_info[9] else False
     tag_list = {}
@@ -1154,7 +1160,7 @@ def get_type_obj_from_attr(attr, user_id):
         # if item == None or item == 'None' or item == 'null':
         #     item = 'default'
         image_name = example_image_path.split('/')[-1]
-        image_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + image_name
+        image_path = format_image_path(user_id, image_name)
         select_result[item] = image_path
 
     logger.info(f'type list: {select_result}')
@@ -1204,7 +1210,7 @@ def get_images_by_type(user_id, type, subtype) -> List:
     result = []
     for image in images:
         image_name = image[1].split('/')[-1]
-        image_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + image_name
+        image_path = format_image_path(user_id, image_name)
         obj = {"image_id": image[0], "image_path": image_path}
         result.append(obj)
     return result
@@ -1230,46 +1236,60 @@ def get_face_list_by_user_id(user_id: str) -> List[Dict]:
         logger.info(f'current item: {item}')
         face_tag, img_path = item[1].split(',')[0], item[0].split(',')[0]
         image_name = img_path.split('/')[-1]
-        response_person[face_tag] = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + image_name
+        response_person[face_tag] = format_image_path(user_id, image_name)
     logger.info(f'person list: {response_person}')
     return response_person
 
 
-def get_image_list_by_ner_query(ner_result: Dict, user_id: str) -> List[Dict]:
+def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> List[Dict]:
     sys.path.append("..")
     from database.mysqldb import MysqlDb
     mysql_db = MysqlDb()
     mysql_db.set_db("ai_photos")
 
     logger.info(f'[NER query] start query from ner results')
-    query_sql = "SELECT image_info.image_id, image_info.image_path FROM image_info INNER JOIN image_face On image_info.image_id=image_face.image_id WHERE "
+    query_sql = "SELECT image_info.image_id, image_info.image_path FROM image_info "
+    query_flag = False
+
+    # get person name query
+    face_list = mysql_db.fetch_all(sql=f"select image_face.face_tag from image_face inner join image_info on image_info.image_id=image_face.image_id where image_info.user_id='{user_id}' AND exist_status='active';", params=None)
+    logger.info(f"[NER query] face list is: {face_list}")
+    if ner_result['name'] or face_list:
+        query_flag = True
+        query_sql += "INNER JOIN image_face ON image_info.image_id=image_face.image_id WHERE "
+        names = ner_result['name']
+        sql_conditions = []
+        for name in names:   
+            sql_conditions.append(f' image_face.face_tag LIKE "%{name}%" ')
+        for face_tag in face_list:
+            face_tag = face_tag[0]
+            if face_tag in query and face_tag not in names:
+                logger.info(f'[NER query] other face detected in db: [{face_tag}]')
+                sql_conditions.append(f' image_face.face_tag LIKE "%{face_tag}%" ')
+        sql = 'OR'.join(sql_conditions)
+        query_sql += '('+sql+')'
+    else:
+        logger.info(f'[NER query] no person name in ner query')
 
     # get location query
     if not ner_result.get('location', None):
         logger.info(f'[NER query] no location in query')
     else:
+        query_flag = True
         locations = ner_result['location']
         sql_conditions = []
         for loc in locations:
             sql_conditions.append(f' image_info.address LIKE "%{loc}%" ')
         sql = 'OR'.join(sql_conditions)
+        if query_sql[-1] == ')':
+            query_sql += ' AND '
         query_sql += '('+sql+')'
-
-    # get person name query
-    if ner_result['name']:
-        names = ner_result['name']
-        sql_conditions = []
-        for name in names:
-            sql_conditions.append(f' image_face.face_tag LIKE "%{name}%" ')
-        sql = 'OR'.join(sql_conditions)
-        query_sql += '('+sql+')'
-    else:
-        logger.info(f'[NER query] no person name in ner query')
         
     # get time query
     if ner_result['time'] == []:
         logger.info(f'[NER query] no time in query')
     else:
+        query_flag = True
         time_points = ner_result['time']
         sql_conditions = []
         for loc in time_points:
@@ -1283,6 +1303,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str) -> List[Dict]:
     if ner_result['period'] == []:
         logger.info(f'[NER query] no time period in query')
     else:
+        query_flag = True
         periods = ner_result['period']
         logger.info(f'[NER query] periods: {periods}')
         sql_conditions = []
@@ -1295,7 +1316,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str) -> List[Dict]:
             query_sql += ' AND '
         query_sql += '('+sql+')'
     
-    if query_sql == "SELECT image_info.image_id, image_info.image_path FROM image_info INNER JOIN image_face On image_info.image_id=iamge_face.image_id WHERE ":
+    if not query_flag:
         logger.info(f'[NER query] no compatible data for current query')
         return []
     query_sql += f' AND image_info.user_id="{user_id}" AND exist_status="active";'
@@ -1307,7 +1328,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str) -> List[Dict]:
     result_image_list = []
     for res in query_result:
         image_name = res[1].split('/')[-1]
-        image_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + image_name
+        image_path = format_image_path(user_id, image_name)
         item = {"image_id": res[0], "imgSrc": image_path}
         result_image_list.append(item)
     logger.info(f'[NER query] result: {result_image_list}')
@@ -1380,7 +1401,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
             logger.info("<uploadImages> "+str(e))
             return JSONResponse(content=f'Database select failed for image {img_path}', status_code=500)
         img_id = result[0]
-        frontend_path = 'http://54.172.226.11/ai_photos/user' + user_id + '/' + img_name
+        frontend_path = format_image_path(user_id, img_name)
         item = {'img_id': img_id, 'img_path': frontend_path}
         logger.info(f'<uploadImages> Image id is {img_id}, image path is {frontend_path}')
         return_list.append(item)
@@ -1413,7 +1434,7 @@ def handle_ai_photos_get_all_images(request: Request):
         image_list = list(mysql_db.fetch_all(sql=f'SELECT image_id, image_path FROM image_info WHERE user_id="{user_id}" AND exist_status="active";'))
         for image in image_list:
             image_name = image[1].split('/')[-1]
-            result_list.append({"image_id": image[0], "image_path": 'http://54.172.226.11/ai_photos/user' + user_id + '/' + image_name})
+            result_list.append({"image_id": image[0], "image_path": format_image_path(user_id, image_name)})
     except Exception as e:
         return JSONResponse(content=e, status_code=500)
     else:
@@ -1613,7 +1634,7 @@ async def handle_ai_photos_chat_to_image(request: Request):
     logger.info(f'<chatWithImage> NER result: {result}')
 
     try:
-        result_image_list = get_image_list_by_ner_query(result, user_id)
+        result_image_list = get_image_list_by_ner_query(result, user_id, query)
     except Exception as e:
         logger.error("<chatWithImage> "+str(e))
         raise Exception(e)

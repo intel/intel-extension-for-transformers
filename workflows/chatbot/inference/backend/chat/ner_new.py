@@ -71,9 +71,16 @@ def inference(query):
                 if "to" in text:
                     print(f"text: {text}")
                     print(f"ent: {ent}")
-                    mentioned_time["period"].append(ent)
+                    if "to" in ent.text:
+                        cur_periods = ent.text.split(" to ")
+                        mentioned_time['period'].extend(cur_periods)
+                    else:
+                        if len(mentioned_time["period"]) > 0 and mentioned_time["period"][-1] == ent.text:
+                            mentioned_time["period"].pop()
+                        else:
+                            mentioned_time["period"].append(ent.text)
                 else:
-                    mentioned_time["time"].append(ent)
+                    mentioned_time["time"].append(ent.text)
     print("mentioned_time: ", mentioned_time)
     print(len(mentioned_time["period"]))
     if len(mentioned_time["period"]) % 2 != 0:
