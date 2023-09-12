@@ -467,8 +467,8 @@ int main(int argc, char** argv) {
         model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
 
 #ifdef NE_BUILD_TESTS
-std::ofstream outFile("logits.txt", std::ios::app);
-for (model_token token_id = 0; token_id < n_vocab; token_id++) {
+        std::ofstream outFile("logits.txt", std::ios::app);
+        for (model_token token_id = 0; token_id < n_vocab; token_id++) {
           outFile << logits[token_id] << " ";
         }
         outFile << "\n";
