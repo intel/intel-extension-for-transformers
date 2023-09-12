@@ -252,14 +252,21 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
   }
 
   template <typename _SRC_T, typename _DST_T, typename... Eltops>
-  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
+  static JBLAS_CODE forward(const _SRC_T* srcptr, _DST_T* dstptr, int row, int col, int srcstep, int dststep,
                             void* elt_const_v = nullptr, Eltops... ops) {
     static std::vector<kernel::jit_injector::eltwise_injector> p = {static_cast<JBLAS_ELTWISEOP>(ops)...};
     if constexpr (sizeof...(ops) != 0)
       static_assert(std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value);
     static JitMemcpy2DAvx512f instance_withops(1, p);
     static JitMemcpy2DAvx512f instance4_withops(4, p);
-    auto param = params{srcptr, dstptr, elt_const_v, row, col, srcstride, dststride};
+    static_assert(sizeof(_SRC_T) == sizeof(_DST_T));  // TODO SRC_T DST_T conversion copy
+    auto param = params{(void*)srcptr,
+                        (void*)dstptr,
+                        elt_const_v,
+                        row,
+                        int(col * sizeof(_SRC_T)),
+                        int(srcstep * sizeof(_SRC_T)),
+                        int(dststep * sizeof(_DST_T))};
     int row4 = utils::padto_le(row, 4);
     int irow = 0;
     if (row4) {
@@ -268,8 +275,8 @@ class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
     }
     int rowtail = row - row4;
     if (rowtail) {
-      param.srcptr = (char*)param.srcptr + row4 * srcstride;
-      param.dstptr = (char*)param.dstptr + row4 * dststride;
+      param.srcptr = (char*)param.srcptr + row4 * srcstep * sizeof(_SRC_T);
+      param.dstptr = (char*)param.dstptr + row4 * dststep * sizeof(_DST_T);
       param.row = rowtail;
       instance_withops.mKernel(&param);
     }
