@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Command Line &mdash; Intel® Extension for Transformers 0.1.dev1+g2cba22f documentation</title>
+  <title>NeuralChat Command Line &mdash; Intel® Extension for Transformers 0.1.dev1+gd7c05b9 documentation</title>
       <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
@@ -101,15 +101,15 @@
 <h3>Text Chat<a class="headerlink" href="#text-chat" title="Link to this heading"></a></h3>
 <ul>
 <li><p>Command Line</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>textchat<span class="w"> </span>--prompt<span class="w"> </span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>predict<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span>
 </pre></div>
 </div>
 </li>
 <li><p>Python API</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralchat.cli.cli_commands</span> <span class="kn">import</span> <span class="n">TextChatExecutor</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralchat.cli.cli_commands</span> <span class="kn">import</span> <span class="n">TextVoiceChatExecutor</span>
 
-<span class="n">textchat</span> <span class="o">=</span> <span class="n">TextChatExecutor</span><span class="p">()</span>
-<span class="n">textchat</span><span class="p">(</span><span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+<span class="n">textchat</span> <span class="o">=</span> <span class="n">TextVoiceChatExecutor</span><span class="p">()</span>
+<span class="n">textchat</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </li>
@@ -119,15 +119,15 @@
 <h3>Voice Chat<a class="headerlink" href="#voice-chat" title="Link to this heading"></a></h3>
 <ul>
 <li><p>Command Line</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_client<span class="w"> </span>voicechat<span class="w"> </span>--input<span class="w"> </span><span class="s2">&quot;../assets/audio/say_hello.wav&quot;</span><span class="w"> </span>--output<span class="w"> </span><span class="s2">&quot;response.wav&quot;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat<span class="w"> </span>predict<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;../../assets/audio/sample.wav&quot;</span><span class="w"> </span>--output_audio_path<span class="w"> </span><span class="s2">&quot;response.wav&quot;</span>
 </pre></div>
 </div>
 </li>
 <li><p>Python API</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralchat.cli.cli_commands</span> <span class="kn">import</span> <span class="n">VoiceChatExecutor</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralchat.cli.cli_commands</span> <span class="kn">import</span> <span class="n">TextVoiceChatExecutor</span>
 
-<span class="n">voicechat</span> <span class="o">=</span> <span class="n">VoiceChatExecutor</span><span class="p">()</span>
-<span class="n">voicechat</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="s2">&quot;../assets/audio/say_hello.wav&quot;</span><span class="p">,</span> <span class="n">output</span><span class="o">=</span><span class="s2">&quot;response.wav&quot;</span><span class="p">)</span>
+<span class="n">voicechat</span> <span class="o">=</span> <span class="n">TextVoiceChatExecutor</span><span class="p">()</span>
+<span class="n">voicechat</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="s2">&quot;../../assets/audio/say_hello.wav&quot;</span><span class="p">,</span> <span class="n">output_audio_path</span><span class="o">=</span><span class="s2">&quot;response.wav&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </li>
@@ -150,7 +150,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fc4be9df580> 
+   <jinja2.runtime.BlockReference object at 0x7fd78d818670> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
