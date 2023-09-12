@@ -217,7 +217,9 @@ class Controller:
                     result += a
                     yield f"data: {a}\n\n"
                     # yield f"data: \n\n"
-            from ..llmcache.cache import put
+            import sys
+            sys.path.append("..")
+            from llmcache.cache import put
             put(params["prompt"], result)
             yield f"data: [DONE]\n\n"
         except requests.exceptions.RequestException as e:
@@ -330,7 +332,9 @@ async def get_cache(request: Request):
     if "msgData" in params:
         params = params["msgData"]
     prompt = params["prompt"]
-    from ..llmcache.cache import get
+    import sys
+    sys.path.append("..")
+    from llmcache.cache import get
     result = get(prompt)
     print(result)
     if(result == None):
@@ -440,15 +444,17 @@ if __name__ == "__main__":
     parser.add_argument("--dispatch-method", type=str, choices=[
         "lottery", "shortest_queue"], default="shortest_queue")
     parser.add_argument(
-        "--cache-chat-config-file", default="cache_config.yml", help="the cache config file"
+        "--cache-chat-config-file", default="llmcache/cache_config.yml", help="the cache config file"
     )
     parser.add_argument(
-        "--cache-embedding-model-dir", default="./instructor-large", help="the cache embedding model directory"
+        "--cache-embedding-model-dir", default="hkunlp/instructor-large", help="the cache embedding model directory"
     )
     args = parser.parse_args()
     logger.info(f"args: {args}")
 
-    from ..llmcache.cache import init_similar_cache_from_config, put
+    import sys
+    sys.path.append("..")
+    from llmcache.cache import init_similar_cache_from_config, put
     if args.cache_chat_config_file:
         init_similar_cache_from_config(config_dir=args.cache_chat_config_file,
                                        embedding_model_dir=args.cache_embedding_model_dir)

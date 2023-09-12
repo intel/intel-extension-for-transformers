@@ -40,6 +40,7 @@ SHELL ["/bin/bash", "--login", "-c"]
 RUN apt-get update \
     && apt-get install -y build-essential \
     && apt-get install -y wget numactl git \
+    && apt-get install -y openssh-server \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -66,29 +67,41 @@ RUN source activate && conda activate chatbot-finetuning && pip install oneccl_b
     pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
     cd /itrex && pip install -v . && \
-    cd neural_chat/examples/instruction_tuning && pip install -r requirements.txt
+    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt
+
+# Enable passwordless ssh for mpirun^M
+RUN mkdir /var/run/sshd
+RUN passwd -d root
+RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /etc/ssh/sshd_config \
+        && sed -i'' -e's/^#PasswordAuthentication yes$/PasswordAuthentication yes/' /etc/ssh/sshd_config \
+        && sed -i'' -e's/^#PermitEmptyPasswords no$/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
+        && sed -i'' -e's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config \
+        && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
+EXPOSE 22
 
 WORKDIR /itrex/neural_chat/examples/instruction_tuning/
 
+CMD ["/usr/sbin/sshd", "-D"]
 
 # HABANA environment
-FROM vault.habana.ai/gaudi-docker/1.10.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
+FROM vault.habana.ai/gaudi-docker/1.11.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
 
-# Install optimum-habana
-RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd ./optimum-habana/examples/text-generation/ && \
-    pip install -r requirements.txt && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
-RUN pip install git+https://github.com/huggingface/optimum-habana.git && \
+# Install optimum-habana
+RUN git clone https://github.com/huggingface/optimum-habana.git && \
+    cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
+    cd ./optimum-habana/examples/text-generation/ && \
+    pip install -r requirements.txt && \
+    cd / && \
     pip install einops && \
     pip install datasets && \
-    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0 && \
+    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0 && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install
 
 # Download ITREX code
@@ -96,11 +109,12 @@ ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
-    cd /itrex/neural_chat/examples/instruction_tuning/ && \
+    cd /itrex/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
     pip install -r requirements.txt
-    
+
 # Build ITREX
 RUN cd /itrex && pip install -v . && \
-    pip install transformers==4.28.1
+    pip install transformers==4.32.0 && \
+    pip install accelerate==0.22.0
 
 WORKDIR /itrex/neural_chat/examples/instruction_tuning

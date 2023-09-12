@@ -37,7 +37,7 @@ class MptModel(BaseModel):
         Returns:
             bool: True if the model_path matches, False otherwise.
         """
-        return "mpt" in model_path.lower() or "opt" in model_path.lower()
+        return "mpt" in model_path.lower()
 
     def get_default_conv_template(self, model_path: str) -> Conversation:
         """
