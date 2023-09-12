@@ -42,8 +42,7 @@ class UnitTest(unittest.TestCase):
         self.client_executor = VoiceChatClientExecutor()
 
     def tearDown(self) -> None:
-        self.server_process.terminate()
-        self.server_process.wait()
+        os.killpg(os.getpgid(self.server_process.pid), 9)
 
     def test_text_chat(self):
         audio_path = \
