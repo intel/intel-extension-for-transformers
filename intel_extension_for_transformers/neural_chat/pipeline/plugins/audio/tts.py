@@ -78,11 +78,8 @@ class TextToSpeech():
         self.cpu_pool = None
         if self.device == 'cpu':
             # ipex IOMP hardware resources
-            if 'LD_PRELOAD' in os.environ and 'libiomp' in os.environ['LD_PRELOAD']:
-                import intel_extension_for_pytorch as ipex
-                self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
-            else:
-                print("Warning! You have not preloaded iomp beforehand and that may lead to performance issue")
+            import intel_extension_for_pytorch as ipex
+            self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
 
         self.normalizer = EnglishNormalizer()
 
