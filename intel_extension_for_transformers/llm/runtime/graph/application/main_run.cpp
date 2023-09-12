@@ -52,55 +52,6 @@ static model_context** g_ctx;
 
 static bool is_interacting = false;
 
-std::string build_prompt_glm2(const std::vector<std::string>& history) {
-  std::ostringstream oss_prompt;
-  for (size_t i = 0; i < history.size(); i += 2) {
-    oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
-    if (i < history.size() - 1) {
-      oss_prompt << history[i + 1] << "\n\n";
-    }
-  }
-  return oss_prompt.str();
-}
-
-std::string build_prompt_glm1(const std::vector<std::string>& history) {
-    std::ostringstream oss_prompt;
-    if (history.size() == 1) {
-        oss_prompt << history.front();
-    } else {
-        for (size_t i = 0; i < history.size(); i += 2) {
-            oss_prompt << "[Round " << i / 2 << "]\n问：" << history[i] << "\n答：";
-            if (i < history.size() - 1) {
-                oss_prompt << history[i + 1] << "\n";
-            }
-        }
-    }
-    return oss_prompt.str();
-}
-
-std::string postprocess(const std::string &text) {
-    std::string output;
-
-    // newline token
-    {
-        static const std::regex pattern(R"(<n>)");
-        output = std::regex_replace(text, pattern, "\n");
-    }
-    // tab token
-    {
-        static const std::regex pattern(R"(<\|tab\|>)");
-        output = std::regex_replace(output, pattern, "\t");
-    }
-    // blank tokens
-    {
-        static const std::regex pattern(R"(<\|blank_(\d+)\|>)");
-        output = regex_replace(output, pattern,
-                               [](const std::smatch &sm) { return std::string(std::stoi(sm[1].str()), ' '); });
-    }
-
-    return output;
-}
-
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__)) || defined(_WIN32)
 void sigint_handler(int signo) {
   if (signo == SIGINT) {
