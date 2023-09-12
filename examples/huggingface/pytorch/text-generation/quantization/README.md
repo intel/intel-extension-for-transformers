@@ -23,7 +23,7 @@ conda install cmake ninja mkl mkl-include -y
 conda install gperftools -c conda-forge -y
 
 # Install PyTorch
-python -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cpu
+python -m pip install https://download.pytorch.org/whl/nightly/cpu/torch-2.1.0.dev20230711%2Bcpu-cp39-cp39-linux_x86_64.whl
 
 # Install IPEX with semi-compiler, require gcc 12.3 or 12.2
 rm -rf llvm-project && mkdir llvm-project && cd llvm-project
@@ -37,7 +37,7 @@ make install -j$(nproc)
 ln -s ${PWD}/_install/llvm/bin/llvm-config ${CONDA_PREFIX}/bin/llvm-config-13
 cd ../../
 
-git clone https://github.com/intel/intel-extension-for-pytorch.git
+git clone --branch llm_feature_branch https://github.com/intel/intel-extension-for-pytorch.git
 cd intel-extension-for-pytorch
 git submodule sync && git submodule update --init --recursive
 export DNNL_GRAPH_BUILD_COMPILER_BACKEND=1
@@ -45,7 +45,7 @@ export CXXFLAGS="${CXXFLAGS} -D__STDC_FORMAT_MACROS"
 python setup.py install
 cd ../
 
-# it is necessary for mpt and neural-chat-v1-1 models, other models don't need it.
+# disable semi-compiler to avoid accuracy regression for mpt and neural-chat-v1-1 models, other models don't need it.
 export _DNNL_DISABLE_COMPILER_BACKEND=1
 
 # Install neural-compressor
