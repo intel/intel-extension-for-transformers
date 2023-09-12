@@ -2294,3 +2294,7 @@ Habana
 customizable
 mosaicml
 mpt
+ChatGLM
+chatglm
+gptj
+gptneox
