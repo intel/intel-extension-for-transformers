@@ -81,7 +81,12 @@ user_model = AutoModelForCausalLM.from_pretrained(
        args.model,
        config=config
 )
-tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+
+if config.model_type == "llama":
+    from transformers import LlamaTokenizer
+    tokenizer = LlamaTokenizer.from_pretrained(args.model)
+else:
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 # to channels last
 user_model = user_model.to(memory_format=torch.channels_last)
