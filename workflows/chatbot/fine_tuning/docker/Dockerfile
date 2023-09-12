@@ -66,8 +66,7 @@ RUN conda init bash && \
     source ~/.bashrc
 
 RUN source activate && conda activate chatbot-finetuning && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
-    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
+    pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft && \
     cd /itrex && pip install -r requirements.txt && pip install -v . && \
     cd intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt
 
@@ -106,7 +105,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install einops && \
     pip install datasets && \
     pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0 && \
-    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install
+    pip install peft
 
 # Download ITREX code
 ARG ITREX_VER=xinyuye/nc_migrate
