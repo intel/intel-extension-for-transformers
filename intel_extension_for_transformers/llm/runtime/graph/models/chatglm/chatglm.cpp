@@ -31,6 +31,8 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
+#include "core/ne_jblas.h"
+#include "core/layers/mha_dense.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
@@ -47,16 +49,11 @@ static int flag = 0;
 static int first_tokens_size = 0;
 static bool chatglm_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                      const int n_past, const int n_threads) {
-  // // enforce that the first token is BOS
-  // if (n_past == 0 && tokens[0] != model_token_bos()) {
-  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
-  //   return false;
-  // }
-
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
 
+  const int batch_size = lctx.batch_size;
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
 
@@ -67,7 +64,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
   const int n_ctx = hparams.n_ctx;
-  // printf("n_ctx = %d\n", n_ctx);
+  
   if (flag == 0) {
     first_tokens_size = n_tokens;
     flag++;
@@ -124,12 +121,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     ne_set_name(cur, "cur");
     cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
     cur = ne_add(ctx0, cur, model.layers[il].norm[1]);
-
-    //cur = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[0], cur), cur);
-    //cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].norm[1], cur), cur);
     
     struct ne_tensor* attn_input = cur;
-    //struct ne_tensor* attn_output;
     // GLM2SelfAttention
     {
       // Linear::forward compute QKV
@@ -226,12 +219,19 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       mlp_input = ne_add(ctx0, mlp_input, model.layers[il].norm[3]);
 
       // mlp.forward
-      struct ne_tensor *mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[0], mlp_input);
-      mlp_output = ne_add_inplace(ctx0, mlp_output, model.layers[il].ffn[1]);
-      mlp_output = ne_gelu_inplace(ctx0, mlp_output);
-      mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[2], mlp_output);
-      mlp_output = ne_add_inplace(ctx0, mlp_output, model.layers[il].ffn[3]);
-      
+      struct ne_tensor *mlp_output;
+      bool status = jblas_fusion_FFN_Add_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[2]->data,
+                                                 N * batch_size, mlp_input->ne[0], model.layers[il].ffn[0]->ne[1],model.layers[il].ffn[2]->ne[1]);
+      if (status) {
+        mlp_output = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2], model.layers[il].ffn[1], model.layers[il].ffn[3], mlp_input);
+      } else {
+        mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[0], mlp_input);
+        mlp_output = ne_add(ctx0, mlp_output, model.layers[il].ffn[1]);
+        mlp_output = ne_gelu(ctx0, mlp_output);
+        mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[2], mlp_output);
+        mlp_output = ne_add(ctx0, mlp_output, model.layers[il].ffn[3]);
+      }
+       
       ne_build_forward_expand(&gf, mlp_output);
       mlp_input = ne_scale_inplace(ctx0, mlp_input, alpha);
       inpL = ne_add_inplace(ctx0, mlp_input, mlp_output);
