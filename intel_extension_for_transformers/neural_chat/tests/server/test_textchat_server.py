@@ -18,13 +18,21 @@
 import subprocess
 import unittest
 import time
+import os
 from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
 
 class UnitTest(unittest.TestCase):
     def setUp(self) -> None:
-        command = 'neuralchat_server start \
-                    --config_file "./textchat.yaml" \
-                    --log_file "./neuralchat.log"'
+        yaml_file_path = "/intel-extension-for-transformers/" + \
+            "intel_extension_for_transformers/neural_chat/tests/server/textchat.yaml"
+        if os.path.exists(yaml_file_path):
+            command = f'neuralchat_server start \
+                        --config_file {yaml_file_path} \
+                        --log_file "./neuralchat.log"'
+        else:
+            command = 'neuralchat_server start \
+                        --config_file "./textchat.yaml" \
+                        --log_file "./neuralchat.log"'
         try:
             self.server_process = subprocess.Popen(command,
                                     universal_newlines=True, shell=True) # nosec
