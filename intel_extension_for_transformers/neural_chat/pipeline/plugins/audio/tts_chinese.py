@@ -16,9 +16,7 @@
 # limitations under the License.
 
 from paddlespeech.server.bin.paddlespeech_client import TTSOnlineClientExecutor
-from ....plugins import register_plugin
 
-@register_plugin('tts_chinese')
 class ChineseTextToSpeech():  # pragma: no cover
     def __init__(self, output_audio_path="./response.wav", spk_id=0,
                  stream_mode=False, server_ip="127.0.0.1", port=443, protocol="http", device="cpu"):

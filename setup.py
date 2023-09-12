@@ -46,8 +46,8 @@ if not SKIP_RUNTIME:
 cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
-install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml', 'evaluate']
-opt_install_requires_list = ['neural_compressor', 'transformers', 'optimum-intel', 'peft']
+install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
+opt_install_requires_list = ['neural_compressor', 'transformers']
 project_name = "intel_extension_for_transformers"
 
 packages_list = find_packages()
@@ -57,11 +57,10 @@ install_requires_list.extend(opt_install_requires_list)
 class CMakeExtension(Extension):
     """CMakeExtension class."""
 
-    def __init__(self, name, sourcedir="", lib_only=False):
+    def __init__(self, name, sourcedir=""):
         """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
-        self.optional = lib_only  # we only deliver shared object but not as a python extension module
 
 
 class CMakeBuild(build_ext):
@@ -239,12 +238,10 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    ext_modules=[CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr', True)]
     if not SKIP_RUNTIME:
         check_submodules()
-        ext_modules.append(CMakeExtension(
-            "intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"))
+        ext_modules=[CMakeExtension(
+            "intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/")]
         cmdclass={'build_ext': CMakeBuild}
 
     setup(
@@ -257,7 +254,7 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/intel-extension-for-transformers",
-        ext_modules = ext_modules,
+        ext_modules = ext_modules if not SKIP_RUNTIME else [],
         packages=find_packages(),
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
@@ -282,6 +279,4 @@ if __name__ == '__main__':
             'Topic :: Scientific/Engineering :: Artificial Intelligence',
             'License :: OSI Approved :: Apache Software License',
         ],
-        setup_requires=['setuptools_scm'],
-        use_scm_version=True,
     )
