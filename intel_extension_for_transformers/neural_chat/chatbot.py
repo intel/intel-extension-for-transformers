@@ -20,20 +20,9 @@ from intel_extension_for_transformers.llm.finetuning.finetuning import Finetunin
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
-from .plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins
 from .config import DeviceOptions
-from .models.base_model import get_model_adapter
-from .pipeline.plugins.caching.cache import CachePlugin
-from .pipeline.plugins.audio.asr import AudioSpeechRecognition
-from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
-from .pipeline.plugins.audio.tts import TextToSpeech
-from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
-from .pipeline.plugins.security import SafetyChecker
-from .pipeline.plugins.retrieval import Agent_QA
-from .models.llama_model import LlamaModel
-from .models.mpt_model import MptModel
-from .models.chatglm_model import ChatGlmModel
-
+from .utils.common import get_device_type
+from .plugins import plugins
 
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
@@ -56,15 +45,61 @@ def build_chatbot(config: PipelineConfig=None):
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
 
-    # get model adapter
-    adapter = get_model_adapter(config.model_name_or_path)
+    if config.device == "auto":
+        config.device = get_device_type()
+
+    # create model adapter
+    if "llama" in config.model_name_or_path.lower():
+        from .models.llama_model import LlamaModel
+        adapter = LlamaModel()
+    elif "neural-chat-7b-v1" in config.model_name_or_path or "mpt" in config.model_name_or_path:
+        from .models.mpt_model import MptModel
+        adapter = MptModel()
+    elif "chatglm" in config.model_name_or_path:
+        from .models.chatglm_model import ChatGlmModel
+        adapter = ChatGlmModel()
+    elif "opt" in config.model_name_or_path or \
+         "gpt" in config.model_name_or_path or \
+         "flan-t5" in config.model_name_or_path or \
+         "bloom" in config.model_name_or_path:
+        from .models.base_model import BaseModel
+        adapter = BaseModel()
+    else:
+        raise ValueError("NeuralChat Error: Unsupported model name or path, \
+                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/NEURAL-CHAT now.")
 
     # register plugin instance in model adaptor
-    for plugin_name in get_registered_plugins():
-        if is_plugin_enabled(plugin_name):
-            plugin_instance = get_plugin_instance(plugin_name)
-            if plugin_instance:
-                adapter.register_plugin_instance(plugin_name, plugin_instance)
+    if config.plugins:
+        for plugin_name, plugin_value in config.plugins.items():
+            enable_plugin = plugin_value.get('enable', False)
+            if enable_plugin:
+                if plugin_name == "tts":
+                    from .pipeline.plugins.audio.tts import TextToSpeech
+                    plugins[plugin_name]['class'] = TextToSpeech
+                elif plugin_name == "tts_chinese":
+                    from .pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
+                    plugins[plugin_name]['class'] = ChineseTextToSpeech
+                elif plugin_name == "asr":
+                    from .pipeline.plugins.audio.asr import AudioSpeechRecognition
+                    plugins[plugin_name]['class'] = AudioSpeechRecognition
+                elif plugin_name == "asr_chinese":
+                    from .pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
+                    plugins[plugin_name]['class'] = ChineseAudioSpeechRecognition
+                elif plugin_name == "retrieval":
+                    from .pipeline.plugins.retrieval.retrieval_agent import Agent_QA
+                    plugins[plugin_name]['class'] = Agent_QA
+                elif plugin_name == "cache":
+                    from .pipeline.plugins.caching.cache import ChatCache
+                    plugins[plugin_name]['class'] = ChatCache
+                elif plugin_name == "safety_checker":
+                    from .pipeline.plugins.security.safety_checker import SafetyChecker
+                    plugins[plugin_name]['class'] = SafetyChecker
+                else:
+                    raise ValueError("NeuralChat Error: Unsupported plugin")
+                print(f"create {plugin_name} plugin instance...")
+                print(f"plugin parameters: ", plugin_value['args'])
+                plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
+                adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
     parameters = {}
     parameters["model_name"] = config.model_name_or_path

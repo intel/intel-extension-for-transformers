@@ -17,13 +17,28 @@
 
 from .utils.dotdict import DotDict
 
-plugins = DotDict({})
+class GlobalPlugins:
+    def __init__(self):
+        self.reset_plugins()
+
+    def reset_plugins(self):
+        self.plugins = DotDict({
+            "tts": {"enable": False, "class": None, "args": {}, "instance": None},
+            "tts_chinese": {"enable": False, "class": None, "args": {}, "instance": None},
+            "asr": {"enable": False, "class": None, "args": {}, "instance": None},
+            "asr_chinese": {"enable": False, "class": None, "args": {}, "instance": None},
+            "retrieval": {"enable": False, "class": None, "args": {}, "instance": None},
+            "cache": {"enable": False, "class": None, "args": {}, "instance": None},
+            "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None}
+        })
+
+global_plugins_instance = GlobalPlugins()
+plugins = global_plugins_instance.plugins
 
 def register_plugin(name):
     def decorator(cls):
-        enable = True if name == "asr" else False
         plugins[name] = {
-            'enable': enable,
+            'enable': True,
             'class': cls,
             'args': {},
             'instance': None
@@ -51,3 +66,6 @@ def get_registered_plugins():
     for plugin_name, _ in plugins.items():
         registered_plugins.append(plugin_name)
     return registered_plugins
+
+def get_all_plugins():
+    return ["tts", "tts_chinese", "asr", "asr_chinese", "retrieval", "cache", "safety_checker"]

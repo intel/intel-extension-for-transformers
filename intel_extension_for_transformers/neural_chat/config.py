@@ -350,11 +350,6 @@ class FinetuningArguments:
 class TTSDatasetArguments:
     audio_folder_path: Optional[str] = field(default=None, metadata={"help": "The path to the directory of audios."})
     text_folder_path: Optional[str] = field(default=None, metadata={"help": "The path to the directory of texts."})
-    gender: Optional[str] = field(default=None, metadata={"help": "Gender."})
-    language: Optional[str] = field(default="en", metadata={"help": "Language. \
-                                                            Shoule be one of 'en', 'de', 'fr', 'es', 'pl', 'it', 'ro' \
-                                                            'hu', 'cs', 'nl', 'fi', 'hr', 'sk', 'sl', 'et', 'lt', \
-                                                            'en_accented'"})
 
 @dataclass
 class TTSModelArguments:
@@ -446,8 +441,3 @@ class PipelineConfig:
         assert type(self.optimization_config) in [AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of AMPConfig, WeightOnlyQuantizationConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
-        for plugin_name, plugin_value in self.plugins.items():
-            if plugin_value['enable']:
-                print(f"create {plugin_name} plugin instance...")
-                print(f"plugin parameters: ", plugin_value['args'])
-                plugins[plugin_name]["instance"] = plugin_value['class'](**plugin_value['args'])

@@ -45,6 +45,7 @@ jobs:
           docker exec "chatbotfinetune-mpi-s0" bash -c "cd /root/chatbot; source ./bash_setup.sh; mpirun -f ./hosts2 -n 2 -ppn 1 -genv OMP_NUM_THREADS=48 sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat_mpi.sh"
 
       - name: Print Logs and Check Finetuning Status
+        if: success() || failure()
         run: |
           sh .github/workflows/script/chatbot/finish_ft_mpt-7b-chat_mpi.sh          
 
