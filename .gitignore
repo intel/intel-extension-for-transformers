@@ -29,8 +29,8 @@ dist/
 # CMakeUserPresets.json should be ignored. See: https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html
 CMakeUserPresets.json
 
-/intel_extension_for_transformers/backends/neural_engine/.vs
-/intel_extension_for_transformers/backends/neural_engine/out
+/intel_extension_for_transformers/llm/runtime/.vs
+/intel_extension_for_transformers/llm/runtime/out
 /examples/**/*.npy
 /examples/**/*.bin
 /examples/**/*.yaml
@@ -44,5 +44,5 @@ build_tmp
 .DS_Store
 examples/huggingface/pytorch/text-classification/early-exit/wandb
 examples/huggingface/pytorch/text-classification/early-exit/.venv
-/intel_extension_for_transformers/backends/neural_engine/graph/.vs
+/intel_extension_for_transformers/llm/runtime/graph/.vs
 examples/huggingface/pytorch/text-classification/early-exit/test/output_*/

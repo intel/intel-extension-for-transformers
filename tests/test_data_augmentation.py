@@ -3,12 +3,12 @@ import shutil
 import unittest
 
 from datasets import load_dataset
-from intel_extension_for_transformers.preprocessing.data_augmentation import DataAugmentation
+from intel_extension_for_transformers.utils.data_augmentation import DataAugmentation
 
 
 def build_fake_dataset(save_path):
     from datasets import load_dataset
-    from intel_extension_for_transformers.preprocessing.utils import EOS
+    from intel_extension_for_transformers.utils.utils import EOS
 
     split = 'validation'
     count = 10

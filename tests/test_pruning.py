@@ -3,7 +3,7 @@ import os
 import shutil
 import torch.utils.data as data
 import unittest
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     metrics,
     OptimizedModel,
     PrunerConfig,
@@ -11,7 +11,7 @@ from intel_extension_for_transformers.optimization import (
     PruningMode,
     NoTrainerOptimizer
 )
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer

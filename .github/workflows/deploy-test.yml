@@ -6,12 +6,12 @@ on:
     paths:
       - ".github/workflows/deploy-test.yml"
       - ".github/workflows/script/models/run_deploy.sh"
-      - "intel_extension_for_transformers/backends/**"
-      - "!intel_extension_for_transformers/backends/neural_engine/kernels/**"
-      - "!intel_extension_for_transformers/backends/neural_engine/test/**"
-      - "!intel_extension_for_transformers/backends/neural_engine/graph/**"
-      - "!intel_extension_for_transformers/backends/neural_engine/third_party/**"
-      - "!intel_extension_for_transformers/backends/neural_engine/docs/**"
+      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
+      - "!intel_extension_for_transformers/llm/runtime/graph/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
+      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
 
   workflow_dispatch:
 
@@ -29,6 +29,7 @@ env:
   DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "modelTest"
   EXTRA_CONTAINER_NAME: "utTest"
+  EXTRA_CONTAINER_NAME2: "codeScan"
 
 jobs:
   Deploy-Workflow:
@@ -64,6 +65,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: "recursive"
+          fetch-tags: true
       # We need this because GitHub needs to clone the branch to pipeline
       - name: Docker Build
         run: |
@@ -144,6 +146,14 @@ jobs:
     runs-on: itrex-node-spell
     needs: [Deploy-Workflow]
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME2 }}-${{ runner.name }}'$) ]]; then
+              docker start ${{ env.EXTRA_CONTAINER_NAME2 }}-${{ runner.name }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME2 }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+          fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
         with:

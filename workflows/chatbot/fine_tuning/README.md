@@ -189,6 +189,9 @@ python finetune_clm.py \
         --no_cuda \
 ```
 
+**note:** set `--do_lm_eval` to evaluate model with `truthfulqa_mc` metric, and you can set `--lm_eval_tasks` to evaluate more tasks supported in [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)
+
+
 - use the below command line for finetuning chatbot on the [HuggingFaceH4/oasst1_en](https://huggingface.co/datasets/HuggingFaceH4/oasst1_en).
 
 ```bash
@@ -244,6 +247,8 @@ python finetune_clm.py \
 # the script also support other models, like mpt.
 ```
 
+**note:** Use `rouge` metric to evaluate model on summarization task.
+
 - use the below command line for code tuning with `meta-llama/Llama-2-7b-hf` on [theblackcat102/evol-codealpaca-v1](https://huggingface.co/datasets/theblackcat102/evol-codealpaca-v1).
 
 ```bash
@@ -273,7 +278,7 @@ python finetune_clm.py \
 
 
 
-**For [MPT](https://huggingface.co/mosaicml/mpt-7b)**, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+**For [MPT](https://huggingface.co/mosaicml/mpt-7b)**, use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python finetune_clm.py \
@@ -295,7 +300,6 @@ python finetune_clm.py \
         --save_strategy epoch \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --no_cuda \
 ```
@@ -422,7 +426,6 @@ mpirun -f nodefile -n 16 -ppn 4 -genv OMP_NUM_THREADS=56 python3 finetune_clm.py
     --group_by_length True \
     --dataset_concatenation \
     --do_train \
-    --trust_remote_code True \
     --tokenizer_name "EleutherAI/gpt-neox-20b" \
     --no_cuda \
     --ddp_backend ccl \
@@ -464,7 +467,7 @@ python finetune_clm.py \
         --use_lazy_mode \
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python finetune_clm.py \
@@ -488,7 +491,6 @@ python finetune_clm.py \
         --log_level info \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
         --use_habana \
@@ -536,9 +538,10 @@ python ../../utils/gaudi_spawn.py \
         --habana \
         --use_habana \
         --use_lazy_mode \
+        --distribution_strategy fast_ddp \
 ```
 
-For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.This model also requires that trust_remote_code=True be passed to the from_pretrained method. This is because we use a custom MPT model architecture that is not yet part of the Hugging Face transformers package.
+For [MPT](https://huggingface.co/mosaicml/mpt-7b), use the below command line for finetuning on the Alpaca dataset. Only LORA supports MPT in PEFT perspective.it uses gpt-neox-20b tokenizer, so you need to define it in command line explicitly.
 
 ```bash
 python ../../utils/gaudi_spawn.py \
@@ -563,11 +566,11 @@ python ../../utils/gaudi_spawn.py \
         --log_level info \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
-        --trust_remote_code True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --habana \
         --use_habana \
         --use_lazy_mode \
+        --distribution_strategy fast_ddp \
 ```
 
 Where the `--dataset_concatenation` argument is a way to vastly accelerate the fine-tuning process through training samples concatenation. With several tokenized sentences concatenated into a longer and concentrated sentence as the training sample instead of having several training samples with different lengths, this way is more efficient due to the parallelism characteristic provided by the more concentrated training samples.
@@ -577,3 +580,10 @@ You could also indicate `--peft` to switch peft method in P-tuning, Prefix tunin
 see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.
 
 Add option **"--use_fast_tokenizer False"** when using latest transformers if you met failure in llama fast tokenizer for llama, The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`
+
+# Evaluation
+
+- For task=completion/chat, set `--do_lm_eval` to evaluate model with `truthfulqa_mc` metric, and you can set `--lm_eval_tasks` to evaluate more tasks supported in [EleutherAI/lm-evaluation-harness](https://github.com/EleutherAI/lm-evaluation-harness)
+- For task=summarization, we use `rouge` metric.
+- For custom evaluation function, you can refer to `instruction_tuning_pipeline/eval_utils.py`, and call it at end of the training
+ 

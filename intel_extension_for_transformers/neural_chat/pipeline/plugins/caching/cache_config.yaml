@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# For `model_src`, `evaluation`, `post_function`, `pre_function`,
+# `storage_config` options, Check README for more.
+
+embedding:
+    sbert
+# embedding_config:
+#     model:
+#       /models/text2vec-large-chinese
+      #distiluse-base-multilingual-cased
+    # Set model kws here including `model`, `api_key` if needed
+storage_config:
+    data_dir:
+        gptcache_data
+    manager:
+        sqlite,faiss
+    vector_params:
+        # Set vector storage related params here
+evaluation: 
+    distance
+evaluation_config:
+    max_distance: 1.0
+    # Set evaluation metric kws here
+pre_function:
+    get_prompt
+post_function:
+    first
+# config:
+#     similarity_threshold: 0.8
+#     # Set other config here

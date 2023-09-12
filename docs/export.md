@@ -44,7 +44,7 @@ trainer.export_to_onnx(
 
 ### Export to BF16 ONNX Model
 
-If the flag: `enable_bf16` is True, you will get an ONNX model with BFloat16 weights for ['MatMul', 'Gemm'] node type. This FP32 + BF16 ONNX model can be accelerated by our [executor](../intel_extension_for_transformers/backends/neural_engine/) backend.
+If the flag: `enable_bf16` is True, you will get an ONNX model with BFloat16 weights for ['MatMul', 'Gemm'] node type. This FP32 + BF16 ONNX model can be accelerated by our [executor](../intel_extension_for_transformers/llm/runtime/deprecated/) backend.
 
 ### API usage
 

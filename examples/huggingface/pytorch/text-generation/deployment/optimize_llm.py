@@ -74,7 +74,7 @@ else:
         net = Net(model)
         traced_model = torch.jit.trace(net, (input_ids, past_key_value, attention_mask))
 
-from intel_extension_for_transformers.backends.neural_engine.compile import compile, autocast
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile, autocast
 if 'llama'  in model_type:
     if args.dtype == "bf16":
         with autocast("bf16"):

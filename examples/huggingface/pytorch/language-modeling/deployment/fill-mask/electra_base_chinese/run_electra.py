@@ -1,5 +1,5 @@
 from transformers import  AutoTokenizer, ElectraForMaskedLM, ElectraModel, ElectraForPreTraining
-from intel_extension_for_transformers.backends.neural_engine.compile.graph import Graph
+from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
 from executor_utils import Neural_Engine
 import torch
 import os

@@ -1,0 +1,14 @@
+[run]
+branch = True
+
+[report]
+omit =
+ */**/fake*yaml
+ */intel_extension_for_transformers/neural_chat/**
+ */intel_extension_for_transformers/transformers/**
+ */intel_extension_for_transformers/llm/evaluation/**
+ */intel_extension_for_transformers/llm/finetuning/**
+ */intel_extension_for_transformers/llm/inference/**
+ */intel_extension_for_transformers/llm/quantization/**
+exclude_lines =
+ pragma: no cover

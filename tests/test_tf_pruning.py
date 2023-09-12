@@ -1,11 +1,11 @@
-from intel_extension_for_transformers.optimization.utils.utility_tf import get_filepath
+from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
 import numpy as np
 import os
 import shutil
 import tensorflow as tf 
 import unittest
 from datasets import load_dataset, load_metric
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     metrics,
     PrunerConfig,
     PruningConfig,
@@ -77,13 +77,13 @@ class TestTFPruning(unittest.TestCase):
     def test_tf_model_quant(self):
         # check whether it is possible to set distributed environment
         # only for coverage currently
-        from intel_extension_for_transformers.optimization.utils.utility_tf import distributed_init
+        from intel_extension_for_transformers.transformers.utils.utility_tf import distributed_init
         distributed_init(["localhost:12345","localhost:23456"], "worker", 0)
         self.assertTrue(os.environ['TF_CONFIG'] != None)
         del os.environ['TF_CONFIG']
         # check whether filepath can be set correctly if using distributed environment
         # only for coverage currently
-        from intel_extension_for_transformers.optimization.utils.utility_tf import get_filepath
+        from intel_extension_for_transformers.transformers.utils.utility_tf import get_filepath
         self.assertTrue(type(get_filepath("dummy", "worker", 0)) == str)
         self.assertTrue(type(get_filepath("dummy", "worker", 1)) == str)
         self.assertTrue(get_filepath("dummy", "worker", 0) != get_filepath("dummy", "worker", 1))

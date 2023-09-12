@@ -35,7 +35,7 @@ env BACKENDS_ONLY=1 pip install [-v|--verbose] [-e] .
 ##### 2. Generate optimal BERT model
 
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 model = compile('/path/to/your/model')
 model.save('/ir/path')
 ```
@@ -61,7 +61,7 @@ Open/Close Log:(GLOG_minloglevel=1/GLOG_minloglevel=2)
 If you use `pip install .` to install the neural engine, then you can use python api as following.
 
 ```python
-from intel_extension_for_transformers.backends.neural_engine.compile import compile
+from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
 # load the model
 graph = compile('./model_and_tokenizer/int8-model.onnx')
 # use graph.inference to do inference

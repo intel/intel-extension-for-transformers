@@ -30,6 +30,7 @@ Here is how to run the scripts:
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+# "--peft_model_id" is used to loaded PEFT weights from peft_model_id
 python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \
@@ -37,18 +38,38 @@ python run_clm_no_trainer.py \
     --alpha 1.0 \
     --output_dir "saved_results" \
     --ipex \
+    --peft_model_id "peft_model_id"
 ```
 
 ```bash
 # "--approach weight_only" is used to enable weight only quantization.
-# Default algorithm is RTN. Use with "--awq" to enable AWQ algorithm.
 python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \
     --approach weight_only \
-    --output_dir "saved_results" \
+    --woq_bits 4 \
+    --woq_group_size 128 \
+    --woq_scheme asym  \
+    --woq_algo RTN \
+    --woq_enable_mse_search \
+    --output_dir "saved_results"
 ```
-**Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN/AWQ[1] algorithms. You can try it with `--approach weight_only`. `--awq` will trigger AWQ algorithm.
+**Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN, GPTQ[1], AWQ[2], TEQ algorithms. For more details, please refer to [link](https://github.com/intel/neural-compressor/blob/master/docs/source/quantization_weight_only.md)
+
+
+```bash
+python run_clm_no_trainer.py \
+    --model EleutherAI/gpt-j-6B \
+    --woq_algo GPTQ \
+    --woq_bits 4 \
+    --quantize \
+    --pad_max_length 2048 \
+    --gptq_pad_max_length 2048 \
+    --gptq_use_max_length \
+    --approach weight_only \
+    --output_dir "test_models" \
+```
+
 
 #### Accuracy with lm_eval
 ```bash
@@ -70,6 +91,7 @@ python run_clm_no_trainer.py \
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+# "--peft_model_id" is used to loaded PEFT weights from peft_model_id
 python run_clm_no_trainer.py \
     --model facebook/opt-2.7b \
     --quantize \
@@ -77,7 +99,8 @@ python run_clm_no_trainer.py \
     --alpha 0.5 \
     --ipex \
     --output_dir "saved_results" \
-    --int8_bf16_mixed
+    --int8_bf16_mixed \
+    --peft_model_id "peft_model_id"
 ```
 
 #### Accuracy with lm_eval
@@ -99,6 +122,7 @@ python run_clm_no_trainer.py \
 ```bash
 # "--sq" is used to enable smooth quant
 # "--int8_bf16_mixed" is used to enable int8-bf16 mixed mode for platform that natively supports bf16
+# "--peft_model_id" is used to loaded PEFT weights from peft_model_id
 python run_clm_no_trainer.py \
     --model decapoda-research/llama-7b-hf \
     --quantize \
@@ -106,7 +130,8 @@ python run_clm_no_trainer.py \
     --alpha 0.8 \
     --ipex \
     --output_dir "saved_results" \
-    --int8_bf16_mixed
+    --int8_bf16_mixed \
+    --peft_model_id "peft_model_id"
 ```
 
 #### Accuracy with lm_eval
@@ -223,4 +248,5 @@ python run_mlm.py \
     --overwrite_output_dir
 ```
 
-[1]. Lin, Ji, et al. "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration." arXiv preprint arXiv:2306.00978 (2023).
+[1]. Elias, Frantar, et al. "GPTQ: Accurate Post-training Compression for Generative Pretrained Transformers." arXiv preprint arXiv:2210.17323 (2023).
+[2]. Lin, Ji, et al. "AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration." arXiv preprint arXiv:2306.00978 (2023).

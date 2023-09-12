@@ -3,8 +3,8 @@ import os
 import numpy as np
 from datasets import load_dataset, load_metric
 from itertools import chain
-from intel_extension_for_transformers.optimization import metrics, OptimizedModel
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers import metrics, OptimizedModel
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
 from argparse import ArgumentParser
 from transformers import (
     MODEL_FOR_MASKED_LM_MAPPING,

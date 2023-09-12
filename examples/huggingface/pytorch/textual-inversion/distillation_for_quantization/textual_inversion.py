@@ -19,13 +19,13 @@ from diffusers import AutoencoderKL, DDPMScheduler, PNDMScheduler, StableDiffusi
 from diffusers.optimization import get_scheduler
 from diffusers.pipelines.stable_diffusion import StableDiffusionSafetyChecker
 from huggingface_hub import HfFolder, Repository, whoami
-from intel_extension_for_transformers.optimization.config import (
+from intel_extension_for_transformers.transformers.config import (
     DistillationConfig,
     QuantizationConfig,
 )
-from intel_extension_for_transformers.optimization.utils import metrics, objectives
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
-from intel_extension_for_transformers.optimization.distillation import Criterion
+from intel_extension_for_transformers.transformers.utils import metrics, objectives
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.distillation import Criterion
 from neural_compressor.utils import logger
 from packaging import version
 from PIL import Image

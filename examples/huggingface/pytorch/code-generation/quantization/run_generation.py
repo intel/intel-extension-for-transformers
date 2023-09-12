@@ -10,15 +10,12 @@ from pathlib import Path
 from datasets import load_dataset
 from torch.nn.functional import pad
 from torch.utils.data import DataLoader
-from transformers import AutoModelForCausalLM, AutoTokenizer, PretrainedConfig
+from transformers import AutoTokenizer, PretrainedConfig
 import transformers
 from optimum.utils import NormalizedConfigManager
 
 import numpy as np
 from itertools import chain
-
-from modeling_gpt_bigcode import GPTBigCodeForCausalLM
-transformers.models.gpt_bigcode.modeling_gpt_bigcode.GPTJForCausalLM = GPTBigCodeForCausalLM
 
 parser = argparse.ArgumentParser()
 
@@ -87,9 +84,23 @@ parser.add_argument("--temperature", default=0.8, type=float)
 parser.add_argument("--top_p", default=0.95, type=float)
 parser.add_argument("--top_k", default=0, type=int)
 parser.add_argument("--do_sample", action="store_true")
+parser.add_argument("--check_references", action="store_true")
+parser.add_argument("--max_memory_per_gpu", type=str, default=None)
+parser.add_argument(
+    "--modeltype",
+    default="causal",
+    help="AutoModel to use, it can be causal or seq2seq",
+)
+parser.add_argument(
+    "--limit_start",
+    type=int,
+    default=0,
+    help="Optional offset to start from when limiting the number of samples",
+)   
 args = parser.parse_args()
 
 
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 user_model = AutoModelForCausalLM.from_pretrained(
     args.model,
     torchscript=True
@@ -357,7 +368,7 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    from intel_extension_for_transformers.evaluation.lm_code_eval import evaluate
+    from intel_extension_for_transformers.llm.evaluation.lm_code_eval import evaluate
     results = evaluate(
         model=user_model,
         tokenizer=tokenizer,

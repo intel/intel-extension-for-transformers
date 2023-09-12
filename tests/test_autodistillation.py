@@ -3,13 +3,13 @@ import shutil
 import torch
 import torch.utils.data as data
 import unittest
-from intel_extension_for_transformers.optimization import (
+from intel_extension_for_transformers.transformers import (
     AutoDistillationConfig,
     FlashDistillationConfig,
     metrics,
 )
-from intel_extension_for_transformers.optimization.trainer import NLPTrainer
-from intel_extension_for_transformers.optimization.utils.utility import distributed_init
+from intel_extension_for_transformers.transformers.trainer import NLPTrainer
+from intel_extension_for_transformers.transformers.utils.utility import distributed_init
 from transformers import (
     AutoModelForPreTraining,
     AutoTokenizer,

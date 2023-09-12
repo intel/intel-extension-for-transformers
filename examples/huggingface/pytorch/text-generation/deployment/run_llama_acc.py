@@ -150,7 +150,7 @@ class Evaluator:
             shuffle=False,
             collate_fn=self.collate_batch,
         )
-        from intel_extension_for_transformers.backends.neural_engine.compile import compile
+        from intel_extension_for_transformers.llm.runtime.deprecated.compile import compile
         graph = compile(args.ir_path)
      
         for i, (

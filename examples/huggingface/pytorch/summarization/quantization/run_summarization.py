@@ -30,9 +30,9 @@ import transformers
 from datasets import load_dataset, load_metric
 
 from filelock import FileLock
-from intel_extension_for_transformers.optimization import OptimizedModel, QuantizationConfig
-from intel_extension_for_transformers.optimization import metrics as nlp_metrics
-from intel_extension_for_transformers.optimization.trainer import NLPSeq2SeqTrainer
+from intel_extension_for_transformers.transformers import OptimizedModel, QuantizationConfig
+from intel_extension_for_transformers.transformers import metrics as nlp_metrics
+from intel_extension_for_transformers.transformers.trainer import NLPSeq2SeqTrainer
 from transformers import (
     AutoConfig,
     AutoModelForSeq2SeqLM,
@@ -51,8 +51,8 @@ from transformers.utils import check_min_version, is_offline_mode
 from transformers.utils.versions import require_version
 from typing import Optional
 
-from intel_extension_for_transformers.optimization import BenchmarkConfig
-from intel_extension_for_transformers.optimization.benchmark import benchmark
+from intel_extension_for_transformers.transformers import BenchmarkConfig
+from intel_extension_for_transformers.transformers.benchmark import benchmark
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.

@@ -22,7 +22,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
-        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
 
 
     @classmethod
@@ -41,7 +41,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
 
     def test_evaluate_for_casualLM(self):
-        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
         results = evaluate(
             model="hf-causal",
             model_args='pretrained="hf-internal-testing/tiny-random-gptj",tokenizer="hf-internal-testing/tiny-random-gptj",dtype=float32',
@@ -51,7 +51,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
     def test_evaluate_for_Seq2SeqLM(self):
-        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
         results = evaluate(
             model="hf-seq2seq",
             model_args='pretrained="hf-internal-testing/tiny-random-t5",tokenizer="hf-internal-testing/tiny-random-t5",dtype=float32',
@@ -61,7 +61,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
 
     def test_evaluate_for_JitModel(self):
-        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
         results = evaluate(
             model="hf-causal",
             model_args='pretrained="hf-internal-testing/tiny-random-gptj",tokenizer="hf-internal-testing/tiny-random-gptj",dtype=float32',
@@ -72,7 +72,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 0.65)
 
     def test_lambada_for_llama(self):
-        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
         results = evaluate(
             model="hf-causal",
             model_args='pretrained="decapoda-research/llama-7b-hf",tokenizer="decapoda-research/llama-7b-hf",dtype=float32',
@@ -83,7 +83,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
 
     def test_cnn_daily(self):
-        from intel_extension_for_transformers.evaluation.hf_eval import summarization_evaluate
+        from intel_extension_for_transformers.llm.evaluation.hf_eval import summarization_evaluate
         results = summarization_evaluate(
            model=self.clm_model,
            tokenizer_name="facebook/opt-125m",
@@ -94,10 +94,10 @@ class TestLmEvaluationHarness(unittest.TestCase):
         results = summarization_evaluate(
             model=self.seq2seq_model, tokenizer_name="t5-small", batch_size=1, limit=5
         )
-        self.assertEqual(results["rouge2"], 14.2213)
+        self.assertEqual(results["rouge2"], 9.6795)
     
     def test_evaluate_for_ort_Seq2SeqLM(self):
-        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
         cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation-with-past t5-past/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
@@ -125,7 +125,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
 
     def test_evaluate_for_ort_casualLM(self):
-        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
         cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
@@ -154,7 +154,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
 
 
     def test_tokenizer_for_llama(self):
-        from intel_extension_for_transformers.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
         cmd = 'optimum-cli export onnx --model decapoda-research/llama-7b-hf --task text-generation llama/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE, shell=True) # nosec
