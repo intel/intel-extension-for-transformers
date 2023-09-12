@@ -19,16 +19,13 @@ import sys, os
 import argparse
 from typing import List
 from ..utils.command import NeuralChatCommandDict
+from ..utils.common import is_audio_file
 from .base_executor import BaseCommandExecutor
-from ..config import PipelineConfig, TextGenerationFinetuningConfig, GenerationConfig
+from ..config import PipelineConfig, TextGenerationFinetuningConfig
 from ..config import ModelArguments, DataArguments, FinetuningArguments
 from ..plugins import plugins
 from transformers import TrainingArguments
 from ..chatbot import build_chatbot, finetune_model
-from ..pipeline.plugins.audio.asr import AudioSpeechRecognition
-from ..pipeline.plugins.audio.asr_chinese import ChineseAudioSpeechRecognition
-from ..pipeline.plugins.audio.tts import TextToSpeech
-from ..pipeline.plugins.audio.tts_chinese import ChineseTextToSpeech
 
 __all__ = ['BaseCommand', 'HelpCommand', 'TextVoiceChatExecutor', 'FinetuingExecutor']
 
@@ -202,6 +199,8 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
             '--query', type=str, default=None, help='Prompt text or audio file.')
         self.parser.add_argument(
             '--model_name_or_path', type=str, default=None, help='Model name or path.')
+        self.parser.add_argument(
+            '--output_audio_path', type=str, default=None, help='Audio output path if the prompt is audio file.')
 
     def execute(self, argv: List[str]) -> bool:
         """
@@ -211,10 +210,18 @@ class TextVoiceChatExecutor(BaseCommandExecutor):
 
         prompt = parser_args.query
         model_name = parser_args.model_name_or_path
+        output_audio_path = parser_args.output_audio_path
+        if os.path.exists(prompt):
+            if is_audio_file(prompt):
+                plugins.asr.enable = True
+                plugins.tts.enable = True
+                if output_audio_path:
+                    plugins.tts.args["output_audio_path"]=output_audio_path
+
         if model_name:
-            self.config = PipelineConfig(model_name_or_path=model_name)
+            self.config = PipelineConfig(model_name_or_path=model_name, plugins=plugins)
         else:
-            self.config = PipelineConfig()
+            self.config = PipelineConfig(plugins=plugins)
         self.chatbot = build_chatbot(self.config)
         try:
             res = self(prompt)

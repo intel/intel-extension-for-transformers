@@ -218,8 +218,6 @@ class BaseModel(ABC):
             self.retrieval = instance
         if plugin_name == "cache":
             self.cache = instance
-        if plugin_name == "intent_detection":
-            self.intent_detection = instance
         if plugin_name == "safety_checker":
             self.safety_checker = instance
 
