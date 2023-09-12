@@ -1,5 +1,5 @@
 # Step-by-Step
-We provide the inference benchmarking script `run_generation.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B),  [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1), [facebook/opt-1.3b](https://huggingface.co/facebook/opt-1.3b), [facebook/opt-2.7b](https://huggingface.co/facebook/opt-2.7b), [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b), [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat), [Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1) more models are working in progress.
+We provide the inference benchmarking script `run_generation.py` for [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B),  [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf), [decapoda-research/llama-13b-hf](https://huggingface.co/decapoda-research/llama-13b-hf), [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b), [bigscience/bloom-7b1](https://huggingface.co/bigscience/bloom-7b1), [facebook/opt-1.3b](https://huggingface.co/facebook/opt-1.3b), [facebook/opt-2.7b](https://huggingface.co/facebook/opt-2.7b), [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b), [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat), [Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1), more models are working in progress.
 
 >**Note**: The default search algorithm is beam search with num_beams = 4, if you'd like to use greedy search for comparison, add "--greedy" in args.
 
@@ -17,15 +17,15 @@ WORK_DIR=$PWD
 # GCC 12.3 is required, please set it firstly
 # Create environment (conda recommended)
 conda create -n llm python=3.9 -y
-# install deps
+# install deps, please try gcc, gxx 12.2 if 12.3 doesn't find from conda
 conda install gcc=12.3 gxx=12.3 cxx-compiler -c conda-forge -y
 conda install cmake ninja mkl mkl-include -y
 conda install gperftools -c conda-forge -y
 
 # Install PyTorch
-python -m pip install torch==2.1.0.dev20230711+cpu torchvision==0.16.0.dev20230711+cpu torchaudio==2.1.0.dev20230711+cpu --index-url https://download.pytorch.org/whl/nightly/cpu
+python -m pip install https://download.pytorch.org/whl/nightly/cpu/torch-2.1.0.dev20230711%2Bcpu-cp39-cp39-linux_x86_64.whl
 
-# Install IPEX with semi-compiler, require gcc 12.3
+# Install IPEX with semi-compiler, require gcc 12.3 or 12.2
 rm -rf llvm-project && mkdir llvm-project && cd llvm-project
 wget https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.6/cmake-16.0.6.src.tar.xz
 wget https://github.com/llvm/llvm-project/releases/download/llvmorg-16.0.6/llvm-16.0.6.src.tar.xz
@@ -44,6 +44,10 @@ export DNNL_GRAPH_BUILD_COMPILER_BACKEND=1
 export CXXFLAGS="${CXXFLAGS} -D__STDC_FORMAT_MACROS"
 python setup.py install
 cd ../
+
+# disable semi-compiler to avoid accuracy regression for mpt and neural-chat-v1-1 models, other models don't need it.
+export _DNNL_DISABLE_COMPILER_BACKEND=1
+
 # Install neural-compressor
 git clone https://github.com/intel/neural-compressor.git
 cd  neural-compressor
