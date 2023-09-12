@@ -1266,8 +1266,9 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
             if face_tag in query and face_tag not in names:
                 logger.info(f'[NER query] other face detected in db: [{face_tag}]')
                 sql_conditions.append(f' image_face.face_tag LIKE "%{face_tag}%" ')
-        sql = 'OR'.join(sql_conditions)
-        query_sql += '('+sql+')'
+        if sql_conditions != []:
+            sql = 'OR'.join(sql_conditions)
+            query_sql += '('+sql+')'
     else:
         logger.info(f'[NER query] no person name in ner query')
 
