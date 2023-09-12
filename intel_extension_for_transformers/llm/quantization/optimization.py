@@ -45,7 +45,7 @@ class Optimization:
                     },
                 },
             }
-            recipes = {"rtn_args": {"sym_full_range": config.sym_full_range}}
+            recipes = {"rtn_args": {"enable_full_range": config.enable_full_range}}
             conf = PostTrainingQuantConfig(
                 approach='weight_only',
                 op_type_dict=op_type_dict,

@@ -17,7 +17,7 @@
 
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 import unittest
-import shutil
+import os
 import torch
 
 class TestASR(unittest.TestCase):
@@ -45,14 +45,21 @@ class TestASR(unittest.TestCase):
 
     def test_audio2text(self):
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
-        text = self.asr.audio2text(audio_path)
+        if os.path.exists(audio_path):
+            text = self.asr.audio2text(audio_path)
+        else:
+            text = self.asr.audio2text("../../assets/audio/welcome.wav")
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
     def test_audio2text_bf16(self):
         if self.asr_bf16 is None:
             return
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
-        text = self.asr_bf16.audio2text(audio_path)
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
+        if os.path.exists(audio_path):
+            text = self.asr_bf16.audio2text(audio_path)
+        else:
+            text = self.asr_bf16.audio2text("../../assets/audio/welcome.wav")
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
 if __name__ == "__main__":

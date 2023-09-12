@@ -35,31 +35,29 @@ docker run --privileged -v `pwd`/models:/models -it chatbotdemo:latest
 ## Run Frontend
 
 ```
-cd /itrex/workflows/chatbot/demo/frontend/
+cd /itrex/workflows/chatbot/demo/advanced_frontend/
 npm install
-npm run dev &
+nohup npm run dev &
 ```
 
 ## Run Chat Backend
 
 ```
-cd /itrex/workflows/chatbot/demo/backend/chat/
+cd /itrex/workflows/chatbot/inference/backend/chat/
+git-lfs install
+git clone https://huggingface.co/hkunlp/instructor-large
 ```
 
-### Modify run_llama7b.sh/run_gptj6b.sh
-Modify the model path in run scripts.
+### Modify run_ipex.sh
+Modify the `--model-path`  in run scripts. If needed, change the port of controller and model worker.
 
 ### Run the char server
 
-Run LLaMa-7B model:
+Run LLaMa-7B/GPT-J-6B model:
 ```
-nohup bash run_llama7b.sh & 
+nohup bash run_ipex.sh & 
 ```
 
-Run GPT-J-6B model：
-```
-nohup bash run_gptj6b.sh &
-```
 
 ## Run FastRAG Backend
 
@@ -75,21 +73,25 @@ cd /home/fastrag/elasticsearch-7.17.10
 
 ```
 su -
-cd /itrex/workflows/chatbot/demo/backend/fastrag/
+cd /itrex/workflows/chatbot/inference/backend/fastrag/
 ```
 
-FastRAG backend uses the official llama-7b model or the optimized model.
-Modify the model path in run scripts.
+FastRAG backend uses the official mpt-7b-chat model or the optimized model.
+Modify the model path in scripts `run.sh`.
 
 ### Run the sd server
+```
 nohup bash run.sh &
+```
 
 ## Run sd Backend
 
 ```
-cd /itrex/workflows/chatbot/demo/backend/sd/
+cd /itrex/workflows/chatbot/inference/backend/sd/
 ```
 
 ### Run the sd server
+```
 nohup bash run.sh &
+```
 

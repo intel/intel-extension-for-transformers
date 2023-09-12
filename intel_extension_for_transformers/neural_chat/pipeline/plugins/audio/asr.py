@@ -23,9 +23,6 @@ import contextlib
 from pydub import AudioSegment
 import numpy as np
 
-from ....plugins import register_plugin
-
-@register_plugin('asr')
 class AudioSpeechRecognition():
     """Convert audio to text."""
     def __init__(self, model_name_or_path="openai/whisper-small", bf16=False, device="cpu"):

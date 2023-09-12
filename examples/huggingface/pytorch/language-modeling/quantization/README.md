@@ -43,7 +43,6 @@ python run_clm_no_trainer.py \
 
 ```bash
 # "--approach weight_only" is used to enable weight only quantization.
-# Default algorithm is RTN. Use with "--awq" to enable AWQ algorithm.
 python run_clm_no_trainer.py \
     --model EleutherAI/gpt-j-6B \
     --quantize \
@@ -52,7 +51,7 @@ python run_clm_no_trainer.py \
     --woq_group_size 128 \
     --woq_scheme asym  \
     --woq_algo RTN \
-    --woq_mse_range \
+    --woq_enable_mse_search \
     --output_dir "saved_results"
 ```
 **Notes**: Weight-only quantization based on fake quantization is previewly supported and supports RTN, GPTQ[1], AWQ[2], TEQ algorithms. For more details, please refer to [link](https://github.com/intel/neural-compressor/blob/master/docs/source/quantization_weight_only.md)

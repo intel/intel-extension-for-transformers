@@ -27,9 +27,7 @@ import numpy as np
 import contextlib
 
 from .utils.english_normalizer import EnglishNormalizer
-from ....plugins import register_plugin
 
-@register_plugin('tts')
 class TextToSpeech():
     """Convert text to speech with a driven speaker embedding
 
