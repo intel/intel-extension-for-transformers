@@ -189,8 +189,8 @@ def convert_to_quantized_model(model, config):
             },
         },
         recipes={
-            "rtn_args":{"sym_full_range": True if "fullrange" in config.weight_dtype else False,
-                        "mse_range": config.mse_range},
+            "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                        "enable_mse_search": config.mse_range},
         },
     )
     inc_model = quantization.fit(model, conf)
