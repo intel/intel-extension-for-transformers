@@ -21,7 +21,7 @@ conda install cmake ninja mkl mkl-include -y
 conda install gperftools -c conda-forge -y
 
 # Install PyTorch
-python -m pip install torch==2.1.0.dev20230711+cpu torchvision==0.16.0.dev20230711+cpu torchaudio==2.1.0.dev20230711+cpu --index-url https://download.pytorch.org/whl/nightly/cpu
+python -m pip install  https://download.pytorch.org/whl/nightly/cpu/torch-2.1.0.dev20230711%2Bcpu-cp39-cp39-linux_x86_64.whl
 
 # Install IPEX with semi-compiler, require gcc 12.3
 rm -rf llvm-project && mkdir llvm-project && cd llvm-project
