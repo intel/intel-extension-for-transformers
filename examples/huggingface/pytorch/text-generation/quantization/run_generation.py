@@ -68,6 +68,7 @@ config = AutoConfig.from_pretrained(
        torchscript=True
        if args.ipex
        else False,  # torchscript will force `return_dict=False` to avoid jit errors
+       use_cache=True, # to use kv cache.
        trust_remote_code=args.trust_remote_code,
        revision=args.revision
        )
