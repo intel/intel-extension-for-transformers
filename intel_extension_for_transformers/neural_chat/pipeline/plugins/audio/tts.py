@@ -177,8 +177,14 @@ class TextToSpeech():
         for text_in in texts:
             inputs = self.processor(text=text_in, return_tensors="pt")
             with torch.no_grad():
-                with ipex.cpu.runtime.pin(self.cpu_pool) if self.cpu_pool else contextlib.nullcontext():
-                    spectrogram = model.generate_speech(inputs["input_ids"].to(self.device), speaker_embeddings.to(self.device))
+                if self.cpu_pool:   # pragma: no cover
+                    import intel_extension_for_pytorch as ipex
+                    with ipex.cpu.runtime.pin(self.cpu_pool):
+                        spectrogram = model.generate_speech(
+                            inputs["input_ids"].to(self.device), speaker_embeddings.to(self.device))
+                else:
+                    spectrogram = model.generate_speech(
+                        inputs["input_ids"].to(self.device), speaker_embeddings.to(self.device))
                 speech = self.vocoder(spectrogram)
                 all_speech = np.concatenate([all_speech, speech.cpu().numpy()])
                 all_speech = np.concatenate([all_speech, np.array([0 for i in range(8000)])])  # pad after each end
