@@ -21,7 +21,7 @@
 #                             SERVER SETTING                                    #
 #################################################################################
 host: localhost
-port: 8000
+port: 2222
 
 model_name_or_path: "facebook/opt-125m"
 device: "cpu"
