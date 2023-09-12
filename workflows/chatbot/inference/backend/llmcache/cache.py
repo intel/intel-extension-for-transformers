@@ -209,6 +209,8 @@ def init_similar_cache_from_config(config_dir: str, embedding_model_dir: str, ca
     import_ruamel()
     from ruamel.yaml import YAML  # pylint: disable=C0415
     if config_dir:
+        import os
+        os.chdir(os.path.dirname(os.path.dirname(__file__)))
         with open(config_dir, "r", encoding="utf-8") as f:
             yaml = YAML(typ="unsafe", pure=True)
             init_conf = yaml.load(f)

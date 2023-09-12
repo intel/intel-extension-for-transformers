@@ -55,8 +55,8 @@ parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', '
 parser.add_argument("--woq_bits", type=int, default=8)
 parser.add_argument("--woq_group_size", type=int, default=-1)
 parser.add_argument("--woq_scheme", default="sym")
-parser.add_argument("--woq_mse_range", action="store_true")
-parser.add_argument("--woq_sym_full_range", action="store_true")
+parser.add_argument("--woq_enable_mse_search", action="store_true")
+parser.add_argument("--woq_enable_full_range", action="store_true")
 # =============GPTQ configs====================
 parser.add_argument("--gptq_actorder", action="store_true", help="Whether to apply the activation order GPTQ heuristic.")
 parser.add_argument('--gptq_percdamp', type=float, default=.01, help='Percent of the average Hessian diagonal to use for dampening.')
@@ -254,8 +254,8 @@ if args.quantize:
             'embed_out':{"weight": {'dtype': 'fp32'},},  # for dolly_v2
         }
         recipes["rtn_args"] = {
-            "mse_range": args.woq_mse_range,
-            "sym_full_range": args.woq_sym_full_range,
+            "enable_mse_search": args.woq_enable_mse_search,
+            "enable_full_range": args.woq_enable_full_range,
         }
         recipes['gptq_args'] = {
                 'percdamp': args.gptq_percdamp, 

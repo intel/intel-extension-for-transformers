@@ -3285,7 +3285,7 @@ static void ne_compute_forward_dump_tensor(const struct ne_compute_params* param
   }
   // make sure each file different as the multi-node will use the file
   int random_num = rand();
-  char file_name[31];
+  char file_name[255];
   sprintf(file_name, "%s_%d.txt", src0->name, random_num);
   FILE* file = fopen(file_name, "w");
   if (file == NULL) {

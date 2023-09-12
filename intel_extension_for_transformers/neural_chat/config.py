@@ -347,15 +347,14 @@ class FinetuningArguments:
 
 @dataclass
 class TTSDatasetArguments:
-    audio_paths: Optional[str] = field(default=None, metadata={"help": "The path of audios."})
-    gender: Optional[str] = field(default=None, metadata={"help": "Gender."})
-    language: Optional[str] = field(default="English", metadata={"help": "Language."})
+    audio_folder_path: Optional[str] = field(default=None, metadata={"help": "The path to the directory of audios."})
+    text_folder_path: Optional[str] = field(default=None, metadata={"help": "The path to the directory of texts."})
 
 @dataclass
 class TTSModelArguments:
     step: int = field(default=0, metadata={"help": "TTS model step."})
     warmup_step: int = field(default=0, metadata={"help": "TTS model warmup step."})
-    learning_rate: float = field(default=5e-5, metadata={"help": "Learning rate."})
+    learning_rate: float = field(default=1e-5, metadata={"help": "Learning rate."})
  
 @dataclass
 class BaseFinetuningConfig:
@@ -371,8 +370,7 @@ SummarizationFinetuningConfig = BaseFinetuningConfig
 CodeGenerationFinetuningConfig = BaseFinetuningConfig
 
 @dataclass
-class TTSFinetuningConfig(BaseFinetuningConfig):
-    training_args: TrainingArguments
+class TTSFinetuningConfig:
     dataset_args: TTSDatasetArguments
     model_args: TTSModelArguments
 
@@ -413,7 +411,7 @@ class WeightOnlyQuantizationConfig:
     bits: int = 8
     group_size: int = -1
     scheme: str = 'sym'
-    sym_full_range: bool = True
+    enable_full_range: bool = True
 
 @dataclass
 class AMPConfig:
@@ -436,8 +434,3 @@ class PipelineConfig:
         assert type(self.optimization_config) in [AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of AMPConfig, WeightOnlyQuantizationConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."
-        for plugin_name, plugin_value in self.plugins.items():
-            if plugin_value['enable']:
-                print(f"create {plugin_name} plugin instance...")
-                print(f"plugin parameters: ", plugin_value['args'])
-                plugins[plugin_name]["instance"] = plugin_value['class'](**plugin_value['args'])
