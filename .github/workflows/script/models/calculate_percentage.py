@@ -3,7 +3,7 @@ import re
 import sys
 import os
 def calculate_percentile(data, percentile):
-    return np.percentile(data, percentile)
+    return np.percentile(data, percentile, method="closest_observation")
 
 def calculate_mean(data):
     return np.mean(data)
