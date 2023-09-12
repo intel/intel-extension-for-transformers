@@ -76,9 +76,9 @@ class TextToSpeech():
             self.pat_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt'))
 
         self.cpu_pool = None
-        if not torch.cuda.is_available():
+        if self.device == 'cpu':
             # ipex IOMP hardware resources
-            if self.device == 'cpu' and 'LD_PRELOAD' in os.environ and 'libiomp' in os.environ['LD_PRELOAD']:
+            if 'LD_PRELOAD' in os.environ and 'libiomp' in os.environ['LD_PRELOAD']:
                 import intel_extension_for_pytorch as ipex
                 self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
             else:
