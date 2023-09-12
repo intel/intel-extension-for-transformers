@@ -33,6 +33,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="",
     )
     parser.add_argument(
+        "--glm_tokenizer",
+        type=str,
+        help="the path of the chatglm tokenizer",
+        default="THUDM/chatglm-6b",
+    )
+    parser.add_argument(
         "-n",
         "--n_predict",
         type=int,
@@ -109,7 +115,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     #     cmd.append(" --color")
 
     if (args.model_name == "chatglm"):
-        tokenizer = AutoTokenizer.from_pretrained('/home/dataset_broad/dataset/users/xuzhenzh/chatglm-6b', trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(args.glm_tokenizer, trust_remote_code=True)
         token_ids_list = tokenizer.encode(args.prompt)
         token_ids_list = map(str, token_ids_list)
         token_ids_str = ', '.join(token_ids_list)

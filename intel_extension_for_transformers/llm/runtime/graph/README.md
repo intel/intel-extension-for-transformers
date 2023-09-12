@@ -114,6 +114,7 @@ LLM running script args explanations:
 | --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
+| --glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
 
 
 ### 4. Tensor Parallelism cross nodes/sockets

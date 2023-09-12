@@ -78,44 +78,6 @@ std::string build_prompt_glm1(const std::vector<std::string>& history) {
     return oss_prompt.str();
 }
 
-static std::string regex_replace(const std::string &input, const std::regex &regex,
-                                 std::function<std::string(const std::smatch &)> format) {
-    std::ostringstream oss;
-    int last_index = 0;
-    for (auto it = std::sregex_iterator(input.begin(), input.end(), regex); it != std::sregex_iterator(); it++) {
-        oss << it->prefix() << format(*it);
-        last_index = it->position() + it->length();
-    }
-    oss << input.substr(last_index);
-    return oss.str();
-}
-
-std::string preprocess(const std::string &text) {
-    std::string output;
-
-    // newline token
-    {
-        static const std::regex newline_regex("\n");
-        output = std::regex_replace(text, newline_regex, "<n>");
-    }
-    // tab token
-    {
-        static const std::regex tab_regex("\t");
-        output = std::regex_replace(output, tab_regex, "<|tab|>");
-    }
-    // blank tokens
-    {
-        static const std::regex pattern(R"([ ]{2,80})");
-        output = regex_replace(output, pattern, [](const std::smatch &sm) {
-            std::ostringstream oss;
-            oss << "<|blank_" << sm.str().size() << "|>";
-            return oss.str();
-        });
-    }
-
-    return output;
-}
-
 std::string postprocess(const std::string &text) {
     std::string output;
 
@@ -297,13 +259,6 @@ int main(int argc, char** argv) {
     embd_inp = ::model_tokenize(ctx, prompt, false);
     embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
   } else if (params.model_arch == MODEL_CHATGLM) {
-    // std::vector<std::string> prompts;
-    // prompts.push_back(params.prompt.c_str());
-    // std::string no_preprocess_prompt = build_prompt_glm1(prompts);
-    // std::string prompt = preprocess(no_preprocess_prompt);
-    // std::string prompt = build_prompt_glm1(prompts);
-    // embd_inp = ::model_tokenize(ctx, " \"", false);
-    // embd_inp.insert(embd_inp.end(), {130001, 130004});  // special postfix
     for (auto &i : params.ids) {
       embd_inp.emplace_back(i);
     }
@@ -658,7 +613,6 @@ int main(int argc, char** argv) {
           std::string s(model_token_to_str(ctx, id));
           s = postprocess(s);
           std::cout << s;
-          // printf("%s", model_token_to_str(ctx, id));
         }
         fflush(stdout);
       }
@@ -671,12 +625,6 @@ int main(int argc, char** argv) {
       }
     }
 
-
-
-
-
-
-    
     // reset color to default if we there is no pending user input
     if (input_echo && (int)embd_inp.size() == n_consumed) {
       console_set_color(con_st, CONSOLE_COLOR_DEFAULT);
