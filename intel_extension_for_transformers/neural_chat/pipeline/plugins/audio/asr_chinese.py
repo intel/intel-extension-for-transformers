@@ -17,9 +17,7 @@
 
 from paddlespeech.cli.asr.infer import ASRExecutor
 import time
-from ....plugins import register_plugin
 
-@register_plugin('asr_chinese')
 class ChineseAudioSpeechRecognition():
     """Convert audio to text in Chinese."""
     def __init__(self):
