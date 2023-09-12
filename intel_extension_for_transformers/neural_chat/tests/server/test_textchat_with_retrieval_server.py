@@ -36,7 +36,7 @@ class UnitTest(unittest.TestCase):
         try:
             self.server_process = subprocess.Popen(command,
                                     universal_newlines=True, shell=True) # nosec
-            time.sleep(25)
+            time.sleep(80)
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
         self.client_executor = TextChatClientExecutor()
