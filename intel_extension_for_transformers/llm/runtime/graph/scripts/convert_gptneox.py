@@ -112,14 +112,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
-
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
     
     fout.write(struct.pack("i", int(hparams.get("bos_token_id", -1))))
     fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
+    fout.write(struct.pack("i", int(hparams.get("pad_token_id", -1))))
+    fout.write(struct.pack("i", int(hparams.get("sep_token_id", -1))))
 
     # Is this correct??
     dot_token = tokenizer.encode(".")[0]

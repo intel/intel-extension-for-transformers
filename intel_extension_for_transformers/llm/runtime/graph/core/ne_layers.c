@@ -2925,8 +2925,8 @@ struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* 
 
 // ne_rope
 
-struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx,
-                               bool inplace) {
+struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
+                               int prompt_size, bool inplace) {
   NE_ASSERT(n_past >= 0);
   bool is_node = false;
 
@@ -2943,7 +2943,7 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_dims;
   ((int32_t*)b->data)[2] = mode;
-  ((int32_t*)b->data)[3] = n_ctx;
+  ((int32_t*)b->data)[3] = prompt_size;
 
   ne_scratch_load(ctx);
 
@@ -2955,13 +2955,14 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   return result;
 }
 
-struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, n_ctx, false);
+struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
+                          int prompt_size) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false);
 }
 
 struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                                  int n_ctx) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, n_ctx, true);
+                                  int prompt_size) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true);
 }
 
 // ne_rope_back
@@ -7670,7 +7671,7 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   const int64_t n_past = ((int32_t*)src1->data)[0];
   const int64_t n_dims = ((int32_t*)src1->data)[1];
   const int64_t mode = ((int32_t*)src1->data)[2];
-  const int64_t n_ctx = ((int32_t*)src1->data)[3];
+  const int64_t prompt_size = ((int32_t*)src1->data)[3];
 
   assert(n_past >= 0);
 
@@ -7710,9 +7711,10 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
         float theta = freq_scale * (float)p;
 
+        // only for glm when mode == 4
         if (is_glm) {
-          theta = MIN(p, n_ctx - 2);
-          float block_theta = MAX(p - (n_ctx - 2), 0);
+          theta = MIN(p, prompt_size - 2);
+          float block_theta = MAX(p - (prompt_size - 2), 0);
           for (int64_t i0 = 0; i0 < ne0 / 4; i0++) {
             const float cos_theta = cosf(theta);
             const float sin_theta = sinf(theta);
@@ -7809,9 +7811,6 @@ static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, 
   const size_t nb1 = dst->nb[1];
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
-
-  // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
-  // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
 
   NE_ASSERT(nb0 == sizeof(ne_fp16_t));
 
@@ -7944,9 +7943,6 @@ static void ne_compute_forward_rope_back_f32(const struct ne_compute_params* par
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
 
-  // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
-  // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
-
   assert(nb0 == sizeof(float));
 
   const int ith = params->ith;
@@ -8052,9 +8048,6 @@ static void ne_compute_forward_rope_back_f16(const struct ne_compute_params* par
   const size_t nb1 = dst->nb[1];
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
-
-  // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
-  // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
 
   assert(nb0 == sizeof(ne_fp16_t));
 

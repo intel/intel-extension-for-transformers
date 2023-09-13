@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
     embd_inp = ::model_tokenize(ctx, prompt, false);
     embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
   } else if (params.model_arch == MODEL_CHATGLM) {
-    for (auto &i : params.ids) {
+    for (auto& i : params.ids) {
       embd_inp.emplace_back(i);
     }
   } else {
@@ -399,14 +399,6 @@ int main(int argc, char** argv) {
 
         // stop saving session if we run out of context
         path_session.clear();
-
-        // printf("\n---\n");
-        // printf("resetting: '");
-        // for (int i = 0; i < (int) embd.size(); i++) {
-        //     printf("%s", model_token_to_str(ctx, embd[i]));
-        // }
-        // printf("'\n");
-        // printf("\n---\n");
       }
 
       // try to reuse a matching prefix from the loaded session instead of re-eval (via n_past)
@@ -667,8 +659,8 @@ int main(int argc, char** argv) {
 
     // end of text token
     if (params.model_arch == MODEL_CHATGLM) {
-      if (!embd.empty() && embd.back() == 130005) {
-      if (params.instruct) {
+      if (!embd.empty() && embd.back() == ctx->vocab.eos_token_id) {
+        if (params.instruct) {
           is_interacting = true;
         } else {
           fprintf(stderr, " [end of text]\n");

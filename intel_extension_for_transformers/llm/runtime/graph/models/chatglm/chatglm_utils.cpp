@@ -52,7 +52,7 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
 }
 
 void CHATGLM::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
-                    bool use_mlock_, bool vocab_only_) {
+                   bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;

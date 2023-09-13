@@ -1126,50 +1126,51 @@ std::string build_prompt_glm2(const std::vector<std::string>& history) {
 }
 
 std::string build_prompt_glm1(const std::vector<std::string>& history) {
-    std::ostringstream oss_prompt;
-    if (history.size() == 1) {
-        oss_prompt << history.front();
-    } else {
-        for (size_t i = 0; i < history.size(); i += 2) {
-            oss_prompt << "[Round " << i / 2 << "]\n问：" << history[i] << "\n答：";
-            if (i < history.size() - 1) {
-                oss_prompt << history[i + 1] << "\n";
-            }
-        }
+  std::ostringstream oss_prompt;
+  if (history.size() == 1) {
+    oss_prompt << history.front();
+  } else {
+    for (size_t i = 0; i < history.size(); i += 2) {
+      oss_prompt << "[Round " << i / 2 << "]\n问：" << history[i] << "\n答：";
+      if (i < history.size() - 1) {
+        oss_prompt << history[i + 1] << "\n";
+      }
     }
-    return oss_prompt.str();
-}
-static std::string regex_replace(const std::string &input, const std::regex &regex,
-                                 std::function<std::string(const std::smatch &)> format) {
-    std::ostringstream oss;
-    int last_index = 0;
-    for (auto it = std::sregex_iterator(input.begin(), input.end(), regex); it != std::sregex_iterator(); it++) {
-        oss << it->prefix() << format(*it);
-        last_index = it->position() + it->length();
-    }
-    oss << input.substr(last_index);
-    return oss.str();
+  }
+  return oss_prompt.str();
 }
 
-std::string postprocess(const std::string &text) {
-    std::string output;
+static std::string regex_replace(const std::string& input, const std::regex& regex,
+                                 std::function<std::string(const std::smatch&)> format) {
+  std::ostringstream oss;
+  int last_index = 0;
+  for (auto it = std::sregex_iterator(input.begin(), input.end(), regex); it != std::sregex_iterator(); it++) {
+    oss << it->prefix() << format(*it);
+    last_index = it->position() + it->length();
+  }
+  oss << input.substr(last_index);
+  return oss.str();
+}
 
-    // newline token
-    {
-        static const std::regex pattern(R"(<n>)");
-        output = std::regex_replace(text, pattern, "\n");
-    }
-    // tab token
-    {
-        static const std::regex pattern(R"(<\|tab\|>)");
-        output = std::regex_replace(output, pattern, "\t");
-    }
-    // blank tokens
-    {
-        static const std::regex pattern(R"(<\|blank_(\d+)\|>)");
-        output = regex_replace(output, pattern,
-                               [](const std::smatch &sm) { return std::string(std::stoi(sm[1].str()), ' '); });
-    }
+std::string postprocess(const std::string& text) {
+  std::string output;
 
-    return output;
+  // newline token
+  {
+    static const std::regex pattern(R"(<n>)");
+    output = std::regex_replace(text, pattern, "\n");
+  }
+  // tab token
+  {
+    static const std::regex pattern(R"(<\|tab\|>)");
+    output = std::regex_replace(output, pattern, "\t");
+  }
+  // blank tokens
+  {
+    static const std::regex pattern(R"(<\|blank_(\d+)\|>)");
+    output =
+        regex_replace(output, pattern, [](const std::smatch& sm) { return std::string(std::stoi(sm[1].str()), ' '); });
+  }
+
+  return output;
 }

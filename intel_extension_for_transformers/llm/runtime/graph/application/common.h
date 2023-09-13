@@ -193,6 +193,6 @@ bool console_readline(console_state& con_st, std::string& line);
 
 std::string build_prompt_glm2(const std::vector<std::string>& history);
 std::string build_prompt_glm1(const std::vector<std::string>& history);
-static std::string regex_replace(const std::string &input, const std::regex &regex,
-                                 std::function<std::string(const std::smatch &)> format);
-std::string postprocess(const std::string &text);
+static std::string regex_replace(const std::string& input, const std::regex& regex,
+                                 std::function<std::string(const std::smatch&)> format);
+std::string postprocess(const std::string& text);

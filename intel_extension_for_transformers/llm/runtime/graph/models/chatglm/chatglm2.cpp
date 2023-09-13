@@ -220,10 +220,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   // lm_head
   inpL = ne_mul_mat(ctx0, model.others[2], inpL);
 
-  // logits -> probs
-  // inpL = ne_soft_max_inplace(ctx0, inpL);
-
-  // run the computation
   ne_build_forward_expand(&gf, inpL);
   ne_graph_compute(ctx0, &gf);
 
