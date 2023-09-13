@@ -19,6 +19,7 @@ import subprocess
 import unittest
 import time
 import os
+import signal
 from intel_extension_for_transformers.neural_chat.server import TextChatClientExecutor
 
 class UnitTest(unittest.TestCase):
@@ -42,7 +43,19 @@ class UnitTest(unittest.TestCase):
         self.client_executor = TextChatClientExecutor()
 
     def tearDown(self) -> None:
-        os.killpg(os.getpgid(self.server_process.pid), 9)
+        try:
+            # Send SIGTERM (signal 15) to the process group
+            os.killpg(os.getpgid(self.server_process.pid), signal.SIGTERM)
+            # Wait for a reasonable amount of time for the process to terminate
+            self.server_process.wait(timeout=10)
+
+            # If it didn't terminate within the timeout, send SIGKILL (signal 9)
+            if self.server_process.poll() is None:
+                os.killpg(os.getpgid(self.server_process.pid), signal.SIGKILL)
+                self.server_process.wait()
+        except subprocess.TimeoutExpired:
+            # Handle the case where the process did not terminate within the timeout
+            print("Process did not terminate within the timeout.")
 
     def test_text_chat(self):
         result = self.client_executor(
