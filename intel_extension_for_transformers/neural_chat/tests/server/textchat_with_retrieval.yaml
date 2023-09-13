@@ -20,59 +20,16 @@
 #################################################################################
 #                             SERVER SETTING                                    #
 #################################################################################
-host: 0.0.0.0
+host: 127.0.0.1
 port: 8000
 
-model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
-device: "auto"
-
-asr:
-    enable: true
-    args:
-        # support cpu, hpu, xpu, cuda
-        device: "cpu"
-        # support openai/whisper series
-        model_name_or_path: "openai/whisper-small"
-        # only can be set to true when the device is set to "cpu"
-        bf16: false
-
-tts:
-    enable: true
-    args:
-        device: "cpu"
-        voice: "default"
-        stream_mode: false
-        output_audio_path: "./output_audio.wav"
-
-asr_chinese:
-    enable: false
-
-tts_chinese:
-    enable: false
-    args:
-        device: "cpu"
-        spk_id: 0
-        stream_mode: false
-        output_audio_path: "./output_audio.wav"
+model_name_or_path: "facebook/opt-125m"
+device: "cpu"
 
 retrieval:
     enable: true
     args:
-        retrieval_type: "dense"
         input_path: "../../assets/docs/"
-        embedding_model: "hkunlp/instructor-large"
-        persist_dir: "./output"
-        max_length: 512
-        process: true
-
-cache:
-    enable: true
-    args:
-        config_dir: "../../pipeline/plugins/caching/cache_config.yaml"
-        embedding_model_dir: "hkunlp/instructor-large"
-
-safety_checker:
-    enable: true
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat', 'retrieval']
+tasks_list: ['textchat']
