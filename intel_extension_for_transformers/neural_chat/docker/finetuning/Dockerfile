@@ -64,13 +64,10 @@ RUN conda init bash && \
     source ~/.bashrc
 
 RUN source activate && conda activate chatbot-finetuning && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
-    conda install jemalloc gperftools -c conda-forge -y && \
     pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
     cd /itrex && pip install -v . && \
-    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
-    cd /itrex/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements.txt
+    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt
 
 # Enable passwordless ssh for mpirun^M
 RUN mkdir /var/run/sshd
@@ -82,7 +79,7 @@ RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /et
         && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 EXPOSE 22
 
-WORKDIR /itrex/intel_extension_for_transformers/neural_chat/examples/
+WORKDIR /itrex/neural_chat/examples/instruction_tuning/
 
 CMD ["/usr/sbin/sshd", "-D"]
 
@@ -96,21 +93,16 @@ RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
-COPY ./inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
-
+# Install optimum-habana
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
-    pip install peft && \
     pip install einops && \
     pip install datasets && \
-    git clone https://github.com/HabanaAI/DeepSpeed.git && \
-    cd DeepSpeed && \
-    git checkout -b v1.11 origin/1.11.0 && \
-    git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
-    pip install -e .
+    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0 && \
+    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install
 
 # Download ITREX code
 ARG ITREX_VER=main
@@ -118,8 +110,6 @@ ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
     cd /itrex/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
-    pip install -r requirements.txt && \
-    cd /itrex/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements.txt
 
 # Build ITREX
