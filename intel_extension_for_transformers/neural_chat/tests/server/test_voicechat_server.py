@@ -19,6 +19,7 @@ import subprocess
 import unittest
 import os
 import time
+import signal
 from intel_extension_for_transformers.neural_chat.server import VoiceChatClientExecutor
 
 class UnitTest(unittest.TestCase):
