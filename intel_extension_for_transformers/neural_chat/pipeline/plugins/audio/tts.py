@@ -32,7 +32,7 @@ class TextToSpeech():
     """Convert text to speech with a driven speaker embedding
 
     1) Default voice (Original model + Proved good default speaker embedding from trained dataset)
-    2) Finetuned voice (Fine-tuned offline model of specific person, such as Pat's voice + corresponding embedding)
+    2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
     3) Customized voice (Original model + User's customized input voice embedding)
     """
     def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu", 
@@ -64,16 +64,16 @@ class TextToSpeech():
         self.default_speaker_embedding = torch.load(default_speaker_embedding_path)
 
         # preload the demo model in case of time-consuming runtime loading
-        self.pat_model = None
-        if os.path.exists("pat.pt"):
-            self.pat_model = torch.load("pat.pt", map_location=device)
+        self.demo_model = None
+        if os.path.exists("demo_model.pt"):
+            self.demo_model = torch.load("demo_model.pt", map_location=device)
 
-        self.pat_speaker_embeddings = None
-        pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_pat.pt')
+        self.male_speaker_embeddings = None
+        pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_male.pt')
         if os.path.exists(pat_speaker_embedding_path):
-            self.pat_speaker_embeddings = torch.load(pat_speaker_embedding_path)
-        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt')):
-            self.pat_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt'))
+            self.male_speaker_embeddings = torch.load(pat_speaker_embedding_path)
+        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt')):
+            self.male_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt'))
 
         self.normalizer = EnglishNormalizer()
 
@@ -137,7 +137,7 @@ class TextToSpeech():
         """Text to speech.
 
         text: the input text
-        voice: default/pat/huma/tom/eric...
+        voice: default/male/female/...
         batch_length: the batch length for spliting long texts into batches to do text to speech
         """
         print(text)
@@ -153,15 +153,15 @@ class TextToSpeech():
         print(texts)
         model = self.original_model
         speaker_embeddings = self.default_speaker_embedding
-        if voice == "pat":
-            if self.pat_model == None:
+        if voice == "male":
+            if self.demo_model == None:
                 print("Finetuned model is not found! Use the default one")
             else:
-                model = self.pat_model
-            if self.pat_speaker_embeddings == None:
-                print("Pat's speaker embedding is not found! Use the default one")
+                model = self.demo_model
+            if self.male_speaker_embeddings == None:
+                print("Male speaker embedding is not found! Use the default one")
             else:
-                speaker_embeddings = self.pat_speaker_embeddings
+                speaker_embeddings = self.male_speaker_embeddings
         elif voice != "default":
             speaker_embeddings = torch.load(self._lookup_voice_embedding(voice))
         all_speech = np.array([])

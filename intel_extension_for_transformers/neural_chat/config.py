@@ -21,6 +21,7 @@ from typing import Optional, List, Dict
 from transformers import TrainingArguments, BitsAndBytesConfig
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
+from .utils.common import get_device_type
 
 from .plugins import plugins
 
@@ -421,15 +422,23 @@ class PipelineConfig:
     def __init__(self,
                  model_name_or_path="meta-llama/Llama-2-7b-hf",
                  tokenizer_name_or_path=None,
+                 hf_access_token=None,
                  device="auto",
                  plugins=plugins,
                  loading_config=None,
                  optimization_config=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
-        self.device = device
+        self.hf_access_token = hf_access_token
+        if device == "auto":
+            self.device = get_device_type()
+        else:
+            self.device = device
+
         self.plugins = plugins
-        self.loading_config = loading_config if loading_config is not None else LoadingModelConfig()
+        self.loading_config = loading_config if loading_config is not None else \
+            LoadingModelConfig(cpu_jit=True if self.device == "cpu" else False, \
+                use_hpu_graphs = True if self.device == "hpu" else False)
         self.optimization_config = optimization_config if optimization_config is not None else AMPConfig()
         assert type(self.optimization_config) in [AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of AMPConfig, WeightOnlyQuantizationConfig" + \

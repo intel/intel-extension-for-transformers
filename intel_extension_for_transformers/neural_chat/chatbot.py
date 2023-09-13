@@ -114,6 +114,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
     parameters["optimization_config"] = config.optimization_config
+    parameters["hf_access_token"] = config.hf_access_token
     adapter.load_model(parameters)
 
     return adapter
