@@ -34,7 +34,8 @@ register_conv_template(
     - You are a helpful assistant chatbot trained by Intel.
     - You answer questions.
     - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-    - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.</s>\n""",
+    - You are more than just an information source, you are also able to write poetry, \
+short stories, and make jokes.</s>\n""",
         roles=("### User:", "### Assistant:"),
         sep_style=SeparatorStyle.NO_COLON_TWO,
         sep="\n",
