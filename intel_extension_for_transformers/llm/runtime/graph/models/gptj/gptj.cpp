@@ -173,15 +173,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                                       1 * N * n_embd * batch_size * ne_element_size(QKVcur)),
                                            n_embd / n_head, n_head, N, batch_size),
                              n_past, n_rot, 0, 0);
-      if (!run_mha_reordered) {
-        Vcur = ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size, 2 * N * n_embd * batch_size * ne_element_size(QKVcur));
-      } else {
-        Vcur = ne_reshape_4d(
-            ctx0,
-            ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size, 2 * N * n_embd * batch_size * ne_element_size(QKVcur)),
-            n_embd / n_head, n_head, N, batch_size);
-      }
-
+      Vcur = ne_view_1d(ctx0, QKVcur, N * n_embd * batch_size, 2 * N * n_embd * batch_size * ne_element_size(QKVcur));
     } else {
       if (!enable_tp) {
         // printf("\n\n\n work into attention split,\n\n\n");
@@ -291,7 +283,9 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                       head_size, n_ctx, n_head, batch_size,  // ne
                                       0, 0, v_size,                          // nb (jblas managed)
                                       il * kv_n_ctx_block * v_size);         // offset
-      ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur, n_past));
+      // jblas alway view V as (D, n_head, seq, bs)
+      const auto Vcur_plain = ne_reshape_4d(ctx0, Vcur, n_embd / n_head, n_head, N, batch_size);
+      ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past));
     }
 
     struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);

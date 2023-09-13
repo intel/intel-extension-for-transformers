@@ -19,7 +19,7 @@ import unicodedata
 import PyPDF2
 import pandas as pd
 import re, json
-from langchain.document_loaders import TextLoader, UnstructuredMarkdownLoader
+from langchain.document_loaders import UnstructuredMarkdownLoader
 from docx import Document as DDocument
 from bs4 import BeautifulSoup
 

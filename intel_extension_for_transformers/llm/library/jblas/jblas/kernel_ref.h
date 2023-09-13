@@ -483,26 +483,26 @@ inline int8_t fp4_e2m1_quantize(float x) {
 
   int sign = x < 0 ? 0b1000 : 0b0000;
   x = fabsf(x);
-  if (x > 1.75f) {
-    if (x > 3.5f) {
-      if (x > 5.f)
+  if (x > 1.75f / 6) {
+    if (x > 3.5f / 6) {
+      if (x > 5.f / 6)
         return 0b111 + sign;  // 6
       else
         return 0b110 + sign;  // 4
     } else {
-      if (x > 2.5f)
+      if (x > 2.5f / 6)
         return 0b101 + sign;  // 3
       else
         return 0b100 + sign;  // 2
     }
   } else {
-    if (x > 0.53125f) {
-      if (x > 1.25f)
+    if (x > 0.53125f / 6) {
+      if (x > 1.25f / 6)
         return 0b011 + sign;  // 1.5
       else
         return 0b010 + sign;  // 1
     } else {
-      if (x > 0.03125f)
+      if (x > 0.03125f / 6)
         return 0b0001 + sign;  // 0.0625
       else
         return 0b0000 + sign;  // 0
@@ -735,8 +735,8 @@ static inline JBLAS_CODE memcpy2d_dw2highw(const void* srcptr, void* dstptr, int
   return JblasSuccess;
 }
 
-static inline JBLAS_CODE memcpy2d(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
-  auto bsrcptr = (char*)srcptr;
+static inline JBLAS_CODE memcpy2d(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
+  auto bsrcptr = (const char*)srcptr;
   auto bdstptr = (char*)dstptr;
   for (int i = 0; i < row; i++) {
     std::memcpy(bdstptr + i * dststride, bsrcptr + i * srcstride, col);
@@ -786,7 +786,7 @@ inline JBLAS_CODE quantize_f32_sign_int_rowblock(const float* srcptr, int8_t* ds
       float minval = 0.f;
       for (size_t ij = 0; ij < blocksize; ij++) {
         maxval = std::max(maxval, srcptr[(j + ij) * ld_src + i]);
-        minval = std::min(maxval, srcptr[(j + ij) * ld_src + i]);
+        minval = std::min(minval, srcptr[(j + ij) * ld_src + i]);
       }
       float scale = (maxval - minval) / 255;
       float rscale = 1.f / scale;
