@@ -987,7 +987,7 @@ def process_single_image(img_id, img_path, user_id):
         update_image_attr(image={"image_id": img_id, "captured_time": captured_time}, attr='captured_time')
 
     # generate address info
-    api_key = "AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg"
+    api_key = os.environ.get("GOOGLE_API_KEY")
     address = get_address_from_gps(latitude, longitude, api_key)
     if address:
         logger.info(f'[background - single] Image address: {address}')
