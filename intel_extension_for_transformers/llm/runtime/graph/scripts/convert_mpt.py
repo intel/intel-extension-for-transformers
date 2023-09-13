@@ -98,7 +98,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
 
     fout.write(struct.pack("i", int(-1 if (hparams.get("bos_token_id", -1)) is None else (hparams.get("bos_token_id", -1)))))
     fout.write(struct.pack("i", int(-1 if (hparams.get("eos_token_id", -1)) is None else (hparams.get("eos_token_id", -1)))))

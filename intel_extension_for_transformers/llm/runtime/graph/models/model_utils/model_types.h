@@ -126,7 +126,6 @@ struct model_hparams {
   bool do_layer_norm_before = false;  // for opt
 
   // ChatGLM-2
-  int32_t multi_query_group_num = 0;
   int32_t ffn_hidden_size = 0;
 
   // ChatGLM-1
