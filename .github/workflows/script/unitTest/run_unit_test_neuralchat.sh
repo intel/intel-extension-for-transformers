@@ -52,10 +52,10 @@ function pytest() {
 
 function main() {
     bash /intel-extension-for-transformers/.github/workflows/script/unitTest/env_setup.sh
-    #apt-get update
-    #apt-get install ffmpeg -y
-    #wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
-    #dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
+    apt-get update
+    apt-get install ffmpeg -y
+    wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
+    dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     python -m pip install --upgrade --force-reinstall torch
     cd ${WORKING_DIR} || exit 1
     if [ -f "requirements.txt" ]; then

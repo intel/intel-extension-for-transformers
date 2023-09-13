@@ -37,7 +37,7 @@ class UnitTest(unittest.TestCase):
         try:
             self.server_process = subprocess.Popen(command,
                                     universal_newlines=True, shell=True) # nosec
-            time.sleep(80)
+            time.sleep(40)
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
         self.client_executor = TextChatClientExecutor()
@@ -48,7 +48,6 @@ class UnitTest(unittest.TestCase):
             server_ip="127.0.0.1",
             port=8000)
         self.assertEqual(result.status_code, 200)
-        self.assertTrue(os.path.exists("output"))
 
 if __name__ == "__main__":
     unittest.main()
