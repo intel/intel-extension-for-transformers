@@ -735,8 +735,8 @@ static inline JBLAS_CODE memcpy2d_dw2highw(const void* srcptr, void* dstptr, int
   return JblasSuccess;
 }
 
-static inline JBLAS_CODE memcpy2d(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
-  auto bsrcptr = (char*)srcptr;
+static inline JBLAS_CODE memcpy2d(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride) {
+  auto bsrcptr = (const char*)srcptr;
   auto bdstptr = (char*)dstptr;
   for (int i = 0; i < row; i++) {
     std::memcpy(bdstptr + i * dststride, bsrcptr + i * srcstride, col);

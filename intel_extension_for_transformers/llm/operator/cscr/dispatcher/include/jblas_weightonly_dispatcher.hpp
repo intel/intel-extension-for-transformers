@@ -11,12 +11,13 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-
 #pragma once
-
+#include <ATen/core/TensorBody.h>
 #include <torch/torch.h>
-
 #include "jblas/jit_blas_weight_compression.h"
+#include <string.h>
+#include <assert.h>
+#include <iostream>
 
 enum QBITS_TASK {
   QBITS_QUANTIZE,
@@ -45,5 +46,5 @@ struct qbits_runtime_ctx {
   jblas::prologue::PackedWeight* deseries_wei;
 };
 
-void task_dispatcher(qbits_config_param* p, qbits_runtime_ctx* ctx,
-                     QBITS_TASK task);
+void task_dispatcher(qbits_config_param* p, qbits_runtime_ctx* ctx, QBITS_TASK task);
+void set_jblas_workspace(torch::Tensor* workspace);

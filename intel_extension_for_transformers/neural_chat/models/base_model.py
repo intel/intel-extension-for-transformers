@@ -95,6 +95,7 @@ class BaseModel(ABC):
             "use_cache": True,
             "peft_path": "/path/to/peft",
             "use_deepspeed": False
+            "hf_access_token": "user's huggingface access token"
         }
         """
         self.model_name = kwargs["model_name"]
@@ -107,7 +108,8 @@ class BaseModel(ABC):
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
                    use_deepspeed=kwargs["use_deepspeed"],
-                   optimization_config=kwargs["optimization_config"])
+                   optimization_config=kwargs["optimization_config"],
+                   hf_access_token=kwargs["hf_access_token"])
 
     def predict_stream(self, query, config=None):
         """
