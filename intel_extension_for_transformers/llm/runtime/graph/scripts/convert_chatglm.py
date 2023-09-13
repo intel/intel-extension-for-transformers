@@ -265,8 +265,8 @@ def chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
 
     fout.write(struct.pack("i", int(hparams.get("bos_token_id", -1))))
     fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
-    fout.write(struct.pack("i", int(hparams.get("pad_token_id", -1))))
-    fout.write(struct.pack("i", int(hparams.get("sep_token_id", -1))))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
 
     vocab = load_vocab_for_glm1(Path(dir_model))
     counter = 0
