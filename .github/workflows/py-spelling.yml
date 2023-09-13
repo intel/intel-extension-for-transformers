@@ -46,6 +46,7 @@ jobs:
           fi
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }}-${{ runner.name }} --shm-size="1g" \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
+          -v ~/.cache/oneAPI:/cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Env build
