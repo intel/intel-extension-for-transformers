@@ -422,12 +422,14 @@ class PipelineConfig:
     def __init__(self,
                  model_name_or_path="meta-llama/Llama-2-7b-hf",
                  tokenizer_name_or_path=None,
+                 hf_access_token=None,
                  device="auto",
                  plugins=plugins,
                  loading_config=None,
                  optimization_config=None):
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
+        self.hf_access_token = hf_access_token
         if device == "auto":
             self.device = get_device_type()
         else:
