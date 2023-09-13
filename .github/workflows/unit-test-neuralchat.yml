@@ -15,10 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  podman_CONFIG_NAME: "commonpodmanConfig"
+  DOCKER_CONFIG_NAME: "commonDockerConfig"
   REPO_NAME: "intel-extension-for-transformers"
   REPO_TAG: "py38"
-  podman_FILE_NAME: "devel"
+  DOCKER_FILE_NAME: "devel"
   CONTAINER_NAME: "utTest"
   EXTRA_CONTAINER_NAME: "modelTest"
 
@@ -56,7 +56,7 @@ jobs:
 
       - name: podman Build
         run: |
-          podman build -f ${{ github.workspace }}/.github/workflows/podman/${{ env.podman_FILE_NAME }}.podmanfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
+          podman build -f ${{ github.workspace }}/.github/workflows/docker/${{ env.DOCKER_FILE_NAME }}.dockerfile -t ${{ env.REPO_NAME }}:${{ env.REPO_TAG }} .
 
       - name: podman Run
         run: |
