@@ -51,7 +51,6 @@ jobs:
           fi
           podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
             -v ${{ github.workspace }}:/intel-extension-for-transformers \
-            -v ~/.cache/oneAPI:/cache \
             -e report_title="SparseLib Test" \
             -e BUILD_NUMBER="${{ github.run_number }}" \
             -e BUILD_ID="${{ github.run_id }}" \
