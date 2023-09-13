@@ -21,9 +21,9 @@
 #
 # ============================================================================
 # How to build: 
-#   docker build ./ -f Dockerfile -t chatbot_finetune:latest
+#   docker build ./ -f Dockerfile -t neuralchat:latest
 # If you need to use proxy, please use the following command
-#   docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile -t chatbot_finetune:latest
+#   docker build ./ --build-arg http_proxy=${http_proxy} --build-arg https_proxy=${http_proxy} -f Dockerfile -t neuralchat:latest
 
 ## SPR environment
 ARG UBUNTU_VER=22.04
@@ -59,20 +59,17 @@ RUN conda init bash && \
     unset -f conda && \
     export PATH=$CONDA_DIR/bin/:${PATH} && \
     conda config --add channels intel && \
-    conda create -yn chatbot-finetuning python=3.9 && \
-    echo "conda activate chatbot-finetuning" >> ~/.bashrc && \
+    conda create -yn neuralchat python=3.9 && \
+    echo "conda activate neuralchat" >> ~/.bashrc && \
     source ~/.bashrc
 
-RUN source activate && conda activate chatbot-finetuning && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
-    conda install jemalloc gperftools -c conda-forge -y && \
+RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
     cd /itrex && pip install -v . && \
-    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
-    cd /itrex/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements.txt
+    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt
 
-# Enable passwordless ssh for mpirun^M
+# Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
 RUN passwd -d root
 RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /etc/ssh/sshd_config \
@@ -82,7 +79,7 @@ RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /et
         && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 EXPOSE 22
 
-WORKDIR /itrex/intel_extension_for_transformers/neural_chat/examples/
+WORKDIR /itrex/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/
 
 CMD ["/usr/sbin/sshd", "-D"]
 
@@ -96,21 +93,16 @@ RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
-COPY ./inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
-
+# Install optimum-habana
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
-    pip install peft && \
     pip install einops && \
     pip install datasets && \
-    git clone https://github.com/HabanaAI/DeepSpeed.git && \
-    cd DeepSpeed && \
-    git checkout -b v1.11 origin/1.11.0 && \
-    git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
-    pip install -e .
+    pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0 && \
+    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install
 
 # Download ITREX code
 ARG ITREX_VER=main
@@ -118,8 +110,6 @@ ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
     cd /itrex/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
-    pip install -r requirements.txt && \
-    cd /itrex/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements.txt
 
 # Build ITREX
