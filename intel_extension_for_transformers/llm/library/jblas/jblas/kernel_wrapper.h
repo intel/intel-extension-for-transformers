@@ -74,15 +74,18 @@ class PaddingTransInterleaveMN {
 class Memcpy2D {
  public:
   template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T, typename... Eltops>
-  static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
+  static JBLAS_CODE forward(const _SRC_T* srcptr, _DST_T* dstptr, int row, int col, int srcstep, int dststep,
                             void* const_elt_v = nullptr, Eltops... ops) {
 #if CompileAVX512F()
     if constexpr (utils::isa_base<ISA_T>::avx512f) {
-      return kernel::jit::JitMemcpy2DAvx512f::forward<_SRC_T, _DST_T>(srcptr, dstptr, row, col, srcstride, dststride,
+      return kernel::jit::JitMemcpy2DAvx512f::forward<_SRC_T, _DST_T>(srcptr, dstptr, row, col, srcstep, dststep,
                                                                       const_elt_v, ops...);
     }
 #endif
-    return kernel::ref::memcpy2d(srcptr, dstptr, row, col, srcstride, dststride);
+    assert(sizeof...(ops) == 0);               // no post ops
+    static_assert(sizeof(_SRC_T) == sizeof(_DST_T));  // no conversion
+    return kernel::ref::memcpy2d(srcptr, dstptr, row, col * sizeof(_SRC_T), srcstep * sizeof(_SRC_T),
+                                 dststep * sizeof(_DST_T));
   }
 };
 
