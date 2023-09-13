@@ -6,6 +6,7 @@ global_settings = get_settings()
 class MysqlDb(object):
     def __init__(self):
         self._host = global_settings.mysql_host
+        self._port = global_settings.mysql_port
         self._db = global_settings.mysql_db
         self._user = global_settings.mysql_user
         self._passwd = global_settings.mysql_password
@@ -13,6 +14,7 @@ class MysqlDb(object):
 
     def _connect(self):
         self._conn = connect(host=self._host,
+                             port=self._port,
                              user=self._user,
                              passwd=self._passwd,
                              db=self._db,
