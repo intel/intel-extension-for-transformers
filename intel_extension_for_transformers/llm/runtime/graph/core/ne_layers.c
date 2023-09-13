@@ -5736,7 +5736,6 @@ static void ne_compute_forward_gelu(const struct ne_compute_params* params, cons
       NE_ASSERT(false);
     } break;
   }
-
 }
 
 // ne_compute_forward_silu
