@@ -13,7 +13,7 @@
 ##  limitations under the License.
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(jblas_dispatcher LANGUAGES C CXX)
-set(CMAKE_CXX_FLAGS "-O3 -fPIC -Wno-narrowing -fconcepts")
+set(CMAKE_CXX_FLAGS "-fPIC -Wno-narrowing -fconcepts")
 file(GLOB SOURCES 
     ${PROJECT_SOURCE_DIR}/src/*.cpp
 )

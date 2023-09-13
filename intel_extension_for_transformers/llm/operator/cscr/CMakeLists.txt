@@ -14,7 +14,6 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(QBits LANGUAGES C CXX)
 
-set(CMAKE_CXX_FLAGS "-O3")
 
 set(QBITS_TORCH_PATH "" CACHE STRING "Torch install path")
 
