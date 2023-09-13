@@ -2054,12 +2054,13 @@ std::vector<beam_top_k_res> beam_top_k(const model_context* ctx, const std::vect
     min_heap.reserve(sample_k);
     for (int j = 0; j < num_beam; ++j) {
       int n = 0;
-      for (; min_heap.size() < sample_k; ++n) {
-        min_heap.push_back(beam_top_k_res({n, token_scores[row_off + j][n], beam_indices[row_off + j]}));
-      } 
-      if (min_heap.size() == sample_k) {
+      if (j == 0) {  // init heap
+        for (; n < sample_k; ++n) {
+          min_heap.push_back(beam_top_k_res({n, token_scores[row_off + j][n], beam_indices[row_off + j]}));
+        }
         std::make_heap(min_heap.begin(), min_heap.end(), comp);
       }
+      MODEL_ASSERT(min_heap.size() == sample_k);
       for (; n < n_vocab; ++n) {
         beam_top_k_res nr({n, token_scores[row_off + j][n], beam_indices[row_off + j]});
         if (min_heap.front().score < nr.score) {
@@ -2072,6 +2073,8 @@ std::vector<beam_top_k_res> beam_top_k(const model_context* ctx, const std::vect
       }
     }
     row_off += i * num_beam;
+    std::sort(min_heap.begin(), min_heap.end(),
+              [](const beam_top_k_res& a, const beam_top_k_res& b) { return a.score > b.score; });
     for (const auto b : min_heap) {
       res.push_back(b);
     }
@@ -2142,11 +2145,12 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
     // next setp
     for (auto it : kv_reorder_indices) {
       if (it.first != it.second) {
+        printf("%d: %d \n", it.first, it.second);
         uint32_t len = next_beams[it.first].token_ids.size() - 1;
         // last token in beam is for next step inference
         MODEL_ASSERT(len == n_past - n_prompt_tokens);
         size_t input_token_offset_k = n_prompt_tokens * ne_element_size(ctx->model.kv_self.k) * n_embd;
-        size_t input_token_offset_v = n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
+        size_t input_token_offset_v = 0; //n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
         if (len + n_prompt_tokens > n_ctx) {
           // all token hidden states cache should be updated
           input_token_offset_k = 0;
@@ -2174,7 +2178,7 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
                        (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
                         it.second * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
                         n_ctx * ne_element_size(ctx->model.kv_self.v) + input_token_offset_v),
-                   ne_element_size(ctx->model.kv_self.v) * len);
+                   ne_element_size(ctx->model.kv_self.v) * n_past);
           }
         }
       }
@@ -2246,7 +2250,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
   printf("====================== \n");
   for (auto kk : next_tokens) {
     printf("%d: %s, score: %10.6f, beam_idx: %d \n", kk.id, (ctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.score,
-            kk.beam_idx);
+           kk.beam_idx);
   }
 #endif
   MODEL_ASSERT(next_tokens.size() == batch_size * sample_scale);
@@ -2263,8 +2267,6 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
     }
   }
   if (next_beams.size() < beam_size) {
-    std::sort(next_tokens.begin(), next_tokens.end(),
-              [](beam_top_k_res& a, beam_top_k_res& b) { return a.score < b.score; });
     int add_num = beam_size - next_beams.size();
     for (int j = 0; j < add_num; ++j) {
       beam next_beam = cur_beams[next_tokens[j].beam_idx];
@@ -2336,7 +2338,7 @@ std::unordered_map<int, int> beam_search_flow::update_kv_cache_reorder_indices()
   MODEL_ASSERT(next_beams.size() == beam_size);
   MODEL_ASSERT(cur_beams.size() == beam_size);
   // DEBUG
-#if 0
+#if 1
   printf("cur_beams: ");
   for (int i = 0; i < beam_size; ++i) {
     printf("%d, ", cur_beams[i].infer_bs_id);
@@ -2379,7 +2381,7 @@ std::unordered_map<int, int> beam_search_flow::update_kv_cache_reorder_indices()
   }
   // beams should be ordered by batch id
   std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
-#if 0  // DEBUG
+#if 1  // DEBUG
   printf("cpy_final_bs_ids: ");
   for (int i = 0; i < beam_size; ++i) {
     printf("%d, ", cpy_final_bs_ids[i]);
