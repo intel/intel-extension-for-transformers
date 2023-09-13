@@ -63,6 +63,7 @@ Functions
           "use_cache": True,
           "peft_path": "/path/to/peft",
           "use_deepspeed": False
+          "hf_access_token": "user's huggingface access token"
       }
 
 
