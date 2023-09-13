@@ -68,6 +68,7 @@ config = AutoConfig.from_pretrained(
        torchscript=True
        if args.ipex
        else False,  # torchscript will force `return_dict=False` to avoid jit errors
+       use_cache=True, # to use kv cache.
        trust_remote_code=args.trust_remote_code,
        revision=args.revision
        )
@@ -80,7 +81,12 @@ user_model = AutoModelForCausalLM.from_pretrained(
        args.model,
        config=config
 )
-tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+
+if config.model_type == "llama":
+    from transformers import LlamaTokenizer
+    tokenizer = LlamaTokenizer.from_pretrained(args.model)
+else:
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 # to channels last
 user_model = user_model.to(memory_format=torch.channels_last)

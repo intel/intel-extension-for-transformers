@@ -4,6 +4,9 @@ Intel® Extension for Transformers
 ===========================
 <h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
 
+[![](https://dcbadge.vercel.app/api/server/mnZDVAbm?compact=true&style=flat-square)](https://discord.gg/mnZDVAbm)
+[![Release Notes](https://img.shields.io/github/v/release/intel/intel-extension-for-transformers)](https://github.com/intel/intel-extension-for-transformers/releases)
+
 [🏭Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💬NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
@@ -44,7 +47,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 *  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of plugins and SOTA optimizations
 
 
-*  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatFALCON)
+*  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/models/gptneox), [LLAMA](intel_extension_for_transformers/llm/runtime/graph/models/llama), [MPT](intel_extension_for_transformers/llm/runtime/graph/models/mpt), [FALCON](intel_extension_for_transformers/llm/runtime/graph/models/falcon), [BLOOM-7B](intel_extension_for_transformers/llm/runtime/graph/models/bloom), [OPT](intel_extension_for_transformers/llm/runtime/graph/models/opt), [ChatGLM2-6B](intel_extension_for_transformers/llm/runtime/graph/models/chatglm), [GPT-J-6B](intel_extension_for_transformers/llm/runtime/graph/models/gptj) and [Dolly-v2-3B](intel_extension_for_transformers/llm/runtime/graph/models/gptneox)
 
 
 ## 🌱Getting Started

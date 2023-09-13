@@ -18,6 +18,10 @@ option(NE_DYNAMIC_LINK "Whether third party libs dynamic link to neural engine" 
 option(NE_WITH_AVX2 "Limit the compile time use of instruciton extensions to AVX2 rather than AVX512" OFF)
 message(STATUS "NE_DYNAMIC_LINK: ${NE_DYNAMIC_LINK}")
 
+# Disable extra OneDNN targets to speedup compilation
+set(DNNL_BUILD_EXAMPLES OFF CACHE BOOL "builds examples" FORCE)
+set(DNNL_BUILD_TESTS OFF CACHE BOOL "builds tests" FORCE)
+
 if(NE_WITH_SPARSELIB_ONLY AND NOT NE_WITH_SPARSELIB)
   message(FATAL_ERROR "SPAESELIB is off")
 endif()
@@ -59,9 +63,9 @@ if(NOT NE_WITH_SPARSELIB_ONLY)
   endif()
   message(STATUS "DNNL_LIBRARY_TYPE: ${DNNL_LIBRARY_TYPE}")
   message(STATUS "DNNL_GRAPH_LIBRARY_TYPE: ${DNNL_GRAPH_LIBRARY_TYPE}")
-  
+
   add_subdirectory(${NE_THIRD_PARTY_DIR}/oneDNN)
-  
+
   add_subdirectory(${NE_THIRD_PARTY_DIR}/pybind11)
 endif()
 
