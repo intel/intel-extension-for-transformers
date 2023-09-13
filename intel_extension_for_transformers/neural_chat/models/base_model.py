@@ -95,7 +95,7 @@ class BaseModel(ABC):
             "use_cache": True,
             "peft_path": "/path/to/peft",
             "use_deepspeed": False
-            "hf_access_token": user's huggingface access token
+            "hf_access_token": "user's huggingface access token"
         }
         """
         self.model_name = kwargs["model_name"]
