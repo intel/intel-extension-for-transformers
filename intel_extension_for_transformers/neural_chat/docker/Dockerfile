@@ -45,7 +45,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Download ITREX code
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex
+RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
 
 # Install miniconda
 ENV CONDA_DIR /opt/conda
@@ -68,9 +68,9 @@ RUN source activate && conda activate chatbot-finetuning && pip install oneccl_b
     conda install jemalloc gperftools -c conda-forge -y && \
     pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
-    cd /itrex && pip install -v . && \
+    cd /intel-extension-for-transformers && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
-    cd /itrex/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements.txt
+    cd /intel-extension-for-transformers/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements.txt
 
 # Enable passwordless ssh for mpirun^M
 RUN mkdir /var/run/sshd
@@ -82,7 +82,7 @@ RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /et
         && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 EXPOSE 22
 
-WORKDIR /itrex/intel_extension_for_transformers/neural_chat/
+WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
 CMD ["/usr/sbin/sshd", "-D"]
 
@@ -116,16 +116,16 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
 ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
-    cd /itrex/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers && \
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
     pip install -r requirements.txt && \
-    cd /itrex/intel_extension_for_transformers/neural_chat/ && \
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements.txt
 
 # Build ITREX
-RUN cd /itrex && pip install -v . && \
+RUN cd /intel-extension-for-transformers && pip install -v . && \
     pip install transformers==4.32.0 && \
     pip install accelerate==0.22.0
 
-WORKDIR /itrex/neural_chat/
+WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
