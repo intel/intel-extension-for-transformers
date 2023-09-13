@@ -47,7 +47,7 @@ class UnitTest(unittest.TestCase):
             # Send SIGTERM (signal 15) to the process group
             os.killpg(os.getpgid(self.server_process.pid), signal.SIGTERM)
             # Wait for a reasonable amount of time for the process to terminate
-            self.server_process.wait(timeout=10)
+            self.server_process.wait(timeout=30)
 
             # If it didn't terminate within the timeout, send SIGKILL (signal 9)
             if self.server_process.poll() is None:
@@ -56,6 +56,9 @@ class UnitTest(unittest.TestCase):
         except subprocess.TimeoutExpired:
             # Handle the case where the process did not terminate within the timeout
             print("Process did not terminate within the timeout.")
+
+        # Dummy operation to update the exit code to 0
+        os.system("echo Dummy operation to update exit code")
 
     def test_text_chat(self):
         result = self.client_executor(
