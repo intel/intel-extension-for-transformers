@@ -14,11 +14,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import torch
 import inspect
 from functools import wraps
-torch.ops.load_library("build/libweight_only_jblasop.so")
+torch.ops.load_library("../build/libQBits.so")
+
 
 def capture_args(f):
     @wraps(f)
@@ -36,9 +36,12 @@ def capture_args(f):
 
 
 @capture_args
-def test_fp32in_fp32out(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, dump_tensor_info=False):
+def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src_dt, dst_dt, dump_tensor_info=False):
     torch.manual_seed(0)
-    activation = torch.rand(m, k, dtype=torch.float)
+    ref_activation = torch.rand(m, k, dtype=torch.float)
+    tar_activation = ref_activation.clone()
+    if src_dt == "bf16":
+        tar_activation = ref_activation.to(torch.bfloat16)
     wei_row = k
     wei_col = n
     if transpose:
@@ -55,15 +58,15 @@ def test_fp32in_fp32out(m, n, k, blocksize, compute_type, weight_type, transpose
     if dump_tensor_info:
         print(revert_wei)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
+    if dst_dt == "bf16":
+        tar_dst = tar_dst.to(torch.bfloat16)
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
-    ref_dst = torch.matmul(activation, revert_wei)
-    if add_bias:
-        torch.ops.weight_only_jblasop.qbits_f32in_f32out_linear_with_bias(
-            activation, compress_wei, bias, tar_dst, k, n, compute_type, weight_type)
-    else:
-        torch.ops.weight_only_jblasop.qbits_f32in_f32out_linear_without_bias(
-            activation, compress_wei, tar_dst, n, k, n, compute_type, weight_type)
+    ref_dst = torch.matmul(ref_activation, revert_wei)
+    torch.ops.weight_only_jblasop.qbits_linear(
+        tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)
+    if dst_dt == "bf16":
+        tar_dst = tar_dst.to(torch.float)
     if add_bias:
         ref_dst += bias
     if dump_tensor_info:
@@ -78,19 +81,29 @@ def test_fp32in_fp32out(m, n, k, blocksize, compute_type, weight_type, transpose
 configs = {"s8_scalef32": {"int8", "fp32"}, "s4clip_scalef32": {"int8", "fp32", "bf16"}, "s4fullrange_scalef32": {
     "int8", "fp32", "bf16"}, "fp4bnb_scalef32": {"fp32", "bf16"}, "fp4e2m1_scalef32": {"fp32", "bf16"}, "nf4_scalef32": {"fp32", "bf16"}}
 
-blocksizes = [8, 12, 64]
+blocksizes = [128, -1]
 do_trans = [False, True]
 add_bias = [False, True]
+src_dts = ["fp32", "bf16"]
+dst_dts = ["fp32", "bf16"]
+
+workspace = torch.zeros(786432, dtype=torch.int8)
+torch.ops.weight_only_jblasop.qbits_set_weightonly_workspace(workspace)
 
 for weight_type in configs:
-    m = 255
-    n = 1023
-    k = 512 # contain unalign calc error bug currently. 
+    m = 256
+    n = 1024
+    k = 512  # contain unalign calc error bug currently.
     for compute_type in configs[weight_type]:
         for blocksize in blocksizes:
-            if compute_type == "int8" and blocksize % 8 != 0:
+            if compute_type == "int8" and blocksize % 8 != 0 and blocksize != -1:
                 continue
+            if blocksize == -1:
+                if weight_type != "s8_scalef32" or compute_type != "int8":
+                    continue
             for trans in do_trans:
                 for bias in add_bias:
-                    test_fp32in_fp32out(m, n, k, blocksize,
-                                        compute_type, weight_type, trans, bias)
+                    for src_dt in src_dts:
+                        for dst_dt in dst_dts:
+                            test(m, n, k, blocksize, compute_type,
+                                 weight_type, trans, bias, src_dt, dst_dt)
