@@ -57,9 +57,8 @@ class TextToSpeech():
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
-            default_speaker_embedding_path = os.path.join(script_dir,
-                                                '../../../assets/speaker_embeddings/spk_embed_default.pt')
+        if os.path.exists(os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0]+ '/assets/speaker_embeddings/spk_embed_default.pt'):
+            default_speaker_embedding_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0]+ '/assets/speaker_embeddings/spk_embed_default.pt'
         elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
             default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
         else:
