@@ -510,8 +510,10 @@ class WeightS8ScaleFp32 {
       auto NPad = wptr->mNPad;
       auto KPad = wptr->mKPad;
       auto bptr = wptr->mWPtr + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
-      *dstptr = bptr;
-      *dststep = KPad;
+      kernel::wrapper::Memcpy2D::template forward<ISA_T, int8_t, int8_t>(
+          bptr, *dstptr, n_size / _GemmCore_T::NTILE, _GemmCore_T::NTILE * k_size, _GemmCore_T::NTILE * KPad,
+          _GemmCore_T::NTILE * k_size);
+      *dststep = k_size;
       return JblasSuccess;
     }
     return JblasInvalidParam;
@@ -921,7 +923,6 @@ class StorageWeightS4ScaleFp32PerChannelN : public StorageWeightS4ScaleFp32, pub
         break;
       case S4_FULLRANGE:
       default:
-        assert(false);
         break;
     }
   }

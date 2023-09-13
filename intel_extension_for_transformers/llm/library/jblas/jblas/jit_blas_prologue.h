@@ -112,8 +112,7 @@ class ActivationBase {
       auto k_pad = utils::padto(k_size, _GemmCore_T::KTILE);
       *dststep = k_pad;
       return kernel::wrapper::Memcpy2D::forward<ISA_T, AType, AType>(aptr + m_offset * _param.lda + k_offset, *dstptr,
-                                                                     m_size, k_size * sizeof(AType),
-                                                                     _param.lda * sizeof(AType), k_pad * sizeof(AType));
+                                                                     m_size, k_size, _param.lda, k_pad);
     }
     return JblasSuccess;
   }
@@ -722,8 +721,10 @@ class WeightPack : public WeightBase<typename _GemmCore_T::BType, ISA_T> {
     auto NPad = wptr->mNPad;
     auto KPad = wptr->mKPad;
     auto bptr = wptr->template getPtr<WType>() + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
-    *dstptr = bptr;
-    *dststep = KPad;
+    kernel::wrapper::Memcpy2D::template forward<ISA_T, WType, WType>(
+        bptr, *dstptr, n_size / _GemmCore_T::NTILE, _GemmCore_T::NTILE * k_size, _GemmCore_T::NTILE * KPad,
+        _GemmCore_T::NTILE * k_size);
+    *dststep = k_size;
     return JblasSuccess;
   }
 };

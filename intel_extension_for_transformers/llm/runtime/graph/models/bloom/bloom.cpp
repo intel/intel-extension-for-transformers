@@ -210,11 +210,11 @@ static bool bloom_model_eval_internal(model_context& lctx, const model_token* to
         cur = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].ffn[0], cur), cur);
         cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[1], cur), cur);
       }
-      if (jblas_fusion_FFN_Add_GeLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[2]->data,
+      if (jblas_fusion_FFN_Add_GeLu_f32f32_support(model.layers[il].ffn[2]->data, model.layers[il].ffn[4]->data,
                                                    N * batch_size, cur->ne[0], model.layers[il].ffn[0]->ne[1],
                                                    model.layers[il].ffn[2]->ne[1])) {
-        cur = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2], model.layers[il].ffn[1],
-                              model.layers[il].ffn[3], cur);
+        cur = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[2], model.layers[il].ffn[4], model.layers[il].ffn[3],
+                              model.layers[il].ffn[5], cur);
       } else {
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
         cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], cur), cur);
