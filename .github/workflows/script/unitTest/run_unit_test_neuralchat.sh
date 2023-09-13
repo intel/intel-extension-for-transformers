@@ -72,3 +72,20 @@ function main() {
     fi
 }
 main
+
+# Kill the neuralchat server processes
+ports="7000 8000 9000"
+# Loop through each port and find associated PIDs
+for port in $ports; do
+    # Use lsof to find the processes associated with the port
+    pids=$(lsof -ti :$port)
+
+    if [ -n "$pids" ]; then
+        echo "Processes running on port $port: $pids"
+        # Terminate the processes gracefully with SIGTERM
+        kill $pids
+        echo "Terminated processes on port $port."
+    else
+        echo "No processes found on port $port."
+    fi
+done

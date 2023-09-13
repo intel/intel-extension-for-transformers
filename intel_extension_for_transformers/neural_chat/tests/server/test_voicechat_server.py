@@ -42,24 +42,6 @@ class UnitTest(unittest.TestCase):
             print("Error while executing command:", e)
         self.client_executor = VoiceChatClientExecutor()
 
-    def tearDown(self) -> None:
-        try:
-            # Send SIGTERM (signal 15) to the process group
-            os.killpg(os.getpgid(self.server_process.pid), signal.SIGTERM)
-            # Wait for a reasonable amount of time for the process to terminate
-            self.server_process.wait(timeout=10)
-
-            # If it didn't terminate within the timeout, send SIGKILL (signal 9)
-            if self.server_process.poll() is None:
-                os.killpg(os.getpgid(self.server_process.pid), signal.SIGKILL)
-                self.server_process.wait()
-        except subprocess.TimeoutExpired:
-            # Handle the case where the process did not terminate within the timeout
-            print("Process did not terminate within the timeout.")
-
-        # Dummy operation to update the exit code to 0
-        os.system("echo Dummy operation to update exit code")
-
     def test_text_chat(self):
         audio_path = \
            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
@@ -67,12 +49,12 @@ class UnitTest(unittest.TestCase):
             result = self.client_executor(
                 audio_input_path=audio_path,
                 server_ip="127.0.0.1",
-                port=8000)
+                port=9000)
         else:
             result = self.client_executor(
                 audio_input_path="../../assets/audio/sample.wav",
                 server_ip="127.0.0.1",
-                port=8000)
+                port=9000)
         self.assertEqual(result.status_code, 200)
 
 if __name__ == "__main__":
