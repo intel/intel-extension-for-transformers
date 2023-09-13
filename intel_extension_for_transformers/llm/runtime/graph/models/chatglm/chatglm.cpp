@@ -69,11 +69,17 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     first_tokens_size = n_tokens;
     flag++;
   }
-  
+
+  // const int tokens_size = tokens.size();
+  // printf("n_tokens = %d, n_past = %d \n", n_tokens, n_past);
+
   const int n_head = hparams.n_head;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = n_embd / n_head / 2;
-
+  // const int head_size = n_embd / n_head;
+  // const int rope_dim = head_size / 2;
+  //  const int mqa_scale = n_head / hparams.multi_query_group_num;
+  //  const int num_kv_heads = hparams.multi_query_group_num;
 
   // const int hidden_size = n_embd;
   const int num_attention_heads = n_head;

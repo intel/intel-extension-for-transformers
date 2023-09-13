@@ -254,8 +254,12 @@ struct model_file_loader {
     hparams.word_embed_proj_dim = file.read_u32();
     hparams.do_layer_norm_before = bool(file.read_u32());
 
-    hparams.ffn_hidden_size = file.read_u32();      // For ChatGLM-2
-    hparams.inner_hidden_size = file.read_u32();    // For ChatGLM-1
+    // For ChatGLM-2
+    hparams.multi_query_group_num = file.read_u32();
+    hparams.ffn_hidden_size = file.read_u32();
+
+    // For ChatGLM-2
+    hparams.inner_hidden_size = file.read_u32();
   }
 
   void read_vocab() {
@@ -369,6 +373,7 @@ struct model_file_saver {
     file.write_u32(hparams.word_embed_proj_dim);
     file.write_u32(static_cast<int>(hparams.do_layer_norm_before));
 
+    file.write_u32(hparams.multi_query_group_num);
     file.write_u32(hparams.ffn_hidden_size);
     file.write_u32(hparams.inner_hidden_size);
   }

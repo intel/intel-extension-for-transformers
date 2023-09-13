@@ -137,10 +137,10 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(
         layers_i + ".self_attention.query_key_value.weight",
-        {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.n_head_kv}, backend);
+        {n_embd, n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
     layer.attn[1] =
         ml->get_tensor(layers_i + ".self_attention.query_key_value.bias",
-                       {n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.n_head_kv}, backend);
+                       {n_embd + 2 * (n_embd / model.hparams.n_head) * model.hparams.multi_query_group_num}, backend);
     layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
 
     // ffn GEMM

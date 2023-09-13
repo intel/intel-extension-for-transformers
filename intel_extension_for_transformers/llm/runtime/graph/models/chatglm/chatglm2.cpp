@@ -64,8 +64,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int n_rot = n_embd / n_head / 2;
   const int head_size = n_embd / n_head;
   const int rope_dim = head_size / 2;
-  const int mqa_scale = n_head / hparams.n_head_kv;
-  const int num_kv_heads = hparams.n_head_kv;
+  const int mqa_scale = n_head / hparams.multi_query_group_num;
+  const int num_kv_heads = hparams.multi_query_group_num;
 
   const int hidden_size = n_embd;
   const int num_attention_heads = n_head;

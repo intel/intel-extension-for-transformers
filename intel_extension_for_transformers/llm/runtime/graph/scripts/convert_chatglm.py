@@ -154,7 +154,7 @@ def chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", hparams["hidden_size"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["num_attention_heads"]))
-    fout.write(struct.pack("i", hparams["multi_query_group_num"]))
+    fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["num_layers"]))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", ftype))
@@ -166,6 +166,7 @@ def chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
     fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
 
+    fout.write(struct.pack("i", hparams["multi_query_group_num"]))
     fout.write(struct.pack("i", hparams["ffn_hidden_size"]))
     fout.write(struct.pack("i", 0))
 
@@ -258,6 +259,7 @@ def chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
     fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
 
+    fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["inner_hidden_size"]))
 
