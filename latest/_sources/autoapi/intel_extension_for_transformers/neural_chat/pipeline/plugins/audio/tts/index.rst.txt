@@ -25,7 +25,7 @@ Classes
    Convert text to speech with a driven speaker embedding
 
    1) Default voice (Original model + Proved good default speaker embedding from trained dataset)
-   2) Finetuned voice (Fine-tuned offline model of specific person, such as Pat's voice + corresponding embedding)
+   2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
    3) Customized voice (Original model + User's customized input voice embedding)
 
    .. py:method:: create_speaker_embedding(driven_audio_path)
@@ -40,7 +40,7 @@ Classes
       Text to speech.
 
       text: the input text
-      voice: default/pat/huma/tom/eric...
+      voice: default/male/female/...
       batch_length: the batch length for spliting long texts into batches to do text to speech
 
 
