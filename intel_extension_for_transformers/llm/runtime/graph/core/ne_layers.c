@@ -5737,7 +5737,6 @@ static void ne_compute_forward_gelu(const struct ne_compute_params* params, cons
     } break;
   }
 
-  // printf("XXXXXXXX gelu\n");
 }
 
 // ne_compute_forward_silu
@@ -7105,24 +7104,6 @@ static void ne_compute_forward_get_rows(const struct ne_compute_params* params, 
       NE_ASSERT(false);
     } break;
   }
-
-  // static bool first = true;
-  // printf("ne0 = %d, ne1 = %d, ne2 = %d\n", dst->ne[0], dst->ne[1], dst->ne[2]);
-  // if (first) {
-  //     first = false;
-  // } else {
-  //     for (int k = 0; k < dst->ne[1]; ++k) {
-  //         for (int j = 0; j < dst->ne[0]/16; ++j) {
-  //             for (int i = 0; i < 16; ++i) {
-  //                 printf("%8.4f ", ((float *) dst->data)[k*dst->ne[0] + j*16 + i]);
-  //             }
-  //             printf("\n");
-  //         }
-  //         printf("\n");
-  //     }
-  //     printf("\n");
-  //     exit(0);
-  // }
 }
 
 // ne_compute_forward_get_rows_back
