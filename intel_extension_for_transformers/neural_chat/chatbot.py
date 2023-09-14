@@ -21,8 +21,7 @@ from intel_extension_for_transformers.llm.quantization.optimization import Optim
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
-from .utils.common import get_device_type
-from .plugins import plugins
+from .plugins import plugins, global_plugins_instance
 
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
@@ -38,6 +37,7 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
+    global plugins
     if not config:
         config = PipelineConfig()
     # Validate input parameters
@@ -100,6 +100,9 @@ def build_chatbot(config: PipelineConfig=None):
                 print(f"plugin parameters: ", plugin_value['args'])
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
+
+    global_plugins_instance.reset_plugins()
+    plugins = global_plugins_instance.plugins
 
     parameters = {}
     parameters["model_name"] = config.model_name_or_path
