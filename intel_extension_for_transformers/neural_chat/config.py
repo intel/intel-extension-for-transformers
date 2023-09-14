@@ -23,7 +23,7 @@ from transformers.utils.versions import require_version
 from dataclasses import dataclass
 from .utils.common import get_device_type
 
-from .plugins import plugins, GlobalPlugins
+from .plugins import plugins
 
 from enum import Enum, auto
 
@@ -424,7 +424,7 @@ class PipelineConfig:
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",
-                 plugins=None,
+                 plugins=plugins,
                  loading_config=None,
                  optimization_config=None):
         self.model_name_or_path = model_name_or_path
@@ -434,15 +434,6 @@ class PipelineConfig:
             self.device = get_device_type()
         else:
             self.device = device
-
-        if plugins is None:
-            plugins = GlobalPlugins()  # Use the default plugins configuration if not provided
-        else:
-            # Check if the provided plugins object is an instance of GlobalPlugins
-            if not isinstance(plugins, GlobalPlugins):
-                raise ValueError("The 'plugins' parameter must be an instance of GlobalPlugins.")
-
-        plugins.reset_plugins()  # Reset the plugins to their default values
 
         self.loading_config = loading_config if loading_config is not None else \
             LoadingModelConfig(cpu_jit=True if self.device == "cpu" else False, \
