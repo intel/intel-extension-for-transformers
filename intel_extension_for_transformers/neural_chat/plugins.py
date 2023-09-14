@@ -32,8 +32,8 @@ class GlobalPlugins:
             "safety_checker": {"enable": False, "class": None, "args": {}, "instance": None}
         })
 
-global_plugins_instance = GlobalPlugins()
-plugins = global_plugins_instance.plugins
+global_plugins = GlobalPlugins()
+plugins = global_plugins.plugins
 
 def register_plugin(name):
     def decorator(cls):

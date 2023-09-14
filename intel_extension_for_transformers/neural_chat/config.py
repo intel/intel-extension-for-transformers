@@ -378,7 +378,7 @@ class TTSFinetuningConfig:
 @dataclass
 class GenerationConfig:
     device: str = "cpu"
-    temperature: float = 0.9
+    temperature: float = 0.1
     top_k: int = 1
     top_p: float = 0.75
     repetition_penalty: float = 1.1
@@ -389,7 +389,7 @@ class GenerationConfig:
     bad_words_ids: List[int] = None
     force_words_ids: List[int] = None
     use_hpu_graphs: bool = False
-    use_cache: bool = False
+    use_cache: bool = True
     audio_output_path: str = None
     cpu_jit: bool = False
     num_gpus: int = 0
@@ -403,7 +403,7 @@ class LoadingModelConfig:
     cpu_jit: bool = None
     peft_path: str = None
     use_hpu_graphs: bool = False
-    use_cache: bool = False
+    use_cache: bool = True
     use_deepspeed: bool = False
 
 @dataclass
@@ -420,7 +420,7 @@ class AMPConfig:
 
 class PipelineConfig:
     def __init__(self,
-                 model_name_or_path="meta-llama/Llama-2-7b-hf",
+                 model_name_or_path="meta-llama/Llama-2-7b-chat-hf",
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",
@@ -436,6 +436,7 @@ class PipelineConfig:
             self.device = device
 
         self.plugins = plugins
+
         self.loading_config = loading_config if loading_config is not None else \
             LoadingModelConfig(cpu_jit=True if self.device == "cpu" else False, \
                 use_hpu_graphs = True if self.device == "hpu" else False)
