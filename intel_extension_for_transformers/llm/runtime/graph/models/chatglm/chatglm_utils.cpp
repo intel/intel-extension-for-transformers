@@ -31,7 +31,7 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
-#include "models/chatglm/chatglm1.h"
+#include "models/chatglm/chatglm.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
@@ -44,18 +44,17 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
                          void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
-  std::unique_ptr<IModel> ms(new CHATGLM1());
-  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, memory_type, use_mmap, use_mlock, vocab_only);
+  std::unique_ptr<IModel> ms(new CHATGLM());
+  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void CHATGLM1::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
-                    bool use_mlock_, bool vocab_only_) {
+void CHATGLM::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
+                   bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
-  memory_type = memory_type_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
   vocab_only = vocab_only_;
@@ -84,7 +83,7 @@ void CHATGLM1::init(const char* path_model, model_context& lctx, int n_ctx_, int
 }
 
 #define MODEL_BACKEND_OFFLOAD NE_BACKEND_CPU
-void CHATGLM1::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+void CHATGLM::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
   auto& model = lctx.model;
   auto& ctx = model.ctx;
 
@@ -163,17 +162,10 @@ void CHATGLM1::load(model_context& lctx, model_progress_callback progress_callba
   }
 
   // print memory requirements
-  const size_t scale = memory_type == NE_TYPE_F32 ? 2 : 1;
-
   // this is the total memory required to run the inference
   const size_t mem_required = ctx_size + mmapped_size - vram_total +  // weights in VRAM not in memory
                               scratch.scratch0 + scratch.scratch1 + scratch.eval;
-
-  // this is the memory required by one model_state
-  const size_t mem_required_state = scale * scratch.kv_self;
-
-  fprintf(stderr, "%s: mem required  = %7.2f MB (+ %7.2f MB per state)\n", __func__, mem_required / 1024.0 / 1024.0,
-          mem_required_state / 1024.0 / 1024.0);
+  fprintf(stderr, "%s: mem required  = %7.2f MB (+ memory per state)\n", __func__, mem_required / 1024.0 / 1024.0);
 
   (void)n_gpu_layer;
 
@@ -192,7 +184,7 @@ void CHATGLM1::load(model_context& lctx, model_progress_callback progress_callba
 
 #undef MODEL_BACKEND_OFFLOAD
 
-class chatglm1_quant_layer : public quant_layer_base {
+class chatglm_quant_layer : public quant_layer_base {
  public:
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
@@ -209,4 +201,4 @@ class chatglm1_quant_layer : public quant_layer_base {
     }
   }
 };
-REGISTER_QUANT_LAYER_CLASS(chatglm1);
+REGISTER_QUANT_LAYER_CLASS(chatglm);

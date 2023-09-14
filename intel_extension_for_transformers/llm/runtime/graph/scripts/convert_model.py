@@ -43,7 +43,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     else:
         dir_model = args.model
 
-    config = AutoConfig.from_pretrained(dir_model)
+    config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
     model_type = model_maps.get(config.model_type, config.model_type)
 
     path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))

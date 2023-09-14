@@ -18,7 +18,7 @@ class TextToSpeech:
     """Convert text to speech with a driven speaker embedding
 
     1) Default voice (Original model + Proved good default speaker embedding from trained dataset)
-    2) Finetuned voice (Fine-tuned offline model of specific person, such as Pat's voice + corresponding embedding)
+    2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
     3) Customized voice (Original model + User's customized input voice embedding)
     """
     def __init__(self):
@@ -39,17 +39,17 @@ class TextToSpeech:
         self.vocoder.eval()
         self.default_speaker_embedding = torch.load('speaker_embeddings/spk_embed_default.pt') # load the default speaker embedding
 
-        # specific parameters for Pat Gelsinger
+        # specific parameters for demo model
         # preload the model in case of time-consuming runtime loading
-        self.pat_model = None
+        self.demo_model = None
         if os.path.exists("finetuned_model_1000_125_few_shot.pt"):
-            self.pat_model = torch.load("finetuned_model_1000_125_few_shot.pt", map_location=torch.device('cpu'))
+            self.demo_model = torch.load("finetuned_model_1000_125_few_shot.pt", map_location=torch.device('cpu'))
 
-        # self.pat_model = ipex.optimize(self.pat_model, torch.bfloat16)
+        # self.demo_model = ipex.optimize(self.demo_model, torch.bfloat16)
         # self.speaker_embeddings = self.create_speaker_embedding(driven_audio_path)
-        self.pat_speaker_embeddings = None
-        if os.path.exists('speaker_embeddings/spk_embed_pat.pt'):
-            self.pat_speaker_embeddings = torch.load('speaker_embeddings/spk_embed_pat.pt')
+        self.male_speaker_embeddings = None
+        if os.path.exists('speaker_embeddings/spk_embed_male.pt'):
+            self.male_speaker_embeddings = torch.load('speaker_embeddings/spk_embed_male.pt')
 
         # ipex IOMP hardware resources
         self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
@@ -79,22 +79,22 @@ class TextToSpeech:
         """Text to speech.
 
         text: the input text
-        voice: default/pat/huma/tom/eric...
+        voice: default/male/female...
         """
         start = time.time()
         inputs = self.processor(text=text, return_tensors="pt")
         model = self.original_model
         speaker_embeddings = self.default_speaker_embedding
 
-        if voice == "pat":
-            if self.pat_model == None:
+        if voice == "male":
+            if self.demo_model == None:
                 print("Finetuned model is not found! Use the default one")
             else:
-                model = self.pat_model
-            if self.pat_speaker_embeddings == None:
-                print("Pat's speaker embedding is not found! Use the default one")
+                model = self.demo_model
+            if self.male_speaker_embeddings == None:
+                print("male speaker embedding is not found! Use the default one")
             else:
-                speaker_embeddings = self.pat_speaker_embeddings
+                speaker_embeddings = self.male_speaker_embeddings
         elif voice != "default":
             speaker_embeddings = torch.load(self.lookup_voice_embedding(voice))
 

@@ -21,6 +21,7 @@ from typing import Optional, List, Dict
 from transformers import TrainingArguments, BitsAndBytesConfig
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
+from .utils.common import get_device_type
 
 from .plugins import plugins
 
@@ -429,9 +430,15 @@ class PipelineConfig:
         self.model_name_or_path = model_name_or_path
         self.tokenizer_name_or_path = tokenizer_name_or_path
         self.hf_access_token = hf_access_token
-        self.device = device
+        if device == "auto":
+            self.device = get_device_type()
+        else:
+            self.device = device
+
         self.plugins = plugins
-        self.loading_config = loading_config if loading_config is not None else LoadingModelConfig()
+        self.loading_config = loading_config if loading_config is not None else \
+            LoadingModelConfig(cpu_jit=True if self.device == "cpu" else False, \
+                use_hpu_graphs = True if self.device == "hpu" else False)
         self.optimization_config = optimization_config if optimization_config is not None else AMPConfig()
         assert type(self.optimization_config) in [AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of AMPConfig, WeightOnlyQuantizationConfig" + \
