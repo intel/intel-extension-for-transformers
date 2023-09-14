@@ -23,23 +23,56 @@
 host: 0.0.0.0
 port: 8000
 
-# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat', 'finetune', 'retrieval']    # text chatbot with document retrieval
+model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
+device: "auto"
 
-# plugins choices = ['audio', 'retrieval', 'caching', 'memory_controller', 'intent_detection', 'safety_checker']
-plugins_list: ['audio', 'retrieval', 'caching']
+asr:
+    enable: true
+    args:
+        # support cpu, hpu, xpu, cuda
+        device: "cpu"
+        # support openai/whisper series
+        model_name_or_path: "openai/whisper-small"
+        # only can be set to true when the device is set to "cpu"
+        bf16: false
 
-audio:
-    audio_input: true
-    audio_output: true
-    language: "english"
+tts:
+    enable: true
+    args:
+        device: "cpu"
+        voice: "default"
+        stream_mode: false
+        output_audio_path: "./output_audio.wav"
+
+asr_chinese:
+    enable: false
+
+tts_chinese:
+    enable: false
+    args:
+        device: "cpu"
+        spk_id: 0
+        stream_mode: false
+        output_audio_path: "./output_audio.wav"
 
 retrieval:
-    retrieval_type: "dense"
-    retrieval_document_path: "../../assets/docs/"
+    enable: true
+    args:
+        retrieval_type: "dense"
+        input_path: "../../assets/docs/"
+        embedding_model: "hkunlp/instructor-large"
+        persist_dir: "./output"
+        max_length: 512
+        process: true
 
-caching:
-    cache_chat_config_file: "../../plugins/caching/cache_config.yaml"
-    cache_embedding_model_dir: "hkunlp/instructor-large"
+cache:
+    enable: true
+    args:
+        config_dir: "../../pipeline/plugins/caching/cache_config.yaml"
+        embedding_model_dir: "hkunlp/instructor-large"
 
-model_name: "meta-llama/Llama-2-7b-chat-hf"
+safety_checker:
+    enable: true
+
+# task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
+tasks_list: ['textchat', 'retrieval']
