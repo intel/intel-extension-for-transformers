@@ -31,6 +31,8 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
+#include "core/ne_jblas.h"
+#include "core/layers/mha_dense.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
@@ -47,16 +49,11 @@ static int flag = 0;
 static int first_tokens_size = 0;
 static bool chatglm_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                         const int n_past, const int n_threads) {
-  // // enforce that the first token is BOS
-  // if (n_past == 0 && tokens[0] != model_token_bos()) {
-  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
-  //   return false;
-  // }
-
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
 
+  const int batch_size = lctx.batch_size;
   const auto& model = lctx.model;
   const auto& hparams = model.hparams;
 
@@ -97,7 +94,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
   ne_set_name(embd, "embd");
   memcpy(embd->data, tokens, N * ne_element_size(embd));
-  // int qlen = embd->ne[1];
+
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
   int hidden_size = inpL->ne[0];
@@ -110,13 +107,14 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
     lctx.use_buf(ctx0, 0);
 
-    // LayerNorm::forward
     cur = ne_norm(ctx0, inpL);
+
+    ne_set_name(cur, "cur");
     cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
     cur = ne_add(ctx0, cur, model.layers[il].norm[1]);
 
     struct ne_tensor* attn_input = cur;
-    // GLM2SelfAttention
+    // SelfAttention
     {
       // Linear::forward compute QKV
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
@@ -126,8 +124,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
                                           cur->nb[1], 0);  // [qlen, 3 * hidden]
 
       ne_set_name(query_layer, "query_layer");
-      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 4, first_tokens_size);  // glm1
-
+      query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 4, first_tokens_size);
       query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);  // [heads, qlen, head_size]
 
       ne_tensor* key_layer =
@@ -142,7 +139,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       value_layer = ne_permute(ctx0, value_layer, 1, 2, 0, 3);  // [heads, head_size, qlen]
 
       // store key and value to memory
-      // printf("qlen: %d, head_size: %d, num_kv_heads: %d\n", qlen, head_size, num_kv_heads);
       {
         struct ne_tensor* k_cache_view =
             ne_view_3d(ctx0, model.layers[il].k_cache, head_size, qlen, num_attention_heads,
@@ -159,7 +155,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
         ne_build_forward_expand(&gf, ne_cpy(ctx0, key_layer, k_cache_view));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
       }
-
       // concat key & value with past kv
       key_layer = ne_view_3d(ctx0, model.layers[il].k_cache, head_size, n_past + qlen, num_attention_heads,
                              model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
@@ -186,6 +181,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       }
 
       attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, 1.f / std::sqrt(head_size)));
+      ne_set_name(attn_scores, "attn_scores");
 
       ne_tensor* attn_probs = ne_soft_max_inplace(ctx0, attn_scores);  // [heads, qlen, klen]
 
@@ -206,16 +202,26 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     inpL = ne_add_inplace(ctx0, attn_input, cur);
 
     struct ne_tensor* mlp_input = ne_norm(ctx0, inpL);
+
     ne_set_name(mlp_input, "mlp_input");
     mlp_input = ne_mul(ctx0, mlp_input, model.layers[il].norm[2]);
     mlp_input = ne_add(ctx0, mlp_input, model.layers[il].norm[3]);
 
     // mlp.forward
-    struct ne_tensor* mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[0], mlp_input);
-    mlp_output = ne_add_inplace(ctx0, mlp_output, model.layers[il].ffn[1]);
-    mlp_output = ne_gelu_inplace(ctx0, mlp_output);
-    mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[2], mlp_output);
-    mlp_output = ne_add_inplace(ctx0, mlp_output, model.layers[il].ffn[3]);
+    struct ne_tensor* mlp_output;
+    bool status = jblas_fusion_FFN_Add_GeLu_f32f32_support(
+        model.layers[il].ffn[0]->data, model.layers[il].ffn[2]->data, N * batch_size, mlp_input->ne[0],
+        model.layers[il].ffn[0]->ne[1], model.layers[il].ffn[2]->ne[1]);
+    if (status) {
+      mlp_output = ne_ffn_add_gelu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[2], model.layers[il].ffn[1],
+                                   model.layers[il].ffn[3], mlp_input);
+    } else {
+      mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[0], mlp_input);
+      mlp_output = ne_add(ctx0, mlp_output, model.layers[il].ffn[1]);
+      mlp_output = ne_gelu(ctx0, mlp_output);
+      mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[2], mlp_output);
+      mlp_output = ne_add(ctx0, mlp_output, model.layers[il].ffn[3]);
+    }
 
     ne_build_forward_expand(&gf, mlp_output);
     mlp_input = ne_scale_inplace(ctx0, mlp_input, alpha);
@@ -228,6 +234,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   // norm
   {
     inpL = ne_norm(ctx0, inpL);
+
     ne_set_name(inpL, "inpL");
     inpL = ne_mul(ctx0, inpL, model.others[1]);
     inpL = ne_add(ctx0, inpL, model.others[2]);
@@ -240,7 +247,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   // lm_head
   inpL = ne_mul_mat(ctx0, model.others[3], inpL);
 
-  // run the computation
   ne_build_forward_expand(&gf, inpL);
   ne_graph_compute(ctx0, &gf);
 

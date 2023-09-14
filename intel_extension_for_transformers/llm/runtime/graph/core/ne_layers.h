@@ -377,13 +377,14 @@ NE_API struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_t
 // rotary position embedding
 // if mode & 1 == 1, skip n_past elements
 // if mode & 2 == 1, GPT-NeoX style
+// if mode & 4 == 1, especially for glm
 // TODO: avoid creating a new tensor every time
 NE_API struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                                 int n_ctx);
+                                 int prompt_size);
 
 // in-place, returns view(a)
 NE_API struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                                         int n_ctx);
+                                         int prompt_size);
 
 // rotary position embedding backward, i.e compute dx from dy
 // a - dy
