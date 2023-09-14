@@ -19,8 +19,6 @@
 import logging
 import torch
 import transformers
-from ...llm.quantization.config import WeightOnlyConfig
-from ...llm.quantization.utils import convert_to_quantized_model, convert_dtype_2_str
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +34,8 @@ class _BaseQBitsAutoModelClass:
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
         if load_in_8bit or load_in_4bit or quantization_config is not None:
+            from ...llm.quantization.config import WeightOnlyConfig
+            from ...llm.quantization.utils import convert_to_quantized_model, convert_dtype_2_str
             torch_dtype = kwargs.pop("torch_dtype", torch.float32)
         if load_in_4bit:
             if quantization_config is None:

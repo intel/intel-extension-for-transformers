@@ -51,7 +51,7 @@ class TestWeightOnly(unittest.TestCase):
             model = M(with_bias=bias)
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(revert_wei)
-            activation = torch.rand(1,32, dtype=torch.float)
+            activation = torch.rand(1, 32, dtype=torch.float)
             output = model(activation)
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(raw_wei)
