@@ -245,7 +245,7 @@ public:
         return true;
     }
 
-    static inline bool check_tensor(
+    static inline bool check_surface(
             uint64_t base, uint32_t width, uint32_t height, uint32_t pitch) {
         if (check_base_address(base) && check_surface_width(width)
                 && check_surface_height(height)
@@ -429,7 +429,7 @@ private:
         uint8_t block_height = xetla_get_block_width_y(tdesc) + 1;
         uint8_t array_len = xetla_get_block_array_len(tdesc) + 1;
 
-        if (check_tensor(base, surface_width, surface_height, surface_pitch)
+        if (check_surface(base, surface_width, surface_height, surface_pitch)
                 && check_block(block_start_x, block_start_y, block_width,
                         block_height, array_len)) {
             return true;
@@ -697,6 +697,8 @@ struct brgemm<gpu_arch::Xe> {
 namespace kernel {
 template <gpu_arch arch, typename T>
 class general_1d {};
+template <gpu_arch arch, typename T>
+class block_2d {};
 
 template <typename T>
 class general_1d<gpu_arch::Xe, T> {
@@ -725,6 +727,19 @@ private:
     static constexpr size_t pitch_alignment_bytes = 4;
     static constexpr size_t min_pitch_bytes = 4;
     static constexpr size_t base_alignment_bytes = 4;
+};
+
+template <typename T>
+class block_2d<gpu_arch::Xe, T> {
+public:
+    static inline bool check_tensor(
+            uint64_t base, uint32_t width, uint32_t height, uint32_t pitch) {
+        return core::block_2d<gpu_arch::Xe, T>::check_surface(
+                base, width * element_size, height, pitch * element_size);
+    }
+
+private:
+    static constexpr size_t element_size = sizeof(T);
 };
 } // namespace kernel
 

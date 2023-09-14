@@ -119,8 +119,8 @@ TEST(block_2d, check_store) {
 }
 
 TEST(block_2d, check_tensor) {
-    using check_2d = core::block_2d<gpu_arch::Xe, float>;
-    EXPECT_FALSE((check_2d::check_tensor(8192, 32, 64, 32)));
+    using check_2d = kernel::block_2d<gpu_arch::Xe, float>;
+    EXPECT_TRUE((check_2d::check_tensor(8192, 32, 64, 32)));
     EXPECT_FALSE((check_2d::check_tensor(8192, 65, 64, 32)));
     EXPECT_FALSE((check_2d::check_tensor(8192, 64, 64, 32)));
     EXPECT_FALSE((check_2d::check_tensor(8192, 64, 64, 65)));

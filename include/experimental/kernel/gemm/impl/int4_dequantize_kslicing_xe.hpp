@@ -295,7 +295,7 @@ public:
         bool implementable = true;
         if (brgemm_t::is_2d_block_a) {
             implementable
-                    &= core::block_2d<gpu_arch::Xe, dtype_a>::check_tensor(
+                    &= kernel::block_2d<gpu_arch::Xe, dtype_a>::check_tensor(
                             (uint64_t)(args.matA_base.base),
                             brgemm_t::is_col_major_a ? args.matrix_m
                                                      : args.matrix_k,
@@ -309,7 +309,7 @@ public:
         }
         if (brgemm_t::is_2d_block_b) {
             implementable
-                    &= core::block_2d<gpu_arch::Xe, dtype_b>::check_tensor(
+                    &= kernel::block_2d<gpu_arch::Xe, dtype_b>::check_tensor(
                             (uint64_t)(args.matB_base.base),
                             args.matB_ld / pack_ratio,
                             brgemm_t::is_col_major_b ? args.matrix_n
@@ -322,7 +322,7 @@ public:
         }
         if (epilogue_t::is_2d_block_c) {
             implementable
-                    &= core::block_2d<gpu_arch::Xe, dtype_c>::check_tensor(
+                    &= kernel::block_2d<gpu_arch::Xe, dtype_c>::check_tensor(
                             (uint64_t)(args.matC_base.base), args.matrix_n,
                             args.matrix_m, args.matC_ld);
         } else {
