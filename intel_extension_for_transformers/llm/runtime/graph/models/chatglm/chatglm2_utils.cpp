@@ -144,8 +144,8 @@ void CHATGLM2::load(model_context& lctx, model_progress_callback progress_callba
     layer.attn[2] = ml->get_tensor(layers_i + ".self_attention.dense.weight", {n_embd, n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] =
-        ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight", {n_embd, uint32_t(model.hparams.ffn_hidden_size * 2)}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.dense_h_to_4h.weight",
+                                  {n_embd, uint32_t(model.hparams.ffn_hidden_size * 2)}, backend);
     layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.dense_4h_to_h.weight",
                                   {uint32_t(model.hparams.ffn_hidden_size), n_embd}, backend);
 
