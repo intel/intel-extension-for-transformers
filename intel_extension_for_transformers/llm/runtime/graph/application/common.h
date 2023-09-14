@@ -25,6 +25,7 @@
 #include <random>
 #include <regex>
 #include <thread>
+#include <functional>
 
 #include "core/data_types.h"
 #include "core/ne_layers.h"
