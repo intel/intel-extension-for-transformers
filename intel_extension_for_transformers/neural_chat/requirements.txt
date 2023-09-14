@@ -28,7 +28,6 @@ starlette
 yacs
 uvicorn
 optimum
-optimum[habana]
 sentence_transformers
 unstructured
 markdown
