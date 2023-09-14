@@ -21,8 +21,7 @@ from intel_extension_for_transformers.llm.quantization.optimization import Optim
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
-from .utils.common import get_device_type
-from .plugins import plugins
+from .plugins import plugins, global_plugins
 
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
@@ -38,15 +37,13 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
+    global plugins
     if not config:
         config = PipelineConfig()
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
-
-    if config.device == "auto":
-        config.device = get_device_type()
 
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
@@ -103,6 +100,9 @@ def build_chatbot(config: PipelineConfig=None):
                 print(f"plugin parameters: ", plugin_value['args'])
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
+
+    global_plugins.reset_plugins()
+    plugins = global_plugins.plugins
 
     parameters = {}
     parameters["model_name"] = config.model_name_or_path
