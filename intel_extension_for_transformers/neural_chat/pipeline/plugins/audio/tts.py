@@ -59,6 +59,8 @@ class TextToSpeech():
             default_speaker_embedding_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0]+ '/assets/speaker_embeddings/spk_embed_default.pt'
         elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
             default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
+        elif os.path.exists('spk_embed_default.pt'):
+            default_speaker_embedding_path = 'spk_embed_default.pt'
         else:
             print("Warning! Need to prepare speaker_embeddings")
         # load the default speaker embedding
