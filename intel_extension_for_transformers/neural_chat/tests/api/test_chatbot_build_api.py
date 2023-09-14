@@ -39,8 +39,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_customized_pipelinecfg(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                tokenizer_name_or_path="EleutherAI/gpt-neox-20b",
-                                device="cpu")
+                                tokenizer_name_or_path="EleutherAI/gpt-neox-20b")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")

@@ -23,7 +23,7 @@ from transformers.utils.versions import require_version
 from dataclasses import dataclass
 from .utils.common import get_device_type
 
-from .plugins import plugins
+from .plugins import plugins, GlobalPlugins
 
 from enum import Enum, auto
 
@@ -378,7 +378,7 @@ class TTSFinetuningConfig:
 @dataclass
 class GenerationConfig:
     device: str = "cpu"
-    temperature: float = 0.9
+    temperature: float = 0.1
     top_k: int = 1
     top_p: float = 0.75
     repetition_penalty: float = 1.1
@@ -389,7 +389,7 @@ class GenerationConfig:
     bad_words_ids: List[int] = None
     force_words_ids: List[int] = None
     use_hpu_graphs: bool = False
-    use_cache: bool = False
+    use_cache: bool = True
     audio_output_path: str = None
     cpu_jit: bool = False
     num_gpus: int = 0
@@ -403,7 +403,7 @@ class LoadingModelConfig:
     cpu_jit: bool = None
     peft_path: str = None
     use_hpu_graphs: bool = False
-    use_cache: bool = False
+    use_cache: bool = True
     use_deepspeed: bool = False
 
 @dataclass
@@ -424,7 +424,7 @@ class PipelineConfig:
                  tokenizer_name_or_path=None,
                  hf_access_token=None,
                  device="auto",
-                 plugins=plugins,
+                 plugins=None,
                  loading_config=None,
                  optimization_config=None):
         self.model_name_or_path = model_name_or_path
@@ -435,7 +435,15 @@ class PipelineConfig:
         else:
             self.device = device
 
-        self.plugins = plugins
+        if plugins is None:
+            plugins = GlobalPlugins()  # Use the default plugins configuration if not provided
+        else:
+            # Check if the provided plugins object is an instance of GlobalPlugins
+            if not isinstance(plugins, GlobalPlugins):
+                raise ValueError("The 'plugins' parameter must be an instance of GlobalPlugins.")
+
+        plugins.reset_plugins()  # Reset the plugins to their default values
+
         self.loading_config = loading_config if loading_config is not None else \
             LoadingModelConfig(cpu_jit=True if self.device == "cpu" else False, \
                 use_hpu_graphs = True if self.device == "hpu" else False)
