@@ -19,15 +19,17 @@ from abc import ABC
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
-from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
+from ..utils.model_utils import load_model, predict, predict_stream, MODELS
+from ..utils.prompt import prepare_prompt
 
 
 def construct_parameters(query, model_name, device, config):
     params = {}
-    params["prompt"] = query
+    prompt = prepare_prompt(query, config.task, MODELS[model_name]["tokenizer"])
+    params["prompt"] = prompt
     params["temperature"] = config.temperature
     params["top_k"] = config.top_k
     params["top_p"] = config.top_p
@@ -42,7 +44,6 @@ def construct_parameters(query, model_name, device, config):
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
     params["device"] = device
-    params["task"] = config.task
     return params
 
 class BaseModel(ABC):
