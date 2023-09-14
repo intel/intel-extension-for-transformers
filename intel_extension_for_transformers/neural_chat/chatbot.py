@@ -52,9 +52,12 @@ def build_chatbot(config: PipelineConfig=None):
     if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
-    elif "neural-chat-7b-v1" in config.model_name_or_path or "mpt" in config.model_name_or_path:
+    elif "mpt" in config.model_name_or_path:
         from .models.mpt_model import MptModel
         adapter = MptModel()
+    elif "neural-chat" in config.model_name_or_path:
+        from .models.neuralchat_model import NeuralChatModel
+        adapter = NeuralChatModel()
     elif "chatglm" in config.model_name_or_path:
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
