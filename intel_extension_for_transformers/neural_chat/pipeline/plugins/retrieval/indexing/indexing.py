@@ -28,7 +28,7 @@ from .context_utils import load_unstructured_data, laod_structured_data, get_chu
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
-                 process=True, embedding_model="hkunlp/instructor-large", max_length=512):
+                 process=True, embedding_model="hkunlp/instructor-large", max_length=2048, index_name="elastic_index_1"):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
         """
@@ -38,6 +38,7 @@ class DocumentIndexing:
         self.persist_dir = persist_dir
         self.embedding_model = embedding_model
         self.max_length = max_length
+        self.index_name = index_name
         
         
     def parse_document(self, input):
@@ -121,7 +122,7 @@ class DocumentIndexing:
                 if self.document_store == "inmemory":
                     document_store = InMemoryDocumentStore(use_gpu=False, use_bm25=True)
                 elif self.document_stor == "Elasticsearch":
-                    document_store = ElasticsearchDocumentStore(host="localhost", index="elastic_index_1",
+                    document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
                                                                 port=9200, search_fields=["content", "title"])
 
                 documents = []
@@ -137,4 +138,16 @@ class DocumentIndexing:
                 return document_store
             else:
                 print("There might be some errors, please wait and try again!")
-
+        
+    def load(self, input):
+        if self.retrieval_type == "dense":
+            embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
+            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
+        else:
+            if self.document_store == "inmemory":
+                vectordb = self.KB_construct(input)
+            else:
+                vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+                                                            port=9200, search_fields=["content", "title"])
+        return vectordb
+                
