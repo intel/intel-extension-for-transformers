@@ -17,6 +17,7 @@ from pathlib import Path
 import argparse
 from typing import List, Optional
 import subprocess
+from transformers import AutoTokenizer
 
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
 
@@ -30,6 +31,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
         type=str,
         help="prompt to start generation with (default: empty)",
         default="",
+    )
+    parser.add_argument(
+        "--glm_tokenizer",
+        type=str,
+        help="the path of the chatglm tokenizer",
+        default="THUDM/chatglm-6b",
     )
     parser.add_argument(
         "-n",
@@ -107,6 +114,14 @@ def main(args_in: Optional[List[str]] = None) -> None:
     # if args.color:
     #     cmd.append(" --color")
 
+    if (args.model_name == "chatglm"):
+        tokenizer = AutoTokenizer.from_pretrained(args.glm_tokenizer, trust_remote_code=True)
+        token_ids_list = tokenizer.encode(args.prompt)
+        token_ids_list = map(str, token_ids_list)
+        token_ids_str = ', '.join(token_ids_list)
+        print(token_ids_str)
+        cmd.extend(["--ids", token_ids_str])
+        
     print("cmd:", cmd)
     subprocess.run(cmd)
 

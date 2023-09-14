@@ -37,11 +37,19 @@ We support the following models:
 ## How to use
 
 ### 1. Build LLM Runtime
+Linux
 ```shell
 mkdir build
 cd build
 cmake .. -G Ninja
 ninja
+```
+Windows: install VisualStudio 2022(a validated veresion), search 'Developer PowerShell for VS 2022' and open it, then run the following cmds.
+```powershell
+mkdir build
+cd build
+cmake ..
+cmake --build . -j
 ```
 
 ### 2. Convert LLM
@@ -114,6 +122,7 @@ LLM running script args explanations:
 | --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
+| --glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
 
 
 ### 4. One-click Script 
