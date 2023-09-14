@@ -2145,12 +2145,11 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
     // next setp
     for (auto it : kv_reorder_indices) {
       if (it.first != it.second) {
-        printf("%d: %d \n", it.first, it.second);
         uint32_t len = next_beams[it.first].token_ids.size() - 1;
         // last token in beam is for next step inference
         MODEL_ASSERT(len == n_past - n_prompt_tokens);
         size_t input_token_offset_k = n_prompt_tokens * ne_element_size(ctx->model.kv_self.k) * n_embd;
-        size_t input_token_offset_v = 0; //n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
+        size_t input_token_offset_v = n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
         if (len + n_prompt_tokens > n_ctx) {
           // all token hidden states cache should be updated
           input_token_offset_k = 0;
@@ -2177,8 +2176,8 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
                    static_cast<char*>(ctx->model.kv_self.v->data) +
                        (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
                         it.second * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                        n_ctx * ne_element_size(ctx->model.kv_self.v) + input_token_offset_v),
-                   ne_element_size(ctx->model.kv_self.v) * n_past);
+                        n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
+                   ne_element_size(ctx->model.kv_self.v) * len);
           }
         }
       }
@@ -2216,7 +2215,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
     }
   }
   // DEBUG
-#if 1
+#if 0
   printf("====================== \n");
   for (auto kk : embd_inp) {
     printf("%d: %s \n", kk, (ctx->vocab.id_to_token.at(kk).tok).c_str());
@@ -2246,7 +2245,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
       beam_top_k(ctx, li.next_token_scores, {batch_size}, beam_indices, sample_scale);
   // std::vector<std::vector<model_token_data>> next_tokens = li.top_k(sample_num);
   // DEBUG
-#if 1
+#if 0
   printf("====================== \n");
   for (auto kk : next_tokens) {
     printf("%d: %s, score: %10.6f, beam_idx: %d \n", kk.id, (ctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.score,
@@ -2258,7 +2257,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
   for (int i = 0; i < beam_size; ++i) {
     beam b = cur_beams[i];
     if (b.eos()) {
-      printf("eos \n");
+      // printf("eos \n");
       if (b.score != 100) {
         b.eos_score = b.score;
         b.score = 100;
@@ -2338,7 +2337,7 @@ std::unordered_map<int, int> beam_search_flow::update_kv_cache_reorder_indices()
   MODEL_ASSERT(next_beams.size() == beam_size);
   MODEL_ASSERT(cur_beams.size() == beam_size);
   // DEBUG
-#if 1
+#if 0
   printf("cur_beams: ");
   for (int i = 0; i < beam_size; ++i) {
     printf("%d, ", cur_beams[i].infer_bs_id);
@@ -2381,7 +2380,7 @@ std::unordered_map<int, int> beam_search_flow::update_kv_cache_reorder_indices()
   }
   // beams should be ordered by batch id
   std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
-#if 1  // DEBUG
+#if 0  // DEBUG
   printf("cpy_final_bs_ids: ");
   for (int i = 0; i < beam_size; ++i) {
     printf("%d, ", cpy_final_bs_ids[i]);
@@ -2468,7 +2467,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       // beam_score_length_penalize();
     }
 
-#if 1  // DEBUG: print current beams for this iteration
+#if 0  // DEBUG: print current beams for this iteration
     printf("\n\nCurrent beams:\n");
     for (size_t j = 0; j < cur_beams.size(); ++j) {
       printf("beams[%d]: ", j);
@@ -2485,7 +2484,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   }
   beam_score_length_penalize();
   const beam& top_b = top_beam();
-#if 1  // DEBUG: print current beams for this iteration
+#if 0  // DEBUG: print current beams for this iteration
   printf("\n\nCurrent beams:\n");
   for (size_t j = 0; j < cur_beams.size(); ++j) {
     printf("beams[%d]: ", j);
