@@ -67,12 +67,14 @@ class Optimization:
             ).model
         elif isinstance(config, SmoothQuantConfig):
             print("Applying SmoothQuant.")
+            import intel_extension_for_pytorch
             if tokenizer is None:
-                logger.error("Please provide the tokenizer. \n" +
-                                "from transformer import AutoTokenizer \n" +
-                                "tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n" +
-                                "Or provide calib_func directly."
+                logger.error("Please provide the tokenizer or provide calib_func directly," + 
+                                " the following is how to get tokenizer. \n" +
+                                " from transformer import AutoTokenizer \n" +
+                                " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
                                 )
+                exit(0)
             if calib_func is None:
                 from datasets import load_dataset
                 from torch.utils.data import DataLoader

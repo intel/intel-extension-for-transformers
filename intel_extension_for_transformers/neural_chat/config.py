@@ -416,9 +416,7 @@ class WeightOnlyQuantizationConfig:
 
 @dataclass
 class AMPConfig:
-    dtype: str = 'bfloat16'
-    op_type_dict = None
-    
+    dtype: str = 'bfloat16'    
 
 @dataclass
 class SmoothQuantConfig:

@@ -17,8 +17,6 @@ import transformers
 import numpy as np
 from itertools import chain
 from optimum.utils import NormalizedConfigManager
-# ipex dependency
-import intel_extension_for_pytorch as ipex
 from optimum.intel.generation.modeling import TSModelForCausalLM
 
 
@@ -37,13 +35,10 @@ parser.add_argument(
 )
 parser.add_argument("--output_dir", nargs="?", default="./saved_results")
 parser.add_argument("--quantize", action="store_true")
-parser.add_argument("--ipex", action="store_true")
-parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="auto", help="Smooth quant parameter.")
 parser.add_argument(
     "--pad_max_length", default=512, type=int, help="Pad input ids to max length."
 )
-parser.add_argument("--calib_iters", default=512, type=int, help="calibration iters.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument(
     "--int8_bf16_mixed",
@@ -70,7 +65,7 @@ calib_size = 1
 config = AutoConfig.from_pretrained(
        args.model,
        torchscript=True
-       if args.ipex
+       if args.quantize
        else False,  # torchscript will force `return_dict=False` to avoid jit errors
        use_cache=True, # to use kv cache.
        trust_remote_code=args.trust_remote_code,
