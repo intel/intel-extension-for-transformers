@@ -37,11 +37,19 @@ We support the following models:
 ## How to use
 
 ### 1. Build LLM Runtime
+Linux
 ```shell
 mkdir build
 cd build
 cmake .. -G Ninja
 ninja
+```
+Windows: install VisualStudio 2022(a validated veresion), search 'Developer PowerShell for VS 2022' and open it, then run the following .htmls.
+```powershell
+mkdir build
+cd build
+cmake ..
+cmake --build . -j
 ```
 
 ### 2. Convert LLM
