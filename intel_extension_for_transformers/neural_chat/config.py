@@ -435,6 +435,8 @@ class PipelineConfig:
         else:
             self.device = device
 
+        self.plugins = plugins
+
         self.loading_config = loading_config if loading_config is not None else \
             LoadingModelConfig(cpu_jit=True if self.device == "cpu" else False, \
                 use_hpu_graphs = True if self.device == "hpu" else False)

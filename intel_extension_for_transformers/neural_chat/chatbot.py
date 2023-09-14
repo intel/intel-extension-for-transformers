@@ -21,7 +21,7 @@ from intel_extension_for_transformers.llm.quantization.optimization import Optim
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
-from .plugins import plugins, global_plugins_instance
+from .plugins import plugins, global_plugins
 
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
@@ -101,8 +101,8 @@ def build_chatbot(config: PipelineConfig=None):
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
-    global_plugins_instance.reset_plugins()
-    plugins = global_plugins_instance.plugins
+    global_plugins.reset_plugins()
+    plugins = global_plugins.plugins
 
     parameters = {}
     parameters["model_name"] = config.model_name_or_path
