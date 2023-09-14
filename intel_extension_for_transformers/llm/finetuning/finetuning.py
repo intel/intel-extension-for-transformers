@@ -513,7 +513,7 @@ class Finetuning:
                     data_collator=data_collator,
                 )
             else:
-                from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611
+                from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611 E0401
 
                 gaudi_config = GaudiConfig()
                 gaudi_config.use_fused_adam = True
