@@ -26,6 +26,7 @@ from intel_extension_for_transformers.neural_chat.config import (
     SmoothQuantConfig
 )
 import logging
+import warnings
 logger = logging.getLogger(__name__)
 torch = LazyImport("torch")
 
@@ -67,7 +68,12 @@ class Optimization:
             ).model
         elif isinstance(config, SmoothQuantConfig):
             print("Applying SmoothQuant.")
-            import intel_extension_for_pytorch
+            try:
+                import intel_extension_for_pytorch as ipex
+            except ImportError:
+                warnings.warn(
+                    "Please install Intel Extension for PyTorch to accelerate the model inference."
+                )
             if tokenizer is None:
                 logger.error("Please provide the tokenizer or provide calib_func directly," + 
                                 " the following is how to get tokenizer. \n" +
