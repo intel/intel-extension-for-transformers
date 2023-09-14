@@ -417,6 +417,14 @@ class WeightOnlyQuantizationConfig:
 @dataclass
 class AMPConfig:
     dtype: str = 'bfloat16'
+    op_type_dict = None
+    
+
+@dataclass
+class SmoothQuantConfig:
+    alpha: float = 0.5
+    op_type_dict: dict = None  
+    excluded_precisions: dict = None
 
 class PipelineConfig:
     def __init__(self,

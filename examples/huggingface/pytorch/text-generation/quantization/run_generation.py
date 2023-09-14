@@ -17,6 +17,9 @@ import transformers
 import numpy as np
 from itertools import chain
 from optimum.utils import NormalizedConfigManager
+# ipex dependency
+import intel_extension_for_pytorch as ipex
+from optimum.intel.generation.modeling import TSModelForCausalLM
 
 
 parser = argparse.ArgumentParser()
@@ -58,6 +61,7 @@ parser.add_argument("--save_accuracy_path", default=None,
 parser.add_argument("--tasks", nargs='+', default=["winogrande", "copa", "piqa", "rte", "hellaswag", \
                     "openbookqa", "lambada_openai", "lambada_standard", "wikitext"], type=str, \
                     help="tasks list for accuracy validation")
+
 args = parser.parse_args()
 
 calib_size = 1
@@ -82,6 +86,7 @@ user_model = AutoModelForCausalLM.from_pretrained(
        config=config
 )
 
+# tokenizer
 if config.model_type == "llama":
     from transformers import LlamaTokenizer
     tokenizer = LlamaTokenizer.from_pretrained(args.model)
@@ -92,125 +97,10 @@ else:
 user_model = user_model.to(memory_format=torch.channels_last)
 user_model.eval()
 
-if args.ipex:
-    import intel_extension_for_pytorch as ipex
-    from optimum.intel.generation.modeling import TSModelForCausalLM
-
 # quantize
 if args.quantize:
-    def generate_dummy_past_key_values(input_bs, user_model):
-        normalized_config = NormalizedConfigManager.get_normalized_config_class(
-            user_model.config.model_type
-        )(user_model.config)
-        nb_pkv = 2
-        num_layers = normalized_config.num_layers
-        num_attention_heads = normalized_config.num_attention_heads
-        hidden_size = normalized_config.hidden_size
-        d_k = hidden_size // num_attention_heads
-
-        if user_model.config.model_type == "bloom":
-            pkv = ()
-            for nb_pkv in range(nb_pkv):
-                if nb_pkv % 2 == 0:
-                    new_shape = [input_bs * num_attention_heads, d_k, 1]
-                else:
-                    new_shape = [input_bs * num_attention_heads, 1, d_k]
-                pkv = pkv + (torch.ones(size=new_shape),)
-        else:
-            new_shape = [input_bs, num_attention_heads, 1, d_k]
-            dummy_tensor = torch.ones(size=new_shape)
-            pkv = tuple(dummy_tensor for _ in range(nb_pkv))
-        past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
-        return past_key_values
-
-    class Evaluator:
-        def __init__(
-            self,
-            dataset,
-            tokenizer,
-            batch_size=8,
-            pad_val=1,
-            pad_max=512,
-            is_calib=False,
-        ):
-            self.dataset = dataset
-            self.tokenizer = tokenizer
-            self.batch_size = batch_size
-            self.pad_val = pad_val
-            self.pad_max = pad_max
-            self.is_calib = is_calib
-
-            # tokenize the dataset
-            self.dataset = self.dataset.map(self.tokenize_function, batched=True)
-            self.dataset.set_format(type="torch", columns=["input_ids"])
-
-        @torch.no_grad()
-        def tokenize_function(self, examples):
-            example = self.tokenizer(examples["text"])
-            return example
-
-        @torch.no_grad()
-        def collate_batch(self, batch):
-            input_ids_padded = []
-            last_ind = []
-            for text in batch:
-                input_ids = text["input_ids"]
-                pad_len = self.pad_max - input_ids.shape[0]
-                last_ind.append(input_ids.shape[0] - 1)
-                if self.is_calib:
-                    input_ids = (
-                        input_ids[: self.pad_max]
-                        if len(input_ids) > self.pad_max
-                        else input_ids
-                    )
-                else:
-                    input_ids = pad(input_ids, (0, pad_len), value=self.pad_val)
-                input_ids_padded.append(input_ids)
-            return (
-                torch.vstack(input_ids_padded),
-                torch.tensor(last_ind),
-            )
-
-    calib_dataset = load_dataset(args.dataset, split="train")
-    calib_dataset = calib_dataset.shuffle(seed=42)
-    calib_evaluator = Evaluator(
-        calib_dataset,
-        tokenizer,
-        args.batch_size,
-        pad_max=args.pad_max_length,
-        is_calib=True,
-    )
-    calib_dataloader = DataLoader(
-        calib_evaluator.dataset,
-        batch_size=calib_size,
-        shuffle=False,
-        collate_fn=calib_evaluator.collate_batch,
-    )
-    input_ids = user_model.dummy_inputs["input_ids"]
-    input_bs, input_len = input_ids.shape
-    past_key_values = generate_dummy_past_key_values(input_bs, user_model)
-    attention_mask = torch.ones(input_bs, input_len + 1)
-    attention_mask[:,0] = 0
-    example_inputs = (input_ids, tuple(past_key_values), attention_mask)
-    # do inference to check example_inputs formats
-    user_model(*example_inputs)
-
-    def calib_func(prepared_model):
-        for i, (input_ids, last_ind) in enumerate(calib_dataloader):
-            input_bs, input_len = input_ids.shape
-            past_key_values = generate_dummy_past_key_values(input_bs, user_model)
-            attention_mask = torch.ones(input_bs, input_len + 1)
-            attention_mask[:,0] = 0
-            if i >= args.calib_iters:
-                break
-            prepared_model(
-                input_ids=input_ids,
-                past_key_values=past_key_values,
-                attention_mask=attention_mask,
-            )
-
-    from neural_compressor import PostTrainingQuantConfig, quantization
-
+    from intel_extension_for_transformers.neural_chat.config import SmoothQuantConfig
+    from intel_extension_for_transformers.llm.quantization.optimization import Optimization
     if re.search("gptj", user_model.config.model_type) or re.search(
         "gpt_neox", user_model.config.model_type
     ):
@@ -225,30 +115,18 @@ if args.quantize:
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    if args.sq:
-        args.alpha = args.alpha if args.alpha == "auto" else float(args.alpha)
-        recipes = {"smooth_quant": True, "smooth_quant_args": {"alpha": args.alpha}}
-        conf = PostTrainingQuantConfig(
-            backend="ipex" if args.ipex else "default",
-            excluded_precisions=excluded_precisions,
-            op_type_dict=op_type_dict,
-            recipes=recipes,
-            example_inputs=example_inputs,
-        )
-    else:
-        conf = PostTrainingQuantConfig(
-            backend="ipex" if args.ipex else "default",
-            excluded_precisions=excluded_precisions,
-            op_type_dict=op_type_dict,
-            example_inputs=example_inputs,
-        )
+    config = SmoothQuantConfig(alpha=float(args.alpha),
+                               op_type_dict=op_type_dict,
+                               excluded_precisions=excluded_precisions
+                               )
     # save config
     user_model.config.save_pretrained(args.output_dir)
-    q_model = quantization.fit(
+    optimization = Optimization(config)
+    q_model = optimization.optimize(
         user_model,
-        conf,
-        calib_func=calib_func,
+        tokenizer
     )
+    # save model
     q_model.save(args.output_dir)
 
 # Generation
