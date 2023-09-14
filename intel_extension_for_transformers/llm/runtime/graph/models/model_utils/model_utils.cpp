@@ -797,7 +797,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     if (params.scale_dtype == quant_sdtype::fp32) {
       if (params.compute_type == quant_comp::int8) {
         if (params.alg != quant_alg::sym) {
-          fprintf("Current not support asymmetric innt8 computation, reset to symmetric\n");
+          printf("Current not support asymmetric innt8 computation, reset to symmetric\n");
         }
         if (params.block_size == -1) {
           using Kernel = WeiS4ClipFp32PerN<GcCompInt8, JblasAVX512F>;
@@ -852,7 +852,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
     if (params.scale_dtype == quant_sdtype::fp32) {
       if (params.compute_type == quant_comp::int8) {
         if (params.alg != quant_alg::sym) {
-          fprintf("Current not support asymmetric innt8 computation, reset to symmetric\n");
+          printf("Current not support asymmetric innt8 computation, reset to symmetric\n");
         }
         if (params.block_size == -1) {
           using Kernel = WeiS8Fp32PerN<GcCompInt8, JblasAVX512F>;
