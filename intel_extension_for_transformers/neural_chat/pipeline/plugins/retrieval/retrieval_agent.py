@@ -25,7 +25,8 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
                  embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
-                 document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}, override=True, index_name="elastic_index_1"):
+                 document_store=None, top_k=1, search_type="mmr", 
+                 search_kwargs={"k": 1, "fetch_k": 5}, override=True, index_name="elastic_index_1"):
         self.model = None
         self.tokenizer = None
         self.retrieval_type = retrieval_type
@@ -33,9 +34,12 @@ class Agent_QA():
         self.intent_detector = IntentDetector()
         assert os.path.exists(input_path)==True, "You should give a specific path for the uploaded files!"
         if override:
-            self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
+            self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, 
+                                               document_store=document_store,
                                                persist_dir=persist_dir, process=process,
-                                               embedding_model=embedding_model, max_length=max_length, index_name=index_name)
+                                               embedding_model=embedding_model,
+                                               max_length=max_length, 
+                                               index_name=index_name)
             self.db = self.doc_parser.KB_construct(input_path)
             self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
                                        search_type=search_type, search_kwargs=search_kwargs)
@@ -43,9 +47,11 @@ class Agent_QA():
             print("Please give a new persist_dir if you want to create a new local database")
             if os.path.exists(persist_dir): ### If the folder is exist and not vacant, we directly load the existing database
                 if bool(os.listdir(persist_dir)):
-                    self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
-                                               persist_dir=persist_dir, process=process,
-                                               embedding_model=embedding_model, max_length=max_length, index_name=index_name)
+                    self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, 
+                                                       document_store=document_store,
+                                                       persist_dir=persist_dir, process=process,
+                                                       embedding_model=embedding_model, max_length=max_length,
+                                                       index_name=index_name)
                     self.db = self.doc_parser.load(input_path)
                     self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db,
                                                top_k=top_k,
@@ -54,17 +60,20 @@ class Agent_QA():
                     self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type,
                                                        document_store=document_store,
                                                        persist_dir=persist_dir, process=process,
-                                                       embedding_model=embedding_model, max_length=max_length, index_name=index_name)
+                                                       embedding_model=embedding_model,
+                                                       max_length=max_length, index_name=index_name)
                     self.db = self.doc_parser.KB_construct(input_path)
-                    self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
-                                               search_type=search_type, search_kwargs=search_kwargs)
+                    self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db,
+                                               top_k=top_k, search_type=search_type, search_kwargs=search_kwargs)
             else:
-                self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
+                self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type,
+                                                   document_store=document_store,
                                                    persist_dir=persist_dir, process=process,
-                                                   embedding_model=embedding_model, max_length=max_length, index_name=index_name)
+                                                   embedding_model=embedding_model,
+                                                   max_length=max_length, index_name=index_name)
                 self.db = self.doc_parser.KB_construct(input_path)
-                self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
-                                           search_type=search_type, search_kwargs=search_kwargs)
+                self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db,
+                                           top_k=top_k, search_type=search_type, search_kwargs=search_kwargs)
                     
             
 
