@@ -96,7 +96,7 @@ namespace avx2 {
 JBLAS_ISA constexpr DefaultISA = JblasAVX2;
 template <template <class GC, JBLAS_ISA ISA> class ProB>
 using Default = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
-    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA, jblas::gemm::GemmCore_Row_NN_4x24_AVX2,
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA, jblas::gemm::GemmCore_Row_NN_2x48_AVX2,
                                                              jblas::prologue::gemm::ActivationBase, ProB,
                                                              jblas::epilogue::gemm::AlphaBetaProcessFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
