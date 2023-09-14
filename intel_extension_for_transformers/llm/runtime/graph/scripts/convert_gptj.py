@@ -97,14 +97,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
-
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
     
     fout.write(struct.pack("i", int(hparams.get("bos_token_id", -1))))
     fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
 
     byte_encoder = bytes_to_unicode()
     byte_decoder = {v:k for k, v in byte_encoder.items()}

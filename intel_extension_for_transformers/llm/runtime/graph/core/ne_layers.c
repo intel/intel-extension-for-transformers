@@ -2925,8 +2925,8 @@ struct ne_tensor* ne_soft_max_inplace(struct ne_context* ctx, struct ne_tensor* 
 
 // ne_rope
 
-struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx,
-                               bool inplace) {
+struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
+                               int prompt_size, bool inplace) {
   NE_ASSERT(n_past >= 0);
   bool is_node = false;
 
@@ -2943,7 +2943,7 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   ((int32_t*)b->data)[0] = n_past;
   ((int32_t*)b->data)[1] = n_dims;
   ((int32_t*)b->data)[2] = mode;
-  ((int32_t*)b->data)[3] = n_ctx;
+  ((int32_t*)b->data)[3] = prompt_size;
 
   ne_scratch_load(ctx);
 
@@ -2955,13 +2955,14 @@ struct ne_tensor* ne_rope_impl(struct ne_context* ctx, struct ne_tensor* a, int 
   return result;
 }
 
-struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode, int n_ctx) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, n_ctx, false);
+struct ne_tensor* ne_rope(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
+                          int prompt_size) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, false);
 }
 
 struct ne_tensor* ne_rope_inplace(struct ne_context* ctx, struct ne_tensor* a, int n_past, int n_dims, int mode,
-                                  int n_ctx) {
-  return ne_rope_impl(ctx, a, n_past, n_dims, mode, n_ctx, true);
+                                  int prompt_size) {
+  return ne_rope_impl(ctx, a, n_past, n_dims, mode, prompt_size, true);
 }
 
 // ne_rope_back
@@ -3727,38 +3728,23 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
           }
         }
       } else if (dst->type == NE_TYPE_F16) {
-        if (ne_is_contiguous(src0)) {  // fp32->fp16 conversion
-          int nele = ne_nelements(src0);
-          // number of rows per thread
-          int dn = (nele + nth - 1) / nth;
-          // row range for this thread
-          int in0 = dn * ith;
-          int in1 = MIN(in0 + dn, nele);
-          float* srcptr = (float*)src0->data;
-          ne_fp16_t* dstptr = (ne_fp16_t*)dst->data;
-          for (int i = in0; i < in1; i++) {
-            dstptr[i] = NE_FP32_TO_FP16(srcptr[i]);
-          }
-        } else {
-          size_t id = 0;
-          ne_fp16_t* dst_ptr = (ne_fp16_t*)dst->data;
-          for (int i03 = 0; i03 < ne03; i03++) {
-            for (int i02 = 0; i02 < ne02; i02++) {
-              id += ne00 * ir0;
-              for (int i01 = ir0; i01 < ir1; i01++) {
-                for (int i00 = 0; i00 < ne00; i00++) {
-                  const float* src0_ptr =
-                      (float*)((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
+        size_t id = 0;
+        ne_fp16_t* dst_ptr = (ne_fp16_t*)dst->data;
 
-                  dst_ptr[id] = NE_FP32_TO_FP16(*src0_ptr);
-                  id++;
-                }
+        for (int i03 = 0; i03 < ne03; i03++) {
+          for (int i02 = 0; i02 < ne02; i02++) {
+            id += ne00 * ir0;
+            for (int i01 = ir0; i01 < ir1; i01++) {
+              for (int i00 = 0; i00 < ne00; i00++) {
+                const float* src0_ptr = (float*)((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
+
+                dst_ptr[id] = NE_FP32_TO_FP16(*src0_ptr);
+                id++;
               }
-              id += ne00 * (ne01 - ir1);
             }
+            id += ne00 * (ne01 - ir1);
           }
         }
-
       } else if (ne_is_quantized(dst->type)) {
         quantize_row_q_t const quantize_row_q = quantize_fns[dst->type].quantize_row_q;
 
@@ -3888,78 +3874,57 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
       }
     }
   } else if (dst->type == NE_TYPE_F16) {
-    bool dst_contiguous = nb0 < nb1 && nb1 < nb2 && nb2 < nb3;
-    bool src_perm1203 = nb01 < nb02 && nb02 < nb00 && nb00 < nb03;
-    if (dst_contiguous && src_perm1203) {  // number of rows per thread
-      int nele = ne1 * ne2;
-      int dn = (nele + nth - 1) / nth;
-      // row range for this thread
-      int in0 = dn * ith;
-      int in1 = MIN(in0 + dn, nele);
-
-      for (int ib = 0; ib < ne3; ib++) {
-        float* srcptr = (float*)((char*)src0->data + ib * nb03);
-        ne_fp16_t* dstptr = (ne_fp16_t*)((char*)dst->data + ib * nb3);
-        for (int j = 0; j < ne0; j++) {
-          for (int i = in0; i < in1; i++) {
-            dstptr[i * nb1 / sizeof(*dstptr) + j] = NE_FP32_TO_FP16(srcptr[i + j * nb00 / sizeof(*srcptr)]);
-          }
-        }
-      }
-    } else {
-      for (int64_t i03 = 0; i03 < ne03; i03++) {
-        for (int64_t i02 = 0; i02 < ne02; i02++) {
-          i10 += ne00 * ir0;
-          while (i10 >= ne0) {
-            i10 -= ne0;
-            if (++i11 == ne1) {
-              i11 = 0;
-              if (++i12 == ne2) {
-                i12 = 0;
-                if (++i13 == ne3) {
-                  i13 = 0;
-                }
+    for (int64_t i03 = 0; i03 < ne03; i03++) {
+      for (int64_t i02 = 0; i02 < ne02; i02++) {
+        i10 += ne00 * ir0;
+        while (i10 >= ne0) {
+          i10 -= ne0;
+          if (++i11 == ne1) {
+            i11 = 0;
+            if (++i12 == ne2) {
+              i12 = 0;
+              if (++i13 == ne3) {
+                i13 = 0;
               }
             }
           }
-          for (int64_t i01 = ir0; i01 < ir1; i01++) {
-            for (int64_t i00 = 0; i00 < ne00; i00++) {
-              const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
-              char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
+        }
+        for (int64_t i01 = ir0; i01 < ir1; i01++) {
+          for (int64_t i00 = 0; i00 < ne00; i00++) {
+            const char* src0_ptr = ((char*)src0->data + i00 * nb00 + i01 * nb01 + i02 * nb02 + i03 * nb03);
+            char* dst_ptr = ((char*)dst->data + i10 * nb0 + i11 * nb1 + i12 * nb2 + i13 * nb3);
 
-              *(ne_fp16_t*)dst_ptr = NE_FP32_TO_FP16(*(const float*)src0_ptr);
+            *(ne_fp16_t*)dst_ptr = NE_FP32_TO_FP16(*(const float*)src0_ptr);
 
-              if (++i10 == ne0) {
-                i10 = 0;
-                if (++i11 == ne1) {
-                  i11 = 0;
-                  if (++i12 == ne2) {
-                    i12 = 0;
-                    if (++i13 == ne3) {
-                      i13 = 0;
-                    }
+            if (++i10 == ne0) {
+              i10 = 0;
+              if (++i11 == ne1) {
+                i11 = 0;
+                if (++i12 == ne2) {
+                  i12 = 0;
+                  if (++i13 == ne3) {
+                    i13 = 0;
                   }
                 }
               }
             }
           }
-          i10 += ne00 * (ne01 - ir1);
-          while (i10 >= ne0) {
-            i10 -= ne0;
-            if (++i11 == ne1) {
-              i11 = 0;
-              if (++i12 == ne2) {
-                i12 = 0;
-                if (++i13 == ne3) {
-                  i13 = 0;
-                }
+        }
+        i10 += ne00 * (ne01 - ir1);
+        while (i10 >= ne0) {
+          i10 -= ne0;
+          if (++i11 == ne1) {
+            i11 = 0;
+            if (++i12 == ne2) {
+              i12 = 0;
+              if (++i13 == ne3) {
+                i13 = 0;
               }
             }
           }
         }
       }
     }
-
   } else {
     NE_ASSERT(false);  // TODO: implement
   }
@@ -5771,8 +5736,6 @@ static void ne_compute_forward_gelu(const struct ne_compute_params* params, cons
       NE_ASSERT(false);
     } break;
   }
-
-  // printf("XXXXXXXX gelu\n");
 }
 
 // ne_compute_forward_silu
@@ -7140,24 +7103,6 @@ static void ne_compute_forward_get_rows(const struct ne_compute_params* params, 
       NE_ASSERT(false);
     } break;
   }
-
-  // static bool first = true;
-  // printf("ne0 = %d, ne1 = %d, ne2 = %d\n", dst->ne[0], dst->ne[1], dst->ne[2]);
-  // if (first) {
-  //     first = false;
-  // } else {
-  //     for (int k = 0; k < dst->ne[1]; ++k) {
-  //         for (int j = 0; j < dst->ne[0]/16; ++j) {
-  //             for (int i = 0; i < 16; ++i) {
-  //                 printf("%8.4f ", ((float *) dst->data)[k*dst->ne[0] + j*16 + i]);
-  //             }
-  //             printf("\n");
-  //         }
-  //         printf("\n");
-  //     }
-  //     printf("\n");
-  //     exit(0);
-  // }
 }
 
 // ne_compute_forward_get_rows_back
@@ -7706,7 +7651,7 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
   const int64_t n_past = ((int32_t*)src1->data)[0];
   const int64_t n_dims = ((int32_t*)src1->data)[1];
   const int64_t mode = ((int32_t*)src1->data)[2];
-  const int64_t n_ctx = ((int32_t*)src1->data)[3];
+  const int64_t prompt_size = ((int32_t*)src1->data)[3];
 
   assert(n_past >= 0);
 
@@ -7746,9 +7691,10 @@ static void ne_compute_forward_rope_f32(const struct ne_compute_params* params, 
 
         float theta = freq_scale * (float)p;
 
+        // only for glm when mode == 4
         if (is_glm) {
-          theta = MIN(p, n_ctx - 2);
-          float block_theta = MAX(p - (n_ctx - 2), 0);
+          theta = MIN(p, prompt_size - 2);
+          float block_theta = MAX(p - (prompt_size - 2), 0);
           for (int64_t i0 = 0; i0 < ne0 / 4; i0++) {
             const float cos_theta = cosf(theta);
             const float sin_theta = sinf(theta);
@@ -7845,9 +7791,6 @@ static void ne_compute_forward_rope_f16(const struct ne_compute_params* params, 
   const size_t nb1 = dst->nb[1];
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
-
-  // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
-  // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
 
   NE_ASSERT(nb0 == sizeof(ne_fp16_t));
 
@@ -7980,9 +7923,6 @@ static void ne_compute_forward_rope_back_f32(const struct ne_compute_params* par
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
 
-  // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
-  // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
-
   assert(nb0 == sizeof(float));
 
   const int ith = params->ith;
@@ -8088,9 +8028,6 @@ static void ne_compute_forward_rope_back_f16(const struct ne_compute_params* par
   const size_t nb1 = dst->nb[1];
   const size_t nb2 = dst->nb[2];
   const size_t nb3 = dst->nb[3];
-
-  // printf("ne0: %d, ne1: %d, ne2: %d, ne3: %d\n", ne0, ne1, ne2, ne3);
-  // printf("n_past = %d, ne2 = %d\n", n_past, ne2);
 
   assert(nb0 == sizeof(ne_fp16_t));
 
