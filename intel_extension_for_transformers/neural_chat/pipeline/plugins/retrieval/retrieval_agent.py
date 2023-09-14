@@ -31,7 +31,7 @@ class Agent_QA():
         self.retrieval_type = retrieval_type
         self.retriever = None
         self.intent_detector = IntentDetector()
-        assert os.path.exists(input_path)=True, "You should give a correct file path!"
+        assert os.path.exists(input_path)==True, "You should give a specific path for the uploaded files!"
         if override:
             self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
                                                persist_dir=persist_dir, process=process,
