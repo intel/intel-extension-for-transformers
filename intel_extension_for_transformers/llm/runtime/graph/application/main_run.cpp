@@ -20,11 +20,13 @@
 #include <cinttypes>
 #include <cstdio>
 #include <ctime>
+#include <codecvt>
 #include <fstream>
 #include <string>
 #include <vector>
 #include <algorithm>
 #include <random>
+#include <regex>
 #include <thread>
 #include <unordered_map>
 #include <utility>
@@ -49,17 +51,6 @@ static console_state con_st;
 static model_context** g_ctx;
 
 static bool is_interacting = false;
-
-std::string build_prompt(const std::vector<std::string>& history) {
-  std::ostringstream oss_prompt;
-  for (size_t i = 0; i < history.size(); i += 2) {
-    oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
-    if (i < history.size() - 1) {
-      oss_prompt << history[i + 1] << "\n\n";
-    }
-  }
-  return oss_prompt.str();
-}
 
 #if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__)) || defined(_WIN32)
 void sigint_handler(int signo) {
@@ -212,12 +203,16 @@ int main(int argc, char** argv) {
   }
 
   std::vector<int> embd_inp;
-  if (params.model_arch == MODEL_CHATGLM2 || params.model_arch == MODEL_CHATGLM1) {
+  if (params.model_arch == MODEL_CHATGLM2) {
     std::vector<std::string> prompts;
     prompts.push_back(params.prompt);
-    std::string prompt = build_prompt(prompts);
+    std::string prompt = build_prompt_glm2(prompts);
     embd_inp = ::model_tokenize(ctx, prompt, false);
     embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
+  } else if (params.model_arch == MODEL_CHATGLM) {
+    for (auto& i : params.ids) {
+      embd_inp.emplace_back(i);
+    }
   } else {
     embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
   }
@@ -404,14 +399,6 @@ int main(int argc, char** argv) {
 
         // stop saving session if we run out of context
         path_session.clear();
-
-        // printf("\n---\n");
-        // printf("resetting: '");
-        // for (int i = 0; i < (int) embd.size(); i++) {
-        //     printf("%s", model_token_to_str(ctx, embd[i]));
-        // }
-        // printf("'\n");
-        // printf("\n---\n");
       }
 
       // try to reuse a matching prefix from the loaded session instead of re-eval (via n_past)
@@ -461,15 +448,18 @@ int main(int argc, char** argv) {
 
         std::vector<model_token_data> candidates;
         candidates.reserve(n_vocab);
+        for (model_token token_id = 0; token_id < n_vocab; token_id++) {
+          candidates.emplace_back(model_token_data{token_id, logits[token_id], 0.0f});
+        }
+        model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
+
+#ifdef NE_BUILD_TESTS
         std::ofstream outFile("logits.txt", std::ios::app);
         for (model_token token_id = 0; token_id < n_vocab; token_id++) {
           outFile << logits[token_id] << " ";
-          candidates.emplace_back(model_token_data{token_id, logits[token_id], 0.0f});
         }
         outFile << "\n";
-
-        model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
-
+#endif
         // Apply penalties
         float nl_logit = logits[model_token_nl()];
         auto last_n_repeat = std::min(std::min((int)last_n_tokens.size(), repeat_last_n), n_ctx);
@@ -558,12 +548,29 @@ int main(int argc, char** argv) {
     }
 
     // display text
-    if (input_echo) {
-      for (auto id : embd) {
-        printf("%s", model_token_to_str(ctx, id));
+    if (params.model_arch == MODEL_CHATGLM || params.model_arch == MODEL_CHATGLM2) {
+      static bool is_prompt = true;
+      if (input_echo) {
+        if (is_prompt == true) {
+          is_prompt = false;
+          continue;
+        }
+        for (auto id : embd) {
+          std::string s(model_token_to_str(ctx, id));
+          s = postprocess(s);
+          std::cout << s;
+        }
+        fflush(stdout);
       }
-      fflush(stdout);
+    } else {
+      if (input_echo) {
+        for (auto id : embd) {
+          printf("%s", model_token_to_str(ctx, id));
+        }
+        fflush(stdout);
+      }
     }
+
     // reset color to default if we there is no pending user input
     if (input_echo && (int)embd_inp.size() == n_consumed) {
       console_set_color(con_st, CONSOLE_COLOR_DEFAULT);
@@ -657,7 +664,16 @@ int main(int argc, char** argv) {
     }
 
     // end of text token
-    if (!embd.empty() && embd.back() == model_token_eos()) {
+    if (params.model_arch == MODEL_CHATGLM) {
+      if (!embd.empty() && embd.back() == ctx->vocab.eos_token_id) {
+        if (params.instruct) {
+          is_interacting = true;
+        } else {
+          fprintf(stderr, " [end of text]\n");
+          break;
+        }
+      }
+    } else if (!embd.empty() && embd.back() == model_token_eos()) {
       if (params.instruct) {
         is_interacting = true;
       } else {

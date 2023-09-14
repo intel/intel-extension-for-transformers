@@ -24,7 +24,7 @@ class UnitTest(unittest.TestCase):
 
     def test_text_chat(self):
         logger.info(f'Testing CLI request === Text Chat ===')
-        command = 'neuralchat textchat \
+        command = 'neuralchat predict \
                     --query "Tell me about Intel." \
                     --model_name_or_path "facebook/opt-125m"'
         result = None
@@ -33,7 +33,7 @@ class UnitTest(unittest.TestCase):
                                     universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
-        self.assertIn("model loaded", result.stdout)
+        self.assertIn("Loading model", result.stdout)
 
     def test_help(self):
         logger.info(f'Testing CLI request === Help ===')
@@ -48,17 +48,23 @@ class UnitTest(unittest.TestCase):
 
     def test_voice_chat(self):
         logger.info(f'Testing CLI request === Voice Chat ===')
-        command = 'neuralchat voicechat \
-                    --query "Tell me about Intel Xeon Scalable Processors." \
-                    --audio_output_path "./response.wav" \
-                    --model_name_or_path "facebook/opt-125m"'
+        audio_path = \
+           "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
+        if os.path.exists(audio_path):
+            command = f'neuralchat predict \
+                        --query {audio_path} \
+                        --model_name_or_path "facebook/opt-125m"'
+        else:
+            command = f'neuralchat predict \
+                        --query "../../assets/audio/sample.wav" \
+                        --model_name_or_path "facebook/opt-125m"'
         result = None
         try:
             result = subprocess.run(command, capture_output = True, check=True,
                                     universal_newlines=True, shell=True) # nosec
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
-        self.assertIn("model loaded", result.stdout)
+        self.assertIn("Loading model", result.stdout)
 
 
 if __name__ == "__main__":

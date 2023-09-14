@@ -26,8 +26,23 @@ import torch
 class TestTTS(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.tts = TextToSpeech(device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
-        self.asr = AudioSpeechRecognition("openai/whisper-small")
+        try:
+            import habana_frameworks.torch.hpu as hthpu
+            self.is_hpu_available = True
+        except ImportError:
+            self.is_hpu_available = False
+        try:
+            import intel_extension_for_pytorch as ipex
+            self.is_ipex_available = True
+        except ImportError:
+            self.is_ipex_available = False
+        if self.is_hpu_available:
+            self.device = "hpu"
+        else:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.tts = TextToSpeech(device=self.device)
+        self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
+        shutil.rmtree('./tmp_audio', ignore_errors=True)
         os.mkdir('./tmp_audio')
 
     @classmethod
@@ -56,7 +71,10 @@ class TestTTS(unittest.TestCase):
     def test_create_speaker_embedding(self):
         driven_audio_path = \
            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
-        spk_embed = self.tts.create_speaker_embedding(driven_audio_path)
+        if os.path.exists(driven_audio_path):
+            spk_embed = self.tts.create_speaker_embedding(driven_audio_path)
+        else:
+            spk_embed = self.tts.create_speaker_embedding("../../assets/audio/sample.wav")
         self.assertEqual(spk_embed.shape[0], 1)
         self.assertEqual(spk_embed.shape[1], 512)
 

@@ -18,7 +18,6 @@
 """Function to check the intent of the input user query with LLM."""
 from __future__ import division
 import os
-from ....plugins import register_plugin
 
 doc_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/pipeline/plugins/security/"
 def convert_fullwidth_to_halfwidth(query):
@@ -33,7 +32,6 @@ def convert_fullwidth_to_halfwidth(query):
         content += chr(mid_char)
     return content
 
-@register_plugin("safety_checker")
 class SafetyChecker:
     def __init__(self, dict_path=None, matchType=2):
         if dict_path == None or (not os.path.exists(dict_path)):
@@ -157,3 +155,5 @@ class SafetyChecker:
     def post_llm_inference_actions(self, response):
         if self.sensitive_check(response):
             return self.sensitive_filter(response)
+        else:
+            return response

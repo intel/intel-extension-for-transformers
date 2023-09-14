@@ -28,14 +28,19 @@ class TestTTS(unittest.TestCase):
         pass
 
     def test_correct_number(self):
-        text = "3000 people among 1.2 billion people"
+        text = "3000 people among 1.2 billion people."
         result = self.normalizer.correct_number(text)
-        self.assertEqual(result, "three thousand people among one point two billion people")
+        self.assertEqual(result, "three thousand people among one point two billion people.")
 
     def test_correct_abbreviation(self):
-        text = "SATG AIA a great department"
+        text = "TTS a great technology."
         result = self.normalizer.correct_abbreviation(text)
-        self.assertEqual(result, "ess Eigh tee jee Eigh I Eigh a great department")
+        self.assertEqual(result, "tee tee ess a great technology.")
+
+    def test_correct_year(self):
+        text = "In 1986, there are more than 2000 people participating in that party."
+        result = self.normalizer.correct_number(text)
+        self.assertEqual(result, "In nineteen eighty-six, there are more than two thousand people participating in that party.")
 
 if __name__ == "__main__":
     unittest.main()
