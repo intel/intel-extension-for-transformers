@@ -111,10 +111,10 @@ JBLAS_CODE dequant_kblock_s8_f32_fwd(int8_t* srcptr, float* dstptr, int row, int
     auto sptr = scales + kpos * NPad;
     int j = 0;
     for (; j < simd_process_num; j += Vlen) {
-      auto s8_ymm_v = _mm_loadu_si64(srcptr + i * ld_src + j);
+      auto s8_ymm_v = _mm_loadl_epi64(reinterpret_cast<__m128i_u*>( srcptr + i * ld_src + j));
       auto s32_ymm_v = _mm256_cvtepi8_epi32(s8_ymm_v);
       if constexpr (WITH_ZP) {
-        s32_ymm_v = _mm256_sub_epi32(s32_ymm_v, _mm256_cvtepi8_epi32(_mm_loadu_si64(zero_points + kpos * NPad + j)));
+        s32_ymm_v = _mm256_sub_epi32(s32_ymm_v, _mm256_cvtepi8_epi32(_mm_loadl_epi64(reinterpret_cast<__m128i_u*>( zero_points + kpos * NPad + j))));
       }
       auto f32_ymm_v = _mm256_cvtepi32_ps(s32_ymm_v);
       f32_ymm_v = _mm256_mul_ps(f32_ymm_v, _mm256_loadu_ps(sptr + j));
@@ -347,7 +347,7 @@ static inline JBLAS_CODE quantize_fp_u8_colblock(int row, int col, const SRC_T* 
         vdsrc = _mm256_min_epi32(vdsrc, vff);
         vdsrc = _mm256_max_epi32(vdsrc, v0);
         auto vbsrc = avx2_cvtepi32_epu8(vdsrc);
-        _mm_storeu_si64((__m128i*)&dstptr[(j + ij) + i * ld_dst], vbsrc);
+        _mm_storel_epi64((__m128i*)&dstptr[(j + ij) + i * ld_dst], vbsrc);
       }
       if (ij < blocksize) {
         for (; ij < blocksize; ij++) {
