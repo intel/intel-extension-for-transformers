@@ -58,7 +58,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     )
     parser.add_argument(
         "-b",
-        "--batch_size",
+        "--batch_size_truncate",
         type=int,
         help="batch size for prompt processing (default: 512)",
         default=512,
@@ -108,7 +108,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--prompt",         args.prompt])
     cmd.extend(["--n-predict",      str(args.n_predict)])
     cmd.extend(["--threads",        str(args.threads)])
-    cmd.extend(["--batch-size",     str(args.batch_size)])
+    cmd.extend(["--batch-size-truncate",     str(args.batch_size_truncate)])
     cmd.extend(["--ctx-size",       str(args.ctx_size)])
     cmd.extend(["--seed",           str(args.seed)])
     cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])
