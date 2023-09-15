@@ -25,7 +25,6 @@ from transformers import SpeechT5HifiGan
 import soundfile as sf
 import numpy as np
 import contextlib
-import intel_extension_for_pytorch as ipex
 
 from .utils.english_normalizer import EnglishNormalizer
 
@@ -33,58 +32,51 @@ class TextToSpeech():
     """Convert text to speech with a driven speaker embedding
 
     1) Default voice (Original model + Proved good default speaker embedding from trained dataset)
-    2) Finetuned voice (Fine-tuned offline model of specific person, such as Pat's voice + corresponding embedding)
+    2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
     3) Customized voice (Original model + User's customized input voice embedding)
     """
     def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu", 
       asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
-        self.original_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts")
-        self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
         self.device = device
+        self.original_model = SpeechT5ForTextToSpeech.from_pretrained("microsoft/speecht5_tts").to(self.device)
+        self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
         self.voice = voice
         self.output_audio_path = output_audio_path
         self.stream_mode = stream_mode
         self.spk_model_name = "speechbrain/spkrec-xvect-voxceleb"
         self.speaker_model = EncoderClassifier.from_hparams(
             source=self.spk_model_name,
-            run_opts={"device": self.device},
-            savedir=os.path.join("/tmp", self.spk_model_name)
-        )
-        self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
+            run_opts={"device": "cpu"},
+            savedir=os.path.join("/tmp", self.spk_model_name))
+        self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
-            default_speaker_embedding_path = os.path.join(script_dir,
-                                                '../../../assets/speaker_embeddings/spk_embed_default.pt')
+        if os.path.exists(os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
+                          + '/assets/speaker_embeddings/spk_embed_default.pt'):
+            default_speaker_embedding_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
+                              + '/assets/speaker_embeddings/spk_embed_default.pt'
         elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
             default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
+        elif os.path.exists('spk_embed_default.pt'):
+            default_speaker_embedding_path = 'spk_embed_default.pt'
         else:
             print("Warning! Need to prepare speaker_embeddings")
         # load the default speaker embedding
         self.default_speaker_embedding = torch.load(default_speaker_embedding_path)
 
         # preload the demo model in case of time-consuming runtime loading
-        self.pat_model = None
-        if os.path.exists("pat.pt"):
-            self.pat_model = torch.load("pat.pt", map_location=device)
+        self.demo_model = None
+        if os.path.exists("demo_model.pt"):
+            self.demo_model = torch.load("demo_model.pt", map_location=device)
 
-        self.pat_speaker_embeddings = None
-        pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_pat.pt')
+        self.male_speaker_embeddings = None
+        pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_male.pt')
         if os.path.exists(pat_speaker_embedding_path):
-            self.pat_speaker_embeddings = torch.load(pat_speaker_embedding_path)
-        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt')):
-            self.pat_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_pat.pt'))
-
-        self.cpu_pool = None
-        if not torch.cuda.is_available():
-            # ipex IOMP hardware resources
-            if 'LD_PRELOAD' in os.environ and 'libiomp' in os.environ['LD_PRELOAD']:
-                import intel_extension_for_pytorch as ipex
-                self.cpu_pool = ipex.cpu.runtime.CPUPool([i for i in range(24)])
-            else:
-                print("Warning! You have not preloaded iomp beforehand and that may lead to performance issue")
+            self.male_speaker_embeddings = torch.load(pat_speaker_embedding_path)
+        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt')):
+            self.male_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt'))
 
         self.normalizer = EnglishNormalizer()
 
@@ -97,10 +89,10 @@ class TextToSpeech():
             [driven_audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
         waveform = audio_dataset[0]["audio"]['array']
         with torch.no_grad():
-            speaker_embeddings = self.speaker_model.encode_batch(torch.tensor(waveform))
+            speaker_embeddings = self.speaker_model.encode_batch(torch.tensor(waveform).to("cpu"))
             speaker_embeddings = torch.nn.functional.normalize(speaker_embeddings, dim=2) # [1,1,512]
             speaker_embeddings = speaker_embeddings[0] # [1,512]
-        return speaker_embeddings.cpu()
+        return speaker_embeddings.to(self.device)
 
     def _lookup_voice_embedding(self, voice, 
       asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
@@ -148,7 +140,7 @@ class TextToSpeech():
         """Text to speech.
 
         text: the input text
-        voice: default/pat/huma/tom/eric...
+        voice: default/male/female/...
         batch_length: the batch length for spliting long texts into batches to do text to speech
         """
         print(text)
@@ -164,23 +156,23 @@ class TextToSpeech():
         print(texts)
         model = self.original_model
         speaker_embeddings = self.default_speaker_embedding
-        if voice == "pat":
-            if self.pat_model == None:
+        if voice == "male":
+            if self.demo_model == None:
                 print("Finetuned model is not found! Use the default one")
             else:
-                model = self.pat_model
-            if self.pat_speaker_embeddings == None:
-                print("Pat's speaker embedding is not found! Use the default one")
+                model = self.demo_model
+            if self.male_speaker_embeddings == None:
+                print("Male speaker embedding is not found! Use the default one")
             else:
-                speaker_embeddings = self.pat_speaker_embeddings
+                speaker_embeddings = self.male_speaker_embeddings
         elif voice != "default":
             speaker_embeddings = torch.load(self._lookup_voice_embedding(voice))
         all_speech = np.array([])
         for text_in in texts:
             inputs = self.processor(text=text_in, return_tensors="pt")
             with torch.no_grad():
-                with ipex.cpu.runtime.pin(self.cpu_pool) if self.cpu_pool else contextlib.nullcontext():
-                    spectrogram = model.generate_speech(inputs["input_ids"], speaker_embeddings)
+                spectrogram = model.generate_speech(
+                    inputs["input_ids"].to(self.device), speaker_embeddings.to(self.device))
                 speech = self.vocoder(spectrogram)
                 all_speech = np.concatenate([all_speech, speech.cpu().numpy()])
                 all_speech = np.concatenate([all_speech, np.array([0 for i in range(8000)])])  # pad after each end

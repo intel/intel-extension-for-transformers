@@ -28,10 +28,10 @@ starlette
 yacs
 uvicorn
 optimum
-optimum[habana]
 sentence_transformers
 unstructured
 markdown
 rouge_score
 openpyxl
 numpy==1.23.5
+tiktoken==0.4.0

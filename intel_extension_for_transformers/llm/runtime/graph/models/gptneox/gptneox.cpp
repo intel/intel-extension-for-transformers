@@ -57,9 +57,9 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, co
     // projection
     // cur = proj_w*cur + proj_b
     cur = ne_mul_mat(ctx0, layer.ffn[2], cur);
-  }
 
-  cur = ne_add(ctx0, ne_repeat(ctx0, layer.ffn[3], cur), cur);
+    cur = ne_add(ctx0, ne_repeat(ctx0, layer.ffn[3], cur), cur);
+  }
   return cur;
 }
 

@@ -399,6 +399,7 @@ dbmdz
 DBMDZ
 dbox
 dbs
+dcbadge
 DCMAKE
 dcn
 ddp
@@ -663,6 +664,7 @@ getitem
 getsize
 GetStrides
 GFLOPs
+gg
 gh
 gid
 Gimpel
@@ -1074,6 +1076,7 @@ mnist
 MNIST
 mnli
 MNLI
+mnZDVAbm
 mobilebert
 MobileBERT
 mobilenet
@@ -1917,6 +1920,7 @@ VOCdevkit
 VOCmAP
 VOCMApMetrics
 VOCRecord
+vercel
 voxel
 voxels
 vram
@@ -2290,3 +2294,7 @@ Habana
 customizable
 mosaicml
 mpt
+ChatGLM
+chatglm
+gptj
+gptneox
