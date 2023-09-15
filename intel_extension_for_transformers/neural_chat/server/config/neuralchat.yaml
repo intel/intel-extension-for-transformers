@@ -27,7 +27,7 @@ model_name_or_path: "meta-llama/Llama-2-7b-chat-hf"
 device: "auto"
 
 asr:
-    enable: true
+    enable: false
     args:
         # support cpu, hpu, xpu, cuda
         device: "cpu"
@@ -37,7 +37,7 @@ asr:
         bf16: false
 
 tts:
-    enable: true
+    enable: false
     args:
         device: "cpu"
         voice: "default"
@@ -56,23 +56,23 @@ tts_chinese:
         output_audio_path: "./output_audio.wav"
 
 retrieval:
-    enable: true
+    enable: false
     args:
         retrieval_type: "dense"
         input_path: "../../assets/docs/"
         embedding_model: "hkunlp/instructor-large"
         persist_dir: "./output"
         max_length: 512
-        process: true
+        process: false
 
 cache:
-    enable: true
+    enable: false
     args:
         config_dir: "../../pipeline/plugins/caching/cache_config.yaml"
         embedding_model_dir: "hkunlp/instructor-large"
 
 safety_checker:
-    enable: true
+    enable: false
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
 tasks_list: ['textchat', 'retrieval']
