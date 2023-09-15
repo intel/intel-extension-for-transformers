@@ -170,7 +170,7 @@ The table below displays the validated model list in NeuralChat for both inferen
 
 ## Selected Notebooks 
 
-Welcome to use Jupyter Notebooks to explore how to build and customize chatbots across a wide range of platforms, including Intel Xeon CPU(ICX and SPR), Intel XPU, Intel Habana Gaudi1/Gaudi2, and Nvidia GPU. Dive into our detailed guide to discover how to develop chatbots on these various computing platforms.
+Welcome to use Jupyter notebooks to explore how to run, deploy, and customize chatbots across a wide range of platforms, including Intel Xeon Scalable Processors (SPR, ICX), Intel Xeon CPU Max Series, Intel Habana Gaudi1/Gaudi2, and other platforms. The selected notebooks are shown below and the full notebooks are available in [here](docs/full_notebooks.md).
 
 | Notebook | Title                                       | Description                                                | Link                                           |
 | ------- | --------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
