@@ -2224,7 +2224,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
     }
   }
   // DEBUG
-#if 0
+#if 1
   printf("====================== \n");
   for (auto kk : embd_inp) {
     printf("%d: %s \n", kk, (ctx->vocab.id_to_token.at(kk).tok).c_str());
@@ -2254,7 +2254,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
       beam_top_k(ctx, li.next_token_scores, {batch_size}, beam_indices, sample_scale);
   // std::vector<std::vector<model_token_data>> next_tokens = li.top_k(sample_num);
   // DEBUG
-#if 0
+#if 1
   printf("====================== \n");
   for (auto kk : next_tokens) {
     printf("%d: %s, score: %10.6f, beam_idx: %d \n", kk.id, (ctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.score,
@@ -2266,11 +2266,11 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
   for (int i = 0; i < beam_size; ++i) {
     beam b = cur_beams[i];
     if (b.eos()) {
-      // printf("---------------------eos-----------------------> \n");
-      if (b.score != 100) {
-        b.eos_score = b.score;
-        b.score = 100;
-      }
+      printf("---------------------eos-----------------------> \n");
+      // if (b.score != 100) {
+      //   b.eos_score = b.score;
+      //   b.score = 100;
+      // }
       next_beams.push_back(std::move(b));
     }
   }
@@ -2505,7 +2505,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       // beam_score_length_penalize();
     }
 
-#if 0  // DEBUG: print current beams for this iteration
+#if 1  // DEBUG: print current beams for this iteration
     printf("\n\nCurrent beams:\n");
     for (size_t j = 0; j < cur_beams.size(); ++j) {
       printf("beams[%d]: ", j);
@@ -2515,11 +2515,11 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
 #endif
   }
 
-  for (auto& b : cur_beams) {
-    if (b.eos()) {
-      b.score = b.eos_score;
-    }
-  }
+  // for (auto& b : cur_beams) {
+  //   if (b.eos()) {
+  //     b.score = b.eos_score;
+  //   }
+  // }
   beam_score_length_penalize();
   const beam& top_b = top_beam();
 
