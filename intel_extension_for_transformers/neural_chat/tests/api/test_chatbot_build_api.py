@@ -72,7 +72,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
         self.assertIsNotNone(response)
         print("output audio path: ", response)
-        self.assertTrue(os.path.exists("./output_audio_path"))
+        self.assertTrue(os.path.exists("./output_audio.wav"))
 
     def test_build_chatbot_with_safety_checker_plugin(self):
         plugins.safety_checker.enable = True
