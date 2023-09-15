@@ -76,7 +76,8 @@ enum model_archs {
   MODEL_OPT,
   MODEL_BLOOM,
   MODEL_CHATGLM2,
-  MODEL_CHATGLM1
+  MODEL_CHATGLM1,
+  MODEL_WHISPER
 };
 
 static const size_t MB = 1024 * 1024;
@@ -141,6 +142,9 @@ struct model_hparams {
   bool operator!=(const model_hparams& other) const {
     return static_cast<bool>(memcmp(this, &other, sizeof(model_hparams)));
   }
+
+  // whisper
+  int32_t e_model_type = 0;
 };
 
 struct model_layer {
@@ -393,7 +397,8 @@ class model_name_to_arch {
       {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
       {"dolly", MODEL_GPTNEOX},     {"starcoder", MODEL_STARCODER},
       {"falcon", MODEL_FALCON},     {"bloom", MODEL_BLOOM},
-      {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1}};
+      {"chatglm2", MODEL_CHATGLM2}, {"chatglm1", MODEL_CHATGLM1},
+      {"whisper", MODEL_WHISPER}};
 };
 
 #ifdef __cplusplus
