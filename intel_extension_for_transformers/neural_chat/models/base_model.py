@@ -189,7 +189,7 @@ class BaseModel(ABC):
                         if plugin_name == "safety_checker" and response:
                             return "Your query contains sensitive words, please try another query."
                         else:
-                            if response != None:
+                            if response != None and response != False:
                                 query = response
         assert query is not None, "Query cannot be None."
 
