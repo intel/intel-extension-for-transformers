@@ -12,7 +12,7 @@
 ##  See the License for the specific language governing permissions and
 ##  limitations under the License.
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
-project(QBits LANGUAGES C CXX)
+project(qbits LANGUAGES C CXX)
 
 
 set(QBITS_TORCH_PATH "" CACHE STRING "Torch install path")
@@ -37,9 +37,9 @@ add_subdirectory(dispatcher)
 
 file(GLOB qbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
 # Define our library target
-add_library(QBits SHARED ${qbits_src})
+add_library(qbits SHARED ${qbits_src})
 # Enable C++14
-target_compile_features(QBits PRIVATE cxx_std_14)
+target_compile_features(qbits PRIVATE cxx_std_14)
 
 # Link against LibTorch
-target_link_libraries(QBits jblas_dispatcher)
+target_link_libraries(qbits jblas_dispatcher)

@@ -32,7 +32,7 @@ inline JBLAS_CODE alphabeta_dt_cvt_process(float* tmp_dst, const int cachestep, 
   auto cptr = reinterpret_cast<DST_T*>(_param.C) + COffset;
   if constexpr (std::is_same_v<DST_T, float>) {
     return jblas::kernel::wrapper::Memcpy2D::template forward<ISA_T, float, DST_T>(
-        (void*)tmp_dst, (void*)cptr, M, N * sizeof(DST_T), cachestep * sizeof(float), _param.ldc * sizeof(DST_T), NULL);
+        tmp_dst, cptr, M, N, cachestep, _param.ldc, NULL);
   }
   if constexpr (std::is_same_v<DST_T, jblas::utils::bf16>) {
     return jblas::kernel::wrapper::Memcpy2DFp32CvtBf16::template forward<ISA_T>(
