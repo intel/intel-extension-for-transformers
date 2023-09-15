@@ -75,4 +75,4 @@ safety_checker:
     enable: false
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
-tasks_list: ['textchat', 'voicechat', 'finetune']
+tasks_list: ['textchat', 'retrieval']
