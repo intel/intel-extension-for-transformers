@@ -239,13 +239,13 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    ext_modules=[CMakeExtension(
+    ext_modules = [CMakeExtension(
         "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr', True)]
     if not SKIP_RUNTIME:
         check_submodules()
         ext_modules.append(CMakeExtension(
             "intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"))
-        cmdclass={'build_ext': CMakeBuild}
+        cmdclass = {'build_ext': CMakeBuild}
 
     setup(
         name=project_name,
@@ -257,7 +257,7 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/intel-extension-for-transformers",
-        ext_modules = ext_modules,
+        ext_modules=ext_modules,
         packages=find_packages(),
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
@@ -265,7 +265,7 @@ if __name__ == '__main__':
         package_data={
             '': ['*.yaml'],
         },
-        cmdclass = cmdclass if not SKIP_RUNTIME else {},
+        cmdclass=cmdclass if not SKIP_RUNTIME else {},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [

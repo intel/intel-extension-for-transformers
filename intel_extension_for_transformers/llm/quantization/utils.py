@@ -21,7 +21,7 @@ import torch
 from accelerate import init_empty_weights
 from neural_compressor import quantization
 from neural_compressor.config import PostTrainingQuantConfig
-from .nn import QuantizedLinearQBits, QuantizedLinearINT4, QuantizedLinearINT8
+from .nn import QuantizedLinearQBits  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
 
 
 logger = logging.getLogger(__name__)
