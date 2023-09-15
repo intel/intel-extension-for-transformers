@@ -16,28 +16,31 @@
 # limitations under the License.
 """Configs for intel extension for transformers."""
 
-from dataclasses import dataclass
-from typing import Optional, Any
+from dataclasses import dataclass, field
+from typing import Any, Optional
+
 from transformers import BitsAndBytesConfig
 
 
 @dataclass
 class WeightOnlyQuantizationConfig:
-    algorithm: str = 'RTN'
+    algorithm: str = "RTN"
     bits: int = 8
     group_size: int = -1
-    scheme: str = 'sym'
+    scheme: str = "sym"
     enable_full_range: bool = True
+
 
 @dataclass
 class AMPConfig:
-    dtype: str = 'bfloat16'    
+    dtype: str = "bfloat16"
 
 @dataclass
 class SmoothQuantConfig:
     tokenizer: Any = None
     calib_func: Any = None
+    calib_dataset: str = "NeelNanda/pile-10k"
+    calib_iters: int = 100
     alpha: float = 0.5
-    op_type_dict: dict = None  
-    excluded_precisions: dict = None
-
+    op_type_dict: dict = None
+    excluded_precisions: list = field(default_factory=list)

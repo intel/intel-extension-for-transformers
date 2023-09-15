@@ -176,11 +176,23 @@ class _BaseAutoModelClass:
             if calib_func is None:
                 from datasets import load_dataset
                 from torch.utils.data import DataLoader
-                calib_dataset = load_dataset("NeelNanda/pile-10k", split="train")
+                calib_dataset = quantization_config.calib_dataset
+                calib_iters = quantization_config.calib_iters
+                calib_dataset = load_dataset(calib_dataset, split="train")
                 calib_dataset = calib_dataset.shuffle(seed=42)
 
                 def tokenize_function(examples):
-                    return quantization_config.tokenizer(examples["text"])
+                    if 'prompt' in examples:
+                        example = quantization_config.tokenizer(examples["prompt"])
+                    elif 'text' in examples:
+                        example = quantization_config.tokenizer(examples["text"])
+                    elif 'code' in examples:
+                        example = quantization_config.tokenizer(examples["code"])
+                    else:
+                        logger.error("Please check dataset prompt identifier," +
+                                     " NeelNanda/pile-10k is default used calibration dataset.")
+                        exit(0)
+                    return example
 
                 tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
                 tokenized_dataset.set_format(type="torch", columns=["input_ids"])
@@ -213,7 +225,7 @@ class _BaseAutoModelClass:
                     past_key_values = generate_dummy_past_key_values(input_bs, model)
                     attention_mask = torch.ones(input_bs, input_len + 1)
                     attention_mask[:,0] = 0
-                    if i >= 100:
+                    if i >= calib_iters:
                         break
                     model(
                         input_ids=input_ids,
