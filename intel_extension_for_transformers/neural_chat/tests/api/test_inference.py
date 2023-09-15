@@ -46,6 +46,22 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
+        
+    def test_retrieval_override(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../assets/docs/"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response1 = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        print(response1)
+        self.assertIsNotNone(response1)
+        plugins.retrieval.override = False
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        response2 = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        print(response2)
+        self.assertIsNotNone(response2)
 
     def test_voice_chat(self):
         plugins.tts.enable = True
