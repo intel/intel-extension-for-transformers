@@ -23,7 +23,7 @@ from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
 from ..utils.model_utils import load_model, predict, predict_stream, MODELS
-from ..utils.prompt import prepare_prompt
+from ..prompts import prepare_prompt
 
 
 def construct_parameters(query, model_name, device, config):
