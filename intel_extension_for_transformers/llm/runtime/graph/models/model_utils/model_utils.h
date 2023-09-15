@@ -324,7 +324,7 @@ class beam_search_kv_cache_reorder {
   ~beam_search_kv_cache_reorder() {}
 
   virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
-                      const std::unordered_map<int, int>& kv_reorder_indices = {},
+                      const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
                       const std::vector<beam>& next_beams = {});
 
  private:
@@ -350,7 +350,7 @@ class beam_search_flow {
 
  private:
   void fill_next_beams_by_top_probabilities();
-  std::unordered_map<int, int> update_kv_cache_reorder_indices();
+  std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
   void beam_score_length_penalize();
   const beam& top_beam();
 

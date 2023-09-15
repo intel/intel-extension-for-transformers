@@ -1992,7 +1992,7 @@ struct logits_info {
 #pragma omp parallel for
       for (int j = 0; j < n_vocab; ++j) {
         float score = log_probability_from_logit(i, *(logits + i * bs_stride + offset + j));
-        next_token_scores[i].push_back(score);
+        next_token_scores[i].push_back(std::move(score));
       }
     }
   }
@@ -2006,33 +2006,39 @@ struct logits_info {
     }
   }
 
-  // Return top k token_data by score. (batch, top_k)
-  // std::vector<std::vector<model_token_data>> top_k(const int& k) {
-  //   std::vector<std::vector<model_token_data>> min_heap(batch_size);  // min-heap by logit
-  //   int tk = std::min(k, n_vocab);
-  //   // min_heap.reserve(batch_size * tk);
-  //   for (int idx = 0; idx < batch_size; ++idx) {
-  //     for (int32_t token_idx = 0; token_idx < tk; ++token_idx) {
-  //       min_heap[idx].push_back(get_token_data(idx, token_idx));
-  //     }
-  //   }
-  //   auto comp = [](const model_token_data& a, const model_token_data& b) { return a.logit > b.logit; };
-  //   for (int idx = 0; idx < batch_size; ++idx) {
-  //     std::make_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
-  //     for (int32_t token_idx = tk; token_idx < n_vocab; ++token_idx) {
-  //       if (min_heap[idx].front().logit < get_token_data(idx, token_idx).logit) {
-  //         std::pop_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
-  //         min_heap[idx].back().id = token_idx;
-  //         min_heap[idx].back().logit = get_token_data(idx, token_idx).logit;
-  //         std::push_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
-  //       }
-  //     }
-  //   }
-  //   return min_heap;
-  // }
+  // Return top k token_data by logit in n_vocab dim. (request_bs*num_beam, top_k)
+  // each beam gives top_k results --> + prev_scores --> from (num_beam * top_k) sort num_beam
+  // however, huggingface transformers repo implements like this:
+  // log_softmax(num_beam*n_vocab) -- > + prev_scores --> sort num_beam
+  // huggingface outputs text with better quality but computing all log_softmax brings overhead
+  // we keep this `logits_top_k` for further acceleration if needed (
+  // quality & latency tradeoff, or sample num k = beam_size? )
+  std::vector<std::vector<model_token_data>> logits_top_k(const int& k) {
+    std::vector<std::vector<model_token_data>> min_heap(batch_size);  // min-heap by logit
+    int tk = std::min(k, n_vocab);
+    // min_heap.reserve(batch_size * tk);
+    for (int idx = 0; idx < batch_size; ++idx) {
+      for (int32_t token_idx = 0; token_idx < tk; ++token_idx) {
+        min_heap[idx].push_back(get_token_data(idx, token_idx));
+      }
+    }
+    auto comp = [](const model_token_data& a, const model_token_data& b) { return a.logit > b.logit; };
+    for (int idx = 0; idx < batch_size; ++idx) {
+      std::make_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+      for (int32_t token_idx = tk; token_idx < n_vocab; ++token_idx) {
+        if (min_heap[idx].front().logit < get_token_data(idx, token_idx).logit) {
+          std::pop_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+          min_heap[idx].back().id = token_idx;
+          min_heap[idx].back().logit = get_token_data(idx, token_idx).logit;
+          std::push_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
+        }
+      }
+    }
+    return min_heap;
+  }
 };
 
-// Return top k token_data by score. (prompt_bs * 2 * num_beam)
+// Return top k token_data by score. (prompt_bs * sample_scale * num_beam)
 std::vector<beam_top_k_res> beam_top_k(const model_context* ctx, const std::vector<std::vector<float>>& token_scores,
                                        const std::vector<int>& num_beams, const std::vector<int> beam_indices,
                                        const int& sample_scale, const int& dim) {
@@ -2111,7 +2117,7 @@ void logits_processor::process(const uint32_t& cur_len, std::vector<std::vector<
 
 //  TODO dispatch JBLAS kv cache manager
 void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
-                                          const std::unordered_map<int, int>& kv_reorder_indices,
+                                          const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
   // first step
   if (n_past == n_prompt_tokens) {
@@ -2143,9 +2149,12 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
     }
   } else if (n_past > n_prompt_tokens) {
     // next setp
-    for (auto it : kv_reorder_indices) {
-      if (it.first != it.second) {
-        uint32_t len = next_beams[it.first].token_ids.size() - 1;
+    for (auto t : kv_reorder_indices) {
+      int cur_id = std::get<0>(t);
+      int cpy_id = std::get<1>(t);
+      if (cur_id != cpy_id) {
+        // printf("it.first: %d, it.second: %d \n", cur_id, cpy_id);
+        uint32_t len = next_beams[cur_id].token_ids.size() - 1;
         // last token in beam is for next step inference
         MODEL_ASSERT(len == n_past - n_prompt_tokens);
         size_t input_token_offset_k = n_prompt_tokens * ne_element_size(ctx->model.kv_self.k) * n_embd;
@@ -2161,21 +2170,21 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
           // [n_embd, N]
           memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
                      (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                      it.first * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
+                      cur_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
                      input_token_offset_k,
                  static_cast<char*>(ctx->model.kv_self.k->data) +
                      i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                     it.second * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
+                     cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
                  ne_element_size(ctx->model.kv_self.k) * n_embd * len);
           // [N, n_embd]
           for (int k = 0; k < n_embd; ++k) {
             memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
                        (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        it.first * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
+                        cur_id * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
                         n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
                    static_cast<char*>(ctx->model.kv_self.v->data) +
                        (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        it.second * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
+                        cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
                         n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
                    ne_element_size(ctx->model.kv_self.v) * len);
           }
@@ -2257,7 +2266,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
   for (int i = 0; i < beam_size; ++i) {
     beam b = cur_beams[i];
     if (b.eos()) {
-      // printf("eos \n");
+      // printf("---------------------eos-----------------------> \n");
       if (b.score != 100) {
         b.eos_score = b.score;
         b.score = 100;
@@ -2321,7 +2330,7 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
 }
 
 // get kv cache reorder indices,
-// k: dst_beam batch idx, v: src_beam batch idx
+// idx_0: dst_beam batch idx, idx_1: src_beam batch idx
 // for copy predicted past token kv cache
 // for example:
 //     - c
@@ -2331,9 +2340,9 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
 //     - f            |       - ad
 // b -|    ---------->|
 //     - g
-// kv_cache_reorder_indices = {0:0, 1:0}
+// kv_cache_reorder_indices = {{0,0}, {1,0}}
 // if kv_cache_reorder_indices = {0:0, 1:1}, then do not need reorder (cpy)
-std::unordered_map<int, int> beam_search_flow::update_kv_cache_reorder_indices() {
+std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indices() {
   MODEL_ASSERT(next_beams.size() == beam_size);
   MODEL_ASSERT(cur_beams.size() == beam_size);
   // DEBUG
@@ -2349,7 +2358,7 @@ std::unordered_map<int, int> beam_search_flow::update_kv_cache_reorder_indices()
   }
   printf("\n");
 #endif
-  std::unordered_map<int, int> kv_reorder_indices;
+  std::vector<std::tuple<int, int>> kv_reorder_indices;
   kv_reorder_indices.reserve(beam_size);
   // shuffle beams which are early stopped (eos)
   // keep them behind beams which have non-eos
@@ -2374,12 +2383,41 @@ std::unordered_map<int, int> beam_search_flow::update_kv_cache_reorder_indices()
 
   // update indices and batch ids
   for (int i = 0; i < beam_size; ++i) {
-    kv_reorder_indices[i] = cpy_final_bs_ids[i];
     // update infer_bs_id before next beam generation
     next_beams[nb_shuffle_ids[i]].infer_bs_id = i;
   }
   // beams should be ordered by batch id
   std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
+
+  // we arrange beams by inference batch indice rather score for memcpy time reduction
+  // so there will be 2 circumstances (ignore no memcpy : 0,1,2,3 --> 0,1,2,3)
+  // 1. cpoy former beams into latter beams, like: 0,1,2,3 --> 0,0,0,1
+  // 2. copy latter beams into former beams, like: 0,1,2,3 -- > 1,2,2,3
+  // kv cache memcpy happens in itself which would cause memory dislocation if follows wrong order
+  // so we give the contrary order to beams vector indice, which is:
+  // if 1, copy from tail
+  // if 2, copy from head
+  bool cpy_from_head = true;
+  int dst_idx_sum = 0;
+  int src_idx_sum = 0;
+  for (int i = 0; i < cpy_final_bs_ids.size(); ++i) {
+    dst_idx_sum += i;
+    src_idx_sum += cpy_final_bs_ids[i];
+    if (src_idx_sum < dst_idx_sum) {
+      cpy_from_head = false;
+      break;
+    }
+  }
+  if (cpy_from_head) {
+    for (int i = 0; i < cpy_final_bs_ids.size(); ++i) {
+      kv_reorder_indices.push_back({i, cpy_final_bs_ids[i]});
+    }
+  } else {
+    for (int i = cpy_final_bs_ids.size() - 1; i >=0; --i) {
+      kv_reorder_indices.push_back({i, cpy_final_bs_ids[i]});
+    }
+  }
+
 #if 0  // DEBUG
   printf("cpy_final_bs_ids: ");
   for (int i = 0; i < beam_size; ++i) {
@@ -2459,7 +2497,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       // beam_score_length_penalize();
     } else {
       fill_next_beams_by_top_probabilities();
-      std::unordered_map<int, int> kv_reorder_indices = update_kv_cache_reorder_indices();
+      std::vector<std::tuple<int, int>> kv_reorder_indices = update_kv_cache_reorder_indices();
       n_past += 1;
       kv_reorder->update(n_past, n_tokens, kv_reorder_indices, next_beams);
       cur_beams.swap(next_beams);
@@ -2484,14 +2522,6 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   }
   beam_score_length_penalize();
   const beam& top_b = top_beam();
-#if 0  // DEBUG: print current beams for this iteration
-  printf("\n\nCurrent beams:\n");
-  for (size_t j = 0; j < cur_beams.size(); ++j) {
-    printf("beams[%d]: ", j);
-    cur_beams[j].print();
-    fflush(stdout);
-  }
-#endif
 
 #if 0  // DEBUG: print final beam result
     printf("\n\nFinal beam:\n");
