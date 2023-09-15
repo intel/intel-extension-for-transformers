@@ -1,9 +1,6 @@
 transformers>=4.32.0
 peft
 fschat
-torch
-torchaudio
-intel_extension_for_pytorch
 num2words
 speechbrain
 paddlepaddle
@@ -28,7 +25,6 @@ starlette
 yacs
 uvicorn
 optimum
-optimum[habana]
 sentence_transformers
 unstructured
 markdown
