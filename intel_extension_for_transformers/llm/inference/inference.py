@@ -696,6 +696,10 @@ def predict_stream(**params):
                         input_tokens = prepare_inputs(
                             input_tokens, model.device if hasattr(model, 'device') else torch.device(device)
                         )
+                    else:
+                        input_tokens = tokenizer.batch_encode_plus(
+                            [prompt], return_tensors="pt", padding=True
+                        )
                     with context:
                         generation_kwargs = dict(
                             streamer=streamer,
