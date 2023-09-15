@@ -98,6 +98,7 @@ def model_on_meta(config):
 
 def get_optimized_model_name(config):
     # pylint: disable=E0401
+    # pylint: disable=E0611
     from optimum.habana.transformers.generation import MODELS_OPTIMIZED_WITH_STATIC_SHAPES
 
     for model_type in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
