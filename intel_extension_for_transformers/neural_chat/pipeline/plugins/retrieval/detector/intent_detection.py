@@ -18,7 +18,7 @@
 
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
     import generate_intent_prompt
-from intel_extension_for_transformers.neural_chat.utils.model_utils import predict
+from intel_extension_for_transformers.neural_chat.models.model_utils import predict
 
 class IntentDetector:
     def __init__(self):

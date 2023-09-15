@@ -22,7 +22,7 @@ from fastchat.conversation import get_conv_template, Conversation
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
-from ..utils.model_utils import load_model, predict, predict_stream, MODELS
+from .model_utils import load_model, predict, predict_stream, MODELS
 from ..prompts import prepare_prompt
 
 

@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -17,13 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+from pathlib import Path
 import copy, time
 from datetime import datetime
 import torch
 from queue import Queue
-import re, os, logging
+import re, os
 from threading import Thread
 import contextlib
+from huggingface_hub import snapshot_download
 from typing import List
 from transformers import (
     GenerationConfig,
@@ -35,35 +36,17 @@ from transformers import (
     StoppingCriteriaList,
     StoppingCriteria,
 )
+from transformers.deepspeed import is_deepspeed_available
+from transformers.utils.bitsandbytes import is_bitsandbytes_available
+from transformers.utils import is_offline_mode
 from intel_extension_for_transformers.neural_chat.config import (
     AMPConfig,
     WeightOnlyQuantizationConfig,
     BitsAndBytesConfig
 )
-from .checkpoint_utils import (
-    get_ds_injection_policy,
-    get_repo_root,
-    model_is_optimized,
-    model_on_meta,
-    write_checkpoints_json,
-)
-
-# Set necessary env variables
-os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
-os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
-from transformers.deepspeed import is_deepspeed_available
-from transformers.utils.bitsandbytes import is_bitsandbytes_available
 
 if is_deepspeed_available():
     import deepspeed # pylint: disable=E0401
-
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-    datefmt="%m/%d/%Y %H:%M:%S",
-    level=logging.INFO,
-)
-logger = logging.getLogger(__name__)
-
 
 class StopOnTokens(StoppingCriteria):
     def __init__(self, min_length: int, start_length: int, stop_token_id: List[int]):
@@ -85,6 +68,133 @@ class StopOnTokens(StoppingCriteria):
                     return True
         return False
 
+def get_repo_root(model_name_or_path, local_rank=-1, token=None):
+    """
+    Downloads the specified model checkpoint and returns the repository where it was downloaded.
+    """
+    if Path(model_name_or_path).is_dir():
+        # If it is a local model, no need to download anything
+        return model_name_or_path
+    else:
+        # Checks if online or not
+        if is_offline_mode():
+            if local_rank == 0:
+                print("Offline mode: forcing local_files_only=True")
+
+        # Only download PyTorch weights by default
+        allow_patterns = ["*.bin"]
+
+        # Download only on first process
+        if local_rank in [-1, 0]:
+            cache_dir = snapshot_download(
+                model_name_or_path,
+                local_files_only=is_offline_mode(),
+                cache_dir=os.getenv("TRANSFORMERS_CACHE", None),
+                allow_patterns=allow_patterns,
+                max_workers=16,
+                token=token,
+            )
+            if local_rank == -1:
+                # If there is only one process, then the method is finished
+                return cache_dir
+
+        # Make all processes wait so that other processes can get the checkpoint directly from cache
+        torch.distributed.barrier()
+
+        return snapshot_download(
+            model_name_or_path,
+            local_files_only=is_offline_mode(),
+            cache_dir=os.getenv("TRANSFORMERS_CACHE", None),
+            allow_patterns=allow_patterns,
+            token=token,
+        )
+
+
+def get_checkpoint_files(model_name_or_path, local_rank):
+    """
+    Gets the list of files for the specified model checkpoint.
+    """
+    cached_repo_dir = get_repo_root(model_name_or_path, local_rank)
+
+    # Extensions: .bin | .pt
+    # Creates a list of paths from all downloaded files in cache dir
+    file_list = [str(entry) for entry in Path(cached_repo_dir).rglob("*.[bp][it][n]") if entry.is_file()]
+    return file_list
+
+
+def write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json):
+    """
+    Dumps metadata into a JSON file for DeepSpeed-inference.
+    """
+    checkpoint_files = get_checkpoint_files(model_name_or_path, local_rank)
+    if local_rank == 0:
+        data = {"type": "ds_model", "checkpoints": checkpoint_files, "version": 1.0}
+        with open(checkpoints_json, "w") as fp:
+            json.dump(data, fp)
+
+
+def model_on_meta(config):
+    """
+    Checks if load the model to meta.
+    """
+    return config.model_type in ["bloom", "llama"]
+
+
+def get_optimized_model_name(config):
+    # pylint: disable=E0401
+    # pylint: disable=E0611
+    from optimum.habana.transformers.generation import MODELS_OPTIMIZED_WITH_STATIC_SHAPES
+
+    for model_type in MODELS_OPTIMIZED_WITH_STATIC_SHAPES:
+        if model_type == config.model_type:
+            return model_type
+
+    return None
+
+
+def model_is_optimized(config):
+    """
+    Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a
+    new input token_idx.
+    """
+    return get_optimized_model_name(config) is not None
+
+
+def get_ds_injection_policy(config):
+    model_type = get_optimized_model_name(config)
+    policy = {}
+    if model_type:
+        if model_type == "bloom":
+            from transformers.models.bloom.modeling_bloom import BloomBlock
+
+            policy = {BloomBlock: ("self_attention.dense", "mlp.dense_4h_to_h")}
+
+        if model_type == "opt":
+            from transformers.models.opt.modeling_opt import OPTDecoderLayer
+
+            policy = {OPTDecoderLayer: ("self_attn.out_proj", ".fc2")}
+
+        if model_type == "gpt2":
+            from transformers.models.gpt2.modeling_gpt2 import GPT2MLP
+
+            policy = {GPT2MLP: ("attn.c_proj", "mlp.c_proj")}
+
+        if model_type == "gptj":
+            from transformers.models.gptj.modeling_gptj import GPTJBlock
+
+            policy = {GPTJBlock: ("attn.out_proj", "mlp.fc_out")}
+
+        if model_type == "gpt_neox":
+            from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXLayer
+
+            policy = {GPTNeoXLayer: ("attention.dense", "mlp.dense_4h_to_h")}
+
+        if model_type == "llama":
+            from transformers.models.llama.modeling_llama import LlamaDecoderLayer
+
+            policy = {LlamaDecoderLayer: ("self_attn.o_proj", "mlp.down_proj")}
+
+    return policy
 
 def max_input_len(input_text_length):
     if input_text_length <= 128:
@@ -94,21 +204,8 @@ def max_input_len(input_text_length):
     elif input_text_length <= 2048:
         return 2048
     else:
-        logger.warning("Max support length is 4096")
+        print("Max support length is 4096")
         return 4096
-
-
-def add_template(example, template_name):
-    if "prompt_with_input" in template_name:
-        prompt_template = (
-                template_name["prompt_with_input"]
-                if example["input"] != "" 
-                else template_name["prompt_without_input"]
-                )
-    else:
-        prompt_template = template_name
-    prompt = prompt_template.format_map(example)
-    return prompt
 
 
 MODELS = {}
@@ -130,7 +227,7 @@ def import_deepspeed():
         )
     # Initialize process(es) for DeepSpeed
     deepspeed.init_distributed(dist_backend="hccl")
-    logger.info("DeepSpeed is enabled.")
+    print("DeepSpeed is enabled.")
 
 
 def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta):
@@ -213,7 +310,7 @@ def load_model(
         if device == "cuda" and is_bitsandbytes_available() and torch.cuda.is_available():
             bitsandbytes_quant_config = optimization_config
         else:
-            logger.warning(
+            print(
                 "CUDA device or bitsandbytes is not available, please make sure CUDA device and bitsandbytes" \
                 + " library is available, ignoring bitsandbytes config now."
             )
@@ -225,7 +322,7 @@ def load_model(
     elif dtype == "float32":
         torch_dtype = torch.float32
     else:
-        logger.warning(f"Unsupported dtype {dtype}, using float32 now.")
+        print(f"Unsupported dtype {dtype}, using float32 now.")
         torch_dtype = torch.float32
 
     MODELS[model_name] = {}
@@ -238,7 +335,7 @@ def load_model(
     config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
     load_to_meta = model_on_meta(config)
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
-        logger.warn("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
+        print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
         load_to_meta = False
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
@@ -376,7 +473,7 @@ def load_model(
 
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
-    logger.info("Model loaded.")
+    print("Model loaded.")
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
@@ -762,4 +859,3 @@ def predict(**params):
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
     return output
->>>>>>> moved mpt_trace.py to llm.
