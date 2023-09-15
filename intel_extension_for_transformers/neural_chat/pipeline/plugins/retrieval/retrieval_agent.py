@@ -45,7 +45,8 @@ class Agent_QA():
                                        search_type=search_type, search_kwargs=search_kwargs)
         else:
             print("Please give a new persist_dir if you want to create a new local database")
-            if os.path.exists(persist_dir): ### If the folder is exist and not vacant, we directly load the existing database
+            if os.path.exists(persist_dir):
+            ### If the folder is exist and not vacant, we will directly load the existing database.
                 if bool(os.listdir(persist_dir)):
                     self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, 
                                                        document_store=document_store,
