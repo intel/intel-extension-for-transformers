@@ -44,7 +44,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="sym",
     )
     parser.add_argument(
-        "--block_size", type=int, help="block size (default: 32)", default=32
+        "--group_size", type=int, help="group size (default: 32)", default=32
     )
     parser.add_argument(
         "--scale_dtype",
@@ -151,9 +151,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     quant_cmd = ["python", path]
     quant_cmd.extend(["--model_name", model_type])
     quant_cmd.extend(["--model_file", Path(work_path, "ne_{}_f32.bin".format(model_type))])
-    quant_cmd.extend(["--out_file", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.block_size))])
+    quant_cmd.extend(["--out_file", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.group_size))])
     quant_cmd.extend(["--weight_dtype", args.weight_dtype])
-    quant_cmd.extend(["--block_size", str(args.block_size)])
+    quant_cmd.extend(["--group_size", str(args.group_size)])
     quant_cmd.extend(["--scale_dtype", args.scale_dtype])
     quant_cmd.extend(["--compute_type", args.compute_type])
     quant_cmd.extend(["--build_dir", args.build_dir])
@@ -164,7 +164,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     path = Path(parent_path, "inference.py")
     infer_cmd = ["python", path]
     infer_cmd.extend(["--model_name", model_type])
-    infer_cmd.extend(["-m", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.block_size))])
+    infer_cmd.extend(["-m", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.group_size))])
     infer_cmd.extend(["--prompt", args.prompt])
     infer_cmd.extend(["--n_predict",      str(args.n_predict)])
     infer_cmd.extend(["--threads",        str(args.threads)])

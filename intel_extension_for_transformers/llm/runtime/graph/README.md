@@ -114,6 +114,7 @@ python scripts/convert.py --outtype f32 --outfile EleutherAI/gpt-j-6b
 
 # quantize weights of fp32 ggml bin
 # model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
+<<<<<<< HEAD
 # to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
 <<<<<<< HEAD
@@ -122,13 +123,21 @@ python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_fil
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
 # or ues neuarl engine graph optimized q4_j with 32 block_size format
 =======
+=======
+# to neural engine graph optimized q4_j with 128 group_size format (recommended)
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 128 --compute_type int8
+>>>>>>> rename block_size to group_size
 
 # to ggml q4_0 format
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
-# to neuarl engine graph optimized q4_j with 32 block_size format
+# to neural engine graph optimized q4_j with 32 group_size format
 
+<<<<<<< HEAD
 >>>>>>> rename script and add build_dir
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
+=======
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_type int8
+>>>>>>> rename block_size to group_size
 
 ```
 quantization args explanations:
@@ -140,7 +149,7 @@ quantization args explanations:
 | --nthread       | number of threads to use (default: 1)                       |
 | --weight_dtype  | data type of quantized weight (default: int4)         |
 | --alg           | quantization algorithm to use: sym/asym (default: sym)      |
-| --block_size    | block size (default: 32)                                    |
+| --group_size    | group size (default: 32)                                    |
 | --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
 | --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
 <<<<<<< HEAD
@@ -197,7 +206,7 @@ LLM one-click running script args explanations:
 | model             | directory containing model file or model id                             |
 | --weight_dtype    | data type of quantized weight (default: int4)                           |
 | --alg             | quantization algorithm to use: sym/asym (default: sym)                  |
-| --block_size      | block size (default: 32)                                                |
+| --group_size      | group size (default: 32)                                                |
 | --scale_dtype     | fp32/bf16 type for scales (default: fp32)                               |
 | --compute_type    | Gemm computation data type: int8/fp32/ggml (default: ggml)              |
 | -p / --prompt     | prompt to start generation with (default: empty)                        |

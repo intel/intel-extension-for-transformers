@@ -88,7 +88,7 @@ static inline quant_comp parse_compute_type(std::string arg) {
 struct quant_params_internal {
   quant_bits bits = quant_bits::q4;
   quant_alg alg = quant_alg::sym;
-  int32_t block_size = 32;
+  int32_t group_size = 32;
   quant_sdtype scale_dtype = quant_sdtype::fp16;
   quant_comp compute_type = quant_comp::ggml;
   bool valid() const {
@@ -96,7 +96,7 @@ struct quant_params_internal {
            compute_type != quant_comp::count;
   }
   std::string getstr() {
-    return std::to_string(int(bits)) + "_" + std::to_string(int(alg)) + "_" + std::to_string(block_size) + "_" +
+    return std::to_string(int(bits)) + "_" + std::to_string(int(alg)) + "_" + std::to_string(group_size) + "_" +
            std::to_string(int(scale_dtype)) + "_" + std::to_string(int(compute_type));
   }
 };

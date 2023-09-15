@@ -150,7 +150,7 @@ struct quant_params {
 
   int32_t bits = 4;
   std::string alg = "sym";
-  int32_t block_size = 32;
+  int32_t group_size = 32;
   std::string scale_dtype = "fp32";
   std::string compute_type = "ggml";
   std::string model_name = "unknown";

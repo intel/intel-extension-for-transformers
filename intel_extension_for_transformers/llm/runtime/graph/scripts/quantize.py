@@ -55,7 +55,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="sym",
     )
     parser.add_argument(
-        "--block_size", type=int, help="block size (default: 32)", default=32
+        "--group_size", type=int, help="group size (default: 32)", default=32
     )
     parser.add_argument(
         "--scale_dtype",
@@ -88,7 +88,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--nthread",        str(args.nthread)])
     cmd.extend(["--bits",           str(quant_bits)])
     cmd.extend(["--alg",            args.alg])
-    cmd.extend(["--block_size",     str(args.block_size)])
+    cmd.extend(["--group_size",     str(args.group_size)])
     cmd.extend(["--scale_dtype",    args.scale_dtype])
     cmd.extend(["--compute_type",   args.compute_type])
     
