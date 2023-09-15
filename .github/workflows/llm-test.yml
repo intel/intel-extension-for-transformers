@@ -96,8 +96,6 @@ jobs:
           fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
 
       - name: Download Summary Log
         uses: actions/download-artifact@v3

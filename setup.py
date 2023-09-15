@@ -46,9 +46,9 @@ if not SKIP_RUNTIME:
 cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
-install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml', 'evaluate']
-opt_install_requires_list = ['neural_compressor', 'transformers', 'optimum-intel', 'peft']
-project_name = "intel_extension_for_transformers"
+install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
+opt_install_requires_list = ['neural_compressor', 'transformers']
+
 
 packages_list = find_packages()
 install_requires_list.extend(opt_install_requires_list)
@@ -248,7 +248,7 @@ if __name__ == '__main__':
         cmdclass = {'build_ext': CMakeBuild}
 
     setup(
-        name=project_name,
+        name="intel_extension_for_transformers",
         author="Intel AIA/AIPC Team",
         author_email="feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
         description="Repository of Intel® Intel Extension for Transformers",
