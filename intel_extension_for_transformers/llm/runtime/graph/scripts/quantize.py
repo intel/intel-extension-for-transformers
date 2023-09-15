@@ -19,7 +19,7 @@ from typing import List, Optional
 import subprocess
 
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
-
+build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Quantize weights of NE files")
@@ -29,6 +29,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     )
     parser.add_argument(
         "--out_file", type=Path, help="path to the quantized model", required=True
+    )
+    parser.add_argument(
+        "--build_dir", type=Path, help="path to build directory", default=build_path
     )
     parser.add_argument(
         "--config",
@@ -69,10 +72,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     args = parser.parse_args(args_in)
 
     model_name = model_maps.get(args.model_name, args.model_name)
-    path = Path(
-        Path(__file__).parent.absolute(),
-        "../build/bin/quant_{}".format(model_name),
-    )
+    path = Path(args.build_dir, "./bin/quant_{}".format(model_name))
     if not path.exists():
         print(path)
         print("Please build graph first or select the correct model name.")

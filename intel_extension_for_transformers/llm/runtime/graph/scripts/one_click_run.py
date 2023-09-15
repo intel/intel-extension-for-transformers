@@ -19,10 +19,15 @@ from typing import List, Optional
 from transformers import AutoConfig
 import subprocess
 
+build_path = Path(Path(__file__).parent.absolute(), "../build/")
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="run quantization and inference")
     parser.add_argument(
         "model", type=Path, help="directory containing model file or model id"
+    )
+    parser.add_argument(
+        "--build_dir", type=Path, help="path to build directory", default=build_path
     )
 
     # quantization related arguments.
@@ -133,7 +138,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     
 
     # 1. convert
-    path = Path(parent_path, "convert_model.py")
+    path = Path(parent_path, "convert.py")
     convert_cmd = ["python", path]
     convert_cmd.extend(["--outfile", Path(work_path, "ne_{}_f32.bin".format(model_type))])
     convert_cmd.extend(["--outtype", "f32"])
@@ -142,7 +147,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     subprocess.run(convert_cmd)
 
     # 2. quantize
-    path = Path(parent_path, "quant_bin.py")
+    path = Path(parent_path, "quantize.py")
     quant_cmd = ["python", path]
     quant_cmd.extend(["--model_name", model_type])
     quant_cmd.extend(["--model_file", Path(work_path, "ne_{}_f32.bin".format(model_type))])
@@ -151,11 +156,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
     quant_cmd.extend(["--block_size", str(args.block_size)])
     quant_cmd.extend(["--scale_dtype", args.scale_dtype])
     quant_cmd.extend(["--compute_type", args.compute_type])
+    quant_cmd.extend(["--build_dir", args.build_dir])
     print("quantize model ...")
     subprocess.run(quant_cmd)
 
     # 3. inference
-    path = Path(parent_path, "run_llm.py")
+    path = Path(parent_path, "inference.py")
     infer_cmd = ["python", path]
     infer_cmd.extend(["--model_name", model_type])
     infer_cmd.extend(["-m", Path(work_path, "ne_{}_{}.bin".format(model_type, args.weight_dtype, args.block_size))])
@@ -167,6 +173,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     infer_cmd.extend(["--seed",           str(args.seed)])
     infer_cmd.extend(["--repeat_penalty", str(args.repeat_penalty)])
     infer_cmd.extend(["--keep",           str(args.keep)])
+    infer_cmd.extend(["--build_dir", args.build_dir])
     print("inferce model ...")
     subprocess.run(infer_cmd)
 
