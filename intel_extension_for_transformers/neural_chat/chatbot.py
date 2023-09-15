@@ -101,14 +101,6 @@ def build_chatbot(config: PipelineConfig=None):
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
-    for key in plugins:
-        plugins[key] = {
-            "enable": False,
-            "class": None,
-            "args": {},
-            "instance": None
-        }
-
     parameters = {}
     parameters["model_name"] = config.model_name_or_path
     if config.tokenizer_name_or_path:

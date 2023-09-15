@@ -19,9 +19,9 @@ from abc import ABC
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
-from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream, MODELS
+from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream
 from ..config import GenerationConfig
-from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
+from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
 
 
@@ -203,6 +203,15 @@ class BaseModel(ABC):
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
                         response = plugin_instance.post_llm_inference_actions(response)
+
+        # clear plugins config
+        for key in plugins:
+            plugins[key] = {
+                "enable": False,
+                "class": None,
+                "args": {},
+                "instance": None
+            }
 
         return response
 
