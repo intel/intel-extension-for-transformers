@@ -2200,28 +2200,26 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
 void beam_search_flow::fill_next_beams_by_top_probabilities() {
   auto const comp = [](const beam& a, const beam& b) { return a.score > b.score; };
   std::vector<model_token> embd_inp;
-  std::vector<int> infer_beam_ids(beam_size);
+  // std::vector<int> infer_beam_ids(beam_size);
   int record = 0;
   int batch_size = 0;
   uint32_t cur_len = 0;
   std::vector<int> beam_indices;
   std::vector<float> beams_score;
   for (int i = 0; i < beam_size; ++i) {
-    // is done or not
-    if (!cur_beams[i].eos()) {
-      if (cur_len != 0) {
-        MODEL_ASSERT(cur_len == cur_beams[i].token_ids.size());
-      } else {
-        cur_len = cur_beams[i].token_ids.size();
-      }
-      // (batch, 1)
-      // ordered by infer_bs_id
-      embd_inp.push_back(cur_beams[i].token_ids.back());
-      infer_beam_ids[i] = record++;
-      batch_size++;
-      beam_indices.push_back(i);
-      beams_score.push_back(cur_beams[i].score);
+    MODEL_ASSERT(!cur_beams[i].eos());
+    if (cur_len != 0) {
+      MODEL_ASSERT(cur_len == cur_beams[i].token_ids.size());
+    } else {
+      cur_len = cur_beams[i].token_ids.size();
     }
+    // (batch, 1)
+    // ordered by infer_bs_id
+    embd_inp.push_back(cur_beams[i].token_ids.back());
+    // infer_beam_ids[i] = record++;
+    batch_size++;
+    beam_indices.push_back(i);
+    beams_score.push_back(cur_beams[i].score);
   }
   // DEBUG
 #if 1
@@ -2263,26 +2261,20 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
 #endif
   MODEL_ASSERT(next_tokens.size() == batch_size * sample_scale);
   MODEL_ASSERT(next_beams.empty());
-  for (int i = 0; i < beam_size; ++i) {
-    beam b = cur_beams[i];
-    if (b.eos()) {
-      printf("---------------------eos-----------------------> \n");
-      // if (b.score != 100) {
-      //   b.eos_score = b.score;
-      //   b.score = 100;
-      // }
-      next_beams.push_back(std::move(b));
-    }
-  }
-  if (next_beams.size() < beam_size) {
-    int add_num = beam_size - next_beams.size();
-    for (int j = 0; j < add_num; ++j) {
-      beam next_beam = cur_beams[next_tokens[j].beam_idx];
-      next_beam.token_ids.push_back(next_tokens[j].id);
-      next_beam.score = next_tokens[j].score;
+  for (int i = 0; i < next_tokens.size(); ++i) {
+    if (next_tokens[i].id == 50256) {  // TODO ctx->model_vocab.eos_id
+      beam_hypos[0].add(cur_beams[next_tokens[i].beam_idx]);
+    } else {
+      beam next_beam = cur_beams[next_tokens[i].beam_idx];
+      next_beam.token_ids.push_back(next_tokens[i].id);
+      next_beam.score = next_tokens[i].score;
       next_beams.push_back(std::move(next_beam));
     }
+    if (next_beams.size() == beam_size) {
+      break;
+    }
   }
+
   // for (int i = 0; i < beam_size; ++i) {
   //   beam b = cur_beams[i];
   //   if (b.eos()) {
@@ -2413,7 +2405,7 @@ std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indi
       kv_reorder_indices.push_back({i, cpy_final_bs_ids[i]});
     }
   } else {
-    for (int i = cpy_final_bs_ids.size() - 1; i >=0; --i) {
+    for (int i = cpy_final_bs_ids.size() - 1; i >= 0; --i) {
       kv_reorder_indices.push_back({i, cpy_final_bs_ids[i]});
     }
   }
@@ -2446,8 +2438,10 @@ void beam_search_flow::beam_score_length_penalize() {
 
 // Return beam with highest probability.
 const beam& beam_search_flow::top_beam() {
-  auto const by_score = [](beam const& a, beam const& b) { return a.score < b.score; };
-  return *std::max_element(cur_beams.begin(), cur_beams.end(), by_score);
+  for (const auto b : cur_beams) {
+    beam_hypos[0].add(b);
+  }
+  return beam_hypos[0].top1();
 }
 
 // TODO batch_size = 1 only
@@ -2473,7 +2467,8 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   if (kv_reorder == nullptr) {
     kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
   }
-  for (int n = 0; n < max_new_tokens && !std::all_of(cur_beams.begin(), cur_beams.end(), eos); ++n) {
+  beam_hypos.push_back(beam_hypotheses(ctx));  // TODO ctx->request_running_bs;
+  for (int n = 0; n < max_new_tokens; ++n) {
     // first step
     if (n_past == 0) {
       model_eval(ctx, embd.data(), n_tokens, n_past, num_threads);
@@ -2513,14 +2508,14 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       fflush(stdout);
     }
 #endif
+
+    auto const done = [](const beam_hypotheses& bh) { return bh.is_done(); };
+    if (std::all_of(beam_hypos.begin(), beam_hypos.end(), done)) {
+      break;
+    }
   }
 
-  // for (auto& b : cur_beams) {
-  //   if (b.eos()) {
-  //     b.score = b.eos_score;
-  //   }
-  // }
-  beam_score_length_penalize();
+  // beam_score_length_penalize();
   const beam& top_b = top_beam();
 
 #if 0  // DEBUG: print final beam result

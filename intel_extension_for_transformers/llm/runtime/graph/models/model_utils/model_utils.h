@@ -278,7 +278,6 @@ struct beam {
   std::vector<model_token> token_ids;
   // Cumulative beam score (log-softmax here)
   float score;
-  float eos_score;
   // record inference batch indice
   int infer_bs_id;
   // end-of-text
@@ -289,6 +288,61 @@ struct beam {
       printf("%d: %s, ", id, model_token_to_str(ctx, id));
     }
     printf("\n");
+  }
+};
+
+struct beam_hypotheses {
+  const model_context* const ctx = nullptr;
+  const int num_beams;
+  const float length_penalty = 1.0f;
+  const bool early_stopping = false;
+  std::vector<beam> beams;
+
+  beam_hypotheses(model_context* lctx)
+      : ctx(lctx),
+        num_beams(lctx->beam_size),
+        length_penalty(lctx->generation_conf.length_penalty),
+        early_stopping(lctx->generation_conf.do_early_stopping) {
+    beams.reserve(lctx->beam_size);
+  }
+
+  int len() { return beams.size(); }
+
+  void add(beam b) {
+    auto comp = [](const beam& a, const beam& b) { return a.score > b.score; };
+    int cur_len = b.eos() ? b.token_ids.size() - 1 : b.token_ids.size();
+    float score = b.score / std::pow(cur_len, length_penalty);
+    b.score = score;
+    if (beams.size() < num_beams) {
+      beams.push_back(std::move(b));
+      if (beams.size() == num_beams) {
+        std::make_heap(beams.begin(), beams.end(), comp);
+      }
+    } else {
+      MODEL_ASSERT(beams.size() == num_beams);
+      if (beams.front().score > b.score) {
+        return;
+      }
+      std::pop_heap(beams.begin(), beams.end(), comp);
+      beams.back() = b;
+      std::push_heap(beams.begin(), beams.end(), comp);
+    }
+  }
+
+  const bool is_done() const {
+    if (beams.size() < num_beams) {
+      return false;
+    }
+    // stop as soon as at least `num_beams` hypotheses are finished
+    if (early_stopping) {
+      return true;
+    }
+    return false;
+  }
+
+  const beam& top1() const {
+    auto const by_score = [](beam const& a, beam const& b) { return a.score < b.score; };
+    return *std::max_element(beams.begin(), beams.end(), by_score);
   }
 };
 
@@ -358,6 +412,7 @@ class beam_search_flow {
   const int beam_size;
   std::vector<beam> cur_beams;
   std::vector<beam> next_beams;
+  std::vector<beam_hypotheses> beam_hypos;
   size_t n_past = 0;
   int num_threads = 4;  // default by 4
   logits_processor lp;
