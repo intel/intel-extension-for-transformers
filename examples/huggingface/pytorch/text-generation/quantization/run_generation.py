@@ -12,7 +12,6 @@ from torch.nn.functional import pad
 from torch.utils.data import DataLoader
 from transformers import AutoConfig, AutoTokenizer, PretrainedConfig
 from transformers.utils import check_min_version
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 import transformers
 import numpy as np
 from itertools import chain
@@ -63,46 +62,44 @@ calib_size = 1
 
 # model
 config = AutoConfig.from_pretrained(
-       args.model,
-       torchscript=True
-       if args.quantize
-       else False,  # torchscript will force `return_dict=False` to avoid jit errors
-       use_cache=True, # to use kv cache.
-       trust_remote_code=args.trust_remote_code,
-       revision=args.revision
-       )
+      args.model,
+      torchscript=True
+      if args.quantize
+      else False,  # torchscript will force `return_dict=False` to avoid jit errors
+      use_cache=True, # to use kv cache.
+      trust_remote_code=args.trust_remote_code,
+      revision=args.revision,
+      )
+
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
 if config.model_type == "mpt":
     check_min_version("4.32.0")
 
-user_model = AutoModelForCausalLM.from_pretrained(
-       args.model,
-       config=config
-)
-
 # tokenizer
 if config.model_type == "llama":
-    from transformers import LlamaTokenizer
-    tokenizer = LlamaTokenizer.from_pretrained(args.model)
+   from transformers import LlamaTokenizer
+   tokenizer = LlamaTokenizer.from_pretrained(args.model)
 else:
-    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
-
-# to channels last
-user_model = user_model.to(memory_format=torch.channels_last)
-user_model.eval()
+   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 # quantize
 if args.quantize:
-    from intel_extension_for_transformers.neural_chat.config import SmoothQuantConfig
-    from intel_extension_for_transformers.llm.quantization.optimization import Optimization
-    if re.search("gptj", user_model.config.model_type) or re.search(
-        "gpt_neox", user_model.config.model_type
+    from intel_extension_for_transformers.transformers import (
+        AMPConfig,
+        WeightOnlyQuantizationConfig,
+        SmoothQuantConfig,
+        BitsAndBytesConfig
+
+    ) 
+    from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+    if re.search("gptj", config.model_type) or re.search(
+        "gpt_neox", config.model_type
     ):
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
         }
-    elif re.search("mpt", user_model.config.model_type):
+    elif re.search("mpt", config.model_type):
         op_type_dict = {
             "add": {"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
             "<built-in function linear>":{"weight": {"dtype": ["fp32"]}, "activation": {"dtype": ["fp32"]}},
@@ -110,19 +107,41 @@ if args.quantize:
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    config = SmoothQuantConfig(alpha=float(args.alpha),
-                               op_type_dict=op_type_dict,
-                               excluded_precisions=excluded_precisions
+    sq_config = SmoothQuantConfig(
+                                tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                                alpha=float(args.alpha),    # default is 0.5
+                                op_type_dict=op_type_dict,  # default is {}
+                                excluded_precisions=excluded_precisions,  # default is []
                                )
-    # save config
-    user_model.config.save_pretrained(args.output_dir)
-    optimization = Optimization(config)
-    q_model = optimization.optimize(
-        user_model,
-        tokenizer
-    )
-    # save model
-    q_model.save(args.output_dir)
+    # smooth-quant
+    q_model = AutoModelForCausalLM.from_pretrained(args.model,
+                                                   quantization_config=sq_config
+                                               )
+    print("sq done.")
+    # weight-only
+    woq_config = WeightOnlyQuantizationConfig(algorithm="RTN", # default is "RTN"
+                                              bits=8, # default is 8
+                                              group_size=-1, # default is -1
+                                              scheme="sym", # default is sym
+                                              enable_full_range=True # default is True
+                                              ) 
+    woq_model = AutoModelForCausalLM.from_pretrained(args.model,
+                                                quantization_config=woq_config
+                                            )
+    print("woq done.")
+    # amp
+    amp_config = AMPConfig(dtype="bfloat16") # default is bfloat16
+    amp_model = AutoModelForCausalLM.from_pretrained(args.model,
+                                                quantization_config=amp_config
+                                            )
+    print("amp done.")
+    # bitsandbytes
+    bab_config = BitsAndBytesConfig()
+    bab_model = AutoModelForCausalLM.from_pretrained(args.model,
+                                                quantization_config=bab_config
+                                            )
+    print("bitsandbytes done.")
+
 
 # Generation
 generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=4)
