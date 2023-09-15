@@ -23,7 +23,6 @@ from .config import (WEIGHTS_NAME, AutoDistillationConfig, BenchmarkConfig,
 from .distillation import (SUPPORTED_DISTILLATION_CRITERION_MODE,
                            DistillationCriterionMode)
 from .mixture.auto_distillation import AutoDistillation
-from .modeling import AutoModelForCausalLM, OptimizedModel
 from .nas import NAS
 from .optimizer import NoTrainerOptimizer, Orchestrate_optimizer
 from .optimizer_tf import TFOptimization
@@ -32,3 +31,4 @@ from .quantization import SUPPORTED_QUANT_MODE, QuantizationMode
 from .utils import (AMPConfig, BitsAndBytesConfig, SmoothQuantConfig,
                     WeightOnlyQuantizationConfig, metrics, objectives)
 from .utils.utility import LazyImport
+from .modeling import AutoModelForCausalLM, OptimizedModel
