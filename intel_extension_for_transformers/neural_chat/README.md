@@ -170,14 +170,14 @@ The table below displays the validated model list in NeuralChat for both inferen
 
 ## Selected Notebooks 
 
-Welcome to use Jupyter notebooks to explore how to run, deploy, and customize chatbots across a wide range of platforms, including Intel Xeon Scalable Processors (SPR, ICX), Intel Xeon CPU Max Series, Intel Habana Gaudi1/Gaudi2, and other platforms. The selected notebooks are shown below and the full notebooks are available in [here](docs/full_notebooks.md).
+Welcome to use Jupyter notebooks to explore how to run, deploy, and customize chatbots across multiple architectures, including Intel Xeon Scalable Processors (SPR, ICX), Intel Xeon CPU Max Series, Intel Habana Gaudi1/Gaudi2, and others. The selected notebooks are shown below and the full notebooks are available in [here](docs/full_notebooks.md).
 
 | Notebook | Title                                       | Description                                                | Link                                           |
 | ------- | --------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------- |
 | #1     | Getting Started on Intel CPU SPR | Learn how to run chatbot on SPR                      | [Notebook](./docs/notebooks/build_chatbot_on_spr.ipynb) |
 | #2     | Getting Started on Habana Gaudi1/Gaudi2 | Learn how to run chatbot on Habana Gaudi1/Gaudi2 | [Notebook](./docs/notebooks/build_chatbot_on_habana_gaudi.ipynb) |
 | #3     | Deploying Chatbot Service on Intel CPU SPR        | Learn how to deploy chatbot service on SPR              | [Notebook](./docs/notebooks/deploy_chatbot_on_spr.ipynb) |
-| #4     | Deploying Chatbot Service on Habana Gaudi1/Gaudi2 | Learn how to deploy chatbot service on Intel Habana Gaudi1/Gaudi2. | [Notebook](./docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb) |
+| #4     | Deploying Chatbot Service on Habana Gaudi1/Gaudi2 | Learn how to deploy chatbot service on Intel Habana Gaudi1/Gaudi2 | [Notebook](./docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb) |
 | #5     | Deploying Chatbot Service with Load Balance on Intel CPU SPR | Learn how to deploy chatbot service with load balance on SPR | [Notebook](./docs/notebooks/chatbot_with_load_balance.ipynb) |
 
 
