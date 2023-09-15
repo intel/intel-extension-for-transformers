@@ -46,6 +46,16 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
+    
+    def test_retrieval_accuracy(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["input_path"] = "../../examples/retrieval/Xeon8480Processor.doxc"
+        plugins.retrieval.args["persist_dir"] = "./test_for_correct/"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
+        self.assertTrue("56" is in response)
 
     def test_voice_chat(self):
         plugins.tts.enable = True
