@@ -46,6 +46,7 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = True
     
     def test_retrieval_accuracy(self):
         plugins.retrieval.enable = True
@@ -57,6 +58,7 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
         print(response)
         self.assertTrue("56" in response)
+        plugins.retrieval.enable = False
 
     def test_voice_chat(self):
         plugins.tts.enable = True
