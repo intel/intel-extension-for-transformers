@@ -308,7 +308,7 @@ class TestQuantization(unittest.TestCase):
         q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=sq_config
                                                 )
-        self.assertTrue(isinstance(q_model, torch.jit.ScriptModule))
+        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
         # weight-only
         woq_config = WeightOnlyQuantConfig()
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
