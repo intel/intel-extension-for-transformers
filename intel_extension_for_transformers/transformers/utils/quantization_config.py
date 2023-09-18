@@ -117,7 +117,7 @@ class WeightOnlyQuantConfig:
     @classmethod
     def from_dict(cls, config_dict, return_unused_kwargs, **kwargs):
         """
-        Instantiates a [`WeightOnlyConfig`] from a Python dictionary of parameters.
+        Instantiates a [`WeightOnlyQuantConfig`] from a Python dictionary of parameters.
 
         Args:
             config_dict (`Dict[str, Any]`):
@@ -129,7 +129,7 @@ class WeightOnlyQuantConfig:
                 Additional parameters from which to initialize the configuration object.
 
         Returns:
-            [`WeightOnlyConfig`]: The configuration object instantiated from those parameters.
+            [`WeightOnlyQuantConfig`]: The configuration object instantiated from those parameters.
         """
 
         config = cls(**config_dict)
@@ -181,7 +181,7 @@ class WeightOnlyQuantConfig:
 
         Args:
             use_diff (`bool`, *optional*, defaults to `True`):
-                If set to `True`, only the difference between the config instance and the default `WeightOnlyConfig()`
+                If set to `True`, only the difference between the config instance and the default `WeightOnlyQuantConfig()`
                 is serialized to JSON string.
 
         Returns:
@@ -204,7 +204,7 @@ class WeightOnlyQuantConfig:
         config_dict = self.to_dict()
 
         # get the default config dict
-        default_config_dict = WeightOnlyConfig().to_dict()
+        default_config_dict = WeightOnlyQuantConfig().to_dict()
 
         serializable_config_dict = {}
 

@@ -41,7 +41,7 @@ from .optimizer_tf import TFOptimization
 from .pruning import SUPPORTED_PRUNING_MODE, PrunerConfig, PruningMode
 from .quantization import SUPPORTED_QUANT_MODE, QuantizationMode
 from .utils import (
-    AMPConfig,
+    MixedPrecisionConfig,
     BitsAndBytesConfig,
     SmoothQuantConfig,
     WeightOnlyQuantConfig,
