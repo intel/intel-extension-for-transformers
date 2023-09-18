@@ -49,7 +49,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --mixed_precision \
     --benchmark
 # smoothquant
-# --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+# [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --sq \
@@ -83,7 +83,7 @@ python run_generation.py \
     --accuracy \
     --tasks "lambada_openai"
 # smoothquant
-# --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
+# [alternative] --int8 is used for int8 only, --int8_bf16_mixed is used for int8 mixed bfloat16 precision.
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --sq \
