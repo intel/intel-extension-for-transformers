@@ -878,6 +878,8 @@ def update_image_attr(image, attr):
 
 def format_image_path(user_id: str, image_name: str) -> str:
     server_ip = os.getenv("IMAGE_SERVER_IP")
+    if not server_ip:
+        raise Exception("Please configure SERVER IP to environment variables.")
     image_path = "http://"+server_ip+"/ai_photos/user"+user_id+'/'+image_name
     return image_path
 

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     redis_password: str = os.getenv("REDIS_PASSWORD", "")
     redis_db: int = int(os.getenv("REDIS_DB", 0))
     mysql_user: str = os.environ.get("MYSQL_USER", "root")
-    mysql_password: str = os.environ.get("MYSQL_PASSWORD")
+    mysql_password: str = os.environ.get("MYSQL_PASSWORD", "root")
     mysql_host: str = os.environ.get("MYSQL_HOST", "localhost")
     mysql_port: int = os.environ.get("MYSQL_PORT", 3306)
     mysql_db: str = os.getenv("MYSQL_DB", "mysql")
