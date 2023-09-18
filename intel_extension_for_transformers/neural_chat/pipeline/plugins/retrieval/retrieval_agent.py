@@ -23,9 +23,9 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
     import generate_qa_prompt, generate_prompt
 
 class Agent_QA():
-    def __init__(self, persist_dir="./output", process=True, input_path=None,
-                 embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
-                 document_store=None, top_k=1, search_type="mmr", 
+    def __init__(self, persist_dir="./output", process=True, input_path=None, \
+                 embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense", \
+                 document_store=None, top_k=1, search_type="mmr",  \
                  search_kwargs={"k": 1, "fetch_k": 5}, override=True, index_name="elastic_index_1"):
         self.model = None
         self.tokenizer = None
@@ -33,14 +33,14 @@ class Agent_QA():
         self.retriever = None
         self.intent_detector = IntentDetector()
         if override:
-            self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, 
-                                               document_store=document_store,
-                                               persist_dir=persist_dir, process=process,
-                                               embedding_model=embedding_model,
-                                               max_length=max_length, 
+            self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, \
+                                               document_store=document_store, \
+                                               persist_dir=persist_dir, process=process, \
+                                               embedding_model=embedding_model, \
+                                               max_length=max_length, \
                                                index_name=index_name)
             self.db = self.doc_parser.KB_construct(input_path)
-            self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
+            self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k, \
                                        search_type=search_type, search_kwargs=search_kwargs)
         else:
             print("Please give a new persist_dir if you want to create a new local database")
