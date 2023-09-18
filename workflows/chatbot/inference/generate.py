@@ -22,7 +22,6 @@ from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import (
     PipelineConfig, GenerationConfig, AMPConfig, LoadingModelConfig
 )
-from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream
 
 
 def parse_args():
@@ -202,6 +201,7 @@ def main():
     config = PipelineConfig(
         model_name_or_path=base_model_path,
         tokenizer_name_or_path=args.tokenizer_name,
+        hf_access_token=args.hf_access_token,
         device="hpu" if args.habana else "auto",
         loading_config=LoadingModelConfig(
             use_hpu_graphs=args.use_hpu_graphs,

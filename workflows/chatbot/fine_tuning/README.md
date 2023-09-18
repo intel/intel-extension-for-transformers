@@ -462,7 +462,7 @@ python finetune_clm.py \
         --output_dir ./llama_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer false \
-        --habana \
+        --device hpu \
         --use_habana \
         --use_lazy_mode \
 ```
@@ -492,7 +492,7 @@ python finetune_clm.py \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
-        --habana \
+        --device hpu \
         --use_habana \
         --use_lazy_mode \
 ```
@@ -535,7 +535,7 @@ python ../../utils/gaudi_spawn.py \
         --output_dir ./llama_peft_finetuned_model \
         --peft lora \
         --use_fast_tokenizer false \
-        --habana \
+        --device hpu \
         --use_habana \
         --use_lazy_mode \
         --distribution_strategy fast_ddp \
@@ -567,7 +567,7 @@ python ../../utils/gaudi_spawn.py \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
-        --habana \
+        --device hpu \
         --use_habana \
         --use_lazy_mode \
         --distribution_strategy fast_ddp \
