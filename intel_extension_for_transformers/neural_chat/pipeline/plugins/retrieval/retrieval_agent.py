@@ -23,10 +23,10 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
     import generate_qa_prompt, generate_prompt
 
 class Agent_QA():
-    def __init__(self, persist_dir="./output", process=True, input_path=None, \
-                 embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense", \
-                 document_store=None, top_k=1, search_type="mmr",  \
-                 search_kwargs={"k": 1, "fetch_k": 5}, override=True, index_name="elastic_index_1"):
+    def __init__(self, persist_dir="./output", process=True, input_path=None,
+                 embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
+                 document_store=None, top_k=1, search_type="mmr", override=True,
+                 index_name="elastic_index_1", search_kwargs={"k": 1, "fetch_k": 5}):
         self.model = None
         self.tokenizer = None
         self.retrieval_type = retrieval_type
