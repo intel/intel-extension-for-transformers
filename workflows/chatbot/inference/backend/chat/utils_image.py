@@ -61,12 +61,13 @@ def get_address_from_gps(latitude, longitude, api_key):
         'latlng': f"{latitude},{longitude}",
         'key': api_key
     }
-    proxies = {
-        'http': 'child-prc.intel.com:913',
-        'https': 'child-prc.intel.com:913',
-    }
+    # proxies = {
+    #     'http': 'child-prc.intel.com:913',
+    #     'https': 'child-prc.intel.com:913',
+    # }
     start_time = time.time()
-    response = requests.get(base_url, params=params, proxies=proxies)
+    # response = requests.get(base_url, params=params, proxies=proxies)
+    response = requests.get(base_url, params=params)
     data = response.json()
     if data['status'] == 'OK':
         address = data['results'][0]['formatted_address']

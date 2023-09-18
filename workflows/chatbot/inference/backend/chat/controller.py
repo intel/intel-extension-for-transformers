@@ -519,7 +519,9 @@ async def handle_ai_photos_upload(request: Request):
         logger.info(f'Image is captured at: {captured_time}, latitude: {latitude}, longitude: {longitude}, altitude: {altitude}')
 
         # generate address info
-        api_key = "AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg"
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise Exception("Please")
         address = get_address_from_gps(latitude, longitude, api_key)
         if address:
             logger.info(f'Image address: {address}')
@@ -994,6 +996,8 @@ def process_single_image(img_id, img_path, user_id):
 
     # generate address info
     api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise Exception("Please configure environment variable of GOOGLE_API_KEY.")
     address = get_address_from_gps(latitude, longitude, api_key)
     if address:
         logger.info(f'[background - single] Image address: {address}')
