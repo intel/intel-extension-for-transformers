@@ -15,7 +15,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .inference import load_model
-from .inference import predict
-from .inference import predict_stream
-from .inference import MODELS
