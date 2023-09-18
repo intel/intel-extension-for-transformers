@@ -285,6 +285,10 @@ PYBIND11_MODULE(bloom_cpp, m)
 
 PYBIND11_MODULE(chatglm2_cpp, m)
 
+#elif MODEL_NAME_ID == 11
+
+PYBIND11_MODULE(chatglm_cpp, m)
+
 #endif
 {
   m.doc() = "cpp model python binding";

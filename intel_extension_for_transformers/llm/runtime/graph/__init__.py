@@ -52,8 +52,7 @@ class Model:
         self.module = cpp_model
 
     def init(self, model_name,
-             bits = 4, alg = "sym", block_size = 32, scale_dtype = "fp32", compute_type = "ggml",
-             n_predict = -1, batch_size = 512, ctx_size = 512, seed = -1, threads = 8, repeat_penalty = 1.1):
+             bits = 4, alg = "sym", block_size = 32, scale_dtype = "fp32", compute_type = "ggml"):
         config = AutoConfig.from_pretrained(model_name)
         model_type = model_maps.get(config.model_type, config.model_type)
         self.__import_package(model_type)
@@ -71,15 +70,8 @@ class Model:
                                     scale_dtype = scale_dtype,
                                     compute_type = compute_type)
         
-        self.init_from_bin(model_type, quant_bin,
-                            n_predict = n_predict,
-                            batch_size = batch_size,
-                            ctx_size = ctx_size,
-                            seed = seed, 
-                            threads = threads,
-                            repeat_penalty = repeat_penalty
-                            )
-        
+        self.model_type = model_type
+        self.bin_file = quant_bin
         # clean 
 
     def init_from_bin(self, model_name, model_path,
@@ -106,7 +98,18 @@ class Model:
                                     scale_dtype = scale_dtype,
                                     compute_type = compute_type)
 
-    def generate(self, prompt, stream_mode = True):
+    def generate(self, prompt, stream_mode = True,
+            n_predict = -1, batch_size = 512, ctx_size = 512, seed = -1, threads = 8, repeat_penalty = 1.1):
+        if self.model is None:
+            self.init_from_bin(self.model_type, self.bin_file,
+                    n_predict = n_predict,
+                    batch_size = batch_size,
+                    ctx_size = ctx_size,
+                    seed = seed, 
+                    threads = threads,
+                    repeat_penalty = repeat_penalty
+                    )
+        
         out = self.model.generate(prompt = prompt, stream_mode = stream_mode)
         return out
 

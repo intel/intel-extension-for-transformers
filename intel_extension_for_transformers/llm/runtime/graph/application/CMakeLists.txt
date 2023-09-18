@@ -79,6 +79,7 @@ set(mymap_starcoder 7)
 set(mymap_opt 8)
 set(mymap_bloom 9)
 set(mymap_chatglm2 10)
+set(mymap_chatglm 11)
 
 function(compile_run TARGET SRC MODEL_NAME MODEL_LIB)
  add_executable_w_warning(${TARGET} ${SRC})

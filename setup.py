@@ -246,7 +246,7 @@ if __name__ == '__main__':
         "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr', lib_only=True)]
     if not SKIP_RUNTIME:
         check_submodules()
-        ext_modules.extend[
+        ext_modules.extend([
             CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
             CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.gptj_cpp", "intel_extension_for_transformers/llm/runtime/graph/"),
             CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.falcon_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
@@ -258,7 +258,7 @@ if __name__ == '__main__':
             CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.opt_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
             CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.bloom_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
             CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False)
-            ]
+            ])
         cmdclass={'build_ext': CMakeBuild}
 
     setup(
