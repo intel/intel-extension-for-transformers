@@ -9,7 +9,7 @@ We provide the inference benchmarking script `run_generation.py` for [EleutherAI
 Pytorch and Intel-extension-for-pytorch version 2.1 are required, the dependent packages are listed in requirements, we recommend create environment as the following steps.
 
 ```bash
-conda create -n llm python=3.9 -
+conda create -n llm python=3.9 -y
 conda activate llm
 bash build_env.sh
 git clone https://github.com/intel/intel-extension-for-transformers.git
