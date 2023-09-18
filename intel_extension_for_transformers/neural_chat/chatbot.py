@@ -16,13 +16,18 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
+import os
 from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
-from .utils.common import get_device_type
 from .plugins import plugins
+
+def prepare_env(device):
+    if device == "hpu":
+        os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
+        os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
 
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
@@ -38,15 +43,13 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
+    global plugins
     if not config:
         config = PipelineConfig()
     # Validate input parameters
     if config.device not in [option.name.lower() for option in DeviceOptions]:
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
-
-    if config.device == "auto":
-        config.device = get_device_type()
 
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
@@ -118,6 +121,9 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
+
+    # Set necessary env variables
+    prepare_env(config.device)
     adapter.load_model(parameters)
 
     return adapter

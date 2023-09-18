@@ -53,15 +53,20 @@ class TextToSpeech():
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
-            default_speaker_embedding_path = os.path.join(script_dir,
-                                                '../../../assets/speaker_embeddings/spk_embed_default.pt')
+        if os.path.exists(os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
+                          + '/assets/speaker_embeddings/spk_embed_default.pt'):
+            default_speaker_embedding_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
+                              + '/assets/speaker_embeddings/spk_embed_default.pt'
         elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
             default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
+        elif os.path.exists('spk_embed_default.pt'):
+            default_speaker_embedding_path = 'spk_embed_default.pt'
         else:
-            print("Warning! Need to prepare speaker_embeddings")
+            print("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
+            default_speaker_embedding_path = None
         # load the default speaker embedding
-        self.default_speaker_embedding = torch.load(default_speaker_embedding_path)
+        self.default_speaker_embedding = torch.load(default_speaker_embedding_path) if default_speaker_embedding_path \
+            else None
 
         # preload the demo model in case of time-consuming runtime loading
         self.demo_model = None
@@ -74,6 +79,8 @@ class TextToSpeech():
             self.male_speaker_embeddings = torch.load(pat_speaker_embedding_path)
         elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt')):
             self.male_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt'))
+
+        self.backup_speaker_embedding = torch.ones((1, 512))
 
         self.normalizer = EnglishNormalizer()
 
@@ -95,17 +102,21 @@ class TextToSpeech():
       asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
         script_dir = os.path.dirname(os.path.abspath(__file__))
         if os.path.exists(f"speaker_embeddings/spk_embed_{voice}.pt") == False:
-            print("No customized speaker embedding is found! Use the default one")
             if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')):
                 default_speaker_embedding_path = os.path.join(script_dir,
                                                     '../../../assets/speaker_embeddings/spk_embed_default.pt')
             elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
-                default_speaker_embedding_path = (asset_path, 'speaker_embeddings/spk_embed_default.pt')
-            return default_speaker_embedding_path
+                print("No customized speaker embedding is found! Use the default one")
+                default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
+            else:   # pragma: no cover
+                print("No customized speaker embedding or default embedding are found! Use the backup one")
+                return self.backup_speaker_embedding
+            print("No customized speaker embedding is found! Use the default one")
+            return torch.load(default_speaker_embedding_path)
         else:
             specific_speaker_embedding_path = os.path.join(script_dir,
                                         f"../../../assets/speaker_embeddings/spk_embed_{voice}.pt")
-            return specific_speaker_embedding_path
+            return torch.load(specific_speaker_embedding_path)
 
     def _batch_long_text(self, text, batch_length):
         """Batch the long text into sequences of shorter sentences."""
@@ -152,7 +163,8 @@ class TextToSpeech():
             texts = [text]
         print(texts)
         model = self.original_model
-        speaker_embeddings = self.default_speaker_embedding
+        speaker_embeddings = self.default_speaker_embedding if self.default_speaker_embedding is not None else \
+            self.backup_speaker_embedding
         if voice == "male":
             if self.demo_model == None:
                 print("Finetuned model is not found! Use the default one")
@@ -163,7 +175,7 @@ class TextToSpeech():
             else:
                 speaker_embeddings = self.male_speaker_embeddings
         elif voice != "default":
-            speaker_embeddings = torch.load(self._lookup_voice_embedding(voice))
+            speaker_embeddings = self._lookup_voice_embedding(voice)
         all_speech = np.array([])
         for text_in in texts:
             inputs = self.processor(text=text_in, return_tensors="pt")
