@@ -51,8 +51,7 @@ class Model:
             raise TypeError("Unspported model type {}!".format(model_name))
         self.module = cpp_model
 
-    def init(self, model_name,
-             bits = 4, alg = "sym", block_size = 32, scale_dtype = "fp32", compute_type = "ggml"):
+    def init(self, model_name, **kwargs):
         config = AutoConfig.from_pretrained(model_name)
         model_type = model_maps.get(config.model_type, config.model_type)
         self.__import_package(model_type)
@@ -61,54 +60,27 @@ class Model:
         convert_model(model_name, "ne_{}_f32.bin".format(model_type), "f32")
 
         # 2. quant model
-        quant_bin = "ne_{}_q{}_{}_{}_{}_{}.bin".format(model_type, bits, alg, block_size, scale_dtype, compute_type)
+        quant_bin = "ne_{}_q.bin".format(model_type)
         self.module.Model.quant_model(model_path = "ne_{}_f32.bin".format(model_type),
-                                    out_path = quant_bin,
-                                    bits = bits,
-                                    alg = alg,
-                                    block_size = block_size,
-                                    scale_dtype = scale_dtype,
-                                    compute_type = compute_type)
+                                    out_path = quant_bin, **kwargs)
         
         self.model_type = model_type
         self.bin_file = quant_bin
         # clean 
 
-    def init_from_bin(self, model_name, model_path,
-                      n_predict = -1, batch_size = 512, ctx_size = 512, seed = -1, threads = 8, repeat_penalty = 1.1):
+    def init_from_bin(self, model_name, model_path, **kwargs):
         self.__import_package(model_name)
         self.model = self.module.Model()
-        self.model.init_model(model_path,
-                              n_predict = n_predict,
-                              batch_size = batch_size,
-                              ctx_size = ctx_size,
-                              seed = seed, 
-                              threads = threads,
-                              repeat_penalty = repeat_penalty
-                              )
+        self.model.init_model(model_path, **kwargs)
 
-    def quant_model(self, model_name, model_path, out_path,
-                    bits = 4, alg = "sym", block_size = 32, scale_dtype = "fp32", compute_type = "ggml"):
+    def quant_model(self, model_name, model_path, out_path, **kwargs):
         self.__import_package(model_name)
         self.module.Model.quant_model(model_path = model_path,
-                                    out_path = out_path,
-                                    bits = bits,
-                                    alg = alg,
-                                    block_size = block_size,
-                                    scale_dtype = scale_dtype,
-                                    compute_type = compute_type)
+                                    out_path = out_path, **kwargs)
 
-    def generate(self, prompt, stream_mode = True,
-            n_predict = -1, batch_size = 512, ctx_size = 512, seed = -1, threads = 8, repeat_penalty = 1.1):
+    def generate(self, prompt, stream_mode = True, **kwargs):
         if self.model is None:
-            self.init_from_bin(self.model_type, self.bin_file,
-                    n_predict = n_predict,
-                    batch_size = batch_size,
-                    ctx_size = ctx_size,
-                    seed = seed, 
-                    threads = threads,
-                    repeat_penalty = repeat_penalty
-                    )
+            self.init_from_bin(self.model_type, self.bin_file, **kwargs)
         
         out = self.model.generate(prompt = prompt, stream_mode = stream_mode)
         return out
