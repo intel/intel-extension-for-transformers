@@ -158,7 +158,7 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
             '--audio_input_path', type=str, default=None, help='Input aduio path.')
         self.parser.add_argument(
             '--audio_output_path', type=str, default=None, help='Output aduio path.')
-        
+
     def execute(self, argv: List[str]) -> bool:
         args = self.parser.parse_args(argv)
         server_ip = args.server_ip
@@ -194,7 +194,7 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
         with open(audio_input_path, "rb") as wav_file:
             files = {
                 "file": ("audio.wav", wav_file, "audio/wav"),
-                "voice": (None, "pat"),
+                "voice": (None, "default"),
                 "audio_output_path": (None, outpath)
             }
             res = requests.post(url, files=files)
