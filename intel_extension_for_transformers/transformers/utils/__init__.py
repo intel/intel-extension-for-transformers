@@ -21,5 +21,5 @@ from .quantization_config import (
     AMPConfig,
     BitsAndBytesConfig,
     SmoothQuantConfig,
-    WeightOnlyQuantizationConfig,
+    WeightOnlyQuantConfig,
 )

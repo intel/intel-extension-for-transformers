@@ -16,19 +16,42 @@
 # limitations under the License.
 
 
-from .config import (WEIGHTS_NAME, AutoDistillationConfig, BenchmarkConfig,
-                     DistillationConfig, DynamicLengthConfig,
-                     FlashDistillationConfig, NASConfig, Provider, PrunerV2,
-                     PruningConfig, QuantizationConfig, TFDistillationConfig)
-from .distillation import (SUPPORTED_DISTILLATION_CRITERION_MODE,
-                           DistillationCriterionMode)
+from .config import (
+    WEIGHTS_NAME,
+    AutoDistillationConfig,
+    BenchmarkConfig,
+    DistillationConfig,
+    DynamicLengthConfig,
+    FlashDistillationConfig,
+    NASConfig,
+    Provider,
+    PrunerV2,
+    PruningConfig,
+    QuantizationConfig,
+    TFDistillationConfig,
+)
+from .distillation import (
+    SUPPORTED_DISTILLATION_CRITERION_MODE,
+    DistillationCriterionMode,
+)
 from .mixture.auto_distillation import AutoDistillation
 from .nas import NAS
 from .optimizer import NoTrainerOptimizer, Orchestrate_optimizer
 from .optimizer_tf import TFOptimization
 from .pruning import SUPPORTED_PRUNING_MODE, PrunerConfig, PruningMode
 from .quantization import SUPPORTED_QUANT_MODE, QuantizationMode
-from .utils import (AMPConfig, BitsAndBytesConfig, SmoothQuantConfig,
-                    WeightOnlyQuantizationConfig, metrics, objectives)
+from .utils import (
+    AMPConfig,
+    BitsAndBytesConfig,
+    SmoothQuantConfig,
+    WeightOnlyQuantConfig,
+    metrics,
+    objectives,
+)
 from .utils.utility import LazyImport
-from .modeling import AutoModelForCausalLM, OptimizedModel
+from .modeling import (
+    AutoModelForCausalLM,
+    AutoModel,
+    AutoModelForSeq2SeqLM,
+    OptimizedModel,
+)
