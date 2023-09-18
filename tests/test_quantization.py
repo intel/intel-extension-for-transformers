@@ -290,7 +290,7 @@ class TestQuantization(unittest.TestCase):
         model_name_or_path = "facebook/opt-125m"
         tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
         from intel_extension_for_transformers.transformers import (
-            AMPConfig,
+            MixedPrecisionConfig,
             WeightOnlyQuantConfig,
             SmoothQuantConfig,
             BitsAndBytesConfig
@@ -301,14 +301,14 @@ class TestQuantization(unittest.TestCase):
         dummy_input = fp32_model.dummy_inputs["input_ids"]
 
         # smooth-quant
-        #sq_config = SmoothQuantConfig(
-        #                            tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-        #                            calib_iters=5
-        #                        )
-        #q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
-        #                                            quantization_config=sq_config
-        #                                        )
-        #self.assertTrue(isinstance(q_model, torch.jit.ScriptModule))
+        sq_config = SmoothQuantConfig(
+                                    tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                                    calib_iters=5
+                                )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config
+                                                )
+        self.assertTrue(isinstance(q_model, torch.jit.ScriptModule))
         # weight-only
         woq_config = WeightOnlyQuantConfig()
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
@@ -317,7 +317,7 @@ class TestQuantization(unittest.TestCase):
         output = woq_model(dummy_input)
         self.assertTrue(float(output[0][0][0][0]), -7.139640808105469)
         # amp
-        amp_config = AMPConfig() 
+        amp_config = MixedPrecisionConfig() 
         amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=amp_config
                                                 )

@@ -18,7 +18,7 @@
 """Utils for optimization."""
 
 from .quantization_config import (
-    AMPConfig,
+    MixedPrecisionConfig,
     BitsAndBytesConfig,
     SmoothQuantConfig,
     WeightOnlyQuantConfig,

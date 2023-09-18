@@ -217,7 +217,7 @@ class WeightOnlyQuantConfig:
 
 
 @dataclass
-class AMPConfig:
+class MixedPrecisionConfig:
     dtype: str = "bfloat16"
 
 @dataclass

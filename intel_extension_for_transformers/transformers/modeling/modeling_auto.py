@@ -48,7 +48,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
 
 
 from intel_extension_for_transformers.transformers import (
-    AMPConfig,
+    MixedPrecisionConfig,
     WeightOnlyQuantConfig,
     SmoothQuantConfig
 )
@@ -106,11 +106,11 @@ class _BaseAutoModelClass:
                 kwargs["torch_dtype"] = "auto"
             quantization_config = kwargs_orig.get("quantization_config", None)
             if quantization_config is not None and not (isinstance(quantization_config, SmoothQuantConfig) or 
-                                                        isinstance(quantization_config, AMPConfig) or
+                                                        isinstance(quantization_config, MixedPrecisionConfig) or
                                                         isinstance(quantization_config, WeightOnlyQuantConfig)
                                                         ):
                 kwargs["quantization_config"] = kwargs_orig["quantization_config"]
-            if isinstance(quantization_config, AMPConfig):
+            if isinstance(quantization_config, MixedPrecisionConfig):
                 config.torch_dtype=torch.bfloat16
 
         has_remote_code = hasattr(config, "auto_map") and cls.__name__ in config.auto_map
