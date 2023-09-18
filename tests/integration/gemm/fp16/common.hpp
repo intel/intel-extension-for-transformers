@@ -441,10 +441,10 @@ template <class Test>
 class result_validate {
 
 public:
-    using dtype_a = Test::data_type_a;
-    using dtype_b = Test::data_type_b;
-    using dtype_c = Test::data_type_c;
-    using dtype_acc = Test::data_type_acc;
+    using dtype_a = typename Test::data_type_a;
+    using dtype_b = typename Test::data_type_b;
+    using dtype_c = typename Test::data_type_c;
+    using dtype_acc = typename Test::data_type_acc;
 
     int operator()(dtype_a *A, dtype_b *B, dtype_c *C, sycl::queue &queue) {
         return gemm_result_validate<dtype_a, dtype_b, dtype_c, dtype_acc>(A, B,

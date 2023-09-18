@@ -87,8 +87,8 @@ tile_store(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using store_dtype = typename payload_t::mem_dtype;
-    using check_store
-            = subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::
+    using check_store =
+            typename subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::
                     template global_2d<payload_t::tile_desc::block_size_x>;
 
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
@@ -103,8 +103,8 @@ tile_store(tile_t &tile, payload_t &payload) {
     static constexpr uint32_t num_block_y = tile_desc::num_block_y;
     static constexpr uint32_t num_block = tile_desc::num_block;
 
-    using load_store_attr =
-            typename arch_attr_t<payload_t::arch_tag>::load_store_attr;
+    using load_store_attr = typename arch_attr_t<
+            payload_t::arch_tag>::template load_store_attr<msg_type::block_2d>;
 
     static constexpr int32_t max_block_width
             = load_store_attr::max_load_width_in_bytes / sizeof(dtype);
@@ -263,7 +263,7 @@ __XETLA_API typename std::enable_if_t<
 tile_store(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using store_dtype = typename payload_t::mem_dtype;
-    using check_store = subgroup::check_store<gpu_arch::Xe, dtype,
+    using check_store = typename subgroup::check_store<gpu_arch::Xe, dtype,
             store_dtype>::global_1d;
 
     static constexpr uint32_t tile_size_x = tile_t::tile_size_x;
@@ -311,7 +311,7 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
             global_atomic_oob_check_on_tag>::value;
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
-    using check_store = subgroup::check_store<gpu_arch::Xe,
+    using check_store = typename subgroup::check_store<gpu_arch::Xe,
             dtype>::template global_atomic<payload_t::tile_bytes,
             payload_t::min_store_bytes, payload_t::block_bytes,
             payload_t::num_channel_x, payload_t::num_channel>;
@@ -418,7 +418,7 @@ tile_store(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using store_dtype = typename payload_t::mem_dtype;
-    using check_store = subgroup::check_store<gpu_arch::Xe, dtype,
+    using check_store = typename subgroup::check_store<gpu_arch::Xe, dtype,
             store_dtype>::template local_scatter<payload_t::tile_bytes,
             payload_t::min_bytes, payload_t::block_bytes,
             payload_t::num_channel_x, payload_t::num_channel>;
@@ -491,7 +491,7 @@ tile_store(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using store_dtype = typename payload_t::store_dtype;
-    using check_store = subgroup::check_store<gpu_arch::Xe, dtype,
+    using check_store = typename subgroup::check_store<gpu_arch::Xe, dtype,
             store_dtype>::template local_scatter_vnni_col<payload_t::tile_bytes,
             payload_t::min_store_bytes, payload_t::block_bytes,
             payload_t::num_channel_x, payload_t::num_channel>;
@@ -570,8 +570,8 @@ tile_store(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using store_dtype = typename payload_t::mem_dtype;
-    using check_store
-            = subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::local_1d;
+    using check_store = typename subgroup::check_store<gpu_arch::Xe, dtype,
+            store_dtype>::local_1d;
 
     constexpr uint32_t vector_size
             = payload_t::bytes_per_row / sizeof(store_dtype);
@@ -645,8 +645,8 @@ tile_store(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using tile_desc = typename payload_t::tile_desc;
     using store_dtype = typename payload_t::mem_dtype;
-    using check_store
-            = subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::local_1d;
+    using check_store = typename subgroup::check_store<gpu_arch::Xe, dtype,
+            store_dtype>::local_1d;
 
     constexpr uint32_t scale_factor = payload_t::scale_factor;
     constexpr uint32_t store_len = tile_desc::tile_size_x / scale_factor;

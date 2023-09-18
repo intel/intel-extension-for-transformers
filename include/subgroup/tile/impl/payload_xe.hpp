@@ -33,15 +33,17 @@ namespace gpu::xetla::subgroup {
 /// @tparam dtype Is the data type
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam mem_layout_ Is the memory layout
-template <typename dtype_, typename tile_desc_, mem_layout mem_layout_>
+template <typename dtype_, typename tile_desc_, mem_layout mem_layout_,
+        gpu_arch arch_tag_>
 struct mem_payload_t<dtype_, tile_desc_, msg_type::block_2d, mem_layout_,
-        mem_space::global, gpu_arch::Xe> {
+        mem_space::global, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using tile_desc = tile_desc_;
     using dtype = dtype_;
     static constexpr msg_type message_type = msg_type::block_2d;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout_;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
@@ -51,7 +53,7 @@ private:
     static constexpr uint32_t num_block = tile_desc::num_block;
     static constexpr uint32_t remained_size_y = tile_desc::remained_size_y;
     using this_payload_t = mem_payload_t<dtype, tile_desc, msg_type::block_2d,
-            memory_layout, mem_space::global, gpu_arch::Xe>;
+            memory_layout, mem_space::global, arch_tag>;
 
 public:
     static constexpr bool mem_transpose
@@ -205,15 +207,16 @@ private:
 /// @tparam dtype Is the data type
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam mem_layout_ Is the memory layout
-template <typename dtype_, typename tile_desc_>
+template <typename dtype_, typename tile_desc_, gpu_arch arch_tag_>
 struct mem_payload_t<dtype_, tile_desc_, msg_type::block_1d,
-        mem_layout::row_major, mem_space::global, gpu_arch::Xe> {
+        mem_layout::row_major, mem_space::global, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using dtype = dtype_;
     using tile_desc = tile_desc_;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout::row_major;
     static constexpr msg_type message_type = msg_type::block_1d;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
@@ -221,7 +224,7 @@ private:
     static_assert(tile_size_y == 1,
             "For tile_size_y > 1 case, please use 2d block message! ");
     using this_payload_t = mem_payload_t<dtype, tile_desc, msg_type::block_1d,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+            mem_layout::row_major, mem_space::global, arch_tag>;
 
 public:
     static constexpr uint32_t bytes_per_row = tile_size_x * sizeof(dtype);
@@ -301,15 +304,16 @@ public:
 /// @tparam dtype Is the data type
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam mem_layout_ Is the memory layout
-template <typename dtype_, typename tile_desc_>
+template <typename dtype_, typename tile_desc_, gpu_arch arch_tag_>
 struct mem_payload_t<dtype_, tile_desc_, msg_type::atomic_add,
-        mem_layout::row_major, mem_space::global, gpu_arch::Xe> {
+        mem_layout::row_major, mem_space::global, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using dtype = dtype_;
     using tile_desc = tile_desc_;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout::row_major;
     static constexpr msg_type message_type = msg_type::atomic_add;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
     static_assert(
             sizeof(dtype) >= 4, "for atomic add, we only support DW or QW");
 
@@ -319,7 +323,7 @@ private:
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;
     using this_payload_t = mem_payload_t<dtype, tile_desc, msg_type::atomic_add,
-            mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+            mem_layout::row_major, mem_space::global, arch_tag>;
 
 public:
     static constexpr uint32_t tile_bytes
@@ -457,15 +461,16 @@ public:
 /// @tparam dtype Is the data type
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam mem_layout_ Is the memory layout
-template <typename dtype_, typename tile_desc_>
+template <typename dtype_, typename tile_desc_, gpu_arch arch_tag_>
 struct mem_payload_t<dtype_, tile_desc_, msg_type::block_1d,
-        mem_layout::row_major, mem_space::local, gpu_arch::Xe> {
+        mem_layout::row_major, mem_space::local, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using dtype = dtype_;
     using tile_desc = tile_desc_;
     static constexpr mem_space memory_space = mem_space::local;
     static constexpr mem_layout memory_layout = mem_layout::row_major;
     static constexpr msg_type message_type = msg_type::block_1d;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
@@ -473,7 +478,7 @@ private:
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;
     using this_payload_t = mem_payload_t<dtype, tile_desc, msg_type::block_1d,
-            mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
+            mem_layout::row_major, mem_space::local, arch_tag>;
 
 public:
     static constexpr uint32_t tile_bytes
@@ -550,15 +555,16 @@ public:
 /// @tparam dtype Is the data type
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam mem_layout_ Is the memory layout
-template <typename dtype_, typename tile_desc_>
+template <typename dtype_, typename tile_desc_, gpu_arch arch_tag_>
 struct mem_payload_t<dtype_, tile_desc_, msg_type::scatter,
-        mem_layout::row_major, mem_space::local, gpu_arch::Xe> {
+        mem_layout::row_major, mem_space::local, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using dtype = dtype_;
     using tile_desc = tile_desc_;
     static constexpr mem_space memory_space = mem_space::local;
     static constexpr mem_layout memory_layout = mem_layout::row_major;
     static constexpr msg_type message_type = msg_type::scatter;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
@@ -566,7 +572,7 @@ private:
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;
     using this_payload_t = mem_payload_t<dtype, tile_desc, msg_type::scatter,
-            mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
+            mem_layout::row_major, mem_space::local, arch_tag>;
 
 public:
     static constexpr reg_layout register_layout = tile_desc::register_layout;
@@ -697,19 +703,19 @@ public:
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam mem_layout_ Is the memory layout
 template <typename dtype_, uint32_t tile_size_x_, uint32_t tile_size_y_,
-        uint32_t block_size_x_, uint32_t block_size_y_>
+        uint32_t block_size_x_, uint32_t block_size_y_, gpu_arch arch_tag_>
 struct mem_payload_t<dtype_,
         tile_desc_t<tile_size_x_, tile_size_y_, block_size_x_, block_size_y_,
                 reg_layout::vnni_tiled_col_major>,
-        msg_type::scatter, mem_layout::row_major, mem_space::local,
-        gpu_arch::Xe> {
+        msg_type::scatter, mem_layout::row_major, mem_space::local, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using dtype = dtype_;
     using tile_desc = tile_desc_t<tile_size_x_, tile_size_y_, block_size_x_,
             block_size_y_, reg_layout::vnni_tiled_col_major>;
     static constexpr mem_space memory_space = mem_space::local;
     static constexpr mem_layout memory_layout = mem_layout::row_major;
     static constexpr msg_type message_type = msg_type::scatter;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
@@ -717,7 +723,7 @@ private:
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;
     using this_payload_t = mem_payload_t<dtype, tile_desc, msg_type::scatter,
-            mem_layout::row_major, mem_space::local, gpu_arch::Xe>;
+            mem_layout::row_major, mem_space::local, arch_tag>;
 
 public:
     static constexpr uint32_t tile_bytes
@@ -856,20 +862,21 @@ public:
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam dtype Is the data type
 /// @tparam mem_layout Is the data layout
-/// @tparam cooperative_num_ Is the thread nums to prefetch data
+/// @tparam num_coop_sg_ Is the thread nums to prefetch data
 template <typename dtype_, uint32_t tile_size_x_, uint32_t tile_size_y_,
         uint32_t block_size_x_, uint32_t block_size_y_, mem_layout mem_layout_,
-        uint32_t cooperative_num_, reg_layout reg_layout_>
+        uint32_t num_coop_sg_, reg_layout reg_layout_, gpu_arch arch_tag_>
 struct prefetch_payload_t<dtype_,
         tile_desc_t<tile_size_x_, tile_size_y_, block_size_x_, block_size_y_,
                 reg_layout_>,
-        mem_layout_, mem_space::global, cooperative_num_, gpu_arch::Xe> {
+        mem_layout_, mem_space::global, num_coop_sg_, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using dtype = dtype_;
     using tile_desc = tile_desc_t<tile_size_x_, tile_size_y_, block_size_x_,
             block_size_y_, reg_layout_>;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout_;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
     static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
@@ -879,36 +886,39 @@ private:
             = is_col_major ? tile_size_y : tile_size_x;
     static constexpr uint32_t mem_tile_size_h
             = is_col_major ? tile_size_x : tile_size_y;
-    using arch_attr = arch_attr_t<gpu_arch::Xe>;
-    using load_store_attr = arch_attr::load_store_attr;
-    static constexpr int32_t max_block_size_w
-            = load_store_attr::max_load_width_in_bytes / sizeof(dtype)
-                    > mem_tile_size_w
-            ? mem_tile_size_w
-            : load_store_attr::max_load_width_in_bytes / sizeof(dtype);
-    static constexpr int32_t max_block_size_h
+    using load_store_attr = typename arch_attr_t<
+            arch_tag>::template load_store_attr<msg_type::block_2d>;
+    static constexpr uint32_t special_prefetch_width
+            = load_store_attr::special_prefetch_width_in_bytes / sizeof(dtype);
+    static constexpr uint32_t normal_prefetch_width
+            = load_store_attr::max_load_width_in_bytes / sizeof(dtype);
+    static constexpr bool is_special_prefetch
+            = (mem_tile_size_w % special_prefetch_width) == 0;
+
+    static constexpr uint32_t block_size_w = is_special_prefetch
+            ? special_prefetch_width
+            : (normal_prefetch_width > mem_tile_size_w ? mem_tile_size_w
+                                                       : normal_prefetch_width);
+    static constexpr uint32_t block_size_h
             = load_store_attr::max_load_height_in_elem;
     static constexpr uint32_t max_num_block_w
-            = (mem_tile_size_w + max_block_size_w - 1) / max_block_size_w;
+            = (mem_tile_size_w + block_size_w - 1) / block_size_w;
+    static constexpr uint32_t num_coop_sg = num_coop_sg_;
+    static constexpr uint32_t num_coop_sg_w
+            = detail::gcd<num_coop_sg, max_num_block_w>::value;
+    static constexpr uint32_t num_coop_sg_h = num_coop_sg / num_coop_sg_w;
 
-    static constexpr uint32_t cooperative_num = cooperative_num_;
-    static constexpr uint32_t coop_num_w
-            = detail::gcd<cooperative_num, max_num_block_w>::value;
-    static constexpr uint32_t coop_num_h = cooperative_num / coop_num_w;
-    // for x direction, we are fine with oob access, since it's still in the same CL
-    static constexpr uint32_t tile_size_w
-            = max_block_size_w * max_num_block_w / coop_num_w;
-    static constexpr int32_t num_block_w = max_num_block_w / coop_num_w;
-    // todo: currently we don't have the oob check for y direction
+    static constexpr uint32_t num_block_w = max_num_block_w / num_coop_sg_w;
+    static constexpr uint32_t tile_size_w = block_size_w * num_block_w;
     static constexpr uint32_t tile_size_h
-            = (mem_tile_size_h + coop_num_h - 1) / coop_num_h;
-    static constexpr int32_t num_block_h
-            = (tile_size_h + max_block_size_h - 1) / max_block_size_h;
+            = (mem_tile_size_h + num_coop_sg_h - 1) / num_coop_sg_h;
+    static constexpr uint32_t num_block_h
+            = (tile_size_h + block_size_h - 1) / block_size_h;
     using this_payload_t = prefetch_payload_t<dtype, tile_desc, mem_layout_,
-            mem_space::global, cooperative_num_, gpu_arch::Xe>;
+            mem_space::global, num_coop_sg_, arch_tag>;
 
 public:
-    static constexpr int32_t num_tdesc = num_block_w * num_block_h;
+    static constexpr uint32_t num_tdesc = num_block_w * num_block_h;
     xetla_vector<uint32_t, num_tdesc * 16> tdesc_prefetch;
 
     inline prefetch_payload_t(const this_payload_t &rhs) {
@@ -926,8 +936,8 @@ public:
             mem_desc_t<dtype, mem_layout_, mem_space::global> &mem_desc,
             uint32_t coop_id = 0) {
         xetla_tdescriptor base_tdesc = mem_desc.get_tdesc();
-        uint32_t coop_id_x = coop_id % coop_num_w;
-        uint32_t coop_id_y = coop_id / coop_num_w;
+        uint32_t coop_id_x = coop_id % num_coop_sg_w;
+        uint32_t coop_id_y = coop_id / num_coop_sg_w;
         xetla_update_tdesc_offsetx(
                 base_tdesc.xetla_format<uint32_t>(), coop_id_x * tile_size_w);
         xetla_update_tdesc_offsety(
@@ -938,8 +948,8 @@ public:
     inline prefetch_payload_t(dtype *p, int surface_width, int surface_height,
             int surface_pitch, int surface_offset_x, int surface_offset_y,
             uint32_t coop_id = 0) {
-        uint32_t coop_id_x = coop_id % coop_num_w;
-        uint32_t coop_id_y = coop_id / coop_num_w;
+        uint32_t coop_id_x = coop_id % num_coop_sg_w;
+        uint32_t coop_id_y = coop_id / num_coop_sg_w;
         xetla_tdescriptor base_tdesc;
         xetla_fill_tdesc(base_tdesc.xetla_format<uint32_t>(), p, surface_width,
                 surface_height, surface_pitch,
@@ -972,20 +982,20 @@ private:
         auto tdesc_2d = tdesc_prefetch.xetla_format<uint32_t, num_tdesc, 16>();
         uint32_t base_offset_y = 0;
 #pragma unroll
-        for (int i = 0; i < tile_size_h / max_block_size_h; i++) {
+        for (int i = 0; i < tile_size_h / block_size_h; i++) {
             auto tdesc_row_2d = tdesc_2d.xetla_select<num_block_w, 1, 16, 1>(
                     i * num_block_w, 0);
-            prepare_tile_desc_core<num_block_w, max_block_size_w,
-                    max_block_size_h>(tdesc_row_2d, base_tdesc, base_offset_y);
-            base_offset_y += max_block_size_h;
+            prepare_tile_desc_core<num_block_w, block_size_w, block_size_h>(
+                    tdesc_row_2d, base_tdesc, base_offset_y);
+            base_offset_y += block_size_h;
         }
-        if constexpr ((tile_size_h % max_block_size_h) != 0) {
-            constexpr int i = tile_size_h / max_block_size_h;
+        if constexpr ((tile_size_h % block_size_h) != 0) {
+            constexpr int i = tile_size_h / block_size_h;
             auto tdesc_row_2d = tdesc_2d.xetla_select<num_block_w, 1, 16, 1>(
                     i * num_block_w, 0);
-            constexpr uint32_t remain_size_y = tile_size_h % max_block_size_h;
-            prepare_tile_desc_core<num_block_w, max_block_size_w,
-                    remain_size_y>(tdesc_row_2d, base_tdesc, base_offset_y);
+            constexpr uint32_t remain_size_y = tile_size_h % block_size_h;
+            prepare_tile_desc_core<num_block_w, block_size_w, remain_size_y>(
+                    tdesc_row_2d, base_tdesc, base_offset_y);
         }
     }
 
@@ -1015,13 +1025,14 @@ private:
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam dtype Is the data type
 /// @tparam mem_layout Is the data layout
-/// @tparam cooperative_num_ Is the thread nums to prefetch data
+/// @tparam num_coop_sg_ Is the thread nums to prefetch data
 template <typename dtype_, uint32_t tile_size_x_, uint32_t block_size_x_,
-        mem_layout mem_layout_, uint32_t cooperative_num_,
-        reg_layout reg_layout_>
+        mem_layout mem_layout_, uint32_t num_coop_sg_, reg_layout reg_layout_,
+        gpu_arch arch_tag_>
 struct prefetch_payload_t<dtype_,
         tile_desc_t<tile_size_x_, 1, block_size_x_, 1, reg_layout_>,
-        mem_layout_, mem_space::global, cooperative_num_, gpu_arch::Xe> {
+        mem_layout_, mem_space::global, num_coop_sg_, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using dtype = dtype_;
     // CL aligned, so we can use uint64_t
     using prefetch_dtype = uint64_t;
@@ -1029,25 +1040,24 @@ struct prefetch_payload_t<dtype_,
             = tile_desc_t<tile_size_x_, 1, block_size_x_, 1, reg_layout_>;
     static constexpr mem_space memory_space = mem_space::global;
     static constexpr mem_layout memory_layout = mem_layout_;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
 private:
     // Fetches the entire CL.
     static constexpr uint32_t cacheline_elems = 64 / sizeof(dtype);
     static constexpr uint32_t mem_block_nums
             = (tile_desc::tile_size_x + cacheline_elems - 1) / cacheline_elems;
-    static constexpr uint32_t cooperative_num = cooperative_num_;
+    static constexpr uint32_t num_coop_sg = num_coop_sg_;
 
-    // For mem_tile_nums < cooperative_num cases, mem_tile_size_x will be CL length
+    // For mem_tile_nums < num_coop_sg cases, mem_tile_size_x will be CL length
     // which might lead to illegal read.
-    // there are cooperative_num threads to prefetch mem_block_nums
+    // there are num_coop_sg threads to prefetch mem_block_nums
     // each thread will prefetch mem_tile_size_x elements
-    static constexpr uint32_t mem_tile_size_x = mem_block_nums > cooperative_num
-            ? (mem_block_nums + cooperative_num - 1)
-                    / cooperative_num *cacheline_elems
+    static constexpr uint32_t mem_tile_size_x = mem_block_nums > num_coop_sg
+            ? (mem_block_nums + num_coop_sg - 1) / num_coop_sg *cacheline_elems
             : 0;
     using this_payload_t = prefetch_payload_t<dtype, tile_desc, mem_layout_,
-            mem_space::global, cooperative_num_, gpu_arch::Xe>;
+            mem_space::global, num_coop_sg_, arch_tag>;
 
     // Fixed prefetch_dtype, close this assertion
     // static_assert(sizeof(prefetch_dtype) >= 4,
@@ -1084,7 +1094,7 @@ public:
         base_offset = offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         uint64_t ptr_temp = (uint64_t)mem_desc.base.base;
         base_ptr = (prefetch_dtype *)ptr_temp
-                + (coop_id % cooperative_num) * mem_tile_size_x;
+                + (coop_id % num_coop_sg) * mem_tile_size_x;
     }
 
     inline prefetch_payload_t(dtype *p, int surface_width, int surface_height,
@@ -1095,7 +1105,7 @@ public:
         uint32_t offset_y = surface_offset_y;
         base_offset = offset_y * pitch_in_bytes + offset_x * sizeof(dtype);
         base_ptr = (prefetch_dtype *)p
-                + (coop_id % cooperative_num) * mem_tile_size_x;
+                + (coop_id % num_coop_sg) * mem_tile_size_x;
     }
 
     template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
@@ -1113,16 +1123,17 @@ public:
 /// @tparam tile_desc_ Is the tile descriptor
 /// @tparam dtype Is the data type
 /// @tparam mem_layout Is the data layout
-/// @tparam cooperative_num_ Is the thread nums to prefetch data
+/// @tparam num_coop_sg_ Is the thread nums to prefetch data
 template <typename dtype_, typename tile_desc_, mem_layout mem_layout_,
-        uint32_t cooperative_num_>
+        uint32_t num_coop_sg_, gpu_arch arch_tag_>
 struct prefetch_payload_t<dtype_, tile_desc_, mem_layout_, mem_space::local,
-        cooperative_num_, gpu_arch::Xe> {
+        num_coop_sg_, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using dtype = dtype_;
     using tile_desc = tile_desc_;
     static constexpr mem_space memory_space = mem_space::local;
     static constexpr mem_layout memory_layout = mem_layout_;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
 
     inline prefetch_payload_t(
             mem_desc_t<dtype, mem_layout_, mem_space::local> &mem_desc,

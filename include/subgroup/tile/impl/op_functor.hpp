@@ -159,11 +159,12 @@ struct gelu_fwd_op_t {
 /// Used in epilogue::tile_op or chained_tile_op.
 /// @tparam dtype_out Is the data type of the intermediate buffer_w.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename dtype_out, gpu_arch arch_tag = gpu_arch::Xe>
+template <typename dtype_out, gpu_arch arch_tag, class enable = void>
 struct gelu_fwd_w_op_t {};
 /// @brief Is the element-wise gelu training forward op functor, specialized for Xe architecture.
-template <typename dtype_out_>
-struct gelu_fwd_w_op_t<dtype_out_, gpu_arch::Xe> {
+template <typename dtype_out_, gpu_arch arch_tag>
+struct gelu_fwd_w_op_t<dtype_out_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
     using dtype_out = dtype_out_;
     using mem_desc_w_t
             = mem_desc_t<dtype_out, mem_layout::row_major, mem_space::global>;
@@ -194,7 +195,7 @@ struct gelu_fwd_w_op_t<dtype_out_, gpu_arch::Xe> {
         using bwd_w_tile_t = tile_t<dtype_out, bwd_w_tile_desc_t>;
         using bwd_w_payload_t = mem_payload_t<dtype_out, bwd_w_tile_desc_t,
                 msg_type::block_2d, mem_desc_w_t::layout, mem_desc_w_t::space,
-                gpu_arch::Xe>;
+                arch_tag>;
         bwd_w_tile_t bwd_w;
         bwd_w_payload_t bwd_w_payload(mem_desc_w);
         // start compute
@@ -234,10 +235,7 @@ struct gelu_fwd_w_op_t<dtype_out_, gpu_arch::Xe> {
                     = remain_y_start * tile_size_x;
             constexpr uint32_t remain_block_elems
                     = remain_size_y * block_size_x;
-            //     using remain_bwd_w_tile_t = xetla_tile_store_t<dtype_out,
-            //             block_size_x, remain_size_y, block_size_x, remain_size_y,
-            //             mem_desc_w_t::layout, mem_desc_w_t::space, store_op::normal,
-            //             gpu_arch::Xe, reg_layout::tiled>;
+
             using remain_bwd_w_tile_desc_t
                     = tile_desc_t<block_size_x, remain_size_y, block_size_x,
                             remain_size_y, reg_layout::tiled>;
@@ -245,7 +243,7 @@ struct gelu_fwd_w_op_t<dtype_out_, gpu_arch::Xe> {
                     = tile_t<dtype_out, remain_bwd_w_tile_desc_t>;
             using remain_bwd_w_payload_t = mem_payload_t<dtype_out,
                     remain_bwd_w_tile_desc_t, msg_type::block_2d,
-                    mem_desc_w_t::layout, mem_desc_w_t::space, gpu_arch::Xe>;
+                    mem_desc_w_t::layout, mem_desc_w_t::space, arch_tag>;
 
             mem_desc_w.update_coord_y(remain_y_start);
             remain_bwd_w_payload_t remain_bwd_w_payload(mem_desc_w);
@@ -280,11 +278,12 @@ struct gelu_fwd_w_op_t<dtype_out_, gpu_arch::Xe> {
 /// Used in epilogue::tile_op or chained_tile_op.
 /// @tparam dtype_in Is the data type of the gelu forward input buffer.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename dtype_in, gpu_arch arch_tag = gpu_arch::Xe>
+template <typename dtype_in, gpu_arch arch_tag, class enable = void>
 struct gelu_bwd_op_t {};
 /// @brief Is the element-wise gelu backward op functor, specialized for Xe architecture.
-template <typename dtype_in_>
-struct gelu_bwd_op_t<dtype_in_, gpu_arch::Xe> {
+template <typename dtype_in_, gpu_arch arch_tag>
+struct gelu_bwd_op_t<dtype_in_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
     using dtype_in = dtype_in_;
     using mem_desc_x_t
             = mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>;
@@ -311,9 +310,9 @@ struct gelu_bwd_op_t<dtype_in_, gpu_arch::Xe> {
         using bwd_x_tile_desc_t = tile_desc_t<tile_size_x, tile_size_y,
                 block_size_x, block_size_y, reg_layout::tiled>;
         using bwd_x_tile_t = tile_t<dtype_in, bwd_x_tile_desc_t>;
-        using bwd_x_payload_t = mem_payload_t<dtype_in, bwd_x_tile_desc_t,
-                msg_type::block_2d, mem_desc_x_t::layout, mem_desc_x_t::space,
-                gpu_arch::Xe>;
+        using bwd_x_payload_t
+                = mem_payload_t<dtype_in, bwd_x_tile_desc_t, msg_type::block_2d,
+                        mem_desc_x_t::layout, mem_desc_x_t::space, arch_tag>;
         bwd_x_tile_t bwd_x;
         // init tdesc
         mem_desc_x_t mem_desc_x(args.base, args.shape, coord);
@@ -377,11 +376,12 @@ struct gelu_bwd_op_t<dtype_in_, gpu_arch::Xe> {
 /// Used in epilogue::tile_op or chained_tile_op.
 /// @tparam dtype_bias Is the data type of bias buffer.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename dtype_bias, gpu_arch arch_tag = gpu_arch::Xe>
+template <typename dtype_bias, gpu_arch arch_tag, class enable = void>
 struct bias_add_op_t {};
 /// @brief Is the bias_add op functor, specialized for Xe architecture.
-template <typename dtype_bias_>
-struct bias_add_op_t<dtype_bias_, gpu_arch::Xe> {
+template <typename dtype_bias_, gpu_arch arch_tag>
+struct bias_add_op_t<dtype_bias_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
     using dtype_bias = dtype_bias_;
     using mem_desc_bias_t
             = mem_desc_t<dtype_bias, mem_layout::row_major, mem_space::global>;
@@ -415,7 +415,7 @@ struct bias_add_op_t<dtype_bias_, gpu_arch::Xe> {
         using bias_t = tile_t<dtype_bias, bias_tile_desc_t>;
         using bias_payload_t = mem_payload_t<dtype_bias, bias_tile_desc_t,
                 msg_type_v<bias_tile_desc_t, mem_desc_bias_t::space>,
-                mem_desc_bias_t::layout, mem_desc_bias_t::space, gpu_arch::Xe>;
+                mem_desc_bias_t::layout, mem_desc_bias_t::space, arch_tag>;
         coord_t bias_coord(coord.x, 0);
         mem_desc_bias_t mem_desc_bias(args.base, args.shape, bias_coord);
         bias_t bias;
@@ -478,12 +478,13 @@ struct bias_add_op_t<dtype_bias_, gpu_arch::Xe> {
 /// @tparam reduce_kind Is the reduce type, can be sum, prod, min and max.
 /// @tparam dtype_in Is the memory side buffer data type.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <reduce_op reduce_kind, typename dtype_in,
-        gpu_arch arch_tag = gpu_arch::Xe>
+template <reduce_op reduce_kind, typename dtype_in, gpu_arch arch_tag,
+        class enable = void>
 struct elemwise_reduce_op_t {};
 /// @brief Is the element-wise reduce op functor, specialized for Xe architecture.
-template <reduce_op reduce_kind_, typename dtype_in_>
-struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
+template <reduce_op reduce_kind_, typename dtype_in_, gpu_arch arch_tag>
+struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
     using dtype_in = dtype_in_;
     using mem_desc_in_t
             = mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>;
@@ -518,7 +519,7 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
         using mat_in_tile_t = tile_t<dtype_in, mat_in_tile_desc_t>;
         using mat_in_payload_t = mem_payload_t<dtype_in, mat_in_tile_desc_t,
                 msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>,
-                mem_desc_in_t::layout, mem_desc_in_t::space, gpu_arch::Xe>;
+                mem_desc_in_t::layout, mem_desc_in_t::space, arch_tag>;
         using mat_in_tile_acc_t = tile_t<dtype_acc, mat_in_tile_desc_t>;
         mem_desc_in_t mem_desc_in(args.base, args.shape, coord);
         mat_in_tile_t mat_in;
@@ -556,7 +557,7 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
             using mat_tail_in_payload_t = mem_payload_t<dtype_in,
                     mat_tail_in_tile_desc_t,
                     msg_type_v<mat_tail_in_tile_desc_t, mem_desc_in_t::space>,
-                    mem_desc_in_t::layout, mem_desc_in_t::space, gpu_arch::Xe>;
+                    mem_desc_in_t::layout, mem_desc_in_t::space, arch_tag>;
             using mat_tail_in_tile_acc_t
                     = tile_t<dtype_acc, mat_tail_in_tile_desc_t>;
             mat_tail_in_tile_t mat_tail_in;
@@ -587,11 +588,12 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
 /// Used in epilogue::tile_op or chained_tile_op.
 /// @tparam dtype_mask Is the mask data type.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename dtype_mask = uint8_t, gpu_arch arch_tag = gpu_arch::Xe>
+template <typename dtype_mask, gpu_arch arch_tag, class enable = void>
 struct dropout_op_t {};
 /// @brief Is the dropout op functor, specialized for Xe architecture.
-template <typename dtype_mask_>
-struct dropout_op_t<dtype_mask_, gpu_arch::Xe> {
+template <typename dtype_mask_, gpu_arch arch_tag>
+struct dropout_op_t<dtype_mask_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
     using dtype_mask = dtype_mask_;
     using mem_desc_mask_t
             = mem_desc_t<dtype_mask, mem_layout::row_major, mem_space::global>;
@@ -630,7 +632,7 @@ struct dropout_op_t<dtype_mask_, gpu_arch::Xe> {
         using mask_in_tile_t = tile_t<dtype_mask, mask_in_tile_desc_t>;
         using mask_in_payload_t = mem_payload_t<dtype_mask, mask_in_tile_desc_t,
                 msg_type_v<mask_in_tile_desc_t, mem_desc_mask_t::space>,
-                mem_desc_mask_t::layout, mem_desc_mask_t::space, gpu_arch::Xe>;
+                mem_desc_mask_t::layout, mem_desc_mask_t::space, arch_tag>;
         mem_desc_mask_t mem_desc_mask(args.base, args.shape, coord);
         mask_in_tile_t mask_in;
         mask_in_payload_t mask_in_payload(mem_desc_mask);
@@ -665,11 +667,12 @@ struct dropout_op_t<dtype_mask_, gpu_arch::Xe> {
 /// Used in epilogue::tile_op or chained_tile_op.
 /// @tparam dtype_mask Is the mask data type.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename dtype_mask = uint8_t, gpu_arch arch_tag = gpu_arch::Xe>
+template <typename dtype_mask, gpu_arch arch_tag, class enable = void>
 struct rng_dropout_op_t {};
 /// @brief Is the random number generator and dropout op functor, specialized for Xe architecture.
-template <typename dtype_mask_>
-struct rng_dropout_op_t<dtype_mask_, gpu_arch::Xe> {
+template <typename dtype_mask_, gpu_arch arch_tag>
+struct rng_dropout_op_t<dtype_mask_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
     using dtype_mask = dtype_mask_;
     using mem_desc_mask_t
             = mem_desc_t<dtype_mask, mem_layout::row_major, mem_space::global>;
@@ -718,7 +721,7 @@ struct rng_dropout_op_t<dtype_mask_, gpu_arch::Xe> {
         using mask_out_payload_t = mem_payload_t<dtype_mask,
                 mask_out_tile_desc_t,
                 msg_type_v<mask_out_tile_desc_t, mem_desc_mask_t::space>,
-                mem_desc_mask_t::layout, mem_desc_mask_t::space, gpu_arch::Xe>;
+                mem_desc_mask_t::layout, mem_desc_mask_t::space, arch_tag>;
         if (args.prob == 0) { return; }
         //calculate the scale internally
         float scale = 1.f / (1.f - args.prob);
@@ -772,11 +775,12 @@ struct rng_dropout_op_t<dtype_mask_, gpu_arch::Xe> {
 /// Used in epilogue::tile_op or chained_tile_op.
 /// @tparam dtype_offset_scale Is the offset and scale data type.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename dtype_offset_scale, gpu_arch arch_tag = gpu_arch::Xe>
+template <typename dtype_offset_scale, gpu_arch arch_tag, class enable = void>
 struct quant_op_t {};
 /// @brief Is the quantization op functor, specialized for Xe architecture.
-template <typename dtype_offset_scale_>
-struct quant_op_t<dtype_offset_scale_, gpu_arch::Xe> {
+template <typename dtype_offset_scale_, gpu_arch arch_tag>
+struct quant_op_t<dtype_offset_scale_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
     using dtype_offset_scale = dtype_offset_scale_;
     using mem_desc_scale_t = mem_desc_t<dtype_offset_scale,
             mem_layout::row_major, mem_space::global>;
@@ -813,11 +817,10 @@ struct quant_op_t<dtype_offset_scale_, gpu_arch::Xe> {
         using scale_tile_desc_t = tile_desc_t<tile_size_x, 1, block_size_x, 1,
                 reg_layout::tiled>;
         using scale_tile_t = tile_t<dtype_offset_scale, scale_tile_desc_t>;
-        using scale_payload_t
-                = mem_payload_t<dtype_offset_scale, scale_tile_desc_t,
-                        msg_type_v<scale_tile_desc_t, mem_desc_scale_t::space>,
-                        mem_desc_scale_t::layout, mem_desc_scale_t::space,
-                        gpu_arch::Xe>;
+        using scale_payload_t = mem_payload_t<dtype_offset_scale,
+                scale_tile_desc_t,
+                msg_type_v<scale_tile_desc_t, mem_desc_scale_t::space>,
+                mem_desc_scale_t::layout, mem_desc_scale_t::space, arch_tag>;
         coord_t scale_coord(coord.x, 0);
         mem_desc_scale_t mem_desc_scale(
                 args.base_scale, args.shape_offset_scale, scale_coord);
@@ -831,8 +834,7 @@ struct quant_op_t<dtype_offset_scale_, gpu_arch::Xe> {
         using offset_payload_t = mem_payload_t<dtype_offset_scale,
                 offset_tile_desc_t,
                 msg_type_v<offset_tile_desc_t, mem_desc_offset_t::space>,
-                mem_desc_offset_t::layout, mem_desc_offset_t::space,
-                gpu_arch::Xe>;
+                mem_desc_offset_t::layout, mem_desc_offset_t::space, arch_tag>;
         coord_t offset_coord(coord.x, 0);
         mem_desc_offset_t mem_desc_offset(
                 args.base_offset, args.shape_offset_scale, offset_coord);
@@ -915,11 +917,12 @@ struct quant_op_t<dtype_offset_scale_, gpu_arch::Xe> {
 /// Used in epilogue::tile_op or chained_tile_op.
 /// @tparam dtype_in Is the data type of multiplier buffer.
 /// @tparam arch_tag Is the hardware architecture tag.
-template <typename dtype_in, gpu_arch arch_tag = gpu_arch::Xe>
+template <typename dtype_in, gpu_arch arch_tag, class enable = void>
 struct scalar_mul_op_t {};
 /// @brief Is the scalar_multiply op functor, specialized for Xe architecture.
-template <typename dtype_in_>
-struct scalar_mul_op_t<dtype_in_, gpu_arch::Xe> {
+template <typename dtype_in_, gpu_arch arch_tag>
+struct scalar_mul_op_t<dtype_in_, arch_tag,
+        std::enable_if_t<(arch_tag == gpu_arch::Xe)>> {
     using dtype_in = dtype_in_;
     using mem_desc_in_t
             = mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>;

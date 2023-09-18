@@ -30,19 +30,18 @@ namespace gpu::xetla::group {
 
 /// @brief Is the epilogue functor specialized for epilogue_policy_quant_op and Xe architecture.
 template <typename tile_op_t_, typename quant_op_t_, typename tile_shape_,
-        typename mem_desc_c_t_>
-class epilogue_t<
-        epilogue_policy_quant_op<tile_op_t_, quant_op_t_, gpu_arch::Xe>,
-        tile_shape_, mem_desc_c_t_> {
+        typename mem_desc_c_t_, gpu_arch arch_tag_>
+class epilogue_t<epilogue_policy_quant_op<tile_op_t_, quant_op_t_, arch_tag_>,
+        tile_shape_, mem_desc_c_t_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
 public:
     using epilogue_policy
-            = epilogue_policy_quant_op<tile_op_t_, quant_op_t_, gpu_arch::Xe>;
+            = epilogue_policy_quant_op<tile_op_t_, quant_op_t_, arch_tag_>;
     using quant_op_t = quant_op_t_;
     using tile_op_t = tile_op_t_;
-    using update_method = typename epilogue_policy::update_method;
     using tile_shape = tile_shape_;
     using mem_desc_c_t = mem_desc_c_t_;
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+    static constexpr gpu_arch arch_tag = arch_tag_;
     static constexpr uint32_t barrier_count = 0;
     static constexpr uint32_t slm_size = 0;
 
@@ -144,7 +143,8 @@ public:
         matC_t matC;
         matC_payload_t matC_payload(mem_desc_c);
         quant_op(matC, matAcc, mem_desc_c.coord, args.quant_op_args);
-        subgroup::tile_store(matC, matC_payload);
+        subgroup::tile_store<cache_hint::streaming, cache_hint::write_back>(
+                matC, matC_payload);
     }
 };
 

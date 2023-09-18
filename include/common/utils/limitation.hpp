@@ -260,7 +260,7 @@ private:
     static constexpr auto element_size = sizeof(T);
     static constexpr uint32_t max_24bit = 16 * 1024 * 1024; // 2 ^ 24
     static constexpr auto bytes_per_grf
-            = register_attr_t<gpu_arch::Xe, grf_mode::double_grf>::reg_in_bytes;
+            = register_attr_t<grf_mode::double_grf, gpu_arch::Xe>::reg_in_bytes;
 
     static inline bool check_base_address(uint64_t base) {
         bool ret = ((base % 64) == 0);
@@ -450,8 +450,8 @@ template <typename dtype, typename mem_dtype>
 struct check_load<gpu_arch::Xe, dtype, mem_dtype> {
     template <bool mem_transform, size_t block_size_x>
     struct global_2d {
-        using load_store_attr =
-                typename arch_attr_t<gpu_arch::Xe>::load_store_attr;
+        using load_store_attr = typename arch_attr_t<
+                gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
         static constexpr int32_t max_vnni_block_width
                 = load_store_attr::max_vnni_load_width_in_elems;
         static_assert(!mem_transform || block_size_x <= max_vnni_block_width,
@@ -499,8 +499,8 @@ template <typename dtype, typename mem_dtype>
 struct check_store<gpu_arch::Xe, dtype, mem_dtype> {
     template <size_t block_size_x>
     struct global_2d {
-        using load_store_attr =
-                typename arch_attr_t<gpu_arch::Xe>::load_store_attr;
+        using load_store_attr = typename arch_attr_t<
+                gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
 
         static constexpr int32_t max_block_width
                 = load_store_attr::max_load_width_in_bytes / sizeof(dtype);
@@ -567,10 +567,10 @@ struct check_store<gpu_arch::Xe, dtype, mem_dtype> {
 
 namespace group {
 template <gpu_arch arch>
-struct brgemm {};
+struct gemm {};
 
 template <>
-struct brgemm<gpu_arch::Xe> {
+struct gemm<gpu_arch::Xe> {
     struct default_fpu {
         template <typename dtype_a, typename dtype_b, typename dtype_mma_a,
                 typename dtype_mma_b, typename dtype_mma_acc>
@@ -601,14 +601,13 @@ struct brgemm<gpu_arch::Xe> {
                     "current don't support matB load from local memory");
         };
 
-        template <typename arch_attr, typename dtype_mma, int tile_size_x_a,
-                int tile_size_y_a, int block_size_x_a, int block_size_y_a,
-                int tile_size_x_b, int tile_size_y_b, int block_size_x_b,
-                int block_size_y_b>
+        template <typename dtype_mma, int tile_size_x_a, int tile_size_y_a,
+                int block_size_x_a, int block_size_y_a, int tile_size_x_b,
+                int tile_size_y_b, int block_size_x_b, int block_size_y_b>
         struct check_tile_size_default {
-            using register_attr = typename arch_attr::register_attr;
             static constexpr uint32_t reg_in_bytes
-                    = register_attr::reg_in_bytes;
+                    = register_attr_t<grf_mode::double_grf,
+                            gpu_arch::Xe>::reg_in_bytes;
             static constexpr uint32_t simd_len
                     = reg_in_bytes / sizeof(dtype_mma);
 
@@ -661,12 +660,11 @@ struct brgemm<gpu_arch::Xe> {
                     "row-major");
         };
 
-        template <typename arch_attr, typename dtype_mma, int tile_size_x_a,
-                int tile_size_y_a, int block_size_x_a, int block_size_y_a,
-                int tile_size_x_b, int tile_size_y_b, int block_size_x_b,
-                int block_size_y_b>
+        template <typename dtype_mma, int tile_size_x_a, int tile_size_y_a,
+                int block_size_x_a, int block_size_y_a, int tile_size_x_b,
+                int tile_size_y_b, int block_size_x_b, int block_size_y_b>
         struct check_tile_size_default {
-            using mma_attr = typename arch_attr::mma_attr;
+            using mma_attr = mma_attr_t<gpu_arch::Xe>;
             static constexpr int32_t mma_m = mma_attr::mma_m_in_elem;
             static constexpr int32_t mma_n = mma_attr::mma_n_in_elem;
             static constexpr int32_t mma_k

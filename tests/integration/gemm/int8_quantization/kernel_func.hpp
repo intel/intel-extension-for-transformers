@@ -30,19 +30,19 @@ struct igemm_quantize_func {
     static constexpr uint32_t prefetch_distance = 3;
     using dtype_acc = int32_t;
     using tile_shape = tile_shape_t<wg_n, wg_m, sg_n, sg_m>;
-    using brgemm_t = typename brgemm_selector_t<dtype_a, dtype_b, mem_layout_a,
+    using gemm_t = typename gemm_selector_t<dtype_a, dtype_b, mem_layout_a,
             mem_layout_b, mem_space::global, mem_space::global, 8, 8, dtype_acc,
             tile_shape, sg_k, mma_engine::xmx, gpu_arch::Xe, prefetch_distance,
-            periodic_sync_interval>::brgemm;
-    using quant_op_t = subgroup::quant_op_t<dtype_param>;
+            periodic_sync_interval>::gemm;
+    using quant_op_t = subgroup::quant_op_t<dtype_param, gpu_arch::Xe>;
     using epilogue_t = gpu::xetla::group::epilogue_t<
             gpu::xetla::group::epilogue_policy_quant_op<none_op_t, quant_op_t,
                     gpu_arch::Xe>,
             tile_shape,
             mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>>;
 
-    using gemm_op_t = gpu::xetla::kernel::gemm_t<
-            gpu::xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, brgemm_t,
+    using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<
+            gpu::xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, gemm_t,
             epilogue_t>;
     static constexpr uint32_t barrier_count = gemm_op_t::get_barrier_count();
     static constexpr uint32_t slm_size = gemm_op_t::get_slm_size();

@@ -20,22 +20,6 @@
 
 using namespace gpu::xetla;
 
-template <uint32_t element_size>
-constexpr uint32_t get_execSize_code() {
-    static_assert(element_size == 1 || element_size == 2 || element_size == 4
-                    || element_size == 8 || element_size == 16
-                    || element_size == 32,
-            "element_size not supported!");
-    switch (element_size) {
-        case 1: return 0;
-        case 2: return 1;
-        case 4: return 2;
-        case 8: return 3;
-        case 16: return 4;
-        case 32: return 5;
-    }
-}
-
 template <typename dtype, int SIMD>
 struct named_barrier_func {
     static KERNEL_FUNC inline void run(

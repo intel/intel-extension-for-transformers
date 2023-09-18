@@ -28,10 +28,10 @@ namespace gpu::xetla {
 enum class gpu_arch : uint8_t { Xe = 0, Xe2 = 1 };
 enum class grf_mode : uint8_t { normal = 0, double_grf = 1 };
 
-template <gpu_arch ARCH_>
+template <msg_type message_type, gpu_arch arch_tag>
 struct load_store_attr_t {};
 template <>
-struct load_store_attr_t<gpu_arch::Xe> {
+struct load_store_attr_t<msg_type::block_2d, gpu_arch::Xe> {
     /// HW limitation checks https://gfxspecs.intel.com/Predator/Home/Index/55490
     static constexpr uint32_t max_load_height_in_elem = 32;
     static constexpr uint32_t max_load_width_in_bytes = 64;
@@ -45,11 +45,13 @@ struct load_store_attr_t<gpu_arch::Xe> {
     static constexpr uint32_t max_load_size_in_bytes = 2048;
     static constexpr uint32_t max_store_size_in_bytes = 512;
 
+    static constexpr uint32_t special_prefetch_width_in_bytes = 64;
+
     static constexpr uint32_t cache_line_size_in_bytes = 64;
     static constexpr uint32_t alignment_in_bytes = 8;
 };
 
-template <gpu_arch ARCH_>
+template <gpu_arch arch_tag>
 struct mma_attr_t {};
 template <>
 struct mma_attr_t<gpu_arch::Xe> {
@@ -58,19 +60,28 @@ struct mma_attr_t<gpu_arch::Xe> {
     static constexpr uint32_t mma_k_in_bytes = 32;
 };
 
-template <gpu_arch ARCH_, grf_mode GRF_MODE_>
+template <grf_mode grf_num_mode, gpu_arch arch_tag>
 struct register_attr_t {};
-template <>
-struct register_attr_t<gpu_arch::Xe, grf_mode::double_grf> {
-    static constexpr uint32_t acc_reg_in_bytes = 64 * 8;
-    static constexpr uint32_t grf_in_bytes = 64 * 256;
+template <grf_mode grf_num_mode>
+struct register_attr_t<grf_num_mode, gpu_arch::Xe> {
+    static constexpr uint32_t acc_reg_in_bytes
+            = (grf_num_mode == grf_mode::normal) ? 4 * 64 : 8 * 64;
+    static constexpr uint32_t grf_in_bytes
+            = (grf_num_mode == grf_mode::normal) ? 128 * 64 : 256 * 64;
     static constexpr uint32_t reg_in_bytes = 64;
 };
-template <gpu_arch ARCH_>
-struct arch_attr_t {
-    using load_store_attr = load_store_attr_t<ARCH_>;
-    using mma_attr = mma_attr_t<ARCH_>;
-    using register_attr = register_attr_t<ARCH_, grf_mode::double_grf>;
+template <gpu_arch arch_tag>
+struct arch_attr_t {};
+template <>
+struct arch_attr_t<gpu_arch::Xe> {
+    template <msg_type message_type = msg_type::block_2d>
+    using load_store_attr = load_store_attr_t<message_type, gpu_arch::Xe>;
+
+    template <grf_mode grf_num_mode = grf_mode::double_grf>
+    using register_attr = register_attr_t<grf_num_mode, gpu_arch::Xe>;
+
+    using mma_attr = mma_attr_t<gpu_arch::Xe>;
+
     static constexpr uint32_t max_wg_num = 64;
 };
 

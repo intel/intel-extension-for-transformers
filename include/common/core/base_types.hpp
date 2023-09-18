@@ -37,22 +37,9 @@ namespace gpu::xetla {
 /// For device side, we will automatically convert it to its native type.
 /// @see native_type_t
 ///
-struct bf16 {
-    uint16_t data;
-    operator float() const {
-        uint32_t temp = data;
-        temp = temp << 0x10;
-        return *reinterpret_cast<float *>(&temp);
-    }
-    bf16() = default;
-    bf16(float val) { data = (*reinterpret_cast<uint32_t *>(&val)) >> 0x10; }
+using bf16 = sycl::ext::oneapi::bfloat16;
 
-    bf16 &operator=(float val) {
-        this->data = (*reinterpret_cast<uint32_t *>(&val)) >> 0x10;
-        return *this;
-    }
-};
-
+/// @brief xetla fp16 data type.
 using fp16 = sycl::half;
 
 /// @brief xetla tf32 data type.
@@ -66,26 +53,7 @@ using fp16 = sycl::half;
 /// For device side, we will automatically convert it to its native type.
 /// @see native_type_t
 ///
-struct tf32 {
-    uint32_t data;
-    //#ifdef __SYCL_DEVICE_ONLY__
-    //    ///
-    //#else
-    operator float() const {
-        uint32_t temp = data;
-        return *reinterpret_cast<float *>(&temp);
-    }
-    tf32(float val) {
-        data = (*reinterpret_cast<uint32_t *>(&val)) & 0xFFFFE000;
-    }
-
-    tf32 &operator=(float val) {
-        this->data = (*reinterpret_cast<uint32_t *>(&val)) & 0xFFFFE000;
-        return *this;
-    }
-
-    //#endif
-};
+using tf32 = sycl::ext::intel::experimental::esimd::tfloat32;
 
 template <typename T, typename = void>
 struct is_host_callable : std::false_type {};
@@ -106,18 +74,6 @@ struct is_internal_type {
 template <typename T>
 struct native_type {
     using type = T;
-};
-
-/// @brief Set bfloat16 as the native data type of bf16
-template <>
-struct native_type<bf16> {
-    using type = sycl::ext::oneapi::bfloat16;
-};
-
-/// @brief Set uint32_t as the native data type of tf32
-template <>
-struct native_type<tf32> {
-    using type = sycl::ext::intel::experimental::esimd::tfloat32;
 };
 
 /// @brief Return the native data type of T

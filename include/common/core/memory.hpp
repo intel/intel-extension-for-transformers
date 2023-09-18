@@ -139,12 +139,15 @@ constexpr __ESIMD_NS::atomic_op get_atomic_op(gpu::xetla::atomic_op ao) {
         case gpu::xetla::atomic_op::umax: return __ESIMD_NS::atomic_op::umax;
         case gpu::xetla::atomic_op::cmpxchg:
             return __ESIMD_NS::atomic_op::cmpxchg;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         case gpu::xetla::atomic_op::fadd: return __ESIMD_NS::atomic_op::fadd;
         case gpu::xetla::atomic_op::fsub: return __ESIMD_NS::atomic_op::fsub;
         case gpu::xetla::atomic_op::fmin: return __ESIMD_NS::atomic_op::fmin;
         case gpu::xetla::atomic_op::fmax: return __ESIMD_NS::atomic_op::fmax;
         case gpu::xetla::atomic_op::fcmpxchg:
             return __ESIMD_NS::atomic_op::fcmpwr;
+#pragma clang diagnostic pop
         case gpu::xetla::atomic_op::bit_and:
             return __ESIMD_NS::atomic_op::bit_and;
         case gpu::xetla::atomic_op::bit_or:

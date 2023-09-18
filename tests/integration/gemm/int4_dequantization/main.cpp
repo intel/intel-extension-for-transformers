@@ -75,8 +75,8 @@ public:
     static constexpr size_t sg_k = 64;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 128;
-    static constexpr size_t slm_kslicing = 8;
-    static constexpr size_t l3_kslicing = 1;
+    static constexpr size_t slm_kslicing = 4;
+    static constexpr size_t l3_kslicing = 2;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = fp16;
@@ -200,6 +200,40 @@ void dequantize_gemm_run(int iter) {
 
     std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
 
+    using tile_shape = xetla::group::tile_shape_t<wg_tile_n, wg_tile_m,
+            sg_tile_n, sg_tile_m>;
+    static constexpr uint32_t periodic_sync_interval = 1;
+    static constexpr uint32_t prefetch_distance = 3;
+
+    using mem_desc_a_t = xetla::mem_desc_t<data_type_a, mem_layout::row_major,
+            mem_space::global>;
+    using mem_desc_b_t = xetla::mem_desc_t<data_type_b, mem_layout::row_major,
+            mem_space::global>;
+    using mem_desc_c_t = xetla::mem_desc_t<data_type_c, mem_layout::row_major,
+            mem_space::global>;
+
+    using compute_attr = xetla::group::compute_attr_t<data_type_acc_in,
+            data_type_acc_in, data_type_acc>;
+    using perf_tuning_knob = xetla::group::perf_tuning_knob_t<sg_tile_k,
+            prefetch_distance, periodic_sync_interval>;
+    using compute_policy
+            = xetla::group::compute_policy_int4_dequantize_xmx<compute_attr,
+                    perf_tuning_knob, data_type_scale, data_type_zero_pt,
+                    dequant_s, gpu_arch::Xe>;
+    using gemm_t = xetla::group::gemm_t<compute_policy, tile_shape,
+            mem_desc_a_t, mem_desc_b_t>;
+
+    using epilogue_t = xetla::group::epilogue_t<
+            xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
+            mem_desc_c_t>;
+    using gemm_op_t = xetla::kernel::gemm_universal_t<
+            gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
+                    l3_kslicing, slm_kslicing, gpu_arch::Xe>,
+            gemm_t, epilogue_t>;
+
+    size_t size_acc = gemm_op_t::get_acc_buf_size(matrix_m, matrix_n);
+    size_t size_cnt = gemm_op_t::get_cnt_buf_size(matrix_m, matrix_n);
+
     //Define and initialize the data required for the calculation
     auto *A_h = static_cast<data_type_a *>(
             malloc_host(size_a * sizeof(data_type_a), Context));
@@ -207,6 +241,10 @@ void dequantize_gemm_run(int iter) {
             malloc_host(size_b * sizeof(data_type_b), Context));
     auto *C_h = static_cast<data_type_c *>(
             malloc_host(size_c * sizeof(data_type_c), Context));
+    auto *Acc_h = static_cast<data_type_acc *>(
+            malloc_host(size_acc * sizeof(data_type_acc), Context));
+    auto *Cnt_h = static_cast<uint32_t *>(
+            malloc_host(size_cnt * sizeof(uint32_t), Context));
     auto *scale_h = static_cast<data_type_scale *>(
             malloc_host(size_scale * sizeof(data_type_scale), Context));
     auto *zero_pt_h = static_cast<data_type_zero_pt *>(
@@ -221,6 +259,12 @@ void dequantize_gemm_run(int iter) {
     auto *C_d = static_cast<data_type_c *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
                     size_c * sizeof(data_type_c), Device, Context));
+    auto *Acc_d = static_cast<data_type_acc *>(
+            aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
+                    size_acc * sizeof(data_type_acc), Device, Context));
+    auto *Cnt_d
+            = static_cast<uint32_t *>(aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
+                    size_cnt * sizeof(uint32_t), Device, Context));
     auto *scale_d = static_cast<data_type_scale *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
                     size_scale * sizeof(data_type_scale), Device, Context));
@@ -243,10 +287,20 @@ void dequantize_gemm_run(int iter) {
     for (unsigned i = 0; i < size_c; ++i) {
         C_h[i] = 0;
     }
+    for (unsigned i = 0; i < size_acc; ++i) {
+        Acc_h[i] = 0;
+    }
+    for (unsigned i = 0; i < size_cnt; ++i) {
+        Cnt_h[i] = 0;
+    }
 
     Queue.memcpy((void *)A_d, (void *)A_h, size_a * sizeof(data_type_a)).wait();
     Queue.memcpy((void *)B_d, (void *)B_h, size_b * sizeof(data_type_b)).wait();
     Queue.memcpy((void *)C_d, (void *)C_h, size_c * sizeof(data_type_c)).wait();
+    Queue.memcpy((void *)Acc_d, (void *)Acc_h, size_acc * sizeof(data_type_acc))
+            .wait();
+    Queue.memcpy((void *)Cnt_d, (void *)Cnt_h, size_cnt * sizeof(uint32_t))
+            .wait();
     Queue.memcpy((void *)scale_d, (void *)scale_h,
                  size_scale * sizeof(data_type_scale))
             .wait();
@@ -254,43 +308,10 @@ void dequantize_gemm_run(int iter) {
                  size_zero_pt * sizeof(data_type_zero_pt))
             .wait();
 
-    using tile_shape = xetla::group::tile_shape_t<wg_tile_n, wg_tile_m,
-            sg_tile_n, sg_tile_m>;
-    static constexpr uint32_t periodic_sync_interval = 1;
-    static constexpr uint32_t prefetch_distance = 3;
-
-    using mem_desc_a_t = xetla::mem_desc_t<data_type_a, mem_layout::row_major,
-            mem_space::global>;
-    using mem_desc_b_t = xetla::mem_desc_t<data_type_b, mem_layout::row_major,
-            mem_space::global>;
-    using mem_desc_c_t = xetla::mem_desc_t<data_type_c, mem_layout::row_major,
-            mem_space::global>;
-
-    using compute_attr = xetla::group::compute_attr_t<data_type_acc_in,
-            data_type_acc_in, data_type_acc>;
-    using perf_tuning_knob = xetla::group::perf_tuning_knob_t<sg_tile_k,
-            prefetch_distance, periodic_sync_interval>;
-    using compute_policy
-            = xetla::group::compute_policy_int4_dequantize_xmx<compute_attr,
-                    perf_tuning_knob, data_type_scale, data_type_zero_pt,
-                    dequant_s, gpu_arch::Xe>;
-    using brgemm_t = xetla::group::brgemm_t<compute_policy, tile_shape,
-            mem_desc_a_t, mem_desc_b_t>;
-
-    using update_method = typename std::conditional<(l3_kslicing > 1),
-            result_reduce_sum, result_overwrite>::type;
-    using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_default<update_method, gpu_arch::Xe>,
-            tile_shape, mem_desc_c_t>;
-    using gemm_op_t = xetla::kernel::gemm_t<
-            gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
-                    l3_kslicing, slm_kslicing, gpu_arch::Xe>,
-            brgemm_t, epilogue_t>;
-
     // set up gemm arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A_d,
             matrix_k, B_d, matrix_n, C_d, matrix_n, scale_d, matrix_n,
-            zero_pt_d, matrix_n);
+            zero_pt_d, matrix_n, Acc_d, Cnt_d);
 
     cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
     if (!gemm_op_t::can_implement(gemm_arg)) {
@@ -363,6 +384,10 @@ void dequantize_gemm_run(int iter) {
     free(C_d, Context);
     free(scale_d, Context);
     free(zero_pt_d, Context);
+    free(Acc_h, Context);
+    free(Cnt_h, Context);
+    free(Acc_d, Context);
+    free(Cnt_d, Context);
 }
 
 template <typename T>

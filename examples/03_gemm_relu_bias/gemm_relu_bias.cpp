@@ -136,7 +136,7 @@ void gemm_relu_bias_run(uint32_t iter) {
                     sg_tile_m>; //	subgroup size in M dim
 
     // Mirco-kernel configuration
-    using brgemm_config = xetla::group::brgemm_selector_t<
+    using gemm_t = xetla::group::gemm_selector_t<
             data_type_a, // input datatype for A
             data_type_b, // input datatype for B
             mem_layout::row_major, // memory layout for A
@@ -150,7 +150,7 @@ void gemm_relu_bias_run(uint32_t iter) {
             sg_tile_k, // elements in each iteration
             mma_engine::xmx, // compute engine
             gpu_arch::Xe> // GPU arch
-            ::brgemm;
+            ::gemm;
 
     // [ReLuBias] Chain multiple elementwise op in chained_tile_op_t<>: relu_op_t, bias_add_op_t
     using bias_op_t = xetla::subgroup::bias_add_op_t<float, gpu_arch::Xe>;
@@ -170,8 +170,8 @@ void gemm_relu_bias_run(uint32_t iter) {
             xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>,
             tile_shape, mem_desc_output_t>;
 
-    using gemm_op_t = xetla::kernel::gemm_t<
-            xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, brgemm_config,
+    using gemm_op_t = xetla::kernel::gemm_universal_t<
+            xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, gemm_t,
             epilogue_t>;
 
     // [ReLuBias] define the shape of bias matrix D, which should be identitcal to C
@@ -257,8 +257,6 @@ int main() {
     // Here provides some possible configurations using epilogue_t:
     // - GEMM
     //   C  = A x B
-    // - update_method=result_reduce_sum
-    //   C += A x B
     // - tile_op_t=relu_op_t
     //   C = ReLU(A x B)
     // - tile_op_t=[relu_op_t, bias_add_op_t]

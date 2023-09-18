@@ -19,6 +19,7 @@
 
 #pragma once
 
-#include "group/brgemm/brgemm.hpp"
-#include "group/cooperative_reduction_xe.hpp"
+#include "group/cooperative_reduction.hpp"
 #include "group/epilogue/epilogue.hpp"
+#include "group/gemm/gemm.hpp"
+#include "group/global_reduction.hpp"

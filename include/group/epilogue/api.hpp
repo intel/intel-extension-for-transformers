@@ -30,7 +30,8 @@ namespace gpu::xetla::group {
 /// @tparam epilogue_policy Is the epilogue policy.
 /// @tparam tile_shape Is the workgroup-level tile shape.
 /// @tparam mem_desc_c Is the memory descriptor of matC.
-template <typename epilogue_policy, typename tile_shape, typename mem_desc_c>
+template <typename epilogue_policy, typename tile_shape, typename mem_desc_c,
+        class enable = void>
 class epilogue_t {};
 
 /// @} xetla_epilogue

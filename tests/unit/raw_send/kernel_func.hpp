@@ -50,7 +50,8 @@ struct raw_send_with_2_source_and_1_destination_func {
         constexpr uint32_t numSrc1 = size;
         constexpr uint32_t numSrc0 = addr_size;
         constexpr uint32_t numDst = size;
-        constexpr uint32_t execSize = detail::get_execSize_code<SIMD>();
+        constexpr uint32_t execSize
+                = gpu::xetla::detail::get_execSize_code<SIMD>();
 
         xetla_raw_send<dtype, SIMD, uint64_t, SIMD, dtype, SIMD, execSize, sfid,
                 numSrc0, numSrc1, numDst>(

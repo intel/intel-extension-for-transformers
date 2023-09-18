@@ -63,8 +63,8 @@ struct xetla_data_transformer<dtype_in_, dtype_out_, dtype_compute_,
     static constexpr uint32_t wg_size_y
             = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
 
-    using arch_attr = arch_attr_t<gpu_arch::Xe>;
-    using load_store_attr = arch_attr::load_store_attr;
+    using load_store_attr = typename arch_attr_t<
+            gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
     static constexpr uint32_t max_load_height_in_elem
             = load_store_attr::max_load_height_in_elem;
     static constexpr uint32_t max_load_width_in_bytes

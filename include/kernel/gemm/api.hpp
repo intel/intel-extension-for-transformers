@@ -23,20 +23,21 @@
 
 namespace gpu::xetla::kernel {
 
-/// @addtogroup xetla_gemm
+/// @addtogroup xetla_gemm_universal
 /// @{
 
-/// @brief GEMM functor.
-/// The basic functionality of xetla GEMM is to calculate the \f$C = A \times B\f$.
+/// @brief GEMM_UNIVERSAL functor.
+/// The basic functionality of xetla GEMM_UNIVERSAL is to calculate the \f$C = A \times B\f$.
 ///
-/// For advanced usages, xetla GEMM can also support:
+/// For advanced usages, xetla GEMM_UNIVERSAL can also support:
 /// - \f$C = tileOp(A \times B)\f$ by configuring the tile_op_t in epilogue.
-/// @tparam dispatch_policy Is the dispatch algorithm of the GEMM implementation.
-/// @tparam brgemm_t Is the brgemm functor.
+/// @tparam dispatch_policy Is the dispatch algorithm of the GEMM_UNIVERSAL implementation.
+/// @tparam gemm_t Is the gemm functor.
 /// @tparam epilogue_t Is the epilogue functor.
-template <typename dispatch_policy, typename brgemm_t, typename epilogue_t>
-class gemm_t {};
+template <typename dispatch_policy, typename gemm_t, typename epilogue_t,
+        class enable = void>
+class gemm_universal_t {};
 
-/// @} xetla_gemm
+/// @} xetla_gemm_universal
 
 } // namespace gpu::xetla::kernel

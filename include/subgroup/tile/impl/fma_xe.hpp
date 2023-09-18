@@ -25,9 +25,10 @@ namespace gpu::xetla::subgroup {
 
 /// @brief Is the tile mma operation functor, specialized for Xe and fpu engine.
 template <typename matAcc_dst_t_, typename matAcc_src_t_, typename matB_t_,
-        typename matA_t_>
+        typename matA_t_, gpu_arch arch_tag_>
 struct tile_mma_t<matAcc_dst_t_, matAcc_src_t_, matB_t_, matA_t_,
-        mma_engine::fpu, gpu_arch::Xe> {
+        mma_engine::fpu, arch_tag_,
+        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
     using matA_t = matA_t_;
     using matB_t = matB_t_;
     using matSrc_t = matAcc_src_t_;
@@ -37,8 +38,8 @@ struct tile_mma_t<matAcc_dst_t_, matAcc_src_t_, matB_t_, matA_t_,
     using dtype_src = typename matSrc_t::dtype;
     using dtype_dst = typename matDst_t::dtype;
 
-    using arch_attr = arch_attr_t<gpu_arch::Xe>;
-    using register_attr = typename arch_attr::register_attr;
+    using register_attr =
+            typename arch_attr_t<arch_tag_>::template register_attr<>;
 
     static_assert(matA_t::reg_transpose,
             "For FMAOp GEMM, the register layout of matA should be col-major");

@@ -49,17 +49,17 @@ struct xetla_mha_attn_reg_fwd_t {
     static constexpr mem_layout mem_layout_out_b = mem_layout::row_major;
     static constexpr mem_layout mem_layout_c = mem_layout::row_major;
 
-    static constexpr mem_space brgemm_mem_space_a = mem_space_a;
-    static constexpr mem_layout brgemm_mem_layout_a = mem_layout_a;
+    static constexpr mem_space gemm_mem_space_a = mem_space_a;
+    static constexpr mem_layout gemm_mem_layout_a = mem_layout_a;
 
-    static constexpr mem_space brgemm_mem_space_b = mem_space_b;
-    static constexpr mem_layout brgemm_mem_layout_QKT_b = mem_layout_QKT_b;
-    static constexpr mem_layout brgemm_mem_layout_out_b = mem_layout_out_b;
+    static constexpr mem_space gemm_mem_space_b = mem_space_b;
+    static constexpr mem_layout gemm_mem_layout_QKT_b = mem_layout_QKT_b;
+    static constexpr mem_layout gemm_mem_layout_out_b = mem_layout_out_b;
 
     static constexpr uint32_t periodic_sync_interval = 0;
     static constexpr uint32_t prefetch_distance = 3;
     static constexpr uint32_t k_stride
-            = 32 / sizeof(dtype_bin); //brgemm_config::k_stride;
+            = 32 / sizeof(dtype_bin); //gemm_t::k_stride;
     using bgm_perf_tuning_knob = group::perf_tuning_knob_t<k_stride,
             prefetch_distance, periodic_sync_interval>;
 
@@ -72,22 +72,21 @@ struct xetla_mha_attn_reg_fwd_t {
     using tile_attr_128x64 = group::tile_shape_t<64, 128, 16, 16>;
 
     using mem_desc_a_QKT
-            = mem_desc_t<dtype_bin, brgemm_mem_layout_a, brgemm_mem_space_a>;
-    using mem_desc_b_QKT = mem_desc_t<dtype_bin, brgemm_mem_layout_QKT_b,
-            brgemm_mem_space_b>;
+            = mem_desc_t<dtype_bin, gemm_mem_layout_a, gemm_mem_space_a>;
+    using mem_desc_b_QKT
+            = mem_desc_t<dtype_bin, gemm_mem_layout_QKT_b, gemm_mem_space_b>;
     using compute_policy_QKT = group::compute_policy_default_xmx<
             group::compute_attr_t<dtype_bin, dtype_bin, dtype_acc>,
             bgm_perf_tuning_knob, gpu_arch::Xe>;
 
     using mem_desc_a_out
-            = mem_desc_t<dtype_sfx, brgemm_mem_layout_a, brgemm_mem_space_a>;
-    using mem_desc_b_out = mem_desc_t<dtype_bin, brgemm_mem_layout_out_b,
-            brgemm_mem_space_b>;
+            = mem_desc_t<dtype_sfx, gemm_mem_layout_a, gemm_mem_space_a>;
+    using mem_desc_b_out
+            = mem_desc_t<dtype_bin, gemm_mem_layout_out_b, gemm_mem_space_b>;
     using compute_policy_out = group::compute_policy_default_xmx<
             group::compute_attr_t<dtype_sfx, dtype_bin, dtype_acc>,
             bgm_perf_tuning_knob, gpu_arch::Xe>;
 
-    using arch_attr = arch_attr_t<gpu_arch::Xe>;
     static constexpr uint32_t l3_kslicing = 1;
     static constexpr uint16_t sfx_type_size = sizeof(dtype_sfx);
     static_assert((sfx_type_size == 1) || (sfx_type_size == 2)
@@ -111,43 +110,40 @@ struct xetla_mha_attn_reg_fwd_t {
             = group::pre_processing_matA_neg_filter_t<tile_attr_128x64,
                     gpu_arch::Xe>;
 
-    using brgemm_op_128x128_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_128x128,
+    using gemm_op_128x128_t
+            = group::gemm_t<compute_policy_QKT, tile_attr_128x128,
                     mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_128x128>;
-    using brgemm_op_128x256_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_128x256,
+    using gemm_op_128x256_t
+            = group::gemm_t<compute_policy_QKT, tile_attr_128x256,
                     mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_128x256>;
-    using brgemm_op_64x384_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_64x384,
-                    mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_64x384>;
-    using brgemm_op_64x512_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_64x512,
-                    mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_64x512>;
-    using brgemm_op_32x1024_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_32x1024,
+    using gemm_op_64x384_t = group::gemm_t<compute_policy_QKT, tile_attr_64x384,
+            mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_64x384>;
+    using gemm_op_64x512_t = group::gemm_t<compute_policy_QKT, tile_attr_64x512,
+            mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_64x512>;
+    using gemm_op_32x1024_t
+            = group::gemm_t<compute_policy_QKT, tile_attr_32x1024,
                     mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_32x1024>;
-    using brgemm_op_16x2048_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_16x2048,
+    using gemm_op_16x2048_t
+            = group::gemm_t<compute_policy_QKT, tile_attr_16x2048,
                     mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_16x2048>;
-    using brgemm_op_128x64_t
-            = group::brgemm_t<compute_policy_out, tile_attr_128x64,
-                    mem_desc_a_out, mem_desc_b_out, pre_processing_128x64>;
+    using gemm_op_128x64_t = group::gemm_t<compute_policy_out, tile_attr_128x64,
+            mem_desc_a_out, mem_desc_b_out, pre_processing_128x64>;
 
-    using brgemm_arguments_128x128 = typename brgemm_op_128x128_t::arguments_t;
-    using brgemm_arguments_128x256 = typename brgemm_op_128x256_t::arguments_t;
-    using brgemm_arguments_64x384 = typename brgemm_op_64x384_t::arguments_t;
-    using brgemm_arguments_64x512 = typename brgemm_op_64x512_t::arguments_t;
-    using brgemm_arguments_32x1024 = typename brgemm_op_32x1024_t::arguments_t;
-    using brgemm_arguments_16x2048 = typename brgemm_op_16x2048_t::arguments_t;
-    using brgemm_arguments_128x64 = typename brgemm_op_128x64_t::arguments_t;
+    using gemm_arguments_128x128 = typename gemm_op_128x128_t::arguments_t;
+    using gemm_arguments_128x256 = typename gemm_op_128x256_t::arguments_t;
+    using gemm_arguments_64x384 = typename gemm_op_64x384_t::arguments_t;
+    using gemm_arguments_64x512 = typename gemm_op_64x512_t::arguments_t;
+    using gemm_arguments_32x1024 = typename gemm_op_32x1024_t::arguments_t;
+    using gemm_arguments_16x2048 = typename gemm_op_16x2048_t::arguments_t;
+    using gemm_arguments_128x64 = typename gemm_op_128x64_t::arguments_t;
 
-    using matAcc_128x128_t = typename brgemm_op_128x128_t::matAcc_t;
-    using matAcc_128x256_t = typename brgemm_op_128x256_t::matAcc_t;
-    using matAcc_64x384_t = typename brgemm_op_64x384_t::matAcc_t;
-    using matAcc_64x512_t = typename brgemm_op_64x512_t::matAcc_t;
-    using matAcc_32x1024_t = typename brgemm_op_32x1024_t::matAcc_t;
-    using matAcc_16x2048_t = typename brgemm_op_16x2048_t::matAcc_t;
-    using matAcc_128x64_t = typename brgemm_op_128x64_t::matAcc_t;
+    using matAcc_128x128_t = typename gemm_op_128x128_t::matAcc_t;
+    using matAcc_128x256_t = typename gemm_op_128x256_t::matAcc_t;
+    using matAcc_64x384_t = typename gemm_op_64x384_t::matAcc_t;
+    using matAcc_64x512_t = typename gemm_op_64x512_t::matAcc_t;
+    using matAcc_32x1024_t = typename gemm_op_32x1024_t::matAcc_t;
+    using matAcc_16x2048_t = typename gemm_op_16x2048_t::matAcc_t;
+    using matAcc_128x64_t = typename gemm_op_128x64_t::matAcc_t;
 
     using mat_128x128_tile_desc_t
             = subgroup::tile_desc_t<matAcc_128x128_t::tile_desc::tile_size_x,
@@ -305,7 +301,7 @@ struct xetla_mha_attn_reg_fwd_t {
     };
 
     /// @brief Main execution function for fused mha softmax
-    /// The basic process is BRGEMM -> Softmax -> BRGEMM.
+    /// The basic process is GEMM -> Softmax -> GEMM.
     /// @param args [in] Includes base descriptors and tid info.
     __XETLA_API static void call(xetla_exec_item<3> &ei, arguments_t *args) {
 
@@ -462,7 +458,7 @@ struct xetla_mha_attn_reg_fwd_t {
 
                 switch (std_seqlen) {
                     case 128: {
-                        brgemm_arguments_128x128 brgemm_arg_128x128;
+                        gemm_arguments_128x128 gemm_arg_128x128;
                         matAcc_128x128_t matAcc_128x128;
 
                         uint32_t width_a = (headid + 1) * hdsz;
@@ -472,7 +468,7 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_128x128.matA_base_desc.init({args->matQ_ptr},
+                        gemm_arg_128x128.matA_base_desc.init({args->matQ_ptr},
                                 {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
@@ -483,26 +479,26 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose
-                        brgemm_arg_128x128.matB_base_desc.init({args->matK_ptr},
+                        gemm_arg_128x128.matB_base_desc.init({args->matK_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_128x128.inner_loop_count
+                        gemm_arg_128x128.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_128x128.init(0);
 
-                        brgemm_op_128x128_t brgemm_op_128x128;
+                        gemm_op_128x128_t gemm_op_128x128;
 
-                        brgemm_op_128x128(g_thd32_tid, matAcc_128x128,
-                                brgemm_arg_128x128);
+                        gemm_op_128x128(
+                                g_thd32_tid, matAcc_128x128, gemm_arg_128x128);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<16 * 32, 1>(0)
                                 = matAcc_128x128.reg * args->Pinv;
                     } break;
                     case 256: {
-                        brgemm_arguments_128x256 brgemm_arg_128x256;
+                        gemm_arguments_128x256 gemm_arg_128x256;
                         matAcc_128x256_t matAcc_128x256;
 
                         uint32_t width_a = (headid + 1) * hdsz;
@@ -512,7 +508,7 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_128x256.matA_base_desc.init({args->matQ_ptr},
+                        gemm_arg_128x256.matA_base_desc.init({args->matQ_ptr},
                                 {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
@@ -523,19 +519,19 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose
-                        brgemm_arg_128x256.matB_base_desc.init({args->matK_ptr},
+                        gemm_arg_128x256.matB_base_desc.init({args->matK_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_128x256.inner_loop_count
+                        gemm_arg_128x256.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_128x256.init(0);
 
-                        brgemm_op_128x256_t brgemm_op_128x256;
+                        gemm_op_128x256_t gemm_op_128x256;
 
-                        brgemm_op_128x256(g_thd32_tid, matAcc_128x256,
-                                brgemm_arg_128x256);
+                        gemm_op_128x256(
+                                g_thd32_tid, matAcc_128x256, gemm_arg_128x256);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<4 * 16 * 16, 1>(0)
@@ -543,7 +539,7 @@ struct xetla_mha_attn_reg_fwd_t {
 
                     } break;
                     case 384: {
-                        brgemm_arguments_64x384 brgemm_arg_64x384;
+                        gemm_arguments_64x384 gemm_arg_64x384;
                         matAcc_64x384_t matAcc_64x384;
 
                         uint32_t width_a = (headid + 1) * hdsz;
@@ -553,7 +549,7 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_64x384.matA_base_desc.init({args->matQ_ptr},
+                        gemm_arg_64x384.matA_base_desc.init({args->matQ_ptr},
                                 {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
@@ -564,18 +560,18 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose
-                        brgemm_arg_64x384.matB_base_desc.init({args->matK_ptr},
+                        gemm_arg_64x384.matB_base_desc.init({args->matK_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_64x384.inner_loop_count
+                        gemm_arg_64x384.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_64x384.init(0);
 
-                        brgemm_op_64x384_t brgemm_op_64x384;
-                        brgemm_op_64x384(
-                                g_thd32_tid, matAcc_64x384, brgemm_arg_64x384);
+                        gemm_op_64x384_t gemm_op_64x384;
+                        gemm_op_64x384(
+                                g_thd32_tid, matAcc_64x384, gemm_arg_64x384);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<3 * 16 * 16, 1>(0)
@@ -583,7 +579,7 @@ struct xetla_mha_attn_reg_fwd_t {
 
                     } break;
                     case 512: {
-                        brgemm_arguments_64x512 brgemm_arg_64x512;
+                        gemm_arguments_64x512 gemm_arg_64x512;
                         matAcc_64x512_t matAcc_64x512;
 
                         uint32_t width_a = (headid + 1) * hdsz;
@@ -593,7 +589,7 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_64x512.matA_base_desc.init({args->matQ_ptr},
+                        gemm_arg_64x512.matA_base_desc.init({args->matQ_ptr},
                                 {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
@@ -604,18 +600,18 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose
-                        brgemm_arg_64x512.matB_base_desc.init({args->matK_ptr},
+                        gemm_arg_64x512.matB_base_desc.init({args->matK_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_64x512.inner_loop_count
+                        gemm_arg_64x512.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_64x512.init(0);
 
-                        brgemm_op_64x512_t brgemm_op_64x512;
-                        brgemm_op_64x512(
-                                g_thd32_tid, matAcc_64x512, brgemm_arg_64x512);
+                        gemm_op_64x512_t gemm_op_64x512;
+                        gemm_op_64x512(
+                                g_thd32_tid, matAcc_64x512, gemm_arg_64x512);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<4 * 16 * 16, 1>(0)
@@ -623,7 +619,7 @@ struct xetla_mha_attn_reg_fwd_t {
 
                     } break;
                     case 1024: {
-                        brgemm_arguments_32x1024 brgemm_arg_32x1024;
+                        gemm_arguments_32x1024 gemm_arg_32x1024;
                         matAcc_32x1024_t matAcc_32x1024;
 
                         uint32_t width_a = (headid + 1) * hdsz;
@@ -633,7 +629,7 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_32x1024.matA_base_desc.init({args->matQ_ptr},
+                        gemm_arg_32x1024.matA_base_desc.init({args->matQ_ptr},
                                 {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
@@ -644,24 +640,24 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose
-                        brgemm_arg_32x1024.matB_base_desc.init({args->matK_ptr},
+                        gemm_arg_32x1024.matB_base_desc.init({args->matK_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_32x1024.inner_loop_count
+                        gemm_arg_32x1024.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_32x1024.init(0);
-                        brgemm_op_32x1024_t brgemm_op_32x1024;
-                        brgemm_op_32x1024(g_thd32_tid, matAcc_32x1024,
-                                brgemm_arg_32x1024);
+                        gemm_op_32x1024_t gemm_op_32x1024;
+                        gemm_op_32x1024(
+                                g_thd32_tid, matAcc_32x1024, gemm_arg_32x1024);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<4 * 16 * 16, 1>(0)
                                 = matAcc_32x1024.reg * args->Pinv;
                     } break;
                     case 2048: {
-                        brgemm_arguments_16x2048 brgemm_arg_16x2048;
+                        gemm_arguments_16x2048 gemm_arg_16x2048;
                         matAcc_16x2048_t matAcc_16x2048;
 
                         uint32_t width_a = (headid + 1) * hdsz;
@@ -671,7 +667,7 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_16x2048.matA_base_desc.init({args->matQ_ptr},
+                        gemm_arg_16x2048.matA_base_desc.init({args->matQ_ptr},
                                 {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
@@ -682,17 +678,17 @@ struct xetla_mha_attn_reg_fwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose
-                        brgemm_arg_16x2048.matB_base_desc.init({args->matK_ptr},
+                        gemm_arg_16x2048.matB_base_desc.init({args->matK_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_16x2048.inner_loop_count
+                        gemm_arg_16x2048.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_16x2048.init(0);
-                        brgemm_op_16x2048_t brgemm_op_16x2048;
-                        brgemm_op_16x2048(g_thd32_tid, matAcc_16x2048,
-                                brgemm_arg_16x2048);
+                        gemm_op_16x2048_t gemm_op_16x2048;
+                        gemm_op_16x2048(
+                                g_thd32_tid, matAcc_16x2048, gemm_arg_16x2048);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<4 * 16 * 16, 1>(0)
@@ -1203,12 +1199,12 @@ struct xetla_mha_attn_reg_fwd_t {
                         int height_c
                                 = max_seqlen * (batchid * numhead + headid + 1);
                         int pitch_c = max_seqlen;
-                        int start_x_c = brgemm_op_128x128_t::get_matC_offset_x(
+                        int start_x_c = gemm_op_128x128_t::get_matC_offset_x(
                                 g_thd32_tid);
                         int start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_128x128_t::get_matC_offset_y(
+                                + gemm_op_128x128_t::get_matC_offset_y(
                                         g_thd32_tid);
                         matC_128x128_payload.init(args->matQKT_ptr, width_c,
                                 height_c, pitch_c, start_x_c, start_y_c);
@@ -1266,12 +1262,12 @@ struct xetla_mha_attn_reg_fwd_t {
                         int height_c
                                 = max_seqlen * (batchid * numhead + headid + 1);
                         int pitch_c = max_seqlen;
-                        int start_x_c = brgemm_op_128x256_t::get_matC_offset_x(
+                        int start_x_c = gemm_op_128x256_t::get_matC_offset_x(
                                 g_thd32_tid);
                         int start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_128x256_t::get_matC_offset_y(
+                                + gemm_op_128x256_t::get_matC_offset_y(
                                         g_thd32_tid);
 
                         matC_128x256_payload.init(args->matQKT_ptr, width_c,
@@ -1326,12 +1322,12 @@ struct xetla_mha_attn_reg_fwd_t {
                         int height_c
                                 = max_seqlen * (batchid * numhead + headid + 1);
                         int pitch_c = max_seqlen;
-                        int start_x_c = brgemm_op_64x384_t::get_matC_offset_x(
+                        int start_x_c = gemm_op_64x384_t::get_matC_offset_x(
                                 g_thd32_tid);
                         int start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_64x384_t::get_matC_offset_y(
+                                + gemm_op_64x384_t::get_matC_offset_y(
                                         g_thd32_tid);
 
                         matC_64x384_payload.init(args->matQKT_ptr, width_c,
@@ -1388,12 +1384,12 @@ struct xetla_mha_attn_reg_fwd_t {
                         int height_c
                                 = max_seqlen * (batchid * numhead + headid + 1);
                         int pitch_c = max_seqlen;
-                        int start_x_c = brgemm_op_64x512_t::get_matC_offset_x(
+                        int start_x_c = gemm_op_64x512_t::get_matC_offset_x(
                                 g_thd32_tid);
                         int start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_64x512_t::get_matC_offset_y(
+                                + gemm_op_64x512_t::get_matC_offset_y(
                                         g_thd32_tid);
                         matC_64x512_payload.init(args->matQKT_ptr, width_c,
                                 height_c, pitch_c, start_x_c, start_y_c);
@@ -1445,12 +1441,12 @@ struct xetla_mha_attn_reg_fwd_t {
                         int height_c
                                 = max_seqlen * (batchid * numhead + headid + 1);
                         int pitch_c = max_seqlen;
-                        int start_x_c = brgemm_op_32x1024_t::get_matC_offset_x(
+                        int start_x_c = gemm_op_32x1024_t::get_matC_offset_x(
                                 g_thd32_tid);
                         int start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_32x1024_t::get_matC_offset_y(
+                                + gemm_op_32x1024_t::get_matC_offset_y(
                                         g_thd32_tid);
 
                         matC_32x1024_payload.init(args->matQKT_ptr, width_c,
@@ -1504,12 +1500,12 @@ struct xetla_mha_attn_reg_fwd_t {
                         int height_c
                                 = max_seqlen * (batchid * numhead + headid + 1);
                         int pitch_c = max_seqlen;
-                        int start_x_c = brgemm_op_16x2048_t::get_matC_offset_x(
+                        int start_x_c = gemm_op_16x2048_t::get_matC_offset_x(
                                 g_thd32_tid);
                         int start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_16x2048_t::get_matC_offset_y(
+                                + gemm_op_16x2048_t::get_matC_offset_y(
                                         g_thd32_tid);
 
                         matC_16x2048_payload.init(args->matQKT_ptr, width_c,
@@ -1572,7 +1568,7 @@ struct xetla_mha_attn_reg_fwd_t {
                 third_nbarr.arrive();
                 third_nbarr.wait();
 
-                brgemm_arguments_128x64 brgemm_arg_128x64;
+                gemm_arguments_128x64 gemm_arg_128x64;
                 matAcc_128x64_t matAcc_128x64;
                 matC_128x64_t matC_128x64;
                 matC_128x64_payload_t matC_128x64_payload;
@@ -1585,7 +1581,7 @@ struct xetla_mha_attn_reg_fwd_t {
                 int start_y_a = (batchid * numhead + headid) * max_seqlen
                         + all_vert128_loop * 128;
 
-                brgemm_arg_128x64.matA_base_desc.init({args->matQKT_ptr},
+                gemm_arg_128x64.matA_base_desc.init({args->matQKT_ptr},
                         {width_a, height_a, pitch_a}, {start_x_a, start_y_a});
 
                 uint32_t width_b = (headid + 1) * hdsz;
@@ -1594,25 +1590,25 @@ struct xetla_mha_attn_reg_fwd_t {
                 int start_x_b = headid * hdsz;
                 int start_y_b = seqlen_entry;
 
-                brgemm_arg_128x64.matB_base_desc.init({args->matV_ptr},
+                gemm_arg_128x64.matB_base_desc.init({args->matV_ptr},
                         {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
-                brgemm_arg_128x64.inner_loop_count
+                gemm_arg_128x64.inner_loop_count
                         = (wg_tile_out_k + k_stride - 1) / k_stride;
 
                 matAcc_128x64.init(0);
 
-                brgemm_op_128x64_t brgemm_op_128x64;
+                gemm_op_128x64_t gemm_op_128x64;
 
-                brgemm_op_128x64(g_thd32_tid, matAcc_128x64, brgemm_arg_128x64);
+                gemm_op_128x64(g_thd32_tid, matAcc_128x64, gemm_arg_128x64);
 
                 int width_c = (headid + 1) * hdsz;
                 int height_c = tru_seqlen + seqlen_entry;
                 int pitch_c = hiddensize;
                 int start_x_c = headid * hdsz
-                        + brgemm_op_128x64_t::get_matC_offset_x(g_thd32_tid);
+                        + gemm_op_128x64_t::get_matC_offset_x(g_thd32_tid);
                 int start_y_c = all_vert128_loop * 128 + seqlen_entry
-                        + brgemm_op_128x64_t::get_matC_offset_y(g_thd32_tid);
+                        + gemm_op_128x64_t::get_matC_offset_y(g_thd32_tid);
 
                 matC_128x64_payload.init(args->matOut_ptr, width_c, height_c,
                         pitch_c, start_x_c, start_y_c);
@@ -1647,20 +1643,20 @@ struct xetla_mha_attn_reg_bwd_t {
     static constexpr mem_layout mem_layout_out_b = mem_layout::row_major;
     static constexpr mem_layout mem_layout_c = mem_layout::row_major;
 
-    static constexpr mem_space brgemm_mem_space_a = mem_space_a;
-    static constexpr mem_space brgemm_mem_space_trnp_a = mem_space_a;
-    static constexpr mem_layout brgemm_mem_layout_a = mem_layout_a;
-    static constexpr mem_layout brgemm_mem_layout_trnp_a = mem_layout_trnp_a;
+    static constexpr mem_space gemm_mem_space_a = mem_space_a;
+    static constexpr mem_space gemm_mem_space_trnp_a = mem_space_a;
+    static constexpr mem_layout gemm_mem_layout_a = mem_layout_a;
+    static constexpr mem_layout gemm_mem_layout_trnp_a = mem_layout_trnp_a;
 
-    static constexpr mem_space brgemm_mem_space_b = mem_space_b;
-    static constexpr mem_layout brgemm_mem_layout_QKT_b = mem_layout_QKT_b;
-    static constexpr mem_layout brgemm_mem_layout_out_b = mem_layout_out_b;
+    static constexpr mem_space gemm_mem_space_b = mem_space_b;
+    static constexpr mem_layout gemm_mem_layout_QKT_b = mem_layout_QKT_b;
+    static constexpr mem_layout gemm_mem_layout_out_b = mem_layout_out_b;
 
     static constexpr uint32_t periodic_sync_interval = 0;
     static constexpr uint32_t prefetch_distance = 3;
 
     static constexpr uint32_t k_stride
-            = 32 / sizeof(dtype_bin); //brgemm_config::k_stride;
+            = 32 / sizeof(dtype_bin); //gemm_t::k_stride;
     using bgm_perf_tuning_knob = group::perf_tuning_knob_t<k_stride,
             prefetch_distance, periodic_sync_interval>;
 
@@ -1674,30 +1670,29 @@ struct xetla_mha_attn_reg_bwd_t {
     using tile_attr_128x64 = group::tile_shape_t<64, 128, 16, 16>;
 
     using mem_desc_a_QKT
-            = mem_desc_t<dtype_bin, brgemm_mem_layout_a, brgemm_mem_space_a>;
-    using mem_desc_b_QKT = mem_desc_t<dtype_bin, brgemm_mem_layout_QKT_b,
-            brgemm_mem_space_b>;
+            = mem_desc_t<dtype_bin, gemm_mem_layout_a, gemm_mem_space_a>;
+    using mem_desc_b_QKT
+            = mem_desc_t<dtype_bin, gemm_mem_layout_QKT_b, gemm_mem_space_b>;
     using compute_policy_QKT = group::compute_policy_default_xmx<
             group::compute_attr_t<dtype_bin, dtype_bin, dtype_acc>,
             bgm_perf_tuning_knob, gpu_arch::Xe>;
 
     using mem_desc_a_out
-            = mem_desc_t<dtype_sfx, brgemm_mem_layout_a, brgemm_mem_space_a>;
-    using mem_desc_b_out = mem_desc_t<dtype_bin, brgemm_mem_layout_out_b,
-            brgemm_mem_space_b>;
+            = mem_desc_t<dtype_sfx, gemm_mem_layout_a, gemm_mem_space_a>;
+    using mem_desc_b_out
+            = mem_desc_t<dtype_bin, gemm_mem_layout_out_b, gemm_mem_space_b>;
     using compute_policy_out = group::compute_policy_default_xmx<
             group::compute_attr_t<dtype_sfx, dtype_bin, dtype_acc>,
             bgm_perf_tuning_knob, gpu_arch::Xe>;
 
     using mem_desc_a_out_b_trnp_a = mem_desc_t<dtype_sfx,
-            brgemm_mem_layout_trnp_a, brgemm_mem_space_trnp_a>;
-    using mem_desc_b_out_b_trnp_a = mem_desc_t<dtype_bin,
-            brgemm_mem_layout_out_b, brgemm_mem_space_b>;
+            gemm_mem_layout_trnp_a, gemm_mem_space_trnp_a>;
+    using mem_desc_b_out_b_trnp_a
+            = mem_desc_t<dtype_bin, gemm_mem_layout_out_b, gemm_mem_space_b>;
     using compute_policy_out_b_trnp_a = group::compute_policy_default_xmx<
             group::compute_attr_t<dtype_sfx, dtype_bin, dtype_acc>,
             bgm_perf_tuning_knob, gpu_arch::Xe>;
 
-    using arch_attr = arch_attr_t<gpu_arch::Xe>;
     static constexpr uint32_t l3_kslicing = 1;
     static constexpr uint16_t sfx_type_size = sizeof(dtype_sfx);
     static_assert((sfx_type_size == 1) || (sfx_type_size == 2)
@@ -1728,76 +1723,67 @@ struct xetla_mha_attn_reg_bwd_t {
             = group::pre_processing_matA_neg_filter_t<tile_attr_256x64,
                     gpu_arch::Xe>;
 
-    using brgemm_op_128x128_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_128x128,
+    using gemm_op_128x128_t
+            = group::gemm_t<compute_policy_QKT, tile_attr_128x128,
                     mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_128x128>;
-    using brgemm_op_128x256_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_128x256,
+    using gemm_op_128x256_t
+            = group::gemm_t<compute_policy_QKT, tile_attr_128x256,
                     mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_128x256>;
-    using brgemm_op_64x384_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_64x384,
-                    mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_64x384>;
-    using brgemm_op_64x512_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_64x512,
-                    mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_64x512>;
-    using brgemm_op_32x1024_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_32x1024,
+    using gemm_op_64x384_t = group::gemm_t<compute_policy_QKT, tile_attr_64x384,
+            mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_64x384>;
+    using gemm_op_64x512_t = group::gemm_t<compute_policy_QKT, tile_attr_64x512,
+            mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_64x512>;
+    using gemm_op_32x1024_t
+            = group::gemm_t<compute_policy_QKT, tile_attr_32x1024,
                     mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_32x1024>;
-    using brgemm_op_16x2048_t
-            = group::brgemm_t<compute_policy_QKT, tile_attr_16x2048,
+    using gemm_op_16x2048_t
+            = group::gemm_t<compute_policy_QKT, tile_attr_16x2048,
                     mem_desc_a_QKT, mem_desc_b_QKT, pre_processing_16x2048>;
 
-    using brgemm_op_128x64_t
-            = group::brgemm_t<compute_policy_out, tile_attr_128x64,
-                    mem_desc_a_out, mem_desc_b_out, pre_processing_128x64>;
-    using brgemm_op_128x64_trnp_a_t
-            = group::brgemm_t<compute_policy_out_b_trnp_a, tile_attr_128x64,
-                    mem_desc_a_out_b_trnp_a, mem_desc_b_out_b_trnp_a,
-                    pre_processing_128x64>;
-    using brgemm_op_256x64_trnp_a_t
-            = group::brgemm_t<compute_policy_out_b_trnp_a, tile_attr_256x64,
-                    mem_desc_a_out_b_trnp_a, mem_desc_b_out_b_trnp_a,
-                    pre_processing_256x64>;
-    using brgemm_op_128x64_trnp_af_t
-            = group::brgemm_t<compute_policy_out_b_trnp_a, tile_attr_128x64,
-                    mem_desc_a_out_b_trnp_a, mem_desc_b_out_b_trnp_a,
-                    pre_processing_128x64_af>;
-    using brgemm_op_256x64_trnp_af_t
-            = group::brgemm_t<compute_policy_out_b_trnp_a, tile_attr_256x64,
-                    mem_desc_a_out_b_trnp_a, mem_desc_b_out_b_trnp_a,
-                    pre_processing_256x64_af>;
+    using gemm_op_128x64_t = group::gemm_t<compute_policy_out, tile_attr_128x64,
+            mem_desc_a_out, mem_desc_b_out, pre_processing_128x64>;
+    using gemm_op_128x64_trnp_a_t = group::gemm_t<compute_policy_out_b_trnp_a,
+            tile_attr_128x64, mem_desc_a_out_b_trnp_a, mem_desc_b_out_b_trnp_a,
+            pre_processing_128x64>;
+    using gemm_op_256x64_trnp_a_t = group::gemm_t<compute_policy_out_b_trnp_a,
+            tile_attr_256x64, mem_desc_a_out_b_trnp_a, mem_desc_b_out_b_trnp_a,
+            pre_processing_256x64>;
+    using gemm_op_128x64_trnp_af_t = group::gemm_t<compute_policy_out_b_trnp_a,
+            tile_attr_128x64, mem_desc_a_out_b_trnp_a, mem_desc_b_out_b_trnp_a,
+            pre_processing_128x64_af>;
+    using gemm_op_256x64_trnp_af_t = group::gemm_t<compute_policy_out_b_trnp_a,
+            tile_attr_256x64, mem_desc_a_out_b_trnp_a, mem_desc_b_out_b_trnp_a,
+            pre_processing_256x64_af>;
 
-    using brgemm_arguments_128x128 = typename brgemm_op_128x128_t::arguments_t;
-    using brgemm_arguments_128x256 = typename brgemm_op_128x256_t::arguments_t;
-    using brgemm_arguments_64x384 = typename brgemm_op_64x384_t::arguments_t;
-    using brgemm_arguments_64x512 = typename brgemm_op_64x512_t::arguments_t;
-    using brgemm_arguments_32x1024 = typename brgemm_op_32x1024_t::arguments_t;
-    using brgemm_arguments_16x2048 = typename brgemm_op_16x2048_t::arguments_t;
+    using gemm_arguments_128x128 = typename gemm_op_128x128_t::arguments_t;
+    using gemm_arguments_128x256 = typename gemm_op_128x256_t::arguments_t;
+    using gemm_arguments_64x384 = typename gemm_op_64x384_t::arguments_t;
+    using gemm_arguments_64x512 = typename gemm_op_64x512_t::arguments_t;
+    using gemm_arguments_32x1024 = typename gemm_op_32x1024_t::arguments_t;
+    using gemm_arguments_16x2048 = typename gemm_op_16x2048_t::arguments_t;
 
-    using brgemm_arguments_128x64 = typename brgemm_op_128x64_t::arguments_t;
-    using brgemm_arguments_128x64_trnp_a =
-            typename brgemm_op_128x64_trnp_a_t::arguments_t;
-    using brgemm_arguments_256x64_trnp_a =
-            typename brgemm_op_256x64_trnp_a_t::arguments_t;
-    using brgemm_arguments_128x64_trnp_af =
-            typename brgemm_op_128x64_trnp_af_t::arguments_t;
-    using brgemm_arguments_256x64_trnp_af =
-            typename brgemm_op_256x64_trnp_af_t::arguments_t;
+    using gemm_arguments_128x64 = typename gemm_op_128x64_t::arguments_t;
+    using gemm_arguments_128x64_trnp_a =
+            typename gemm_op_128x64_trnp_a_t::arguments_t;
+    using gemm_arguments_256x64_trnp_a =
+            typename gemm_op_256x64_trnp_a_t::arguments_t;
+    using gemm_arguments_128x64_trnp_af =
+            typename gemm_op_128x64_trnp_af_t::arguments_t;
+    using gemm_arguments_256x64_trnp_af =
+            typename gemm_op_256x64_trnp_af_t::arguments_t;
 
-    using matAcc_128x128_t = typename brgemm_op_128x128_t::matAcc_t;
-    using matAcc_128x256_t = typename brgemm_op_128x256_t::matAcc_t;
-    using matAcc_64x384_t = typename brgemm_op_64x384_t::matAcc_t;
-    using matAcc_64x512_t = typename brgemm_op_64x512_t::matAcc_t;
-    using matAcc_32x1024_t = typename brgemm_op_32x1024_t::matAcc_t;
-    using matAcc_16x2048_t = typename brgemm_op_16x2048_t::matAcc_t;
+    using matAcc_128x128_t = typename gemm_op_128x128_t::matAcc_t;
+    using matAcc_128x256_t = typename gemm_op_128x256_t::matAcc_t;
+    using matAcc_64x384_t = typename gemm_op_64x384_t::matAcc_t;
+    using matAcc_64x512_t = typename gemm_op_64x512_t::matAcc_t;
+    using matAcc_32x1024_t = typename gemm_op_32x1024_t::matAcc_t;
+    using matAcc_16x2048_t = typename gemm_op_16x2048_t::matAcc_t;
 
-    using matAcc_128x64_t = typename brgemm_op_128x64_t::matAcc_t;
-    using matAcc_128x64_trnp_a_t = typename brgemm_op_128x64_trnp_a_t::matAcc_t;
-    using matAcc_256x64_trnp_a_t = typename brgemm_op_256x64_trnp_a_t::matAcc_t;
-    using matAcc_128x64_trnp_af_t =
-            typename brgemm_op_128x64_trnp_af_t::matAcc_t;
-    using matAcc_256x64_trnp_af_t =
-            typename brgemm_op_256x64_trnp_af_t::matAcc_t;
+    using matAcc_128x64_t = typename gemm_op_128x64_t::matAcc_t;
+    using matAcc_128x64_trnp_a_t = typename gemm_op_128x64_trnp_a_t::matAcc_t;
+    using matAcc_256x64_trnp_a_t = typename gemm_op_256x64_trnp_a_t::matAcc_t;
+    using matAcc_128x64_trnp_af_t = typename gemm_op_128x64_trnp_af_t::matAcc_t;
+    using matAcc_256x64_trnp_af_t = typename gemm_op_256x64_trnp_af_t::matAcc_t;
 
     using matC_128x128_tile_desc_t
             = subgroup::tile_desc_t<matAcc_128x128_t::tile_desc::tile_size_x,
@@ -2023,7 +2009,7 @@ struct xetla_mha_attn_reg_bwd_t {
     };
 
     /// @brief Main execution function for fused mha softmax
-    /// The basic process is BRGEMM -> Softmax -> BRGEMM.
+    /// The basic process is GEMM -> Softmax -> GEMM.
     /// @param args [in] Includes base descriptors and tid info.
     __XETLA_API static void call(xetla_exec_item<3> &ei, arguments_t *args) {
 
@@ -2149,7 +2135,7 @@ struct xetla_mha_attn_reg_bwd_t {
 
         for (int transp128_loop = 0; transp128_loop < transp128_loop_num;
                 transp128_loop++) {
-            brgemm_arguments_128x64_trnp_af brgemm_arg_128x64;
+            gemm_arguments_128x64_trnp_af gemm_arg_128x64;
             matAcc_128x64_trnp_af_t matAcc_128x64;
             matC_128x64_trnp_af_t matC_128x64;
             matC_128x64_trnp_af_payload_t matC_128x64_payload;
@@ -2161,7 +2147,7 @@ struct xetla_mha_attn_reg_bwd_t {
             int start_x_a = transp128_loop * 128 + offset_blk_128x128;
             int start_y_a = (batchid * numhead + headid) * max_seqlen;
 
-            brgemm_arg_128x64.matA_base_desc.init({args->matW_ptr},
+            gemm_arg_128x64.matA_base_desc.init({args->matW_ptr},
                     {height_a, width_a, pitch_a}, {start_y_a, start_x_a});
 
             uint32_t width_b = (headid + 1) * hdsz;
@@ -2170,27 +2156,24 @@ struct xetla_mha_attn_reg_bwd_t {
             int start_x_b = headid * hdsz;
             int start_y_b = seqlen_entry;
 
-            brgemm_arg_128x64.matB_base_desc.init({args->matdO_ptr},
+            gemm_arg_128x64.matB_base_desc.init({args->matdO_ptr},
                     {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
-            brgemm_arg_128x64.inner_loop_count
+            gemm_arg_128x64.inner_loop_count
                     = (wg_tile_out_k + k_stride - 1) / k_stride;
 
             matAcc_128x64.init(0);
-            brgemm_op_128x64_trnp_af_t brgemm_op_128x64_trnp_af;
-            brgemm_op_128x64_trnp_af(
-                    g_thd32_tid, matAcc_128x64, brgemm_arg_128x64);
+            gemm_op_128x64_trnp_af_t gemm_op_128x64_trnp_af;
+            gemm_op_128x64_trnp_af(g_thd32_tid, matAcc_128x64, gemm_arg_128x64);
 
             int width_c = (headid + 1) * hdsz;
             int height_c = tru_seqlen + seqlen_entry;
             int pitch_c = hiddensize;
             int start_x_c = headid * hdsz
-                    + brgemm_op_128x64_trnp_af_t::get_matC_offset_x(
-                            g_thd32_tid);
+                    + gemm_op_128x64_trnp_af_t::get_matC_offset_x(g_thd32_tid);
             int start_y_c = transp128_loop * 128 + seqlen_entry
                     + offset_blk_128x128
-                    + brgemm_op_128x64_trnp_af_t::get_matC_offset_y(
-                            g_thd32_tid);
+                    + gemm_op_128x64_trnp_af_t::get_matC_offset_y(g_thd32_tid);
 
             matC_128x64_payload.init(args->matdV_ptr, width_c, height_c,
                     pitch_c, start_x_c, start_y_c);
@@ -2198,14 +2181,14 @@ struct xetla_mha_attn_reg_bwd_t {
                     matAcc_128x64_trnp_af_t>(matC_128x64, matAcc_128x64);
             subgroup::tile_store(matC_128x64, matC_128x64_payload);
 
-            //add global sync if nbarr used inside brgemm
+            //add global sync if nbarr used inside gemm
             all_nbarr.arrive();
             all_nbarr.wait();
         }
 
         for (int transp256_loop = 0; transp256_loop < transp256_loop_num;
                 transp256_loop++) {
-            brgemm_arguments_256x64_trnp_af brgemm_arg_256x64;
+            gemm_arguments_256x64_trnp_af gemm_arg_256x64;
             matAcc_256x64_trnp_af_t matAcc_256x64;
             matC_256x64_trnp_af_t matC_256x64;
             matC_256x64_trnp_af_payload_t matC_256x64_payload;
@@ -2217,7 +2200,7 @@ struct xetla_mha_attn_reg_bwd_t {
             int start_x_a = transp256_loop * 256;
             int start_y_a = (batchid * numhead + headid) * max_seqlen;
 
-            brgemm_arg_256x64.matA_base_desc.init({args->matW_ptr},
+            gemm_arg_256x64.matA_base_desc.init({args->matW_ptr},
                     {height_a, width_a, pitch_a}, {start_y_a, start_x_a});
 
             uint32_t width_b = (headid + 1) * hdsz;
@@ -2226,26 +2209,23 @@ struct xetla_mha_attn_reg_bwd_t {
             int start_x_b = headid * hdsz;
             int start_y_b = seqlen_entry;
 
-            brgemm_arg_256x64.matB_base_desc.init({args->matdO_ptr},
+            gemm_arg_256x64.matB_base_desc.init({args->matdO_ptr},
                     {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
-            brgemm_arg_256x64.inner_loop_count
+            gemm_arg_256x64.inner_loop_count
                     = (wg_tile_out_k + k_stride - 1) / k_stride;
 
             matAcc_256x64.init(0);
-            brgemm_op_256x64_trnp_af_t brgemm_op_256x64_trnp_af;
-            brgemm_op_256x64_trnp_af(
-                    g_thd32_tid, matAcc_256x64, brgemm_arg_256x64);
+            gemm_op_256x64_trnp_af_t gemm_op_256x64_trnp_af;
+            gemm_op_256x64_trnp_af(g_thd32_tid, matAcc_256x64, gemm_arg_256x64);
 
             int width_c = (headid + 1) * hdsz;
             int height_c = tru_seqlen + seqlen_entry;
             int pitch_c = hiddensize;
             int start_x_c = headid * hdsz
-                    + brgemm_op_256x64_trnp_af_t::get_matC_offset_x(
-                            g_thd32_tid);
+                    + gemm_op_256x64_trnp_af_t::get_matC_offset_x(g_thd32_tid);
             int start_y_c = transp256_loop * 256 + seqlen_entry
-                    + brgemm_op_256x64_trnp_af_t::get_matC_offset_y(
-                            g_thd32_tid);
+                    + gemm_op_256x64_trnp_af_t::get_matC_offset_y(g_thd32_tid);
 
             matC_256x64_payload.init(args->matdV_ptr, width_c, height_c,
                     pitch_c, start_x_c, start_y_c);
@@ -2253,7 +2233,7 @@ struct xetla_mha_attn_reg_bwd_t {
                     matAcc_256x64_trnp_af_t>(matC_256x64, matAcc_256x64);
             subgroup::tile_store(matC_256x64, matC_256x64_payload);
 
-            //add global sync if nbarr used inside brgemm
+            //add global sync if nbarr used inside gemm
             all_nbarr.arrive();
             all_nbarr.wait();
         }
@@ -2295,19 +2275,18 @@ struct xetla_mha_attn_reg_bwd_t {
 
                 switch (std_seqlen) {
                     case 128: {
-                        brgemm_arguments_128x128 brgemm_arg_128x128;
+                        gemm_arguments_128x128 gemm_arg_128x128;
                         matAcc_128x128_t matAcc_128x128;
 
                         matW_128x128_t matW_128x128;
                         matW_128x128_payload_t matW_128x128_payload;
 
-                        ld_st_start_x_c
-                                = brgemm_op_128x128_t::get_matC_offset_x(
-                                        g_thd32_tid);
+                        ld_st_start_x_c = gemm_op_128x128_t::get_matC_offset_x(
+                                g_thd32_tid);
                         ld_st_start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_128x128_t::get_matC_offset_y(
+                                + gemm_op_128x128_t::get_matC_offset_y(
                                         g_thd32_tid);
 
                         matW_128x128_payload.init(args->matW_ptr, ld_st_width_c,
@@ -2322,8 +2301,8 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_128x128.matA_base_desc.init(
-                                {args->matdO_ptr}, {width_a, height_a, pitch_a},
+                        gemm_arg_128x128.matA_base_desc.init({args->matdO_ptr},
+                                {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
                         uint32_t width_b = (headid + 1) * hdsz;
@@ -2333,17 +2312,17 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose, be swapped in init
-                        brgemm_arg_128x128.matB_base_desc.init({args->matV_ptr},
+                        gemm_arg_128x128.matB_base_desc.init({args->matV_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_128x128.inner_loop_count
+                        gemm_arg_128x128.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_128x128.init(0);
-                        brgemm_op_128x128_t brgemm_op_128x128;
-                        brgemm_op_128x128(g_thd32_tid, matAcc_128x128,
-                                brgemm_arg_128x128);
+                        gemm_op_128x128_t gemm_op_128x128;
+                        gemm_op_128x128(
+                                g_thd32_tid, matAcc_128x128, gemm_arg_128x128);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<16 * 32, 1>(0)
@@ -2374,19 +2353,18 @@ struct xetla_mha_attn_reg_bwd_t {
                     } break;
 
                     case 256: {
-                        brgemm_arguments_128x256 brgemm_arg_128x256;
+                        gemm_arguments_128x256 gemm_arg_128x256;
                         matAcc_128x256_t matAcc_128x256;
 
                         matW_128x256_t matW_128x256;
                         matW_128x256_payload_t matW_128x256_payload;
 
-                        ld_st_start_x_c
-                                = brgemm_op_128x256_t::get_matC_offset_x(
-                                        g_thd32_tid);
+                        ld_st_start_x_c = gemm_op_128x256_t::get_matC_offset_x(
+                                g_thd32_tid);
                         ld_st_start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_128x256_t::get_matC_offset_y(
+                                + gemm_op_128x256_t::get_matC_offset_y(
                                         g_thd32_tid);
 
                         matW_128x256_payload.init(args->matW_ptr, ld_st_width_c,
@@ -2401,8 +2379,8 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_128x256.matA_base_desc.init(
-                                {args->matdO_ptr}, {width_a, height_a, pitch_a},
+                        gemm_arg_128x256.matA_base_desc.init({args->matdO_ptr},
+                                {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
                         uint32_t width_b = (headid + 1) * hdsz;
@@ -2412,17 +2390,17 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose, be swapped in init
-                        brgemm_arg_128x256.matB_base_desc.init({args->matV_ptr},
+                        gemm_arg_128x256.matB_base_desc.init({args->matV_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_128x256.inner_loop_count
+                        gemm_arg_128x256.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_128x256.init(0);
-                        brgemm_op_128x256_t brgemm_op_128x256;
-                        brgemm_op_128x256(g_thd32_tid, matAcc_128x256,
-                                brgemm_arg_128x256);
+                        gemm_op_128x256_t gemm_op_128x256;
+                        gemm_op_128x256(
+                                g_thd32_tid, matAcc_128x256, gemm_arg_128x256);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<16 * 16 * 4, 1>(0)
@@ -2450,18 +2428,18 @@ struct xetla_mha_attn_reg_bwd_t {
                     } break;
 
                     case 384: {
-                        brgemm_arguments_64x384 brgemm_arg_64x384;
+                        gemm_arguments_64x384 gemm_arg_64x384;
                         matAcc_64x384_t matAcc_64x384;
 
                         matW_64x384_t matW_64x384;
                         matW_64x384_payload_t matW_64x384_payload;
 
-                        ld_st_start_x_c = brgemm_op_64x384_t::get_matC_offset_x(
+                        ld_st_start_x_c = gemm_op_64x384_t::get_matC_offset_x(
                                 g_thd32_tid);
                         ld_st_start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_64x384_t::get_matC_offset_y(
+                                + gemm_op_64x384_t::get_matC_offset_y(
                                         g_thd32_tid);
                         matW_64x384_payload.init(args->matW_ptr, ld_st_width_c,
                                 ld_st_height_c, ld_st_pitch_c, ld_st_start_x_c,
@@ -2475,7 +2453,7 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_64x384.matA_base_desc.init({args->matdO_ptr},
+                        gemm_arg_64x384.matA_base_desc.init({args->matdO_ptr},
                                 {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
@@ -2486,17 +2464,17 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose, be swapped in init
-                        brgemm_arg_64x384.matB_base_desc.init({args->matV_ptr},
+                        gemm_arg_64x384.matB_base_desc.init({args->matV_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_64x384.inner_loop_count
+                        gemm_arg_64x384.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_64x384.init(0);
-                        brgemm_op_64x384_t brgemm_op_64x384;
-                        brgemm_op_64x384(
-                                g_thd32_tid, matAcc_64x384, brgemm_arg_64x384);
+                        gemm_op_64x384_t gemm_op_64x384;
+                        gemm_op_64x384(
+                                g_thd32_tid, matAcc_64x384, gemm_arg_64x384);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<16 * 16 * 3, 1>(0)
@@ -2527,18 +2505,18 @@ struct xetla_mha_attn_reg_bwd_t {
                     } break;
 
                     case 512: {
-                        brgemm_arguments_64x512 brgemm_arg_64x512;
+                        gemm_arguments_64x512 gemm_arg_64x512;
                         matAcc_64x512_t matAcc_64x512;
 
                         matW_64x512_t matW_64x512;
                         matW_64x512_payload_t matW_64x512_payload;
 
-                        ld_st_start_x_c = brgemm_op_64x512_t::get_matC_offset_x(
+                        ld_st_start_x_c = gemm_op_64x512_t::get_matC_offset_x(
                                 g_thd32_tid);
                         ld_st_start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_64x512_t::get_matC_offset_y(
+                                + gemm_op_64x512_t::get_matC_offset_y(
                                         g_thd32_tid);
                         matW_64x512_payload.init(args->matW_ptr, ld_st_width_c,
                                 ld_st_height_c, ld_st_pitch_c, ld_st_start_x_c,
@@ -2552,7 +2530,7 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_64x512.matA_base_desc.init({args->matdO_ptr},
+                        gemm_arg_64x512.matA_base_desc.init({args->matdO_ptr},
                                 {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
@@ -2563,17 +2541,17 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose, be swapped in init
-                        brgemm_arg_64x512.matB_base_desc.init({args->matV_ptr},
+                        gemm_arg_64x512.matB_base_desc.init({args->matV_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_64x512.inner_loop_count
+                        gemm_arg_64x512.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_64x512.init(0);
-                        brgemm_op_64x512_t brgemm_op_64x512;
-                        brgemm_op_64x512(
-                                g_thd32_tid, matAcc_64x512, brgemm_arg_64x512);
+                        gemm_op_64x512_t gemm_op_64x512;
+                        gemm_op_64x512(
+                                g_thd32_tid, matAcc_64x512, gemm_arg_64x512);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<16 * 16 * 4, 1>(0)
@@ -2601,19 +2579,18 @@ struct xetla_mha_attn_reg_bwd_t {
                     } break;
 
                     case 1024: {
-                        brgemm_arguments_32x1024 brgemm_arg_32x1024;
+                        gemm_arguments_32x1024 gemm_arg_32x1024;
                         matAcc_32x1024_t matAcc_32x1024;
 
                         matW_32x1024_t matW_32x1024;
                         matW_32x1024_payload_t matW_32x1024_payload;
 
-                        ld_st_start_x_c
-                                = brgemm_op_32x1024_t::get_matC_offset_x(
-                                        g_thd32_tid);
+                        ld_st_start_x_c = gemm_op_32x1024_t::get_matC_offset_x(
+                                g_thd32_tid);
                         ld_st_start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_32x1024_t::get_matC_offset_y(
+                                + gemm_op_32x1024_t::get_matC_offset_y(
                                         g_thd32_tid);
                         matW_32x1024_payload.init(args->matW_ptr, ld_st_width_c,
                                 ld_st_height_c, ld_st_pitch_c, ld_st_start_x_c,
@@ -2627,8 +2604,8 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_32x1024.matA_base_desc.init(
-                                {args->matdO_ptr}, {width_a, height_a, pitch_a},
+                        gemm_arg_32x1024.matA_base_desc.init({args->matdO_ptr},
+                                {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
                         uint32_t width_b = (headid + 1) * hdsz;
@@ -2638,17 +2615,17 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose, be swapped in init
-                        brgemm_arg_32x1024.matB_base_desc.init({args->matV_ptr},
+                        gemm_arg_32x1024.matB_base_desc.init({args->matV_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_32x1024.inner_loop_count
+                        gemm_arg_32x1024.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_32x1024.init(0);
-                        brgemm_op_32x1024_t brgemm_op_32x1024;
-                        brgemm_op_32x1024(g_thd32_tid, matAcc_32x1024,
-                                brgemm_arg_32x1024);
+                        gemm_op_32x1024_t gemm_op_32x1024;
+                        gemm_op_32x1024(
+                                g_thd32_tid, matAcc_32x1024, gemm_arg_32x1024);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<16 * 16 * 4, 1>(0)
@@ -2676,19 +2653,18 @@ struct xetla_mha_attn_reg_bwd_t {
                     } break;
 
                     case 2048: {
-                        brgemm_arguments_16x2048 brgemm_arg_16x2048;
+                        gemm_arguments_16x2048 gemm_arg_16x2048;
                         matAcc_16x2048_t matAcc_16x2048;
 
                         matW_16x2048_t matW_16x2048;
                         matW_16x2048_payload_t matW_16x2048_payload;
 
-                        ld_st_start_x_c
-                                = brgemm_op_16x2048_t::get_matC_offset_x(
-                                        g_thd32_tid);
+                        ld_st_start_x_c = gemm_op_16x2048_t::get_matC_offset_x(
+                                g_thd32_tid);
                         ld_st_start_y_c
                                 = (batchid * numhead + headid) * max_seqlen
                                 + all_vert_loop * all_vert_stride
-                                + brgemm_op_16x2048_t::get_matC_offset_y(
+                                + gemm_op_16x2048_t::get_matC_offset_y(
                                         g_thd32_tid);
                         matW_16x2048_payload.init(args->matW_ptr, ld_st_width_c,
                                 ld_st_height_c, ld_st_pitch_c, ld_st_start_x_c,
@@ -2702,8 +2678,8 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_a = all_vert_loop * all_vert_stride
                                 + seqlen_entry;
 
-                        brgemm_arg_16x2048.matA_base_desc.init(
-                                {args->matdO_ptr}, {width_a, height_a, pitch_a},
+                        gemm_arg_16x2048.matA_base_desc.init({args->matdO_ptr},
+                                {width_a, height_a, pitch_a},
                                 {start_x_a, start_y_a});
 
                         uint32_t width_b = (headid + 1) * hdsz;
@@ -2713,17 +2689,17 @@ struct xetla_mha_attn_reg_bwd_t {
                         int start_y_b = seqlen_entry;
 
                         //B transpose, be swapped in init
-                        brgemm_arg_16x2048.matB_base_desc.init({args->matV_ptr},
+                        gemm_arg_16x2048.matB_base_desc.init({args->matV_ptr},
                                 {height_b, width_b, pitch_b},
                                 {start_y_b, start_x_b});
 
-                        brgemm_arg_16x2048.inner_loop_count
+                        gemm_arg_16x2048.inner_loop_count
                                 = (wg_tile_QKT_k + k_stride - 1) / k_stride;
 
                         matAcc_16x2048.init(0);
-                        brgemm_op_16x2048_t brgemm_op_16x2048;
-                        brgemm_op_16x2048(g_thd32_tid, matAcc_16x2048,
-                                brgemm_arg_16x2048);
+                        gemm_op_16x2048_t gemm_op_16x2048;
+                        gemm_op_16x2048(
+                                g_thd32_tid, matAcc_16x2048, gemm_arg_16x2048);
 
                         matElem_reg_4x16x16.xetla_format<float>()
                                 .xetla_select<16 * 16 * 4, 1>(0)
@@ -3105,7 +3081,7 @@ struct xetla_mha_attn_reg_bwd_t {
             if (((((all_vert128_loop + 1) << all_vert128_shift) - 1)
                         == all_vert_loop)
                     || (all_vert128_shift == 0)) { //dQ
-                brgemm_arguments_128x64 brgemm_arg_128x64;
+                gemm_arguments_128x64 gemm_arg_128x64;
                 matAcc_128x64_t matAcc_128x64;
                 matC_128x64_t matC_128x64;
                 matC_128x64_payload_t matC_128x64_payload;
@@ -3118,7 +3094,7 @@ struct xetla_mha_attn_reg_bwd_t {
                 int start_y_a = (batchid * numhead + headid) * max_seqlen
                         + all_vert128_loop * 128;
 
-                brgemm_arg_128x64.matA_base_desc.init({args->matdW_ptr},
+                gemm_arg_128x64.matA_base_desc.init({args->matdW_ptr},
                         {width_a, height_a, pitch_a}, {start_x_a, start_y_a});
 
                 uint32_t width_b = (headid + 1) * hdsz;
@@ -3127,23 +3103,23 @@ struct xetla_mha_attn_reg_bwd_t {
                 int start_x_b = headid * hdsz;
                 int start_y_b = seqlen_entry;
 
-                brgemm_arg_128x64.matB_base_desc.init({args->matK_ptr},
+                gemm_arg_128x64.matB_base_desc.init({args->matK_ptr},
                         {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
-                brgemm_arg_128x64.inner_loop_count
+                gemm_arg_128x64.inner_loop_count
                         = (wg_tile_out_k + k_stride - 1) / k_stride;
 
                 matAcc_128x64.init(0);
-                brgemm_op_128x64_t brgemm_op_128x64;
-                brgemm_op_128x64(g_thd32_tid, matAcc_128x64, brgemm_arg_128x64);
+                gemm_op_128x64_t gemm_op_128x64;
+                gemm_op_128x64(g_thd32_tid, matAcc_128x64, gemm_arg_128x64);
 
                 int ld_st_width_c = (headid + 1) * hdsz;
                 int height_c = tru_seqlen + seqlen_entry;
                 int pitch_c = hiddensize;
                 int start_x_c = headid * hdsz
-                        + brgemm_op_128x64_t::get_matC_offset_x(g_thd32_tid);
+                        + gemm_op_128x64_t::get_matC_offset_x(g_thd32_tid);
                 int start_y_c = all_vert128_loop * 128 + seqlen_entry
-                        + brgemm_op_128x64_t::get_matC_offset_y(g_thd32_tid);
+                        + gemm_op_128x64_t::get_matC_offset_y(g_thd32_tid);
 
                 matC_128x64_payload.init(args->matdQ_ptr, ld_st_width_c,
                         height_c, pitch_c, start_x_c, start_y_c);
@@ -3155,7 +3131,7 @@ struct xetla_mha_attn_reg_bwd_t {
 
         for (int transp256_loop = 0; transp256_loop < transp256_loop_num;
                 transp256_loop++) {
-            brgemm_arguments_256x64_trnp_a brgemm_arg_256x64;
+            gemm_arguments_256x64_trnp_a gemm_arg_256x64;
             matAcc_256x64_trnp_a_t matAcc_256x64;
             matC_256x64_trnp_a_t matC_256x64;
             matC_256x64_trnp_a_payload_t matC_256x64_payload;
@@ -3167,7 +3143,7 @@ struct xetla_mha_attn_reg_bwd_t {
             int start_x_a = transp256_loop * 256;
             int start_y_a = (batchid * numhead + headid) * max_seqlen;
 
-            brgemm_arg_256x64.matA_base_desc.init({args->matdW_ptr},
+            gemm_arg_256x64.matA_base_desc.init({args->matdW_ptr},
                     {height_a, width_a, pitch_a}, {start_y_a, start_x_a});
 
             uint32_t width_b = (headid + 1) * hdsz;
@@ -3176,24 +3152,23 @@ struct xetla_mha_attn_reg_bwd_t {
             int start_x_b = headid * hdsz;
             int start_y_b = seqlen_entry;
 
-            brgemm_arg_256x64.matB_base_desc.init({args->matQ_ptr},
+            gemm_arg_256x64.matB_base_desc.init({args->matQ_ptr},
                     {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
-            brgemm_arg_256x64.inner_loop_count
+            gemm_arg_256x64.inner_loop_count
                     = (wg_tile_out_k + k_stride - 1) / k_stride;
 
             matAcc_256x64.init(0);
-            brgemm_op_256x64_trnp_a_t brgemm_op_256x64_trnp_a;
-            brgemm_op_256x64_trnp_a(
-                    g_thd32_tid, matAcc_256x64, brgemm_arg_256x64);
+            gemm_op_256x64_trnp_a_t gemm_op_256x64_trnp_a;
+            gemm_op_256x64_trnp_a(g_thd32_tid, matAcc_256x64, gemm_arg_256x64);
 
             int width_c = (headid + 1) * hdsz;
             int height_c = tru_seqlen + seqlen_entry;
             int pitch_c = hiddensize;
             int start_x_c = headid * hdsz
-                    + brgemm_op_256x64_trnp_a_t::get_matC_offset_x(g_thd32_tid);
+                    + gemm_op_256x64_trnp_a_t::get_matC_offset_x(g_thd32_tid);
             int start_y_c = transp256_loop * 256 + seqlen_entry
-                    + brgemm_op_256x64_trnp_a_t::get_matC_offset_y(g_thd32_tid);
+                    + gemm_op_256x64_trnp_a_t::get_matC_offset_y(g_thd32_tid);
 
             matC_256x64_payload.init(args->matdK_ptr, width_c, height_c,
                     pitch_c, start_x_c, start_y_c);
@@ -3207,7 +3182,7 @@ struct xetla_mha_attn_reg_bwd_t {
 
         for (int transp128_loop = 0; transp128_loop < transp128_loop_num;
                 transp128_loop++) {
-            brgemm_arguments_128x64_trnp_a brgemm_arg_128x64;
+            gemm_arguments_128x64_trnp_a gemm_arg_128x64;
             matAcc_128x64_trnp_a_t matAcc_128x64;
             matC_128x64_trnp_a_t matC_128x64;
             matC_128x64_trnp_a_payload_t matC_128x64_payload;
@@ -3219,7 +3194,7 @@ struct xetla_mha_attn_reg_bwd_t {
             int start_x_a = transp128_loop * 128 + offset_blk_128x128;
             int start_y_a = (batchid * numhead + headid) * max_seqlen;
 
-            brgemm_arg_128x64.matA_base_desc.init({args->matdW_ptr},
+            gemm_arg_128x64.matA_base_desc.init({args->matdW_ptr},
                     {height_a, width_a, pitch_a}, {start_y_a, start_x_a});
 
             uint32_t width_b = (headid + 1) * hdsz;
@@ -3228,25 +3203,24 @@ struct xetla_mha_attn_reg_bwd_t {
             int start_x_b = headid * hdsz;
             int start_y_b = seqlen_entry;
 
-            brgemm_arg_128x64.matB_base_desc.init({args->matQ_ptr},
+            gemm_arg_128x64.matB_base_desc.init({args->matQ_ptr},
                     {width_b, height_b, pitch_b}, {start_x_b, start_y_b});
 
-            brgemm_arg_128x64.inner_loop_count
+            gemm_arg_128x64.inner_loop_count
                     = (wg_tile_out_k + k_stride - 1) / k_stride;
 
             matAcc_128x64.init(0);
-            brgemm_op_128x64_trnp_a_t brgemm_op_128x64_trnp_a;
-            brgemm_op_128x64_trnp_a(
-                    g_thd32_tid, matAcc_128x64, brgemm_arg_128x64);
+            gemm_op_128x64_trnp_a_t gemm_op_128x64_trnp_a;
+            gemm_op_128x64_trnp_a(g_thd32_tid, matAcc_128x64, gemm_arg_128x64);
 
             int width_c = (headid + 1) * hdsz;
             int height_c = tru_seqlen + seqlen_entry;
             int pitch_c = hiddensize;
             int start_x_c = headid * hdsz
-                    + brgemm_op_128x64_trnp_a_t::get_matC_offset_x(g_thd32_tid);
+                    + gemm_op_128x64_trnp_a_t::get_matC_offset_x(g_thd32_tid);
             int start_y_c = transp128_loop * 128 + seqlen_entry
                     + offset_blk_128x128
-                    + brgemm_op_128x64_trnp_a_t::get_matC_offset_y(g_thd32_tid);
+                    + gemm_op_128x64_trnp_a_t::get_matC_offset_y(g_thd32_tid);
 
             matC_128x64_payload.init(args->matdK_ptr, width_c, height_c,
                     pitch_c, start_x_c, start_y_c);

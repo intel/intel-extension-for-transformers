@@ -234,7 +234,7 @@ public:
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = bf16;
     using data_type_b = bf16;
-    using data_type_c = float;
+    using data_type_c = bf16;
     using data_type_acc = float;
 };
 
@@ -278,204 +278,14 @@ public:
     using data_type_acc = float;
 };
 
-class Test12 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 16;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test13 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 16;
-    static constexpr mem_layout layout_a = mem_layout::col_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test14 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 16;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::col_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test15 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 16;
-    static constexpr mem_layout layout_a = mem_layout::col_major;
-    static constexpr mem_layout layout_b = mem_layout::col_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test16 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 8;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test17 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 4;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test18 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 2;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test19 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 32;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test20 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 1;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
-class Test21 : public TestBase {
-public:
-    static constexpr size_t mat_m = 4096;
-    static constexpr size_t mat_n = 4096;
-    static constexpr size_t mat_k = 4096;
-    static constexpr size_t wg_m = 256;
-    static constexpr size_t wg_n = 256;
-    static constexpr size_t sg_m = 32;
-    static constexpr size_t sg_n = 64;
-    static constexpr size_t sg_k = 32;
-    static constexpr uint32_t wg_num_n = 64;
-    static constexpr mem_layout layout_a = mem_layout::row_major;
-    static constexpr mem_layout layout_b = mem_layout::row_major;
-    using data_type_a = bf16;
-    using data_type_b = bf16;
-    using data_type_c = bf16;
-    using data_type_acc = float;
-};
-
 template <class Test>
 class result_validate {
 
 public:
-    using dtype_a = Test::data_type_a;
-    using dtype_b = Test::data_type_b;
-    using dtype_c = Test::data_type_c;
-    using dtype_acc = Test::data_type_acc;
+    using dtype_a = typename Test::data_type_a;
+    using dtype_b = typename Test::data_type_b;
+    using dtype_c = typename Test::data_type_c;
+    using dtype_acc = typename Test::data_type_acc;
 
     int operator()(dtype_a *A, dtype_b *B, dtype_c *C, sycl::queue &queue) {
         return gemm_result_validate<dtype_a, dtype_b, dtype_c, dtype_acc>(A, B,
@@ -490,11 +300,3 @@ using bf16_gemm_func = bf16_gemm_test_func<typename Test::data_type_a,
         typename Test::data_type_acc, Test::wg_m, Test::wg_n, Test::sg_m,
         Test::sg_n, Test::sg_k, Test::layout_a, Test::layout_b,
         Test::l3_kslicing, Test::slm_kslicing, Test::engine>;
-
-template <class Test>
-using bf16_gemm_func_block_policy
-        = bf16_gemm_test_func_block_policy<typename Test::data_type_a,
-                typename Test::data_type_b, typename Test::data_type_c,
-                typename Test::data_type_acc, Test::wg_m, Test::wg_n,
-                Test::sg_m, Test::sg_n, Test::sg_k, Test::layout_a,
-                Test::layout_b, Test::wg_num_n, Test::engine>;

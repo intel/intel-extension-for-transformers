@@ -25,26 +25,26 @@
 
 namespace gpu::xetla::kernel {
 
-/// @addtogroup xetla_gemm
+/// @addtogroup xetla_gemm_universal
 /// @{
 
-/// @brief Is the GEMM functor, specialized in kslicing dispatch policy and Xe architecture.
+/// @brief Is the gemm_universal functor, specialized in kslicing dispatch policy and Xe architecture.
 ///
-/// @tparam global_kslicing_ratio_ Is the k dim split ratio between groups.
-/// @tparam local_kslicing_ratio_ Is the k dim split ratio within a group.
-/// @tparam brgemm_t_ Is the brgemm functor to compose a GEMM.
-/// @tparam epilogue_t_ Is the epilogue functor to compose a GEMM.
-template <int global_kslicing_ratio_, int local_kslicing_ratio_,
-        typename brgemm_t_, typename epilogue_t_>
-class gemm_t<dispatch_policy_kslicing<global_kslicing_ratio_,
-                     local_kslicing_ratio_, gpu_arch::Xe>,
-        brgemm_t_, epilogue_t_> {
-    using brgemm_t = brgemm_t_;
+/// @tparam num_global_kslicing_ Is the k dim split ratio between groups.
+/// @tparam num_local_kslicing_ Is the k dim split ratio within a group.
+/// @tparam gemm_t_ Is the gemm functor to compose a GEMM_UNIVERSAL.
+/// @tparam epilogue_t_ Is the epilogue functor to compose a GEMM_UNIVERSAL.
+template <int num_global_kslicing_, int num_local_kslicing_, gpu_arch arch_tag_,
+        typename gemm_t_, typename epilogue_t_>
+class gemm_universal_t<dispatch_policy_kslicing<num_global_kslicing_,
+                               num_local_kslicing_, arch_tag_>,
+        gemm_t_, epilogue_t_, std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+    using gemm_t = gemm_t_;
     using epilogue_t = epilogue_t_;
-    using brgemm_args_t = typename brgemm_t::arguments_t;
+    using gemm_args_t = typename gemm_t::arguments_t;
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
-    using tile_shape = typename brgemm_t::tile_shape;
+    using tile_shape = typename gemm_t::tile_shape;
     static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
     static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
@@ -54,21 +54,20 @@ class gemm_t<dispatch_policy_kslicing<global_kslicing_ratio_,
     static constexpr uint32_t real_wg_tile_m = sg_tile_m * wg_size_y;
     static constexpr uint32_t real_wg_tile_n = sg_tile_n * wg_size_x;
 
-    static constexpr uint32_t k_stride = brgemm_t::k_stride;
-    using work_group_t = typename brgemm_t::work_group_t;
+    static constexpr uint32_t k_stride = gemm_t::k_stride;
+    using work_group_t = typename gemm_t::work_group_t;
     static constexpr uint32_t work_group_size = work_group_t::size;
 
-    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
-    static_assert(
-            arch_tag == brgemm_t::arch_tag, "arch_tag should be the same");
+    static constexpr gpu_arch arch_tag = arch_tag_;
+    static_assert(arch_tag == gemm_t::arch_tag, "arch_tag should be the same");
     static_assert(
             arch_tag == epilogue_t::arch_tag, "arch_tag should be the same");
-    static_assert(std::is_same<typename brgemm_t::tile_shape,
+    static_assert(std::is_same<typename gemm_t::tile_shape,
                           typename epilogue_t::tile_shape>::value,
             "tile_shape should be the same");
 
-    using mem_desc_a_t = typename brgemm_t::mem_desc_a_t;
-    using mem_desc_b_t = typename brgemm_t::mem_desc_b_t;
+    using mem_desc_a_t = typename gemm_t::mem_desc_a_t;
+    using mem_desc_b_t = typename gemm_t::mem_desc_b_t;
     using mem_desc_c_t = typename epilogue_t::mem_desc_c_t;
     using matA_base_t = typename mem_desc_a_t::base_t;
     using matB_base_t = typename mem_desc_b_t::base_t;
@@ -76,32 +75,31 @@ class gemm_t<dispatch_policy_kslicing<global_kslicing_ratio_,
     using dtype_a = typename mem_desc_a_t::dtype;
     using dtype_b = typename mem_desc_b_t::dtype;
     using dtype_c = typename mem_desc_c_t::dtype;
-    using matAcc_t = typename brgemm_t::matAcc_t;
+    using matAcc_t = typename gemm_t::matAcc_t;
+    using dtype_acc = typename matAcc_t::dtype;
+    using mem_desc_acc_t
+            = mem_desc_t<dtype_acc, mem_layout::row_major, mem_space::global>;
+    using mem_desc_cnt_t
+            = mem_desc_t<uint32_t, mem_layout::row_major, mem_space::global>;
+    using acc_base_t = typename mem_desc_acc_t::base_t;
+    using cnt_base_t = typename mem_desc_cnt_t::base_t;
 
-    using update_method = typename epilogue_t::update_method;
-    static constexpr uint32_t global_kslicing_ratio = global_kslicing_ratio_;
-    static constexpr uint32_t local_kslicing_ratio = local_kslicing_ratio_;
-    static_assert((global_kslicing_ratio > 0) && (local_kslicing_ratio > 0),
+    static constexpr uint32_t num_global_kslicing = num_global_kslicing_;
+    static constexpr uint32_t num_local_kslicing = num_local_kslicing_;
+    static_assert((num_global_kslicing > 0) && (num_local_kslicing > 0),
             "min slicing ratio is 1");
 
-    static_assert((local_kslicing_ratio & (local_kslicing_ratio - 1)) == 0,
-            "local_kslicing_ratio should be power of 2!");
-    static_assert(global_kslicing_ratio == 1
-                    || std::is_same<remove_const_t<dtype_c>, float>::value
-                    || std::is_same<remove_const_t<dtype_c>, int>::value,
-            "for global_kslicing_ratio > 1, current we only support float or "
-            "int for matC");
-    static_assert(global_kslicing_ratio == 1
-                    || std::is_same<update_method, result_reduce_sum>::value,
-            "for global_kslicing_ratio > 1, the update method should be reduce "
-            "sum");
+    static_assert((num_local_kslicing & (num_local_kslicing - 1)) == 0,
+            "num_local_kslicing should be power of 2!");
 
     using kslicing_t = group::cooperative_reduce_t<reduce_op::sum, tile_shape,
-            matAcc_t, local_kslicing_ratio, gpu_arch::Xe>;
+            matAcc_t, num_local_kslicing, arch_tag>;
     using mat_slice_t = typename kslicing_t::mat_slice_t;
+    static constexpr uint32_t ks_coop_num_x = kslicing_t::coop_num_x;
+    static constexpr uint32_t ks_coop_num_y = kslicing_t::coop_num_y;
 
-    static constexpr uint32_t brgemm_nbarr_count = brgemm_t::barrier_count;
-    static constexpr uint32_t brgemm_slm_size = brgemm_t::slm_size;
+    static constexpr uint32_t gemm_nbarr_count = gemm_t::barrier_count;
+    static constexpr uint32_t gemm_slm_size = gemm_t::slm_size;
 
     static constexpr uint32_t epilogue_nbarr_count = epilogue_t::barrier_count;
     static constexpr uint32_t epilogue_slm_size = epilogue_t::slm_size;
@@ -109,8 +107,17 @@ class gemm_t<dispatch_policy_kslicing<global_kslicing_ratio_,
     static constexpr uint32_t kslicing_nbarr_count = kslicing_t::barrier_count;
     static constexpr uint32_t kslicing_slm_size = kslicing_t::slm_size;
 
+    static constexpr uint32_t counter_size = 8;
+
+    using tile_shape_cnt = group::tile_shape_t<ks_coop_num_x * wg_size_x,
+            ks_coop_num_y * wg_size_y, ks_coop_num_x, ks_coop_num_y>;
+
+    using global_group_reduce_t = group::global_reduce_t<reduce_op::sum,
+            tile_shape, tile_shape_cnt, mem_desc_acc_t, mem_desc_cnt_t,
+            num_global_kslicing, counter_size, arch_tag>;
+
 public:
-    /// @brief GEMM arguments.
+    /// @brief GEMM_UNIVERSAL arguments.
     /// This is the interface for users to pass the application-related runtime variables.
     struct arguments_t {
         /// @brief Is the size of the m dimension of the matrix multiplication (m x k x n).
@@ -119,18 +126,22 @@ public:
         uint32_t matrix_k;
         /// @brief Is the size of the n dimension of the matrix multiplication (m x k x n).
         uint32_t matrix_n;
-        /// @brief Is the leading dimension (pitch) size of the matrix A in memory.
-        uint32_t matA_ld;
-        /// @brief Is the leading dimension (pitch) size of the matrix B in memory.
-        uint32_t matB_ld;
-        /// @brief Is the leading dimension (pitch) size of the matrix C in memory.
-        uint32_t matC_ld;
         /// @brief Is the base address of matrix A.
         matA_base_t matA_base;
+        /// @brief Is the leading dimension (pitch) size of the matrix A in memory.
+        uint32_t matA_ld;
         /// @brief Is the base address of matrix B.
         matB_base_t matB_base;
+        /// @brief Is the leading dimension (pitch) size of the matrix B in memory.
+        uint32_t matB_ld;
         /// @brief Is the base address of matrix C.
         matC_base_t matC_base;
+        /// @brief Is the leading dimension (pitch) size of the matrix C in memory.
+        uint32_t matC_ld;
+        /// @brief Is the base address of accumulation buffer.
+        acc_base_t acc_base;
+        /// @brief Is the base address of counter buffer.
+        cnt_base_t cnt_base;
         /// @brief Is the epilogue arguments.
         epilogue_args_t epilogue_args;
 
@@ -159,6 +170,7 @@ public:
                 uint32_t matrix_n_, matA_base_t matA_base_, uint32_t matA_ld_,
                 matB_base_t matB_base_, uint32_t matB_ld_,
                 matC_base_t matC_base_, uint32_t matC_ld_,
+                acc_base_t acc_base_ = {}, cnt_base_t cnt_base_ = {},
                 epilogue_args_t epilogue_args_ = {})
             : matrix_m(matrix_m_)
             , matrix_k(matrix_k_)
@@ -169,6 +181,8 @@ public:
             , matB_ld(matB_ld_)
             , matC_base(matC_base_)
             , matC_ld(matC_ld_)
+            , acc_base(acc_base_)
+            , cnt_base(cnt_base_)
             , epilogue_args(epilogue_args_) {}
         inline arguments_t(const arguments_t &args)
             : matrix_m(args.matrix_m)
@@ -180,6 +194,8 @@ public:
             , matB_ld(args.matB_ld)
             , matC_base(args.matC_base)
             , matC_ld(args.matC_ld)
+            , acc_base(args.acc_base)
+            , cnt_base(args.cnt_base)
             , epilogue_args(args.epilogue_args) {}
         // Be aware of the risks: Rule of three (copy constructor, copy assignment, destructor)
         // Please check if you need to add self-define destructor
@@ -194,6 +210,8 @@ public:
             this->matB_ld = args.matB_ld;
             this->matC_base = args.matC_base;
             this->matC_ld = args.matC_ld;
+            this->acc_base = args.acc_base;
+            this->cnt_base = args.cnt_base;
             this->epilogue_args = args.epilogue_args;
             return *this;
         }
@@ -203,9 +221,9 @@ public:
     /// Users query and get a named_barrier id consumption count in compile time.
     /// @return The count of named barriers required.
     __XETLA_API static constexpr uint32_t get_barrier_count() {
-        constexpr uint32_t count = brgemm_nbarr_count * local_kslicing_ratio
+        constexpr uint32_t count = gemm_nbarr_count * num_local_kslicing
                 + kslicing_nbarr_count
-                + epilogue_nbarr_count * local_kslicing_ratio;
+                + epilogue_nbarr_count * num_local_kslicing;
         static_assert(
                 count <= 32, "The named_barrier count should be less than 32!");
         return count;
@@ -215,26 +233,26 @@ public:
     /// Users query and get a local memory consumption size in compile time.
     /// @return The size of local memory required.
     __XETLA_API static constexpr uint32_t get_slm_size() {
-        constexpr uint32_t size = brgemm_slm_size * local_kslicing_ratio
-                + kslicing_slm_size + epilogue_slm_size * local_kslicing_ratio;
+        constexpr uint32_t size = gemm_slm_size * num_local_kslicing
+                + kslicing_slm_size + epilogue_slm_size * num_local_kslicing;
         static_assert(size <= (128 * 1024),
                 "The local memory size should be less than 128KB!");
         return size;
     }
 
-    /// @brief Host helper function to get the expected local range under the current GEMM config.
+    /// @brief Host helper function to get the expected local range under the current GEMM_UNIVERSAL config.
     /// @return Expected local range.
     static cl::sycl::range<3> get_local_range() {
         uint32_t local_range_m = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
         uint32_t local_range_n = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
-        std::cout << "Local range: {" << local_kslicing_ratio << ", "
+        std::cout << "Local range: {" << num_local_kslicing << ", "
                   << local_range_m << ", " << local_range_n << "} \n";
-        assert(local_range_m * local_range_n * local_kslicing_ratio <= 32);
+        assert(local_range_m * local_range_n * num_local_kslicing <= 32);
         return cl::sycl::range<3> {
-                local_kslicing_ratio, local_range_m, local_range_n};
+                num_local_kslicing, local_range_m, local_range_n};
     };
 
-    /// @brief Host helper function to get the expected group range under the current GEMM config.
+    /// @brief Host helper function to get the expected group range under the current GEMM_UNIVERSAL config.
     /// @param matrix_m Is the size of the m dimension of the matrix multiplication (m x k x n).
     /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
     /// @return Expected group range.
@@ -242,14 +260,14 @@ public:
             uint32_t matrix_m, uint32_t matrix_n) {
         uint32_t group_range_m = (matrix_m + wg_tile_m - 1) / wg_tile_m;
         uint32_t group_range_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;
-        std::cout << "Group range: {" << global_kslicing_ratio << ", "
+        std::cout << "Group range: {" << num_global_kslicing << ", "
                   << group_range_m << ", " << group_range_n << "} \n";
         return cl::sycl::range<3> {
-                global_kslicing_ratio, group_range_m, group_range_n};
+                num_global_kslicing, group_range_m, group_range_n};
     };
 
-    /// @brief Host helper function to get the expected nd_range under the current GEMM config.
-    /// @param args Is the GEMM arguments for application-related runtime variables.
+    /// @brief Host helper function to get the expected nd_range of the current GEMM_UNIVERSAL config.
+    /// @param args Is the GEMM_UNIVERSAL arguments for application-related runtime variables.
     /// @return Expected nd_range.
     static cl::sycl::nd_range<3> get_nd_range(arguments_t &args) {
         cl::sycl::range<3> local_range = get_local_range();
@@ -258,33 +276,52 @@ public:
         return cl::sycl::nd_range<3> {group_range * local_range, local_range};
     };
 
+    /// @brief Host helper function to get the expected accumulation buffer size of the current GEMM_UNIVERSAL config.
+    /// @param matrix_m Is the size of the m dimension of the matrix multiplication (m x k x n).
+    /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
+    /// @return Expected accumulation buffer size in unit of elements.
+    static size_t get_acc_buf_size(uint32_t matrix_m, uint32_t matrix_n) {
+        return matrix_m * matrix_n;
+    };
+
+    /// @brief Host helper function to get the expected counter buffer size of the current GEMM_UNIVERSAL config.
+    /// @param matrix_m Is the size of the m dimension of the matrix multiplication (m x k x n).
+    /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
+    /// @return Expected counter buffer size in unit of elements.
+    static size_t get_cnt_buf_size(uint32_t matrix_m, uint32_t matrix_n) {
+        size_t group_range_m = (matrix_m + wg_tile_m - 1) / wg_tile_m;
+        size_t group_range_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;
+        return group_range_m * group_range_n * wg_size_y * wg_size_x
+                * ks_coop_num_y * ks_coop_num_x * counter_size;
+    };
+
     /// @brief Check if the arguments can be implemented.
-    /// @param args Is the GEMM arguments for application-related runtime variables.
+    /// @param args Is the GEMM_UNIVERSAL arguments for application-related runtime variables.
     /// @return Check result.
     static bool can_implement(arguments_t &args) {
         bool implementable = true;
-        if (brgemm_t::is_2d_block_a) {
+        if (gemm_t::is_2d_block_a) {
             implementable
                     &= kernel::block_2d<gpu_arch::Xe, dtype_a>::check_tensor(
                             (uint64_t)(args.matA_base.base),
-                            brgemm_t::is_col_major_a ? args.matrix_m
-                                                     : args.matrix_k,
-                            brgemm_t::is_col_major_a ? args.matrix_k
-                                                     : args.matrix_m,
+                            gemm_t::is_col_major_a ? args.matrix_m
+                                                   : args.matrix_k,
+                            gemm_t::is_col_major_a ? args.matrix_k
+                                                   : args.matrix_m,
                             args.matA_ld);
         } else {
             implementable &= kernel::general_1d<gpu_arch::Xe,
                     dtype_a>::check_alignment(args.matA_base.base,
                     args.matA_ld);
         }
-        if (brgemm_t::is_2d_block_b) {
+        if (gemm_t::is_2d_block_b) {
             implementable
                     &= kernel::block_2d<gpu_arch::Xe, dtype_b>::check_tensor(
                             (uint64_t)(args.matB_base.base),
-                            brgemm_t::is_col_major_b ? args.matrix_k
-                                                     : args.matrix_n,
-                            brgemm_t::is_col_major_b ? args.matrix_n
-                                                     : args.matrix_k,
+                            gemm_t::is_col_major_b ? args.matrix_k
+                                                   : args.matrix_n,
+                            gemm_t::is_col_major_b ? args.matrix_n
+                                                   : args.matrix_k,
                             args.matB_ld);
         } else {
             implementable &= kernel::general_1d<gpu_arch::Xe,
@@ -305,11 +342,11 @@ public:
         return implementable;
     }
 
-    /// @brief Main execution function for GEMM.
+    /// @brief Main execution function for GEMM_UNIVERSAL.
     /// The processing order is 1) set group-level base and boundary, split group to workgroups ->
-    /// 2) #local_kslicing_ratio x brgemms -> 3) local kslicing -> 4) #local_kslicing_ratio x epilogues.
+    /// 2) num_local_kslicing x gemms -> 3) local kslicing -> 4) num_local_kslicing x epilogues.
     /// @param ei Is the execution item, returns execution related information, such as workgroup id, subgroup id...
-    /// @param args Is the GEMM arguments for application-related runtime variables.
+    /// @param args Is the GEMM_UNIVERSAL arguments for application-related runtime variables.
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.
     __XETLA_API KERNEL_FUNC void operator()(xetla_exec_item<3> &ei,
@@ -329,17 +366,17 @@ public:
                 ? args.matrix_m
                 : (start_m + wg_tile_m);
         uint32_t boundary_k = wg_tile_k;
-        if constexpr (global_kslicing_ratio > 1) {
-            wg_tile_k = (wg_tile_k + global_kslicing_ratio - 1)
-                    / global_kslicing_ratio;
+        if constexpr (num_global_kslicing > 1) {
+            wg_tile_k = (wg_tile_k + num_global_kslicing - 1)
+                    / num_global_kslicing;
             start_k = start_k + ei.get_group(0) * wg_tile_k;
             boundary_k = (start_k + wg_tile_k) > boundary_k
                     ? boundary_k
                     : (start_k + wg_tile_k);
         }
-        if constexpr (local_kslicing_ratio > 1) {
-            wg_tile_k = (wg_tile_k + local_kslicing_ratio - 1)
-                    / local_kslicing_ratio;
+        if constexpr (num_local_kslicing > 1) {
+            wg_tile_k
+                    = (wg_tile_k + num_local_kslicing - 1) / num_local_kslicing;
             start_k = start_k + wg_id * wg_tile_k;
             boundary_k = (start_k + wg_tile_k) > boundary_k
                     ? boundary_k
@@ -347,16 +384,16 @@ public:
         }
 
         // set up arguments
-        uint32_t brgemm_slm_base = slm_base;
-        uint32_t brgemm_nbarr_base = nbarrier_base;
-        if constexpr (local_kslicing_ratio > 1) {
-            brgemm_slm_base = slm_base + wg_id * brgemm_slm_size;
-            brgemm_nbarr_base = nbarrier_base + wg_id * brgemm_nbarr_count;
+        uint32_t gemm_slm_base = slm_base;
+        uint32_t gemm_nbarr_base = nbarrier_base;
+        if constexpr (num_local_kslicing > 1) {
+            gemm_slm_base = slm_base + wg_id * gemm_slm_size;
+            gemm_nbarr_base = nbarrier_base + wg_id * gemm_nbarr_count;
         }
         uint32_t kslicing_slm_base
-                = slm_base + local_kslicing_ratio * brgemm_slm_size;
+                = slm_base + num_local_kslicing * gemm_slm_size;
         uint32_t kslicing_nbarr_base
-                = nbarrier_base + local_kslicing_ratio * brgemm_nbarr_count;
+                = nbarrier_base + num_local_kslicing * gemm_nbarr_count;
         uint32_t epilogue_slm_base = kslicing_slm_base + kslicing_slm_size;
         uint32_t epilogue_nbarr_base
                 = kslicing_nbarr_base + kslicing_nbarr_count;
@@ -382,39 +419,64 @@ public:
         }
 
         uint32_t inner_loop_count = (wg_tile_k + k_stride - 1) / k_stride;
-        brgemm_args_t brgemm_args(mem_desc_a, mem_desc_b, inner_loop_count);
+        gemm_args_t gemm_args(mem_desc_a, mem_desc_b, inner_loop_count);
         matAcc_t matAcc;
         matAcc.init(0);
-        brgemm_t brgemm;
-        brgemm(g, matAcc, brgemm_args, brgemm_slm_base, brgemm_nbarr_base);
+        gemm_t gemm;
+        gemm(g, matAcc, gemm_args, gemm_slm_base, gemm_nbarr_base);
 
         kslicing_t kslicing(wg_id);
         mat_slice_t mat_slice;
         kslicing(g, mat_slice, matAcc, kslicing_slm_base, kslicing_nbarr_base);
-
-        if (kslicing.coop_id_x < kslicing_t::coop_num_x) {
+        if (kslicing.is_valid_post_process_wg()) {
             //setup for matC
             //set up cooperative offset for matC store
-            int32_t coop_offset_n
+            int32_t coop_offset_x
                     = kslicing.coop_id_x * mat_slice_t::tile_size_x;
-            int32_t coop_offset_m
+            int32_t coop_offset_y
                     = kslicing.coop_id_y * mat_slice_t::tile_size_y;
-            if constexpr (mem_desc_c_t::is_local) {
-                mem_desc_c.init(args.matC_base,
-                        {real_wg_tile_n, real_wg_tile_m, real_wg_tile_n},
-                        {coop_offset_n, coop_offset_m});
-            } else {
-                mem_desc_c.init(args.matC_base,
-                        {boundary_n, boundary_m, args.matC_ld},
-                        {start_n + coop_offset_n, start_m + coop_offset_m});
+            int32_t acc_start_x = start_n + coop_offset_x;
+            int32_t acc_start_y = start_m + coop_offset_y;
+            int32_t cnt_start_x
+                    = ei.get_group(2) * tile_shape_cnt::wg_tile_size_x
+                    + kslicing.coop_id_x;
+            int32_t cnt_start_y
+                    = ei.get_group(1) * tile_shape_cnt::wg_tile_size_y
+                    + kslicing.coop_id_y;
+            uint32_t group_range_x = ei.get_group_range(2);
+            uint32_t group_range_y = ei.get_group_range(1);
+            uint32_t cnt_size_x
+                    = group_range_x * tile_shape_cnt::wg_tile_size_x;
+            uint32_t cnt_size_y
+                    = group_range_y * tile_shape_cnt::wg_tile_size_y;
+            mem_desc_acc_t mem_desc_acc(args.acc_base,
+                    {boundary_n, boundary_m, args.matrix_n},
+                    {acc_start_x, acc_start_y});
+            mem_desc_cnt_t mem_desc_cnt(args.cnt_base,
+                    {cnt_size_x, cnt_size_y, cnt_size_x},
+                    {cnt_start_x, cnt_start_y});
+
+            global_group_reduce_t global_group_reduce;
+            global_group_reduce(g, mat_slice, mem_desc_acc, mem_desc_cnt);
+
+            if (global_group_reduce.is_last_group()) {
+                if constexpr (mem_desc_c_t::is_local) {
+                    mem_desc_c.init(args.matC_base,
+                            {real_wg_tile_n, real_wg_tile_m, real_wg_tile_n},
+                            {coop_offset_x, coop_offset_y});
+                } else {
+                    mem_desc_c.init(args.matC_base,
+                            {boundary_n, boundary_m, args.matC_ld},
+                            {start_n + coop_offset_x, start_m + coop_offset_y});
+                }
+                epilogue_t epilogue;
+                epilogue(g, mat_slice, mem_desc_c, args.epilogue_args,
+                        epilogue_slm_base, epilogue_nbarr_base);
             }
-            epilogue_t epilogue;
-            epilogue(g, mat_slice, mem_desc_c, args.epilogue_args,
-                    epilogue_slm_base, epilogue_nbarr_base);
         }
     }
 };
 
-/// @} xetla_gemm
+/// @} xetla_gemm_universal
 
 } // namespace gpu::xetla::kernel

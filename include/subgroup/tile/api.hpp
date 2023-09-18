@@ -31,7 +31,8 @@ namespace gpu::xetla::subgroup {
 /// @tparam engine Is the compute engine, fpu or xmx.
 /// @tparam arch_tag Is the hardware architecture tag.
 template <typename matAcc_dst_t, typename matAcc_src_t, typename matB_t,
-        typename matA_t, mma_engine engine, gpu_arch arch_tag>
+        typename matA_t, mma_engine engine, gpu_arch arch_tag,
+        typename enable = void>
 struct tile_mma_t {};
 
 /// @brief Is to illustrate the memory information
@@ -41,8 +42,8 @@ struct tile_mma_t {};
 /// @tparam  memory_space Is the data location
 /// @tparam  memory_layout Is the memory layout
 template <typename dtype, typename tile_desc, msg_type message_type,
-        mem_layout memory_layout, mem_space memory_space,
-        gpu_arch arch_tag = gpu_arch::Xe>
+        mem_layout memory_layout, mem_space memory_space, gpu_arch arch_tag,
+        typename enable = void>
 struct mem_payload_t {};
 
 /// @brief Is to illustrate the memory information to prefetch data to cache.
@@ -53,8 +54,8 @@ struct mem_payload_t {};
 /// @tparam cooperative_num_ Is the thread nums to prefetch data.
 /// @tparam arch_tag Is the hardware architecture tag.
 template <typename dtype_, typename tile_desc_, mem_layout mem_layout_,
-        mem_space mem_space_, uint32_t cooperative_num_,
-        gpu_arch arch_tag = gpu_arch::Xe>
+        mem_space mem_space_, uint32_t cooperative_num_, gpu_arch arch_tag,
+        typename enable = void>
 struct prefetch_payload_t {};
 
 /// @brief Is to illustrate the tile information about a sub matrix.

@@ -24,7 +24,7 @@ using namespace gpu::xetla::subgroup;
 template <typename dtype, int dst_swidth, int dst_sheight, int dst_spitch,
         int twidth, int theight, int bwidth, int bheight,
         bool transform = false, bool transpose = false,
-        int src_spitch = dst_spitch>
+        int src_spitch = dst_spitch, gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_store_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
@@ -46,14 +46,13 @@ struct tile_load_store_func {
         using matA_t = tile_t<dtype, tile_desc_a>;
         using matC_t = tile_t<dtype, tile_desc_c>;
 
-        using payload_load_t
-                = mem_payload_t<dtype, tile_desc_a, msg_type::block_2d,
-                        a_mem_layout, mem_space::global, gpu_arch::Xe>;
+        using payload_load_t = mem_payload_t<dtype, tile_desc_a,
+                msg_type::block_2d, a_mem_layout, mem_space::global, arch_tag>;
         using prefetch_payload_t = prefetch_payload_t<dtype, tile_desc_a,
-                a_mem_layout, mem_space::global, 1>;
+                a_mem_layout, mem_space::global, 1, arch_tag>;
         using payload_store_t
                 = mem_payload_t<dtype, tile_desc_c, msg_type::block_2d,
-                        mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                        mem_layout::row_major, mem_space::global, arch_tag>;
 
         matA_t matA;
         matC_t matC;
@@ -78,7 +77,8 @@ struct tile_load_store_func {
 
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         int theight, int bwidth, int bheight, bool check_boundary = false,
-        bool check_oob = true, bool transform = false, bool transpose = false>
+        bool check_oob = true, bool transform = false, bool transpose = false,
+        gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_store_atomic_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
@@ -97,10 +97,10 @@ struct tile_load_store_atomic_func {
 
         using payload_block_2d_t
                 = mem_payload_t<dtype, tile_desc, msg_type::block_2d,
-                        mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                        mem_layout::row_major, mem_space::global, arch_tag>;
         using payload_atomic_t
                 = mem_payload_t<dtype, tile_desc, msg_type::atomic_add,
-                        mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                        mem_layout::row_major, mem_space::global, arch_tag>;
 
         matA_t matA;
         matBias_t matBias;
@@ -127,7 +127,7 @@ struct tile_load_store_atomic_func {
 
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         int theight, int bwidth, int bheight, bool transform = false,
-        bool transpose = false>
+        bool transpose = false, gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_broadcast_store_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
@@ -142,11 +142,11 @@ struct tile_load_broadcast_store_func {
 
         using payload_load_t
                 = mem_payload_t<dtype, tile_desc_a, msg_type::block_1d,
-                        mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                        mem_layout::row_major, mem_space::global, arch_tag>;
 
         using payload_store_t
                 = mem_payload_t<dtype, tile_desc_c, msg_type::block_2d,
-                        mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                        mem_layout::row_major, mem_space::global, arch_tag>;
 
         payload_load_t payload_load(a, swidth, sheight, spitch, 0, 0);
         payload_store_t payload_store(c, swidth, sheight, spitch, 0, 0);
@@ -163,7 +163,8 @@ struct tile_load_broadcast_store_func {
 
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         int theight, int bwidth, int bheight, bool check_boundary = false,
-        bool transform = false, bool transpose = false>
+        bool transform = false, bool transpose = false,
+        gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_store_1d_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
@@ -173,9 +174,9 @@ struct tile_load_store_1d_func {
         using matA_t = tile_t<dtype, tile_desc>;
 
         using payload_t = mem_payload_t<dtype, tile_desc, msg_type::block_1d,
-                mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                mem_layout::row_major, mem_space::global, arch_tag>;
         using prefetch_payload_t = prefetch_payload_t<dtype, tile_desc,
-                mem_layout::row_major, mem_space::global, 1>;
+                mem_layout::row_major, mem_space::global, 1, arch_tag>;
         matA_t matA;
         payload_t payload_load(a, swidth, sheight, spitch, 0, 0);
         prefetch_payload_t prefetch_payload(
@@ -197,7 +198,8 @@ struct tile_load_store_1d_func {
 
 template <typename dtype, int dst_swidth, int dst_sheight, int dst_spitch,
         int twidth, int theight, int bwidth, int bheight, int offset_x,
-        int offset_y, int src_spitch = dst_spitch>
+        int offset_y, int src_spitch = dst_spitch,
+        gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_padding_load_store_func {
     static KERNEL_FUNC inline void run(
             xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
@@ -210,7 +212,7 @@ struct tile_padding_load_store_func {
         using matA_t = tile_t<dtype, tile_desc>;
 
         using payload_t = mem_payload_t<dtype, tile_desc, msg_type::block_2d,
-                mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+                mem_layout::row_major, mem_space::global, arch_tag>;
 
         matA_t matA;
 

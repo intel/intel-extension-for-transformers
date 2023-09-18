@@ -29,12 +29,12 @@ template <class Test, typename validate_func, typename KERNEL,
 void gemm_exec(const std::string &compile_str, size_t batch = 1) {
     test_result result = test_result::complete;
 
-    using gemm_op_t = KERNEL::gemm_op_t;
+    using gemm_op_t = typename KERNEL::gemm_op_t;
 
-    using data_type_a = Test::data_type_a;
-    using data_type_b = Test::data_type_b;
-    using data_type_c = Test::data_type_c;
-    using data_type_acc = Test::data_type_acc;
+    using data_type_a = typename Test::data_type_a;
+    using data_type_b = typename Test::data_type_b;
+    using data_type_c = typename Test::data_type_c;
+    using data_type_acc = typename Test::data_type_acc;
 
     constexpr size_t matrix_m = Test::mat_m;
     constexpr size_t matrix_n = Test::mat_n;
@@ -60,19 +60,34 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
     auto A = alloc_device_and_init<data_type_a>(
             batch * size_a,
             [](data_type_a *data, size_t idx) {
-                data[idx] = static_cast<data_type_a>((idx * 3) % 17);
+                data[idx] = static_cast<data_type_a>(random_float());
             },
             queue, device, context);
     auto B = alloc_device_and_init<data_type_b>(
             batch * size_b,
             [](data_type_b *data, size_t idx) {
-                data[idx] = static_cast<data_type_b>((idx * 5) % 19);
+                data[idx] = static_cast<data_type_b>(random_float());
             },
             queue, device, context);
     auto C = alloc_device_and_init<data_type_c>(
             batch * size_c,
             [](data_type_c *data, size_t idx) {
                 data[idx] = static_cast<data_type_c>(0);
+            },
+            queue, device, context);
+
+    size_t size_acc = gemm_op_t::get_acc_buf_size(matrix_m, matrix_n);
+    size_t size_cnt = gemm_op_t::get_cnt_buf_size(matrix_m, matrix_n);
+    auto Acc = alloc_device_and_init<data_type_acc>(
+            batch * size_acc,
+            [](data_type_acc *data, size_t idx) {
+                data[idx] = static_cast<data_type_acc>(0);
+            },
+            queue, device, context);
+    auto Cnt = alloc_device_and_init<uint32_t>(
+            batch * size_cnt,
+            [](uint32_t *data, size_t idx) {
+                data[idx] = static_cast<uint32_t>(0);
             },
             queue, device, context);
 
@@ -93,7 +108,7 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
                 Test::layout_a == mem_layout::col_major ? matrix_m : matrix_k,
                 nullptr,
                 Test::layout_b == mem_layout::col_major ? matrix_k : matrix_n,
-                nullptr, matrix_n);
+                nullptr, matrix_n, nullptr, nullptr);
 
         cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(arg);
 
@@ -101,10 +116,14 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
             auto A_ptr = A + i * size_a;
             auto B_ptr = B + i * size_b;
             auto C_ptr = C + i * size_c;
+            auto Acc_ptr = Acc + i * size_acc;
+            auto Cnt_ptr = Cnt + i * size_cnt;
 
             arg.matA_base = A_ptr;
             arg.matB_base = B_ptr;
             arg.matC_base = C_ptr;
+            arg.acc_base = Acc_ptr;
+            arg.cnt_base = Cnt_ptr;
 
             if (!gemm_op_t::can_implement(arg)) {
                 std::cout << "The arguments cannot be supported, skip ... "
@@ -121,7 +140,7 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
                             gpu::xetla::xetla_local_init<SLMSIZE>();
                             gpu::xetla::xetla_nbarrier_init<BARNUM>();
                             KERNEL::run(ei, A_ptr, B_ptr, C_ptr, matrix_m,
-                                    matrix_n, matrix_k);
+                                    matrix_n, matrix_k, Acc_ptr, Cnt_ptr);
                         });
             });
             e_esimd.wait();
@@ -140,6 +159,8 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
     free(A, context);
     free(B, context);
     free(C, context);
+    free(Acc, context);
+    free(Cnt, context);
 
     if (result == test_result::skip) {
         GTEST_SKIP();

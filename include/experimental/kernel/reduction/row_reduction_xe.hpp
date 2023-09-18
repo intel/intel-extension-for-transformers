@@ -59,8 +59,8 @@ struct xetla_row_reduction_t<dtype_in_, dtype_out_, dtype_acc_, reduction_attr_,
             = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
     using work_group_t = work_group_t<wg_size_x * wg_size_y>;
     static constexpr bool use_dynamic_job = is_dynamic_job && (wg_size_y > 1);
-    using arch_attr = arch_attr_t<gpu_arch::Xe>;
-    using load_store_attr = arch_attr::load_store_attr;
+    using load_store_attr = typename arch_attr_t<
+            gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
     static constexpr uint32_t max_load_height_in_elem
             = load_store_attr::max_load_height_in_elem;
     static constexpr uint32_t max_load_width_in_bytes

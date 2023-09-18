@@ -188,14 +188,6 @@ enum class offset_mode : uint8_t {
     acyclic_offset = 2
 };
 
-/// @brief Result will be overwritten.
-///
-struct result_overwrite {};
-
-/// @brief Result will be summed up with old data in memory.
-///
-struct result_reduce_sum {};
-
 /// @brief Initial the local memory size and named barrier count with kernel_t.
 /// @tparam kernel_t Is XeTLA kernel level functor.
 template <typename kernel_t>

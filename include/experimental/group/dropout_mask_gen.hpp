@@ -61,8 +61,8 @@ struct mask_gen_t {
         float dropout_prob;
     };
 
-    using arch_attr = arch_attr_t<arch_>;
-    using load_store_attr = typename arch_attr::load_store_attr;
+    using load_store_attr = typename arch_attr_t<
+            arch_>::template load_store_attr<msg_type::block_2d>;
     static constexpr uint32_t max_store_width_in_bytes
             = load_store_attr::max_store_width_in_bytes;
     static constexpr uint32_t max_store_width_in_elem

@@ -94,7 +94,7 @@ void batch_gemm_run(uint32_t iter) {
                     sg_tile_m>; //	subgroup size in dim1
 
     // Mirco-kernel configuration
-    using brgemm_config = xetla::group::brgemm_selector_t<
+    using gemm_t = xetla::group::gemm_selector_t<
             data_type_a, // input datatype for A
             data_type_b, // input datatype for B
             mem_layout::row_major, // memory layout for A
@@ -108,16 +108,14 @@ void batch_gemm_run(uint32_t iter) {
             sg_tile_k, // elements in each iteration
             mma_engine::xmx, // compute engine
             gpu_arch::Xe> // GPU arch
-            ::brgemm;
+            ::gemm;
 
     using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_default<result_overwrite,
-                    gpu_arch::Xe>,
-            tile_shape,
+            xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
             mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
-    using gemm_op_t = xetla::kernel::gemm_t<
-            xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, brgemm_config,
+    using gemm_op_t = xetla::kernel::gemm_universal_t<
+            xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, gemm_t,
             epilogue_t>;
 
     //Ndrange and workgroup shape

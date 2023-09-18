@@ -24,20 +24,18 @@ void basic_gemm_run(uint32_t iter) {
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
     // Please contact us for support.
 
-    //GEMM input size
-    uint32_t matrix_m = 4096;
-    uint32_t matrix_n = 4096;
-    uint32_t matrix_k = 4096;
+    //GEMM_UNIVERSAL input size
+    size_t matrix_m = 4096;
+    size_t matrix_n = 4096;
+    size_t matrix_k = 4096;
 
-    uint32_t size_a = matrix_m * matrix_k;
-    uint32_t size_b = matrix_k * matrix_n;
-    uint32_t size_c = matrix_m * matrix_n;
+    size_t size_a = matrix_m * matrix_k;
+    size_t size_b = matrix_k * matrix_n;
+    size_t size_c = matrix_m * matrix_n;
 
     using data_type_a = bf16;
     using data_type_b = bf16;
-    using data_type_c
-            = std::conditional_t<kslicing_type == kslicing_impl_t::global,
-                    float, bf16>;
+    using data_type_c = bf16;
     using data_type_acc = float;
 
     //Turn on the profiling property to facilitate subsequent profiling
@@ -91,7 +89,7 @@ void basic_gemm_run(uint32_t iter) {
                     sg_tile_m>; //	subgroup size in dim1
 
     // Mirco-kernel configuration
-    using brgemm_config = xetla::group::brgemm_selector_t<
+    using gemm_t = typename xetla::group::gemm_selector_t<
             data_type_a, // input datatype for A
             data_type_b, // input datatype for B
             mem_layout::row_major, // memory layout for A
@@ -105,43 +103,53 @@ void basic_gemm_run(uint32_t iter) {
             sg_tile_k, // elements in each iteration
             mma_engine::xmx, // compute engine
             gpu_arch::Xe> // GPU arch
-            ::brgemm;
+            ::gemm;
 
-    using update_method
-            = std::conditional_t<kslicing_type == kslicing_impl_t::global,
-                    result_reduce_sum, result_overwrite>;
     using epilogue_t = xetla::group::epilogue_t<
-            xetla::group::epilogue_policy_default<update_method, gpu_arch::Xe>,
-            tile_shape,
+            xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
             mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
     // specify the range k_w/k_s by setting the corresponding ratio
     // splitk using global memory
-    constexpr int splitk_global_ratio
+    constexpr int num_global_splitk
             = (kslicing_type == kslicing_impl_t::global) ? 2 : 1;
     // splitk using local memory
-    constexpr int splitk_local_ratio
+    constexpr int num_local_splitk
             = (kslicing_type == kslicing_impl_t::local) ? 2 : 1;
 
-    using dispatch_policy = std::conditional_t<kslicing_type
-                    == kslicing_impl_t::none,
-            gpu::xetla::kernel::dispatch_policy_default<gpu_arch::Xe>,
-            gpu::xetla::kernel::dispatch_policy_kslicing<splitk_global_ratio,
-                    splitk_local_ratio, gpu_arch::Xe>>;
+    using dispatch_policy
+            = gpu::xetla::kernel::dispatch_policy_kslicing<num_global_splitk,
+                    num_local_splitk, gpu_arch::Xe>;
 
-    using gemm_op_t
-            = xetla::kernel::gemm_t<dispatch_policy, brgemm_config, epilogue_t>;
+    using gemm_op_t = xetla::kernel::gemm_universal_t<dispatch_policy, gemm_t,
+            epilogue_t>;
+
+    // allocate temp buffers for global split
+    size_t size_acc = gemm_op_t::get_acc_buf_size(matrix_m, matrix_n);
+    size_t size_cnt = gemm_op_t::get_cnt_buf_size(matrix_m, matrix_n);
+    auto Acc = alloc_device_and_init<data_type_acc>(
+            size_acc,
+            [](data_type_acc *data, size_t idx) {
+                data[idx] = static_cast<data_type_acc>(0.0f);
+            },
+            queue, device, context);
+    auto Cnt = alloc_device_and_init<uint32_t>(
+            size_cnt,
+            [](uint32_t *data, size_t idx) {
+                data[idx] = static_cast<uint32_t>(0);
+            },
+            queue, device, context);
 
     if constexpr (kslicing_type != kslicing_impl_t::none) {
-        std::cout << "basic_gemm with "
+        std::cout << "basic_gemm_universal with "
                   << (kslicing_type == kslicing_impl_t::global ? "global"
                                                                : "local")
                   << " cooperation" << std::endl;
     }
 
-    // set up gemm arguments
+    // set up gemm_universal arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A,
-            matrix_k, B, matrix_n, C, matrix_n);
+            matrix_k, B, matrix_n, C, matrix_n, Acc, Cnt);
 
     cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
     if (!gemm_op_t::can_implement(gemm_arg)) {
@@ -152,7 +160,7 @@ void basic_gemm_run(uint32_t iter) {
 
     uint32_t warmup = 10;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k;
-    profiling_helper prof("basic_gemm", ops, "gflops");
+    profiling_helper prof("basic_gemm_universal", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
         if constexpr (kslicing_type == kslicing_impl_t::global) {
@@ -186,11 +194,13 @@ void basic_gemm_run(uint32_t iter) {
     free(A, context);
     free(B, context);
     free(C, context);
+    free(Acc, context);
+    free(Cnt, context);
 }
 
 int main() {
     // An example code for calculating matrix multiplication using
-    // GEMM API:
+    // GEMM_UNIVERSAL API:
     //   C = A x B
     // The resulted matrix C is partitioned by the group range
     // in to multiple blocks. The block matrix
@@ -209,15 +219,15 @@ int main() {
     // in group range, i.e. from (0, i_w, j_w) to (k_w, i_w, j_w)
 
     // More detailed description referring to the cooperation (kslicing) could
-    // be found in the example 06_splitk_brgemm with custom implementation
+    // be found in the example 01_basic_gemm with custom implementation
 
-    // basic gemm
+    // basic gemm_universal
     basic_gemm_run<kslicing_impl_t::none>(10);
 
-    // basic gemm with workgroup cooperation
+    // basic gemm_universal with workgroup cooperation
     // basic_gemm_run<kslicing_impl_t::global>(10);
 
-    // basic gemm with thread cooperation
+    // basic gemm_universal with thread cooperation
     // basic_gemm_run<kslicing_impl_t::local>(10);
     return (0);
 }

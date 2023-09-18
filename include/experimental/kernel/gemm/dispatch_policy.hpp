@@ -30,14 +30,14 @@ namespace gpu::xetla::kernel {
 /// A special GEMM implementation to increase the hardware occupancy by splitting the GEMM task along k dimension.
 /// It includes inter-group reduction (by using global atomic) and intra-group reduction (by using local memory for data exchange).
 /// @note The difference compare with dispatch_policy_kslicing is we will add additional handling for 4bit.
-/// @tparam global_ratio_ Is the k dim split ratio between groups.
-/// @tparam local_ratio_ Is the k dim split ratio within a group.
+/// @tparam num_global_kslicing_ Is the k dim split ratio between groups.
+/// @tparam num_local_kslicing_ Is the k dim split ratio within a group.
 /// @tparam arch_tag_ Is the HW architecture.
-template <int global_ratio_ = 1, int local_ratio_ = 1,
+template <int num_global_kslicing_ = 1, int num_local_kslicing_ = 1,
         gpu_arch arch_tag_ = gpu_arch::Xe>
 struct dispatch_policy_int4_dequantize_kslicing {
-    static constexpr int global_ratio = global_ratio_;
-    static constexpr int local_ratio = local_ratio_;
+    static constexpr int num_global_kslicing = num_global_kslicing_;
+    static constexpr int num_local_kslicing = num_local_kslicing_;
     static constexpr gpu_arch arch_tag = arch_tag_;
 };
 

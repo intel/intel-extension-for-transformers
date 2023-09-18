@@ -28,8 +28,8 @@ int tile_mma_result_validate(T *A, T *B, T *C, int m, int n, int k,
         for (int j = 0; j < n; j++) {
             float result = 0;
             for (int kk = 0; kk < k; kk++) {
-                T a_temp = is_col_major_a ? A[i + kk * m] : A[i * k + kk];
-                T b_temp = is_col_major_b ? B[kk + j * k] : B[kk * n + j];
+                float a_temp = is_col_major_a ? A[i + kk * m] : A[i * k + kk];
+                float b_temp = is_col_major_b ? B[kk + j * k] : B[kk * n + j];
                 result = result + a_temp * b_temp;
             }
             if (std::abs((T(result) - C[i * n + j]) / C[i * n + j]) > 0.01) {

@@ -47,7 +47,7 @@ namespace gpu::xetla {
 /// @param offset_x [in] is the x coordinate of the start point.
 /// @param offset_y [in] is the y coordinate of the start point.
 ///
-template <typename Ty, uint8_t block_width = 1, uint8_t block_height = 1,
+template <typename Ty, uint32_t block_width = 1, uint32_t block_height = 1,
         uint8_t array_len = 1>
 __XETLA_API void xetla_fill_tdesc(xetla_tdescriptor_ref tdesc, Ty *p,
         int tensor_width, int tensor_height, int tensor_pitch, int offset_x,
@@ -101,7 +101,7 @@ __XETLA_API void xetla_fill_tdesc(xetla_tdescriptor_ref tdesc,
 /// @param offset_y [in] is the y coordinate of the start point.
 /// @return return a new tensor
 ///
-template <typename Ty, uint8_t block_width = 1, uint8_t block_height = 1,
+template <typename Ty, uint32_t block_width = 1, uint32_t block_height = 1,
         uint8_t array_len = 1>
 __XETLA_API xetla_tdescriptor xetla_get_tdesc(Ty *p, int tensor_width,
         int tensor_height, int tensor_pitch, int offset_x, int offset_y) {
@@ -298,7 +298,7 @@ __XETLA_API void xetla_tatomic_store_global(xetla_vector<uint64_t, N> address,
     msg_desc |= detail::get_atomic_cache_hint_code<L1H, L3H>() << 17;
     msg_desc |= numSrc0 << 25;
 
-    constexpr uint32_t execSize = detail::get_execSize_code<N>();
+    constexpr uint32_t execSize = gpu::xetla::detail::get_execSize_code<N>();
     constexpr uint32_t sfid = 0xF;
     constexpr uint32_t exDesc = 0;
 

@@ -23,36 +23,35 @@
 
 namespace gpu::xetla::kernel {
 
-/// @addtogroup xetla_gemm
+/// @addtogroup xetla_gemm_universal
 /// @{
 
-/// @brief Default GEMM implementation.
-/// A general GEMM implementation to provide a composition point of brgemm and epilogue.
+/// @brief Default GEMM_UNIVERSAL implementation.
+/// A general GEMM_UNIVERSAL implementation to provide a composition point of gemm_universal and epilogue.
 /// @tparam arch_tag_ Is the HW architecture.
-template <gpu_arch arch_tag_ = gpu_arch::Xe>
+template <gpu_arch arch_tag_>
 struct dispatch_policy_default {
     static constexpr gpu_arch arch_tag = arch_tag_;
 };
 
-/// @brief Kslicing GEMM implementation.
-/// A special GEMM implementation to increase the hardware occupancy by splitting the GEMM task along k dimension.
+/// @brief Kslicing GEMM_UNIVERSAL implementation.
+/// A special GEMM_UNIVERSAL implementation to increase the hardware occupancy by splitting the GEMM_UNIVERSAL task along k dimension.
 /// It includes inter-group reduction (by using global atomic) and intra-group reduction (by using local memory for data exchange).
-/// @tparam global_ratio_ Is the k dim split ratio between groups.
-/// @tparam local_ratio_ Is the k dim split ratio within a group.
+/// @tparam num_global_kslicing_ Is the k dim split ratio between groups.
+/// @tparam num_local_kslicing_ Is the k dim split ratio within a group.
 /// @tparam arch_tag_ Is the HW architecture.
-template <int global_ratio_ = 1, int local_ratio_ = 1,
-        gpu_arch arch_tag_ = gpu_arch::Xe>
+template <int num_global_kslicing_, int num_local_kslicing_, gpu_arch arch_tag_>
 struct dispatch_policy_kslicing {
-    static constexpr int global_ratio = global_ratio_;
-    static constexpr int local_ratio = local_ratio_;
+    static constexpr int num_global_kslicing = num_global_kslicing_;
+    static constexpr int num_local_kslicing = num_local_kslicing_;
     static constexpr gpu_arch arch_tag = arch_tag_;
 };
 
-/// @brief Blocked dispatch GEMM implementation.
-/// A GEMM implementation to provide a composition point of brgemm and epilogue.
+/// @brief Blocked dispatch GEMM_UNIVERSAL implementation.
+/// A GEMM_UNIVERSAL implementation to provide a composition point of gemm and epilogue.
 /// @tparam wg_num_n_ Is the x-dir workgroup number of repeat block.
 /// @tparam arch_tag_ Is the HW architecture.
-template <int wg_num_n_ = 8, gpu_arch arch_tag_ = gpu_arch::Xe>
+template <int wg_num_n_, gpu_arch arch_tag_>
 struct dispatch_policy_block {
     static constexpr gpu_arch arch_tag = arch_tag_;
     static constexpr uint32_t max_wg_num = arch_attr_t<arch_tag>::max_wg_num;
@@ -62,6 +61,6 @@ struct dispatch_policy_block {
     static constexpr int wg_num_m = max_wg_num / wg_num_n;
 };
 
-/// @} xetla_gemm
+/// @} xetla_gemm_universal
 
 } // namespace gpu::xetla::kernel

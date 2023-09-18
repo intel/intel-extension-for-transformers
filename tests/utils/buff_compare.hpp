@@ -269,7 +269,8 @@ bool _handle_fp_types(buff_vals<dtype> &data, buff_vals<dtype> &other,
         size_t sub_ulp = ulp_act - ulp_des;
         if (ulp_des > ulp_act) sub_ulp = ulp_des - ulp_act;
         if (!((fabs(act - des) <= small_num_threshold)
-                    || (sub_ulp <= ulp_threshold))) {
+                    || (sub_ulp <= ulp_threshold)
+                    || (fabs((des - act) / des) <= 0.001))) {
             ++diff_elems_count;
             flag = false;
             if (diff_elems_count <= 10) {

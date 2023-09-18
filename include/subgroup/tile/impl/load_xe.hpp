@@ -72,7 +72,7 @@ tile_load(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using load_dtype = typename payload_t::mem_dtype;
     using tile_desc = typename tile_t::tile_desc;
-    using check_load = subgroup::check_load<gpu_arch::Xe, dtype,
+    using check_load = typename subgroup::check_load<gpu_arch::Xe, dtype,
             load_dtype>::template global_2d<payload_t::mem_transform,
             tile_desc::block_size_x>;
 
@@ -103,11 +103,12 @@ tile_load(tile_t &tile, payload_t &payload) {
 
     static constexpr bool mem_transform = payload_t::mem_transform;
 
-    using load_store_attr = typename arch_attr_t<arch_tag>::load_store_attr;
+    using load_store_attr = typename arch_attr_t<
+            arch_tag>::template load_store_attr<msg_type::block_2d>;
     static constexpr uint32_t elems_per_CL
             = load_store_attr::cache_line_size_in_bytes / sizeof(dtype);
     static constexpr uint32_t elems_per_reg
-            = arch_attr_t<arch_tag>::register_attr::reg_in_bytes
+            = arch_attr_t<arch_tag>::template register_attr<>::reg_in_bytes
             / sizeof(dtype);
     static constexpr int32_t max_load_block_height
             = load_store_attr::max_load_height_in_elem;
@@ -365,8 +366,8 @@ __XETLA_API typename std::enable_if_t<
 tile_load(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using load_dtype = typename payload_t::mem_dtype;
-    using check_load
-            = subgroup::check_load<gpu_arch::Xe, dtype, load_dtype>::global_1d;
+    using check_load = typename subgroup::check_load<gpu_arch::Xe, dtype,
+            load_dtype>::global_1d;
 
     static constexpr uint32_t tile_size_x = tile_t::tile_size_x;
     static constexpr uint32_t scale_factor = payload_t::scale_factor;
@@ -410,7 +411,7 @@ tile_load(tile_t &tile, payload_t &payload) {
     using dtype = typename payload_t::dtype;
     using tile_desc = typename payload_t::tile_desc;
     using load_dtype = typename payload_t::mem_dtype;
-    using check_load = subgroup::check_load<gpu_arch::Xe, dtype,
+    using check_load = typename subgroup::check_load<gpu_arch::Xe, dtype,
             load_dtype>::template local_scatter<payload_t::memory_layout,
             payload_t::tile_desc::block_size_x, payload_t::tile_bytes,
             payload_t::min_bytes, payload_t::block_bytes,
@@ -492,8 +493,8 @@ tile_load(tile_t &tile, payload_t &payload) {
     using dtype = typename tile_t::dtype;
     using tile_desc = typename tile_t::tile_desc;
     using load_dtype = typename payload_t::mem_dtype;
-    using check_load
-            = subgroup::check_load<gpu_arch::Xe, dtype, load_dtype>::local_1d;
+    using check_load = typename subgroup::check_load<gpu_arch::Xe, dtype,
+            load_dtype>::local_1d;
 
     constexpr uint32_t scale_factor = payload_t::scale_factor;
     constexpr uint32_t load_len = tile_desc::tile_size_x / scale_factor;
