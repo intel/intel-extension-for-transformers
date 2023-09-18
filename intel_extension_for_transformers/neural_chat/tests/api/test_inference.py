@@ -55,6 +55,7 @@ class UnitTest(unittest.TestCase):
                                 plugins=plugins)
         chatbot = build_chatbot(config)
         response = chatbot.predict("How many cores does the Intel® Xeon® Platinum 8480+ Processor have in total?")
+        print(response)
         self.assertTrue("56" in response)
 
     def test_voice_chat(self):
