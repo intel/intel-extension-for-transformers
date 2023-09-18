@@ -70,7 +70,7 @@ RUN source activate && conda activate chatbot-finetuning && pip install oneccl_b
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
     cd /intel-extension-for-transformers && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
-    cd /intel-extension-for-transformers/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements.txt
+    cd /intel-extension-for-transformers/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt
 
 # Enable passwordless ssh for mpirun^M
 RUN mkdir /var/run/sshd
@@ -120,7 +120,7 @@ RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
     pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
-    pip install -r requirements.txt
+    pip install -r requirements_hpu.txt
 
 # Build ITREX
 RUN cd /intel-extension-for-transformers && pip install -v . && \

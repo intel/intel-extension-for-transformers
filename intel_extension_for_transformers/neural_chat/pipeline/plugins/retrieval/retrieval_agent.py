@@ -24,7 +24,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
 
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
-                 embedding_model="hkunlp/instructor-large", max_length=512, retrieval_type="dense",
+                 embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
                  document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}):
         self.model = None
         self.tokenizer = None

@@ -19,9 +19,9 @@ from abc import ABC
 from typing import List
 import os
 from fastchat.conversation import get_conv_template, Conversation
-from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream, MODELS
+from intel_extension_for_transformers.llm.inference import load_model, predict, predict_stream
 from ..config import GenerationConfig
-from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, get_plugin_arguments
+from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
 
 
@@ -100,6 +100,9 @@ class BaseModel(ABC):
         """
         self.model_name = kwargs["model_name"]
         self.device = kwargs["device"]
+        self.use_hpu_graphs = kwargs["use_hpu_graphs"]
+        self.cpu_jit = kwargs["cpu_jit"]
+        self.use_cache = kwargs["use_cache"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
@@ -121,18 +124,11 @@ class BaseModel(ABC):
         """
         if not config:
             config = GenerationConfig()
-        return predict_stream(**construct_parameters(query, self.model_name, self.device, config))
 
-    def predict(self, query, config=None):
-        """
-        Predict using a non-streaming approach.
-
-        Args:
-            query: The input query for prediction.
-            config: Configuration for prediction.
-        """
-        if not config:
-            config = GenerationConfig()
+        config.device = self.device
+        config.use_hpu_graphs = self.use_hpu_graphs
+        config.cpu_jit = self.cpu_jit
+        config.use_cache = self.use_cache
 
         if is_audio_file(query):
             if not os.path.exists(query):
@@ -153,7 +149,48 @@ class BaseModel(ABC):
                         if plugin_name == "safety_checker" and response:
                             return "Your query contains sensitive words, please try another query."
                         else:
-                            pass
+                            query = response
+        assert query is not None, "Query cannot be None."
+
+        return predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+
+    def predict(self, query, config=None):
+        """
+        Predict using a non-streaming approach.
+
+        Args:
+            query: The input query for prediction.
+            config: Configuration for prediction.
+        """
+        if not config:
+            config = GenerationConfig()
+
+        config.device = self.device
+        config.use_hpu_graphs = self.use_hpu_graphs
+        config.cpu_jit = self.cpu_jit
+        config.use_cache = self.use_cache
+
+        if is_audio_file(query):
+            if not os.path.exists(query):
+                raise ValueError(f"The audio file path {query} is invalid.")
+
+        # plugin pre actions
+        for plugin_name in get_registered_plugins():
+            if is_plugin_enabled(plugin_name):
+                plugin_instance = get_plugin_instance(plugin_name)
+                if plugin_instance:
+                    if hasattr(plugin_instance, 'pre_llm_inference_actions'):
+                        if plugin_name == "asr" and not is_audio_file(query):
+                            continue
+                        if plugin_name == "retrieval":
+                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                        else:
+                            response = plugin_instance.pre_llm_inference_actions(query)
+                        if plugin_name == "safety_checker" and response:
+                            return "Your query contains sensitive words, please try another query."
+                        else:
+                            if response != None and response != False:
+                                query = response
         assert query is not None, "Query cannot be None."
 
         # LLM inference
@@ -166,6 +203,15 @@ class BaseModel(ABC):
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
                         response = plugin_instance.post_llm_inference_actions(response)
+
+        # clear plugins config
+        for key in plugins:
+            plugins[key] = {
+                "enable": False,
+                "class": None,
+                "args": {},
+                "instance": None
+            }
 
         return response
 

@@ -21,7 +21,6 @@ from intel_extension_for_transformers.llm.quantization.optimization import Optim
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
-from .utils.common import get_device_type
 from .plugins import plugins
 
 def build_chatbot(config: PipelineConfig=None):
@@ -38,6 +37,7 @@ def build_chatbot(config: PipelineConfig=None):
         pipeline = build_chatbot()
         response = pipeline.predict(query="Tell me about Intel Xeon Scalable Processors.")
     """
+    global plugins
     if not config:
         config = PipelineConfig()
     # Validate input parameters
@@ -45,16 +45,16 @@ def build_chatbot(config: PipelineConfig=None):
         valid_options = ", ".join([option.name.lower() for option in DeviceOptions])
         raise ValueError(f"Invalid device value '{config.device}'. Must be one of {valid_options}")
 
-    if config.device == "auto":
-        config.device = get_device_type()
-
     # create model adapter
     if "llama" in config.model_name_or_path.lower():
         from .models.llama_model import LlamaModel
         adapter = LlamaModel()
-    elif "neural-chat-7b-v1" in config.model_name_or_path or "mpt" in config.model_name_or_path:
+    elif "mpt" in config.model_name_or_path:
         from .models.mpt_model import MptModel
         adapter = MptModel()
+    elif "neural-chat" in config.model_name_or_path:
+        from .models.neuralchat_model import NeuralChatModel
+        adapter = NeuralChatModel()
     elif "chatglm" in config.model_name_or_path:
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()

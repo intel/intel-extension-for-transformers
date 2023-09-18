@@ -111,14 +111,12 @@ jobs:
           path: ${{ github.workspace }}/log_dir
            
            
-  Genreate-Report:
+  Generate-Report:
     runs-on: itrex-node-spell
     needs: [unit-test]
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
         
       - name: Download UT PR Log
         uses: actions/download-artifact@v3
