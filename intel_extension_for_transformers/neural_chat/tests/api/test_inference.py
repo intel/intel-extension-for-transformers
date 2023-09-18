@@ -46,7 +46,7 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
-        plugins.retrieval.enable = True
+        plugins.retrieval.enable = False
     
     def test_retrieval_accuracy(self):
         plugins.retrieval.enable = True
