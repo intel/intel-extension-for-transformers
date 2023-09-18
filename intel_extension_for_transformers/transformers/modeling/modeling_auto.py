@@ -30,16 +30,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 
-from transformers import AutoConfig, PretrainedConfig
-from transformers.dynamic_module_utils import get_class_from_dynamic_module, resolve_trust_remote_code
-from transformers.models.auto.modeling_auto import (MODEL_FOR_CAUSAL_LM_MAPPING,
-                                                    MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING,
-                                                    MODEL_MAPPING
-                                                    )
 
-from transformers.models.auto.auto_factory import _get_model_class
+import logging
+import torch
+import transformers
+
 from intel_extension_for_transformers.transformers.utils.utility import (
     LazyImport,
     generate_dummy_past_key_values,
@@ -57,86 +53,38 @@ import warnings
 logger = logging.getLogger(__name__)
 torch = LazyImport("torch")
 
-
-class _BaseAutoModelClass:
-    # Base class for auto models.
-    _model_mapping = None
+class _BaseQBitsAutoModelClass:
+    ORIG_MODEL = None
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         import intel_extension_for_transformers.transformers.modeling.modeling_map
-        config = kwargs.pop("config", None)
+        load_in_8bit = kwargs.pop("load_in_8bit", False)
+        load_in_4bit = kwargs.pop("load_in_4bit", False)
         calib_func = kwargs.pop("calib_func", None)
-        trust_remote_code = kwargs.pop("trust_remote_code", None)
-        kwargs["_from_auto"] = True
-        hub_kwargs_names = [
-            "cache_dir",
-            "code_revision",
-            "force_download",
-            "local_files_only",
-            "proxies",
-            "resume_download",
-            "revision",
-            "subfolder",
-            "use_auth_token",
-        ]
-        hub_kwargs = {name: kwargs.pop(name) for name in hub_kwargs_names if name in kwargs}
+        quantization_config = kwargs.pop("quantization_config", None)
+        if isinstance(quantization_config, MixedPrecisionConfig):
+            kwargs["torch_dtype"] = torch.bfloat16
+        if load_in_8bit or load_in_4bit or quantization_config is not None:
+            from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, convert_dtype_2_str
+            torch_dtype = kwargs.pop("torch_dtype", torch.float32)
+        
+        if load_in_4bit:
+            if quantization_config is None:
+                quantization_config = WeightOnlyQuantConfig(compute_dtype=torch_dtype, weight_dtype="nf4")
+            else:
+                assert "4" in quantization_config.weight_dtype and quantization_config.compute_dtype == torch_dtype, \
+                f"Quantization_config.weight_dtype should be 'nf4', 'int4_fullrange', 'int4_clip',"
+                f"'fp4_e2m1' or 'fp4_e2m1_bnb' and compute_dtype should be {torch_dtype}."
+        elif load_in_8bit:
+            if quantization_config is None:
+                quantization_config = WeightOnlyQuantConfig(compute_dtype=torch_dtype, weight_dtype="int8")
+            else:
+                assert quantization_config.weight_dtype == "int8" \
+                    and quantization_config.compute_dtype == torch_dtype, \
+                        f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
 
-        if not isinstance(config, PretrainedConfig):
-            kwargs_orig = copy.deepcopy(kwargs)
-            # ensure not to pollute the config object with torch_dtype="auto" - since it's
-            # meaningless in the context of the config object - torch.dtype values are acceptable
-            if kwargs.get("torch_dtype", None) == "auto":
-                _ = kwargs.pop("torch_dtype")
-            # to not overwrite the quantization_config if config has a quantization_config
-
-            if kwargs.get("quantization_config", None) is not None:
-                _ = kwargs.pop("quantization_config")
-
-            config, kwargs = AutoConfig.from_pretrained(
-                pretrained_model_name_or_path,
-                return_unused_kwargs=True,
-                trust_remote_code=trust_remote_code,
-                **hub_kwargs,
-                **kwargs,
-            )
-
-            # if torch_dtype=auto was passed here, ensure to pass it on
-            if kwargs_orig.get("torch_dtype", None) == "auto":
-                kwargs["torch_dtype"] = "auto"
-            quantization_config = kwargs_orig.get("quantization_config", None)
-            if quantization_config is not None and not (isinstance(quantization_config, SmoothQuantConfig) or 
-                                                        isinstance(quantization_config, MixedPrecisionConfig) or
-                                                        isinstance(quantization_config, WeightOnlyQuantConfig)
-                                                        ):
-                kwargs["quantization_config"] = kwargs_orig["quantization_config"]
-            if isinstance(quantization_config, MixedPrecisionConfig):
-                config.torch_dtype=torch.bfloat16
-
-        has_remote_code = hasattr(config, "auto_map") and cls.__name__ in config.auto_map
-        has_local_code = type(config) in cls._model_mapping.keys()
-        trust_remote_code = resolve_trust_remote_code(
-            trust_remote_code, pretrained_model_name_or_path, has_local_code, has_remote_code
-        )
-        if has_remote_code and trust_remote_code:
-            class_ref = config.auto_map[cls.__name__]
-            model_class = get_class_from_dynamic_module(
-                class_ref, pretrained_model_name_or_path, **hub_kwargs, **kwargs
-            )
-            _ = hub_kwargs.pop("code_revision", None)
-            model = model_class.from_pretrained(
-                pretrained_model_name_or_path, *model_args, config=config, **hub_kwargs, **kwargs
-            )
-        elif type(config) in cls._model_mapping.keys():
-            model_class = _get_model_class(config, cls._model_mapping)
-            model =  model_class.from_pretrained(
-                pretrained_model_name_or_path, *model_args, config=config, **hub_kwargs, **kwargs
-            )
-        else:
-            raise ValueError(
-                f"Unrecognized configuration class {config.__class__} for this kind of AutoModel: {cls.__name__}.\n"
-                f"Model type should be one of {', '.join(c.__name__ for c in cls._model_mapping.keys())}."
-            )
+        model = cls.ORIG_MODEL.from_pretrained(pretrained_model_name_or_path, *model_args, **kwargs)
         model.eval()
         if isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
@@ -238,15 +186,17 @@ class _BaseAutoModelClass:
                 model,
                 conf,
                 calib_func=calib_func
-            ).model
+            )
         return model
 
+class AutoModelForCausalLM(_BaseQBitsAutoModelClass):
+    ORIG_MODEL = transformers.AutoModelForCausalLM
 
-class AutoModelForCausalLM(_BaseAutoModelClass):
-    _model_mapping = MODEL_FOR_CAUSAL_LM_MAPPING
 
-class AutoModel(_BaseAutoModelClass):
-    _model_mapping = MODEL_MAPPING
+class AutoModel(_BaseQBitsAutoModelClass):
+    ORIG_MODEL = transformers.AutoModel
 
-class AutoModelForSeq2SeqLM(_BaseAutoModelClass):
-    _model_mapping = MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING
+
+class AutoModelForSeq2SeqLM(_BaseQBitsAutoModelClass):
+    ORIG_MODEL = transformers.AutoModelForSeq2SeqLM
+
