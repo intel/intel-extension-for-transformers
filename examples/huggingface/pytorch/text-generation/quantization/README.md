@@ -6,7 +6,7 @@ We provide the inference benchmarking script `run_generation.py` for [EleutherAI
 
 # Prerequisite​
 ## 1. Create Environment​
-Pytorch & Intel-extension-for-pytorch version 2.1 is required, the dependent packages are listed in requirements, we recommend create environment as the following steps.
+Pytorch and Intel-extension-for-pytorch version 2.1 are required, the dependent packages are listed in requirements, we recommend create environment as the following steps.
 
 ```bash
 conda create -n llm python=3.9 -
@@ -21,7 +21,7 @@ python setup.py install
 > Disable semi-compiler to avoid accuracy regression for mpt and neural-chat-v1-1 models, other > models don't need it.
 > `export _DNNL_DISABLE_COMPILER_BACKEND=1`
 
-> Note: if `ImportError: /lib64/libstdc++.so.6: version ``GLIBCXX_3.4.29`` not found` error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.
+> Note: If `ImportError: /lib64/libstdc++.so.6: version ``GLIBCXX_3.4.29`` not found` error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.
 > ```bash
 > find $CONDA_PREFIX | grep libstdc++.so.6
 > export LD_PRELOAD=<the path of libstdc++.so.6>:${LD_PRELOAD}
