@@ -265,13 +265,8 @@ MODEL_API const char* model_print_system_info(void);
 typedef struct beam_top_k_res {
   model_token id;  // token id
   float score;     // score of the token
-  int beam_idx;    // token in which beam
+  int beam_idx;    // token in which beam (-1 means unknown)
 } beam_top_k_res;
-
-MODEL_API std::vector<beam_top_k_res> beam_top_k(const model_context* ctx,
-                                                 const std::vector<std::vector<float>>& token_scores,
-                                                 const std::vector<int>& num_beams, const std::vector<int> beam_indices,
-                                                 const int& sample_scale = 2, const int& dim = -1);
 
 struct beam {
   const model_context* ctx = nullptr;
@@ -281,7 +276,7 @@ struct beam {
   // record inference batch indice
   int infer_bs_id;
   // end-of-text
-  const bool eos() const { return !token_ids.empty() && token_ids.back() == 50256; }  // TODO ctx->vocab.eos_id
+  const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
   void print() const {
     printf("length: %d, score: %0.6f, eos: %d, tokens:\n", token_ids.size(), score, eos());
     for (const auto& id : token_ids) {
@@ -308,11 +303,15 @@ struct beam_hypotheses {
 
   int len() { return beams.size(); }
 
-  void add(beam b) {
+  void add(beam b, const uint32_t& n_prompt_tokens) {
     auto comp = [](const beam& a, const beam& b) { return a.score > b.score; };
-    int cur_len = b.eos() ? b.token_ids.size() - 1 : b.token_ids.size();
-    float score = b.score / std::pow(cur_len, length_penalty);
+    uint32_t cur_len = b.eos() ? b.token_ids.size() - 1 : b.token_ids.size();
+    float score = b.score / std::pow(cur_len + n_prompt_tokens, length_penalty);
+    // printf("===============beam hypos add =================== \n");
+    // printf("origin score: %12.6f, cur_len: %d \n", b.score, cur_len+n_prompt_tokens);
     b.score = score;
+    // b.print();
+    // printf("=========================\n");
     if (beams.size() < num_beams) {
       beams.push_back(std::move(b));
       if (beams.size() == num_beams) {
@@ -353,10 +352,8 @@ class logits_processor {
   explicit logits_processor(model_context* lctx) : ctx(lctx), min_new_tokens(lctx->generation_conf.min_new_tokens) {}
   ~logits_processor() {}
 
-  void process(const uint32_t& cur_len, std::vector<std::vector<float>>& token_scores,
-               const model_vocab::id& eos_token_id);
-  void min_new_tokens_logits_process(const uint32_t& cur_len, std::vector<std::vector<float>>& token_scores,
-                                     const model_vocab::id& eos_token_id);
+  void process(const uint32_t& cur_len, const model_vocab::id& eos_token_id);
+  void min_new_tokens_logits_process(const uint32_t& cur_len, const model_vocab::id& eos_token_id);
 
  private:
   model_context* ctx = nullptr;
@@ -403,17 +400,22 @@ class beam_search_flow {
   std::vector<model_token> loop(const model_token* tokens_inp, const int& n_tokens, const int& n_threads);
 
  private:
+  std::vector<beam_top_k_res> beam_top_k(model_context* ctx, const uint32_t& cur_len, const std::vector<float>& beams_score,
+                                         const std::vector<int>& num_beams, const std::vector<int> beam_indices,
+                                         const int& sample_scale = 2, const int& dim = -1);
   void fill_next_beams_by_top_probabilities();
   std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
   void beam_score_length_penalize();
-  const beam& top_beam();
+  const beam& finalize();
 
   model_context* ctx = nullptr;
   const int beam_size;
   std::vector<beam> cur_beams;
   std::vector<beam> next_beams;
   std::vector<beam_hypotheses> beam_hypos;
-  size_t n_past = 0;
+  std::vector<bool> requests_done;
+  uint32_t n_past = 0;
+  uint32_t n_prompt_tokens = 0;
   int num_threads = 4;  // default by 4
   logits_processor lp;
   std::shared_ptr<beam_search_kv_cache_reorder> kv_reorder;
