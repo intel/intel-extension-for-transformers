@@ -23,7 +23,6 @@ from dataclasses import dataclass, field
 from typing import Any, Optional, Dict, Union
 from .utility import LazyImport
 from transformers import BitsAndBytesConfig
-from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_2_str
 torch = LazyImport("torch")
 
 class WeightOnlyQuantConfig:
@@ -42,6 +41,7 @@ class WeightOnlyQuantConfig:
         algorithm="RTN",
         **kwargs,
     ):
+        from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_2_str
         self.llm_int8_skip_modules = llm_int8_skip_modules if llm_int8_skip_modules else []
         self.weight_dtype = weight_dtype
         self.scale_dtype = scale_dtype
@@ -181,7 +181,8 @@ class WeightOnlyQuantConfig:
 
         Args:
             use_diff (`bool`, *optional*, defaults to `True`):
-                If set to `True`, only the difference between the config instance and the default `WeightOnlyQuantConfig()`
+                If set to `True`, only the difference between the config instance and the default
+                `WeightOnlyQuantConfig()`
                 is serialized to JSON string.
 
         Returns:
