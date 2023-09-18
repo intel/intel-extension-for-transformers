@@ -781,6 +781,10 @@ async def handel_ai_photos_update_checked(request: Request):
 ################
 #    in use    #
 ################
+
+IMAGE_ROOT_PATH = "/home/nfs_images"
+
+
 def check_user_ip(user_ip: str) -> bool:
     sys.path.append("..")
     from database.mysqldb import MysqlDb
@@ -873,7 +877,7 @@ def update_image_attr(image, attr):
 
 
 def format_image_path(user_id: str, image_name: str) -> str:
-    server_ip = "54.147.152.170"
+    server_ip = os.getenv("IMAGE_SERVER_IP")
     image_path = "http://"+server_ip+"/ai_photos/user"+user_id+'/'+image_name
     return image_path
 
@@ -912,7 +916,7 @@ def delete_single_image(user_id, image_id):
     image_path = image_path[0]
     
     import shutil
-    image_path_dst = '/home/ubuntu/images/deleted/user'+str(user_id)
+    image_path_dst = IMAGE_ROOT_PATH+'/deleted/user'+str(user_id)
     os.makedirs(image_path_dst, exist_ok=True)
     logger.info(f'[Delete] destination folder created: {image_path_dst}')
     shutil.move(src=image_path, dst=image_path_dst)
@@ -1009,7 +1013,7 @@ def process_single_image(img_id, img_path, user_id):
         logger.info(f'[background - single] Can not generate caption for image.')
 
     # process faces for image
-    db_path = "/home/ubuntu/images/user"+user_id
+    db_path = IMAGE_ROOT_PATH+"/user"+user_id
     process_face_for_single_image(image_id=img_id, image_path=img_path, db_path=db_path, user_id=user_id)
     logger.info(f'[background - single] Face process done for image {img_id}')
 
@@ -1376,7 +1380,7 @@ def delete_user_infos(user_id: str):
     # delete local images
     try:
         logger.info(f'[delete user] delete local images of user {user_id}.')
-        folder_path = '/home/ubuntu/images/user'+str(user_id)
+        folder_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
         if os.path.isdir(folder_path):
             import shutil
             shutil.rmtree(folder_path)
@@ -1416,7 +1420,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
     params = await request.json()
     image_list = params['image_list']
 
-    image_path = '/home/ubuntu/images/user'+str(user_id)
+    image_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
     os.makedirs(image_path, exist_ok=True)
 
     sys.path.append("..")
@@ -1748,7 +1752,7 @@ async def image_to_image(request: Request):
         img_id = img_info["imgId"]
         img_path = img_info["imgSrc"]
         userid, img_name = img_path.split('/')[-2], img_path.split('/')[-1]
-        image_path = '/home/ubuntu/images/'+userid+'/'+img_name
+        image_path = IMAGE_ROOT_PATH+'/'+userid+'/'+img_name
         logger.info(f'<image2Image> current image id: {img_id}, image path: {image_path}')
 
         img_b64 = image_to_byte64(image_path)
