@@ -51,6 +51,8 @@ class DocumentIndexing:
             content = load_unstructured_data(input)
             if self.process:
                 chuck = get_chuck_data(content, self.max_length, input)
+                print("$$$")
+                print(chuck)
             else:
                 chuck = [[content.strip(),input]]
         elif input.endswith("jsonl") or input.endswith("xlsx"):
