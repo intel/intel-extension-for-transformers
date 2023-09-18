@@ -1217,15 +1217,16 @@ def get_images_by_type(user_id, type, subtype) -> List:
     logger.info(f"image list: {images}")
     if len(images) == 0:
         logger.error(f'no label {subtype} in {type}')
-        raise ValueError(f"no label {subtype} in {type}")
-    images = list(images)
-    result = []
-    for image in images:
-        image_name = image[1].split('/')[-1]
-        image_path = format_image_path(user_id, image_name)
-        obj = {"image_id": image[0], "image_path": image_path}
-        result.append(obj)
-    return result
+        return []
+    else:
+        images = list(images)
+        result = []
+        for image in images:
+            image_name = image[1].split('/')[-1]
+            image_path = format_image_path(user_id, image_name)
+            obj = {"image_id": image[0], "image_path": image_path}
+            result.append(obj)
+        return result
 
 
 def get_face_list_by_user_id(user_id: str) -> List[Dict]:
