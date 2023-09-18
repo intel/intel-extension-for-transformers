@@ -62,6 +62,7 @@ class UnitTest(unittest.TestCase):
         response2 = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response2)
         self.assertIsNotNone(response2)
+        plugins.retrieval.override = True
 
     def test_voice_chat(self):
         plugins.tts.enable = True
