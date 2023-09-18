@@ -66,7 +66,7 @@ class _BaseQBitsAutoModelClass:
         if isinstance(quantization_config, MixedPrecisionConfig):
             kwargs["torch_dtype"] = torch.bfloat16
         if load_in_8bit or load_in_4bit or quantization_config is not None:
-            from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, convert_dtype_2_str
+            from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
             torch_dtype = kwargs.pop("torch_dtype", torch.float32)
         
         if load_in_4bit:
