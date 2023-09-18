@@ -1,4 +1,4 @@
-from database.db_config import get_settings
+from ..config.config import get_settings
 from pymysql import connect
 
 global_settings = get_settings()

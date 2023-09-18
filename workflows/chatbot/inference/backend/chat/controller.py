@@ -1200,11 +1200,15 @@ def get_images_by_type(user_id, type, subtype) -> List:
         sql=f"SELECT image_id, image_path FROM image_info WHERE user_id='{user_id}' AND exist_status='active' AND address='{subtype}';"
 
     elif type == 'time':
-        sql = f'SELECT image_id, image_path AS date FROM image_info WHERE DATE(captured_time)="{subtype}" AND user_id="{user_id}" AND exist_status="active";'
+        if subtype == 'None':
+            sql = f'SELECT image_id, image_path FROM image_info WHERE captured_time is null AND user_id="{user_id}" AND exist_status="active";'
+        else:
+            sql = f'SELECT image_id, image_path FROM image_info WHERE DATE(captured_time)="{subtype}" AND user_id="{user_id}" AND exist_status="active";'
 
     elif type == 'person':
         sql = f"SELECT image_info.image_id, image_info.image_path FROM image_face INNER JOIN image_info ON image_info.image_id=image_face.image_id WHERE image_info.user_id='{user_id}' AND image_info.exist_status='active' AND image_face.face_tag='{subtype}'"
 
+    logger.info(f'sql: {sql}')
     images = mysql_db.fetch_all(sql=sql, params=None)
     logger.info(f"image list: {images}")
     if len(images) == 0:
@@ -1340,6 +1344,51 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     return result_image_list
 
 
+def delete_user_infos(user_id: str):
+    sys.path.append("..")
+    from database.mysqldb import MysqlDb
+    mysql_db = MysqlDb()
+    mysql_db.set_db("ai_photos")
+
+    logger.info(f'[delete user] start query from ner results')
+
+    # delete image_face and face_info
+    try:
+        logger.info(f'[delete user] delete image_face and face_info of user {user_id}.')
+        mysql_db.update(sql=f"DELETE image_face, face_info FROM image_face INNER JOIN face_info ON image_face.face_id=face_info.face_id WHERE user_id='{user_id}'", params=None)
+    except Exception as e:
+        raise Exception(e)
+    
+    # delete image_info
+    try:
+        logger.info(f'[delete user] delete image_info of user {user_id}.')
+        mysql_db.update(sql=f"DELETE FROM image_info WHERE user_id='{user_id}'", params=None)
+    except Exception as e:
+        raise Exception(e)
+    
+    # delete user_info
+    try:
+        logger.info(f'[delete user] delete user_info of user {user_id}.')
+        mysql_db.update(sql=f"DELETE FROM user_info WHERE user_id='{user_id}'", params=None)
+    except Exception as e:
+        raise Exception(e)
+
+    # delete local images
+    try:
+        logger.info(f'[delete user] delete local images of user {user_id}.')
+        folder_path = '/home/ubuntu/images/user'+str(user_id)
+        if os.path.isdir(folder_path):
+            import shutil
+            shutil.rmtree(folder_path)
+        else:
+            os.remove(folder_path)
+        logger.info(f'[delete user] local images of user {user_id} is deleted.')
+    except Exception as e:
+        raise Exception(e)
+    
+    logger.info(f'[delete user] user {user_id} infomation all deleted.')
+
+
 def forward_req_to_sd_inference_runner(inputs):
     resp = requests.post("http://{}:{}".format("198.175.88.27", "80"),
                          data=json.dumps(inputs), timeout=200)
@@ -1466,6 +1515,19 @@ def handle_ai_photos_get_type_list(request: Request):
     # person
     person_result = get_face_list_by_user_id(user_id)
     type_result_dict['type_list']['person'] = person_result
+
+    # other
+    other_time_result = get_images_by_type(user_id, type="time", subtype="None")
+    other_add_result = get_images_by_type(user_id, type="address", subtype="default")
+    logger.info(f'<getTypeList> other time result: {other_time_result}')
+    logger.info(f'<getTypeList> other address result: {other_add_result}')
+    for time_res in other_time_result:
+        if time_res in other_add_result:
+            continue
+        other_add_result.append(time_res)
+    logger.info(f'<getTypeList> final other result: {other_add_result}')
+    # TODO: add other result into return list
+    type_result_dict['type_list']['other'] = other_add_result
 
     type_result_dict["process_status"] = get_process_status(user_id)
     return type_result_dict
@@ -1617,6 +1679,21 @@ async def handel_ai_photos_update_caption(request: Request):
         except Exception as e:
             logger.error("<updateCaption> "+str(e))
             return Response(content=str(e), status_code=status.HTTP_400_BAD_REQUEST)
+
+    return "Succeed"
+
+
+@app.post("/v1/aiphotos/deleteUser")
+def handle_ai_photos_delete_user(request: Request):
+    user_id = request.client.host
+    logger.info(f'<deleteUser> user ip is: {user_id}')
+    check_user_ip(user_id)
+
+    try:
+        delete_user_infos(user_id)
+    except Exception as e:
+        logger.error("<deleteUser> "+str(e))
+        raise Exception(e)
 
     return "Succeed"
 
