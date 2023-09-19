@@ -39,7 +39,8 @@ class UnitTest(unittest.TestCase):
 
     def test_retrieval(self):
         plugins.retrieval.enable = True
-        plugins.retrieval.args["input_path"] = "../../assets/docs/"
+        # plugins.retrieval.args["input_path"] = "../../assets/docs/"
+        plugins.retrieval.args["input_path"] = 'sample.txt'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
@@ -50,7 +51,8 @@ class UnitTest(unittest.TestCase):
         
     def test_retrieval_override(self):
         plugins.retrieval.enable = True
-        plugins.retrieval.args["input_path"] = "../../assets/docs/"
+        # plugins.retrieval.args["input_path"] = "../../assets/docs/"
+        plugins.retrieval.args["input_path"] = 'sample.txt'
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
