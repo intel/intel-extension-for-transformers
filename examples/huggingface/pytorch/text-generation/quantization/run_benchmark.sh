@@ -68,7 +68,6 @@ function run_benchmark {
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy "
         extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
-        batch_size=112
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
         extra_cmd=$extra_cmd" --tasks ${iters}"
@@ -106,12 +105,11 @@ function run_benchmark {
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
     elif [ "${topology}" = "mpt_7b_chat" ]; then
         model_name_or_path="mosaicml/mpt-7b-chat"
-
     fi
 
     
     if [[ ${int8} == "true" ]]; then
-        elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
+        if [ "${topology}" = "gpt_j_woq_rtn" ]; then
             extra_cmd=$extra_cmd" --woq"
         elif [ "${topology}" = "gpt_j_woq_bab" ]; then
             extra_cmd=$extra_cmd" --bitsandbytes"

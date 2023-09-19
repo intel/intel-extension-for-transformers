@@ -18,6 +18,7 @@ function init_params {
   batch_size=8
   approach="PostTrainingStatic"
   script="run_generation.py"
+  alpha=0.5
   for var in "$@"
   do
     case $var in
