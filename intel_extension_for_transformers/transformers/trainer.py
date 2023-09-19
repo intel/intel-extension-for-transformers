@@ -1737,8 +1737,8 @@ class BaseTrainer():
                     #     partial(take_eval_steps, trainer=self, metric_name='eval_loss')
                     # shuffle train_dataset before each training
                     indices = list(range(len(self.train_dataset)))  # pylint: disable=E0401
-                    np.random.shuffle(indices)
-                    self.train_dataset = Subset(self.train_dataset, indices)
+                    np.random.shuffle(indices)  # pylint: disable=E0401
+                    self.train_dataset = Subset(self.train_dataset, indices)  # pylint: disable=E0401
                     model = distiller().model
                     logger.info(' '.join([
                         '=' * 30, 'Step {} of'.format(i + 1), presentation,
