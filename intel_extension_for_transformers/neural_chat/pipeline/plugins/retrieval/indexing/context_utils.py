@@ -151,6 +151,7 @@ def load_unstructured_data(input):
     text = text.replace('\n\n', '')
     text = uni_pro(text)
     text = re.sub(r'\s+', ' ', text)
+    print("The current context {}!!!".format(text))
     return text
 
 

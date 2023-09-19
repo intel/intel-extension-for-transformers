@@ -28,8 +28,8 @@ from .context_utils import load_unstructured_data, laod_structured_data, get_chu
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
-                 process=True, embedding_model="hkunlp/instructor-large", max_length=2048, 
-                 index_name="elastic_index_1"):
+                 process=True, embedding_model="hkunlp/instructor-large", max_length=512,
+                 index_name=None):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
         """
@@ -40,25 +40,23 @@ class DocumentIndexing:
         self.embedding_model = embedding_model
         self.max_length = max_length
         self.index_name = index_name
-        
-        
+
     def parse_document(self, input):
         """
         Parse the uploaded file.
         """
         if input.endswith("pdf") or input.endswith("docx") or input.endswith("html") \
-           or input.endswith("txt") or input.endswith("md"):
+                or input.endswith("txt") or input.endswith("md"):
             content = load_unstructured_data(input)
             if self.process:
                 chuck = get_chuck_data(content, self.max_length, input)
             else:
-                chuck = [[content.strip(),input]]
+                chuck = [[content.strip(), input]]
         elif input.endswith("jsonl") or input.endswith("xlsx"):
             chuck = laod_structured_data(input, self.process, self.max_length)
         else:
             print("This file is ignored. Will support this file format soon.")
         return chuck
-
 
     def batch_parse_document(self, input):
         """
@@ -68,12 +66,12 @@ class DocumentIndexing:
         for dirpath, dirnames, filenames in os.walk(input):
             for filename in filenames:
                 if filename.endswith("pdf") or filename.endswith("docx") or filename.endswith("html") \
-                    or filename.endswith("txt") or filename.endswith("md"):
+                        or filename.endswith("txt") or filename.endswith("md"):
                     content = load_unstructured_data(os.path.join(dirpath, filename))
                     if self.process:
                         chuck = get_chuck_data(content, self.max_length, input)
                     else:
-                        chuck = [[content.strip(),input]]
+                        chuck = [[content.strip(), input]]
                     paragraphs += chuck
                 elif filename.endswith("jsonl") or filename.endswith("xlsx"):
                     chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_length)
@@ -81,8 +79,7 @@ class DocumentIndexing:
                 else:
                     print("This file {} is ignored. Will support this file format soon.".format(filename))
         return paragraphs
-    
-    
+
     def KB_construct(self, input):
         """
         Construct the local knowledge base based on the uploaded file/files.
@@ -95,7 +92,7 @@ class DocumentIndexing:
                     data_collection = self.batch_parse_document(input)
                 else:
                     print("Please check your upload file and try again!")
-                    
+
                 documents = []
                 for data, meta in data_collection:
                     if len(data) < 5:
@@ -103,7 +100,7 @@ class DocumentIndexing:
                     metadata = {"source": meta}
                     new_doc = Document(page_content=data, metadata=metadata)
                     documents.append(new_doc)
-                assert documents!= [], "The given file/files cannot be loaded." 
+                assert documents != [], "The given file/files cannot be loaded."
                 embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
                 vectordb = Chroma.from_documents(documents=documents, embedding=embedding,
                                                  persist_directory=self.persist_dir)
@@ -139,16 +136,14 @@ class DocumentIndexing:
                 return document_store
             else:
                 print("There might be some errors, please wait and try again!")
-        
+                
     def load(self, input):
         if self.retrieval_type == "dense":
             embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
             vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
         else:
-            if self.document_store == "inmemory":
+            if self.document_store = "inmemory":
                 vectordb = self.KB_construct(input)
             else:
                 vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
                                                             port=9200, search_fields=["content", "title"])
-        return vectordb
-                
