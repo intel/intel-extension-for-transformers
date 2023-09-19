@@ -55,7 +55,7 @@ class Model {
     if (ctx) model_free(ctx);
   }
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
-                  float repeat_penalty);
+                  float repeat_penalty, const std::string& post_process);
   void reinit();
   std::string generate(const std::string& prompt, bool sentence_mode = true);
   bool is_token_end() { return token_eos; }
@@ -78,7 +78,7 @@ class Model {
 };
 
 void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
-                       int threads, float repeat_penalty) {
+                       int threads, float repeat_penalty, const std::string& post_process) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
@@ -301,7 +301,8 @@ PYBIND11_MODULE(chatglm_cpp, m)
                           py::arg("ctx_size") = 512,
                           py::arg("seed") = -1,
                           py::arg("threads") = 8,
-                          py::arg("repeat_penalty") = 1.1f
+                          py::arg("repeat_penalty") = 1.1f,
+                          py::arg("post_process") = "topk"
                           )
       .def("generate", &Model::generate, "Generate tokens with prompt",
                           py::arg("prompt"),
