@@ -66,7 +66,7 @@ RUN conda init bash && \
     source ~/.bashrc
 
 RUN source activate && conda activate chatbot-finetuning && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft && \
+    pip install datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft && \
     cd itrex && pip install -r requirements.txt && pip install -v . && \
     cd intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt
 
