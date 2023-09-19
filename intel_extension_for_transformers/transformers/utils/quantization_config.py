@@ -110,14 +110,14 @@ class WeightOnlyQuantConfig:
             raise ValueError("llm_int8_skip_modules must be a list of strings")
 
         if self.compute_dtype is None:
-            self.compute_dtype = "ggml"
-        elif self.compute_dtype not in ['ggml', 'int8', 'fp32']:
-            raise ValueError("compute_dtype must be 'ggml', 'int8', 'fp32'.")
+            self.compute_dtype = "int8"
+        elif self.compute_dtype not in ['int8', 'fp32']:
+            raise ValueError("compute_dtype must be 'int8', 'fp32'.")
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
-        elif self.weight_dtype not in ['int4', 'int8', 'fp32']:
-            raise ValueError(f"weight_dtype must be 'int4', 'int8', 'fp32'.")
+        elif self.weight_dtype not in ['int4', 'int8']:
+            raise ValueError(f"weight_dtype must be 'int4', 'int8'.")
 
         if self.scale_dtype not in ["fp32", "fp16"]:
             raise ValueError("scale_dtype must be 'fp32', 'fp16'.")

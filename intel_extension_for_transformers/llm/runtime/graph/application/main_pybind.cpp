@@ -77,14 +77,14 @@ class Model {
   int post_process(float* logits);
 };
 
-void Model::init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed,
+void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
                        int threads, float repeat_penalty) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
   params.model_arch = model_name_to_arch::init().find(params.model_name);
   params.model = model_path;
-  params.n_predict = n_predict;
+  params.n_predict = max_new_tokens;
   params.n_batch = batch_size;
   params.n_ctx = ctx_size;
   params.seed = seed;
@@ -123,7 +123,7 @@ std::string Model::generate_one_token(const std::string& prompt) {
   int next_token_id = post_process(logits);
   curr_input_ids = {next_token_id};
 
-  if (next_token_id == model_token_eos() || n_past - prompt.size() == params.n_predict) {
+  if (next_token_id == model_token_eos() || n_past - prompt.size() == params.max_new_tokens) {
     token_eos = true;
   }
 
@@ -296,7 +296,7 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def(py::init())
       .def("init_model", &Model::init_model, "initial model with model path and parameters",
                           py::arg("model_path"),
-                          py::arg("n_predict") = -1,
+                          py::arg("max_new_tokens") = -1,
                           py::arg("batch_size") = 512,
                           py::arg("ctx_size") = 512,
                           py::arg("seed") = -1,
