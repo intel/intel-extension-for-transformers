@@ -19,11 +19,24 @@ Functions
 .. autoapisummary::
 
    intel_extension_for_transformers.transformers.utils.utility.distributed_init
+   intel_extension_for_transformers.transformers.utils.utility.generate_dummy_past_key_values
+   intel_extension_for_transformers.transformers.utils.utility.get_example_inputs_for_trace
 
 
 
 .. py:function:: distributed_init(backend='gloo', world_size=1, rank=-1, init_method=None, master_addr='127.0.0.1', master_port='12345')
 
    Init the distibute environment.
+
+
+.. py:function:: generate_dummy_past_key_values(input_bs, model)
+
+   Generate the dummy past_key_values.
+
+
+.. py:function:: get_example_inputs_for_trace(model, return_type='tuple')
+
+   Generate the example_input for tracing, support models load from AutoModelForCausalLM.
+
 
 

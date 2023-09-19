@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.transformers.utils.quantization_config`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.utils.quantization_config
+
+.. autoapi-nested-parse::
+
+   Configs for intel extension for transformers.
+
+
+

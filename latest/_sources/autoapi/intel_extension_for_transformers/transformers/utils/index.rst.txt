@@ -18,6 +18,7 @@ Submodules
    get_throughput/index.rst
    metrics/index.rst
    objectives/index.rst
+   quantization_config/index.rst
    utility/index.rst
    utility_tf/index.rst
 
