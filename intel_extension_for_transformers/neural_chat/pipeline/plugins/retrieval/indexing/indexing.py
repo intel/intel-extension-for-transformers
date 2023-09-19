@@ -142,7 +142,7 @@ class DocumentIndexing:
             embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
             vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
         else:
-            if self.document_store = "inmemory":
+            if self.document_store == "inmemory":
                 vectordb = self.KB_construct(input)
             else:
                 vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
