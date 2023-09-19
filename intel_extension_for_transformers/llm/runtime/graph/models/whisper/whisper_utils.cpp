@@ -112,10 +112,19 @@ void WHISPER::load(model_context& lctx, model_progress_callback progress_callbac
 
   ml->ne_ctx = ctx;
 
-  // model.others[0] = ml->get_tensor("gpt_neox.embed_in.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  // model.others[1] = ml->get_tensor("gpt_neox.final_layer_norm.weight", {n_embd}, NE_BACKEND_CPU);
-  // model.others[2] = ml->get_tensor("gpt_neox.final_layer_norm.bias", {n_embd}, NE_BACKEND_CPU);
-  // model.others[3] = ml->get_tensor("embed_out.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  model.others[0] =
+      ml->get_tensor("encoder.positional_embedding", {n_embd, (unsigned int)n_ctx}, NE_BACKEND_CPU);   // todo wwq
+  model.others[1] = ml->get_tensor("encoder.conv1.weight", {n_embd, n_embd, n_embd}, NE_BACKEND_CPU);  // todo nmels???
+  model.others[2] = ml->get_tensor("encoder.conv1.bias", {n_embd}, NE_BACKEND_CPU);
+
+  model.others[3] = ml->get_tensor("encoder.conv2.weight", {n_embd, n_embd, n_embd}, NE_BACKEND_CPU);  // todo
+  model.others[4] = ml->get_tensor("encoder.conv2.bias", {1, n_embd}, NE_BACKEND_CPU);
+  model.others[5] = ml->get_tensor("encoder.ln_post.weight", {n_embd}, NE_BACKEND_CPU);
+  model.others[6] = ml->get_tensor("encoder.ln_post.bias", {n_embd}, NE_BACKEND_CPU);
+  model.others[7] = ml->get_tensor("decoder.positional_embedding", {n_embd, (unsigned int)n_ctx}, NE_BACKEND_CPU);
+  model.others[8] = ml->get_tensor("decoder.token_embedding.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  model.others[9] = ml->get_tensor("decoder.ln.weight", {n_embd}, NE_BACKEND_CPU);
+  model.others[10] = ml->get_tensor("decoder.ln.bias", {n_embd}, NE_BACKEND_CPU);
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);

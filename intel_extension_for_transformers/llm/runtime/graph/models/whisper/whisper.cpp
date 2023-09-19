@@ -794,6 +794,18 @@ struct whisper_vocab {
   id token_beg = 50363;  // begin timestamps
 
   bool is_multilingual() const { return n_vocab == 51865; }
+
+  whisper_vocab() {}
+
+  whisper_vocab(model_vocab* model_vocab) {
+    for (auto& data : model_vocab->token_to_id) {
+      token_to_id.insert(std::pair<token, id>(data.first, data.second));
+    }
+
+    for (auto& data : model_vocab->id_to_token) {
+      id_to_token.insert(std::pair<id, token>(data.score, data.tok));
+    }
+  }
 };
 
 struct whisper_segment {
@@ -978,6 +990,66 @@ struct whisper_model {
   // tensors
   int n_loaded;
   std::map<std::string, struct ne_tensor*> tensors;
+
+  whisper_model() {}
+
+  whisper_model(model_struct* model_struct) {
+    e_pe = model_struct->others[0];
+    e_conv_1_w = model_struct->others[1];
+    e_conv_1_b = model_struct->others[2];
+    e_conv_2_w = model_struct->others[3];
+    e_conv_2_b = model_struct->others[4];
+    e_ln_w = model_struct->others[5];
+    e_ln_b = model_struct->others[6];
+    d_pe = model_struct->others[7];
+    d_te = model_struct->others[8];
+    d_ln_w = model_struct->others[9];
+    d_ln_b = model_struct->others[10];
+
+    for (auto& data : model_struct->layers) {
+      whisper_layer_encoder encoder;
+
+      encoder.attn_k_w = data.attn[0];
+      e_conv_1_w = data.attn[1];
+      e_conv_1_b = data.attn[2];
+      e_conv_2_w = data.attn[3];
+      e_conv_2_b = data.attn[4];
+      e_ln_w = data.attn[5];
+      e_ln_b = data.attn[6];
+      d_pe = data.attn[7];
+      d_te = data.attn[8];
+      d_ln_w = data.attn[9];
+      d_ln_b = data.attn[10];
+
+      layers_encoder.push_back(encoder);
+
+      whisper_layer_decoder decoder;
+
+      decoder.attn_k_w = data.attn[0];
+      e_conv_1_w = data.attn[1];
+      e_conv_1_b = data.attn[2];
+      e_conv_2_w = data.attn[3];
+      e_conv_2_b = data.attn[4];
+      e_ln_w = data.attn[5];
+      e_ln_b = data.attn[6];
+      d_pe = data.attn[7];
+      d_te = data.attn[8];
+      d_ln_w = data.attn[9];
+      d_ln_b = data.attn[10];
+
+      layers_decoder.push_back(decoder);
+    }
+
+    for (auto& data : model_struct->tensors_by_name) {
+      tensors.insert(std::pair<std::string, struct ne_tensor*>(data.first, data.second));
+    }
+
+    ctx = model_struct->ctx;
+
+    for (int i = 0; i < model_struct->buf.size; ++i) {
+      buf->emplace_back(model_struct->buf.addr[i]);
+    }
+  }
 };
 
 struct whisper_sequence {
@@ -1124,6 +1196,13 @@ struct whisper_context {
   whisper_state* state = nullptr;
 
   std::string path_model;  // populated by whisper_init_from_file()
+
+  whisper_context() {}
+
+  whisper_context(model_context* model_context) {
+    vocab = whisper_vocab(&model_context->vocab);
+    model = whisper_model(&model_context->model);
+  }
 };
 
 static void whisper_default_log(const char* text) { fprintf(stderr, "%s", text); }
@@ -2240,9 +2319,348 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 //   - n_tokens:   number of tokens in the prompt
 //   - n_past:     number of past tokens to prefix the prompt with
 //
+static bool whisper_decode_internal(whisper_context& wctx, whisper_state& wstate, whisper_decoder& decoder,
+                                    const whisper_token* tokens, const int n_tokens, const int n_past,
+                                    const int n_threads) {
+  const int64_t t_start_us = ne_time_us();
 
-// static bool whisper_decode_internal(model_context& wctx, const model_token* tokens, const int n_tokens,
-//                                     const int n_past, const int n_threads) {
+  const auto& model = wctx.model;
+  const auto& hparams = model.hparams;
+
+  auto& kv_self = decoder.kv_self;
+
+  WHISPER_ASSERT(!!kv_self.ctx);
+
+  auto& logits_out = wstate.logits;
+
+  const int n_vocab = hparams.n_vocab;
+
+  const int n_ctx = hparams.n_text_ctx;
+  const int n_state = hparams.n_text_state;
+  const int n_head = hparams.n_text_head;
+  const int n_layer = hparams.n_text_layer;
+
+  const int N = n_tokens;
+  const int M = wstate.exp_n_audio_ctx > 0 ? wstate.exp_n_audio_ctx : hparams.n_audio_ctx;
+
+  // WHISPER_PRINT_DEBUG("%s: n_past = %d, N = %d, M = %d, n_ctx = %d\n", __func__, n_past, N, M, n_ctx);
+
+  struct ne_init_params params = {
+      /*.mem_size   =*/wstate.buf_compute.size(),
+      /*.mem_buffer =*/wstate.buf_compute.data(),
+      /*.no_alloc   =*/false,
+  };
+
+  struct ne_context* ctx0 = ne_init(params);
+
+  struct ne_cgraph gf = {};
+
+  struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
+  memcpy(embd->data, tokens, N * ne_element_size(embd));
+
+  struct ne_tensor* position = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
+  for (int i = 0; i < N; ++i) {
+    ((int32_t*)position->data)[i] = n_past + i;
+  }
+
+  wstate.use_buf(ctx0, 3);
+
+  // token encoding + position encoding
+  struct ne_tensor* cur = ne_add(ctx0, ne_get_rows(ctx0, model.d_te, embd), ne_get_rows(ctx0, model.d_pe, position));
+
+  struct ne_tensor* inpL = cur;
+
+  for (int il = 0; il < n_layer; ++il) {
+    const auto& layer = model.layers_decoder[il];
+
+    // norm
+    {
+      wstate.use_buf(ctx0, 0);
+
+      cur = ne_norm(ctx0, inpL);
+
+      // cur = ln_0_w*cur + ln_0_b
+      cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.attn_ln_0_w, cur), cur),
+                   ne_repeat(ctx0, layer.attn_ln_0_b, cur));
+    }
+
+    // self-attention
+    {
+      struct ne_tensor* Qcur = ne_mul_mat(ctx0, layer.attn_q_w, cur);
+
+      Qcur = ne_add(ctx0, ne_repeat(ctx0, layer.attn_q_b, Qcur), Qcur);
+
+      Qcur = ne_scale_inplace(ctx0, Qcur, ne_new_f32(ctx0, pow(float(n_state) / n_head, -0.25)));
+
+      // note: no bias for Key
+      struct ne_tensor* Kcur = ne_mul_mat(ctx0, layer.attn_k_w, cur);
+
+      Kcur = ne_scale_inplace(ctx0, Kcur, ne_new_f32(ctx0, pow(float(n_state) / n_head, -0.25)));
+
+      // store key and value to memory
+      {
+        struct ne_tensor* Vcur = ne_mul_mat(ctx0, layer.attn_v_w, cur);
+
+        Vcur = ne_add(ctx0, ne_repeat(ctx0, layer.attn_v_b, Vcur), Vcur);
+
+        Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, n_state, N));
+
+        struct ne_tensor* k =
+            ne_view_1d(ctx0, kv_self.k, N * n_state, (ne_element_size(kv_self.k) * n_state) * (il * n_ctx + n_past));
+        struct ne_tensor* v =
+            ne_view_2d(ctx0, kv_self.v, N, n_state, (n_ctx)*ne_element_size(kv_self.v),
+                       (il * n_ctx) * ne_element_size(kv_self.v) * n_state + n_past * ne_element_size(kv_self.v));
+
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
+        ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
+      }
+
+      // ------
+
+      wstate.use_buf(ctx0, 0);
+
+      struct ne_tensor* Q = ne_permute(
+          ctx0, ne_cpy(ctx0, Qcur, ne_new_tensor_3d(ctx0, NE_TYPE_F32, n_state / n_head, n_head, N, NE_SIZE_CALC)), 0,
+          2, 1, 3);
+
+      struct ne_tensor* K = ne_permute(ctx0,
+                                       ne_reshape_3d(ctx0,
+                                                     ne_view_1d(ctx0, kv_self.k, (n_past + N) * n_state,
+                                                                il * n_ctx * ne_element_size(kv_self.k) * n_state),
+                                                     n_state / n_head, n_head, n_past + N),
+                                       0, 2, 1, 3);
+
+      wstate.use_buf(ctx0, 1);
+
+      // K * Q
+      struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
+
+      // struct ne_tensor * KQ_scaled =
+      //     ne_scale_inplace(ctx0,
+      //             KQ,
+      //             ne_new_f32(ctx0, 1.0f/sqrt(float(n_state)/n_head))
+      //             );
+
+      struct ne_tensor* KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ, n_past);
+
+      struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
+
+      struct ne_tensor* V = ne_view_3d(
+          ctx0, kv_self.v, n_past + N, n_state / n_head, n_head, n_ctx * ne_element_size(kv_self.v),
+          n_ctx * ne_element_size(kv_self.v) * n_state / n_head, il * n_ctx * ne_element_size(kv_self.v) * n_state);
+
+      struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
+
+      struct ne_tensor* KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
+
+      cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_state, N, NE_SIZE_CALC));
+    }
+
+    // projection
+    {
+      wstate.use_buf(ctx0, 0);
+
+      cur = ne_mul_mat(ctx0, layer.attn_ln_1_w, cur);
+
+      wstate.use_buf(ctx0, 1);
+
+      cur = ne_add(ctx0, ne_repeat(ctx0, layer.attn_ln_1_b, cur), cur);
+    }
+
+    wstate.use_buf(ctx0, 2);
+
+    // add the input
+    struct ne_tensor* inpCA = ne_add(ctx0, cur, inpL);
+
+    // norm
+    {
+      wstate.use_buf(ctx0, 0);
+
+      cur = ne_norm(ctx0, inpCA);  // note: we use inpCA here
+
+      // cur = ln_0_w*cur + ln_0_b
+      cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.cross_attn_ln_0_w, cur), cur),
+                   ne_repeat(ctx0, layer.cross_attn_ln_0_b, cur));
+    }
+
+    // cross-attention
+    {
+      struct ne_tensor* Qcur = ne_mul_mat(ctx0, layer.cross_attn_q_w, cur);
+
+      Qcur = ne_add(ctx0, ne_repeat(ctx0, layer.cross_attn_q_b, Qcur), Qcur);
+
+      Qcur = ne_scale_inplace(ctx0, Qcur, ne_new_f32(ctx0, pow(float(n_state) / n_head, -0.25)));
+
+      // Kcross is already scaled
+      struct ne_tensor* Kcross = ne_reshape_3d(
+          ctx0, ne_view_1d(ctx0, wstate.kv_cross.k, M * n_state, il * M * ne_element_size(wstate.kv_cross.k) * n_state),
+          n_state / n_head, n_head, M);
+
+      // struct ne_tensor * Vcross =
+      //     ne_reshape_3d(ctx0,
+      //             ne_view_1d(ctx0, wstate.kv_cross.v, M*n_state,
+      //             il*M*ne_element_size(wstate.kv_cross.v)*n_state), n_state/n_head, n_head, M);
+
+      // struct ne_tensor * V_trans =
+      //     ne_cpy(ctx0,
+      //             ne_permute(ctx0, Vcross, 1, 2, 0, 3),
+      //             ne_new_tensor_3d(ctx0, Vcross->type, M, n_state/n_head, n_head));
+
+      struct ne_tensor* V =
+          ne_view_3d(ctx0, wstate.kv_cross.v, M, n_state / n_head, n_head, M * ne_element_size(wstate.kv_cross.v),
+                     M * ne_element_size(wstate.kv_cross.v) * n_state / n_head,
+                     il * M * ne_element_size(wstate.kv_cross.v) * n_state);
+
+      // ------
+
+      struct ne_tensor* Q = ne_permute(
+          ctx0, ne_cpy(ctx0, Qcur, ne_new_tensor_3d(ctx0, NE_TYPE_F32, n_state / n_head, n_head, N, NE_SIZE_CALC)), 0,
+          2, 1, 3);
+
+      struct ne_tensor* K = ne_permute(ctx0, Kcross, 0, 2, 1, 3);
+
+      // K * Q
+      struct ne_tensor* KQ = ne_mul_mat(ctx0, K, Q);
+
+      // struct ne_tensor * KQ_scaled =
+      //     ne_scale_inplace(ctx0,
+      //             KQ,
+      //             ne_new_f32(ctx0, 1.0f/sqrt(float(n_state)/n_head))
+      //             );
+
+      // no masking for cross-attention
+      // struct ne_tensor * KQ_masked = ne_diag_mask_inf_inplace(ctx0, KQ_scaled, n_past);
+
+      struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ);
+
+      struct ne_tensor* KQV = ne_mul_mat(ctx0, V, KQ_soft_max);
+
+      struct ne_tensor* KQV_merged = ne_permute(ctx0, KQV, 0, 2, 1, 3);
+
+      // cur = KQV_merged.contiguous().view(n_state, N)
+      cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_state, N, NE_SIZE_CALC));
+    }
+
+    // projection
+    {
+      wstate.use_buf(ctx0, 0);
+
+      cur = ne_mul_mat(ctx0, layer.cross_attn_ln_1_w, cur);
+
+      wstate.use_buf(ctx0, 1);
+
+      cur = ne_add(ctx0, ne_repeat(ctx0, layer.cross_attn_ln_1_b, cur), cur);
+    }
+
+    wstate.use_buf(ctx0, 2);
+
+    // add the input
+    cur = ne_add(ctx0, cur, inpCA);
+
+    struct ne_tensor* inpFF = cur;
+
+    // feed-forward network
+    {
+      // norm
+      {
+        wstate.use_buf(ctx0, 0);
+
+        cur = ne_norm(ctx0, inpFF);
+
+        wstate.use_buf(ctx0, 1);
+
+        // cur = mlp_ln_w*cur + mlp_ln_b
+        cur =
+            ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.mlp_ln_w, cur), cur), ne_repeat(ctx0, layer.mlp_ln_b, cur));
+      }
+
+      wstate.use_buf(ctx0, 0);
+
+      // fully connected
+      cur = ne_mul_mat(ctx0, layer.mlp_0_w, cur);
+
+      wstate.use_buf(ctx0, 1);
+
+      cur = ne_add(ctx0, ne_repeat(ctx0, layer.mlp_0_b, cur), cur);
+
+      wstate.use_buf(ctx0, 0);
+
+      // GELU activation
+      cur = ne_gelu(ctx0, cur);
+
+      wstate.use_buf(ctx0, 1);
+
+      // projection
+      cur = ne_mul_mat(ctx0, layer.mlp_1_w, cur);
+
+      wstate.use_buf(ctx0, 0);
+
+      cur = ne_add(ctx0, ne_repeat(ctx0, layer.mlp_1_b, cur), cur);
+    }
+
+    wstate.use_buf(ctx0, 3);
+
+    inpL = ne_add(ctx0, cur, inpFF);
+  }
+
+  cur = inpL;
+
+  // norm
+  {
+    wstate.use_buf(ctx0, 0);
+
+    cur = ne_norm(ctx0, cur);
+
+    wstate.use_buf(ctx0, 1);
+
+    cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, model.d_ln_w, cur), cur), ne_repeat(ctx0, model.d_ln_b, cur));
+  }
+
+  wstate.use_buf(ctx0, 0);
+
+  // compute logits only for the last token
+  // comment this line to compute logits for all N tokens
+  // might be useful in the future
+  cur = ne_view_2d(ctx0, cur, cur->ne[0], 1, cur->nb[1], (cur->ne[1] - 1) * cur->nb[1]);
+
+  struct ne_tensor* logits = ne_mul_mat(ctx0, model.d_te, cur);
+
+  wstate.use_buf(ctx0, -1);
+
+  // run the computation
+  {
+    ne_build_forward_expand(&gf, logits);
+    // ne_graph_compute(ctx0, &gf, n_threads); TODO
+    ne_graph_compute(ctx0, &gf);
+  }
+
+  // extract logits for all N tokens
+  // logits_out.resize(N*n_vocab);
+  // memcpy(logits_out.data(), ne_get_data(logits), sizeof(float)*N*n_vocab);
+
+  // extract logits only for the last token
+  logits_out.resize(n_vocab);
+  memcpy(logits_out.data(), ne_get_data(logits), sizeof(float) * n_vocab);
+
+  if (N > 1) {
+    // printf("%s: used_mem = %f MB, %f MB, %f MB %f MB %f MB\n", __func__,
+    //         ne_used_mem(ctx0)/1024.0/1024.0,
+    //         wstate.get_buf_max_mem(0)/1024.0/1024.0,
+    //         wstate.get_buf_max_mem(1)/1024.0/1024.0,
+    //         wstate.get_buf_max_mem(2)/1024.0/1024.0,
+    //         wstate.get_buf_max_mem(3)/1024.0/1024.0);
+  }
+
+  ne_free(ctx0);
+
+  wstate.t_decode_us += ne_time_us() - t_start_us;
+  wstate.n_decode++;
+
+  return true;
+}
+
+// static bool whisper_decode_internalne(model_context& wctx, const model_token* tokens, const int n_tokens,
+//                                       const int n_past, const int n_threads) {
 //   const int64_t t_start_us = ne_time_us();
 
 //   const auto& model = wctx.model;
@@ -2403,7 +2821,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 
 //       wctx.use_buf(ctx0, 1);
 
-//       cur = ne_add(ctx0, ne_repeat(ctx0, layer.attn[6]], cur), cur);
+//       cur = ne_add(ctx0, ne_repeat(ctx0, layer.attn[6], cur), cur);
 //     }
 
 //     wctx.use_buf(ctx0, 2);
@@ -2419,8 +2837,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 //       cur = ne_norm(ctx0, inpCA);  // note: we use inpCA here
 
 //       // cur = ln_0_w*cur + ln_0_b
-//       cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.ffn[0], cur), cur),
-//                    ne_repeat(ctx0, layer.ffn[1], cur));
+//       cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.ffn[0], cur), cur), ne_repeat(ctx0, layer.ffn[1], cur));
 //     }
 
 //     // cross-attention
@@ -2949,6 +3366,61 @@ static std::vector<whisper_vocab::id> tokenize(const whisper_vocab& vocab, const
 // interface implementation
 //
 
+static std::vector<whisper_vocab::id> tokenize_ne(const model_vocab& vocab, const std::string& text) {
+  std::vector<std::string> words;
+
+  // first split the text into words
+  {
+    std::string str = text;
+    std::string pat =
+        R"('s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\s[:alpha:][:digit:]]+|\s+(?!\S)|\s+)";
+
+    std::regex re(pat);
+    std::smatch m;
+
+    while (std::regex_search(str, m, re)) {
+      for (auto x : m) {
+        words.push_back(x);
+      }
+      str = m.suffix();
+    }
+  }
+
+  // find the longest tokens that form the words:
+  std::vector<whisper_vocab::id> tokens;
+  for (const auto& word : words) {
+    if (word.empty()) continue;
+
+    int i = 0;
+    int n = word.size();
+    while (i < n) {
+      int j = n;
+      bool found = false;
+      while (j > i) {
+        auto sub = word.substr(i, j - i);
+        auto it = vocab.token_to_id.find(sub);
+        if (it != vocab.token_to_id.end()) {
+          tokens.push_back(it->second);
+          i = j;
+          found = true;
+          break;
+        }
+        --j;
+      }
+      if (!found) {
+        log("unknown token\n");
+        ++i;
+      }
+    }
+  }
+
+  return tokens;
+}
+
+//
+// interface implementation
+//
+
 #ifdef WHISPER_USE_COREML
 // replace .bin with -encoder.mlmodelc
 static std::string whisper_get_coreml_path_encoder(std::string path_bin) {
@@ -3021,7 +3493,6 @@ struct whisper_state* whisper_init_state(whisper_context* ctx) {
     delete state;
     return nullptr;
   }
-
   {
     const size_t memory_size = ne_nbytes(state->kv_cross.k) + ne_nbytes(state->kv_cross.v);
     log("%s: kv cross size = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
@@ -3406,6 +3877,21 @@ int whisper_decode(struct whisper_context* ctx, const whisper_token* tokens, int
   // }
 
   return 0;
+}
+
+int whisper_tokenize_ne(struct model_context* ctx, const char* text, whisper_token* tokens, int n_max_tokens) {
+  const auto res = tokenize_ne(ctx->vocab, text);
+
+  if (n_max_tokens < (int)res.size()) {
+    log("%s: too many resulting tokens: %d (max %d)\n", __func__, (int)res.size(), n_max_tokens);
+    return -1;
+  }
+
+  for (int i = 0; i < (int)res.size(); i++) {
+    tokens[i] = res[i];
+  }
+
+  return res.size();
 }
 
 int whisper_tokenize(struct whisper_context* ctx, const char* text, whisper_token* tokens, int n_max_tokens) {
@@ -5706,30 +6192,24 @@ static void whisper_exp_compute_token_level_timestamps(struct whisper_context& c
 void whisper_set_log_callback(whisper_log_callback callback) { whisper_log = callback; }
 
 int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  // if (!whisper_decode_internal(*ctx, wstate, decoder, tokens, n_tokens, n_past, n_threads)) {
-  //   fprintf(stderr, "%s: failed to eval\n", __func__);
-  //   return 1;
-  // }
+  // construct whisper_context， whisper_state by model_context
+  whisper_context* wCtx = new whisper_context(ctx);
+
+  wCtx->state = whisper_init_state(wCtx);
+  if (!wCtx->state) {
+    fprintf(stderr, "%s: failed to create \n", __func__);
+    return 1;
+  }
+
+  whisper_full_params params_cur;
+  std::vector<float> samples;
+  if (!whisper_full_with_state(wCtx, wCtx->state, std::move(params_cur), samples.data(), n_threads)) {
+    fprintf(stderr, "%s: failed to eval\n", __func__);
+    return 1;
+  }
 
   // // get a more accurate load time, upon first eval
   // // TODO: fix this
-  // if (!ctx->has_evaluated_once) {
-  //   ctx->t_load_us = ne_time_us() - ctx->t_start_us;
-  //   ctx->has_evaluated_once = true;
-  // }
-
-  return 0;
-}
-
-int model_eval(struct whisper_context* ctx, whisper_state& wstate, whisper_decoder& decoder, const model_token* tokens,
-               int n_tokens, int n_past, int n_threads) {
-  // if (!whisper_decode_internal(*ctx, wstate, decoder, tokens, n_tokens, n_past, n_threads)) {
-  //   fprintf(stderr, "%s: failed to eval\n", __func__);
-  //   return 1;
-  // }
-
-  // get a more accurate load time, upon first eval
-  // TODO: fix this
   // if (!ctx->has_evaluated_once) {
   //   ctx->t_load_us = ne_time_us() - ctx->t_start_us;
   //   ctx->has_evaluated_once = true;
