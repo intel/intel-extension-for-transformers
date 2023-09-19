@@ -119,7 +119,7 @@ JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4
   auto ret = JblasRuntimeError;
   if (wqptr->mCoreType == GcCompInt8KBlock::TYPE) {
     if (_cd->AMX_INT8() && wqptr->mBlockSize % 128 == 0) {
-      using GemmKernel = jblas::wrapper::transformer_default::weight_comp::amx_int8::QKVGemmDynamicS4Fp32KBlock;
+      using GemmKernel = transformer::amx_int8::QKVGemmDynamicS4Fp32KBlock;
       static GemmKernel kernel;
       GemmKernel::WeightType::Param wparams[3]{
           wqptr,
@@ -135,7 +135,7 @@ JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4
       ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
       delete quanA;
     } else if (_cd->AVX512_VNNI()) {
-      using GemmKernel = jblas::wrapper::transformer_default::weight_comp::avx512_vnni::QKVGemmDynamicS4Fp32KBlock;
+      using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS4Fp32KBlock;
       static GemmKernel kernel;
       GemmKernel::WeightType::Param wparams[3]{
           wqptr,
