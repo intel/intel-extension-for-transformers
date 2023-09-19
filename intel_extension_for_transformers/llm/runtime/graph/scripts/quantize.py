@@ -78,15 +78,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
 
-    quant_bits = 4
-    if args.weight_dtype == "int8":
-        quant_bits = 8
-
     cmd = [path]
     cmd.extend(["--model_file",     args.model_file])
     cmd.extend(["--out_file",       args.out_file])
     cmd.extend(["--nthread",        str(args.nthread)])
-    cmd.extend(["--weight_dtype",           str(quant_bits)])
+    cmd.extend(["--weight_dtype",   str(args.weight_dtype)])
     cmd.extend(["--alg",            args.alg])
     cmd.extend(["--group_size",     str(args.group_size)])
     cmd.extend(["--scale_dtype",    args.scale_dtype])
