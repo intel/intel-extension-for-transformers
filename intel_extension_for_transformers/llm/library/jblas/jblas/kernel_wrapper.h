@@ -82,6 +82,14 @@ class Memcpy2D {
       return kernel::jit::JitMemcpy2DAvx512f::forward<_SRC_T, _DST_T>(srcptr, dstptr, row, col, srcstep, dststep,
                                                                       const_elt_v, ops...);
     }
+#elif CompileAVX2()
+    // if constexpr (utils::isa_base<ISA_T>::avx2) {
+    //   return kernel::jit::JitMemcpy2DAvx2::forward<_SRC_T, _DST_T>(
+    //       srcptr, dstptr, row, col, srcstep, dststep, const_elt_v, ops...);
+    // }
+    return kernel::ref::memcpy2d(srcptr, dstptr, row, col * sizeof(_SRC_T),
+                                 srcstep * sizeof(_SRC_T),
+                                 dststep * sizeof(_DST_T));
 #endif
     assert(sizeof...(ops) == 0);                      // no post ops
     static_assert(sizeof(_SRC_T) == sizeof(_DST_T));  // no conversion

@@ -49,6 +49,19 @@ class eltwise_injector {
     assign_zmm(used_zmm_idx, &zmm_aux3);
     assign_zmm(used_zmm_idx, &zmm_aux4);
   }
+  void assign_resources(Xbyak::CodeGenerator* ptr,
+                        const std::set<int>& used_ymm_idx,
+                        const Xbyak::Reg64& table_reg) {
+    h = ptr;
+    p_table = table_reg;
+    assert(used_ymm_idx.size() <= 26);
+    assign_ymm(used_ymm_idx, &ymm_mask);
+    assign_ymm(used_ymm_idx, &ymm_aux0);
+    assign_ymm(used_ymm_idx, &ymm_aux1);
+    assign_ymm(used_ymm_idx, &ymm_aux2);
+    assign_ymm(used_ymm_idx, &ymm_aux3);
+    assign_ymm(used_ymm_idx, &ymm_aux4);
+  }
   void assign_reg_elt_constp(const Xbyak::Reg64& reg) { reg_rt_const_p = reg; }
   void vector_compute(const Xbyak::Zmm& zmm_src, int const_p_offset = 0) {
     load_table_addr();
@@ -74,6 +87,14 @@ class eltwise_injector {
       case SWISH:
         swish_compute_vector_fwd(zmm_src, const_p_offset);
         break;
+      default:
+        assert(false);
+        break;
+    }
+  }
+  void vector_compute(const Xbyak::Ymm& ymm_src, int const_p_offset = 0) {
+    load_table_addr();
+    switch (elt_op) {
       default:
         assert(false);
         break;
@@ -604,9 +625,19 @@ class eltwise_injector {
   void assign_zmm(const std::set<int>& used_zmm_idx, Zmm* zmm) {
     constexpr int max_zmm_idx = 32;
     for (int idx = 0; idx < max_zmm_idx; idx++) {
-      if (used_zmm_idx.count(idx) == 0 && assign_zmm_idx.count(idx) == 0) {
+      if (used_zmm_idx.count(idx) == 0 && assign_vmm_idx.count(idx) == 0) {
         *zmm = Zmm(idx);
-        assign_zmm_idx.insert(idx);
+        assign_vmm_idx.insert(idx);
+        break;
+      }
+    }
+  }
+  void assign_ymm(const std::set<int>& used_ymm_idx, Ymm* ymm) {
+    constexpr int max_ymm_idx = 32;
+    for (int idx = 0; idx < max_ymm_idx; idx++) {
+      if (used_ymm_idx.count(idx) == 0 && assign_vmm_idx.count(idx) == 0) {
+        *ymm = Ymm(idx);
+        assign_vmm_idx.insert(idx);
         break;
       }
     }
@@ -622,8 +653,9 @@ class eltwise_injector {
   /*register for fwd*/
   Xbyak::Reg64 p_table;
   Xbyak::Reg64 reg_rt_const_p;
-  std::set<int> assign_zmm_idx;
+  std::set<int> assign_vmm_idx;  // use for zmm (in avx512) or ymm (in avx2)
   Zmm zmm_mask, zmm_aux0, zmm_aux1, zmm_aux2, zmm_aux3, zmm_aux4;
+  Ymm ymm_mask, ymm_aux0, ymm_aux1, ymm_aux2, ymm_aux3, ymm_aux4;
   Xbyak::Opmask k_mask;
   static constexpr int n_mantissa_bits = 23;
 

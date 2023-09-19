@@ -239,6 +239,247 @@ class DequanKBlockS8F32 {
   }
 };
 
+class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
+ public:
+  struct params {
+    void *srcptr, *dstptr, *elt_const_v;
+    int row, col;
+    int srcstride, dststride;
+  };
+  typedef long long (*func_t)(params*);
+
+ public:
+  static int constexpr VBytes = 32;
+  JitMemcpy2DAvx2(
+      int unroll_row,
+      std::vector<kernel::jit_injector::eltwise_injector>& injectors) {
+    generate(unroll_row, injectors);
+  }
+
+  template <typename _SRC_T, typename _DST_T, typename... Eltops>
+  static JBLAS_CODE forward(const _SRC_T* srcptr, _DST_T* dstptr, int row,
+                            int col, int srcstep, int dststep,
+                            void* elt_const_v = nullptr, Eltops... ops) {
+    static std::vector<kernel::jit_injector::eltwise_injector> p = {
+        static_cast<JBLAS_ELTWISEOP>(ops)...};
+    static_assert(sizeof...(ops) == 0);  // TODO AVX2 support Eltops
+    static JitMemcpy2DAvx2 instance_withops(1, p);
+    static JitMemcpy2DAvx2 instance4_withops(4, p);
+    static_assert(sizeof(_SRC_T) ==
+                  sizeof(_DST_T));  // TODO SRC_T DST_T conversion copy
+    auto param = params{(void*)srcptr,
+                        (void*)dstptr,
+                        elt_const_v,
+                        row,
+                        int(col * sizeof(_SRC_T)),
+                        int(srcstep * sizeof(_SRC_T)),
+                        int(dststep * sizeof(_DST_T))};
+    int row4 = utils::padto_le(row, 4);
+    int irow = 0;
+    if (row4) {
+      param.row = row4;
+      instance4_withops.mKernel(&param);
+    }
+    int rowtail = row - row4;
+    if (rowtail) {
+      param.srcptr = (char*)param.srcptr + row4 * srcstep * sizeof(_SRC_T);
+      param.dstptr = (char*)param.dstptr + row4 * dststep * sizeof(_DST_T);
+      param.row = rowtail;
+      instance_withops.mKernel(&param);
+    }
+    return JblasSuccess;
+  }
+
+ protected:
+  void generate(int unrollk,
+                std::vector<kernel::jit_injector::eltwise_injector>&
+                    injectors) {  // unrollK=[1,2,4]
+    if (unrollk != 1 && unrollk != 2 && unrollk != 4) {
+      assert(false);
+      return;
+    }
+    inLocalLabel();  // use local label for multiple instance
+    {
+      int SF_TmpSize = 64;
+      int SF_TmpPos = 16 * 10;
+      Xbyak::util::StackFrame st(this, 1, 13, 16 * 10 + SF_TmpSize);
+      const Xbyak::Reg64& parambase = st.p[0];
+      const Xbyak::Reg64& reg_srcptr = st.t[0];
+      const Xbyak::Reg64& reg_dstptr = st.t[1];
+      const Xbyak::Reg64& reg_srcstride = st.t[2];
+      const Xbyak::Reg64& reg_dststride = st.t[3];
+      const Xbyak::Reg64& reg_rowsize = st.t[4];
+      const Xbyak::Reg64& reg_colsize = st.t[5];
+      const Xbyak::Reg64& reg_iterrow = st.t[6];
+      const Xbyak::Reg64& reg_itercol = st.t[7];
+      const Xbyak::Reg64& reg_tmp = st.t[8];
+      const Xbyak::Reg64& reg_elt_constv = st.t[8];  // alias of reg_tmp.
+      const Xbyak::Reg64& reg_tmpsrc = st.t[9];
+      const Xbyak::Reg64& reg_tmpdst = st.t[10];
+      const Xbyak::Reg64& reg_tmp1 = st.t[12];
+      const Xbyak::Reg64& reg_tmp2 = st.t[11];
+      const Xbyak::Reg64& reg_ret = rax;
+
+      vreg_push(rsp);
+
+      mov(reg_srcptr, ptr[parambase + OFFSET(srcptr)]);
+      mov(reg_dstptr, ptr[parambase + OFFSET(dstptr)]);
+      xor_(reg_srcstride, reg_srcstride);
+      mov(reg_srcstride.cvt32(), ptr[parambase + OFFSET(srcstride)]);
+      xor_(reg_dststride, reg_dststride);
+      mov(reg_dststride.cvt32(), ptr[parambase + OFFSET(dststride)]);
+
+      load32(reg_colsize, ptr[parambase + OFFSET(col)]);
+      load32(reg_rowsize, ptr[parambase + OFFSET(row)]);
+      if (unrollk == 4) {
+        imul(reg_tmp1, reg_srcstride, 3);
+        imul(reg_tmp2, reg_dststride, 3);
+      }
+      int const ColUnroll = 4;
+
+      // for (int i = 0; i < unrollk * ColUnroll; i++) used_ymm_idx.insert(i);
+      // for (auto&& injector : injectors) {
+      //   injector.assign_resources(this, used_ymm_idx, reg_ret);
+      //   injector.assign_reg_elt_constp(reg_elt_constv);
+      // }
+
+      xor_(reg_iterrow, reg_iterrow);
+      L(".rowloop");
+      xor_(reg_itercol, reg_itercol);
+      mov(reg_tmpsrc, reg_srcptr);
+      mov(reg_tmpdst, reg_dstptr);
+
+      L(".colloop");
+      mov(reg_tmp, reg_colsize);
+      sub(reg_tmp, reg_itercol);
+      cmp(reg_tmp, ColUnroll * VBytes);
+      jl(".maskproc", T_NEAR);
+      push(reg_tmp);
+      mov(reg_elt_constv, ptr[parambase + OFFSET(elt_const_v)]);
+      if (unrollk > 1) {
+        for (int j = 0; j < unrollk; j++) {
+          for (int i = 0; i < ColUnroll; i++) {
+            if (j == 3) {
+              vmovups(Xbyak::Ymm(i + j * ColUnroll),
+                      ptr[reg_tmpsrc + reg_tmp1 + i * VBytes]);
+              // for (int k = 0; k < injectors.size(); k++)
+              //   injectors[k].vector_compute(Xbyak::Ymm(i + j * ColUnroll),
+              //                               k * 3 * sizeof(float));
+              vmovups(ptr[reg_tmpdst + reg_tmp2 + i * VBytes],
+                      Xbyak::Ymm(i + j * ColUnroll));
+            } else {
+              vmovups(Xbyak::Ymm(i + j * ColUnroll),
+                      ptr[reg_tmpsrc + reg_srcstride * j + i * VBytes]);
+              // for (int k = 0; k < injectors.size(); k++)
+              //   injectors[k].vector_compute(Xbyak::Ymm(i + j * ColUnroll),
+              //                               k * 3 * sizeof(float));
+              vmovups(ptr[reg_tmpdst + reg_dststride * j + i * VBytes],
+                      Xbyak::Ymm(i + j * ColUnroll));
+            }
+          }
+        }
+      } else {
+        for (int i = 0; i < ColUnroll; i++) {
+          vmovups(Xbyak::Ymm(i), ptr[reg_tmpsrc + i * VBytes]);
+          // for (int k = 0; k < injectors.size(); k++)
+          //   injectors[k].vector_compute(Xbyak::Ymm(i), k * 3 *
+          //   sizeof(float));
+          vmovups(ptr[reg_tmpdst + i * VBytes], Xbyak::Ymm(i));
+        }
+      }
+      pop(reg_tmp);
+      add(reg_tmpsrc, ColUnroll * VBytes);
+      add(reg_tmpdst, ColUnroll * VBytes);
+      add(reg_itercol, ColUnroll * VBytes);
+      jmp(".colend", T_NEAR);
+      L(".maskproc");
+      push(reg_tmp);
+      mov(reg_tmp, reg_colsize);
+      sub(reg_tmp, reg_itercol);
+      cmp(reg_tmp, VBytes);
+      jb(".maskflag");
+      cmp(reg_tmp, 0);
+      jl(".maskend");
+      if (unrollk > 1) {
+        for (int j = 0; j < unrollk; j++) {
+          if (j == 3) {
+            vmovdqu8(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_tmp1]);
+            // for (int k = 0; k < injectors.size(); k++)
+            //   injectors[k].vector_compute(Xbyak::Zmm(0), k * 3 *
+            //   sizeof(float));
+            vmovdqu8(ptr[reg_tmpdst + reg_tmp2], Xbyak::Ymm(0));
+          } else {
+            vmovdqu8(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_srcstride * j]);
+            // for (int k = 0; k < injectors.size(); k++)
+            //   injectors[k].vector_compute(Xbyak::Zmm(0), k * 3 *
+            //   sizeof(float));
+            vmovdqu8(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0));
+          }
+        }
+      } else {
+        vmovdqu8(Xbyak::Ymm(0), ptr[reg_tmpsrc]);
+        // for (int k = 0; k < injectors.size(); k++)
+        //   injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
+        vmovdqu8(ptr[reg_tmpdst], Xbyak::Ymm(0));
+      }
+      jl("maskend");
+      L(".maskflag");
+      push(reg_srcptr);  // use it in temporary
+      push(reg_ret);     // use it in temporary
+      xor_(reg_srcptr, reg_srcptr);
+      L(".maskloop");
+      if (unrollk > 1) {
+        for (int j = 0; j < unrollk; j++) {
+          if (j == 3) {
+            add(reg_tmp1, reg_srcptr);  // avoid adress by three reg
+            add(reg_tmp2, reg_srcptr);  // avoid adress by three reg
+            mov(reg_ret.cvt32(), ptr[reg_tmpsrc + reg_tmp1]);
+            mov(ptr[reg_tmpdst + reg_tmp2], reg_ret.cvt32());
+            sub(reg_tmp1, reg_srcptr);
+            sub(reg_tmp2, reg_srcptr);
+          } else {
+            mov(reg_ret.cvt32(),
+                ptr[reg_tmpsrc + reg_srcstride * j + reg_srcptr]);
+            mov(ptr[reg_tmpdst + reg_dststride * j + reg_srcptr],
+                reg_ret.cvt32());
+          }
+        }
+      } else {
+        mov(reg_ret.cvt32(), ptr[reg_tmpsrc + reg_srcptr]);
+        mov(ptr[reg_tmpdst + reg_srcptr], reg_ret.cvt32());
+      }
+      add(reg_srcptr, 4);
+      cmp(reg_srcptr, reg_tmp);
+      jb(".maskloop");
+      pop(reg_ret);
+      pop(reg_srcptr);
+      L(".maskend");
+      pop(reg_tmp);
+      add(reg_tmpsrc, VBytes);
+      add(reg_tmpdst, VBytes);
+      add(reg_itercol, VBytes);
+      L(".colend");
+      cmp(reg_itercol, reg_colsize);
+      jb(".colloop");
+      add(reg_iterrow, unrollk);
+      lea(reg_srcptr, ptr[reg_srcptr + reg_srcstride * unrollk]);
+      lea(reg_dstptr, ptr[reg_dstptr + reg_dststride * unrollk]);
+      cmp(reg_iterrow, reg_rowsize);
+      jb(".rowloop");
+
+      mov(reg_ret, 0);
+      vreg_pop(rsp);
+    }
+    outLocalLabel();  // end of local label
+    for (auto&& injector : injectors) injector.prepare_table();
+    this->ready();
+    mKernel = this->getCode<func_t>();
+  }
+
+  func_t mKernel = nullptr;
+  std::set<int> used_ymm_idx;
+};
+
 class JitMemcpy2DAvx512f : protected jblas::xbyak::JitAvx512f {
  public:
   struct params {
