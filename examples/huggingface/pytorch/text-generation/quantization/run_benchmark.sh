@@ -114,7 +114,7 @@ function run_benchmark {
         elif [ "${topology}" = "gpt_j_woq_bab" ]; then
             extra_cmd=$extra_cmd" --bitsandbytes"
         elif [ "${topology}" = "gpt_j_mp" ]; then
-            extra_cmd=$extra_cmd" --mixedpresion"
+            extra_cmd=$extra_cmd" --mixed_precision"
         else
             extra_cmd=$extra_cmd" --int8"
         fi

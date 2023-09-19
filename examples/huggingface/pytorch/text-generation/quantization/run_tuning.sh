@@ -67,7 +67,7 @@ function run_tuning {
         extra_cmd=$extra_cmd" --bitsandbytes"
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
-        extra_cmd=$extra_cmd" --mixedpresion"
+        extra_cmd=$extra_cmd" --mixed_precision"
     elif [ "${topology}" = "opt_1.3b" ]; then
         alpha=0.8
         model_name_or_path="facebook/opt-1.3b"
