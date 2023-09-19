@@ -20,7 +20,6 @@ import subprocess
 import sys
 import intel_extension_for_transformers
 import os.path as path
-import shlex
 
 
 def neural_engine_bin():
@@ -28,4 +27,4 @@ def neural_engine_bin():
     neural_engine_bin = path.join(
         intel_extension_for_transformers.__path__[0], 'neural_engine_bin')
     raise SystemExit(subprocess.call(
-        [neural_engine_bin] + shlex.quote(sys.argv[1:]), close_fds=False))
+        [neural_engine_bin] + sys.argv[1:], close_fds=False))
