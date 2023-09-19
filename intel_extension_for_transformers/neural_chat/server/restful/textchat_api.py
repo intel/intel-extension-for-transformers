@@ -16,6 +16,7 @@
 # limitations under the License.
 
 from fastapi.routing import APIRouter
+from fastapi.responses import StreamingResponse
 # pylint: disable=E0611
 from pydantic import BaseModel
 from typing import Optional
@@ -63,28 +64,32 @@ class TextChatAPIRouter(APIRouter):
             logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
-    
+
 
     async def handle_completion_request(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
         return await self.handle_chat_completion_request(request)
-    
+
 
     async def handle_chat_completion_request(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
         chatbot = self.get_chatbot()
 
         try:
             logger.info(f"Predicting chat completion using prompt '{request.prompt}'")
-            response = chatbot.predict(query=request.prompt)
+            if request.stream:
+                generator = chatbot.predict_stream(query=request.prompt)
+                return StreamingResponse(generator, media_type="text/event-stream")
+            else:
+                response = chatbot.predict(query=request.prompt)
         except Exception as e:
             raise Exception(e)
         else:
             logger.info(f"Chat completion finished.")
             return ChatCompletionResponse(response=response) 
-    
+
 
 router = TextChatAPIRouter()
 
-    
+
 @router.post("/v1/completions")
 async def completion_endpoint(request: ChatCompletionRequest) -> ChatCompletionResponse:
     ret = check_completion_request(request)
