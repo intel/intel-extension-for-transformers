@@ -123,7 +123,7 @@ std::string Model::generate_one_token(const std::string& prompt) {
   int next_token_id = post_process(logits);
   curr_input_ids = {next_token_id};
 
-  if (next_token_id == model_token_eos() || n_past - prompt.size() == params.n_predict) {
+  if (next_token_id == ctx->vocab.eos_token_id || n_past - prompt.size() == params.n_predict) {
     token_eos = true;
   }
 
