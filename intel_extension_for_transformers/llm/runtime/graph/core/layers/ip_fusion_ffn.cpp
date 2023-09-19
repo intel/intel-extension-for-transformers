@@ -323,8 +323,8 @@ bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq,
         if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32) ||
             w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
           constexpr jblas::gemm::GemmCoreType cores[] = {
-              jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK,
-              jblas::gemm::GemmCoreType::AVX512F_8X48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
+              jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+              jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
           constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
           support = contains(w1tmp->mCoreType, cores, EleNum);
           support &= hasISA(cores, EleNum);

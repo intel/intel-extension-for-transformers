@@ -40,7 +40,7 @@ static bool hasISA(const jblas::gemm::GemmCoreType* set, size_t len) {
   bool support = false;
   for (size_t i = 0; i < len; i++) {
     switch (set[i]) {
-      case jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK:
+      case jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK:
       case jblas::gemm::GemmCoreType::AMX_INT8_16x48:
       case jblas::gemm::GemmCoreType::AMX_INT8_16x64:
       case jblas::gemm::GemmCoreType::AMX_INT8_16x48_SS:
@@ -50,19 +50,24 @@ static bool hasISA(const jblas::gemm::GemmCoreType* set, size_t len) {
       case jblas::gemm::GemmCoreType::AMX_BF16_16x64:
         support |= _cd->AMX_BF16();
         break;
-      case jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK:
-      case jblas::gemm::GemmCoreType::AVX512_VNNI_8X48:
+      case jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK:
+      case jblas::gemm::GemmCoreType::AVX512_VNNI_4x48_KBLOCK:
+      case jblas::gemm::GemmCoreType::AVX512_VNNI_8x48:
         support |= _cd->AVX512_VNNI();
         break;
       case jblas::gemm::GemmCoreType::AVX512_FP16_8x64:
       case jblas::gemm::GemmCoreType::AVX512_FP16_8x96:
         support |= _cd->AVX512_FP16();
         break;
-      case jblas::gemm::GemmCoreType::AVX512F_8X48:
+      case jblas::gemm::GemmCoreType::AVX512F_8x48:
         support |= _cd->AVX512F();
         break;
       case jblas::gemm::GemmCoreType::AVX2_4X24:
         support |= _cd->AVX2();
+        break;
+      case jblas::gemm::GemmCoreType::AVX_VNNI_1x48_KBLOCK:
+      case jblas::gemm::GemmCoreType::AVX_VNNI_2x48:
+        support |= _cd->AVX_VNNI();
         break;
       default:
         break;
@@ -114,11 +119,11 @@ using GcCompBf16 = jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16;
 using GcCompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 using GcCompInt8 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI;
 
-constexpr jblas::gemm::GemmCoreType GcCompInt8KBlockSet[] = {jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK,
-                                                             jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK};
+constexpr jblas::gemm::GemmCoreType GcCompInt8KBlockSet[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK,
+                                                             jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK};
 
 constexpr jblas::gemm::GemmCoreType GcCompInt8Set[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_SS,
-                                                       jblas::gemm::GemmCoreType::AVX512_VNNI_8X48};
+                                                       jblas::gemm::GemmCoreType::AVX512_VNNI_8x48};
 
 namespace custom {
 namespace epilogue {
