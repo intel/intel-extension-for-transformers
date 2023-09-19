@@ -51,40 +51,33 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 
 ## 🌱Getting Started
-### Sentiment Analysis with Quantization
+### LLM Weight-Only Quantization
 #### Prepare Dataset
 ```python
-from datasets import load_dataset, load_metric
-from transformers import AutoConfig,AutoModelForSequenceClassification,AutoTokenizer
-
-raw_datasets = load_dataset("glue", "sst2")
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
-raw_datasets = raw_datasets.map(lambda e: tokenizer(e['sentence'], truncation=True, padding='max_length', max_length=128), batched=True)
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
+dummy_input = fp32_model.dummy_inputs["input_ids"
 ```
+
 #### Quantization
 ```python
-from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
-from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-
-config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
-model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",config=config)
-model.config.label2id = {0: 0, 1: 1}
-model.config.id2label = {0: 'NEGATIVE', 1: 'POSITIVE'}
-# Replace transformers.Trainer with NLPTrainer
-# trainer = transformers.Trainer(...)
-trainer = NLPTrainer(model=model, 
-    train_dataset=raw_datasets["train"], 
-    eval_dataset=raw_datasets["validation"],
-    tokenizer=tokenizer
-)
-q_config = QuantizationConfig(metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)])
-model = trainer.quantize(quant_config=q_config)
-
-input = tokenizer("I like Intel Extension for Transformers", return_tensors="pt")
-output = model(**input).logits.argmax().item()
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
+woq_config = WeightOnlyQuantConfig()
+woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, quantization_config=woq_config)
+output = woq_model(dummy_input)
 ```
 
-> For more quick samples, please refer to [Get Started Page](docs/get_started.md). For more validated examples, please refer to [Support Model Matrix](docs/examples.md)
+#### LLM Runtime Inference (WIP, coming soon)
+Before API Ready, you can use LLM Runtime with [examples](intel_extension_for_transformers/llm/runtime/graph)
+```python
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+prompt = "Once upon a time, a little girl"
+model = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=True)
+output = model.generate(prompt, streamer)
+```
+
+> For more quick samples, please refer to [Get Started Page](examples/huggingface/pytorch/text-generation/quantization
+/README.md).
 
 ## 🎯Validated Performance
 
