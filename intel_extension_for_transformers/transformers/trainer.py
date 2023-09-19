@@ -1485,7 +1485,7 @@ class BaseTrainer():
         # pylint: disable=E1101
         if not self.args.remove_unused_columns:
             return dataset
-        if self._signature_columns is None:
+        if self._signature_columns is None:  # pylint: disable=E0401
             # Inspect model forward signature to keep only the arguments it accepts.
             signature = inspect.signature(self.model.forward)
             self._signature_columns = list(signature.parameters.keys())
@@ -1736,7 +1736,7 @@ class BaseTrainer():
                     # distiller.eval_func = \
                     #     partial(take_eval_steps, trainer=self, metric_name='eval_loss')
                     # shuffle train_dataset before each training
-                    indices = list(range(len(self.train_dataset)))
+                    indices = list(range(len(self.train_dataset)))  # pylint: disable=E0401
                     np.random.shuffle(indices)
                     self.train_dataset = Subset(self.train_dataset, indices)
                     model = distiller().model
