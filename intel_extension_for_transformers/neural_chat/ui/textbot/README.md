@@ -1,4 +1,6 @@
-Hugging Face Space helps to make some amazing ML applications more accessible to the community. Inspired by this, we can create a chatbot application on Hugging Face Spaces.
+Hugging Face Space helps to make some amazing ML applications more accessible to the community. Inspired by this, we can create a chatbot application on Hugging Face Spaces. Alternatively, you can also deploy the frontend on your own server.
+
+# Deploy on Huggingface Space
 
 ## 🚀 Create a new space on Huggingface
 To create a new application space on Hugging Face, visit the website at [https://huggingface.co/new-space](https://huggingface.co/new-space) and follow the below steps to create a new space.
@@ -15,7 +17,39 @@ We recommend using Gradio as the Space SDK, keeping the default values for the o
 For detailed information about the configuration settings, please refer to the [Hugging Face Spaces Config Reference](https://huggingface.co/docs/hub/spaces-config-reference).
 
 ## 🚀 Setup application
-We recommend directly using this textbot frontend code, which shows the reference implementation that we already deployed on Hugging Face Space. 
-To set up your application, copy the code files from this directory and configure them as needed.Alternatively, you can clone the existing space from [https://huggingface.co/spaces/Intel/NeuralChat-MPT](https://huggingface.co/spaces/Intel/NeuralChat-MPT).
+We strongly recommend utilizing the provided textbot frontend code as it represents the reference implementation already deployed on Hugging Face Space. To establish your application, simply copy the code files from this directory and adjust their configurations as necessary. Alternatively, you have the option to clone the existing space from [https://huggingface.co/spaces/Intel/NeuralChat-MPT](https://huggingface.co/spaces/Intel/NeuralChat-MPT) and then update the 'app.py' file with the one located in this folder.
 
 ![Clonse Space](https://i.imgur.com/76N8m5B.png)
+
+# Deploy on your server
+
+Before deploying on your server, you need to install and configure the Conda environment:
+
+## Setup Conda
+
+First, you need to install and configure the Conda environment:
+
+```shell
+# Download and install Miniconda
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash `Miniconda*.sh`
+source ~/.bashrc
+```
+
+## Install Python dependencies
+
+Install the required Python dependencies using pip:
+
+```shell
+pip install -r requirements.txt
+```
+
+## Run the frontend
+
+Launch the chatbot frontend on your server using the following command:
+
+```shell
+nohup python app.py &
+```
+
+This will run the chatbot application in the background on your server.
