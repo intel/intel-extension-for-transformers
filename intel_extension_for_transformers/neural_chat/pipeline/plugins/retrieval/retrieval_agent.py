@@ -40,7 +40,7 @@ class Agent_QA():
         self.retrieval_type = retrieval_type
         self.retriever = None
         self.intent_detector = IntentDetector()
-        self.input_path
+        self.input_path = input_path
         if append:
             self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, \
                                                document_store=document_store, \
