@@ -262,11 +262,11 @@ MODEL_API const char* model_print_system_info(void);
 /*  beam search utils  */
 #define NEG_INF -std::numeric_limits<float>::max()
 
-typedef struct beam_top_k_res {
+typedef struct beam_next_token {
   model_token id;  // token id
   float score;     // score of the token
   int beam_idx;    // token in which beam (-1 means unknown)
-} beam_top_k_res;
+} beam_next_token;
 
 struct beam {
   const model_context* ctx = nullptr;
@@ -278,7 +278,7 @@ struct beam {
   // end-of-text
   const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
   void print() const {
-    printf("length: %d, score: %0.6f, eos: %d, tokens:\n", token_ids.size(), score, eos());
+    printf("length: %d, score: %12.6f, eos: %d, tokens:\n", token_ids.size(), score, eos());
     for (const auto& id : token_ids) {
       printf("%d: %s, ", id, model_token_to_str(ctx, id));
     }
@@ -307,11 +307,13 @@ struct beam_hypotheses {
     auto comp = [](const beam& a, const beam& b) { return a.score > b.score; };
     uint32_t cur_len = b.eos() ? b.token_ids.size() - 1 : b.token_ids.size();
     float score = b.score / std::pow(cur_len + n_prompt_tokens, length_penalty);
-    // printf("===============beam hypos add =================== \n");
-    // printf("origin score: %12.6f, cur_len: %d \n", b.score, cur_len+n_prompt_tokens);
+#if 0
+    printf("=============== beam hypos add =================== \n");
+    b.print();
+    printf("origin score: %12.6f, new score: %12.f, sentence_len: %d \n", b.score, score, cur_len + n_prompt_tokens);
+    printf("================================================== \n");
+#endif
     b.score = score;
-    // b.print();
-    // printf("=========================\n");
     if (beams.size() < num_beams) {
       beams.push_back(std::move(b));
       if (beams.size() == num_beams) {
@@ -400,7 +402,7 @@ class beam_search_flow {
   std::vector<model_token> loop(const model_token* tokens_inp, const int& n_tokens, const int& n_threads);
 
  private:
-  std::vector<beam_top_k_res> beam_top_k(model_context* ctx, const uint32_t& cur_len, const std::vector<float>& beams_score,
+  std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len, const std::vector<float>& beams_score,
                                          const std::vector<int>& num_beams, const std::vector<int> beam_indices,
                                          const int& sample_scale = 2, const int& dim = -1);
   void fill_next_beams_by_top_probabilities();

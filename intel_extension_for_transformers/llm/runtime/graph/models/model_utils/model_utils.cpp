@@ -1973,7 +1973,7 @@ struct logits_info {
     next_token_scores.resize(batch_size);
   }
 
-  beam_top_k_res get_token_data(const int& batch_idx, const int32_t& token_idx) const {
+  beam_next_token get_token_data(const int& batch_idx, const int32_t& token_idx) const {
     return {token_idx, *(logits + batch_idx * bs_stride + offset + token_idx), -1};
   }
 
@@ -1985,37 +1985,16 @@ struct logits_info {
     return std::log(probability_from_logit(batch_idx, logit));
   }
 
-//   void compute_log_softmax_logits() {
-// #pragma omp parallel for
-//     for (int i = 0; i < batch_size; ++i) {
-//       next_token_scores[i].reserve(n_vocab);
-// #pragma omp parallel for
-//       for (int j = 0; j < n_vocab; ++j) {
-//         float score = log_probability_from_logit(i, *(logits + i * bs_stride + offset + j));
-//         next_token_scores[i].push_back(std::move(score));
-//       }
-//     }
-//   }
-
-//   // token score + pre tokens score
-//   void compute_next_token_scores(const std::vector<float>& beams_score) {
-//     MODEL_ASSERT(batch_size == beams_score.size());
-// #pragma omp parallel for
-//     for (int i = 0; i < batch_size; ++i) {
-//       std::for_each(next_token_scores[i].begin(), next_token_scores[i].end(), [&](float& s) { s += beams_score[i]; });
-//     }
-//   }
-
   // Return top k token_data by raw logit in n_vocab dim. (request_bs*num_beam, top_k)
-  std::vector<std::vector<beam_top_k_res>> vocab_top_k(const int& k) {
-    std::vector<std::vector<beam_top_k_res>> min_heap(batch_size);  // min-heap by logit
+  std::vector<std::vector<beam_next_token>> vocab_top_k(const int& k) {
+    std::vector<std::vector<beam_next_token>> min_heap(batch_size);  // min-heap by logit
     int tk = std::min(k, n_vocab);
     for (int idx = 0; idx < batch_size; ++idx) {
       for (int32_t token_idx = 0; token_idx < tk; ++token_idx) {
         min_heap[idx].push_back(get_token_data(idx, token_idx));
       }
     }
-    auto comp = [](const beam_top_k_res& a, const beam_top_k_res& b) { return a.score > b.score; };
+    auto comp = [](const beam_next_token& a, const beam_next_token& b) { return a.score > b.score; };
     for (int idx = 0; idx < batch_size; ++idx) {
       std::make_heap(min_heap[idx].begin(), min_heap[idx].end(), comp);
       for (int32_t token_idx = tk; token_idx < n_vocab; ++token_idx) {
@@ -2091,7 +2070,6 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
       int cur_id = std::get<0>(t);
       int cpy_id = std::get<1>(t);
       if (cur_id != cpy_id) {
-        // printf("it.first: %d, it.second: %d \n", cur_id, cpy_id);
         uint32_t len = next_beams[cur_id].token_ids.size() - 1;
         // last token in beam is for next step inference
         MODEL_ASSERT(len == n_past - n_prompt_tokens);
@@ -2142,7 +2120,7 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
 // we sample top_k logits for each beam, than compute scores in these logits positions
 // then we sample top_k results among all beams.
 // this approach will accelerate sampling speed by log_softmax times reduction
-std::vector<beam_top_k_res> beam_search_flow::beam_top_k(model_context* ctx, const uint32_t& cur_len,
+std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len,
                                                          const std::vector<float>& beams_score,
                                                          const std::vector<int>& num_beams,
                                                          const std::vector<int> beam_indices, const int& sample_scale,
@@ -2153,7 +2131,7 @@ std::vector<beam_top_k_res> beam_search_flow::beam_top_k(model_context* ctx, con
   lp.process(cur_len, ctx->vocab.eos_token_id);
   const int raw_k = sample_scale * beam_size;
   // raw logits top_k
-  std::vector<std::vector<beam_top_k_res>> raw_top_k = li.vocab_top_k(raw_k);
+  std::vector<std::vector<beam_next_token>> raw_top_k = li.vocab_top_k(raw_k);
   MODEL_ASSERT(raw_top_k.size() == ctx->batch_size);  // request_bs * num_beam
   MODEL_ASSERT(raw_top_k[0].size() == raw_k);
   MODEL_ASSERT(beams_score.size() == ctx->batch_size);
@@ -2161,15 +2139,15 @@ std::vector<beam_top_k_res> beam_search_flow::beam_top_k(model_context* ctx, con
 #pragma omp parallel for
   for (int i = 0; i < ctx->batch_size; ++i) {
     std::for_each(raw_top_k[i].begin(), raw_top_k[i].end(),
-                  [&](beam_top_k_res& r) { r.score = li.log_probability_from_logit(i, r.score) + beams_score[i]; });
+                  [&](beam_next_token& r) { r.score = li.log_probability_from_logit(i, r.score) + beams_score[i]; });
   }
   MODEL_ASSERT(num_beams.size() == request_bs);
-  std::vector<beam_top_k_res> res;
+  std::vector<beam_next_token> res;
   res.reserve(sample_scale * std::accumulate(num_beams.begin(), num_beams.end(), 0));
-  std::vector<beam_top_k_res> min_heap;
+  std::vector<beam_next_token> min_heap;
   const uint32_t n_vocab = ctx->model.hparams.n_vocab;
   size_t row_off = 0;
-  auto comp = [](const beam_top_k_res& a, const beam_top_k_res& b) { return a.score > b.score; };
+  auto comp = [](const beam_next_token& a, const beam_next_token& b) { return a.score > b.score; };
   for (int i = 0; i < request_bs; ++i) {
     const int num_beam = num_beams[i];
     const int sample_k = sample_scale * num_beam;
@@ -2180,14 +2158,14 @@ std::vector<beam_top_k_res> beam_search_flow::beam_top_k(model_context* ctx, con
       int n = 0;
       if (j == 0) {  // init heap
         for (; n < sample_k; ++n) {
-          min_heap.push_back(beam_top_k_res(
+          min_heap.push_back(beam_next_token(
               {raw_top_k[row_off + j][n].id, raw_top_k[row_off + j][n].score, beam_indices[row_off + j]}));
         }
         std::make_heap(min_heap.begin(), min_heap.end(), comp);
       }
       MODEL_ASSERT(min_heap.size() == sample_k);
       for (; n < raw_k; ++n) {
-        beam_top_k_res nr({raw_top_k[row_off + j][n].id, raw_top_k[row_off + j][n].score, beam_indices[row_off + j]});
+        beam_next_token nr({raw_top_k[row_off + j][n].id, raw_top_k[row_off + j][n].score, beam_indices[row_off + j]});
         if (min_heap.front().score < nr.score) {
           std::pop_heap(min_heap.begin(), min_heap.end(), comp);
           min_heap.back().id = nr.id;
@@ -2199,7 +2177,7 @@ std::vector<beam_top_k_res> beam_search_flow::beam_top_k(model_context* ctx, con
     }
     row_off += i * num_beam;
     std::sort(min_heap.begin(), min_heap.end(),
-              [](const beam_top_k_res& a, const beam_top_k_res& b) { return a.score > b.score; });
+              [](const beam_next_token& a, const beam_next_token& b) { return a.score > b.score; });
     for (const auto b : min_heap) {
       res.push_back(b);
     }
@@ -2211,7 +2189,6 @@ std::vector<beam_top_k_res> beam_search_flow::beam_top_k(model_context* ctx, con
 void beam_search_flow::fill_next_beams_by_top_probabilities() {
   auto const comp = [](const beam& a, const beam& b) { return a.score > b.score; };
   std::vector<model_token> embd_inp;
-  // std::vector<int> infer_beam_ids(beam_size);
   int record = 0;
   int batch_size = 0;
   uint32_t cur_len = 0;
@@ -2227,7 +2204,6 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
     // (batch, 1)
     // ordered by infer_bs_id
     embd_inp.push_back(cur_beams[i].token_ids.back());
-    // infer_beam_ids[i] = record++;
     batch_size++;
     beam_indices.push_back(i);
     beams_score.push_back(cur_beams[i].score);
@@ -2254,14 +2230,10 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
   }
 #endif
 
-  // logits_info li(ctx);
-  // li.compute_log_softmax_logits();
-  // lp.process(cur_len, li.next_token_scores, 50256);  //  TODO ctx->model.eos_id;
-  // li.compute_next_token_scores(beams_score);
   const int sample_scale = 2;
-  std::vector<beam_top_k_res> next_tokens =
-      beam_top_k(ctx, cur_len, beams_score, {batch_size}, beam_indices, sample_scale);
-  // std::vector<std::vector<model_token_data>> next_tokens = li.top_k(sample_num);
+  std::vector<beam_next_token> next_tokens =
+      beam_top_k_next_tokens(ctx, cur_len, beams_score, {batch_size}, beam_indices, sample_scale);
+
   // DEBUG
 #if 0
   printf("====================== \n");
@@ -2293,49 +2265,6 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
     }
   }
 
-  // for (int i = 0; i < beam_size; ++i) {
-  //   beam b = cur_beams[i];
-  //   if (b.eos()) {
-  //     // b is at end-of-sentence, so just copy it to next_beams if its
-  //     // probability is high enough.
-  //     if (next_beams.size() < beam_size) {
-  //       if (b.score != 100) {
-  //         b.eos_score = b.score;
-  //         b.score = 100;
-  //       }
-  //       next_beams.push_back(b);
-  //       if (next_beams.size() == beam_size) {
-  //         std::make_heap(next_beams.begin(), next_beams.end(), comp);
-  //       }
-  //     } else if (next_beams.front().score < b.score) {
-  //       std::pop_heap(next_beams.begin(), next_beams.end(), comp);
-  //       next_beams.back() = b;
-  //       std::push_heap(next_beams.begin(), next_beams.end(), comp);
-  //     }
-  //   } else {
-  //     int j = 0;
-  //     if (next_beams.size() < beam_size) {
-  //       for (; next_beams.size() < beam_size && j < sample_num; ++j) {
-  //         beam next_beam = b;
-  //         next_beam.token_ids.push_back(next_tokens[infer_beam_ids[i]][j].id);
-  //         next_beam.score += li.log_probability_from_logit(infer_beam_ids[i],
-  //         next_tokens[infer_beam_ids[i]][j].logit); next_beams.push_back(std::move(next_beam));
-  //       }
-  //       std::make_heap(next_beams.begin(), next_beams.end(), comp);
-  //     }
-  //     for (; j < sample_num; ++j) {
-  //       float const next_score =
-  //           b.score + li.log_probability_from_logit(infer_beam_ids[i], next_tokens[infer_beam_ids[i]][j].logit);
-  //       if (next_beams.front().score < next_score) {
-  //         std::pop_heap(next_beams.begin(), next_beams.end(), comp);
-  //         next_beams.back() = b;
-  //         next_beams.back().token_ids.push_back(next_tokens[infer_beam_ids[i]][j].id);
-  //         next_beams.back().score = next_score;
-  //         std::push_heap(next_beams.begin(), next_beams.end(), comp);
-  //       }
-  //     }
-  //   }
-  // }
   std::sort(next_beams.begin(), next_beams.end(), [](beam& a, beam& b) { return a.infer_bs_id < b.infer_bs_id; });
 }
 
@@ -2405,8 +2334,8 @@ std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indi
   // 2. copy latter beams into former beams, like: 0,1,2,3 -- > 1,2,2,3
   // kv cache memcpy happens in itself which would cause memory dislocation if follows wrong order
   // so we give the contrary order to beams vector indice, which is:
-  // if 1, copy from tail
-  // if 2, copy from head
+  // if 1, copy order is from tail to head
+  // if 2, copy order is from head to tail
   bool cpy_from_head = true;
   int dst_idx_sum = 0;
   int src_idx_sum = 0;
@@ -2456,18 +2385,22 @@ void beam_search_flow::beam_score_length_penalize() {
 
 // Return beam with highest probability.
 const beam& beam_search_flow::finalize() {
-  // printf("\n before: \n");
-  // for (auto b : beam_hypos[0].beams) {
-  //   b.print();
-  // }
+#if 0
+  printf("\n finalize before: \n");
+  for (auto b : beam_hypos[0].beams) {
+    b.print();
+  }
+#endif
   if (!requests_done[0]) {
     for (const auto b : cur_beams) {
       beam_hypos[0].add(b, n_prompt_tokens);
     }
-    // printf("\n after: \n");
-    // for (auto b : beam_hypos[0].beams) {
-    //   b.print();
-    // }
+#if 0
+    printf("\n finalize after: \n");
+    for (auto b : beam_hypos[0].beams) {
+      b.print();
+    }
+#endif
   }
   return beam_hypos[0].top1();
 }
@@ -2488,9 +2421,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   ctx->batch_size = 1;
   const uint32_t max_new_tokens = ctx->generation_conf.max_new_tokens;
 
-  // Loop while there are any beams that have not yet reached end-of-sentence.
-  // If the top beam is at end-of-sentence, then finish since all other
-  // beam score can only decrease.
+  // Loop ends in: 1. all requests done; or 2. reach max_new_tokens length
   auto const eos = [](const beam& b) { return b.eos(); };
   kv_reorder = ctx->bs_kv_reorder;
   if (kv_reorder == nullptr) {
@@ -2504,11 +2435,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       model_eval(ctx, embd.data(), n_tokens, n_past, num_threads);
       n_past += n_tokens;
       kv_reorder->update(n_past, n_tokens);
-      // logits_info li(ctx);
-      // li.compute_log_softmax_logits();
-      // lp.process(0, li.next_token_scores, 50256);  //  TODO ctx->model.eos_id;
-      // li.compute_next_token_scores({0.0f});
-      std::vector<beam_top_k_res> next_tokens = beam_top_k(ctx, 0, {0.0f}, {1}, {0}, beam_size);
+      std::vector<beam_next_token> next_tokens = beam_top_k_next_tokens(ctx, 0, {0.0f}, {1}, {0}, beam_size);
       MODEL_ASSERT(next_tokens.size() == beam_size);
       cur_beams.clear();
       for (int i = 0; i < beam_size; ++i) {
@@ -2519,7 +2446,6 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
         b.infer_bs_id = i;
         cur_beams.push_back(b);
       }
-      // beam_score_length_penalize();
     } else {
       fill_next_beams_by_top_probabilities();
       std::vector<std::tuple<int, int>> kv_reorder_indices = update_kv_cache_reorder_indices();
@@ -2527,7 +2453,6 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       kv_reorder->update(n_past, n_tokens, kv_reorder_indices, next_beams);
       cur_beams.swap(next_beams);
       next_beams.clear();
-      // beam_score_length_penalize();
     }
 
 #if 0  // DEBUG: print current beams for this iteration
@@ -2554,7 +2479,6 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
     }
   }
 
-  // beam_score_length_penalize();
   const beam& top_b = finalize();
 
 #if 0  // DEBUG: print final beam result
