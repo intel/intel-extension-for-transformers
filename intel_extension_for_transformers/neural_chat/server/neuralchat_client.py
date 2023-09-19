@@ -78,6 +78,11 @@ class TextChatClientExecutor(BaseCommandExecutor):
             type=int,
             default=128,
             help='The maximum number of new tokens to generate, the value should be set between 32 and 2048')
+        self.parser.add_argument(
+            '--stream',
+            type=bool,
+            default=False,
+            help='support streaming output')
 
 
     def execute(self, argv: List[str]) -> bool:
@@ -91,6 +96,7 @@ class TextChatClientExecutor(BaseCommandExecutor):
         top_k = args.top_k
         repetition_penalty = args.repetition_penalty
         max_new_tokens = args.max_new_tokens
+        stream = args.stream
 
         try:
             time_start = time.time()
@@ -103,7 +109,8 @@ class TextChatClientExecutor(BaseCommandExecutor):
                 top_p=top_p,
                 top_k=top_k,
                 repetition_penalty=repetition_penalty,
-                max_new_tokens=max_new_tokens)
+                max_new_tokens=max_new_tokens,
+                stream=stream)
             time_end = time.time()
             time_consume = time_end - time_start
             response_dict = res.json()
@@ -125,7 +132,8 @@ class TextChatClientExecutor(BaseCommandExecutor):
                  top_p: float=0.75,
                  top_k: int=1,
                  repetition_penalty: float=1.1,
-                 max_new_tokens: int=128):
+                 max_new_tokens: int=128,
+                 stream: bool=False):
         """
         Python API to call an executor.
         """
@@ -138,7 +146,8 @@ class TextChatClientExecutor(BaseCommandExecutor):
             "top_p": top_p,
             "top_k": top_k,
             "repetition_penalty": repetition_penalty,
-            "max_new_tokens": max_new_tokens
+            "max_new_tokens": max_new_tokens,
+            "stream": stream
         }
 
         res = requests.post(url, json.dumps(request))
@@ -183,7 +192,7 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
             logger.error("Failed to generate text response.")
             logger.error(e)
             return False
-        
+
     def __call__(self,
                  server_ip: str="127.0.0.1",
                  port: int=8000,
@@ -239,7 +248,7 @@ class FinetuningClientExecutor(BaseCommandExecutor):
             logger.error("Failed to finetune.")
             logger.error(e)
             return False
-        
+
     def __call__(self,
                  server_ip: str="127.0.0.1",
                  port: int=8000,
