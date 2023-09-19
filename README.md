@@ -56,7 +56,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 ```python
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
-dummy_input = fp32_model.dummy_inputs["input_ids"
+dummy_input = fp32_model.dummy_inputs["input_ids"]
 ```
 
 #### Quantization
@@ -67,6 +67,8 @@ woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, quantizatio
 output = woq_model(dummy_input)
 ```
 
+> For more quick samples, please refer to [Get Started Page](examples/huggingface/pytorch/text-generation/quantization/README.md).
+
 #### LLM Runtime Inference (WIP, coming soon)
 Before API Ready, you can use LLM Runtime with [examples](intel_extension_for_transformers/llm/runtime/graph)
 ```python
@@ -75,9 +77,6 @@ prompt = "Once upon a time, a little girl"
 model = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=True)
 output = model.generate(prompt, streamer)
 ```
-
-> For more quick samples, please refer to [Get Started Page](examples/huggingface/pytorch/text-generation/quantization
-/README.md).
 
 ## 🎯Validated Performance
 
