@@ -63,7 +63,8 @@ compile_quant(quant_opt       quant_model.cpp opt       opt)
 compile_quant(quant_bloom     quant_model.cpp bloom     bloom)
 
 compile_quant(quant_chatglm   quant_model.cpp chatglm   chatglm)
-compile_quant(quant_chatglm2  quant_model.cpp chatglm2   chatglm2)
+compile_quant(quant_chatglm2  quant_model.cpp chatglm2  chatglm2)
+compile_quant(quant_baichuan  quant_model.cpp baichuan  baichuan)
 
 # all models running
 function(compile_run TARGET SRC MODEL_NAME MODEL_LIB)
@@ -87,4 +88,5 @@ compile_run(run_starcoder main_run.cpp starcoder starcoder)
 compile_run(run_opt       main_run.cpp opt       opt)
 compile_run(run_bloom     main_run.cpp bloom     bloom)
 compile_run(run_chatglm2  main_run.cpp chatglm2  chatglm2)
-compile_run(run_chatglm   main_run.cpp chatglm  chatglm)
+compile_run(run_chatglm   main_run.cpp chatglm   chatglm)
+compile_run(run_baichuan  main_run.cpp baichuan  baichuan)
