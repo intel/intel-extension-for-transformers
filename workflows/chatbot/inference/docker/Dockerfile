@@ -73,9 +73,15 @@ RUN source activate && conda activate chatbot-demo && \
     pip install uvicorn sse_starlette bottle gevent pymysql && \
     pip install schema && \
     pip install datasets torch sentencepiece peft evaluate nltk rouge_score && \
-    cd /root/chatbot && git clone https://github.com/intel/intel-extension-for-transformers.git \
-    && cd ./intel-extension-for-transformers/ && git checkout xinyuye/nc_migrate && pip install -r requirements.txt && pip install -v . \
-    && cd ./intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt
+    cd /root/chatbot 
+
+ARG ITREX_VER=xinyuye/nc_migrate
+ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+
+ADD https://api.github.com/repos/intel/intel-extension-for-transformers/git/refs/heads/${ITREX_VER} version.json
+RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
+    cd /itrex && pip install -r requirements.txt && pip install -v . && \
+    cd ./intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt
 
 ENV KMP_BLOCKTIME=1
 ENV KMP_SETTINGS=1
@@ -114,10 +120,13 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
     pip install -e . 
 
-RUN git clone https://github.com/intel/intel-extension-for-transformers.git \
-    && cd ./intel-extension-for-transformers/ && git checkout xinyuye/nc_migrate && pip install -r requirements.txt && pip install -v . \
-    && cd ./intel_extension_for_transformers/neural_chat/ \
-    && pip install -r requirements.txt \
+ARG ITREX_VER=xinyuye/nc_migrate
+ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
+
+ADD https://api.github.com/repos/intel/intel-extension-for-transformers/git/refs/heads/${ITREX_VER} version.json
+RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
+    cd /itrex && pip install -r requirements.txt && pip install -v . && \
+    cd ./intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt \
     && pip install transformers==4.32.0 \
     && pip install accelerate==0.22.0  \
     && pip uninstall -y intel_extension_for_pytorch

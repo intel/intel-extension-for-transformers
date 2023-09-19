@@ -47,6 +47,7 @@ RUN apt-get update \
     && dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 
 # Download ITREX code
+ADD https://api.github.com/repos/intel/intel-extension-for-transformers/git/refs/heads/${ITREX_VER} version.json
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex
 
 # Install miniconda
@@ -111,6 +112,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
 ARG ITREX_VER=xinyuye/nc_migrate
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
+ADD https://api.github.com/repos/intel/intel-extension-for-transformers/git/refs/heads/${ITREX_VER} version.json
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
     cd /itrex/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements.txt
