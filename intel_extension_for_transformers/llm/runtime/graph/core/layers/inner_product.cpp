@@ -78,6 +78,13 @@ using KBlockFp32Fp32 = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeigh
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
 template <template <class GC, JBLAS_ISA ISA> class ProB>
+using KBlockFp32Fp32Next = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+        jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+
+template <template <class GC, JBLAS_ISA ISA> class ProB>
 using PerNFp32Fp32 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI,
                                                              jblas::prologue::gemm::ActivationFp32AsymU8Quantize, ProB,
@@ -98,12 +105,20 @@ static JBLAS_CODE jblas_s4fp32kblock_f32f32_forward(float* activation, SS4Fp32* 
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize, (int8_t*)workspace);
       ret = kernel.compute({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo});
       delete quanA;
-    } else if (_cd->AVX512_VNNI()) {
-      using GemmKernel = avx512_vnni::KBlockFp32Fp32<WeiS4ClipFp32>;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize, (int8_t*)workspace);
-      ret = kernel.compute({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo});
-      delete quanA;
+    } else if (_cd->AVX512_VNNI() && weiptr->mBlockSize % 8 == 0) {
+      if (_m <= 32) {
+        using GemmKernel = avx512_vnni::KBlockFp32Fp32Next<WeiS4ClipFp32>;
+        static GemmKernel kernel;
+        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize, (int8_t*)workspace);
+        ret = kernel.compute({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo});
+        delete quanA;
+      } else {
+        using GemmKernel = avx512_vnni::KBlockFp32Fp32<WeiS4ClipFp32>;
+        static GemmKernel kernel;
+        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize, (int8_t*)workspace);
+        ret = kernel.compute({_m, _n, _k, activation, lda, quanA, weiptr, output, ldo});
+        delete quanA;
+      }
     }
   } else if (weiptr->mCoreType == GcCompFp32::TYPE) {
     if (_cd->AVX512F()) {
@@ -261,14 +276,24 @@ JBLAS_CODE jblas_fusion_add_s4fp32_f32f32_forward(float* activation, SS4Fp32* we
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize, (int8_t*)workspace);
       ret = kernel.compute({_m, _n, _k, activation, lda, quanA, weiptr, output, bias, ldo, broadcast_bias ? 0 : ldo});
       delete quanA;
-    } else if (_cd->AVX512_VNNI()) {
-      using GemmKernel = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
-          custom::wrapper::kblock::avx512_vnni::AddGemmSKernelDynamicS4KBlock,
-          jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize, (int8_t*)workspace);
-      ret = kernel.compute({_m, _n, _k, activation, lda, quanA, weiptr, output, bias, ldo, broadcast_bias ? 0 : ldo});
-      delete quanA;
+    } else if (_cd->AVX512_VNNI() && weiptr->mBlockSize % 8 == 0) {
+      if (_m <= 32) {
+        using GemmKernel = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+            custom::wrapper::kblock::avx512_vnni::AddGemmSKernelDynamicS4KBlockNext,
+            jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+        static GemmKernel kernel;
+        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize, (int8_t*)workspace);
+        ret = kernel.compute({_m, _n, _k, activation, lda, quanA, weiptr, output, bias, ldo, broadcast_bias ? 0 : ldo});
+        delete quanA;
+      } else {
+        using GemmKernel = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+            custom::wrapper::kblock::avx512_vnni::AddGemmSKernelDynamicS4KBlock,
+            jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+        static GemmKernel kernel;
+        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize, (int8_t*)workspace);
+        ret = kernel.compute({_m, _n, _k, activation, lda, quanA, weiptr, output, bias, ldo, broadcast_bias ? 0 : ldo});
+        delete quanA;
+      }
     }
   }
   return ret;
