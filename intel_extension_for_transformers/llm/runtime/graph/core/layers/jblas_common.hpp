@@ -779,10 +779,9 @@ using DynamicGemm =
                                                     jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, Epi>;
 
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
-using DynamicGemmNext =
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<JblasAVX512_VNNI,
-                                                    jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
-                                                    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, Epi>;
+using DynamicGemmNext = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+    JblasAVX512_VNNI, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, Epi>;
 
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
 using DynamicGemmPerN = jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<

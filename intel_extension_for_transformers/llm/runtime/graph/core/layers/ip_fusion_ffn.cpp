@@ -82,7 +82,7 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(float* activation, SS4Fp3
       delete quanA2;
 
     } else if (_cd->AVX512_VNNI() && w1ptr->mBlockSize % 8 == 0) {
-      if (seq<=32) {
+      if (seq <= 32) {
         using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmSKernelDynamicS4KBlockNext;
         using SiluGemmKernel = custom::wrapper::kblock::avx512_vnni::SiluGemmSKernelDynamicS4KBlockNext;
         using FusedInter = custom::wrapper::transformer::FFNFusedInterface<SiluGemmKernel, GemmKernel>;
