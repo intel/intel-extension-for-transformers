@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
+model_name = "mosaicml/mpt-7b"
+woq_config = WeightOnlyQuantConfig(compote_dtype="int8")
+
+model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True)
 
 prompt = "Once upon a time, a little girl"
-model_name = "/mnt/disk1/data2/zhenweil/models/mpt/mpt-7b/"
-
-model = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=True) # weightonlyconfig
-print(model.generate("Hello, my dog is cute")) #max_length=100 , sentence_mode=True
+print(model.generate(prompt, sentence_mode=True, n_predict=30))

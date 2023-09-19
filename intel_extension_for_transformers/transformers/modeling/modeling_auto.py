@@ -93,7 +93,7 @@ class _BaseQBitsAutoModelClass:
                 logger.info("Using LLM runtime.")
                 from intel_extension_for_transformers.llm.runtime.graph import Model
                 model = Model()
-                model.init(pretrained_model_name_or_path)
+                model.init(pretrained_model_name_or_path, compute_type=quantization_config.compute_dtype)
                 return model
             else:
                 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model

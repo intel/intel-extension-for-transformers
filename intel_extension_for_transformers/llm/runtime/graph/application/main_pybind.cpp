@@ -57,7 +57,7 @@ class Model {
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
                   float repeat_penalty);
   void reinit();
-  std::string generate(const std::string& prompt, bool stream_mode = false);
+  std::string generate(const std::string& prompt, bool sentence_mode = true);
   bool is_token_end() { return token_eos; }
   static int quant_model(const std::string& model_path, const std::string& out_path, int bits, const std::string& alg,
                          int block_size, const std::string& scale_dtype, const std::string& compute_type);
@@ -169,12 +169,12 @@ std::string Model::generate_tokens(const std::string& prompt) {
   return ret;
 }
 
-std::string Model::generate(const std::string& prompt, bool stream_mode) {
-  if (stream_mode) {
-    return generate_one_token(prompt);
+std::string Model::generate(const std::string& prompt, bool sentence_mode) {
+  if (sentence_mode) {
+    return generate_tokens(prompt);
   }
 
-  return generate_tokens(prompt);
+  return generate_one_token(prompt);
 }
 
 int Model::post_process(float* logits) {
@@ -305,7 +305,7 @@ PYBIND11_MODULE(chatglm_cpp, m)
                           )
       .def("generate", &Model::generate, "Generate tokens with prompt",
                           py::arg("prompt"),
-                          py::arg("stream_mode") = true
+                          py::arg("sentence_mode") = true
                           )
       .def_static("quant_model", &Model::quant_model, "Quantize model",
                           py::arg("model_path"),

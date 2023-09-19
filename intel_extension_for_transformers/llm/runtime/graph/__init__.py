@@ -14,6 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 from transformers import AutoConfig
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert_model import convert_model
 
@@ -59,16 +60,19 @@ class Model:
         self.__import_package(model_type)
 
         # 1. convert model
-        convert_model(model_name, "ne_{}_f32.bin".format(model_type), "f32")
+        fp32_bin = "ne_{}_f32.bin".format(model_type)
+        convert_model(model_name, fp32_bin, "f32")
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
-        self.module.Model.quant_model(model_path = "ne_{}_f32.bin".format(model_type),
-                                    out_path = quant_bin, **kwargs)
+        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
         
         self.model_type = model_type
         self.bin_file = quant_bin
-        # clean 
+        
+        # clean
+        os.remove(fp32_bin)
+
 
     def init_from_bin(self, model_name, model_path, **kwargs):
         self.__import_package(model_name)
@@ -80,11 +84,11 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, prompt, stream_mode = True, **kwargs):
+    def generate(self, prompt, sentence_mode = True, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
         
-        out = self.model.generate(prompt = prompt, stream_mode = stream_mode)
+        out = self.model.generate(prompt = prompt, sentence_mode = sentence_mode)
         return out
 
     def is_token_end(self):
