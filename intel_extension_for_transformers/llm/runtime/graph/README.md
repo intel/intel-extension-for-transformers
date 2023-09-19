@@ -151,8 +151,37 @@ itrex_llm_runtime Model methods explanations:
 | is_token_end   | check if the token of "end of text" has been output                                                     |
 | generate       | generate tokens based on prompt, with the second arg representing whether to enable stream mode         |
 
+### 3. Inference model with C++ script API
 
-### 3. Tensor Parallelism cross nodes/sockets
+We supply LLM running script to run supported models with c++ api conveniently.
+
+# recommed to use numactl to bind cores in Intel cpus for better performance
+# if you use different core numbers, please also  change -t arg value
+# please type prompt about codes when run `StarCoder`, for example, -p "def fibonnaci(".
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see"
+
+# if you want to generate fixed outputs, please set --seed arg, for example:
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --seed 12
+
+# if you want to reduce repeated generated texts, please set --repeat_penalty (value > 1.0, default = 1.0), for example:
+OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
+LLM running script args explanations:
+
+arg	explanation
+--model_name	model name
+-m / --model	path to the executed model
+-p / --prompt	prompt to start generation with (default: empty)
+-n / --n_predict	number of tokens to predict (default: -1, -1 = infinity)
+-t / --threads	number of threads to use during computation (default: 56)
+-b / --batch_size	batch size for prompt processing (default: 512)
+-c / --ctx_size	size of the prompt context (default: 512, can not be larger than specific model's context window length)
+-s / --seed	NG seed (default: -1, use random seed for < 0)
+--repeat_penalty	penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)
+--color	colorise output to distinguish prompt and user input from generations
+--keep	number of tokens to keep from the initial prompt (default: 0, -1 = all)
+--glm_tokenizer	the path of the chatglm tokenizer (default: THUDM/chatglm-6b)
+
+### 4. Tensor Parallelism cross nodes/sockets
 
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
 
