@@ -29,15 +29,15 @@ namespace transformer {
 namespace avx512_vnni {
 static JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
 using QKVGemmDynamicS4Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_4x48_AVX512_VNNI_KBLOCK,
         jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
         jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 using QKVGemmDynamicS8Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_4x48_AVX512_VNNI_KBLOCK,
         jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
         jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;

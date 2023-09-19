@@ -72,8 +72,8 @@ JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
 
 template <template <class GC, JBLAS_ISA ISA> class ProB>
 using KBlockFp32Fp32 = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_4x48_AVX512_VNNI_KBLOCK,
         jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 
