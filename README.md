@@ -51,31 +51,26 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 
 ## 🌱Getting Started
-### LLM Weight-Only Quantization
-#### Prepare Dataset
-```python
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
-fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
-dummy_input = fp32_model.dummy_inputs["input_ids"]
-```
-
-#### Quantization
-```python
-from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
-woq_config = WeightOnlyQuantConfig()
-woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, quantization_config=woq_config)
-output = woq_model(dummy_input)
-```
-
-> For more quick samples, please refer to [Get Started Page](examples/huggingface/pytorch/text-generation/quantization/README.md).
-
-#### LLM Runtime Inference (WIP, coming soon)
+### LLM Weight-Only Inference
+Our API is currently a work in progress and will be coming soon.
 Before API Ready, you can use LLM Runtime with [examples](intel_extension_for_transformers/llm/runtime/graph).
+
+#### LLM Runtime int4 Inference 
 ```python
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 prompt = "Once upon a time, a little girl"
-model = AutoModelForCausalLM.from_pretrained(model_name, use_llm_runtime=True)
-output = model.generate(prompt, streamer)
+config = WeightOnlyQuantConfig(compute_dtype="int8")
+model = AutoModelForCausalLM.from_pretrained("mosaicml/mpt-7b", quantization_config=woq_config, use_llm_runtime=True)
+print(model.generate(prompt, streamer, max_new_tokens=30))
+```
+
+#### LLM Runtime int8 Inference
+```python
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+prompt = "Once upon a time, a little girl"
+config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
+model = AutoModelForCausalLM.from_pretrained("mosaicml/mpt-7b", quantization_config=woq_config, use_llm_runtime=True)
+print(model.generate(prompt, streamer, max_new_tokens=30))
 ```
 
 ## 🎯Validated Performance
