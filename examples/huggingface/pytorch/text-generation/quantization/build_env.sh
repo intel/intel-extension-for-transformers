@@ -1,58 +1,58 @@
 #!/bin/bash
-  2 set -x
-  3 set -e
-  4
-  5 VER_LLVM="llvmorg-16.0.6"
-  6 VER_IPEX="7256d0848ba81bb802dd33fca0e33049a751db58"
-  7
-  8 # Check existance of required Linux commands
-  9 for CMD in conda git nproc make; do
- 10     command -v ${CMD} || (echo "Error: Command \"${CMD}\" not found." ; exit 4)
- 11 done
- 12
- 13 MAX_JOBS_VAR=$(nproc)
- 14 if [ ! -z "${MAX_JOBS}" ]; then
- 15     MAX_JOBS_VAR=${MAX_JOBS}
- 16 fi
- 17
- 18 # Save current directory path
- 19 BASEFOLDER=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
- 20 cd ${BASEFOLDER}
- 21 # Checkout individual components
- 22 if [ ! -d llvm-project ]; then
- 23     git clone https://github.com/llvm/llvm-project.git
- 24 fi
- 25 if [ ! -d intel-extension-for-pytorch ]; then
- 26     git clone https://github.com/intel/intel-extension-for-pytorch.git
- 27 fi
- 28
- 29 # Checkout required branch/commit and update submodules
- 30 cd llvm-project
- 31 if [ ! -z ${VER_LLVM} ]; then
- 32     git checkout ${VER_LLVM}
- 33 fi
- 34 git submodule sync
- 35 git submodule update --init --recursive
- 36 cd ..
- 37 cd intel-extension-for-pytorch
- 38 if [ ! -z ${VER_IPEX} ]; then
- 39     git checkout ${VER_IPEX}
- 40 fi
- 41 git submodule sync
- 42 git submodule update --init --recursive
- 43 cd ..
- 44
- 45 # Install dependencies
- 46 conda install -y gcc==12.3 gxx==12.3 cxx-compiler -c conda-forge
- 47 conda update -y sysroot_linux-64
- 48 python -m pip install cmake
- 49 python -m pip install https://download.pytorch.org/whl/nightly/cpu/torch-2.1.0.dev20230711%2Bcpu-cp39-cp39-linux_x86_64.whl
- 50 ABI=$(python -c "import torch; print(int(torch._C._GLIBCXX_USE_CXX11_ABI))")
- 51
- 52 # Compile individual component
- 53 export CC=${CONDA_PREFIX}/bin/gcc
- 54 export CXX=${CONDA_PREFIX}/bin/g++
- 55 export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}
+set -x
+set -e
+
+VER_LLVM="llvmorg-16.0.6"
+VER_IPEX="7256d0848ba81bb802dd33fca0e33049a751db58"
+
+# Check existance of required Linux commands
+for CMD in conda git nproc make; do
+    command -v ${CMD} || (echo "Error: Command \"${CMD}\" not found." ; exit 4)
+done
+
+MAX_JOBS_VAR=$(nproc)
+if [ ! -z "${MAX_JOBS}" ]; then
+    MAX_JOBS_VAR=${MAX_JOBS}
+fi
+
+# Save current directory path
+BASEFOLDER=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+cd ${BASEFOLDER}
+# Checkout individual components
+if [ ! -d llvm-project ]; then
+    git clone https://github.com/llvm/llvm-project.git
+fi
+if [ ! -d intel-extension-for-pytorch ]; then
+    git clone https://github.com/intel/intel-extension-for-pytorch.git
+fi
+
+# Checkout required branch/commit and update submodules
+cd llvm-project
+if [ ! -z ${VER_LLVM} ]; then
+    git checkout ${VER_LLVM}
+fi
+git submodule sync
+git submodule update --init --recursive
+cd ..
+cd intel-extension-for-pytorch
+if [ ! -z ${VER_IPEX} ]; then
+    git checkout ${VER_IPEX}
+fi
+git submodule sync
+git submodule update --init --recursive
+cd ..
+
+# Install dependencies
+conda install -y gcc==12.3 gxx==12.3 cxx-compiler -c conda-forge
+conda update -y sysroot_linux-64
+python -m pip install cmake
+python -m pip install https://download.pytorch.org/whl/nightly/cpu/torch-2.1.0.dev20230711%2Bcpu-cp39-cp39-linux_x86_64.whl
+ABI=$(python -c "import torch; print(int(torch._C._GLIBCXX_USE_CXX11_ABI))")
+
+# Compile individual component
+export CC=${CONDA_PREFIX}/bin/gcc
+export CXX=${CONDA_PREFIX}/bin/g++
+export LD_LIBRARY_PATH=${CONDA_PREFIX}/lib:${LD_LIBRARY_PATH}
 
 #  LLVM
 cd llvm-project
@@ -115,4 +115,3 @@ cd ..
 pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
 # Install others deps
 pip install transformers optimum-intel cpuid accelerate datasets sentencepiece protobuf==3.20.3
-
