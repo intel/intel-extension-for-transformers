@@ -25,7 +25,7 @@ from pydub import AudioSegment
 def convert_video_to_wav(path, output_sample_rate, is_mono=True):
     is_dir = os.path.isdir(path)
     if is_dir: 
-        path_list=os.listdir(path)
+        path_list=os.listdir(shlex.quote(path))
     else: # input is a file
         path, basename = os.path.split(path)
         path_list = [basename]
