@@ -70,7 +70,7 @@ output = woq_model(dummy_input)
 > For more quick samples, please refer to [Get Started Page](examples/huggingface/pytorch/text-generation/quantization/README.md).
 
 #### LLM Runtime Inference (WIP, coming soon)
-Before API Ready, you can use LLM Runtime with [examples](intel_extension_for_transformers/llm/runtime/graph)
+Before API Ready, you can use LLM Runtime with [examples](intel_extension_for_transformers/llm/runtime/graph).
 ```python
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 prompt = "Once upon a time, a little girl"
