@@ -777,6 +777,13 @@ using DynamicGemm =
     jblas::wrapper::gemm_kblock::GemmLauncherKBlock<JblasAVX512_VNNI,
                                                     jblas::gemm::kblock::GemmCore_Row_NN_4x48_AVX512_VNNI_KBLOCK,
                                                     jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, Epi>;
+
+template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
+using DynamicGemmNext =
+    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<JblasAVX512_VNNI,
+                                                    jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+                                                    jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, Epi>;
+
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
 using DynamicGemmPerN = jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
     JblasAVX512_VNNI, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI,
@@ -787,6 +794,12 @@ using SiluGemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, custom::epilog
 using GeluGemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, custom::epilogue::GeluFp32>;
 using AddGeluGemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, custom::epilogue::AddFp32>;
+
+using GemmSKernelDynamicS4KBlockNext = DynamicGemmNext<WeiS4ClipFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+using SiluGemmSKernelDynamicS4KBlockNext = DynamicGemmNext<WeiS4ClipFp32, custom::epilogue::SiluFp32>;
+using GeluGemmSKernelDynamicS4KBlockNext = DynamicGemmNext<WeiS4ClipFp32, custom::epilogue::GeluFp32>;
+using AddGeluGemmSKernelDynamicS4KBlockNext = DynamicGemmNext<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmSKernelDynamicS4KBlockNext = DynamicGemmNext<WeiS4ClipFp32, custom::epilogue::AddFp32>;
 
 using GemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
 using SiluGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::SiluFp32>;
