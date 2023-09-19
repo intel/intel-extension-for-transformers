@@ -18,3 +18,4 @@ evaluate
 wget
 optimum
 optimum-intel
+peft

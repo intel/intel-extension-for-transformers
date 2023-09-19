@@ -16,12 +16,18 @@
 # limitations under the License.
 """Neural Chat Chatbot API."""
 
+import os
 from intel_extension_for_transformers.llm.finetuning.finetuning import Finetuning
 from intel_extension_for_transformers.llm.quantization.optimization import Optimization
 from .config import PipelineConfig
 from .config import BaseFinetuningConfig
 from .config import DeviceOptions
-from .plugins import plugins, global_plugins
+from .plugins import plugins
+
+def prepare_env(device):
+    if device == "hpu":
+        os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
+        os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
 
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
@@ -101,9 +107,6 @@ def build_chatbot(config: PipelineConfig=None):
                 plugins[plugin_name]["instance"] = plugins[plugin_name]['class'](**plugin_value['args'])
                 adapter.register_plugin_instance(plugin_name, plugins[plugin_name]["instance"])
 
-    global_plugins.reset_plugins()
-    plugins = global_plugins.plugins
-
     parameters = {}
     parameters["model_name"] = config.model_name_or_path
     if config.tokenizer_name_or_path:
@@ -118,6 +121,9 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
+
+    # Set necessary env variables
+    prepare_env(config.device)
     adapter.load_model(parameters)
 
     return adapter

@@ -36,3 +36,4 @@ rouge_score
 openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
+lm_eval

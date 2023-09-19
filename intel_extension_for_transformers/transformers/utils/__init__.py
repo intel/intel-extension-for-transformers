@@ -16,3 +16,10 @@
 # limitations under the License.
 
 """Utils for optimization."""
+
+from .quantization_config import (
+    MixedPrecisionConfig,
+    BitsAndBytesConfig,
+    SmoothQuantConfig,
+    WeightOnlyQuantConfig,
+)

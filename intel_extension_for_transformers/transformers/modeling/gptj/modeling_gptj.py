@@ -221,13 +221,24 @@ class GPTJAttention(nn.Module):
         Tuple[torch.Tensor, Tuple[torch.Tensor]],
         Optional[Tuple[torch.Tensor, Tuple[torch.Tensor], Tuple[torch.Tensor, ...]]],
     ]:
+        
         query = self.q_proj(hidden_states)
         key = self.k_proj(hidden_states)
         value = self.v_proj(hidden_states)
-
+        
         query = self._split_heads(query, self.num_attention_heads, self.head_dim, True)
         key = self._split_heads(key, self.num_attention_heads, self.head_dim, True)
         value = self._split_heads(value, self.num_attention_heads, self.head_dim, False)
+        
+        past_length = 0
+        device = query.device
+        input_shape = hidden_states.size()[:-1]
+        if position_ids is None:
+            position_ids = torch.arange(past_length, 
+                                        torch.tensor(input_shape[-1]) + torch.tensor(past_length),
+                                        dtype=torch.long,
+                                        device=device)
+            position_ids = position_ids.unsqueeze(0).view(-1, input_shape[-1])
 
         if is_torch_fx_proxy(position_ids):
             # The logic to conditionally copy to GPU could not be traced, so we do this
@@ -1173,3 +1184,4 @@ class GPTJForQuestionAnswering(GPTJPreTrainedModel):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
+

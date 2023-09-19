@@ -23,6 +23,12 @@
 #include <cstdio>
 #endif
 
+#if UINTPTR_MAX == 0xFFFFFFFF
+#define NE_MEM_ALIGN 4
+#else
+#define NE_MEM_ALIGN 16
+#endif
+
 #include "core/ne_layers.h"
 #include "models/model_utils/util.h"
 #include "models/models.h"
@@ -493,9 +499,15 @@ struct model_model_loader {
 
   void calc_sizes(size_t* ctx_size_p, size_t* mmapped_size_p) const {
     *ctx_size_p = *mmapped_size_p = 0;
+    size_t size_needed = 0;
     for (const model_load_tensor& lt : tensors_map.tensors) {
       *ctx_size_p += sizeof(struct ne_tensor) + NE_OBJECT_SIZE;
-      *(use_mmap ? mmapped_size_p : ctx_size_p) += lt.size;
+      if (lt.type == NE_TYPE_JBLAS) {
+        size_needed = lt.size;
+      } else {
+        size_needed = (lt.size + NE_MEM_ALIGN - 1) / NE_MEM_ALIGN * NE_MEM_ALIGN;
+      }
+      *(use_mmap ? mmapped_size_p : ctx_size_p) += size_needed;
     }
   }
 
