@@ -67,6 +67,7 @@ RUN source activate && conda activate chatbot-demo && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
     conda install pytorch torchvision torchaudio cpuonly -c pytorch && \
+    pip install --upgrade pip && \
     pip install intel_extension_for_pytorch && \
     pip install optimum-intel && \
     pip install transformers diffusers accelerate SentencePiece peft evaluate nltk datasets && \
