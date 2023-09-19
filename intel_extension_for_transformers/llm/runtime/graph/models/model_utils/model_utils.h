@@ -402,9 +402,11 @@ class beam_search_flow {
   std::vector<model_token> loop(const model_token* tokens_inp, const int& n_tokens, const int& n_threads);
 
  private:
-  std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len, const std::vector<float>& beams_score,
-                                         const std::vector<int>& num_beams, const std::vector<int> beam_indices,
-                                         const int& sample_scale = 2, const int& dim = -1);
+  std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len,
+                                                      const std::vector<float>& beams_score,
+                                                      const std::vector<int>& num_beams,
+                                                      const std::vector<int> beam_indices, const int& sample_scale = 2,
+                                                      const int& dim = -1);
   void fill_next_beams_by_top_probabilities();
   std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
   void beam_score_length_penalize();

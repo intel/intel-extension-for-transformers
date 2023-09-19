@@ -2121,10 +2121,10 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
 // then we sample top_k results among all beams.
 // this approach will accelerate sampling speed by log_softmax times reduction
 std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len,
-                                                         const std::vector<float>& beams_score,
-                                                         const std::vector<int>& num_beams,
-                                                         const std::vector<int> beam_indices, const int& sample_scale,
-                                                         const int& dim) {
+                                                                      const std::vector<float>& beams_score,
+                                                                      const std::vector<int>& num_beams,
+                                                                      const std::vector<int> beam_indices,
+                                                                      const int& sample_scale, const int& dim) {
   MODEL_ASSERT(dim == -1);   // raise unimplemented error
   const int request_bs = 1;  // TODO ctx->request_running_num
   logits_info li(ctx);
@@ -2246,8 +2246,8 @@ void beam_search_flow::fill_next_beams_by_top_probabilities() {
   MODEL_ASSERT(next_beams.empty());
   for (int i = 0; i < next_tokens.size(); ++i) {
     if (next_tokens[i].id == ctx->vocab.eos_token_id) {
-    // if beam_token does not belong to top num_beams tokens, it should not be added
-      bool is_beam_token_worse_than_top_num_beams = i >= beam_size ? true: false;
+      // if beam_token does not belong to top num_beams tokens, it should not be added
+      bool is_beam_token_worse_than_top_num_beams = i >= beam_size ? true : false;
       if (is_beam_token_worse_than_top_num_beams) {
         continue;
       }
