@@ -22,7 +22,7 @@ jobs:
       - name: Build Docker Image
         run: |
           cd workflows/chatbot/inference/docker
-          docker build ./ --target hpu -f ./Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
+          docker build --no-cache ./ --target hpu -f ./Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |

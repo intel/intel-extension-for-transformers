@@ -22,7 +22,7 @@ jobs:
       - name: Build Docker Image
         run: |
           cd workflows/chatbot/fine_tuning/docker
-          docker build ./ --target hpu -f ./Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
+          docker build --no-cache ./ --target hpu -f ./Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         id: master_container

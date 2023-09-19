@@ -78,9 +78,8 @@ RUN source activate && conda activate chatbot-demo && \
 ARG ITREX_VER=xinyuye/nc_migrate
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
-ADD https://api.github.com/repos/intel/intel-extension-for-transformers/git/refs/heads/${ITREX_VER} version.json
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
-    cd /itrex && pip install -r requirements.txt && pip install -v . && \
+    cd itrex && pip install -r requirements.txt && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt
 
 ENV KMP_BLOCKTIME=1
@@ -123,9 +122,8 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
 ARG ITREX_VER=xinyuye/nc_migrate
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
-ADD https://api.github.com/repos/intel/intel-extension-for-transformers/git/refs/heads/${ITREX_VER} version.json
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
-    cd /itrex && pip install -r requirements.txt && pip install -v . && \
+    cd itrex && pip install -r requirements.txt && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt \
     && pip install transformers==4.32.0 \
     && pip install accelerate==0.22.0  \
