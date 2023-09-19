@@ -91,11 +91,18 @@ class _BaseQBitsAutoModelClass:
             logger.info("Applying Weight Only Quantization.")
             if use_llm_runtime:
                 logger.info("Using LLM runtime.")
+                quantization_config.post_init_runtime()
                 from intel_extension_for_transformers.llm.runtime.graph import Model
                 model = Model()
-                model.init(pretrained_model_name_or_path, compute_type=quantization_config.compute_dtype)
+                model.init(pretrained_model_name_or_path,
+                           bits=4, # TODO turn into weight_dtype
+                           alg=quantization_config.scheme,
+                           block_size=quantization_config.group_size, # TODO group size
+                           scale_dtype=quantization_config.scale_dtype,
+                           compute_type=quantization_config.compute_dtype)
                 return model
             else:
+                quantization_config.post_init()
                 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
                 convert_to_quantized_model(model, quantization_config)
         elif isinstance(quantization_config, SmoothQuantConfig):

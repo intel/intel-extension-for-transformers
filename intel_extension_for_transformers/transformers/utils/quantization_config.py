@@ -30,13 +30,13 @@ class WeightOnlyQuantConfig:
         self,
         llm_int8_skip_modules=None,
         compute_dtype=None,
-        weight_dtype="int4_fullrange", # int8 int4_clip, int4_fullrange fp4_e2m1_bnb fp4_e2m1 nf4
+        weight_dtype=None,
         scale_dtype="fp32", # Now only fp32
         mse_range=False,
         use_double_quant=False,
         double_quant_dtype="int8", # reserve for double quant
         double_quant_scale_dtype="fp32", # reserve for double quant
-        group_size=None,
+        group_size=32,
         scheme="sym",
         algorithm="RTN",
         **kwargs,
@@ -51,11 +51,8 @@ class WeightOnlyQuantConfig:
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.scheme = scheme
         self.algorithm = algorithm
+        self.group_size = group_size
 
-        if group_size is None:
-            self.group_size = 32
-        else:
-            self.group_size = group_size
         if compute_dtype is None:
             self.compute_dtype = "fp32"
         elif isinstance(compute_dtype, str):
@@ -65,7 +62,6 @@ class WeightOnlyQuantConfig:
         else:
             raise ValueError("bit4_compute_dtype must be a string or a torch.dtype")
 
-        self.post_init()
 
     def post_init(self):
         r"""
@@ -78,7 +74,9 @@ class WeightOnlyQuantConfig:
         if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'bf16', 'int8']:
             raise ValueError("compute_dtype must be 'fp32', 'bf16', 'int8'.")
 
-        if self.weight_dtype not in ['int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1']:
+        if self.weight_dtype is None:
+            self.weight_dtype = 'int4_fullrange'
+        elif self.weight_dtype not in ['int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1']:
             raise ValueError(f"weight_dtype must be a string in "
                              f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1'")
 
@@ -102,6 +100,33 @@ class WeightOnlyQuantConfig:
 
         if not isinstance(self.scheme, str):
             raise ValueError("scheme must be a string")
+
+    def post_init_runtime(self):
+        r"""
+        Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
+        """
+
+        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
+            raise ValueError("llm_int8_skip_modules must be a list of strings")
+
+        if self.compute_dtype is None:
+            self.compute_dtype = "ggml"
+        elif self.compute_dtype not in ['ggml', 'int8', 'fp32']:
+            raise ValueError("compute_dtype must be 'ggml', 'int8', 'fp32'.")
+
+        if self.weight_dtype is None:
+            self.weight_dtype = "int4"
+        elif self.weight_dtype not in ['int4', 'int8', 'fp32']:
+            raise ValueError(f"weight_dtype must be 'int4', 'int8', 'fp32'.")
+
+        if self.scale_dtype not in ["fp32", "fp16"]:
+            raise ValueError("scale_dtype must be 'fp32', 'fp16'.")
+
+        if self.group_size not in [32, 128]:
+            raise ValueError("group_size must be an integer in [32, 128]")
+
+        if self.scheme not in ["sym", "asym"]:
+            raise ValueError("scheme must be 'sym', 'asym'.")
 
     def quantization_method(self):
         r"""
