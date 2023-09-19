@@ -84,7 +84,8 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, prompt, sentence_mode = True, **kwargs):
+    def generate(self, prompt, streamer = None, sentence_mode = True, **kwargs):
+        # TODO support streamer
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
         
