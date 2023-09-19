@@ -55,7 +55,7 @@ class Model {
     if (ctx) model_free(ctx);
   }
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
-                  float repeat_penalty);
+                  float repeat_penalty, const std::string& post_process);
   void reinit();
   std::string generate(const std::string& prompt, bool sentence_mode = true);
   bool is_token_end() { return token_eos; }
@@ -77,14 +77,14 @@ class Model {
   int post_process(float* logits);
 };
 
-void Model::init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed,
-                       int threads, float repeat_penalty) {
+void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
+                       int threads, float repeat_penalty, const std::string& post_process) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
   params.model_arch = model_name_to_arch::init().find(params.model_name);
   params.model = model_path;
-  params.n_predict = n_predict;
+  params.n_predict = max_new_tokens;
   params.n_batch = batch_size;
   params.n_ctx = ctx_size;
   params.seed = seed;
@@ -123,7 +123,7 @@ std::string Model::generate_one_token(const std::string& prompt) {
   int next_token_id = post_process(logits);
   curr_input_ids = {next_token_id};
 
-  if (next_token_id == model_token_eos() || n_past - prompt.size() == params.n_predict) {
+  if (next_token_id == ctx->vocab.eos_token_id || n_past - prompt.size() == params.n_predict) {
     token_eos = true;
   }
 
@@ -294,28 +294,14 @@ PYBIND11_MODULE(chatglm_cpp, m)
   m.doc() = "cpp model python binding";
   py::class_<Model>(m, "Model", py::module_local())
       .def(py::init())
-      .def("init_model", &Model::init_model, "initial model with model path and parameters",
-                          py::arg("model_path"),
-                          py::arg("n_predict") = -1,
-                          py::arg("batch_size") = 512,
-                          py::arg("ctx_size") = 512,
-                          py::arg("seed") = -1,
-                          py::arg("threads") = 8,
-                          py::arg("repeat_penalty") = 1.1f
-                          )
-      .def("generate", &Model::generate, "Generate tokens with prompt",
-                          py::arg("prompt"),
-                          py::arg("sentence_mode") = true
-                          )
-      .def_static("quant_model", &Model::quant_model, "Quantize model",
-                          py::arg("model_path"),
-                          py::arg("out_path"),
-                          py::arg("bits") = 4,
-                          py::arg("alg") = "sym",
-                          py::arg("block_size") = 32,
-                          py::arg("scale_dtype") = "fp32",
-                          py::arg("compute_type") = "ggml"
-                          )
+      .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"),
+           py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
+           py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("post_process") = "topk")
+      .def("generate", &Model::generate, "Generate tokens with prompt", py::arg("prompt"),
+           py::arg("sentence_mode") = true)
+      .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
+                  py::arg("bits") = 4, py::arg("alg") = "sym", py::arg("block_size") = 32,
+                  py::arg("scale_dtype") = "fp32", py::arg("compute_type") = "ggml")
       .def("is_token_end", &Model::is_token_end)
       .def("reinit", &Model::reinit);
 }

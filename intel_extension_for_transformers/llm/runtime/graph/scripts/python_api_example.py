@@ -17,9 +17,9 @@
 
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 model_name = "mosaicml/mpt-7b"
-woq_config = WeightOnlyQuantConfig(compote_dtype="int8")
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8")
 
 model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True)
 
 prompt = "Once upon a time, a little girl"
-print(model.generate(prompt, sentence_mode=True, n_predict=30))
+print(model.generate(prompt, max_new_tokens=30))
