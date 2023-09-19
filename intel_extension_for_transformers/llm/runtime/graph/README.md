@@ -52,83 +52,10 @@ cmake ..
 cmake --build . -j
 ```
 
-### 2. Convert LLM
-LLM Runtime assumes the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
-
-```bash
-# download fp32 model (e.g., LLAMA2) from Hugging Face
-git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
-
-# convert the pytorch model to ggml format
-python scripts/convert_model.py --outtype f32 --outfile ne-f32.bin model_path
-
-# or convert the model without downloading it by hand (llama and llama2 are WIP) 
-python scripts/convert_model.py --outtype f32 --outfile EleutherAI/gpt-j-6b
-
-# quantize weights of fp32 ggml bin
-# model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
-# to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
-python scripts/quant_bin.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
-
-# to ggml q4_0 format
-python scripts/quant_bin.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
-# to neuarl engine graph optimized q4_j with 32 block_size format
-
-python scripts/quant_bin.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
-
-```
-quantization args explanations:
-| arg             | explanation                                                 |
-| --------------  | ----------------------------------------------------------- |
-| --model_file    | path to the fp32 model                                      |
-| --out_file      | path to the quantized model                                 |
-| --config        | path to the configuration file (default: )                  |
-| --nthread       | number of threads to use (default: 1)                       |
-| --weight_dtype  | data type of quantized weight (default: int4)         |
-| --alg           | quantization algorithm to use: sym/asym (default: sym)      |
-| --block_size    | block size (default: 32)                                    |
-| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
-| --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
-
-
-### 3. Run Models of C++ Inferface
-
-We supply LLM running python script to run supported models conveniently.
-
-```bash
-# recommed to use numactl to bind cores in Intel cpus for better performance
-# if you use different core numbers, please also  change -t arg value
-# please type prompt about codes when run `StarCoder`, for example, -p "def fibonnaci(".
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see"
-
-# if you want to generate fixed outputs, please set --seed arg, for example:
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --seed 12
-
-# if you want to reduce repeated generated texts, please set --repeat_penalty (value > 1.0, default = 1.0), for example:
-OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/run_llm.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
-```
-
-LLM running script args explanations:
-| arg               | explanation                                                             |
-| --------------    | ----------------------------------------------------------------------- |
-| --model_name      | model name                                                              |
-| -m / --model      | path to the executed model                                              |
-| -p / --prompt     | prompt to start generation with (default: empty)                        |
-| -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
-| -t / --threads    | number of threads to use during computation (default: 56)               |
-| -b / --batch_size | batch size for prompt processing (default: 512)                         |
-| -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                |
-| -s / --seed       | NG seed (default: -1, use random seed for < 0)                          |
-| --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
-| --color           | colorise output to distinguish prompt and user input from generations   |
-| --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
-| --glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
-
-### 4. One-click Script 
-
+### 2. Run LLM
 You can use the following script to run, including convertion, quantization and inference.
 ```
-python scripts/one_click_run.py model-path --weight_dtype int4 -p "She opened the door and see"
+python scripts/run_llm.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
 LLM one-click running script args explanations:
@@ -150,7 +77,48 @@ LLM one-click running script args explanations:
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 
-### 4. Run Models of Python Interface
+
+## Advanced use
+
+### 1. Convert and Quantize LLM model
+LLM Runtime assumes the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
+
+```bash
+
+# convert the model directly use model id in Hugging Face. (recommended)
+python scripts/convert.py --outtype f32 --outfile ne-f32.bin EleutherAI/gpt-j-6b
+
+# or you can download fp32 model (e.g., LLAMA2) from Hugging Face at first, then convert the pytorch model to ggml format.
+git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
+python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
+
+# quantize weights of fp32 ggml bin
+# model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
+# to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
+
+# Alternativly you could run ggml q4_0 format like following
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
+# or ues neuarl engine graph optimized q4_j with 32 block_size format
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
+
+```
+quantization args explanations:
+| arg             | explanation                                                 |
+| --------------  | ----------------------------------------------------------- |
+| --model_file    | path to the fp32 model                                      |
+| --out_file      | path to the quantized model                                 |
+| --config        | path to the configuration file (default: )                  |
+| --nthread       | number of threads to use (default: 1)                       |
+| --weight_dtype  | data type of quantized weight (default: int4)         |
+| --alg           | quantization algorithm to use: sym/asym (default: sym)      |
+| --block_size    | block size (default: 32)                                    |
+| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
+| --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
+
+
+### 2. Inference model with Python API
+
 Here is how to install itrex_llm_runtime from source.
 ```bash
 git submodule update --recursive --init
@@ -183,7 +151,8 @@ itrex_llm_runtime Model methods explanations:
 | is_token_end   | check if the token of "end of text" has been output                                                     |
 | generate       | generate tokens based on prompt, with the second arg representing whether to enable stream mode         |
 
-### 5. Tensor Parallelism cross nodes/sockets
+
+### 3. Tensor Parallelism cross nodes/sockets
 
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
 
