@@ -18,11 +18,11 @@
 #include "core/data_types.h"
 
 enum class quant_bits : int { q4 = 0, q8, count };
-static inline quant_bits parse_bits(int bits) {
-  if (bits == 4) {
+static inline quant_bits parse_bits(const std::string& bits) {
+  if (bits == "int4") {
     return quant_bits::q4;
   }
-  if (bits == 8) {
+  if (bits == "int8") {
     return quant_bits::q8;
   }
   return quant_bits::count;

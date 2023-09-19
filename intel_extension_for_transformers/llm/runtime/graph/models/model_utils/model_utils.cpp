@@ -782,7 +782,7 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
 // quantization
 //
 quant_params_internal quant_params_to_internal(const quant_params& params) {
-  return quant_params_internal{parse_bits(params.bits), parse_alg(params.alg), params.group_size,
+  return quant_params_internal{parse_bits(params.weight_dtype), parse_alg(params.alg), params.group_size,
                                parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_type)};
 }
 

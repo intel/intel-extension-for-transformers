@@ -86,7 +86,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--model_file",     args.model_file])
     cmd.extend(["--out_file",       args.out_file])
     cmd.extend(["--nthread",        str(args.nthread)])
-    cmd.extend(["--bits",           str(quant_bits)])
+    cmd.extend(["--weight_dtype",           str(quant_bits)])
     cmd.extend(["--alg",            args.alg])
     cmd.extend(["--group_size",     str(args.group_size)])
     cmd.extend(["--scale_dtype",    args.scale_dtype])
