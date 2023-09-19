@@ -1,5 +1,6 @@
 accelerate
 datasets >= 2.0
+peft
 protobuf
 sentencepiece != 0.1.92
 torch >= 1.10.0

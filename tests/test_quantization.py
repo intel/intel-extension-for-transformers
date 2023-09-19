@@ -286,6 +286,52 @@ class TestQuantization(unittest.TestCase):
                 self.assertEqual(tensor.data_type, TensorProto.BFLOAT16)
                 break
 
+    def test_quantization_for_llm(self):
+        model_name_or_path = "facebook/opt-125m"
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        from intel_extension_for_transformers.transformers import (
+            MixedPrecisionConfig,
+            WeightOnlyQuantConfig,
+            SmoothQuantConfig,
+            BitsAndBytesConfig
+
+        ) 
+        from intel_extension_for_transformers.transformers import AutoModelForCausalLM
+        fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path)
+        dummy_input = fp32_model.dummy_inputs["input_ids"]
+
+        # smooth-quant
+        sq_config = SmoothQuantConfig(
+                                    tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
+                                    calib_iters=5
+                                )
+        q_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=sq_config
+                                                )
+        self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
+        # weight-only
+        woq_config = WeightOnlyQuantConfig()
+        woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=woq_config
+                                                )
+        output = woq_model(dummy_input)
+        self.assertTrue(float(output[0][0][0][0]), -7.139640808105469)
+        # amp
+        amp_config = MixedPrecisionConfig() 
+        amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=amp_config
+                                                )
+        output = amp_model(dummy_input)
+        self.assertTrue(float(output[0][0][0][0]), -7.347761154174805)
+        
+    
+        # bitsandbytes
+        bab_config = BitsAndBytesConfig()
+        bab_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=bab_config
+                                                )
+        output = bab_model(dummy_input)
+        self.assertTrue(float(output[0][0][0][0]), -7.347761154174805)
 
 if __name__ == "__main__":
     unittest.main()

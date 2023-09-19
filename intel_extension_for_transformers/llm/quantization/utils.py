@@ -184,7 +184,7 @@ def convert_to_quantized_model(model, config):
                     "dtype":dtype,
                     "group_size": config.group_size,  # -1 (per-channel)
                     "scheme": config.scheme,
-                    "algorithm": "RTN", 
+                    "algorithm": config.algorithm, 
                 },
             },
         },

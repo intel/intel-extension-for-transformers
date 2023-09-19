@@ -4,7 +4,7 @@ import unittest
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
-from intel_extension_for_transformers.llm.quantization.config import WeightOnlyConfig
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 
 
 class M(torch.nn.Module):
@@ -33,7 +33,7 @@ class TestWeightOnly(unittest.TestCase):
             activation = torch.rand(1,32, dtype=torch.float)
             output = model(activation)
 
-            config = WeightOnlyConfig(weight_dtype="int8", group_size=32)
+            config = WeightOnlyQuantConfig(weight_dtype="int8", group_size=32)
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -51,12 +51,12 @@ class TestWeightOnly(unittest.TestCase):
             model = M(with_bias=bias)
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(revert_wei)
-            activation = torch.rand(1, 32, dtype=torch.float)
+            activation = torch.rand(1, 5, 32, dtype=torch.float)
             output = model(activation)
             with torch.no_grad():
                 model.linear.weight = torch.nn.Parameter(raw_wei)
 
-            config = WeightOnlyConfig(weight_dtype="int4_fullrange", group_size=32)
+            config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
             convert_to_quantized_model(model, config)
             output_quant = model(activation)
             print(output)
@@ -80,7 +80,7 @@ class TestWeightOnly(unittest.TestCase):
     #             return x
 
     #     model = LinearPredictor()
-    #     replace_linear(model, None, None, WeightOnlyConfig(weight_dtype='int4_fullrange'))
+    #     replace_linear(model, None, None, WeightOnlyQuantConfig(weight_dtype='int4_fullrange'))
     #     lossfn = torch.nn.MSELoss()
     #     optimizer = torch.optim.SGD([p for p in model.parameters() if p.requires_grad], lr=1e-3)
     #     batch_size = 16
@@ -108,7 +108,7 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(module_list) > 0)
 
     def test_auto_model_with_config(self):
-        config = WeightOnlyConfig()
+        config = WeightOnlyQuantConfig()
         model = AutoModelForCausalLM.from_pretrained(llama_model_path, quantization_config=config)
         module_list = []
         for name, module in model.named_modules():
