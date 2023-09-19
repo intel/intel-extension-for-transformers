@@ -105,11 +105,6 @@ pip install -r requirements.txt
 python setup.py install
 cd ..
 
-# Install intel-extension-for-pytorch
-git checkout -b int8_llama2
-pip install -r requirements.txt
-python setup.py install
-cd ..
 
 # Install lm_eval
 pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3
