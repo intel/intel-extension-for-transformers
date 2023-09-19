@@ -42,6 +42,7 @@ from deepface import DeepFace
 from typing import List, Dict
 from fastapi import BackgroundTasks
 from utils_image import find_GPS_image, get_address_from_gps, generate_caption, image_to_byte64, byte64_to_image, generate_random_name, transfer_xywh
+from pydub import AudioSegment
 
 logger = build_logger("controller", "controller.log")
 
@@ -1295,6 +1296,8 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     if not ner_result.get('location', None):
         logger.info(f'[NER query] no location in query')
     else:
+        if not query_flag:
+            query_sql += " WHERE "
         query_flag = True
         locations = ner_result['location']
         sql_conditions = []
@@ -1309,6 +1312,8 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     if ner_result['time'] == []:
         logger.info(f'[NER query] no time in query')
     else:
+        if not query_flag:
+            query_sql += " WHERE "
         query_flag = True
         time_points = ner_result['time']
         sql_conditions = []
@@ -1323,6 +1328,8 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     if ner_result['period'] == []:
         logger.info(f'[NER query] no time period in query')
     else:
+        if not query_flag:
+            query_sql += " WHERE "
         query_flag = True
         periods = ner_result['period']
         logger.info(f'[NER query] periods: {periods}')
@@ -1339,7 +1346,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     if not query_flag:
         logger.info(f'[NER query] no compatible data for current query')
         return []
-    query_sql += f' AND image_info.user_id="{user_id}" AND exist_status="active";'
+    query_sql += f' AND ( image_info.user_id="{user_id}" ) AND ( exist_status="active" ) ;'
 
     try:
         query_result = mysql_db.fetch_all(sql=query_sql, params=None)
@@ -1735,7 +1742,7 @@ async def handle_ai_photos_chat_to_image(request: Request):
 
 
 @app.post("/v1/aiphotos/image2Image")
-async def image_to_image(request: Request):
+async def handle_image_to_image(request: Request):
     user_id = request.client.host
     logger.info(f'<image2Image> user ip is: {user_id}')
     check_user_ip(user_id)
