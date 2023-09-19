@@ -98,7 +98,7 @@ template <template <class GC, JBLAS_ISA ISA> class ProB>
 using Default = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA, jblas::gemm::GemmCore_Row_NN_2x48_AVX2,
                                                              jblas::prologue::gemm::ActivationBase, ProB,
-                                                             jblas::epilogue::gemm::AlphaBetaProcessFp32>,
+                                                             jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
 }  // namespace avx2
 }  // namespace
@@ -137,7 +137,7 @@ static JBLAS_CODE jblas_s4fp32kblock_f32f32_forward(float* activation, SS4Fp32* 
     } else if (_cd->AVX2()) {
       using GemmKernel = avx2::Default<WeiS4ClipFp32>;
       static GemmKernel kernel;
-      ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, output, ldo, ldo, 1.0f, 0.0f});
+      ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, ldo});
     }
   } else if (weiptr->mCoreType == GcCompBf16::TYPE) {
     if (_cd->AMX_BF16()) {
@@ -175,7 +175,7 @@ static JBLAS_CODE jblas_s8fp32kblock_f32f32_forward(float* activation, SS8Fp32* 
     } else if (_cd->AVX2()) {
       using GemmKernel = avx2::Default<WeiS8Fp32>;
       static GemmKernel kernel;
-      ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, output, ldo, ldo, 1.0f, 0.0f});
+      ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, ldo});
     }
   }
   return ret;
