@@ -723,6 +723,8 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       quant_print_usage(argc, argv, params);
       exit(0);
     } else {
+      quant_print_usage(argc, argv, params);
+      fprintf(stderr, "unrecognized arguments: %s", arg.c_str());
       exit(0);
     }
   }
