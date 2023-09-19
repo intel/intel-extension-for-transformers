@@ -63,6 +63,7 @@ class _BaseQBitsAutoModelClass:
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         calib_func = kwargs.pop("calib_func", None)
         quantization_config = kwargs.pop("quantization_config", None)
+        use_llm_runtime = kwargs.pop("use_llm_runtime", False)
         if isinstance(quantization_config, MixedPrecisionConfig):
             kwargs["torch_dtype"] = torch.bfloat16
         if load_in_8bit or load_in_4bit or quantization_config is not None:
@@ -88,8 +89,15 @@ class _BaseQBitsAutoModelClass:
         model.eval()
         if isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
-            from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
-            convert_to_quantized_model(model, quantization_config)
+            if use_llm_runtime:
+                logger.info("Using LLM runtime.")
+                from intel_extension_for_transformers.llm.runtime.graph import Model
+                model = Model()
+                model.init(pretrained_model_name_or_path)
+                return model
+            else:
+                from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
+                convert_to_quantized_model(model, quantization_config)
         elif isinstance(quantization_config, SmoothQuantConfig):
             logger.info("Applying SmoothQuant.")
             try:

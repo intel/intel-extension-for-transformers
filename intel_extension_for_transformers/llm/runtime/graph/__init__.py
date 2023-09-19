@@ -23,6 +23,8 @@ class Model:
     def __init__(self):
         self.module = None
         self.model = None
+        self.model_type = None
+        self.bin_file = None
 
     def __import_package(self, model_name):
         if self.module:
