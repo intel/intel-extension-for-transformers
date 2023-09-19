@@ -48,6 +48,7 @@ class Agent_QA():
                                                embedding_model=embedding_model, \
                                                max_length=max_length, \
                                                index_name=index_name)
+            print("The current input path is {}".format(self.input_path))
             self.db = self.doc_parser.KB_construct(self.input_path)
             self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k, \
                                        search_type=search_type, search_kwargs=search_kwargs)
