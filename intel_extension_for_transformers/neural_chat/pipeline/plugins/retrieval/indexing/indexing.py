@@ -147,3 +147,4 @@ class DocumentIndexing:
             else:
                 vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
                                                             port=9200, search_fields=["content", "title"])
+        return vectordb
