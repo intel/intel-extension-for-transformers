@@ -52,7 +52,19 @@ cmake ..
 cmake --build . -j
 ```
 
-### 2. Run LLM
+### 2. Run LLM with Python API
+
+You can use the python api to simplely run HF model.
+```python
+from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
+model_name = "EleutherAI/gpt-j-6b"     # support model id of HF or local PATH to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True)
+prompt = "Once upon a time, a little girl"
+output = model.generate(prompt, streamer, max_new_tokens=30)
+```
+
+### 3. Run LLM with Script
 You can use the following script to run, including convertion, quantization and inference.
 ```
 python scripts/run_llm.py model-path --weight_dtype int4 -p "She opened the door and see"
@@ -116,42 +128,7 @@ quantization args explanations:
 | --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
 | --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
 
-
-### 2. Inference model with Python API
-
-Here is how to install itrex_llm_runtime from source.
-```bash
-git submodule update --recursive --init
-python setup.py install
-```
-
-```python
-import itrex_llm_runtime.mpt_cpp as cpp_model
-prompt = "Once upon a time, a little girl"
-m = cpp_model.Model()
-
-m.set_threads(56) # set parameters before init_model
-m.init_model("ne-mpt-q4.bin")
-
-while not m.is_token_end():
-    out = m.generate(prompt, True)
-    print(out, end="", flush=True)
-```
-
-itrex_llm_runtime Model methods explanations:
-| methods        | explanation                                                                                             |
-|----------------|---------------------------------------------------------------------------------------------------------|
-| init_model     | initialize the model with model path                                                                    |
-| reinit         | reinitialize the model buffer                                                                           |
-| set_n_predict  | number of tokens to predict (default: -1, -1 = infinity)                                                |
-| set_batch_size | batch size for prompt processing (default: 512)                                                         |
-| set_ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length |
-| set_threads    | number of threads to use during computation (default: 56)                                               |
-| set_seed       | NG seed (default: -1, use random seed for < 0)                                                          |
-| is_token_end   | check if the token of "end of text" has been output                                                     |
-| generate       | generate tokens based on prompt, with the second arg representing whether to enable stream mode         |
-
-### 3. Inference model with C++ script API
+### 2. Inference model with C++ script API
 
 We supply LLM running script to run supported models with c++ api conveniently.
 ```bash
@@ -184,7 +161,7 @@ LLM running script args explanations:
 | --glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
 
 
-### 4. Tensor Parallelism cross nodes/sockets
+### 3. Tensor Parallelism cross nodes/sockets
 
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
 
