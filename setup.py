@@ -248,7 +248,7 @@ if __name__ == '__main__':
         cmdclass = {'build_ext': CMakeBuild}
 
     setup(
-        name="intel_extension_for_transformers",
+        name="intel-extension-for-transformers",
         author="Intel AIA/AIPC Team",
         author_email="feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
         description="Repository of Intel® Intel Extension for Transformers",
