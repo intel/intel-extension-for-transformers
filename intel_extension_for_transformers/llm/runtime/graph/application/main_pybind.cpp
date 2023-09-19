@@ -294,29 +294,14 @@ PYBIND11_MODULE(chatglm_cpp, m)
   m.doc() = "cpp model python binding";
   py::class_<Model>(m, "Model", py::module_local())
       .def(py::init())
-      .def("init_model", &Model::init_model, "initial model with model path and parameters",
-                          py::arg("model_path"),
-                          py::arg("max_new_tokens") = -1,
-                          py::arg("batch_size") = 512,
-                          py::arg("ctx_size") = 512,
-                          py::arg("seed") = -1,
-                          py::arg("threads") = 8,
-                          py::arg("repeat_penalty") = 1.1f,
-                          py::arg("post_process") = "topk"
-                          )
-      .def("generate", &Model::generate, "Generate tokens with prompt",
-                          py::arg("prompt"),
-                          py::arg("sentence_mode") = true
-                          )
-      .def_static("quant_model", &Model::quant_model, "Quantize model",
-                          py::arg("model_path"),
-                          py::arg("out_path"),
-                          py::arg("bits") = 4,
-                          py::arg("alg") = "sym",
-                          py::arg("block_size") = 32,
-                          py::arg("scale_dtype") = "fp32",
-                          py::arg("compute_type") = "ggml"
-                          )
+      .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"),
+           py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
+           py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("post_process") = "topk")
+      .def("generate", &Model::generate, "Generate tokens with prompt", py::arg("prompt"),
+           py::arg("sentence_mode") = true)
+      .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
+                  py::arg("bits") = 4, py::arg("alg") = "sym", py::arg("block_size") = 32,
+                  py::arg("scale_dtype") = "fp32", py::arg("compute_type") = "ggml")
       .def("is_token_end", &Model::is_token_end)
       .def("reinit", &Model::reinit);
 }
