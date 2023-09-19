@@ -81,7 +81,6 @@ class EnglishNormalizer:
             if word.isdigit(): # if word is positive integer, it must can be num2words
                 try:
                     potential_year = int(word)
-                    # We ignore the preposition here for demo TODO fix it in a more elegant way!
                     if prev.lower() in prepositions_year and potential_year < 2999 and potential_year > 1000 \
                           and potential_year % 1000 != 0:
                         word = num2words(word, to="year")
