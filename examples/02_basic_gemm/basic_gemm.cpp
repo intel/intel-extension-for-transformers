@@ -119,8 +119,8 @@ void basic_gemm_run(uint32_t iter) {
                 static constexpr uint32_t periodic_sync_interval = 8;
                 static constexpr uint32_t prefetch_distance = 3;
                 // should larger than 8
-                static constexpr uint32_t k_iter_num = 32;
-                using perf_tuning_knob = perf_tuning_knob_t<k_iter_num,
+                static constexpr uint32_t k_stride = 32;
+                using perf_tuning_knob = perf_tuning_knob_t<k_stride,
                         prefetch_distance, periodic_sync_interval>;
 
                 // specific the computation, performance tuning and computation core
@@ -164,9 +164,9 @@ void basic_gemm_run(uint32_t iter) {
                 int start_k = 0;
 
                 // Each workgroup will compute all data in K based on no k_sliciing
-                // The developer can set how much data a subgroup compute by k_iter_num
+                // The developer can set how much data a subgroup compute by k_stride
                 uint32_t wg_tile_k = matrix_k;
-                uint32_t inner_loop_count = wg_tile_k / k_iter_num;
+                uint32_t inner_loop_count = wg_tile_k / k_stride;
 
                 // Step 7: define the workgroup start point for each workgroup
                 mem_desc_input_a md_a(

@@ -80,6 +80,8 @@ void basic_gemm_run(uint32_t iter) {
 
     //There are implicit requirement for sg_tile_k range
     constexpr uint32_t sg_tile_k = 32;
+    static constexpr uint32_t sync_freq = 8;
+    static constexpr uint32_t stages = 3;
 
     // Org the compute shape for sub-matrix
     using tile_shape
@@ -102,7 +104,9 @@ void basic_gemm_run(uint32_t iter) {
             tile_shape, // computation tile shape
             sg_tile_k, // elements in each iteration
             mma_engine::xmx, // compute engine
-            gpu_arch::Xe> // GPU arch
+            gpu_arch::Xe, // GPU arch
+            stages, // number of prefetch pipe stage
+            sync_freq> // frequency of periodic sync, in unit of inner loop
             ::gemm;
 
     using epilogue_t = xetla::group::epilogue_t<
@@ -155,6 +159,11 @@ void basic_gemm_run(uint32_t iter) {
     if (!gemm_op_t::can_implement(gemm_arg)) {
         std::cout << "The arguments cannot be supported, aborting ... "
                   << std::endl;
+        free(A, context);
+        free(B, context);
+        free(C, context);
+        free(Acc, context);
+        free(Cnt, context);
         FAIL();
     }
 

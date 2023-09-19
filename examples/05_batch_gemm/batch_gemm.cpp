@@ -14,11 +14,9 @@
 * limitations under the License.
 *******************************************************************************/
 #include "tests/utils/utils.hpp"
-#include "xetla.hpp"
 
-enum class batch_impl_t { for_loop = 0, nd_range = 1 };
+#include "batch_gemm.hpp"
 
-template <batch_impl_t batch_impl = batch_impl_t::for_loop>
 void batch_gemm_run(uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
@@ -85,6 +83,8 @@ void batch_gemm_run(uint32_t iter) {
 
     //There are implicit requirement for sg_tile_k range
     constexpr uint32_t sg_tile_k = 32;
+    static constexpr uint32_t sync_freq = 8;
+    static constexpr uint32_t stages = 3;
 
     // Org the compute shape for sub-matrix
     using tile_shape
@@ -107,40 +107,34 @@ void batch_gemm_run(uint32_t iter) {
             tile_shape, // computation tile shape
             sg_tile_k, // elements in each iteration
             mma_engine::xmx, // compute engine
-            gpu_arch::Xe> // GPU arch
+            gpu_arch::Xe, // GPU arch
+            stages, // number of prefetch pipe stage
+            sync_freq> // frequency of periodic sync, in unit of inner loop
             ::gemm;
 
     using epilogue_t = xetla::group::epilogue_t<
             xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
             mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
-    using gemm_op_t = xetla::kernel::gemm_universal_t<
-            xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, gemm_t,
-            epilogue_t>;
+    using batch_gemm_op_t
+            = xetla::kernel::batch_gemm_t<gemm_t, epilogue_t, gpu_arch::Xe>;
 
-    //Ndrange and workgroup shape
-    cl::sycl::range<3> group_range
-            = gemm_op_t::get_group_range(matrix_m, matrix_n);
-    cl::sycl::range<3> local_range = gemm_op_t::get_local_range();
+    // set up gemm_universal arguments
+    typename batch_gemm_op_t::arguments_t gemm_arg(batch_size, matrix_m,
+            matrix_k, matrix_n, A, matrix_k, B, matrix_n, C, matrix_n);
 
-    // [Batch] Extend index space, the z dimension corresponds to batch
-    // dimension
-    try {
-        if constexpr (batch_impl == batch_impl_t::nd_range) {
-            group_range[0] = batch_size;
-        }
-    } catch (sycl::exception const &e) {
-        sycl::free(A, context);
-        sycl::free(B, context);
-        sycl::free(C, context);
-        std::cout << "invalid parameter: " << e.what() << '\n';
-        return;
+    cl::sycl::nd_range<3> nd_range = batch_gemm_op_t::get_nd_range(gemm_arg);
+    if (!batch_gemm_op_t::can_implement(gemm_arg)) {
+        std::cout << "The arguments cannot be supported, aborting ... "
+                  << std::endl;
+        free(A, context);
+        free(B, context);
+        free(C, context);
+        FAIL();
     }
 
-    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
-
     uint32_t warmup = 10;
-    long ops = batch_size * 2 * static_cast<long>(matrix_m) * matrix_n
+    size_t ops = batch_size * 2 * static_cast<size_t>(matrix_m) * matrix_n
             * matrix_k;
     profiling_helper prof("batch_gemm", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
@@ -149,28 +143,10 @@ void batch_gemm_run(uint32_t iter) {
             // GPU kernel
             cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 xetla_exec_item<3> ei(item);
-                slm_barrier_init<gemm_op_t>();
-                gemm_op_t gemm_op;
-                if constexpr (batch_impl == batch_impl_t::for_loop) {
-                    // [Batch] One work-item computes all slices in the
-                    // batch dimension
-                    for (uint32_t batch = 0; batch < batch_size; batch++) {
-                        typename gemm_op_t::arguments_t arg(matrix_m, matrix_k,
-                                matrix_n, A + size_a_slice * batch, matrix_k,
-                                B + size_b_slice * batch, matrix_n,
-                                C + size_c_slice * batch, matrix_n);
-                        gemm_op(ei, arg);
-                    }
-                } else {
-                    // [Batch] Get batch index from group_range
-                    // One work-item is responsible for one slice only
-                    uint32_t batch = ei.get_group(0);
-                    typename gemm_op_t::arguments_t arg(matrix_m, matrix_k,
-                            matrix_n, A + size_a_slice * batch, matrix_k,
-                            B + size_b_slice * batch, matrix_n,
-                            C + size_c_slice * batch, matrix_n);
-                    gemm_op(ei, arg);
-                }
+                // allocate slm and nbarrier resource
+                slm_barrier_init<batch_gemm_op_t>();
+                batch_gemm_op_t batch_gemm_op;
+                batch_gemm_op(ei, gemm_arg);
             });
         });
         gpu_event.wait();
@@ -197,21 +173,12 @@ void batch_gemm_run(uint32_t iter) {
 int main() {
     // The purpose of this example is to demonstrate how to calculate matrix
     // multiplication of high order.
-    //   C = A x B
+    //   C[i] = A[i] x B[i] for i in range(0, batch_size)
     // where:
-    //   shape(A) = [batch_size, m, k]
-    //   shape(B) = [batch_size, k, n]
-    //   shape(C) = [batch_size, m, n]
+    //   shape(A) = [batch_size x m, k]
+    //   shape(B) = [batch_size x k, n]
+    //   shape(C) = [batch_size x m, n]
 
-    // This example provides two implementation,
-    // - batch_impl_t::for_loop shows the basic usage
-    //   of varying base pointer inside the kernel
-    // - batch_impl_t::nd_range shows the idiomatic
-    //   mapping of task decomposition to index space
-
-    // Note:
-    //   - comments related to batch will have the "[Batch]" prefix
-    // batch_gemm_run<batch_impl_t::for_loop>(10);
-    batch_gemm_run<batch_impl_t::nd_range>(10);
+    batch_gemm_run(10);
     return (0);
 }
