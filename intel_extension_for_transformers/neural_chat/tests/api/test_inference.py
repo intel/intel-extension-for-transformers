@@ -64,6 +64,7 @@ class UnitTest(unittest.TestCase):
         print(response2)
         self.assertIsNotNone(response2)
         plugins.retrieval.override = True
+        plugins.retrieval.enable = False
 
     def test_voice_chat(self):
         plugins.tts.enable = True
