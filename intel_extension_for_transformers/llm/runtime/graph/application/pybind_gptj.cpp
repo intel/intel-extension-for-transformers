@@ -163,7 +163,6 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
     for (auto id : embd) {
       res += model_token_to_str(lctx, id);
     }
-    // std::cout << res << std::endl;
   } else {
     std::vector<float> logits;
     for (int i = embd.size(); i < embd_inp.size() + n_predict; i++) {
@@ -231,6 +230,7 @@ int main(int argc, char* argv[]) {
         gptj_in_all,
         // "she opened the door and see",
         // "Once upon a time",
+        // "Tell me 10 things about jazz music",
         // "A spaceship lands on the moon",
         // "What is the meaning of life?",
         "2017: It is done, and submitted. You can play 'Survival of the Tastiest' on Android, and on the web. Playing "

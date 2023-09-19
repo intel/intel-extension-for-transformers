@@ -1935,9 +1935,8 @@ std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tenso
 // A struct for calculating logits-related info.
 struct logits_info {
   const model_context* const ctx = nullptr;
-  // (batch, seq_len * vocab_size)
+  // (batch, seq_len * vocab_size)  batch = input_prompt_bs* beam_size
   const float* const logits = nullptr;
-  std::vector<std::vector<float>> next_token_scores;  // (input_prompt_bs* beam_size, n_vocab)
   const int batch_size;
   const int32_t n_vocab;
   // last seq_len indice
@@ -1970,7 +1969,6 @@ struct logits_info {
       normalizers[i] = 1.0f / std::accumulate(logits + i * bs_stride + offset,
                                               logits + i * bs_stride + offset + n_vocab, 0.0f, sum_exp{max_ls[i]});
     }
-    next_token_scores.resize(batch_size);
   }
 
   beam_next_token get_token_data(const int& batch_idx, const int32_t& token_idx) const {
@@ -2186,7 +2184,7 @@ std::vector<beam_next_token> beam_search_flow::beam_top_k_next_tokens(model_cont
 }
 
 // TODO debug info unify (function ptr?)
-void beam_search_flow::fill_next_beams_by_top_probabilities() {
+void beam_search_flow::fill_next_beams_by_top_scores() {
   auto const comp = [](const beam& a, const beam& b) { return a.score > b.score; };
   std::vector<model_token> embd_inp;
   int record = 0;
@@ -2447,7 +2445,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
         cur_beams.push_back(b);
       }
     } else {
-      fill_next_beams_by_top_probabilities();
+      fill_next_beams_by_top_scores();
       std::vector<std::tuple<int, int>> kv_reorder_indices = update_kv_cache_reorder_indices();
       n_past += 1;
       kv_reorder->update(n_past, n_tokens, kv_reorder_indices, next_beams);

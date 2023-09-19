@@ -407,7 +407,7 @@ class beam_search_flow {
                                                       const std::vector<int>& num_beams,
                                                       const std::vector<int> beam_indices, const int& sample_scale = 2,
                                                       const int& dim = -1);
-  void fill_next_beams_by_top_probabilities();
+  void fill_next_beams_by_top_scores();
   std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
   void beam_score_length_penalize();
   const beam& finalize();
