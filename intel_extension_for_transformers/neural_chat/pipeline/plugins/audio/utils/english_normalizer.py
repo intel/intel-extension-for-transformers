@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -17,6 +16,7 @@
 # limitations under the License.
 
 from num2words import num2words
+import re
 
 class EnglishNormalizer:
     def __init__(self):
@@ -50,10 +50,10 @@ class EnglishNormalizer:
         }
         
     def correct_abbreviation(self, text):
-        # if one word is all capital letters, then correct this whole word
-        # TODO mixed abbreviation like i7 12th W3C should be supported
+        # TODO mixed abbreviation or proper noun like i7, ffmpeg, BTW should be supported
 
-        words = text.split()
+        # words = text.split()    # CVPR-15 will be upper but 1 and 5 will be splitted to two numbers
+        words = re.split(' |-|_', text)
         results = []
         for idx, word in enumerate(words):
             if word.isupper(): # W3C is also upper
@@ -72,6 +72,7 @@ class EnglishNormalizer:
         results = []
         prepositions_year = ["in", "on"]
         prev = ""
+        ordinal_pattern = re.compile("^.*[0-9](st|nd|rd|th)$")
         for idx, word in enumerate(words):
             suffix = ""
             if len(word) > 0 and word[-1] in [",", ".", "?", "!"]:
@@ -80,9 +81,11 @@ class EnglishNormalizer:
             if word.isdigit(): # if word is positive integer, it must can be num2words
                 try:
                     potential_year = int(word)
+                    # We ignore the preposition here for demo TODO fix it in a more elegant way!
                     if prev.lower() in prepositions_year and potential_year < 2999 and potential_year > 1000 \
                           and potential_year % 1000 != 0:
                         word = num2words(word, to="year")
+                        word = word.replace("-", "") # nineteen eighty-seven => nineteen eightyseven
                     else:
                         word = num2words(word)
                 except Exception as e:
@@ -98,6 +101,9 @@ class EnglishNormalizer:
                     except ValueError:
                         # print("not a number, fallback to original word")
                         pass
+
+            if ordinal_pattern.search(word):
+                word = num2words(word[:-2], to='ordinal').replace("-", " ")
             word = word + suffix
             results.append(word)
             prev = word
@@ -106,4 +112,3 @@ class EnglishNormalizer:
         if len(results) > 0 and results[-1] not in [",", ".", "?", "!"]:
             results += "."
         return results
-
