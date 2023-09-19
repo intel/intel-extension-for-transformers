@@ -1283,7 +1283,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
             sql_conditions.append(f' image_face.face_tag LIKE "%{name}%" ')
         for face_tag in face_list:
             face_tag = face_tag[0]
-            if face_tag in query and face_tag not in names:
+            if face_tag in query:
                 logger.info(f'[NER query] other face detected in db: [{face_tag}]')
                 sql_conditions.append(f' image_face.face_tag LIKE "%{face_tag}%" ')
         if sql_conditions != []:
@@ -1317,7 +1317,10 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         query_flag = True
         time_points = ner_result['time']
         sql_conditions = []
+        today = datetime.date.today()
         for loc in time_points:
+            if today == loc.text:
+                continue
             sql_conditions.append(f' image_info.captured_time LIKE "%{loc}%" ')
         sql = 'OR'.join(sql_conditions)
         if query_sql[-1] == ')':
