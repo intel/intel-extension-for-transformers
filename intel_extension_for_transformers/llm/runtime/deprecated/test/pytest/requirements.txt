@@ -1,5 +1,5 @@
 onnx
-onnxruntime<=1.15.1
+onnxruntime
 datasets
 transformers
 onnxruntime_extensions
