@@ -61,22 +61,15 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
     --model EleutherAI/gpt-j-6b \
     --woq \
     --benchmark
-# bitsandbytes
-OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
-    --model EleutherAI/gpt-j-6b \
-    --bitsandbytes \
-    --benchmark
-
 # load_in_4bit
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --load_in_4bit \
     --benchmark
-
 # load_in_8bit
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model EleutherAI/gpt-j-6b \
-    --load_in_4bit \
+    --load_in_8bit \
     --benchmark
 
 ```
@@ -107,12 +100,6 @@ python run_generation.py \
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
     --woq \
-    --accuracy \
-    --tasks "lambada_openai"
-# bitsandbytes
-python run_generation.py \
-    --model EleutherAI/gpt-j-6b \
-    --bitsandbytes \
     --accuracy \
     --tasks "lambada_openai"
 # load_in_4bit
