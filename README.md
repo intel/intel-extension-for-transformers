@@ -2,7 +2,7 @@
   
 Intel® Extension for Transformers
 ===========================
-<h3>An Innovative Transformer-based Toolkit Accelerating AI Everywhere</h3>
+<h3>An Innovative Transformer-based Toolkit to Accelerate AI Everywhere</h3>
 
 [![](https://dcbadge.vercel.app/api/server/mnZDVAbm?compact=true&style=flat-square)](https://discord.gg/mnZDVAbm)
 [![Release Notes](https://img.shields.io/github/v/release/intel/intel-extension-for-transformers)](https://github.com/intel/intel-extension-for-transformers/releases)
