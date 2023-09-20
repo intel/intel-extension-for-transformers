@@ -144,7 +144,8 @@ void ReorderOperator::Reshape(const vector<Tensor*>& input, const vector<Tensor*
 
   // Primitive arguments.
   if (src_scales_.size()) {
-    auto dst_scales_mem = memory({{src_scales_.size()}, memory::data_type::f32, memory::format_tag::x}, eng_);
+    auto dst_scales_mem =
+        memory({{dnnl_dim_t(src_scales_.size())}, memory::data_type::f32, memory::format_tag::x}, eng_);
     dst_scales_mem.set_data_handle(reinterpret_cast<void*>(src_scales_.data()));
     reorder_args[DNNL_ARG_ATTR_SCALES | DNNL_ARG_DST] = dst_scales_mem;
   }
