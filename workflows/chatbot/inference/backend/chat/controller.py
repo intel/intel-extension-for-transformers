@@ -1268,7 +1268,6 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     face_list = mysql_db.fetch_all(sql=f"select image_face.face_tag from image_face inner join image_info on image_info.image_id=image_face.image_id where image_info.user_id='{user_id}' AND exist_status='active';", params=None)
     logger.info(f"[NER query] face list is: {face_list}")
     if ner_result['name'] or face_list:
-        query_flag = True
         names = ner_result['name']
         sql_conditions = []
         for name in names:   
@@ -1279,6 +1278,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
                 logger.info(f'[NER query] other face detected in db: [{face_tag}]')
                 sql_conditions.append(f' image_face.face_tag LIKE "%{face_tag}%" ')
         if sql_conditions != []:
+            query_flag = True
             sql = 'OR'.join(sql_conditions)
             query_sql += "INNER JOIN image_face ON image_info.image_id=image_face.image_id WHERE "
             query_sql += '('+sql+')'
