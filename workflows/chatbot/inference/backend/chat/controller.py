@@ -1817,7 +1817,7 @@ async def handle_talkingbot_create_embedding(file: UploadFile = File(...)):
     with open("tmp_driven_audio_bytes", 'wb') as fout:
         content = await file.read()
         fout.write(content)
-    audio = AudioSegment.from_file("tmp_audio_bytes")
+    audio = AudioSegment.from_file("tmp_driven_audio_bytes")
     audio = audio.set_frame_rate(16000)
     # bytes to mp3
     audio.export(f"{file_name}", format="mp3")
