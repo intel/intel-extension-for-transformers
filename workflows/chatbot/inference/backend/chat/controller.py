@@ -1787,8 +1787,6 @@ async def handle_image_to_image(request: Request):
 # ================== For streaming ==================
 @app.post("/v1/aiphotos/talkingbot/asr")
 async def handle_talkingbot_asr(file: UploadFile = File(...)):
-#async def handle_talkingbot(request: Request):
-    start = time.time()
     file_name = file.filename
     logger.info(f'Received file: {file_name}')
     with open("tmp_audio_bytes", 'wb') as fout:
@@ -1810,10 +1808,23 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
 
 
 @app.post("/v1/aiphotos/talkingbot/create_embed")
-async def handle_talkingbot_create_embedding(file: UploadFile = File(...)) -> str:
-    # TODO
-    voice_id = ""
-    return voice_id
+async def handle_talkingbot_create_embedding(file: UploadFile = File(...)):
+    file_name = file.filename
+    logger.info(f'Received file: {file_name}')
+    with open("tmp_driven_audio_bytes", 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    audio = AudioSegment.from_file("tmp_audio_bytes")
+    audio = audio.set_frame_rate(16000)
+    # bytes to mp3
+    audio.export(f"{file_name}", format="mp3")
+    worker_name = controller.get_worker_address("mpt-7b-chat")
+    try:
+        r = requests.post(worker_name + "/talkingbot/create_embed", json={"file_name": file_name}, timeout=1000) # stream=True
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Talkingbot fails: {worker_name}, {e}")
+        return None
+    return {"voice_id": r.json()}
 
 
 @app.post("/v1/aiphotos/talkingbot/llm_tts")

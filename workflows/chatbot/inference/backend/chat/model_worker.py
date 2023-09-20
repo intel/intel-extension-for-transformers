@@ -273,6 +273,17 @@ class StopOnTokens(StoppingCriteria):
                     return True
         return False
 
+@app.post("/talkingbot/create_embed")
+async def talkingbot_create_embedding(request: Request, response_class=PlainTextResponse):
+    params = await request.json()
+    saved_path = params["file_name"]
+    logger.info("audio --> embedding")
+    spk_id = str(uuid.uuid4())[:6]
+    spk_embed = tts.create_speaker_embedding(driven_audio_path=saved_path)
+    torch.save(spk_embed, f"speaker_embeddings/spk_embed_{spk_id}.pt")
+    logger.info(f"speaker embedding {spk_id} successfully saved!")
+    return spk_id
+
 @app.post("/talkingbot", response_class=PlainTextResponse)
 async def talkingbot(request: Request):
     params = await request.json()
