@@ -20,6 +20,7 @@
 #include "jit_blas_utils.h"
 #include "kernel_avx2.h"
 #include "kernel_avx512f.h"
+#include "kernel_avx512_bf16.h"
 #include "kernel_jit.h"
 #include "kernel_ref.h"
 
@@ -82,7 +83,7 @@ class Memcpy2D {
                                                                       const_elt_v, ops...);
     }
 #endif
-    assert(sizeof...(ops) == 0);               // no post ops
+    assert(sizeof...(ops) == 0);                      // no post ops
     static_assert(sizeof(_SRC_T) == sizeof(_DST_T));  // no conversion
     return kernel::ref::memcpy2d(srcptr, dstptr, row, col * sizeof(_SRC_T), srcstep * sizeof(_SRC_T),
                                  dststep * sizeof(_DST_T));
@@ -95,8 +96,13 @@ class Memcpy2DFp32CvtBf16 {
   static JBLAS_CODE forward(const void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
                             bool zeropadding) {
 #if CompileAVX512F()
-    if constexpr (utils::isa_base<ISA_T>::avx512f) {
+    if constexpr (utils::isa_base<ISA_T>::amx_bf16) {
+      return kernel::avx512_bf16::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride,
+                                                              zeropadding);
+    } else if constexpr (utils::isa_base<ISA_T>::avx512f) {
       return kernel::avx512f::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride, zeropadding);
+    } else if constexpr (utils::isa_base<ISA_T>::avx2) {
+      return kernel::avx2::fp32_cvt_bf16_2D_write_back(srcptr, dstptr, row, col, srcstride, dststride, zeropadding);
     }
 #endif
     return kernel::ref::dt_cvt_2D_write_back<float, utils::bf16>(srcptr, dstptr, row, col, srcstride, dststride,
@@ -141,7 +147,11 @@ class Memcpy2DBf16CvtFp32 {
   template <JBLAS_ISA ISA_T>
   static JBLAS_CODE forward(void* srcptr, void* dstptr, int row, int col, int srcstride, int dststride,
                             bool zeropadding) {
-    if constexpr (ISA_T >= JblasAVX512F) {
+    if constexpr (ISA_T >= JblasAMX_BF16) {
+      return kernel::avx512_bf16::bf16_cvt_fp32_2D_write_back(  //
+          (const utils::bf16*)srcptr, (float*)dstptr, row, col, srcstride / sizeof(utils::bf16),
+          dststride / sizeof(float), zeropadding);
+    } else if constexpr (ISA_T >= JblasAVX512F) {
       return kernel::avx512f::bf16_cvt_fp32_2D_write_back(  //
           (const utils::bf16*)srcptr, (float*)dstptr, row, col, srcstride / sizeof(utils::bf16),
           dststride / sizeof(float), zeropadding);
