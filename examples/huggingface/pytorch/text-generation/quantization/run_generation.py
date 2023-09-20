@@ -8,6 +8,7 @@ from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 from transformers.utils import check_min_version
 from optimum.intel.generation.modeling import TSModelForCausalLM
+from intel_extension_for_transformers.transformers.utils import logger
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
     WeightOnlyQuantConfig,
@@ -77,7 +78,6 @@ parser.add_argument('--gptq_pad_max_length', type=int, default=2048, help='Calib
 parser.add_argument("--bitsandbytes", action="store_true")
 # =======================================
 args = parser.parse_args()
-logger = logging.getLogger(__name__)
 
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
