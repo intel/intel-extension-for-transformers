@@ -300,7 +300,7 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def("generate", &Model::generate, "Generate tokens with prompt", py::arg("prompt"),
            py::arg("sentence_mode") = true)
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
-                  py::arg("bits") = 4, py::arg("alg") = "sym", py::arg("group_size") = 32,
+                  py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
                   py::arg("scale_dtype") = "fp32", py::arg("compute_type") = "ggml")
       .def("is_token_end", &Model::is_token_end)
       .def("reinit", &Model::reinit);

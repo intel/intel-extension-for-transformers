@@ -16,7 +16,7 @@
 # limitations under the License.
 import os
 from transformers import AutoConfig
-from intel_extension_for_transformers.llm.runtime.graph.scripts.convert_model import convert_model
+from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 
 model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 
