@@ -106,12 +106,12 @@ python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
 
 # quantize weights of fp32 ggml bin
 # model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
-# to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
+# optimized INT4 model with group size 128 (recommended)
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
 
 # Alternativly you could run ggml q4_0 format like following
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
-# or ues neuarl engine graph optimized q4_j with 32 block_size format
+# optimized INT4 model with group size 32
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
 
 ```
