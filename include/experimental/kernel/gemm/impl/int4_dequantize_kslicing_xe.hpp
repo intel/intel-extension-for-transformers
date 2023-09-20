@@ -449,11 +449,13 @@ public:
                 {boundary_n / pack_ratio, boundary_k,
                         args.matB_ld / pack_ratio},
                 {int(start_n / pack_ratio), start_k});
+
+        uint32_t scale_size_y = ((args.matrix_k + dequant_s - 1) / dequant_s);
         mem_desc_scale_t mem_desc_scale(args.scale_base,
-                {args.matrix_n, args.matrix_k / dequant_s, args.scale_ld},
+                {args.matrix_n, scale_size_y, args.scale_ld},
                 {start_x_scale, start_y_scale});
         mem_desc_zero_pt_t mem_desc_zero_pt(args.zero_pt_base,
-                {args.matrix_n / pack_ratio, args.matrix_k / dequant_s,
+                {args.matrix_n / pack_ratio, scale_size_y,
                         args.zero_pt_ld / pack_ratio},
                 {start_x_zero_pt, start_y_zero_pt});
 
