@@ -31,7 +31,7 @@ parser.add_argument(
     help="By default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument("--approach", type=str, default='static', 
-                    help="Select from ['dynamic', 'static', 'weight-only']")
+                    help="Select from ['dynamic', 'static', 'weight_only']")
 parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5",
                     help="Smooth quant parameter.")
@@ -149,6 +149,7 @@ if args.sq or args.weight_only_algo in ['AWQ', 'TEQ']:
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 if args.layer_wise:
+    print('load empty shell model...')
     from neural_compressor.adaptor.torch_utils.layer_wise_quant import load_shell
     user_model = load_shell(args.model, AutoModelForCausalLM, torchscript=torchscript)
 else:
@@ -163,6 +164,7 @@ tokenizer = AutoTokenizer.from_pretrained(args.model)
 user_model = user_model.to(memory_format=torch.channels_last)
 user_model.eval()
 
+weight_only = args.approach == 'weight_only'
 
 if args.quantize:
     # dataset
@@ -247,7 +249,7 @@ if args.int8 or args.int8_bf16_mixed:
     if args.ipex:
         user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)))
     else:
-        user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)), user_model)
+        user_model = load(os.path.abspath(os.path.expanduser(args.output_dir)), user_model, weight_only=weight_only)
     user_model.eval()
 
 if args.accuracy:
