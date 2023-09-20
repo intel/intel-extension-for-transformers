@@ -274,9 +274,9 @@ class Finetuning:
 
         config = self.load_model_config(self.model_args)
         if config.architectures[0].endswith("ForCausalLM"):
-            self.finetune_clm(model_args, data_args, training_args, finetune_args)
+            self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
         elif config.architectures[0].endswith("ForConditionalGeneration"):
-            self.finetune_seq2seq(model_args, data_args, training_args, finetune_args)
+            self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
         else:
             raise NotImplementedError(
                 "Unsupported architecture {}, only support CausalLM (CLM) \
@@ -303,8 +303,8 @@ class Finetuning:
             lora_module_names.remove('lm_head')
         return list(lora_module_names)
 
-    def finetune_clm(self, model_args, data_args, training_args, finetune_args):
-        if finetune_args.device == 'habana':
+    def finetune_clm(self, model_args, data_args, training_args, finetune_args, config):
+        if finetune_args.device == 'hpu':
             if not is_optimum_habana_available():
                 raise ImportError(
                     "optimum habana is not installed. refer https://github.com/huggingface/optimum-habana"
@@ -315,8 +315,7 @@ class Finetuning:
         # Distributed training:
         # The .from_pretrained methods guarantee that only one local process can concurrently
         # download model & vocab.
-        config = self.load_model_config(model_args)
-        
+
         # set use_fast_tokenizer to False for Llama series models
         if "llama" in config.model_type:
             model_args.use_fast_tokenizer = False
@@ -502,7 +501,7 @@ class Finetuning:
                 model = model.to(model_dtype)
             model.print_trainable_parameters()
 
-            if finetune_args.device != 'habana':
+            if finetune_args.device != 'hpu':
                 # Initialize our Trainer
                 trainer = Trainer(
                     model=model,
@@ -513,7 +512,7 @@ class Finetuning:
                     data_collator=data_collator,
                 )
             else:
-                from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611
+                from optimum.habana import GaudiConfig, GaudiTrainer # pylint: disable=E0611 E0401
 
                 gaudi_config = GaudiConfig()
                 gaudi_config.use_fused_adam = True
@@ -565,7 +564,7 @@ class Finetuning:
                             training_args, gen_kwargs)
                     self.logger.info(results)
 
-    def finetune_seq2seq(self, model_args, data_args, training_args, finetune_args):
+    def finetune_seq2seq(self, model_args, data_args, training_args, finetune_args, config):
         # Detecting last checkpoint.
         last_checkpoint = None
         if os.path.isdir(training_args.output_dir) \
@@ -711,7 +710,6 @@ class Finetuning:
         
         if training_args.do_train:
             # download model & vocab.
-            config = self.load_model_config(model_args)
 
             # Load model
             if model_args.model_name_or_path:

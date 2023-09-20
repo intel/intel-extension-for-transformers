@@ -45,6 +45,7 @@ from transformers import (
     default_data_collator,
     get_scheduler,
 )
+
 from transformers.utils import check_min_version, get_full_repo_name, send_example_telemetry
 from transformers.utils.versions import require_version
 from timers import CPUTimer, GPUTimer
@@ -52,6 +53,7 @@ from intel_extension_for_transformers.transformers.pruner import (WeightPruningC
                                                                   prepare_pruning,
                                                                   model_slim,
                                                                   parse_auto_slim_config)
+from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate as lm_evaluate
 
 check_min_version("4.27.0.dev0")
 logger = logging.getLogger(__name__)
@@ -367,6 +369,11 @@ def parse_args():
         type=int, default=2048,
         help="Maximum data length the model can receive."
     )
+    parser.add_argument("--eval_fp16", action='store_true',
+        help=" fp16",
+    )
+    parser.add_argument("--tasks", default=["lambada_openai"],
+        help="Usually chosen with ['lambada_openai','hellaswag','winogrande','piqa'")
     parser.add_argument(
         "--trust_remote_code", default=True,
         help="Transformers parameter: use the external repo")
@@ -644,7 +651,7 @@ def main():
         device = args.device
         if device != 'cpu':
             device = "cuda:"+str(device)
-        pruning = prepare_pruning(configs, model,  dataloader=train_dataloader, device=device)
+        pruning = prepare_pruning(model, configs, dataloader=train_dataloader, device=device)
         model.config.use_cache = use_cache
         
     if args.output_dir is not None:
@@ -655,11 +662,11 @@ def main():
         model.save_pretrained(output_dir)
         tokenizer.save_pretrained(output_dir)
         
-    if torch.cuda.is_available():
-        model = model.cuda()
+    if device != 'cpu':
+        model = model.to(device)
     model.eval()
     if args.evaluation_dataset_name != None:
-        dataset_eval = load_dataset( 
+        dataset_eval = load_dataset(
             # for example:use the_pile's validation set for pruning, and lambada dataset for eval
             args.evaluation_dataset_name,
             args.dataset_config_name,
@@ -672,6 +679,19 @@ def main():
     def eval_func(model):
         acc, avg_latency = evaluator.evaluate(model)
         return acc, avg_latency
+    
+    model_name = args.model_name_or_path
+    if args.eval_fp16:
+        model_args = f'pretrained="{model_name}",tokenizer="{model_name}",dtype=float16'
+    else:
+        model_args = f'pretrained="{model_name}",tokenizer="{model_name}",dtype=float32'
+    eval_batch = args.per_device_eval_batch_size
+    
+    results = lm_evaluate(model="hf-causal",
+                        model_args=model_args,
+                        user_model=model, tasks=args.tasks,
+                        device=device,
+                        batch_size=eval_batch)
 
     if not args.auto_slim:
         # only eval

@@ -70,10 +70,21 @@ class EnglishNormalizer:
         """Ignore the year or other exception right now"""
         words = text.split()
         results = []
+        prepositions_year = ["in", "on"]
+        prev = ""
         for idx, word in enumerate(words):
+            suffix = ""
+            if len(word) > 0 and word[-1] in [",", ".", "?", "!"]:
+                suffix = word[-1]
+                word = word[:-1]
             if word.isdigit(): # if word is positive integer, it must can be num2words
                 try:
-                    word = num2words(word)
+                    potential_year = int(word)
+                    if prev.lower() in prepositions_year and potential_year < 2999 and potential_year > 1000 \
+                          and potential_year % 1000 != 0:
+                        word = num2words(word, to="year")
+                    else:
+                        word = num2words(word)
                 except Exception as e:
                     print(f"num2words fail with word: {word} and exception: {e}")
             else:
@@ -87,6 +98,12 @@ class EnglishNormalizer:
                     except ValueError:
                         # print("not a number, fallback to original word")
                         pass
+            word = word + suffix
             results.append(word)
-        return " ".join(results)
+            prev = word
+        results = " ".join(results)
+        # if the text is not truncated correctly by early stop token, then manually add one.
+        if len(results) > 0 and results[-1] not in [",", ".", "?", "!"]:
+            results += "."
+        return results
 

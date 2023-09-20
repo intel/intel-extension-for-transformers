@@ -46,6 +46,7 @@ class UnitTest(unittest.TestCase):
         response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
         print(response)
         self.assertIsNotNone(response)
+        plugins.retrieval.enable = False
 
     def test_voice_chat(self):
         plugins.tts.enable = True
@@ -63,6 +64,15 @@ class UnitTest(unittest.TestCase):
     def test_quantization(self):
         config = AMPConfig()
         optimize_model(model="facebook/opt-125m", config=config)
+
+    def test_text_chat_stream(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        chatbot = build_chatbot(config)
+        stream_text = ""
+        for text in chatbot.predict_stream("Tell me about Intel Xeon Scalable Processors."):
+            stream_text += text
+            print(text)
+        self.assertIsNotNone(stream_text)
 
 if __name__ == '__main__':
     unittest.main()

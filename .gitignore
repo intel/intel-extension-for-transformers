@@ -15,6 +15,7 @@ tags
 build/
 _build
 dist/
+.cache/
 
 # build / dist files
 /intel_extension_for_transformers/intel_extension_for_transformers[.-]*/

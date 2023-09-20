@@ -48,9 +48,8 @@ class AccumulatorWriteBack {
       return kernel::wrapper::Memcpy2DFp16CvtFp32::template forward<ISA_T>(
           (void*)cacheptr, (void*)cptr, M, N, cachestep * sizeof(SType), _param.ldc * sizeof(DType), false);
     } else if constexpr (sizeof(SType) == sizeof(DType)) {
-      return kernel::wrapper::Memcpy2D::template forward<ISA_T, SType, DType>(
-          (void*)cacheptr, (void*)cptr, M, N * sizeof(DType), cachestep * sizeof(SType), _param.ldc * sizeof(DType),
-          _param.elt_const_v, ops...);
+      return kernel::wrapper::Memcpy2D::template forward<ISA_T, SType, DType>(cacheptr, cptr, M, N, cachestep,
+                                                                              _param.ldc, _param.elt_const_v, ops...);
     } else {
       assert(false);
     }

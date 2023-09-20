@@ -510,8 +510,10 @@ class WeightS8ScaleFp32 {
       auto NPad = wptr->mNPad;
       auto KPad = wptr->mKPad;
       auto bptr = wptr->mWPtr + n_offset * KPad + k_offset * _GemmCore_T::NTILE;
-      *dstptr = bptr;
-      *dststep = KPad;
+      kernel::wrapper::Memcpy2D::template forward<ISA_T, int8_t, int8_t>(
+          bptr, *dstptr, n_size / _GemmCore_T::NTILE, _GemmCore_T::NTILE * k_size, _GemmCore_T::NTILE * KPad,
+          _GemmCore_T::NTILE * k_size);
+      *dststep = k_size;
       return JblasSuccess;
     }
     return JblasInvalidParam;
@@ -921,7 +923,6 @@ class StorageWeightS4ScaleFp32PerChannelN : public StorageWeightS4ScaleFp32, pub
         break;
       case S4_FULLRANGE:
       default:
-        assert(false);
         break;
     }
   }
@@ -1279,11 +1280,11 @@ class WeightF4ScaleFp32 : public WeightS4ScaleFp32<_GemmCore_T, ISA_T, S4_CLIP> 
  public:
   using Param = typename WeightS8ScaleFp32<_GemmCore_T, ISA_T>::Param;
   using StorageWeight = StorageWeightF4ScaleFp32;
-  PackedWeight* createStorage(const int N, const int K, int blocksize, bool is_sym = true) override {
+  PackedWeight* createStorage(const int N, const int K, int blocksize) {
     int KPad = utils::padto(K, _GemmCore_T::KTILE);
     int NPad = utils::padto(N, _GemmCore_T::NTILE);
     auto ptr = new StorageWeight(_GemmCore_T::TYPE, F4_T);
-    ptr->resize(NPad, KPad, blocksize <= 0 ? K : blocksize, is_sym);
+    ptr->resize(NPad, KPad, blocksize <= 0 ? K : blocksize);
     return ptr;
   }
 
@@ -1332,6 +1333,26 @@ class WeightF4ScaleFp32 : public WeightS4ScaleFp32<_GemmCore_T, ISA_T, S4_CLIP> 
     }
     assert(false);
     return JblasInvalidParam;
+  }
+  virtual void packQWeight(const int N, const int K, const int8_t* B, const int ldb, const float* scales,
+                           PackedWeight* ptr) {
+    auto stor = dynamic_cast<StorageWeight*>(ptr);
+    if (stor) {
+      int rawnk_scale = utils::updiv(K, stor->mBlockSize);
+      int nk_scale = utils::updiv(stor->mKPad, stor->mBlockSize);
+#pragma omp parallel for
+      for (int i = 0; i < nk_scale; i++) {  // padding copy
+        if (i < rawnk_scale) {
+          std::memcpy(stor->mSPtr + i * stor->mNPad, scales + i * N, N * sizeof(scales[0]));
+        } else {
+          std::memset(stor->mSPtr + i * stor->mNPad, 0, stor->mNPad * sizeof(stor->mSPtr[0]));
+        }
+      }
+      utils::avector<int8_t> reorded(stor->mKPad * stor->mNPad);
+      WeightS8ScaleFp32<_GemmCore_T, ISA_T>::reorderWeight(N, K, B, ldb, reorded.data());
+      WeightS4ScaleFp32<_GemmCore_T, ISA_T, S4_CLIP>::compressWeight(stor->mNPad, stor->mKPad, reorded.data(),
+                                                                     stor->mNPad, stor->mWPtr);
+    }
   }
 
  protected:

@@ -119,7 +119,7 @@ def correct_number(text):
 
 while True:
     try:
-        text = input("Write a sentence to let the talker speak:\n")
+        text = input("Write a sentence to let the talker speak:\n").strip()
         text = correct_abbreviation(text)
         text = correct_number(text)
         inputs = processor(text=text, return_tensors="pt")
