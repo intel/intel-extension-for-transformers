@@ -25,7 +25,7 @@ enum baichuan_model {
 
 static const model_scratch baichuan_mem_req(int n_layers) {
   switch (n_layers) {
-    case 28:
+    case 40:
       return {2048ull * MB, 2048ull * MB, 4096ull * MB};
     // TODO(hengyu): add more variants besides 6B
     default:

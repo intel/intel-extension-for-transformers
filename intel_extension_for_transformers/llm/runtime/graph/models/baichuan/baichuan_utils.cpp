@@ -52,7 +52,7 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
 }
 
 void BAICHUAN::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
-                   bool use_mlock_, bool vocab_only_) {
+                    bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
@@ -138,22 +138,15 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
     layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.gate_proj.weight", {n_embd, 4 * n_embd}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.down_proj.weight", {4 * n_embd, n_embd}, backend);
-    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.up_proj.weight", {4 * n_embd, n_embd}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.gate_proj.weight",
+                                  {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
+    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.down_proj.weight",
+                                  {uint32_t(model.hparams.inner_hidden_size), n_embd}, backend);
+    layer.ffn[2] =
+        ml->get_tensor(layers_i + ".mlp.up_proj.weight", {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
 
-
-    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096 / 32, 2048, 32);
-    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 2048, 4096 / 32, 32);
-    // if (backend != NE_BACKEND_CPU) {
-    //   vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
-    //                 ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
-    //                 ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-    //                 ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
-    //                 ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
-    //                 ne_nbytes(layer.k_cache) + ne_nbytes(layer.v_cache) +
-    //                 ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
-    // }
+    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 5120 / 40, 4096, 40);  // [n_head, maxlen, head_size]
+    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096, 5120 / 40, 40);  // [n_head, head_size, maxlen]
   }
 
   // print memory requirements
@@ -183,7 +176,7 @@ class baichuan_quant_layer : public quant_layer_base {
  public:
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
-    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
+    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'
     if (layername == "embed_tokens.weight") {
       // special layer process, can be loaded by config file
       return quant_params_internal();  // return q4_0 to cover the usage of getrow

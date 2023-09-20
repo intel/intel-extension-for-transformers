@@ -390,7 +390,8 @@ class model_name_to_arch {
       {"opt", MODEL_OPT},           {"gptneox", MODEL_GPTNEOX},
       {"dolly", MODEL_GPTNEOX},     {"starcoder", MODEL_STARCODER},
       {"falcon", MODEL_FALCON},     {"bloom", MODEL_BLOOM},
-      {"chatglm2", MODEL_CHATGLM2}, {"chatglm", MODEL_CHATGLM}, {"baichuan", MODEL_BAICHUAN}};
+      {"chatglm2", MODEL_CHATGLM2}, {"chatglm", MODEL_CHATGLM},
+      {"baichuan", MODEL_BAICHUAN}};
 };
 
 #ifdef __cplusplus

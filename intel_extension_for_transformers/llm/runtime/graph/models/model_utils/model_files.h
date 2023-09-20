@@ -481,7 +481,7 @@ struct model_model_loader {
             it = tensors_map.name_to_idx.find("model.embed_tokens.weight");  // baichuan13B
             if (it == tensors_map.name_to_idx.end()) {
               it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");  // ChatGLM-1
-                if (it == tensors_map.name_to_idx.end()) {
+              if (it == tensors_map.name_to_idx.end()) {
                 it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
                 if (it == tensors_map.name_to_idx.end()) {
                   it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
