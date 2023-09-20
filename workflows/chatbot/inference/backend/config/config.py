@@ -1,14 +1,11 @@
 import os
 from dotenv import load_dotenv
-
 from functools import lru_cache
-
-from pydantic_settings import BaseSettings
 from pydantic import AnyUrl
+from pydantic_settings import BaseSettings
+from chat.utils import build_logger
 
-# from ..utils import get_logger
-
-# logger = get_logger(__name__)
+logger = build_logger("config", "config.log")
 
 load_dotenv()
 
@@ -21,7 +18,7 @@ class Settings(BaseSettings):
     mysql_password: str = os.environ.get("MYSQL_PASSWORD", "root")
     mysql_host: str = os.environ.get("MYSQL_HOST", "localhost")
     mysql_port: int = os.environ.get("MYSQL_PORT", 3306)
-    mysql_db: str = os.getenv("MYSQL_DB", "fastrag")
+    mysql_db: str = os.getenv("MYSQL_DB", "mysql")
     server_ip: str = os.getenv("SERVER_IP", "")
     sd_inference_ip: str = os.getenv("SD_INFERENCE_SERVER_IP", "")
     sd_inference_port: str = os.getenv("SD_INFERENCE_SERVER_PORT", "")
@@ -32,11 +29,13 @@ class Settings(BaseSettings):
     google_oauth_client_secret: str = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
     github_oauth_client_id: str = os.getenv("GITHUB_OAUTH_CLIENT_ID", "")
     github_oauth_client_secret: str = os.getenv("GITHUB_OAUTH_CLIENT_SECRET", "")
-
+    facebook_oauth_client_id: str = os.getenv("FACEBOOK_OAUTH_CLIENT_ID", "")
+    facebook_oauth_client_secret: str = os.getenv("FACEBOOK_OAUTH_CLIENT_SECRET", "")
+    linkedin_oauth_client_id: str = os.getenv("LINKEDIN_OAUTH_CLIENT_ID", "")
+    linkedin_oauth_client_secret: str = os.getenv("LINKEDIN_OAUTH_CLIENT_SECRET", "")
 
 
 @lru_cache()
 def get_settings() -> BaseSettings:
-    # logger.info("Loading config settings from the environment...")
+    logger.info("Loading config settings from the environment...")
     return Settings()
-

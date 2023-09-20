@@ -42,6 +42,7 @@ from deepface import DeepFace
 from typing import List, Dict
 from fastapi import BackgroundTasks
 from utils_image import find_GPS_image, get_address_from_gps, generate_caption, image_to_byte64, byte64_to_image, generate_random_name, transfer_xywh
+from pydub import AudioSegment
 
 logger = build_logger("controller", "controller.log")
 
@@ -519,7 +520,9 @@ async def handle_ai_photos_upload(request: Request):
         logger.info(f'Image is captured at: {captured_time}, latitude: {latitude}, longitude: {longitude}, altitude: {altitude}')
 
         # generate address info
-        api_key = "AIzaSyD4m9izGcZnv55l27ZvlymdmNsGK7ri_Gg"
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        if not api_key:
+            raise Exception("Please")
         address = get_address_from_gps(latitude, longitude, api_key)
         if address:
             logger.info(f'Image address: {address}')
@@ -781,6 +784,10 @@ async def handel_ai_photos_update_checked(request: Request):
 ################
 #    in use    #
 ################
+
+IMAGE_ROOT_PATH = "/home/nfs_images"
+
+
 def check_user_ip(user_ip: str) -> bool:
     sys.path.append("..")
     from database.mysqldb import MysqlDb
@@ -873,7 +880,9 @@ def update_image_attr(image, attr):
 
 
 def format_image_path(user_id: str, image_name: str) -> str:
-    server_ip = "54.147.152.170"
+    server_ip = os.getenv("IMAGE_SERVER_IP")
+    if not server_ip:
+        raise Exception("Please configure SERVER IP to environment variables.")
     image_path = "http://"+server_ip+"/ai_photos/user"+user_id+'/'+image_name
     return image_path
 
@@ -912,7 +921,7 @@ def delete_single_image(user_id, image_id):
     image_path = image_path[0]
     
     import shutil
-    image_path_dst = '/home/ubuntu/images/deleted/user'+str(user_id)
+    image_path_dst = IMAGE_ROOT_PATH+'/deleted/user'+str(user_id)
     os.makedirs(image_path_dst, exist_ok=True)
     logger.info(f'[Delete] destination folder created: {image_path_dst}')
     shutil.move(src=image_path, dst=image_path_dst)
@@ -988,6 +997,8 @@ def process_single_image(img_id, img_path, user_id):
 
     # generate address info
     api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        raise Exception("Please configure environment variable of GOOGLE_API_KEY.")
     address = get_address_from_gps(latitude, longitude, api_key)
     if address:
         logger.info(f'[background - single] Image address: {address}')
@@ -1009,7 +1020,7 @@ def process_single_image(img_id, img_path, user_id):
         logger.info(f'[background - single] Can not generate caption for image.')
 
     # process faces for image
-    db_path = "/home/ubuntu/images/user"+user_id
+    db_path = IMAGE_ROOT_PATH+"/user"+user_id
     process_face_for_single_image(image_id=img_id, image_path=img_path, db_path=db_path, user_id=user_id)
     logger.info(f'[background - single] Face process done for image {img_id}')
 
@@ -1200,24 +1211,29 @@ def get_images_by_type(user_id, type, subtype) -> List:
         sql=f"SELECT image_id, image_path FROM image_info WHERE user_id='{user_id}' AND exist_status='active' AND address='{subtype}';"
 
     elif type == 'time':
-        sql = f'SELECT image_id, image_path AS date FROM image_info WHERE DATE(captured_time)="{subtype}" AND user_id="{user_id}" AND exist_status="active";'
+        if subtype == 'None':
+            sql = f'SELECT image_id, image_path FROM image_info WHERE captured_time is null AND user_id="{user_id}" AND exist_status="active";'
+        else:
+            sql = f'SELECT image_id, image_path FROM image_info WHERE DATE(captured_time)="{subtype}" AND user_id="{user_id}" AND exist_status="active";'
 
     elif type == 'person':
         sql = f"SELECT image_info.image_id, image_info.image_path FROM image_face INNER JOIN image_info ON image_info.image_id=image_face.image_id WHERE image_info.user_id='{user_id}' AND image_info.exist_status='active' AND image_face.face_tag='{subtype}'"
 
+    logger.info(f'sql: {sql}')
     images = mysql_db.fetch_all(sql=sql, params=None)
     logger.info(f"image list: {images}")
     if len(images) == 0:
         logger.error(f'no label {subtype} in {type}')
-        raise ValueError(f"no label {subtype} in {type}")
-    images = list(images)
-    result = []
-    for image in images:
-        image_name = image[1].split('/')[-1]
-        image_path = format_image_path(user_id, image_name)
-        obj = {"image_id": image[0], "image_path": image_path}
-        result.append(obj)
-    return result
+        return []
+    else:
+        images = list(images)
+        result = []
+        for image in images:
+            image_name = image[1].split('/')[-1]
+            image_path = format_image_path(user_id, image_name)
+            obj = {"image_id": image[0], "image_path": image_path}
+            result.append(obj)
+        return result
 
 
 def get_face_list_by_user_id(user_id: str) -> List[Dict]:
@@ -1267,7 +1283,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
             sql_conditions.append(f' image_face.face_tag LIKE "%{name}%" ')
         for face_tag in face_list:
             face_tag = face_tag[0]
-            if face_tag in query and face_tag not in names:
+            if face_tag in query:
                 logger.info(f'[NER query] other face detected in db: [{face_tag}]')
                 sql_conditions.append(f' image_face.face_tag LIKE "%{face_tag}%" ')
         if sql_conditions != []:
@@ -1280,6 +1296,8 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     if not ner_result.get('location', None):
         logger.info(f'[NER query] no location in query')
     else:
+        if not query_flag:
+            query_sql += " WHERE "
         query_flag = True
         locations = ner_result['location']
         sql_conditions = []
@@ -1294,10 +1312,15 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     if ner_result['time'] == []:
         logger.info(f'[NER query] no time in query')
     else:
+        if not query_flag:
+            query_sql += " WHERE "
         query_flag = True
         time_points = ner_result['time']
         sql_conditions = []
+        today = datetime.date.today()
         for loc in time_points:
+            if today == loc.text:
+                continue
             sql_conditions.append(f' image_info.captured_time LIKE "%{loc}%" ')
         sql = 'OR'.join(sql_conditions)
         if query_sql[-1] == ')':
@@ -1308,6 +1331,8 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     if ner_result['period'] == []:
         logger.info(f'[NER query] no time period in query')
     else:
+        if not query_flag:
+            query_sql += " WHERE "
         query_flag = True
         periods = ner_result['period']
         logger.info(f'[NER query] periods: {periods}')
@@ -1324,7 +1349,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     if not query_flag:
         logger.info(f'[NER query] no compatible data for current query')
         return []
-    query_sql += f' AND image_info.user_id="{user_id}" AND exist_status="active";'
+    query_sql += f' AND ( image_info.user_id="{user_id}" ) AND ( exist_status="active" ) ;'
 
     try:
         query_result = mysql_db.fetch_all(sql=query_sql, params=None)
@@ -1338,6 +1363,51 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         result_image_list.append(item)
     logger.info(f'[NER query] result: {result_image_list}')
     return result_image_list
+
+
+def delete_user_infos(user_id: str):
+    sys.path.append("..")
+    from database.mysqldb import MysqlDb
+    mysql_db = MysqlDb()
+    mysql_db.set_db("ai_photos")
+
+    logger.info(f'[delete user] start query from ner results')
+
+    # delete image_face and face_info
+    try:
+        logger.info(f'[delete user] delete image_face and face_info of user {user_id}.')
+        mysql_db.update(sql=f"DELETE image_face, face_info FROM image_face INNER JOIN face_info ON image_face.face_id=face_info.face_id WHERE user_id='{user_id}'", params=None)
+    except Exception as e:
+        raise Exception(e)
+    
+    # delete image_info
+    try:
+        logger.info(f'[delete user] delete image_info of user {user_id}.')
+        mysql_db.update(sql=f"DELETE FROM image_info WHERE user_id='{user_id}'", params=None)
+    except Exception as e:
+        raise Exception(e)
+    
+    # delete user_info
+    try:
+        logger.info(f'[delete user] delete user_info of user {user_id}.')
+        mysql_db.update(sql=f"DELETE FROM user_info WHERE user_id='{user_id}'", params=None)
+    except Exception as e:
+        raise Exception(e)
+
+    # delete local images
+    try:
+        logger.info(f'[delete user] delete local images of user {user_id}.')
+        folder_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
+        if os.path.isdir(folder_path):
+            import shutil
+            shutil.rmtree(folder_path)
+        else:
+            os.remove(folder_path)
+        logger.info(f'[delete user] local images of user {user_id} is deleted.')
+    except Exception as e:
+        raise Exception(e)
+    
+    logger.info(f'[delete user] user {user_id} infomation all deleted.')
 
 
 def forward_req_to_sd_inference_runner(inputs):
@@ -1367,7 +1437,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
     params = await request.json()
     image_list = params['image_list']
 
-    image_path = '/home/ubuntu/images/user'+str(user_id)
+    image_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
     os.makedirs(image_path, exist_ok=True)
 
     sys.path.append("..")
@@ -1466,6 +1536,19 @@ def handle_ai_photos_get_type_list(request: Request):
     # person
     person_result = get_face_list_by_user_id(user_id)
     type_result_dict['type_list']['person'] = person_result
+
+    # other
+    other_time_result = get_images_by_type(user_id, type="time", subtype="None")
+    other_add_result = get_images_by_type(user_id, type="address", subtype="default")
+    logger.info(f'<getTypeList> other time result: {other_time_result}')
+    logger.info(f'<getTypeList> other address result: {other_add_result}')
+    for time_res in other_time_result:
+        if time_res in other_add_result:
+            continue
+        other_add_result.append(time_res)
+    logger.info(f'<getTypeList> final other result: {other_add_result}')
+    # TODO: add other result into return list
+    type_result_dict['type_list']['other'] = other_add_result
 
     type_result_dict["process_status"] = get_process_status(user_id)
     return type_result_dict
@@ -1621,6 +1704,21 @@ async def handel_ai_photos_update_caption(request: Request):
     return "Succeed"
 
 
+@app.post("/v1/aiphotos/deleteUser")
+def handle_ai_photos_delete_user(request: Request):
+    user_id = request.client.host
+    logger.info(f'<deleteUser> user ip is: {user_id}')
+    check_user_ip(user_id)
+
+    try:
+        delete_user_infos(user_id)
+    except Exception as e:
+        logger.error("<deleteUser> "+str(e))
+        raise Exception(e)
+
+    return "Succeed"
+
+
 @app.post("/v1/aiphotos/chatWithImage")
 async def handle_ai_photos_chat_to_image(request: Request):
     user_id = request.client.host
@@ -1647,7 +1745,7 @@ async def handle_ai_photos_chat_to_image(request: Request):
 
 
 @app.post("/v1/aiphotos/image2Image")
-async def image_to_image(request: Request):
+async def handle_image_to_image(request: Request):
     user_id = request.client.host
     logger.info(f'<image2Image> user ip is: {user_id}')
     check_user_ip(user_id)
@@ -1671,7 +1769,7 @@ async def image_to_image(request: Request):
         img_id = img_info["imgId"]
         img_path = img_info["imgSrc"]
         userid, img_name = img_path.split('/')[-2], img_path.split('/')[-1]
-        image_path = '/home/ubuntu/images/'+userid+'/'+img_name
+        image_path = IMAGE_ROOT_PATH+'/'+userid+'/'+img_name
         logger.info(f'<image2Image> current image id: {img_id}, image path: {image_path}')
 
         img_b64 = image_to_byte64(image_path)

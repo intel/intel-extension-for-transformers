@@ -61,8 +61,8 @@ create table image_face
 );
 
 
-insert into user_info values(null, '2023-08-07 16:45:56', '2023-08-21 16:45:56', 1)
+-- insert into user_info values(null, '2023-08-07 16:45:56', '2023-08-21 16:45:56', 1)
 
-insert into image_info values(null, 1, '/home/ubuntu/user1/2023082303015374.jpg', '2019:06:19 9:56:32', 'test photo', 'None', 'None', 'None', 'None');
-insert into image_info values(null, 1, '/home/ubuntu/user1/2023082303015374.jpg', '2019:06:19 9:56:32', 'test photo', 'None', 'None', 'None', 'None');
-insert into image_info values(null, 1, '/home/ubuntu/user1/2023082303015374.jpg', '2019:06:18 9:56:32', 'test photo', 'None', 'None', 'None', 'None');
+-- insert into image_info values(null, 1, '/home/ubuntu/user1/2023082303015374.jpg', '2019:06:19 9:56:32', 'test photo', 'None', 'None', 'None', 'None');
+-- insert into image_info values(null, 1, '/home/ubuntu/user1/2023082303015374.jpg', '2019:06:19 9:56:32', 'test photo', 'None', 'None', 'None', 'None');
+-- insert into image_info values(null, 1, '/home/ubuntu/user1/2023082303015374.jpg', '2019:06:18 9:56:32', 'test photo', 'None', 'None', 'None', 'None');

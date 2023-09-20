@@ -29,12 +29,11 @@ class TextToSpeech:
         self.processor = SpeechT5Processor.from_pretrained("microsoft/speecht5_tts")
         self.device = "cpu"
         self.spk_model_name = "speechbrain/spkrec-xvect-voxceleb"
-        with tempfile.TemporaryFile(dir=os.path.join("/tmp", self.spk_model_name), mode="w+") as file:
-            self.speaker_model = EncoderClassifier.from_hparams(
-                source=self.spk_model_name,
-                run_opts={"device": self.device},
-                savedir=file.name
-            )
+        self.speaker_model = EncoderClassifier.from_hparams(
+            source=self.spk_model_name,
+            run_opts={"device": self.device},
+            savedir=os.path.join("/tmp", self.spk_model_name)
+        )
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan")
         self.vocoder.eval()
         self.default_speaker_embedding = torch.load('speaker_embeddings/spk_embed_default.pt') # load the default speaker embedding
