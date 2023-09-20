@@ -8,7 +8,6 @@ from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 from transformers.utils import check_min_version
 from optimum.intel.generation.modeling import TSModelForCausalLM
-from intel_extension_for_transformers.transformers.utils import logger
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
     WeightOnlyQuantConfig,
@@ -56,7 +55,7 @@ parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="0.5", help="Smooth quant parameter.")
 # ============WeightOnlyQuant configs===============
 parser.add_argument("--woq", action="store_true")
-parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', 'GPTQ'], 
+parser.add_argument("--woq_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'], 
                     help="Weight-only parameter.")
 parser.add_argument("--woq_dtype", type=str, default="int8", 
                     choices=["int8", "int4_clip", "int4_fullrange", "fp4_e2m1_bnb", "fp4_e2m1", "nf4"])
@@ -64,18 +63,10 @@ parser.add_argument("--woq_group_size", type=int, default=-1)
 parser.add_argument("--woq_scheme", default="sym")
 parser.add_argument("--woq_enable_mse_search", action="store_true")
 parser.add_argument("--woq_enable_full_range", action="store_true")
-# =============WeightOnlyQuant GPTQ configs====================
-
-parser.add_argument("--gptq_actorder", action="store_true", help="Whether to apply the activation order GPTQ heuristic.")
-parser.add_argument('--gptq_percdamp', type=float, default=.01, help='Percent of the average Hessian diagonal to use for dampening.')
-parser.add_argument('--gptq_block_size', type=int, default=128, help='Block size. sub weight matrix size to run GPTQ.')
-parser.add_argument('--gptq_nsamples', type=int, default=128, help='Number of calibration data samples.')
-parser.add_argument('--gptq_use_max_length', action="store_true", help='Set all sequence length to be same length of args.gptq_pad_max_length')
-parser.add_argument('--gptq_pad_max_length', type=int, default=2048, help='Calibration dataset sequence max length, \
-                                                                           this should align with your model config, \
-                                                                           and your dataset builder args: args.pad_max_length')
 # ============BitsAndBytes configs==============
 parser.add_argument("--bitsandbytes", action="store_true")
+parser.add_argument("--load_in_4bit", type=bool, default=False)
+parser.add_argument("--load_in_8bit", type=bool, default=False)
 # =======================================
 args = parser.parse_args()
 
@@ -102,16 +93,11 @@ if config.model_type == "llama":
 else:
    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
-# mixedprecision
+# quantization config setting
+quantization_config = None
 if args.mixed_precision:
-    mp_config = MixedPrecisionConfig(dtype="bfloat16") # default is bfloat16
-    user_model = AutoModelForCausalLM.from_pretrained(args.model,
-                                                quantization_config=mp_config
-                                               )
-    logger.info("Mixed Precision done.")
-# smoothquant
+    quantization_config = MixedPrecisionConfig(dtype="bfloat16") # default is bfloat16
 elif args.sq:
-    from intel_extension_for_transformers.transformers import AutoModelForCausalLM
     if re.search("gptj", config.model_type) or re.search(
         "gpt_neox", config.model_type
     ):
@@ -126,33 +112,38 @@ elif args.sq:
     else:
         op_type_dict = {}
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
-    sq_config = SmoothQuantConfig(
+    quantization_config = SmoothQuantConfig(
                                 tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
                                 alpha=float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
                                )
-    user_model = AutoModelForCausalLM.from_pretrained(args.model,
-                                                   quantization_config=sq_config
-                                               )
-    config.save_pretrained(args.output_dir)
-    user_model.save(args.output_dir)
-    logger.info("SmoothQuant done.")
-# weight-only
 elif args.woq:
-    woq_config = WeightOnlyQuantConfig()
-    user_model = AutoModelForCausalLM.from_pretrained(args.model,
-                                                quantization_config=woq_config
-                                            )
-    logger.info("WeightOnlyQuant done.")
+    quantization_config = WeightOnlyQuantConfig() #default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
-    bab_config = BitsAndBytesConfig()
+    # CUDA device is need for `load_in_4bit` and `load_in_8bit`.
+    quantization_config = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+    )
+
+# get model
+# `BitsAndBytesConfig` and (`load_in_4bit` or `load_in_8bit`) is alternative for WeightOnlyQuant.
+if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
-                                                quantization_config=bab_config
+                                                        quantization_config=quantization_config,
                                             )
-    logger.info("WeightOnlyQuant bitsandbytes done.")
-elif not args.int8 or args.int8_bf16_mixed:
+    if args.sq:
+        config.save_pretrained(args.output_dir)
+        user_model.save(args.output_dir)
+elif args.load_in_4bit or args.load_in_8bit:
+    # CPU device usage is provided by intel-extension-for-transformers.
+    user_model = AutoModelForCausalLM.from_pretrained(args.model,
+                                                    load_in_4bit=args.load_in_4bit,
+                                                    load_in_8bit=args.load_in_8bit
+                                                    )
+elif not args.int8 or not args.int8_bf16_mixed:
     user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config)
     # peft
     if args.peft_model_id is not None:
@@ -225,3 +216,4 @@ if args.accuracy:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))
         else:
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["acc"]))
+

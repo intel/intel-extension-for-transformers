@@ -1762,12 +1762,12 @@
       }
     }
   },
-  "gpt_j_6b_gen_woq_bab": {
+  "gpt_j_6b_gen_woq_load4bit": {
     "working_dir": "huggingface/pytorch/text-generation/quantization",
     "tune":{
       "cmd": "bash run_tuning.sh",
       "params": {
-        "topology": "gpt_j_woq_bab",
+        "topology": "gpt_j_woq_load4bit",
         "task": "generation",
         "output_model": "saved_results"
       }
@@ -1775,7 +1775,30 @@
     "benchmark": {
       "cmd": "bash run_benchmark.sh",
       "params": {
-        "topology": "gpt_j_woq_bab",
+        "topology": "gpt_j_woq_load4bit",
+        "task": "generation",
+        "mode": "benchmark",
+        "batch_size": "1",
+        "iters": "100",
+        "int8": "false",
+        "config": "saved_results"
+      }
+    }
+  },
+  "gpt_j_6b_gen_woq_load8bit": {
+    "working_dir": "huggingface/pytorch/text-generation/quantization",
+    "tune":{
+      "cmd": "bash run_tuning.sh",
+      "params": {
+        "topology": "gpt_j_woq_load8bit",
+        "task": "generation",
+        "output_model": "saved_results"
+      }
+    },
+    "benchmark": {
+      "cmd": "bash run_benchmark.sh",
+      "params": {
+        "topology": "gpt_j_woq_load8bit",
         "task": "generation",
         "mode": "benchmark",
         "batch_size": "1",
