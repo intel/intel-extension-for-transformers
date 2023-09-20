@@ -1783,8 +1783,9 @@ async def handle_image_to_image(request: Request):
 
     return generated_images
 
+
 # ================== For streaming ==================
-@app.post("/talkingbot/asr")
+@app.post("/v1/aiphotos/talkingbot/asr")
 async def handle_talkingbot_asr(file: UploadFile = File(...)):
 #async def handle_talkingbot(request: Request):
     start = time.time()
@@ -1807,7 +1808,15 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     print("+++++++asr+++++++")
     return {"asr_result": r.json()}
 
-@app.post("/talkingbot/llm_tts")
+
+@app.post("/v1/aiphotos/talkingbot/create_embed")
+async def handle_talkingbot_create_embedding(file: UploadFile = File(...)) -> str:
+    # TODO
+    voice_id = ""
+    return voice_id
+
+
+@app.post("/v1/aiphotos/talkingbot/llm_tts")
 async def handle_talkingbot_llm_tts(request: Request):
     data = await request.json()
     text = data["text"]
