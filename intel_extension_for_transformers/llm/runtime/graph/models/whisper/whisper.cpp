@@ -1931,6 +1931,7 @@ static bool whisper_model_load(struct whisper_model_loader* loader, whisper_cont
 //
 static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate, const int mel_offset,
                                     const int n_threads) {
+  printf("whisper_encode_internal begin \n");
   const int64_t t_start_us = ne_time_us();
 
   const auto& model = wctx.model;
@@ -1955,7 +1956,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 
   wstate.use_buf(ctx0, 0);
 
-  struct ne_tensor* mel = ne_new_tensor_2d(ctx0, NE_TYPE_F32, 2 * n_ctx, n_mels, NE_SIZE_CALC);
+  struct ne_tensor* mel = ne_new_tensor_2d(ctx0, NE_TYPE_F32, /*2 * */ n_ctx, n_mels, NE_SIZE_CALC);  // fix wwq
   assert(mel->type == NE_TYPE_F32);
   {
     float* dst = (float*)mel->data;
@@ -1970,7 +1971,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
       }
     }
   }
-
+  printf("whisper_encode_internal begin 0.2 \n");
   struct ne_tensor* cur;
 
 #ifndef WHISPER_USE_COREML
@@ -2004,7 +2005,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 
       cur = ne_gelu(ctx0, cur);
     }
-
+    printf("whisper_encode_internal begin 0.1 \n");
     wstate.use_buf(ctx0, 3);
 
     // ===================================================================
@@ -2023,9 +2024,15 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 
     const size_t e_pe_stride = model.e_pe->ne[0] * ne_element_size(model.e_pe);
     const size_t e_pe_offset = model.e_pe->ne[0] * ne_element_size(model.e_pe) * n_ctx * iter;
-
+    printf("whisper_encode_internal begin 0.1 \n");
     struct ne_tensor* e_pe = ne_view_2d(ctx0, model.e_pe, model.e_pe->ne[0], n_ctx, e_pe_stride, e_pe_offset);
+    printf("whisper_encode_internal begin 0.3 \n");
+    printf("e_pe shape x1:%d y1: %d zz: %d\n", model.e_pe->ne[0], n_ctx, e_pe->ne[2]);
 
+    printf("e_pe shape x:%d y: %d z: %d\n", e_pe->ne[0], e_pe->ne[1], e_pe->ne[2]);
+    printf("cur shape x: %d y: %d z: %d\n", cur->ne[0], cur->ne[1], cur->ne[2]);
+    printf("ne_transpose(ctx0, cur) shape x: %d y: %d \n", ne_transpose(ctx0, cur)->ne[0],
+           ne_transpose(ctx0, cur)->ne[1]);
     cur = ne_add(ctx0, e_pe, ne_transpose(ctx0, cur));
 
     // ===================================================================
@@ -2034,7 +2041,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
     // cur = ne_add(ctx0, model.e_pe, ne_transpose(ctx0, cur));
 
     struct ne_tensor* inpL = cur;
-
+    printf("whisper_encode_internal begin 1 \n");
     for (int il = 0; il < n_layer; ++il) {
       const auto& layer = model.layers_encoder[il];
 
@@ -2049,7 +2056,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
         cur = ne_add(ctx0, ne_mul(ctx0, ne_repeat(ctx0, layer.attn_ln_0_w, cur), cur),
                      ne_repeat(ctx0, layer.attn_ln_0_b, cur));
       }
-
+      printf("whisper_encode_internal begin 2 \n");
       // self-attention
       {
         wstate.use_buf(ctx0, 1);
@@ -2117,7 +2124,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 
         cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_state, n_ctx, NE_SIZE_CALC));
       }
-
+      printf("whisper_encode_internal begin 3 \n");
       // projection
       {
         wstate.use_buf(ctx0, 0);
@@ -2322,6 +2329,7 @@ static bool whisper_encode_internal(whisper_context& wctx, whisper_state& wstate
 static bool whisper_decode_internal(whisper_context& wctx, whisper_state& wstate, whisper_decoder& decoder,
                                     const whisper_token* tokens, const int n_tokens, const int n_past,
                                     const int n_threads) {
+  printf("whisper_decode_internal begin \n");
   const int64_t t_start_us = ne_time_us();
 
   const auto& model = wctx.model;
