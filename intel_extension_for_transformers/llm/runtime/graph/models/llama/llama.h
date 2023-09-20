@@ -35,7 +35,7 @@ static const model_scratch llama_mem_req(int n_layers) {
     case 60:
       return {512ull * MB, 512ull * MB, 3124ull * MB};
     case 80:
-      return {1024ull * MB, 1024ull * MB, 5120ull * MB};
+      return {8192ull * MB, 8192ull * MB, 20240ull * MB};
     default:
       MODEL_ASSERT(false);
   }
