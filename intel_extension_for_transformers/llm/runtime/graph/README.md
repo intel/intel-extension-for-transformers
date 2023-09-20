@@ -97,47 +97,22 @@ LLM Runtime assumes the same model format as [llama.cpp](https://github.com/gger
 
 ```bash
 
-<<<<<<< HEAD
 # convert the model directly use model id in Hugging Face. (recommended)
 python scripts/convert.py --outtype f32 --outfile ne-f32.bin EleutherAI/gpt-j-6b
 
 # or you can download fp32 model (e.g., LLAMA2) from Hugging Face at first, then convert the pytorch model to ggml format.
 git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
 python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
-=======
-# convert the pytorch model to ggml format
-python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
-
-# or convert the model without downloading it by hand (llama and llama2 are WIP) 
-python scripts/convert.py --outtype f32 --outfile EleutherAI/gpt-j-6b
->>>>>>> rename script and add build_dir
 
 # quantize weights of fp32 ggml bin
 # model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
-<<<<<<< HEAD
 # to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
-<<<<<<< HEAD
 
 # Alternativly you could run ggml q4_0 format like following
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
 # or ues neuarl engine graph optimized q4_j with 32 block_size format
-=======
-=======
-# to neural engine graph optimized q4_j with 128 group_size format (recommended)
-python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 128 --compute_type int8
->>>>>>> rename block_size to group_size
-
-# to ggml q4_0 format
-python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
-# to neural engine graph optimized q4_j with 32 group_size format
-
-<<<<<<< HEAD
->>>>>>> rename script and add build_dir
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
-=======
-python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_type int8
->>>>>>> rename block_size to group_size
 
 ```
 quantization args explanations:
@@ -149,15 +124,11 @@ quantization args explanations:
 | --nthread       | number of threads to use (default: 1)                       |
 | --weight_dtype  | data type of quantized weight (default: int4)         |
 | --alg           | quantization algorithm to use: sym/asym (default: sym)      |
-| --group_size    | group size (default: 32)                                    |
+| --block_size    | block size (default: 32)                                    |
 | --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
 | --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
-<<<<<<< HEAD
 
 ### 2. Inference model with C++ script API
-=======
-| --build_dir     | build directory of binary executable files                  |
->>>>>>> rename script and add build_dir
 
 We supply LLM running script to run supported models with c++ api conveniently.
 ```bash
@@ -188,40 +159,8 @@ LLM running script args explanations:
 | --color           | colorise output to distinguish prompt and user input from generations   |
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 | --glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
-| --build_dir       | build directory of binary executable files                              |
 
-<<<<<<< HEAD
+
 ### 3. Tensor Parallelism cross nodes/sockets
-=======
-### 4. One-click Script 
-
-You can use the following script to run, including convertion, quantization and inference.
-```
-python scripts/one_click_run.py model-path --weight_dtype int4 -p "She opened the door and see"
-```
-
-LLM one-click running script args explanations:
-| arg               | explanation                                                             |
-| --------------    | ----------------------------------------------------------------------- |
-| model             | directory containing model file or model id                             |
-| --weight_dtype    | data type of quantized weight (default: int4)                           |
-| --alg             | quantization algorithm to use: sym/asym (default: sym)                  |
-| --group_size      | group size (default: 32)                                                |
-| --scale_dtype     | fp32/bf16 type for scales (default: fp32)                               |
-| --compute_type    | Gemm computation data type: int8/fp32/ggml (default: ggml)              |
-| -p / --prompt     | prompt to start generation with (default: empty)                        |
-| -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
-| -t / --threads    | number of threads to use during computation (default: 56)               |
-| -b / --batch_size_truncate | batch size for prompt processing (default: 512)                         |
-| -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                       |
-| -s / --seed       | NG seed (default: -1, use random seed for < 0)                          |
-| --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
-| --color           | colorise output to distinguish prompt and user input from generations   |
-| --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
-| --build_dir       | build directory of binary executable files                              |
-
-### 5. Tensor Parallelism cross nodes/sockets
->>>>>>> rename script and add build_dir
 
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
-
