@@ -3,6 +3,7 @@ import re
 import time
 import json
 import torch
+import logging
 from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 from transformers.utils import check_min_version
@@ -13,7 +14,7 @@ from intel_extension_for_transformers.transformers import (
     SmoothQuantConfig,
     BitsAndBytesConfig
 
-) 
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -76,6 +77,7 @@ parser.add_argument('--gptq_pad_max_length', type=int, default=2048, help='Calib
 parser.add_argument("--bitsandbytes", action="store_true")
 # =======================================
 args = parser.parse_args()
+logger = logging.getLogger(__name__)
 
 # transformers version >= 4.32.0 contained the mpt modeling definition.
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/mpt/modeling_mpt.py
@@ -106,6 +108,7 @@ if args.mixed_precision:
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                 quantization_config=mp_config
                                                )
+    logger.info("Mixed Precision done.")
 # smoothquant
 elif args.sq:
     from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -128,24 +131,28 @@ elif args.sq:
                                 alpha=float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
+                                calib_iters=5
                                )
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                    quantization_config=sq_config
                                                )
     config.save_pretrained(args.output_dir)
     user_model.save(args.output_dir)
+    logger.info("SmoothQuant done.")
 # weight-only
 elif args.woq:
     woq_config = WeightOnlyQuantConfig()
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                 quantization_config=woq_config
                                             )
+    logger.info("WeightOnlyQuant done.")
 # bitsandbytes
 elif args.bitsandbytes:
     bab_config = BitsAndBytesConfig()
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                 quantization_config=bab_config
                                             )
+    logger.info("WeightOnlyQuant bitsandbytes done.")
 elif not args.int8 or args.int8_bf16_mixed:
     user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config)
     # peft
