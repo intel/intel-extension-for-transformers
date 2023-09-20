@@ -1398,6 +1398,9 @@ def delete_user_infos(user_id: str):
     try:
         logger.info(f'[delete user] delete local images of user {user_id}.')
         folder_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
+        if not os.path.exists(folder_path):
+            logger.info(f'[delete user] no image folder for user {user_id}')
+            return
         if os.path.isdir(folder_path):
             import shutil
             shutil.rmtree(folder_path)
