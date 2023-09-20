@@ -59,8 +59,9 @@ class Model {
   void reinit();
   std::string generate(const std::string& prompt, bool sentence_mode = true);
   bool is_token_end() { return token_eos; }
-  static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype, const std::string& alg,
-                         int group_size, const std::string& scale_dtype, const std::string& compute_type);
+  static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
+                         const std::string& alg, int group_size, const std::string& scale_dtype,
+                         const std::string& compute_type);
 
  private:
   model_context* ctx = nullptr;
@@ -212,8 +213,9 @@ int Model::post_process(float* logits) {
   return id;
 }
 
-int Model::quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype, const std::string& alg,
-                       int group_size, const std::string& scale_dtype, const std::string& compute_type) {
+int Model::quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
+                       const std::string& alg, int group_size, const std::string& scale_dtype,
+                       const std::string& compute_type) {
   quant_params q_params;
 #ifdef MODEL_NAME
   q_params.model_name = MODEL_NAME;
