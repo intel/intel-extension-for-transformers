@@ -235,10 +235,12 @@ class NEVocab:
 Vocab = Union[SentencePieceVocab, NEVocab]
 
 
-def permute(weights: NDArray, n_head: int) -> NDArray:
+def permute(weights: NDArray, n_head: int, n_head_kv: int) -> NDArray:
+    if n_head_kv is not None and n_head != n_head_kv:
+        n_head //= n_head_kv
     return (weights.reshape(n_head, 2, weights.shape[0] // n_head // 2, *weights.shape[1:])
-                   .swapaxes(1, 2)
-                   .reshape(weights.shape))
+                .swapaxes(1, 2)
+                .reshape(weights.shape))
 
 
 def dequantize_q4(qvalues_pack32: NDArray, scales: NDArray, addends: Optional[NDArray], g_idx: Optional[NDArray]) -> NDArray:
@@ -286,7 +288,7 @@ class Tensor(metaclass=ABCMeta):
     @abstractmethod
     def astype(self, data_type: DataType) -> 'Tensor': ...
     @abstractmethod
-    def permute(self, n_head: int) -> 'Tensor': ...
+    def permute(self, n_head: int, kv_head: int) -> 'Tensor': ...
     @abstractmethod
     def to_ne(self) -> 'NECompatibleTensor': ...
 
@@ -312,8 +314,8 @@ class UnquantizedTensor(Tensor):
     def to_ne(self) -> 'UnquantizedTensor':
         return self
 
-    def permute(self, n_head: int) -> 'UnquantizedTensor':
-        return UnquantizedTensor(permute(self.ndarray, n_head))
+    def permute(self, n_head: int, kv_head: int) -> 'UnquantizedTensor':
+        return UnquantizedTensor(permute(self.ndarray, n_head, kv_head))
 
 
 def load_unquantized(lazy_tensor: 'LazyTensor', expected_dtype: Any = None, convert: bool = False) -> NDArray:
@@ -361,26 +363,27 @@ class NEQuantizedTensor(Tensor):
     def to_ne(self) -> 'NEQuantizedTensor':
         return self
 
-    def permute(self, n_head: int) -> 'NEQuantizedTensor':
-        return NEQuantizedTensor(permute(self.ndarray, n_head), self.shape, self.data_type)
+    def permute(self, n_head: int, kv_head: int) -> 'NEQuantizedTensor':
+        return NEQuantizedTensor(permute(self.ndarray, n_head, kv_head), self.shape, self.data_type)
 
 
 NECompatibleTensor = Union[UnquantizedTensor, NEQuantizedTensor]
 
 
 class DeferredPermutedTensor(Tensor):
-    def __init__(self, base: Tensor, n_head: int) -> None:
+    def __init__(self, base: Tensor, n_head: int, kv_head: int) -> None:
         self.base = base
         self.n_head = n_head
+        self.kv_head = kv_head
         self.data_type = self.base.data_type
 
     def astype(self, data_type: DataType) -> Tensor:
-        return self.base.astype(data_type).permute(self.n_head)
+        return self.base.astype(data_type).permute(self.n_head, self.kv_head)
 
     def to_ne(self) -> NECompatibleTensor:
-        return self.base.to_ne().permute(self.n_head)
+        return self.base.to_ne().permute(self.n_head, self.kv_head)
 
-    def permute(self, n_head: int) -> Tensor:
+    def permute(self, n_head: int, kv_head: int) -> Tensor:
         raise Exception("shouldn't permute twice")
 
 
@@ -472,8 +475,8 @@ class GPTQForLLaMaQuantizedTensor(Tensor):
         ret.data_type = QuantizedDataType(groupsize=new_groupsize, have_addends=True, have_g_idx=False)
         return ret
 
-    def permute(self, n_head: int) -> Tensor:
-        return DeferredPermutedTensor(self, n_head)
+    def permute(self, n_head: int, kv_head: int) -> Tensor:
+        return DeferredPermutedTensor(self, n_head, kv_head)
 
     def to_ne(self) -> NEQuantizedTensor:
         # The output format looks like this:
@@ -600,10 +603,10 @@ def merge_multifile_models(models_plus: List[ModelPlus]) -> ModelPlus:
     return ModelPlus(model, paths, format, vocab)
 
 
-def permute_lazy(lazy_tensor: LazyTensor, n_head: int) -> LazyTensor:
+def permute_lazy(lazy_tensor: LazyTensor, n_head: int, n_head_kv: int) -> LazyTensor:
     def load() -> Tensor:
-        return lazy_tensor.load().permute(n_head)
-    return LazyTensor(load, lazy_tensor.shape, lazy_tensor.data_type, f'permute({n_head}) ' + lazy_tensor.description)
+        return lazy_tensor.load().permute(n_head, n_head_kv)
+    return LazyTensor(load, lazy_tensor.shape, lazy_tensor.data_type, f'permute({n_head}, {n_head_kv}) ' + lazy_tensor.description)
 
 
 def convert_transformers_to_orig(model: LazyModel) -> LazyModel:
@@ -616,8 +619,8 @@ def convert_transformers_to_orig(model: LazyModel) -> LazyModel:
     for i in itertools.count():
         if f"model.layers.{i}.self_attn.q_proj.weight" not in model:
             break
-        out[f"layers.{i}.attention.wq.weight"] = permute_lazy(model[f"model.layers.{i}.self_attn.q_proj.weight"], n_head)
-        out[f"layers.{i}.attention.wk.weight"] = permute_lazy(model[f"model.layers.{i}.self_attn.k_proj.weight"], n_head)
+        out[f"layers.{i}.attention.wq.weight"] = permute_lazy(model[f"model.layers.{i}.self_attn.q_proj.weight"], n_head, n_head)
+        out[f"layers.{i}.attention.wk.weight"] = permute_lazy(model[f"model.layers.{i}.self_attn.k_proj.weight"], n_head, 8)
         out[f"layers.{i}.attention.wv.weight"] = model[f"model.layers.{i}.self_attn.v_proj.weight"]
         out[f"layers.{i}.attention.wo.weight"] = model[f"model.layers.{i}.self_attn.o_proj.weight"]
 
@@ -956,14 +959,11 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
-
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
 
         self.fout.write(struct.pack("i", 1)) # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json but bos_token_id = 1 in llama.cpp
-        self.fout.write(struct.pack("i", 1)) 
+        self.fout.write(struct.pack("i", 1))
+        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", 0))
 
     def write_tensor_header(self, name: str, shape: Sequence[int], data_type: DataType) -> None:
         sname = name.encode('utf-8')
@@ -1003,6 +1003,7 @@ class OutputFile:
         ndarrays = bounded_parallel_map(do_item, model.items(), concurrency=8)
         for i, ((name, lazy_tensor), ndarray) in enumerate(zip(model.items(), ndarrays)):
             size = ' x '.join(f"{dim:6d}" for dim in lazy_tensor.shape)
+            import pdb;pdb.set_trace()
             padi = len(str(len(model)))
             print(f"[{i+1:{padi}d}/{len(model)}] Writing tensor {name:38s} | size {size:16} | type {lazy_tensor.data_type}")
             of.write_tensor_header(name, lazy_tensor.shape, lazy_tensor.data_type)
@@ -1159,6 +1160,7 @@ def do_dump_model(model_plus: ModelPlus) -> None:
         print(f"{name}: shape={lazy_tensor.shape} type={lazy_tensor.data_type}; {lazy_tensor.description}")
 
 
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Convert a LLaMa model to a NE compatible file")
     parser.add_argument("--dump", action="store_true", help="don't convert, just show what's in the model")
@@ -1194,6 +1196,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         model = do_necessary_conversions(model)
         output_type = pick_output_type(model, args.outtype)
         model = convert_to_output_type(model, output_type)
+        #model = convert_transformers_to_orig(model)
         params = Params.guessed(model, output_type)
         outfile = args.outfile or default_outfile(model_plus.paths, params)
         OutputFile.write_all(outfile, params, model, vocab)
