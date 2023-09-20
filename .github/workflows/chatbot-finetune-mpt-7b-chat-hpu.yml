@@ -51,6 +51,7 @@ jobs:
             --dataset_concatenation \
             --do_train \
             --tokenizer_name \"EleutherAI/gpt-neox-20b\" \
+            --use_fast_tokenizer True \
             --device hpu \
             --use_habana \
             --use_lazy_mode "
