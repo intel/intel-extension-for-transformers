@@ -274,20 +274,13 @@ class Controller:
 app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
 
-origins = [
-    "http://localhost.tiangolo.com",
-    "https://localhost.tiangolo.com",
-    "http://localhost",
-    "http://localhost:5185",
-]
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.post("/register_worker")
@@ -1276,7 +1269,6 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     logger.info(f"[NER query] face list is: {face_list}")
     if ner_result['name'] or face_list:
         query_flag = True
-        query_sql += "INNER JOIN image_face ON image_info.image_id=image_face.image_id WHERE "
         names = ner_result['name']
         sql_conditions = []
         for name in names:   
@@ -1288,7 +1280,10 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
                 sql_conditions.append(f' image_face.face_tag LIKE "%{face_tag}%" ')
         if sql_conditions != []:
             sql = 'OR'.join(sql_conditions)
+            query_sql += "INNER JOIN image_face ON image_info.image_id=image_face.image_id WHERE "
             query_sql += '('+sql+')'
+        else:
+            logger.info(f'[NER query] no person name in ner query')
     else:
         logger.info(f'[NER query] no person name in ner query')
 
@@ -1350,6 +1345,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         logger.info(f'[NER query] no compatible data for current query')
         return []
     query_sql += f' AND ( image_info.user_id="{user_id}" ) AND ( exist_status="active" ) ;'
+    logger.info(f'[NER query] query sql: {query_sql}')
 
     try:
         query_result = mysql_db.fetch_all(sql=query_sql, params=None)
@@ -1401,12 +1397,13 @@ def delete_user_infos(user_id: str):
         if not os.path.exists(folder_path):
             logger.info(f'[delete user] no image folder for user {user_id}')
             return
-        if os.path.isdir(folder_path):
-            import shutil
-            shutil.rmtree(folder_path)
         else:
-            os.remove(folder_path)
-        logger.info(f'[delete user] local images of user {user_id} is deleted.')
+            if os.path.isdir(folder_path):
+                import shutil
+                shutil.rmtree(folder_path)
+            else:
+                os.remove(folder_path)
+            logger.info(f'[delete user] local images of user {user_id} is deleted.')
     except Exception as e:
         raise Exception(e)
     
