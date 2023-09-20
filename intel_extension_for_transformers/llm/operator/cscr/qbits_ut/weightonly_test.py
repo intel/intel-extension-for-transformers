@@ -17,7 +17,7 @@
 import torch
 import inspect
 from functools import wraps
-torch.ops.load_library("../build/libQBits.so")
+torch.ops.load_library("../build/libqbits.so")
 
 
 def capture_args(f):
