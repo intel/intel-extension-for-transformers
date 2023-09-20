@@ -4,7 +4,7 @@ nlpaug
 sacremoses
 neural-compressor
 onnx>=1.10
-onnxruntime>=1.11
+onnxruntime<=1.15.1
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch>=1.10.0
 transformers
