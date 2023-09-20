@@ -22,6 +22,20 @@ import subprocess
 model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 
 
+def convert_model(model, outfile, outtype):
+    config = AutoConfig.from_pretrained(model, trust_remote_code=True)
+    model_type = model_maps.get(config.model_type, config.model_type)
+
+    path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
+    cmd = []
+    cmd.extend(["python", path])
+    cmd.extend(["--outfile", outfile])
+    cmd.extend(["--outtype", outtype])
+    cmd.extend([model])
+
+    print("cmd:", cmd)
+    subprocess.run(cmd)
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(
         description="Convert a PyTorch model to a NE compatible file"
@@ -43,18 +57,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     else:
         dir_model = args.model
 
-    config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
-    model_type = model_maps.get(config.model_type, config.model_type)
-
-    path = Path(Path(__file__).parent.absolute(), "convert_{}.py".format(model_type))
-    cmd = []
-    cmd.extend(["python", path])
-    cmd.extend(["--outfile", args.outfile])
-    cmd.extend(["--outtype", args.outtype])
-    cmd.extend([args.model])
-
-    print("cmd:", cmd)
-    subprocess.run(cmd)
+    convert_model(dir_model, args.outfile, args.outtype)
 
 
 if __name__ == "__main__":
