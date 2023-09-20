@@ -131,7 +131,6 @@ elif args.sq:
                                 alpha=float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
-                                calib_iters=5
                                )
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                    quantization_config=sq_config
