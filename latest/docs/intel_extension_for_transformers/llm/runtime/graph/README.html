@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g67d67ff documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gd962cd0 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -173,7 +173,7 @@ ninja
 | -p / –prompt     | prompt to start generation with (default: empty)                        |
 | -n / –n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
 | -t / –threads    | number of threads to use during computation (default: 56)               |
-| -b / –batch_size | batch size for prompt processing (default: 512)                         |
+| -b / –batch_size_truncate | batch size for prompt processing (default: 512)                         |
 | -c / –ctx_size   | size of the prompt context (default: 512, can not be larger than specific model’s context window length)                                                                                |
 | -s / –seed       | NG seed (default: -1, use random seed for &lt; 0)                          |
 | –repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
@@ -195,12 +195,12 @@ python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtyp
 
 <span class="c1"># quantize weights of fp32 ggml bin</span>
 <span class="c1"># model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly</span>
-<span class="c1"># to neuarl engine graph optimized q4_j with 128 block_size format (recommended)</span>
+<span class="c1"># optimized INT4 model with group size 128 (recommended)</span>
 python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>llama2<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--block_size<span class="w"> </span><span class="m">128</span><span class="w"> </span>--compute_type<span class="w"> </span>int8
 
 <span class="c1"># Alternativly you could run ggml q4_0 format like following</span>
 python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>llama2<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_0.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4
-<span class="c1"># or ues neuarl engine graph optimized q4_j with 32 block_size format</span>
+<span class="c1"># optimized INT4 model with group size 32</span>
 python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>llama2<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--block_size<span class="w"> </span><span class="m">32</span><span class="w"> </span>--compute_type<span class="w"> </span>int8
 </pre></div>
 </div>
@@ -269,7 +269,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fb73f7bdfc0> 
+   <jinja2.runtime.BlockReference object at 0x7f936b8386a0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
