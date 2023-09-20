@@ -2298,3 +2298,5 @@ ChatGLM
 chatglm
 gptj
 gptneox
+bdec
+neuralchat
