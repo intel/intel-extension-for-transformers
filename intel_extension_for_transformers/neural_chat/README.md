@@ -94,7 +94,7 @@ NeuralChat introduces the `plugins` which offer a rich set of useful LLM utils a
 
 Below shows the supported plugins:
 
-- [Knowledge Retrieval](./pipeline/plugins/retrievers/)
+- [Knowledge Retrieval](./pipeline/plugins/retrieval/)
 
     Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses.
 
@@ -102,7 +102,7 @@ Below shows the supported plugins:
 
     Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time
 
-- [Prompt Optimization](./pipeline/plugins/prompts/)
+- [Prompt Optimization](./pipeline/plugins/prompt/)
 
     Prompt optimization supports auto prompt engineering to improve user prompts.
 
