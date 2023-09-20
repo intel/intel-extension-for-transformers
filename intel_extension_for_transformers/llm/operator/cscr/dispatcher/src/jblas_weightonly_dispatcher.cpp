@@ -422,8 +422,8 @@ void parse_gemm_core_offline(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   auto blocksize = wbtmp->mBlockSize;
   ctx->blocksize = blocksize;
   switch (gemm_core_type) {
-    case jblas::gemm::GemmCoreType::AMX_INT8_16X48_KBLOCK:
-    case jblas::gemm::GemmCoreType::AVX512_VNNI_3X48_KBLOCK:
+    case jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK:
+    case jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK:
       assert(p->compute_type == "int8");
       if (check_amx() && blocksize % (jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK::KTILE * 2) == 0) {
         return parse_weight<TASK, jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight,
@@ -440,7 +440,7 @@ void parse_gemm_core_offline(qbits_config_param* p, qbits_runtime_ctx* ctx) {
       TORCH_CHECK(false, "Qbits: Illegal config in int8 compute_type: blocksize:", blocksize,
                   " ISA largger than vnni:", check_avx512_vnni());
       break;
-    case jblas::gemm::GemmCoreType::AVX512F_8X48:
+    case jblas::gemm::GemmCoreType::AVX512F_8x48:
       assert(p->compute_type == "fp32");
       if (check_avx512f()) {
         return parse_weight<TASK, jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight,
@@ -469,7 +469,7 @@ void parse_gemm_core_offline(qbits_config_param* p, qbits_runtime_ctx* ctx) {
                             JblasAMX_BF16>(p, ctx);
       }
       TORCH_CHECK(false, "Qbits: device ISA must support AMX-BF16 when compute_type==bf16");
-    case jblas::gemm::GemmCoreType::AVX512_VNNI_8X48:
+    case jblas::gemm::GemmCoreType::AVX512_VNNI_8x48:
       assert(p->compute_type == "int8");
       if (check_avx512_vnni())
         return parse_weight<TASK, jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB,

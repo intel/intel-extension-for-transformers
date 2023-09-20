@@ -29,6 +29,13 @@ namespace transformer {
 namespace avx512_vnni {
 static JBLAS_ISA constexpr DefaultISA = JblasAVX512_VNNI;
 using QKVGemmDynamicS4Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<DefaultISA,
+                                                    jblas::gemm::kblock::GemmCore_Row_NN_4x48_AVX512_VNNI_KBLOCK,
+                                                    jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
+                                                    jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
+                                                    jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+using QKVGemmDynamicS4Fp32KBlockNext = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
         DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
         jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
@@ -36,8 +43,8 @@ using QKVGemmDynamicS4Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterface
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 using QKVGemmDynamicS8Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterfaceKBlockPackWeight<
-    jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_4x48_AVX512_VNNI_KBLOCK,
         jblas::prologue::gemm::ActivationF32U8KBlockQuantize,
         jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
@@ -119,7 +126,7 @@ JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4
   auto ret = JblasRuntimeError;
   if (wqptr->mCoreType == GcCompInt8KBlock::TYPE) {
     if (_cd->AMX_INT8() && wqptr->mBlockSize % 128 == 0) {
-      using GemmKernel = jblas::wrapper::transformer_default::weight_comp::amx_int8::QKVGemmDynamicS4Fp32KBlock;
+      using GemmKernel = transformer::amx_int8::QKVGemmDynamicS4Fp32KBlock;
       static GemmKernel kernel;
       GemmKernel::WeightType::Param wparams[3]{
           wqptr,
@@ -134,22 +141,40 @@ JBLAS_CODE jblas_QKVs4fp32_f32f32_forward(float* activation, SS4Fp32* wqptr, SS4
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, (int8_t*)workspace);
       ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
       delete quanA;
-    } else if (_cd->AVX512_VNNI()) {
-      using GemmKernel = jblas::wrapper::transformer_default::weight_comp::avx512_vnni::QKVGemmDynamicS4Fp32KBlock;
-      static GemmKernel kernel;
-      GemmKernel::WeightType::Param wparams[3]{
-          wqptr,
-          wkptr,
-          wvptr,
-      };
-      GemmKernel::CParam oparams[3]{
-          {output, ldo},
-          {output + _m * _n, ldo},
-          {output + 2 * _m * _n, ldo},
-      };
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, (int8_t*)workspace);
-      ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
-      delete quanA;
+    } else if (_cd->AVX512_VNNI() && wqptr->mBlockSize % 8 == 0) {
+      if (_m <= 32) {
+        using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS4Fp32KBlockNext;
+        static GemmKernel kernel;
+        GemmKernel::WeightType::Param wparams[3]{
+            wqptr,
+            wkptr,
+            wvptr,
+        };
+        GemmKernel::CParam oparams[3]{
+            {output, ldo},
+            {output + _m * _n, ldo},
+            {output + 2 * _m * _n, ldo},
+        };
+        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, (int8_t*)workspace);
+        ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
+        delete quanA;
+      } else {
+        using GemmKernel = transformer::avx512_vnni::QKVGemmDynamicS4Fp32KBlock;
+        static GemmKernel kernel;
+        GemmKernel::WeightType::Param wparams[3]{
+            wqptr,
+            wkptr,
+            wvptr,
+        };
+        GemmKernel::CParam oparams[3]{
+            {output, ldo},
+            {output + _m * _n, ldo},
+            {output + 2 * _m * _n, ldo},
+        };
+        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, wqptr->mBlockSize, (int8_t*)workspace);
+        ret = kernel.compute({_m, _n, _k, 3, activation, lda, quanA, wparams, oparams, NULL});
+        delete quanA;
+      }
     }
   }
   return ret;
