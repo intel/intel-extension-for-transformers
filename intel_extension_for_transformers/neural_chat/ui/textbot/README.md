@@ -19,7 +19,11 @@ For detailed information about the configuration settings, please refer to the [
 ## 🚀 Setup application
 We strongly recommend utilizing the provided textbot frontend code as it represents the reference implementation already deployed on Hugging Face Space. To establish your application, simply copy the code files from this directory and adjust their configurations as necessary. Alternatively, you have the option to clone the existing space from [https://huggingface.co/spaces/Intel/NeuralChat-GNR-1](https://huggingface.co/spaces/Intel/NeuralChat-GNR-1).
 
-![Clonse Space](https://i.imgur.com/76N8m5B.png)
+![Clone Space](https://i.imgur.com/76N8m5B.png)
+
+You also have the option to update the backend service URL in the `app.py` file.
+
+![Update backend URL](https://i.imgur.com/rQxPOV7.png)
 
 # Deploy on your server
 
@@ -60,6 +64,10 @@ Once the application is running, you can find the access URL in the trace log:
 INFO | gradio_web_server | Models: meta-llama/Llama-2-7b-chat-hf
 INFO | stdout | Running on local URL:  http://0.0.0.0:7860
 ```
-The URL to access the chatbot frontend is http://{SERVER_IP_ADDRESS}:7860. Please remember to replace {SERVER_IP_ADDRESS} with your server's actual IP address.
+The URL to access the chatbot frontend is http://{SERVER_IP_ADDRESS}:80. Please remember to replace {SERVER_IP_ADDRESS} with your server's actual IP address.
 
 ![URL](https://i.imgur.com/La3tJ8d.png)
+
+You also have the option to update the backend service URL in the `app.py` file.
+
+![Update backend URL](https://i.imgur.com/gRtZHrJ.png)
