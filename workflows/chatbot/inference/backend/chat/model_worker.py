@@ -157,6 +157,102 @@ async def api_generate_stream(request: Request):
     background_tasks.add_task(release_model_semaphore)
     return StreamingResponse(generator, background=background_tasks, media_type="text/event-stream")
 
+# ============= For streaming =============
+@app.post("/talkingbot/asr")
+async def talkingbot_asr(request: Request, response_class=PlainTextResponse):
+    params = await request.json()
+    saved_path = params["file_name"]
+    # audio -> text
+    logger.info("1: audio --> text")
+    text = asr.audio2text(saved_path)
+    logger.info(text)
+    return text
+
+def predict_stream(text, voice, knowledge_id):
+    # text -> answer
+    logger.info("2: text --> answer")
+    prompt = """Have a conversation with a human. You are required to generate suitable response to the user input.\n\n###Input: {}\n\n###Response:""".format(text)
+    print("prompt====", prompt)
+    worker.tokenizer.pad_token = worker.tokenizer.eos_token
+
+    input_tokens = worker.tokenizer.batch_encode_plus([prompt], return_tensors="pt", add_special_tokens=False)
+    input_token_len = input_tokens.input_ids.shape[-1]
+
+    #stop = StopOnTokens(min_length=36, start_length=input_token_len, stop_token_id=stop_token_ids)
+    generation_config = GenerationConfig(
+        #eos_token_id=0,
+        #pad_token_id=0,
+        use_cache=True,
+        min_new_tokens=1,
+        #max_new_tokens=64,
+        max_new_tokens=1024,
+        temperature=0.1,
+        top_p=0.95,
+        top_k=1,
+        repetition_penalty=1.1,
+        num_beams=1,
+        do_sample=True,
+        #early_stopping=True,
+        ## use default decode mode
+    )
+    streamer = TextIteratorStreamer(
+                        worker.tokenizer, skip_prompt=True, skip_special_tokens=True)
+    generation_kwargs = dict(
+                    generation_config=generation_config, return_dict_in_generate=True,
+                    streamer=streamer)
+    #generation_kwargs["stopping_criteria"] = StoppingCriteriaList([stop])
+    def generate_output():
+        with torch.no_grad():
+            with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16, cache_enabled=True):
+                return worker.model.model.generate(
+                    **input_tokens,
+                    **generation_kwargs,
+                )
+    generation_thread = Thread(target=generate_output)
+    generation_thread.start()
+
+    buffered_texts = []
+    hitted_ends = ['.', '!', '?', ';', ':']
+    for new_text in streamer:
+        print(f"new text: ==={new_text}===")
+        if len(new_text.strip()) == 0:
+            continue
+        buffered_texts.append(new_text)
+        if(len(buffered_texts) > 5):
+            if new_text.endswith('... ') or new_text.strip()[-1] in hitted_ends:
+                yield ''.join(buffered_texts)
+                buffered_texts = []
+    # output the trailing sequence
+    if len(buffered_texts) > 0:
+        yield ''.join(buffered_texts)
+
+
+async def generate_audio(text, voice, knowledge_id):
+    for idx, response in enumerate(predict_stream(text, voice, knowledge_id)):
+        print(response)
+        # TODO change this to sentence
+        response = normalizer.correct_number(response)
+        response = normalizer.correct_abbreviation(response)
+        answer_speech_path = tts.text2speech(response, voice=voice)
+        yield answer_speech_path
+        await asyncio.sleep(0.5) # keep in the right orger
+
+
+@app.post("/talkingbot/llm_tts")
+async def talkingbot_llm_tts(request: Request): # response_clas
+    params = await request.json()
+    text = params["text"]
+    voice = params["voice"]
+    knowledge_id = params["knowledge_id"]
+    print("text: ", text)
+    print("voice id: ", voice)
+    print("knowledge base id: ", knowledge_id)
+    documents=[]
+    prompt = """Have a conversation with a human. You must generate suitable response in short to the user input.\n### Input:\n{}\n### Response:""".format(text)
+    print("prompt====", prompt)
+    audio_answer_generator = generate_audio(prompt, voice, knowledge_id)
+    return StreamingResponse(audio_answer_generator, media_type="text/event-stream") # text/event-stream
+
 class StopOnTokens(StoppingCriteria):
     def __init__(self, min_length: int, start_length: int, stop_token_id: list[int]):
         self.min_length = min_length

@@ -1685,6 +1685,59 @@ async def image_to_image(request: Request):
 
     return generated_images
 
+# ================== For streaming ==================
+@app.post("/talkingbot/asr")
+async def handle_talkingbot_asr(file: UploadFile = File(...)):
+#async def handle_talkingbot(request: Request):
+    start = time.time()
+    file_name = file.filename
+    logger.info(f'Received file: {file_name}')
+    with open("tmp_audio_bytes", 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    audio = AudioSegment.from_file("tmp_audio_bytes")
+    audio = audio.set_frame_rate(16000)
+    # bytes to mp3
+    audio.export(f"{file_name}", format="mp3")
+    worker_name = controller.get_worker_address("mpt-7b-chat")
+
+    try:
+        r = requests.post(worker_name + "/talkingbot/asr", json={"file_name": file_name}, timeout=1000) # stream=True
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Talkingbot fails: {worker_name}, {e}")
+        return None
+    print("+++++++asr+++++++")
+    return {"asr_result": r.json()}
+
+@app.post("/talkingbot/llm_tts")
+async def handle_talkingbot_llm_tts(request: Request):
+    data = await request.json()
+    text = data["text"]
+    voice = data["voice"]
+    knowledge_id = data["knowledge_id"]
+    print(text)
+    print(voice)
+    print(knowledge_id)
+    worker_name = controller.get_worker_address("mpt-7b-chat")
+    try:
+        r = requests.post(worker_name + "/talkingbot/llm_tts", json={"text": text, "voice": voice, "knowledge_id": knowledge_id}, timeout=1000, stream=True)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Talkingbot fails: {worker_name}, {e}")
+        return None
+    print("-------llm_tts-----")
+    def audio_file_generate(response):
+        for f in response:
+            print("generate: *************")
+            print(f)
+            f = f.decode("utf-8")
+            path = str(f)
+            with open(path,mode="rb") as file:
+                bytes = file.read()
+                data = base64.b64encode(bytes)
+            yield f"data: {data}\n\n"
+        yield f"data: [DONE]\n\n"
+    return StreamingResponse(audio_file_generate(r), media_type="text/event-stream")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
