@@ -82,7 +82,7 @@ LLM one-click running script args explanations:
 | -p / --prompt     | prompt to start generation with (default: empty)                        |
 | -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
 | -t / --threads    | number of threads to use during computation (default: 56)               |
-| -b / --batch_size | batch size for prompt processing (default: 512)                         |
+| -b / --batch_size_truncate | batch size for prompt processing (default: 512)                         |
 | -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                |
 | -s / --seed       | NG seed (default: -1, use random seed for < 0)                          |
 | --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
@@ -106,12 +106,12 @@ python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
 
 # quantize weights of fp32 ggml bin
 # model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
-# to neuarl engine graph optimized q4_j with 128 block_size format (recommended)
+# optimized INT4 model with group size 128 (recommended)
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
 
 # Alternativly you could run ggml q4_0 format like following
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
-# or ues neuarl engine graph optimized q4_j with 32 block_size format
+# optimized INT4 model with group size 32
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
 
 ```
@@ -164,4 +164,3 @@ LLM running script args explanations:
 ### 3. Tensor Parallelism cross nodes/sockets
 
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
-
