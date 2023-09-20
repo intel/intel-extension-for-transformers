@@ -6,10 +6,10 @@ on:
     paths:
       - .github/workflows/unit-test-neuralchat.yml
       - .github/workflows/script/unitTest/**
-      - intel_extension_for_transformers/neural_chat/
-      - intel_extension_for_transformers/llm/finetuning/
-      - intel_extension_for_transformers/llm/quantization/
-      - intel_extension_for_transformers/transformers/
+      - intel_extension_for_transformers/neural_chat/**
+      - intel_extension_for_transformers/llm/finetuning/**
+      - intel_extension_for_transformers/llm/quantization/**
+      - intel_extension_for_transformers/transformers/**
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
