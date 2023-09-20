@@ -1319,7 +1319,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         sql_conditions = []
         today = datetime.date.today()
         for loc in time_points:
-            if today == loc.text:
+            if today == loc:
                 continue
             sql_conditions.append(f' image_info.captured_time LIKE "%{loc}%" ')
         sql = 'OR'.join(sql_conditions)
