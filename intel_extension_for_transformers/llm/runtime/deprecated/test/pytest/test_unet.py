@@ -116,7 +116,7 @@ class TestUnet(unittest.TestCase):
         output = graph.inference([inputs_0, inputs_1, inputs_2])
 
         # onnxruntime
-        session = ort.InferenceSession(model_dir)
+        session = ort.InferenceSession(model_dir, providers=["CPUExecutionProvider"])
         x = torch.load(input_0_path).numpy()
         y = torch.tensor([301], dtype=torch.float32).numpy()
         z = torch.load(input_2_path).numpy()
