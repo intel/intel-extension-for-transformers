@@ -116,6 +116,7 @@ RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} itrex && \
     cd itrex && pip install -r requirements.txt && pip install -v . && \
     cd intel_extension_for_transformers/neural_chat/ && pip install -r requirements.txt && \
     pip install transformers==4.32.0 && \
-    pip install accelerate==0.22.0
+    pip install accelerate==0.22.0 && \
+    pip uninstall -y intel_extension_for_pytorch
 
 WORKDIR /itrex/workflows/chatbot/fine_tuning
