@@ -19,7 +19,7 @@ from pathlib import Path
 import argparse
 from typing import (IO, TYPE_CHECKING, Any, Callable, Dict, Iterable, List,
                     Literal, Optional, Sequence, Tuple, TypeVar, Union)
-from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModel, AutoConfig, AutoModelForCausalLM, AutoTokenizer
 import sentencepiece.sentencepiece_model_pb2 as model
 from sentencepiece import SentencePieceProcessor  # type: ignore
 
@@ -101,25 +101,7 @@ class SentencePieceVocab:
         return f"<SentencePieceVocab with {self.vocab_size_base} base tokens and {len(self.added_tokens_list)} added tokens>"
 
 
-def load_vocab_for_glm1(path: Path) -> SentencePieceVocab:
-    # Be extra-friendly and accept either a file or a directory.  Also, if it's
-    # a directory, it might be the model directory, and tokenizer.model might
-    # be in the parent of that.
-    if path.is_dir():
-        path2 = path / "ice_text.model"
-        # Use `.parent` instead of /.. to handle the symlink case better.
-        path3 = path.parent / "ice_text.model"
-        if path2.exists():
-            path = path2
-        elif path3.exists():
-            path = path3
-        else:
-            raise FileNotFoundError(f"Could not find tokenizer.model in {path} or its parent; if it's in another directory, pass the directory as --vocab-dir")
-    added_tokens_path = path.parent / "added_tokens.json"
-    print(f"Loading vocab file {path}")
-    return SentencePieceVocab(path, added_tokens_path if added_tokens_path.exists() else None)
-
-def load_vocab_for_glm2(path: Path) -> SentencePieceVocab:
+def load_vocab_for_baichuan(path: Path) -> SentencePieceVocab:
     # Be extra-friendly and accept either a file or a directory.  Also, if it's
     # a directory, it might be the model directory, and tokenizer.model might
     # be in the parent of that.
@@ -175,7 +157,7 @@ def baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", int(-1 if (hparams.get("pad_token_id", -1)) is None else (hparams.get("pad_token_id", -1)))))
     fout.write(struct.pack("i", int(-1 if (hparams.get("sep_token_id", -1)) is None else (hparams.get("sep_token_id", -1)))))
 
-    vocab = load_vocab_for_glm2(Path(dir_model))
+    vocab = load_vocab_for_baichuan(Path(dir_model))
     counter = 0
     for text, score in vocab.all_tokens():
         fout.write(struct.pack("i", len(text)))
@@ -250,19 +232,12 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.outtype== "f16":
         ftype = 1
 
-
+    config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
-    model = AutoModel.from_pretrained(
-        dir_model, low_cpu_mem_usage=True, trust_remote_code=True
-    )
+    model = AutoModelForCausalLM.from_pretrained(dir_model, trust_remote_code=True)
+    import pdb;pdb.set_trace()
 
     baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
-
-    # if hasattr(model.config, "multi_query_attention"):
-    #     chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
-    # else:
-    #     chatglm1_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
-
 
 if __name__ == '__main__':
     main()
