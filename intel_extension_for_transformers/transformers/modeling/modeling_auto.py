@@ -69,7 +69,7 @@ class _BaseQBitsAutoModelClass:
         if load_in_8bit or load_in_4bit or quantization_config is not None:
             from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model
             torch_dtype = kwargs.pop("torch_dtype", torch.float32)
-        
+
         if load_in_4bit:
             if quantization_config is None:
                 quantization_config = WeightOnlyQuantConfig(compute_dtype=torch_dtype, weight_dtype="nf4")
@@ -204,6 +204,7 @@ class _BaseQBitsAutoModelClass:
             )
         return model
 
+
 class AutoModelForCausalLM(_BaseQBitsAutoModelClass):
     ORIG_MODEL = transformers.AutoModelForCausalLM
 
@@ -214,4 +215,3 @@ class AutoModel(_BaseQBitsAutoModelClass):
 
 class AutoModelForSeq2SeqLM(_BaseQBitsAutoModelClass):
     ORIG_MODEL = transformers.AutoModelForSeq2SeqLM
-
