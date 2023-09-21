@@ -19,6 +19,7 @@ from typing import List, Optional
 from transformers import AutoConfig
 import subprocess
 
+model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def main(args_in: Optional[List[str]] = None) -> None:
@@ -136,7 +137,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     parent_path = Path(__file__).parent.absolute()
     config = AutoConfig.from_pretrained(dir_model)
-    model_type = config.model_type
+    model_type = model_maps.get(config.model_type, config.model_type)
     work_path = Path(model_type + "_files")
     if not work_path.exists():
         Path.mkdir(work_path)

@@ -65,7 +65,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.outtype== "f16":
         ftype = 1
     
-    tokenizer = AutoTokenizer.from_pretrained(dir_model)
+    tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
     config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
     hparams = config.to_dict()
     print("Loading model: ", dir_model)
