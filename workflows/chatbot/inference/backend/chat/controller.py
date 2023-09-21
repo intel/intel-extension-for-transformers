@@ -32,6 +32,7 @@ import sys
 import base64
 import random
 import datetime
+from datetime import timedelta, timezone
 import ipaddress
 import pandas as pd
 from io import BytesIO
@@ -987,6 +988,14 @@ def process_single_image(img_id, img_path, user_id):
         update_image_attr(image={"image_id": img_id, "altitude": altitude}, attr='altitude')
     if captured_time:
         update_image_attr(image={"image_id": img_id, "captured_time": captured_time}, attr='captured_time')
+    else:
+        SHA_TZ = timezone(
+            timedelta(hours=8),
+            name='Asia/Shanghai'
+        )
+        utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
+        beijing_time = utc_now.astimezone(SHA_TZ)
+        update_image_attr(image={"image_id": img_id, "captured_time": beijing_time}, attr='captured_time')
 
     # generate address info
     api_key = os.environ.get("GOOGLE_API_KEY")
@@ -1332,6 +1341,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         periods = ner_result['period']
         logger.info(f'[NER query] periods: {periods}')
         sql_conditions = []
+        today = datetime.date.today()
         for period in periods:
             from_time = period['from']
             to_time = period['to']
