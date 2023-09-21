@@ -1732,7 +1732,7 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1755,7 +1755,7 @@
         "topology": "gpt_j_woq_bab",
         "task": "generation",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1778,7 +1778,7 @@
         "topology": "gpt_j_woq_rtn",
         "task": "generation",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1801,7 +1801,7 @@
         "topology": "gpt_j_woq_load4bit",
         "task": "generation",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1824,7 +1824,7 @@
         "topology": "gpt_j_woq_load8bit",
         "task": "generation",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1847,7 +1847,7 @@
         "topology": "gpt_j_mp",
         "task": "generation",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1874,7 +1874,7 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1901,7 +1901,7 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1928,7 +1928,7 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -1955,7 +1955,7 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "accuracy",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -2032,7 +2032,7 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -2059,7 +2059,7 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
@@ -2086,7 +2086,7 @@
         "approach": "static",
         "backend": "ipex",
         "mode": "benchmark",
-        "batch_size": "1",
+        "batch_size": "112",
         "iters": "100",
         "int8": "false",
         "config": "saved_results"
