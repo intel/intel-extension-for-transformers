@@ -20,9 +20,7 @@ jobs:
           submodules: "recursive"
 
       - name: Build Docker Image
-        run: |
-          cd workflows/chatbot/inference/docker
-          docker build --no-cache ./ --target hpu -f ./Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
+        run: docker build --no-cache ./ --target hpu -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |

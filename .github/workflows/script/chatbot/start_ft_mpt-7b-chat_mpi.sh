@@ -21,6 +21,7 @@ python3 workflows/chatbot/fine_tuning/instruction_tuning_pipeline/finetune_clm.p
     --do_train \
     --trust_remote_code True \
     --tokenizer_name "EleutherAI/gpt-neox-20b" \
-    --use_fast_tokenizer True
+    --use_fast_tokenizer True \
+    --max_eval_samples 64 \
     --no_cuda \
     --ddp_backend ccl >"${hname}.log" 2>"${hname}.err"

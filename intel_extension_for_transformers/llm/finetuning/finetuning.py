@@ -535,7 +535,8 @@ class Finetuning:
                                 user_model=unwrapped_model,
                                 device=unwrapped_model.device.type,
                                 batch_size=training_args.per_device_eval_batch_size,
-                                tasks=finetune_args.lm_eval_tasks,)
+                                tasks=finetune_args.lm_eval_tasks,
+                                limit=data_args.max_eval_samples)
                         self.logger.info(results)
 
         if finetune_args.task == "summarization":
