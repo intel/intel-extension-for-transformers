@@ -142,11 +142,11 @@ class _BaseQBitsAutoModelClass:
                 model = Model()
                 model.init(
                     pretrained_model_name_or_path,
-                    bits=4,  # TODO turn into weight_dtype
+                    weight_dtype=quantization_config.weight_dtype,
                     alg=quantization_config.scheme,
-                    block_size=quantization_config.group_size,  # TODO group size
+                    group_size=quantization_config.group_size,
                     scale_dtype=quantization_config.scale_dtype,
-                    compute_type=quantization_config.compute_dtype,
+                    compute_type=quantization_config.compute_dtype
                 )
                 return model
             else:

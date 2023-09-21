@@ -59,8 +59,9 @@ class Model {
   void reinit();
   std::string generate(const std::string& prompt, bool sentence_mode = true);
   bool is_token_end() { return token_eos; }
-  static int quant_model(const std::string& model_path, const std::string& out_path, int bits, const std::string& alg,
-                         int block_size, const std::string& scale_dtype, const std::string& compute_type);
+  static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
+                         const std::string& alg, int group_size, const std::string& scale_dtype,
+                         const std::string& compute_type);
 
  private:
   model_context* ctx = nullptr;
@@ -212,8 +213,9 @@ int Model::post_process(float* logits) {
   return id;
 }
 
-int Model::quant_model(const std::string& model_path, const std::string& out_path, int bits, const std::string& alg,
-                       int block_size, const std::string& scale_dtype, const std::string& compute_type) {
+int Model::quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
+                       const std::string& alg, int group_size, const std::string& scale_dtype,
+                       const std::string& compute_type) {
   quant_params q_params;
 #ifdef MODEL_NAME
   q_params.model_name = MODEL_NAME;
@@ -226,9 +228,9 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
   q_params.model_arch = mt;
   q_params.model_file = model_path;
   q_params.out_file = out_path;
-  q_params.bits = bits;
+  q_params.weight_dtype = weight_dtype;
   q_params.alg = alg;
-  q_params.block_size = block_size;
+  q_params.group_size = group_size;
   q_params.scale_dtype = scale_dtype;
   q_params.compute_type = compute_type;
 
@@ -300,7 +302,7 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def("generate", &Model::generate, "Generate tokens with prompt", py::arg("prompt"),
            py::arg("sentence_mode") = true)
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
-                  py::arg("bits") = 4, py::arg("alg") = "sym", py::arg("block_size") = 32,
+                  py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
                   py::arg("scale_dtype") = "fp32", py::arg("compute_type") = "ggml")
       .def("is_token_end", &Model::is_token_end)
       .def("reinit", &Model::reinit);

@@ -113,7 +113,7 @@ class TestTextEncoder(unittest.TestCase):
             print(node_name, ', shape = ', output[node_name].shape)
 
         # onnxruntime
-        session = ort.InferenceSession(model_dir)
+        session = ort.InferenceSession(model_dir, providers=["CPUExecutionProvider"])
         x = torch.load(input_0_path).numpy().astype(np.int32)
 
         ortvalue = ort.OrtValue.ortvalue_from_numpy(x)
