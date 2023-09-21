@@ -122,11 +122,11 @@ function main() {
                       elif [[ ${precision} == "q4_j_b128_asym" ]]; then
                           ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 128 --scale_dtype fp32 --compute_type fp32 --alg asym
                       elif [[ ${precision} == "q4_0" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --compute_type ggml --alg sym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --compute_type int8 --alg sym --use_ggml true
                       elif [[ ${precision} == "q4_1" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --compute_type ggml --alg asym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --compute_type int8 --alg asym --use_ggml true
                       elif [[ ${precision} == "q8_0" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int8 --group_size 32 --compute_type ggml --alg sym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int8 --group_size 32 --compute_type int8 --alg sym --use_ggml true
                       else
                           ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4
                       fi

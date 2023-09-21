@@ -713,7 +713,7 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       params.compute_dtype = argv[++i];
     } else if (arg == "--use_ggml") {
       auto value = argv[++i];
-      params.use_ggml = strlen(value) > 0 && (strcmp(tolower(value), "true") == 0 || std::atoi(value) != 0);
+      params.use_ggml = strlen(value) > 0 && (strcasecmp(value, "true") == 0 || std::atoi(value) != 0);
     } else if (arg == "--model_name") {
       params.model_name = argv[++i];
       model_archs mt = model_name_to_arch::init().find(params.model_name);

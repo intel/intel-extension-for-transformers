@@ -99,7 +99,7 @@ class _BaseQBitsAutoModelClass:
                            alg=quantization_config.scheme,
                            group_size=quantization_config.group_size,
                            scale_dtype=quantization_config.scale_dtype,
-                           compute_type=quantization_config.compute_dtype)
+                           compute_dtype=quantization_config.compute_dtype)
                 return model
             else:
                 quantization_config.post_init()
