@@ -16,13 +16,14 @@
 # limitations under the License.
 
 from fastapi.routing import APIRouter
+from fastapi.responses import StreamingResponse
 # pylint: disable=E0611
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import APIRouter
 from ...cli.log import logger
 from ...server.restful.openai_protocol import ChatCompletionRequest, ChatCompletionResponse
-
+from ...config import GenerationConfig
 
 def check_completion_request(request: BaseModel) -> Optional[str]:
     logger.info(f"Checking parameters of completion request...")
@@ -63,28 +64,38 @@ class TextChatAPIRouter(APIRouter):
             logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
-    
+
 
     async def handle_completion_request(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
         return await self.handle_chat_completion_request(request)
-    
+
 
     async def handle_chat_completion_request(self, request: ChatCompletionRequest) -> ChatCompletionResponse:
         chatbot = self.get_chatbot()
 
         try:
             logger.info(f"Predicting chat completion using prompt '{request.prompt}'")
-            response = chatbot.predict(query=request.prompt)
+            config = GenerationConfig()
+            # Set attributes of the config object from the request
+            for attr, value in request.__dict__.items():
+                if attr == "stream":
+                    continue
+                setattr(config, attr, value)
+            if request.stream:
+                generator = chatbot.predict_stream(query=request.prompt, config=config)
+                return StreamingResponse(generator, media_type="text/event-stream")
+            else:
+                response = chatbot.predict(query=request.prompt, config=config)
         except Exception as e:
             raise Exception(e)
         else:
             logger.info(f"Chat completion finished.")
             return ChatCompletionResponse(response=response) 
-    
+
 
 router = TextChatAPIRouter()
 
-    
+
 @router.post("/v1/completions")
 async def completion_endpoint(request: ChatCompletionRequest) -> ChatCompletionResponse:
     ret = check_completion_request(request)
@@ -99,3 +110,8 @@ async def chat_completion_endpoint(chat_request: ChatCompletionRequest) -> ChatC
     if ret is not None:
         raise RuntimeError("Invalid parameter.")
     return await router.handle_chat_completion_request(chat_request)
+
+@router.post("/v1/models")
+async def show_available_models():
+    models = router.get_chatbot().model_name
+    return {"models": models}

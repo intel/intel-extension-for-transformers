@@ -90,6 +90,11 @@ class JitAvx2 : protected JitAvx {
  protected:
   static int constexpr VBits = 256;
   typedef Xbyak::Ymm vreg_t;
+
+  void loadbf16_f32(const Xbyak::Ymm& dst, const Xbyak::Address& addr) {
+    vpmovzxwd(dst, addr);
+    vpslld(dst, dst, 16);
+  }
 };
 
 class JitAvx512f : protected JitAvx2 {
@@ -186,6 +191,10 @@ class JitAvx512f : protected JitAvx2 {
 class JitAvx512_fp16 : protected JitAvx512f {};
 
 class JitAvx512vnni : protected JitAvx512f {
+ protected:
+};
+
+class JitAvxvnni : protected JitAvx2 {
  protected:
 };
 

@@ -4,9 +4,12 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - intel_extension_for_transformers/neural_chat/tests/**
       - .github/workflows/unit-test-neuralchat.yml
       - .github/workflows/script/unitTest/**
+      - intel_extension_for_transformers/neural_chat/**
+      - intel_extension_for_transformers/llm/finetuning/**
+      - intel_extension_for_transformers/llm/quantization/**
+      - intel_extension_for_transformers/transformers/**
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -30,8 +33,8 @@ jobs:
         include:
           - test_branch: ${{ github.ref }}
             test_name: "PR-test"
-          # - test_branch: "main"
-          #   test_name: "baseline"
+          - test_branch: "main"
+            test_name: "baseline"
     steps:
       - name: podman Clean Up
         run: |

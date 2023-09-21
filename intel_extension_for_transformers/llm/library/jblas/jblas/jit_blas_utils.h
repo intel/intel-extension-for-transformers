@@ -100,11 +100,9 @@ struct bf16 {
 #else
     bf16f32 tmp = {0.f};
     tmp.f32 = _v;
-#if 0
     // See document of VCVTNEPS2BF16 in Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume 2
     const auto lsb = tmp.bf16[1] & 1;
     tmp.u += 0x7fff + lsb;
-#endif
     x = tmp.bf16[1];
 #endif
   }

@@ -677,9 +677,9 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
           "  --config              path to the configuration file (default: "
           ")\n");
   fprintf(stderr, "  --nthread N           number of threads to use (default: 1)\n");
-  fprintf(stderr, "  --bits N              number of bits to use for quantization (default: 4)\n");
+  fprintf(stderr, "  --weight_dtype N              number of bits to use for quantization (default: 4)\n");
   fprintf(stderr, "  --alg                 qquantization algorithm to use: sym/asym (default: sym)\n");
-  fprintf(stderr, "  --block_size N        block size (default: 32)\n");
+  fprintf(stderr, "  --group_size N        group size (default: 32)\n");
   fprintf(stderr, "  --scale_dtype dtype   fp32/bf16 type for scales (default: fp32)\n");
   fprintf(stderr,
           "  --compute_type             Gemm computation data type: int8/fp32/ggml (default: "
@@ -701,12 +701,12 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       params.config = argv[++i];
     } else if (arg == "--nthread") {
       params.nthread = std::stoi(argv[++i]);
-    } else if (arg == "--bits") {
-      params.bits = std::stoi(argv[++i]);
+    } else if (arg == "--weight_dtype") {
+      params.weight_dtype = argv[++i];
     } else if (arg == "--alg") {
       params.alg = argv[++i];
-    } else if (arg == "--block_size") {
-      params.block_size = std::stoi(argv[++i]);
+    } else if (arg == "--group_size") {
+      params.group_size = std::stoi(argv[++i]);
     } else if (arg == "--scale_dtype") {
       params.scale_dtype = argv[++i];
     } else if (arg == "--compute_type") {
@@ -723,6 +723,8 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       quant_print_usage(argc, argv, params);
       exit(0);
     } else {
+      quant_print_usage(argc, argv, params);
+      fprintf(stderr, "unrecognized arguments: %s", arg.c_str());
       exit(0);
     }
   }
@@ -732,19 +734,19 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
 
 ne_ftype quant_params_to_ftype(const quant_params& params) {
   if (params.compute_type == "ggml") {
-    if (params.bits == 4) {
+    if (params.weight_dtype == "int4") {
       if (params.alg == "sym") {
         return NE_FTYPE_MOSTLY_Q4_0;
       } else {
         return NE_FTYPE_MOSTLY_Q4_1;
       }
-    } else if (params.bits == 5) {
+    } else if (params.weight_dtype == "int5") {
       if (params.alg == "sym") {
         return NE_FTYPE_MOSTLY_Q5_0;
       } else {
         return NE_FTYPE_MOSTLY_Q5_1;
       }
-    } else if (params.bits == 8) {
+    } else if (params.weight_dtype == "int8") {
       return NE_FTYPE_MOSTLY_Q8_0;
     }
   } else {
@@ -755,19 +757,19 @@ ne_ftype quant_params_to_ftype(const quant_params& params) {
 
 ne_type quant_params_to_type(const quant_params& params) {
   if (params.compute_type == "ggml") {
-    if (params.bits == 4) {
+    if (params.weight_dtype == "int4") {
       if (params.alg == "sym") {
         return NE_TYPE_Q4_0;
       } else {
         return NE_TYPE_Q4_1;
       }
-    } else if (params.bits == 5) {
+    } else if (params.weight_dtype == "int5") {
       if (params.alg == "sym") {
         return NE_TYPE_Q5_0;
       } else {
         return NE_TYPE_Q5_1;
       }
-    } else if (params.bits == 8) {
+    } else if (params.weight_dtype == "int8") {
       return NE_TYPE_Q8_0;
     }
   } else {
