@@ -110,23 +110,23 @@ function main() {
                     quantized_model="${model}-${precision}.bin"
                     if [[ ! -e ${quantized_model} ]]; then
                       if [[ ${precision} == "q4_j_vnni_b128" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 128 --scale_dtype fp32 --compute_type int8 --alg sym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 128 --scale_dtype fp32 --compute_dtype int8 --alg sym
                       elif [[ ${precision} == "q4_j_vnni_bf16_b32" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --scale_dtype bf16 --compute_type int8 --alg sym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --scale_dtype bf16 --compute_dtype int8 --alg sym
                       elif [[ ${precision} == "q4_j_vnni_b32" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --scale_dtype fp32 --compute_type int8 --alg sym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --scale_dtype fp32 --compute_dtype int8 --alg sym
                       elif [[ ${precision} == "q4_j_b32" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --scale_dtype fp32 --compute_type fp32 --alg sym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --scale_dtype fp32 --compute_dtype fp32 --alg sym
                       elif [[ ${precision} == "q4_j_b128" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 128 --scale_dtype fp32 --compute_type fp32 --alg sym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 128 --scale_dtype fp32 --compute_dtype fp32 --alg sym
                       elif [[ ${precision} == "q4_j_b128_asym" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 128 --scale_dtype fp32 --compute_type fp32 --alg asym
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 128 --scale_dtype fp32 --compute_dtype fp32 --alg asym
                       elif [[ ${precision} == "q4_0" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --compute_type int8 --alg sym --use_ggml true
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --compute_dtype int8 --alg sym --use_ggml
                       elif [[ ${precision} == "q4_1" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --compute_type int8 --alg asym --use_ggml true
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4 --group_size 32 --compute_dtype int8 --alg asym --use_ggml
                       elif [[ ${precision} == "q8_0" ]]; then
-                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int8 --group_size 32 --compute_type int8 --alg sym --use_ggml true
+                          ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int8 --group_size 32 --compute_dtype int8 --alg sym --use_ggml
                       else
                           ${quant_script} --model_file ${working_dir}/${model}-fp32.bin --out_file ${working_dir}/${model}-${precision}.bin --weight_dtype int4
                       fi

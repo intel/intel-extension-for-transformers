@@ -683,7 +683,7 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
   fprintf(stderr, "  --scale_dtype         fp32/bf16 type for scales (default: fp32)\n");
   fprintf(stderr, "  --compute_dtype       data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
   fprintf(stderr,
-          "  --use_ggml            enable ggml(0) / jblas(1) for quantization and inference: 0/1 (default: 0)\n");
+          "  --use_ggml            enable ggml for quantization and inference\n");
   fprintf(stderr,
           "  --model_name          model name like falcon / llama (default: "
           "unknown)\n");
@@ -712,8 +712,7 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
     } else if (arg == "--compute_dtype") {
       params.compute_dtype = argv[++i];
     } else if (arg == "--use_ggml") {
-      auto value = argv[++i];
-      params.use_ggml = strlen(value) > 0 && (strcasecmp(value, "true") == 0 || std::atoi(value) != 0);
+      params.use_ggml = true;
     } else if (arg == "--model_name") {
       params.model_name = argv[++i];
       model_archs mt = model_name_to_arch::init().find(params.model_name);

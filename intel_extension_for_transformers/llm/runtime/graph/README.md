@@ -79,7 +79,7 @@ LLM one-click running script args explanations:
 | --group_size    | group size (default: 32)                                                  |
 | --scale_dtype   | fp32/bf16 type for scales (default: fp32)                                 |
 | --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)             |
-| --use_ggml      | enable ggml for quantization and inference: true/false (default: false)   |
+| --use_ggml      | enable ggml for quantization and inference                                |
 | -p / --prompt     | prompt to start generation with (default: empty)                        |
 | -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
 | -t / --threads    | number of threads to use during computation (default: 56)               |
@@ -128,7 +128,7 @@ quantization args explanations:
 | --group_size    | group size (default: 32)                                    |
 | --scale_dtype   | data type of scales: bf16/fp32 (default: fp32)              |
 | --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)  |
-| --use_ggml      | enable ggml for quantization and inference: true/false (default: false) |
+| --use_ggml      | enable ggml for quantization and inference                  |
 
 
 ### 2. Inference model with C++ script API

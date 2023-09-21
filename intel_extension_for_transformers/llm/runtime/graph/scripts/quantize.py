@@ -81,9 +81,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     )
     parser.add_argument(
         "--use_ggml",
-        type=str2bool,
-        help="enable ggml for quantization and inference: true/false (default: false)",
-        default=False,
+        action="store_true",
+        help="enable ggml for quantization and inference",
     )
     args = parser.parse_args(args_in)
 
@@ -103,7 +102,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--group_size",     str(args.group_size)])
     cmd.extend(["--scale_dtype",    args.scale_dtype])
     cmd.extend(["--compute_dtype",  args.compute_dtype])
-    cmd.extend(["--use_ggml",       str(args.use_ggml)])
+    if args.use_ggml:
+        cmd.extend(["--use_ggml"])
     
     print(cmd)
     subprocess.run(cmd)
