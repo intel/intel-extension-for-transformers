@@ -346,7 +346,8 @@ bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq,
             w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
           constexpr jblas::gemm::GemmCoreType cores[] = {
               jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-              jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
+              jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48,
+              jblas::gemm::GemmCoreType::AVX2_2X48};
           constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
           support = contains(w1tmp->mCoreType, cores, EleNum);
           support &= hasISA(cores, EleNum);
@@ -420,6 +421,20 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS
     if (_cd->AVX512F()) {
       using GemmKernel = custom::wrapper::kblock::avx512f::AddGemmS4KBlock;
       using GeluGemmKernel = custom::wrapper::kblock::avx512f::AddGeluGemmS4KBlock;
+      using FusedInter = custom::wrapper::transformer::FpGeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
+      // FusedInter::Arguments::paramA paramA={activation, lda};
+      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
+      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
+      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
+                            broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = custom::wrapper::kblock::avx2::AddGemmS4KBlock;
+      using GeluGemmKernel = custom::wrapper::kblock::avx2::AddGeluGemmS4KBlock;
       using FusedInter = custom::wrapper::transformer::FpGeluFusedInterface<GeluGemmKernel, GemmKernel>;
       static FusedInter finter;
       int lda = fin;
@@ -508,6 +523,20 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32_f32f32_forward(float* activation, SS
     if (_cd->AVX512F()) {
       using GemmKernel = custom::wrapper::kblock::avx512f::AddGemmS8KBlock;
       using GeluGemmKernel = custom::wrapper::kblock::avx512f::AddGeluGemmS8KBlock;
+      using FusedInter = custom::wrapper::transformer::FpGeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
+      // FusedInter::Arguments::paramA paramA={activation, lda};
+      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
+      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
+      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
+                            broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = custom::wrapper::kblock::avx2::AddGemmS8KBlock;
+      using GeluGemmKernel = custom::wrapper::kblock::avx2::AddGeluGemmS8KBlock;
       using FusedInter = custom::wrapper::transformer::FpGeluFusedInterface<GeluGemmKernel, GemmKernel>;
       static FusedInter finter;
       int lda = fin;

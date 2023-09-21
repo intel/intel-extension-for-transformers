@@ -65,6 +65,9 @@ static bool hasISA(const jblas::gemm::GemmCoreType* set, size_t len) {
       case jblas::gemm::GemmCoreType::AVX2_4X24:
         support |= _cd->AVX2();
         break;
+      case jblas::gemm::GemmCoreType::AVX2_2X48:
+        support |= _cd->AVX2();
+        break;
       case jblas::gemm::GemmCoreType::AVX_VNNI_1x48_KBLOCK:
       case jblas::gemm::GemmCoreType::AVX_VNNI_2x48:
         support |= _cd->AVX_VNNI();
@@ -863,6 +866,17 @@ using AddGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
 using AddGeluGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
 }  // namespace avx512f
+namespace avx2 {
+template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
+using DefaultGemmFp32 =
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<JblasAVX2, jblas::gemm::GemmCore_Row_NN_2x48_AVX2,
+                                                             jblas::prologue::gemm::ActivationBase, ProB, Epi>;
+using AddGeluGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
+
+using AddGeluGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
+using AddGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
+}  // namespace avx2
 namespace amx_bf16 {
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
 using DefaultGemmFp32 =

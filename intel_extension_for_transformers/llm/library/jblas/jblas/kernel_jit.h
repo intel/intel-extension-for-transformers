@@ -266,7 +266,7 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       static_assert(std::is_same<_SRC_T, float>::value &&
                     std::is_same<_DST_T, float>::value);
     static JitMemcpy2DAvx2 instance_withops(1, p);
-    static JitMemcpy2DAvx2 instance4_withops(4, p);
+    // static JitMemcpy2DAvx2 instance4_withops(4, p);
     static_assert(sizeof(_SRC_T) ==
                   sizeof(_DST_T));  // TODO SRC_T DST_T conversion copy
     auto param = params{(void*)srcptr,
@@ -276,11 +276,11 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
                         int(col * sizeof(_SRC_T)),
                         int(srcstep * sizeof(_SRC_T)),
                         int(dststep * sizeof(_DST_T))};
-    int row4 = 0;  // unrollk == 4 has poor perf
+    int row4 = 0;  // utils::padto_le(row, 4);
     int irow = 0;
     if (row4) {
       param.row = row4;
-      instance4_withops.mKernel(&param);
+      // instance4_withops.mKernel(&param);
     }
     int rowtail = row - row4;
     if (rowtail) {
@@ -399,39 +399,39 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       mov(reg_tmp, reg_colsize);
       sub(reg_tmp, reg_itercol);
       cmp(reg_tmp, VBytes);
-      jb(".maskflag");
+      jb(".maskflag", T_NEAR);
       cmp(reg_tmp, 0);
-      jl(".maskend");
+      jl(".maskend", T_NEAR);
       // tail=8
       if (unrollk > 1) {
         for (int j = 0; j < unrollk; j++) {
           if (j == 3) {
-            vmovdqu8(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_tmp1]);
+            vmovups(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_tmp1]);
             for (int k = 0; k < injectors.size(); k++)
               injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
-            vmovdqu8(ptr[reg_tmpdst + reg_tmp2], Xbyak::Ymm(0));
+            vmovups(ptr[reg_tmpdst + reg_tmp2], Xbyak::Ymm(0));
           } else {
-            vmovdqu8(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_srcstride * j]);
+            vmovups(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_srcstride * j]);
             for (int k = 0; k < injectors.size(); k++)
               injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
-            vmovdqu8(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0));
+            vmovups(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0));
           }
         }
       } else {
-        vmovdqu8(Xbyak::Ymm(0), ptr[reg_tmpsrc]);
+        vmovups(Xbyak::Ymm(0), ptr[reg_tmpsrc]);
         for (int k = 0; k < injectors.size(); k++)
           injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
-        vmovdqu8(ptr[reg_tmpdst], Xbyak::Ymm(0));
+        vmovups(ptr[reg_tmpdst], Xbyak::Ymm(0));
       }
-      jl("maskend");
+      jl(".maskend", T_NEAR);
       L(".maskflag");
       // 0<tail<8
       push(reg_ret);     // use it in temporary
       mov(reg_ret.cvt32(), 1);
-      shlx(reg_ret.cvt32(), reg_ret.cvt32(), reg_tmp);
+      shlx(reg_ret.cvt32(), reg_ret.cvt32(), reg_tmp.cvt32());
       sub(reg_ret.cvt32(), 1);
-      vmovd(Xbyak::Ymm(1), reg_ret.cvt32());
-      vpbroadcastd(Xbyak::Ymm(1), Xbyak::Ymm(1));
+      vmovd(Xbyak::Xmm(1), reg_ret.cvt32());
+      vpbroadcastd(Xbyak::Ymm(1), Xbyak::Xmm(1));
       vpsllvd(Xbyak::Ymm(1), Xbyak::Ymm(1), ptr[rip + data_label]);
       if (unrollk > 1) {
         for (int j = 0; j < unrollk; j++) {
@@ -478,7 +478,7 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
     outLocalLabel();  // end of local label
     L(data_label);
     uint32_t mask_bias[8] = {7, 6, 5, 4, 3, 2, 1, 0};
-    db(reinterpret_cast<uint8_t*>(mask_bias), 256);
+    db(reinterpret_cast<uint8_t*>(mask_bias), sizeof(mask_bias));
     for (auto&& injector : injectors) injector.prepare_table();
     this->ready();
     mKernel = this->getCode<func_t>();
