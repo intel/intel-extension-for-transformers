@@ -31,7 +31,6 @@
 # limitations under the License.
 
 
-import logging
 import warnings
 
 import torch
@@ -43,13 +42,13 @@ from intel_extension_for_transformers.transformers import (
     WeightOnlyQuantConfig,
 )
 from intel_extension_for_transformers.transformers.utils.utility import (
+    logger,
     LazyImport,
     generate_dummy_past_key_values,
     get_example_inputs_for_trace,
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 
-logger = logging.getLogger(__name__)
 torch = LazyImport("torch")
 
 
