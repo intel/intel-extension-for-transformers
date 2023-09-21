@@ -1829,11 +1829,12 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
                 word = keyword_list[word]
             result_list.append(word)
         asr_result = ' '.join(result_list)
+        final_result = asr_result[0].upper() + asr_result[1:] + '.'
     except requests.exceptions.RequestException as e:
         logger.error(f"Talkingbot fails: {worker_name}, {e}")
         return None
     print("+++++++asr+++++++")
-    return {"asr_result": asr_result.capitalize()+'.'}
+    return {"asr_result": final_result}
 
 
 @app.post("/v1/aiphotos/talkingbot/create_embed")
