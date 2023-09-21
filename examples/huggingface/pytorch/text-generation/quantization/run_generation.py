@@ -3,17 +3,19 @@ import re
 import time
 import json
 import torch
+import logging
 from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 from transformers.utils import check_min_version
 from optimum.intel.generation.modeling import TSModelForCausalLM
+from intel_extension_for_transformers.transformers.utils import logger
 from intel_extension_for_transformers.transformers import (
     MixedPrecisionConfig,
     WeightOnlyQuantConfig,
     SmoothQuantConfig,
     BitsAndBytesConfig
 
-) 
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -106,6 +108,7 @@ if args.mixed_precision:
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                 quantization_config=mp_config
                                                )
+    logger.info("Mixed Precision done.")
 # smoothquant
 elif args.sq:
     from intel_extension_for_transformers.transformers import AutoModelForCausalLM
@@ -134,18 +137,21 @@ elif args.sq:
                                                )
     config.save_pretrained(args.output_dir)
     user_model.save(args.output_dir)
+    logger.info("SmoothQuant done.")
 # weight-only
 elif args.woq:
     woq_config = WeightOnlyQuantConfig()
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                 quantization_config=woq_config
                                             )
+    logger.info("WeightOnlyQuant done.")
 # bitsandbytes
 elif args.bitsandbytes:
     bab_config = BitsAndBytesConfig()
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                 quantization_config=bab_config
                                             )
+    logger.info("WeightOnlyQuant bitsandbytes done.")
 elif not args.int8 or args.int8_bf16_mixed:
     user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config)
     # peft

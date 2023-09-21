@@ -40,7 +40,18 @@ class TestTTS(unittest.TestCase):
     def test_correct_year(self):
         text = "In 1986, there are more than 2000 people participating in that party."
         result = self.normalizer.correct_number(text)
-        self.assertEqual(result, "In nineteen eighty-six, there are more than two thousand people participating in that party.")
+        self.assertEqual(result, "In nineteen eightysix, there are more than two thousand people participating in that party.")
+
+    def test_correct_ordinal(self):
+        text = "1st 2nd 3rd 4th 5th 11th 12th 21st 22nd"
+        result = self.normalizer.correct_number(text)
+        self.assertEqual(result, "first second third fourth fifth eleventh twelfth twenty first twenty second.")
+
+    def test_correct_conjunctions(self):
+        text = "CVPR-15 ICML-21"
+        text = self.normalizer.correct_abbreviation(text)
+        result = self.normalizer.correct_number(text)
+        self.assertEqual(result, "cee vee pee ar fifteen I cee em el twenty-one.")
 
 if __name__ == "__main__":
     unittest.main()

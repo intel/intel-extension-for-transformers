@@ -18,6 +18,7 @@ Welcome to use Jupyter Notebooks to explore how to build and customize chatbots 
 | 2.4     | Deploying a Chatbot on Habana Gaudi1/Gaudi2 | Instructions for deploying a chatbot on Intel Habana Gaudi1/Gaudi2. | [Notebook](./notebooks/deploy_chatbot_on_habana_gaudi.ipynb) |
 | 2.5     | Deploying a Chatbot on Nvidia A100          | Learn how to deploy a chatbot as a service on Nvidia A100 platforms. | [Notebook](./notebooks/deploy_chatbot_on_nv_a100.ipynb) |
 | 2.6     | Deploying Chatbot with load balance         | Learn how to deploy a chatbot as a service with load balance. | [Notebook](./notebooks/chatbot_with_load_balance.ipynb) |
+| 2.7     | Setup end to end text chatbot on Intel CPU SPR  | Learn how to setup a end to end text chatbot on Intel CPU SPR, including frontend and backend. | [Notebook](./notebooks/setup_text_chatbot_service_on_spr.ipynb) |
 | 3       | Optimizing Chatbots on Different Platforms  |                                                            |                                                         |
 | 3.1     | AMP Optimization on SPR                     | Optimize your chatbot using Automatic Mixed Precision (AMP) on SPR platforms. | [Notebook](./notebooks/amp_optimization_on_spr.ipynb) |
 | 3.2     | AMP Optimization on Habana Gaudi1/Gaudi2    | Learn how to optimize your chatbot with AMP on Intel Habana Gaudi1/Gaudi2 platforms. | [Notebook](./notebooks/amp_optimization_on_habana_gaudi.ipynb) |

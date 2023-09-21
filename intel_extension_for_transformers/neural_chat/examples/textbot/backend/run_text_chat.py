@@ -16,28 +16,11 @@
 # limitations under the License.
 
 
-import argparse
-from intel_extension_for_transformers.neural_chat import GenerationConfig
-from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
+from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
 
 def main():
-
-    parser = argparse.ArgumentParser(prog='text chat example', add_help=True)
-    parser.add_argument(
-        "--prompt",
-        action="store",
-        help="text prompt for neuralchat",
-        default=None,
-        required=True)
-
-    args = parser.parse_args()
-    chatbot = build_chatbot()
-    config = GenerationConfig(max_new_tokens=64)
-    response = chatbot.predict(
-        query=args.prompt, 
-        config=config
-    )
-    print(response)
+    server_executor = NeuralChatServerExecutor()
+    server_executor(config_file="./textbot.yaml", log_file="./textbot.log")
 
 if __name__ == "__main__":
     main()
