@@ -95,6 +95,12 @@ class eltwise_injector {
   void vector_compute(const Xbyak::Ymm& ymm_src, int const_p_offset = 0) {
     load_table_addr();
     switch (elt_op) {
+      case TANH:
+        tanh_compute_vector_fwd(ymm_src);
+        break;
+      case GELU:
+        gelu_compute_vector_fwd(ymm_src);
+        break;
       default:
         assert(false);
         break;
@@ -522,6 +528,83 @@ class eltwise_injector {
     h->vrcp14ps(zmm_aux0, zmm_aux0);
     h->vmulps(zmm_src, zmm_src, zmm_aux0);
   }
+  void tanh_compute_vector_fwd(const Xbyak::Ymm& ymm_src) {
+    // register mapping
+    Ymm ymm_dst = ymm_aux1, ymm_src_shift = ymm_aux1, ymm_coeff = ymm_aux1,
+        ymm_pol = ymm_aux2, ymm_indices = ymm_aux3, ymm_src_original = ymm_aux4,
+        ymm_sign = ymm_aux4;
+
+    const int tanh_n_polynomials = 32;
+
+    // We split the positive domain in 33 intervals:
+    // a) [0; linear_ubound]: in this interval tanh(x) = x
+    // b) [linear_ubound; 0x1.8p-12]: This interval spans part of a
+    //    half binade
+    // c) [0x1.8p-12; 0x1.0p-11], ..., [0x1.8p2; 0x1.0p3]:
+    //    one interval for each half binade, there are 29 of those
+    // d) [0x1.0p3; saturation_ubound]:
+    //    This interval spans part of a half binade
+    // e) [0x1.205966p3; saturation_ubound]: in this interval, tanh(x) = 1
+    // For b-d, we need 31 polynomials and will do a table lookup for those.
+    // To simplify the logic, we will also put a) in the table.
+    auto coeffs_address = [&](int coeff_off, int off = 0) {
+      return table_val(tanh_pol_table, coeff_off * tanh_n_polynomials + off);
+    };
+    auto gather_coefficient = [&](Ymm vmm_coeff, int coeff_idx,
+                                  Ymm vmm_pol_idx) {
+      Ymm ymm_coeff(vmm_coeff.getIdx());
+      Ymm ymm_pol_idx(vmm_pol_idx.getIdx());
+      h->vmovups(ymm_coeff, coeffs_address(coeff_idx, 0));
+      h->vpermps(ymm_coeff, ymm_pol_idx, ymm_coeff);
+      h->vpslld(ymm_mask, ymm_pol_idx, 28);
+      h->vblendvps(ymm_coeff, ymm_coeff, coeffs_address(coeff_idx, 16),
+                   ymm_mask);
+    };
+
+    // because tanh(x) = -tanh(-x), we extract sign to make x postive
+    // and reapply sign at the end
+    h->vmovups(ymm_src_original, ymm_src);
+    h->vpabsd(ymm_src, ymm_src);
+
+    // We compute the indices for the table lookup
+    h->vmovups(ymm_indices, ymm_src);
+    h->vpsubd(ymm_indices, ymm_indices, table_val(tanh_idx_bias));
+    h->vandps(ymm_indices, ymm_indices, table_val(tanh_idx_mask));
+    h->vpsrld(ymm_indices, ymm_indices, 22);
+
+    // we do the argument reduction
+    h->vmovups(ymm_src_shift, ymm_src);
+    h->vandps(ymm_src_shift, ymm_src_shift, table_val(tanh_idx_mask));
+    h->vsubps(ymm_src, ymm_src, ymm_src_shift);
+
+    // we gather and evaluate the polynonials
+    gather_coefficient(ymm_pol, 6, ymm_indices);
+    for (int deg = 5; deg >= 0; --deg) {
+      gather_coefficient(ymm_coeff, deg, ymm_indices);
+      h->vfmadd213ps(ymm_pol, ymm_src, ymm_coeff);
+    }
+
+    // we restore src with cleared sign, and keep sign
+    h->vmovups(ymm_src, ymm_src_original);
+    h->vandps(ymm_sign, ymm_sign, table_val(sign_mask));
+    h->vandps(ymm_src, ymm_src, table_val(positive_mask));
+
+    // Now we blend the results
+    // [saturation_ubound; +inf[ : we return +/- 1
+    h->vmovups(ymm_dst, table_val(one));
+    // [linear_ubound; saturation_lbound] : we return +/- P(x)
+    h->vmovups(ymm_mask, table_val(tanh_saturation_lbound));
+    h->vcmpps(ymm_mask, ymm_mask, ymm_src, _cmp_nle_us);
+    h->vblendvps(ymm_dst, ymm_dst, ymm_pol, ymm_mask);
+    // [0; linear_ubound]  : we return x
+    h->vmovups(ymm_mask, table_val(tanh_linear_ubound));
+    h->vcmpps(ymm_mask, ymm_mask, ymm_src, _cmp_nle_us);
+    h->vblendvps(ymm_dst, ymm_dst, ymm_src, ymm_mask);
+
+    // We reapply the sign and return
+    h->vxorps(ymm_dst, ymm_dst, ymm_sign);
+    h->vmovups(ymm_src, ymm_dst);
+  }
   void tanh_compute_vector_fwd(const Xbyak::Zmm& zmm_src) {
     // register mapping
     Zmm zmm_dst = zmm_aux1, zmm_src_shift = zmm_aux1, zmm_coeff = zmm_aux1, zmm_pol = zmm_aux2, zmm_indices = zmm_aux3,
@@ -593,6 +676,23 @@ class eltwise_injector {
     // We reapply the sign and return
     h->vpxord(zmm_dst, zmm_dst, zmm_sign);
     h->vmovups(zmm_src, zmm_dst);
+  }
+  void gelu_compute_vector_fwd(const Xbyak::Ymm& ymm_src) {
+    h->vmovups(ymm_aux0, ymm_src);
+    // compute G(x) = sqrt_root_two_over_pi * x * (1 + fitting_const * x * x)
+    h->vmulps(ymm_src, ymm_src, ymm_src);
+    h->vmovups(ymm_aux1, table_val(gelu_tanh_fitting_const));
+    h->vfmadd213ps(ymm_src, ymm_aux1, table_val(one));
+    h->vmulps(ymm_src, ymm_src, ymm_aux0);
+    h->vmulps(ymm_src, ymm_src, table_val(gelu_tanh_sqrt_two_over_pi));
+
+    // compute tanh(G(x))
+    tanh_compute_vector_fwd(ymm_src);
+
+    // compute 0.5 * x * (1 + tanh(G(x)))
+    h->vaddps(ymm_src, ymm_src, table_val(one));
+    h->vmulps(ymm_src, ymm_src, table_val(half));
+    h->vmulps(ymm_src, ymm_src, ymm_aux0);
   }
   void gelu_compute_vector_fwd(const Xbyak::Zmm& zmm_src) {
     h->vmovups(zmm_aux0, zmm_src);
