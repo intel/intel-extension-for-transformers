@@ -61,7 +61,7 @@ model_name = "EleutherAI/gpt-j-6b"     # support model id of HF or local PATH to
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True)
 prompt = "Once upon a time, a little girl"
-output = model.generate(prompt, streamer, max_new_tokens=30)
+output = model.generate(prompt, max_new_tokens=30)
 ```
 
 ### 3. Run LLM with Script
