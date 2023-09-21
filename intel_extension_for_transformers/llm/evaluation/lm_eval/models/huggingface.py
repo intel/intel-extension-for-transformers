@@ -410,9 +410,10 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
         self.model_format = model_format
         if self.model_format == "onnx":
-            if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")):
+            if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) or \
+               not os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
                 raise ValueError(
-                "Couldn't find decoder_model.onnx in {}.".format(pretrained)
+                "Couldn't find decoder_model.onnx or decoder_model_merged.onnx in {}.".format(pretrained)
                 )
 
             import onnxruntime as ort
@@ -422,7 +423,16 @@ class AutoCausalLM(HuggingFaceAutoLM):
             model_config = PretrainedConfig.from_pretrained(pretrained)
             sess_options = ort.SessionOptions()
             sess_options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-            if os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
+            if os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
+                sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
+                    os.path.join(pretrained, "decoder_model_merged.onnx"),
+                    session_options=sess_options)
+                self.model = ORTModelForCausalLM(sessions[0],  # pylint: disable=E1121
+                                                 model_config,
+                                                 pretrained,
+                                                 use_cache=True,
+                                                 use_io_binding=False)
+            elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
                 sessions = ORTModelForCausalLM.load_model(  # pylint: disable=E1123
                     os.path.join(pretrained, "decoder_model.onnx"),
                     os.path.join(pretrained, "decoder_with_past_model.onnx"),
