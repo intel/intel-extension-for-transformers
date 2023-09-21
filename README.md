@@ -31,7 +31,7 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```bash
 pip install intel-extension-for-transformers
 ```
-> For more installation method, please refer to [Installation Page](docs/installation.md)
+> For more installation methods, please refer to [Installation Page](docs/installation.md)
 
 ## 🌟Introduction
 Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the below key features and examples:
@@ -52,31 +52,30 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 
 ## 🌱Getting Started
-### LLM Weight-Only Inference
-LLM Runtime weight-only [examples](intel_extension_for_transformers/llm/runtime/graph) provide int4/int8 inference.
+Below are the sample code to enable weight-only low precision inference. See more [examples](intel_extension_for_transformers/llm/runtime/graph).
 
-#### LLM Runtime int4 Inference 
+### INT4 Inference 
 ```python
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 prompt = "Once upon a time, a little girl"
 config = WeightOnlyQuantConfig(compute_dtype="int8")
-model = AutoModel.from_pretrained("mosaicml/mpt-7b", quantization_config=config, use_llm_runtime=True)
+model = AutoModel.from_pretrained("Intel/neural-chat-7b-v1-1", quantization_config=config)
 print(model.generate(prompt, max_new_tokens=30))
 ```
 
-#### LLM Runtime int8 Inference
+### INT8 Inference
 ```python
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 prompt = "Once upon a time, a little girl"
 config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
-model = AutoModel.from_pretrained("mosaicml/mpt-7b", quantization_config=config, use_llm_runtime=True)
+model = AutoModel.from_pretrained("Intel/neural-chat-7b-v1-1", quantization_config=config)
 print(model.generate(prompt, max_new_tokens=30))
 ```
 
-## 🎯Validated PModels
-Below, you will find the average values for Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
+## 🎯Validated Podels
+Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
 
-| Model |  FP32         | INT4 group size 32 | INT4 group size 128 | 
+| Model |  FP32         | INT4 (Group size 32) | INT4 (Group size 128) | 
 |---------------------|:----------------------:|-----------------------|-----------------------------------|
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 0.643 | 0.644 | 0.64 |
 | [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 0.69 | 0.69 | 0.685 |
@@ -157,7 +156,7 @@ Below, you will find the average values for Lambada (OpenAI), HellaSwag, Winogra
 
 
 ## 📃Selected Publications/Events
-* Keynote: [Intel Innovation 2023 Livestream - Day2](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
+* Intel Innovation'23 Keynote: [Intel Innovation 2023 Keynote by Greg Lavender](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
 * Blog published on Medium: [NeuralChat: A Customizable Chatbot Framework](https://medium.com/intel-analytics-software/make-your-own-chatbot-within-a-few-minutes-with-neuralchat-a-customizable-chatbot-framework-139b4bdec8d1) (Sep 2023)
 * Blog published on Medium: [Faster Stable Diffusion Inference with Intel Extension for Transformers](https://medium.com/intel-analytics-software/faster-stable-diffusion-inference-with-intel-extension-for-transformers-on-intel-platforms-7e0f563186b0) (July 2023)
 * Blog of Intel Developer News: [The Moat Is Trust, Or Maybe Just Responsible AI](https://www.intel.com/content/www/us/en/developer/articles/technical/moat-is-trust-minimizing-risks-generative-ai.html) (July 2023)
