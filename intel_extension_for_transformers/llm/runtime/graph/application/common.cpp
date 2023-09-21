@@ -681,8 +681,7 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
   fprintf(stderr, "  --alg                 quantization algorithm to use: sym/asym (default: sym)\n");
   fprintf(stderr, "  --group_size          group size (default: 32)\n");
   fprintf(stderr, "  --scale_dtype         fp32/bf16 type for scales (default: fp32)\n");
-  fprintf(stderr,
-          "  --compute_dtype       data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
+  fprintf(stderr, "  --compute_dtype       data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
   fprintf(stderr,
           "  --use_ggml            enable ggml(0) / jblas(1) for quantization and inference: 0/1 (default: 0)\n");
   fprintf(stderr,
