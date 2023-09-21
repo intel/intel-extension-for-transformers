@@ -89,6 +89,8 @@ The Next token latency is based on input size 32, group size 128 and greedy sear
 | [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 0.613 | 0.609 | 0.609 |22.02ms|
 | [tiiuae/falcon-40b-instruct](https://huggingface.co/tiiuae/falcon-40b-instruct) | 0.756 | 0.757 | 0.755 |n/a|
 
+Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) 
+
 ## 📖Documentation
 <table>
 <thead>
