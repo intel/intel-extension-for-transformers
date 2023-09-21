@@ -262,7 +262,9 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
                             void* elt_const_v = nullptr, Eltops... ops) {
     static std::vector<kernel::jit_injector::eltwise_injector> p = {
         static_cast<JBLAS_ELTWISEOP>(ops)...};
-    static_assert(sizeof...(ops) == 0);  // TODO AVX2 support Eltops
+    if constexpr (sizeof...(ops) != 0)
+      static_assert(std::is_same<_SRC_T, float>::value &&
+                    std::is_same<_DST_T, float>::value);
     static JitMemcpy2DAvx2 instance_withops(1, p);
     static JitMemcpy2DAvx2 instance4_withops(4, p);
     static_assert(sizeof(_SRC_T) ==
@@ -298,6 +300,7 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       assert(false);
       return;
     }
+    Xbyak::Label data_label;
     inLocalLabel();  // use local label for multiple instance
     {
       int SF_TmpSize = 64;
@@ -381,9 +384,8 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       } else {
         for (int i = 0; i < ColUnroll; i++) {
           vmovups(Xbyak::Ymm(i), ptr[reg_tmpsrc + i * VBytes]);
-          // for (int k = 0; k < injectors.size(); k++)
-          //   injectors[k].vector_compute(Xbyak::Ymm(i), k * 3 *
-          //   sizeof(float));
+          for (int k = 0; k < injectors.size(); k++)
+            injectors[k].vector_compute(Xbyak::Ymm(i), k * 3 * sizeof(float));
           vmovups(ptr[reg_tmpdst + i * VBytes], Xbyak::Ymm(i));
         }
       }
@@ -400,17 +402,18 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       jb(".maskflag");
       cmp(reg_tmp, 0);
       jl(".maskend");
+      // tail=8
       if (unrollk > 1) {
         for (int j = 0; j < unrollk; j++) {
           if (j == 3) {
             vmovdqu8(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_tmp1]);
             for (int k = 0; k < injectors.size(); k++)
-              injectors[k].vector_compute(Xbyak::Zmm(0), k * 3 * sizeof(float));
+              injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
             vmovdqu8(ptr[reg_tmpdst + reg_tmp2], Xbyak::Ymm(0));
           } else {
             vmovdqu8(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_srcstride * j]);
             for (int k = 0; k < injectors.size(); k++)
-              injectors[k].vector_compute(Xbyak::Zmm(0), k * 3 * sizeof(float));
+              injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
             vmovdqu8(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0));
           }
         }
@@ -422,35 +425,39 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       }
       jl("maskend");
       L(".maskflag");
-      push(reg_srcptr);  // use it in temporary
+      // 0<tail<8
       push(reg_ret);     // use it in temporary
-      xor_(reg_srcptr, reg_srcptr);
-      L(".maskloop");
+      mov(reg_ret.cvt32(), 1);
+      shlx(reg_ret.cvt32(), reg_ret.cvt32(), reg_tmp);
+      sub(reg_ret.cvt32(), 1);
+      vmovd(Xbyak::Ymm(1), reg_ret.cvt32());
+      vpbroadcastd(Xbyak::Ymm(1), Xbyak::Ymm(1));
+      vpsllvd(Xbyak::Ymm(1), Xbyak::Ymm(1), ptr[rip + data_label]);
       if (unrollk > 1) {
         for (int j = 0; j < unrollk; j++) {
           if (j == 3) {
-            add(reg_tmp1, reg_srcptr);  // avoid adress by three reg
-            add(reg_tmp2, reg_srcptr);  // avoid adress by three reg
-            mov(reg_ret.cvt32(), ptr[reg_tmpsrc + reg_tmp1]);
-            mov(ptr[reg_tmpdst + reg_tmp2], reg_ret.cvt32());
-            sub(reg_tmp1, reg_srcptr);
-            sub(reg_tmp2, reg_srcptr);
+            vpmaskmovd(Xbyak::Ymm(0), Xbyak::Ymm(1),
+                       ptr[reg_tmpsrc + reg_tmp1]);
+            for (int k = 0; k < injectors.size(); k++)
+              injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
+            vpmaskmovd(ptr[reg_tmpdst + reg_tmp2], Xbyak::Ymm(0),
+                       Xbyak::Ymm(1));
           } else {
-            mov(reg_ret.cvt32(),
-                ptr[reg_tmpsrc + reg_srcstride * j + reg_srcptr]);
-            mov(ptr[reg_tmpdst + reg_dststride * j + reg_srcptr],
-                reg_ret.cvt32());
+            vpmaskmovd(Xbyak::Ymm(0), Xbyak::Ymm(1),
+                       ptr[reg_tmpsrc + reg_srcstride * j]);
+            for (int k = 0; k < injectors.size(); k++)
+              injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
+            vpmaskmovd(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0),
+                       Xbyak::Ymm(1));
           }
         }
       } else {
-        mov(reg_ret.cvt32(), ptr[reg_tmpsrc + reg_srcptr]);
-        mov(ptr[reg_tmpdst + reg_srcptr], reg_ret.cvt32());
+        vpmaskmovd(Xbyak::Ymm(0), Xbyak::Ymm(1), ptr[reg_tmpsrc]);
+        for (int k = 0; k < injectors.size(); k++)
+          injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
+        vpmaskmovd(ptr[reg_tmpdst], Xbyak::Ymm(0), Xbyak::Ymm(1));
       }
-      add(reg_srcptr, 4);
-      cmp(reg_srcptr, reg_tmp);
-      jb(".maskloop");
       pop(reg_ret);
-      pop(reg_srcptr);
       L(".maskend");
       pop(reg_tmp);
       add(reg_tmpsrc, VBytes);
@@ -469,6 +476,9 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       vreg_pop(rsp);
     }
     outLocalLabel();  // end of local label
+    L(data_label);
+    uint32_t mask_bias[8] = {7, 6, 5, 4, 3, 2, 1, 0};
+    db(reinterpret_cast<uint8_t*>(mask_bias), 256);
     for (auto&& injector : injectors) injector.prepare_table();
     this->ready();
     mKernel = this->getCode<func_t>();
