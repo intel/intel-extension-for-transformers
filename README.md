@@ -74,7 +74,7 @@ print(model.generate(prompt, max_new_tokens=30))
 
 ## 🎯Validated  Models
 Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
-The Next token latency is based on input size 32, group size 128 and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
+The next token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
 
 | Model |  FP32         | INT4 (Group size 32) | INT4 (Group size 128) | Next Token Latency   | 
 |---------------------|:----------------------:|:-----------------------:|:----------------------------:|:------------:| 
@@ -84,10 +84,10 @@ The Next token latency is based on input size 32, group size 128 and greedy sear
 | [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) | 0.674 | 0.672 | 0.669 | 80.16ms|
 | [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat) | 0.672 | 0.67 | 0.666 | 35.84ms|
 | [tiiuae/falcon-7b](https://huggingface.co/tiiuae/falcon-7b) | 0.698 | 0.694 | 0.693 |36.1ms|
-| [baichuan-inc/baichuan-7B](https://huggingface.co/baichuan-inc/baichuan-7B) | 0.474 | 0.471 | 0.47 |n/a|
-| [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b) | 0.65 | 0.647 | 0.643 |n/a|
+| [baichuan-inc/baichuan-7B](https://huggingface.co/baichuan-inc/baichuan-7B) | 0.474 | 0.471 | 0.47 | Coming Soon |
+| [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b) | 0.65 | 0.647 | 0.643 | Coming Soon |
 | [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 0.613 | 0.609 | 0.609 |22.02ms|
-| [tiiuae/falcon-40b-instruct](https://huggingface.co/tiiuae/falcon-40b-instruct) | 0.756 | 0.757 | 0.755 |n/a|
+| [tiiuae/falcon-40b-instruct](https://huggingface.co/tiiuae/falcon-40b-instruct) | 0.756 | 0.757 | 0.755 | Coming Soon |
 
 Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) 
 
