@@ -307,11 +307,11 @@ struct beam_hypotheses {
     auto comp = [](const beam& a, const beam& b) { return a.score > b.score; };
     uint32_t cur_len = b.eos() ? b.token_ids.size() - 1 : b.token_ids.size();
     float score = b.score / std::pow(cur_len + n_prompt_tokens, length_penalty);
-#if 0
-    printf("=============== beam hypos add =================== \n");
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("add beam hypos: \n");
     b.print();
-    printf("origin score: %12.6f, new score: %12.f, sentence_len: %d \n", b.score, score, cur_len + n_prompt_tokens);
-    printf("================================================== \n");
+    printf("origin_score: %12.6f, new_score: %12.6f, sentence_len: %d \n", b.score, score, cur_len + n_prompt_tokens);
+    printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
     b.score = score;
     if (beams.size() < num_beams) {

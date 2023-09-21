@@ -2207,38 +2207,31 @@ void beam_search_flow::fill_next_beams_by_top_scores() {
     beams_score.push_back(cur_beams[i].score);
   }
   // DEBUG
-#if 0
-  printf("====================== \n");
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+  printf("========================================================================================= \n");
+  printf("next_tokens for inference: \n");
   for (auto kk : embd_inp) {
     printf("%d: %s \n", kk, (ctx->vocab.id_to_token.at(kk).tok).c_str());
   }
+  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
   ctx->batch_size = batch_size;
   int n_tokens = 1;
 
   model_eval(ctx, embd_inp.data(), n_tokens, n_past, num_threads);
-  // DEBUG
-#if 0
-  size_t bs_stride = n_tokens * ctx->model.hparams.n_vocab;
-  for (int k = 0; k < batch_size; ++k) {
-    printf("====================== \n");
-    for (int kk = 0; kk < 10; ++kk) {
-      printf("%4.5f \n", model_get_logits(ctx) + k * bs_stride + kk);
-    }
-  }
-#endif
 
   const int sample_scale = 2;
   std::vector<beam_next_token> next_tokens =
       beam_top_k_next_tokens(ctx, cur_len, beams_score, {batch_size}, beam_indices, sample_scale);
 
   // DEBUG
-#if 0
-  printf("====================== \n");
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+  printf("top_k next_tokens: \n");
   for (auto kk : next_tokens) {
     printf("%d: %s, score: %10.6f, beam_idx: %d \n", kk.id, (ctx->vocab.id_to_token.at(kk.id).tok).c_str(), kk.score,
            kk.beam_idx);
   }
+  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
   MODEL_ASSERT(next_tokens.size() == batch_size * sample_scale);
   MODEL_ASSERT(next_beams.empty());
@@ -2283,7 +2276,8 @@ std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indi
   MODEL_ASSERT(next_beams.size() == beam_size);
   MODEL_ASSERT(cur_beams.size() == beam_size);
   // DEBUG
-#if 0
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+  printf("kv cache update indices info: \n");
   printf("cur_beams: ");
   for (int i = 0; i < beam_size; ++i) {
     printf("%d, ", cur_beams[i].infer_bs_id);
@@ -2355,7 +2349,8 @@ std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indi
     }
   }
 
-#if 0  // DEBUG
+  // DEBUG
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
   printf("cpy_final_bs_ids: ");
   for (int i = 0; i < beam_size; ++i) {
     printf("%d, ", cpy_final_bs_ids[i]);
@@ -2371,6 +2366,7 @@ std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indi
     printf("%d, ", next_beams[i].infer_bs_id);
   }
   printf("\n");
+  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
   return kv_reorder_indices;
 }
@@ -2383,21 +2379,26 @@ void beam_search_flow::beam_score_length_penalize() {
 
 // Return beam with highest probability.
 const beam& beam_search_flow::finalize() {
-#if 0
-  printf("\n finalize before: \n");
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+  printf("========================================================================================= \n");
+  printf("finalize: \n");
+  printf("before: \n");
   for (auto b : beam_hypos[0].beams) {
     b.print();
   }
+  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
   if (!requests_done[0]) {
     for (const auto b : cur_beams) {
       beam_hypos[0].add(b, n_prompt_tokens);
     }
-#if 0
-    printf("\n finalize after: \n");
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("after (adding more beams from outside): \n");
     for (auto b : beam_hypos[0].beams) {
       b.print();
     }
+    printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+    printf("========================================================================================= \n");
 #endif
   }
   return beam_hypos[0].top1();
@@ -2436,6 +2437,16 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       std::vector<beam_next_token> next_tokens = beam_top_k_next_tokens(ctx, 0, {0.0f}, {1}, {0}, beam_size);
       MODEL_ASSERT(next_tokens.size() == beam_size);
       cur_beams.clear();
+      // DEBUG
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+      printf("========================================================================================== \n");
+      printf("top_k next_tokens: \n");
+      for (auto kk : next_tokens) {
+        printf("%d: %s, score: %12.6f, beam_idx: %d \n", kk.id, (ctx->vocab.id_to_token.at(kk.id).tok).c_str(),
+               kk.score, kk.beam_idx);
+      }
+      printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+#endif
       for (int i = 0; i < beam_size; ++i) {
         beam b;
         b.ctx = ctx;
@@ -2453,13 +2464,15 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
       next_beams.clear();
     }
 
-#if 0  // DEBUG: print current beams for this iteration
-    printf("\n\nCurrent beams:\n");
+    // DEBUG: print current beams for this iteration
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("current beams:\n");
     for (size_t j = 0; j < cur_beams.size(); ++j) {
       printf("beams[%d]: ", j);
       cur_beams[j].print();
       fflush(stdout);
     }
+    printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
 #endif
 
     // check if done
@@ -2479,9 +2492,12 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
 
   const beam& top_b = finalize();
 
-#if 0  // DEBUG: print final beam result
-    printf("\n\nFinal beam:\n");
-    top_b.print();
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON  // DEBUG: print final beam result
+  printf("========================================================================================= \n");
+  printf("final beam:\n");
+  top_b.print();
+  printf("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n");
+  printf("========================================================================================= \n");
 #endif
 
   beam_search_response.clear();
