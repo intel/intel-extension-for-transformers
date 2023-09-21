@@ -37,7 +37,9 @@
 #endif
 
 #define COMMON_SAMPLE_RATE 16000
-
+#ifdef _MSC_VER 
+#define strcasecmp _stricmp
+#endif
 //
 // CLI argument parsing
 //
