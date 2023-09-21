@@ -85,7 +85,7 @@ class DocumentIndexing:
     def load(self, input):
         if self.retrieval_type=="dense":
             embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
-            vectordb = Chroma(embedding=embedding, persist_directory=self.persist_dir)
+            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
         else:
             if self.document_store == "inmemory":
                 vectordb = self.KB_construct(input)

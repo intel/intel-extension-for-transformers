@@ -45,6 +45,7 @@ class Agent_QA():
             self.input_path = os.path.join(asset_path, '/docs/')
         else:
             print("The given file path is unavailable, please check and try again!")
+            print("The current script path is {}".format(script_dir))
         if append:
             self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
                                                persist_dir=persist_dir, process=process,
