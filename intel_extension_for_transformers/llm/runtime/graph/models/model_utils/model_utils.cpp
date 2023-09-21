@@ -81,9 +81,11 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   }
 
   // NE_TYPE_JBLAS can not be allocated memory
-  cache.k = ne_new_tensor_1d(cache.ctx, wtype == NE_TYPE_JBLAS ? NE_TYPE_I8 : wtype, n_elements_k, NE_SIZE_CALC);
+  cache.k = ne_new_tensor_1d(cache.ctx, wtype == NE_TYPE_JBLAS ? NE_TYPE_I8 : wtype, n_elements_k + 64, NE_SIZE_CALC);
+  cache.k = ne_view_1d(cache.ctx, cache.k, n_elements_k, 64 - (reinterpret_cast<uintptr_t>(cache.k->data) % 64));
   cache.k->type = wtype;
-  cache.v = ne_new_tensor_1d(cache.ctx, wtype == NE_TYPE_JBLAS ? NE_TYPE_I8 : wtype, n_elements_v, NE_SIZE_CALC);
+  cache.v = ne_new_tensor_1d(cache.ctx, wtype == NE_TYPE_JBLAS ? NE_TYPE_I8 : wtype, n_elements_v + 64, NE_SIZE_CALC);
+  cache.v = ne_view_1d(cache.ctx, cache.v, n_elements_v, 64 - (reinterpret_cast<uintptr_t>(cache.v->data) % 64));
   cache.v->type = wtype;
   ne_set_name(cache.k, "cache_k");
   ne_set_name(cache.v, "cache_v");
