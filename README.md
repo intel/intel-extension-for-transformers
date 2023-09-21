@@ -52,8 +52,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 ## 🌱Getting Started
 ### LLM Weight-Only Inference
-Our API is currently a work in progress and will be coming soon.
-Before API Ready, you can use LLM Runtime with [examples](intel_extension_for_transformers/llm/runtime/graph).
+LLM Runtime weight-only [examples](intel_extension_for_transformers/llm/runtime/graph) provide int4/int8 inference.
 
 #### LLM Runtime int4 Inference 
 ```python
