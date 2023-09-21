@@ -72,7 +72,7 @@ model = AutoModel.from_pretrained("Intel/neural-chat-7b-v1-1", quantization_conf
 print(model.generate(prompt, max_new_tokens=30))
 ```
 
-## 🎯Validated Podels
+## 🎯Validated  Models
 Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
 The Next token latency is based on input size 32, group size 128 and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
 
@@ -87,7 +87,6 @@ The Next token latency is based on input size 32, group size 128 and greedy sear
 | [baichuan-inc/baichuan-7B](https://huggingface.co/baichuan-inc/baichuan-7B) | 0.474 | 0.471 | 0.47 |n/a|
 | [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b) | 0.65 | 0.647 | 0.643 |n/a|
 | [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 0.613 | 0.609 | 0.609 |22.02ms|
-| [databricks/dolly-v2-7b](https://huggingface.co/databricks/dolly-v2-7b) | 0.631 | 0.627 | 0.623 |n/a|
 | [tiiuae/falcon-40b-instruct](https://huggingface.co/tiiuae/falcon-40b-instruct) | 0.756 | 0.757 | 0.755 |n/a|
 
 
