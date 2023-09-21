@@ -19,7 +19,18 @@ from typing import List, Optional
 from transformers import AutoConfig
 import subprocess
 
+model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
+
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="run quantization and inference")
@@ -53,12 +64,16 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="fp32",
     )
     parser.add_argument(
-        "--compute_type",
+        "--compute_dtype",
         type=str,
-        help="Gemm computation data type: int8/fp32/ggml (default: ggml)",
-        default="ggml",
+        help="data type of Gemm computation: int8/bf16/fp32 (default: int8)",
+        default="int8",
     )
-
+    parser.add_argument(
+        "--use_ggml",
+        action="store_true",
+        help="enable ggml for quantization and inference",
+    )
     # inference related arguments.
     parser.add_argument(
         "-p",
@@ -131,7 +146,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
     parent_path = Path(__file__).parent.absolute()
     config = AutoConfig.from_pretrained(dir_model)
-    model_type = config.model_type
+    model_type = model_maps.get(config.model_type, config.model_type)
     work_path = Path(model_type + "_files")
     if not work_path.exists():
         Path.mkdir(work_path)
@@ -155,7 +170,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     quant_cmd.extend(["--weight_dtype", args.weight_dtype])
     quant_cmd.extend(["--group_size", str(args.group_size)])
     quant_cmd.extend(["--scale_dtype", args.scale_dtype])
-    quant_cmd.extend(["--compute_type", args.compute_type])
+    quant_cmd.extend(["--compute_dtype", args.compute_dtype])
+    if args.use_ggml:
+        quant_cmd.extend(["--use_ggml"])
     quant_cmd.extend(["--build_dir", args.build_dir])
     print("quantize model ...")
     subprocess.run(quant_cmd)
