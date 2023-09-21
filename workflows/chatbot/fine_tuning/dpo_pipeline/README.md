@@ -27,7 +27,7 @@ We verify DPO training on our finetuned `mpt-7b` model [Intel/neural-chat-7b-v1-
 
 #### mpt architecture
 | Model | Average ⬆️| ARC (25-s) ⬆️ | HellaSwag (10-s) ⬆️ | MMLU (5-s) ⬆️| TruthfulQA (MC) (0-s) ⬆️ | Evaluation by |
-| --- | --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- | --- |
 |[mosaicml/mpt-7b](https://huggingface.co/mosaicml/mpt-7b)| 47.4  | 47.61 | 77.56 | 31 | 33.43 | ours |
 | [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat) | 49.95 | 46.5 | 75.55 | 37.60 | 40.17 | ours |
 | [Intel/neural-chat-7b-v1-1](https://huggingface.co/Intel/neural-chat-7b-v1-1) | **51.41**   | 50.09 | 76.69 | 38.79 | 40.07 | ours |
@@ -36,8 +36,8 @@ We verify DPO training on our finetuned `mpt-7b` model [Intel/neural-chat-7b-v1-
 
 #### llama-2 architecture
 
-| Model | Average ⬆️| ARC (25-s) ⬆️ | HellaSwag (10-s) ⬆️ | MMLU (5-s) ⬆️| TruthfulQA (MC) (0-s) ⬆️ |
-| --- | --- | --- | --- | --- | --- |
+| Model | Average ⬆️| ARC (25-s) ⬆️ | HellaSwag (10-s) ⬆️ | MMLU (5-s) ⬆️| TruthfulQA (MC) (0-s) ⬆️ | Evaluation by |
+| --- | --- | --- | --- | --- | --- | --- |
 |[meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf)|54.275 | 52.90  | 78.63 | 46.61  | 38.96|ours |
 | [meta-llama/Llama-2-7b-chat-hf](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf)|55.81 | 53.50  | 78.60 | 46.53  | 44.60  |ours |
 | Our Finetuned | **57.4** | 54.78 | 78.77 | 51.2  | 44.85 | ours |
