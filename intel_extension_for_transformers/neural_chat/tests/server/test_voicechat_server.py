@@ -45,16 +45,16 @@ class UnitTest(unittest.TestCase):
         audio_path = \
            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
         if os.path.exists(audio_path):
-            result = self.client_executor(
+            self.client_executor(
                 audio_input_path=audio_path,
                 server_ip="127.0.0.1",
                 port=9000)
         else:
-            result = self.client_executor(
+            self.client_executor(
                 audio_input_path="../../assets/audio/sample.wav",
                 server_ip="127.0.0.1",
                 port=9000)
-        self.assertEqual(result.status_code, 200)
+        self.assertEqual(os.path.exists("audio_0.wav"), True)
 
 if __name__ == "__main__":
     unittest.main()

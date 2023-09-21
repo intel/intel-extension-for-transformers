@@ -16,11 +16,13 @@
 # limitations under the License.
 
 from fastapi import APIRouter
+from fastapi.responses import StreamingResponse
 from typing import Optional
 from ...cli.log import logger
 from fastapi import File, UploadFile, Form
 from pydub import AudioSegment
 from ...config import GenerationConfig
+import base64
 
 class VoiceChatAPIRouter(APIRouter):
 
@@ -36,22 +38,26 @@ class VoiceChatAPIRouter(APIRouter):
             logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
-    
+
     async def handle_voice_chat_request(self, filename: str, audio_output_path: Optional[str]=None) -> str:
         chatbot = self.get_chatbot()
         try:
-            config = GenerationConfig(max_new_tokens=64, audio_output_path=audio_output_path)
-            result = chatbot.chat(query=filename, config=config)
+            config = GenerationConfig(audio_output_path=audio_output_path)
+            result = chatbot.chat_stream(query=filename, config=config)
+            def audio_file_generate(result):
+                for path in result:
+                    with open(path,mode="rb") as file:
+                        bytes = file.read()
+                        data = base64.b64encode(bytes)
+                    yield f"data: {data}\n\n"
+                yield f"data: [DONE]\n\n"
+            return StreamingResponse(audio_file_generate(result), media_type="text/event-stream")
         except Exception as e:
             raise Exception(e)
-        else:
-            logger.info('Voice chatbot inferencing finished.')
-            return result
 
 
 router = VoiceChatAPIRouter()
 
-# voice to text
 @router.post("/v1/voicechat/completions")
 async def voicechat(file: UploadFile=File(...), voice: str=Form(...), audio_output_path: str=Form(...)):
     file_name = file.filename
@@ -67,4 +73,3 @@ async def voicechat(file: UploadFile=File(...), voice: str=Form(...), audio_outp
     else:
         logger.info(f'Predicting voicechat with text output.')
         return await router.handle_voice_chat_request(file_name)
-    

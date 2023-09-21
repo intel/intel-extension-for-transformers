@@ -153,7 +153,26 @@ class BaseModel(ABC):
                             query = response
         assert query is not None, "Query cannot be None."
 
-        return predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+        response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+
+        # plugin post actions
+        for plugin_name in get_registered_plugins():
+            if is_plugin_enabled(plugin_name):
+                plugin_instance = get_plugin_instance(plugin_name)
+                if plugin_instance:
+                    if hasattr(plugin_instance, 'post_llm_inference_actions'):
+                        response = plugin_instance.post_llm_inference_actions(response)
+
+        # clear plugins config
+        for key in plugins:
+            plugins[key] = {
+                "enable": False,
+                "class": None,
+                "args": {},
+                "instance": None
+            }
+
+        return response
 
     def predict(self, query, config=None):
         """
