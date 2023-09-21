@@ -22,6 +22,16 @@ import subprocess
 model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="run quantization and inference")
     parser.add_argument(
@@ -61,9 +71,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     )
     parser.add_argument(
         "--use_ggml",
-        type=int,
-        help="enable ggml(0) / jblas(1) for quantization and inference: 0/1 (default: 0)",
-        default=0,
+        type=str2bool,
+        help="enable ggml for quantization and inference: true/false (default: false)",
+        default=False,
     )
     # inference related arguments.
     parser.add_argument(

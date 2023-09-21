@@ -69,7 +69,7 @@ enum class quant_comp : int {
   bf16,      // jblas bf16
   count,
 };
-static inline quant_comp parse_compute_type(std::string arg, int ggml_arg) {
+static inline quant_comp parse_compute_type(std::string arg, bool ggml_arg) {
   if (ggml_arg) {
     return quant_comp::ggml;
   }
