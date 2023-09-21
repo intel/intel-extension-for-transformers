@@ -25,19 +25,41 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
                  embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
-                 document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}):
+                 document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5},
+                 append=True, index_name="elastic_index_1"):
         self.model = None
         self.tokenizer = None
         self.retrieval_type = retrieval_type
         self.retriever = None
         self.intent_detector = IntentDetector()
-        if os.path.exists(input_path):
-            self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
-                                               persist_dir=persist_dir, process=process,
-                                               embedding_model=embedding_model, max_length=max_length)
-            self.db = self.doc_parser.KB_construct(input_path)
-            self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
-                                       search_type=search_type, search_kwargs=search_kwargs)
+        self.input_path=input_path
+        if append:
+            if os.path.exists(input_path):
+                self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type, document_store=document_store,
+                                                   persist_dir=persist_dir, process=process,
+                                                   embedding_model=embedding_model, max_length=max_length,
+                                                   index_name = index_name)
+                self.db = self.doc_parser.KB_construct(input_path)
+        else:
+            print("Make sure the current persist path is new!")
+            if os.path.exists(persist_dir):
+                if bool(os.listdir(persist_dir)):
+                    self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type,
+                                                   document_store=document_store,
+                                                   persist_dir=persist_dir, process=process,
+                                                   embedding_model=embedding_model,
+                                                   max_length=max_length.
+                                                   index_name = index_name)
+                    self.db = self.doc_parser.load(self.input_path)
+                else:
+                    self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type,
+                                                       document_store=document_store,
+                                                       persist_dir=persist_dir, process=process,
+                                                       embedding_model=embedding_model, max_length=max_length,
+                                                       index_name = index_name)
+                    self.db = self.doc_parser.KB_construct(input_path)
+        self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
+                                   search_type=search_type, search_kwargs=search_kwargs)
 
 
 

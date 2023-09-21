@@ -41,6 +41,7 @@ class TestChatbotBuilder(unittest.TestCase):
         print(response)
         print("**********")
         # self.assertTrue("56" in response)
+        plugins.retrieval.enable = False
         
 
 if __name__ == '__main__':
