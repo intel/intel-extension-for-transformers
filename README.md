@@ -76,9 +76,8 @@ print(model.generate(prompt, max_new_tokens=30))
 Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
 The Next token latency is based on input size 32, group size 128 and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
 
-<center>
 | Model |  FP32         | INT4 (Group size 32) | INT4 (Group size 128) | Next Token Latency   | 
-|---------------------|:----------------------:|-----------------------|-----------------------------------|------------| 
+|---------------------|:----------------------:|:-----------------------:|:----------------------------:|:------------:| 
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 0.643 | 0.644 | 0.64 | 21.98ms|
 | [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 0.69 | 0.69 | 0.685 | 24.55ms|
 | [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 0.689 | 0.682 | 0.68 | 24.84ms|
@@ -89,7 +88,6 @@ The Next token latency is based on input size 32, group size 128 and greedy sear
 | [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b) | 0.65 | 0.647 | 0.643 |n/a|
 | [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 0.613 | 0.609 | 0.609 |22.02ms|
 | [tiiuae/falcon-40b-instruct](https://huggingface.co/tiiuae/falcon-40b-instruct) | 0.756 | 0.757 | 0.755 |n/a|
-</center>
 
 ## 📖Documentation
 <table>
