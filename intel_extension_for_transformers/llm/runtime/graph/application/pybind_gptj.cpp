@@ -69,6 +69,7 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   params.batch_size = batch_size;
   params.beam_search = beam_search;
   params.beam_size = beam_size;
+  params.memory_type = KV_MEM_TYPE_F16;  // TODO MEMORY_AUTO for MHA
   // params.use_mmap = false;
   // params.use_mlock= true;
   model_init_backend();
