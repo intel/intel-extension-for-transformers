@@ -29,7 +29,7 @@
 ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
-ARG ITREX_VER=main
+ARG ITREX_VER=xinyuye/nc_migrate
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 # See http://bugs.python.org/issue19846
@@ -64,13 +64,13 @@ RUN conda init bash && \
     source ~/.bashrc
 
 RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
+    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
+    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
-    pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
-    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
-    cd /intel-extension-for-transformers && pip install -v . && \
-    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
-    cd /intel-extension-for-transformers/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt
+    pip install datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
+    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
@@ -113,7 +113,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install -e .
 
 # Download ITREX code
-ARG ITREX_VER=main
+ARG ITREX_VER=xinyuye/nc_migrate
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers && \
@@ -123,7 +123,7 @@ RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-
     pip install -r requirements_hpu.txt
 
 # Build ITREX
-RUN cd /intel-extension-for-transformers && pip install -v . && \
+RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     pip install transformers==4.32.0 && \
     pip install accelerate==0.22.0
 

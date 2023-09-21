@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate chatbot-demo; python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate neuralchat; python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
         if: success() || failure()
