@@ -1797,19 +1797,38 @@ async def handle_image_to_image(request: Request):
 # ================== For streaming ==================
 @app.post("/v1/aiphotos/talkingbot/asr")
 async def handle_talkingbot_asr(file: UploadFile = File(...)):
-    file_name = file.filename
+    _file_name = file.filename
+    pwd = os.getcwd()
+    logger.info(f'current path: {pwd}')
+    file_name = os.path.join(pwd, _file_name)
     logger.info(f'Received file: {file_name}')
-    with open("tmp_audio_bytes", 'wb') as fout:
+    embed_name = os.path.join(pwd, "tmp_audio_bytes")
+    with open(embed_name, 'wb') as fout:
         content = await file.read()
         fout.write(content)
-    audio = AudioSegment.from_file("tmp_audio_bytes")
+    audio = AudioSegment.from_file(embed_name)
     audio = audio.set_frame_rate(16000)
     # bytes to mp3
     audio.export(f"{file_name}", format="mp3")
     worker_name = controller.get_worker_address("mpt-7b-chat")
 
+    keyword_list = {
+        "intel": "Intel",
+        " i ": " I ",
+        "shanghai": "Shanghai",
+        "china": "China",
+        "beijing": "Beijing"
+    }
     try:
         r = requests.post(worker_name + "/talkingbot/asr", json={"file_name": file_name}, timeout=1000) # stream=True
+        # substitude keywords manually
+        result_list = []
+        words = r.split(" ")
+        for word in words:
+            if word in keyword_list.keys():
+                word = keyword_list[word]
+            result_list.append(word)
+        r = ' '.join(result_list)
     except requests.exceptions.RequestException as e:
         logger.error(f"Talkingbot fails: {worker_name}, {e}")
         return None
