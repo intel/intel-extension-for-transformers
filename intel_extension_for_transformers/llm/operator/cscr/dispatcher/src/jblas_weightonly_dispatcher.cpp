@@ -112,9 +112,9 @@ void qbits_dequantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   auto parse_wei = dynamic_cast<typename PrologueB::StorageWeight*>(ctx->deseries_wei);
   TORCH_CHECK(parse_wei != nullptr, "Qbits: unresolved compressed weight.");
   if (ctx->transpose)
-    decompress_kernel.unpackTransposeWeight(ctx->n, ctx->k, parse_wei, ctx->output->data_ptr<float>(), ctx->k);
+    decompress_kernel.unpackTransposeWeight(int(ctx->n), int(ctx->k), parse_wei, ctx->output->data_ptr<float>(), int(ctx->k));
   else
-    decompress_kernel.unpackWeight(ctx->n, ctx->k, parse_wei, ctx->output->data_ptr<float>(), ctx->n);
+    decompress_kernel.unpackWeight(int(ctx->n), int(ctx->k), parse_wei, ctx->output->data_ptr<float>(), int(ctx->n));
 }
 
 template <class KERNEL, class ParamA, class ParamC>
@@ -122,9 +122,9 @@ void do_compute(qbits_config_param* p, qbits_runtime_ctx* ctx, const ParamA para
   if (initer.verbose) timer.start();
   static KERNEL gemm_kernel;
   if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>)
-    gemm_kernel.compute({ctx->m, ctx->n, ctx->k, param_a, ctx->deseries_wei, param_c});
+    gemm_kernel.compute({int(ctx->m), int(ctx->n), int(ctx->k), param_a, ctx->deseries_wei, param_c});
   else
-    gemm_kernel.template compute<true, false>({ctx->m, ctx->n, ctx->k, param_a, ctx->deseries_wei, param_c});
+    gemm_kernel.template compute<true, false>({int(ctx->m), int(ctx->n), int(ctx->k), param_a, ctx->deseries_wei, param_c});
   if (initer.verbose) {
     timer.stop();
     auto cost_time = timer.get_elapsed_time();
