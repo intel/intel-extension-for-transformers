@@ -122,7 +122,7 @@ elif args.woq:
     quantization_config = WeightOnlyQuantConfig() #default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
-    # CUDA device is need for `load_in_4bit` and `load_in_8bit`.
+    # GPU device is need for `load_in_4bit` and `load_in_8bit`.
     quantization_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",

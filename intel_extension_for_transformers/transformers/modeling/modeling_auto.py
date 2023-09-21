@@ -64,7 +64,7 @@ class _BaseQBitsAutoModelClass:
         calib_func = kwargs.pop("calib_func", None)
         quantization_config = kwargs.pop("quantization_config", None)
         use_llm_runtime = kwargs.pop("use_llm_runtime", False)
-        device_map = kwargs.pop("device_map", None)
+        device_map = kwargs.get("device_map", None)
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
@@ -77,11 +77,8 @@ class _BaseQBitsAutoModelClass:
                 True
                 if device_map == torch.device("cpu")
                 or device_map == "cpu"
-                or device_map is None
                 else False
             )
-            if use_cpu:
-                logger.info("CPU device is used.")
             if (
                 is_accelerate_available()
                 and is_bitsandbytes_available()
@@ -97,7 +94,7 @@ class _BaseQBitsAutoModelClass:
                 )
                 logger.info("WeightOnlyQuant bitsandbytes done.")
                 return model
-
+            logger.info("CPU device is used.")
             if load_in_8bit or load_in_4bit or quantization_config is not None:
                 from intel_extension_for_transformers.llm.quantization.utils import (
                     convert_to_quantized_model,

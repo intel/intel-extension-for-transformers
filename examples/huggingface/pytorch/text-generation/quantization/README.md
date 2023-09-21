@@ -30,7 +30,7 @@ python setup.py install
 
 
 # Run
-We support compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms. `BitsAndBytes` based transformers works on GPU device and `load_in_4bit` and `load_in_8bit` work on CPU device are provided, the followings are command to show how to use it.
+We support compression technologies such as `MixedPrecision`, `SmoothQuant` and `WeightOnlyQuant` with `RTN/AWQ/TEQ` algorithms and `BitsandBytes`, `load_in_4bit` and `load_in_8bit` work on CPU device are provided, the followings are command to show how to use it.
 
 ## 1. Performance
 ``` bash
@@ -64,12 +64,12 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 # load_in_4bit
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model EleutherAI/gpt-j-6b \
-    --load_in_4bit \
+    --load_in_4bit True \
     --benchmark
 # load_in_8bit
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model EleutherAI/gpt-j-6b \
-    --load_in_8bit \
+    --load_in_8bit True \
     --benchmark
 
 ```
@@ -105,13 +105,13 @@ python run_generation.py \
 # load_in_4bit
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
-    --load_in_4bit \
+    --load_in_4bit True \
     --accuracy \
     --tasks "lambada_openai"
 # load_in_8bit
 python run_generation.py \
     --model EleutherAI/gpt-j-6b \
-    --load_in_8bit \
+    --load_in_8bit True \
     --accuracy \
     --tasks "lambada_openai"
 

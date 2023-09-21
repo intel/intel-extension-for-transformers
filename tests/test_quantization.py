@@ -330,8 +330,22 @@ class TestQuantization(unittest.TestCase):
         bab_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=bab_config
                                                 )
-        output = bab_model(dummy_input)
-        self.assertTrue(float(output[0][0][0][0]), -7.347761154174805)
+
+        # load_in_4bit
+        bit4_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                     load_in_4bit=True
+                                                )
+        output = bit4_model(dummy_input)
+        self.assertTrue(float(output[0][0][0][0]), -8.0592)
+
+        # load_in_8bit
+        bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                     load_in_8bit=True,
+                                                     device_map="cpu"
+                                                )
+        output = bit8_model(dummy_input)
+        self.assertTrue(float(output[0][0][0][0]), -7.2695)
+
 
 if __name__ == "__main__":
     unittest.main()

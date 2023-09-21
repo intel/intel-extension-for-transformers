@@ -64,10 +64,10 @@ function run_tuning {
         extra_cmd=$extra_cmd" --woq"
     elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
-        extra_cmd=$extra_cmd" --load_in_4bit"
+        extra_cmd=$extra_cmd" --load_in_4bit True"
     elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
-        extra_cmd=$extra_cmd" --load_in_8bit"
+        extra_cmd=$extra_cmd" --load_in_8bit True"
     elif [ "${topology}" = "gpt_j_mp" ]; then
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
         extra_cmd=$extra_cmd" --mixed_precision"
