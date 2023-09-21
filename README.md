@@ -12,9 +12,7 @@ Intel® Extension for Transformers
 
 ## 🚀Latest News
 * <b>NeuralChat has been showcased in [Intel Innovation’23 Keynote](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) and [Google Cloud Next'23](https://cloud.google.com/blog/topics/google-cloud-next/welcome-to-google-cloud-next-23) to demonstrate GenAI/LLM capabilities on Intel Xeon Scalable Processors.</b>
-* <b>NeuralChat supports custom chatbot development and deployment on broad Intel HWs such as Xeon Scalable Processors, Gaudi2, Xeon CPU Max Series, Data Center GPU Max Series, Arc Series, and Core Processors. Check out [Notebooks](./intel_extension_for_transformers/neural_chat/docs/full_notebooks.md). </b>
-* <b>LLM runtime extends Hugging Face Transformers API to provide seamless low precision inference for popular LLMs, supporting mainstream low precision data types such as INT8/FP8/INT4/FP4/NF4.</b>
-
+* <b>NeuralChat supports custom chatbot development and deployment on broad Intel HWs such as Xeon Scalable Processors, Gaudi2, Xeon CPU Max Series, Data Center GPU Max Series, Arc Series, and Core Processors. Check out [Notebooks](./intel_extension_for_transformers/neural_chat/docs/full_notebooks.md) and below sample code. </b>
 
 ```python
 # pip install intel-extension-for-transformers
@@ -22,6 +20,8 @@ from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
+
+* <b>LLM runtime extends Hugging Face Transformers API to provide seamless low precision inference for popular LLMs, supporting mainstream low precision data types such as INT8/FP8/INT4/FP4/NF4.</b>
 
 ---
 <div align="left">
