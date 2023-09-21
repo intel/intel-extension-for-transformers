@@ -1,4 +1,5 @@
 import datetime
+from datetime import timezone, timedelta
 from threading import Thread
 import re
 import torch
@@ -42,7 +43,12 @@ def enforce_stop_tokens(text: str) -> str:
 
 
 def inference(query):
-    cur_time = datetime.datetime.now().strftime("%Y/%m/%d")
+    SHA_TZ = timezone(
+        timedelta(hours=8),
+        name='Asia/Shanghai'
+    )
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
+    cur_time = utc_now.astimezone(SHA_TZ).strftime("%Y/%m/%d")
     print("current time is:{}".format(cur_time))
     prompt = check_query_time(query, cur_time)
     inputs= tok(prompt, return_token_type_ids=False, return_tensors="pt")
