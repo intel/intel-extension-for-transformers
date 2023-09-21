@@ -127,7 +127,7 @@ quantization args explanations:
 | --group_size    | group size (default: 32)                                    |
 | --scale_dtype   | data type of scales: bf16/fp32 (default: fp32)              |
 | --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)  |
-| --use_ggml      | enable ggml type for quantization and inference             |
+| --use_ggml      | enable ggml(0) / jblas(1) for quantization and inference: 0/1 (default: 0) |
 
 
 ### 2. Inference model with C++ script API

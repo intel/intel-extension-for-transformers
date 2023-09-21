@@ -676,15 +676,15 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
   fprintf(stderr,
           "  --config              path to the configuration file (default: "
           ")\n");
-  fprintf(stderr, "  --nthread N           number of threads to use (default: 1)\n");
-  fprintf(stderr, "  --weight_dtype N      number of bits to use for quantization (default: int4)\n");
-  fprintf(stderr, "  --alg                 qquantization algorithm to use: sym/asym (default: sym)\n");
-  fprintf(stderr, "  --group_size N        group size (default: 32)\n");
-  fprintf(stderr, "  --scale_dtype dtype   fp32/bf16 type for scales (default: fp32)\n");
+  fprintf(stderr, "  --nthread             number of threads to use (default: 1)\n");
+  fprintf(stderr, "  --weight_dtype        number of bits to use for quantization (default: int4)\n");
+  fprintf(stderr, "  --alg                 quantization algorithm to use: sym/asym (default: sym)\n");
+  fprintf(stderr, "  --group_size          group size (default: 32)\n");
+  fprintf(stderr, "  --scale_dtype         fp32/bf16 type for scales (default: fp32)\n");
   fprintf(stderr,
-          "  --compute_dtype        data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
+          "  --compute_dtype       data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
   fprintf(stderr,
-          "  --use_ggml           enable ggml type for quantization and inference\n");
+          "  --use_ggml            enable ggml(0) / jblas(1) for quantization and inference: 0/1 (default: 0)\n");
   fprintf(stderr,
           "  --model_name          model name like falcon / llama (default: "
           "unknown)\n");

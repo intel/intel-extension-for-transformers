@@ -152,7 +152,7 @@ struct quant_params {
   std::string alg = "sym";
   int32_t group_size = 32;
   std::string scale_dtype = "fp32";
-  std::string compute_dtype = "ggml";
+  std::string compute_dtype = "int8";
   std::string model_name = "unknown";
   int use_ggml = 0;
   // set by model_name automatically
