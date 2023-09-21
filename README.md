@@ -72,15 +72,13 @@ model = AutoModelForCausalLM.from_pretrained("mosaicml/mpt-7b", quantization_con
 print(model.generate(prompt, streamer, max_new_tokens=30))
 ```
 
-## 🎯Validated Performance
+## 🎯Validated PModels
+Below, you will find the average values for Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
 
-
-| Model |  FP32 | BF16 | INT8 |
+| Model |  FP32 | INT4 group size 32 | INT4 group size 128 | 
 |---------------------|:----------------------:|-----------------------|-----------------------------------|
-| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 4163.67 (ms) | 1879.61 (ms) | 1612.24 (ms) |
-| [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) | 10.33 (s) | 3.02 (s) | N/A |
-
-> Note*: GPT-J-6B software/hardware configuration please refer to [text-generation](./examples/huggingface/pytorch/text-generation/README.md). Stable-diffusion software/hardware configuration please refer to [text-to-image](./examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion/README.md)
+| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 0.643 | 0.644 | 0.64 |
+| [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 0.69 | 0.69 | 0.685 |
 
 
 
