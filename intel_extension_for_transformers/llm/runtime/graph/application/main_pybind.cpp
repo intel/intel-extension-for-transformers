@@ -61,7 +61,7 @@ class Model {
   bool is_token_end() { return token_eos; }
   static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
                          const std::string& alg, int group_size, const std::string& scale_dtype,
-                         const std::string& compute_dtype);
+                         const std::string& compute_dtype, int use_ggml);
 
  private:
   model_context* ctx = nullptr;
@@ -215,7 +215,7 @@ int Model::post_process(float* logits) {
 
 int Model::quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
                        const std::string& alg, int group_size, const std::string& scale_dtype,
-                       const std::string& compute_dtype) {
+                       const std::string& compute_dtype, int use_ggml) {
   quant_params q_params;
 #ifdef MODEL_NAME
   q_params.model_name = MODEL_NAME;
@@ -233,6 +233,7 @@ int Model::quant_model(const std::string& model_path, const std::string& out_pat
   q_params.group_size = group_size;
   q_params.scale_dtype = scale_dtype;
   q_params.compute_dtype = compute_dtype;
+  q_params.use_ggml = use_ggml;
 
   ne_ftype ftype = quant_params_to_ftype(q_params);
   printf("ne_ftype: %d\n", ftype);
@@ -303,7 +304,7 @@ PYBIND11_MODULE(chatglm_cpp, m)
            py::arg("sentence_mode") = true)
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
                   py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
-                  py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "ggml")
+                  py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "ggml", py::arg("use_ggml") = 0)
       .def("is_token_end", &Model::is_token_end)
       .def("reinit", &Model::reinit);
 }

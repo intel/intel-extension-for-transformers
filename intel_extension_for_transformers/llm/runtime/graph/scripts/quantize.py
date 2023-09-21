@@ -66,8 +66,14 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--compute_dtype",
         type=str,
-        help="Gemm computation data type: int8/fp32/bf16/ggml (default: ggml)",
-        default="ggml",
+        help="data type of Gemm computation: int8/bf16/fp32 (default: int8)",
+        default="int8",
+    )
+    parser.add_argument(
+        "--use_ggml",
+        type=int,
+        help="enable ggml(0) / jblas(1) for quantization and inference: 0/1 (default: 0)",
+        default=0,
     )
     args = parser.parse_args(args_in)
 
@@ -86,7 +92,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--alg",            args.alg])
     cmd.extend(["--group_size",     str(args.group_size)])
     cmd.extend(["--scale_dtype",    args.scale_dtype])
-    cmd.extend(["--compute_dtype",   args.compute_dtype])
+    cmd.extend(["--compute_dtype",  args.compute_dtype])
+    cmd.extend(["--use_ggml",       str(args.use_ggml)])
     
     print(cmd)
     subprocess.run(cmd)

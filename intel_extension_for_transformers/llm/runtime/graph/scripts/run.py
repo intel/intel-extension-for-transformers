@@ -55,10 +55,15 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--compute_dtype",
         type=str,
-        help="Gemm computation data type: int8/fp32/bf16/ggml (default: ggml)",
-        default="ggml",
+        help="data type of Gemm computation: int8/bf16/fp32 (default: int8)",
+        default="int8",
     )
-
+    parser.add_argument(
+        "--use_ggml",
+        type=int,
+        help="enable ggml(0) / jblas(1) for quantization and inference: 0/1 (default: 0)",
+        default=0,
+    )
     # inference related arguments.
     parser.add_argument(
         "-p",
@@ -156,6 +161,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     quant_cmd.extend(["--group_size", str(args.group_size)])
     quant_cmd.extend(["--scale_dtype", args.scale_dtype])
     quant_cmd.extend(["--compute_dtype", args.compute_dtype])
+    quant_cmd.extend(["--use_ggml", str(args.use_ggml)])
     quant_cmd.extend(["--build_dir", args.build_dir])
     print("quantize model ...")
     subprocess.run(quant_cmd)
