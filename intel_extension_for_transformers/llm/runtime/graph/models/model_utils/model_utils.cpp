@@ -2371,12 +2371,6 @@ std::vector<std::tuple<int, int>> beam_search_flow::update_kv_cache_reorder_indi
   return kv_reorder_indices;
 }
 
-void beam_search_flow::beam_score_length_penalize() {
-  float length_penalty = ctx->generation_conf.length_penalty;
-  std::for_each(cur_beams.begin(), cur_beams.end(),
-                [&](beam& b) { b.score /= std::pow(b.token_ids.size(), length_penalty); });
-}
-
 // Return beam with highest probability.
 const beam& beam_search_flow::finalize() {
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
