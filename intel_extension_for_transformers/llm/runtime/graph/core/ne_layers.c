@@ -1473,8 +1473,6 @@ struct ne_tensor* ne_tp_concat(struct ne_context* ctx, struct ne_tensor* a, enum
   parallel_context* p_ctx = init_parallel_context();
   int32_t world_size = get_tp_size(p_ctx);
   int32_t rank = get_tp_rank(p_ctx);
-  // int32_t world_size = 2;
-  // int32_t rank = 0;
 
   if (a->grad) {
     is_node = true;
@@ -1539,8 +1537,6 @@ struct ne_tensor* ne_split(struct ne_context* ctx, struct ne_tensor* a, enum par
   parallel_context* p_ctx = init_parallel_context();
   int32_t world_size = get_tp_size(p_ctx);
   int32_t rank = get_tp_rank(p_ctx);
-  // int32_t world_size = 2;
-  // int32_t rank = 0;
 
   if (a->grad) {
     is_node = true;
