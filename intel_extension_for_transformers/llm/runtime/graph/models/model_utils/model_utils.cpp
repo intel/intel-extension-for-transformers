@@ -783,7 +783,7 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
 //
 quant_params_internal quant_params_to_internal(const quant_params& params) {
   return quant_params_internal{parse_bits(params.weight_dtype), parse_alg(params.alg), params.group_size,
-                               parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_dtype)};
+                               parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_dtype, params.use_ggml)};
 }
 
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
