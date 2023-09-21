@@ -308,7 +308,6 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       cur = ne_mul_mat(ctx0, model.layers[il].attn[3], KQV_merged_contiguous);
     }
 #ifdef NE_TP_MODEL
-      // ffn2 and ffn0 use split row, ffn1 use split column
       if (enable_tp) { cur = ne_all_reduce(ctx0, cur); }
 #endif
 

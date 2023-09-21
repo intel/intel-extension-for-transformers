@@ -77,7 +77,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
   int32_t world_size = get_tp_size(p_ctx);
   int32_t rank = get_tp_rank(p_ctx);
   enable_tp = world_size > 1 ? true : false;
-
+  // IMPORTANT, when TP, the n_head will 1 / world_size
   if (enable_tp) { n_head /= world_size; }
 #endif
 
