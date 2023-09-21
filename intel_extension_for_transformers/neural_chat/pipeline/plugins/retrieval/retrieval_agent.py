@@ -48,8 +48,8 @@ class Agent_QA():
                                                    document_store=document_store,
                                                    persist_dir=persist_dir, process=process,
                                                    embedding_model=embedding_model,
-                                                   max_length=max_length.
-                                                   index_name = index_name)
+                                                   max_length=max_length,
+                                                   index_name=index_name)
                     self.db = self.doc_parser.load(self.input_path)
                 else:
                     self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type,
