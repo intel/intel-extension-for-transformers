@@ -78,7 +78,7 @@ LLM one-click running script args explanations:
 | --alg           | quantization algorithm to use: sym/asym (default: sym)                    |
 | --group_size    | group size (default: 32)                                                  |
 | --scale_dtype   | fp32/bf16 type for scales (default: fp32)                                 |
-| --compute_type  | Gemm computation data type: int8/fp32/bf16/ggml (default: ggml)           |
+| --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)             |
 | -p / --prompt     | prompt to start generation with (default: empty)                        |
 | -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
 | -t / --threads    | number of threads to use during computation (default: 56)               |
@@ -107,12 +107,12 @@ python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
 # quantize weights of fp32 ggml bin
 # model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
 # optimized INT4 model with group size 128 (recommended)
-python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 128 --compute_type int8
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 128 --compute_dtype int8
 
 # Alternativly you could run ggml q4_0 format like following
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
 # optimized INT4 model with group size 32
-python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_type int8
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_dtype int8
 
 ```
 quantization args explanations:
@@ -120,13 +120,15 @@ quantization args explanations:
 | --------------  | ----------------------------------------------------------- |
 | --model_file    | path to the fp32 model                                      |
 | --out_file      | path to the quantized model                                 |
-| --config        | path to the configuration file (default: )                  |
+| --config        | path to the configuration file (default: "")                |
 | --nthread       | number of threads to use (default: 1)                       |
-| --weight_dtype  | data type of quantized weight (default: int4)               |
+| --weight_dtype  | data type of quantized weight: int4/int8 (default: int4)    |
 | --alg           | quantization algorithm to use: sym/asym (default: sym)      |
 | --group_size    | group size (default: 32)                                    |
-| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
-| --compute_type  | Gemm computation data type: int8/fp32/bf16/ggml (default: ggml)  |
+| --scale_dtype   | data type of scales: bf16/fp32 (default: fp32)              |
+| --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)  |
+| --use_ggml      | enable ggml type for quantization and inference             |
+
 
 ### 2. Inference model with C++ script API
 

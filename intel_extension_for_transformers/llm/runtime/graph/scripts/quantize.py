@@ -64,7 +64,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="fp32",
     )
     parser.add_argument(
-        "--compute_type",
+        "--compute_dtype",
         type=str,
         help="Gemm computation data type: int8/fp32/bf16/ggml (default: ggml)",
         default="ggml",
@@ -86,7 +86,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--alg",            args.alg])
     cmd.extend(["--group_size",     str(args.group_size)])
     cmd.extend(["--scale_dtype",    args.scale_dtype])
-    cmd.extend(["--compute_type",   args.compute_type])
+    cmd.extend(["--compute_dtype",   args.compute_dtype])
     
     print(cmd)
     subprocess.run(cmd)

@@ -53,7 +53,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="fp32",
     )
     parser.add_argument(
-        "--compute_type",
+        "--compute_dtype",
         type=str,
         help="Gemm computation data type: int8/fp32/bf16/ggml (default: ggml)",
         default="ggml",
@@ -155,7 +155,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     quant_cmd.extend(["--weight_dtype", args.weight_dtype])
     quant_cmd.extend(["--group_size", str(args.group_size)])
     quant_cmd.extend(["--scale_dtype", args.scale_dtype])
-    quant_cmd.extend(["--compute_type", args.compute_type])
+    quant_cmd.extend(["--compute_dtype", args.compute_dtype])
     quant_cmd.extend(["--build_dir", args.build_dir])
     print("quantize model ...")
     subprocess.run(quant_cmd)

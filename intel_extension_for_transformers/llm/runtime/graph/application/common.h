@@ -152,7 +152,7 @@ struct quant_params {
   std::string alg = "sym";
   int32_t group_size = 32;
   std::string scale_dtype = "fp32";
-  std::string compute_type = "ggml";
+  std::string compute_dtype = "ggml";
   std::string model_name = "unknown";
   // set by model_name automatically
   model_archs model_arch = MODEL_UNKNOWN;

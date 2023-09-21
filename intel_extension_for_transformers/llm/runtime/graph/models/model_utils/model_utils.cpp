@@ -783,7 +783,7 @@ model_token model_sample_token(struct model_context* ctx, model_token_data_array
 //
 quant_params_internal quant_params_to_internal(const quant_params& params) {
   return quant_params_internal{parse_bits(params.weight_dtype), parse_alg(params.alg), params.group_size,
-                               parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_type)};
+                               parse_scale_dtype(params.scale_dtype), parse_compute_type(params.compute_dtype)};
 }
 
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
@@ -795,7 +795,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   cd->setThreads(nthread);
   if (params.bits == quant_bits::q4) {
     if (params.scale_dtype == quant_sdtype::fp32) {
-      if (params.compute_type == quant_comp::int8) {
+      if (params.compute_dtype == quant_comp::int8) {
         if (params.alg != quant_alg::sym) {
           printf("Current not support asymmetric int8 computation, reset to symmetric\n");
         }
@@ -822,7 +822,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
             kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
           }
         }
-      } else if (params.compute_type == quant_comp::fp32) {
+      } else if (params.compute_dtype == quant_comp::fp32) {
         using Kernel = WeiS4ClipFp32<GcCompFp32, JblasAVX512_FP16>;
         using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
@@ -833,7 +833,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         } else {
           kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
         }
-      } else if (params.compute_type == quant_comp::bf16) {
+      } else if (params.compute_dtype == quant_comp::bf16) {
         using Kernel = WeiS4ClipFp32<GcCompBf16, JblasAMX_BF16>;
         using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
@@ -850,7 +850,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
   } else if (params.bits == quant_bits::q8) {
     // TODO add 8bit quantization
     if (params.scale_dtype == quant_sdtype::fp32) {
-      if (params.compute_type == quant_comp::int8) {
+      if (params.compute_dtype == quant_comp::int8) {
         if (params.alg != quant_alg::sym) {
           printf("Current not support asymmetric int8 computation, reset to symmetric\n");
         }
@@ -877,7 +877,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
             kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
           }
         }
-      } else if (params.compute_type == quant_comp::fp32) {
+      } else if (params.compute_dtype == quant_comp::fp32) {
         using Kernel = WeiS8Fp32<GcCompFp32, JblasAVX512_FP16>;
         using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
@@ -888,7 +888,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         } else {
           kernelref.packTransposeWeight(n, k, f32ptr, k, packedw);
         }
-      } else if (params.compute_type == quant_comp::bf16) {
+      } else if (params.compute_dtype == quant_comp::bf16) {
         using Kernel = WeiS8Fp32<GcCompBf16, JblasAMX_BF16>;
         using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;

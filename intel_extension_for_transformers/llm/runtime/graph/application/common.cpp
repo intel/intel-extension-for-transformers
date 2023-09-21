@@ -682,8 +682,7 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
   fprintf(stderr, "  --group_size N        group size (default: 32)\n");
   fprintf(stderr, "  --scale_dtype dtype   fp32/bf16 type for scales (default: fp32)\n");
   fprintf(stderr,
-          "  --compute_type        Gemm computation data type: int8/fp32/bf16/ggml (default: "
-          "ggml)\n");
+          "  --compute_dtype        data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
   fprintf(stderr,
           "  --model_name          model name like falcon / llama (default: "
           "unknown)\n");
@@ -709,8 +708,8 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       params.group_size = std::stoi(argv[++i]);
     } else if (arg == "--scale_dtype") {
       params.scale_dtype = argv[++i];
-    } else if (arg == "--compute_type") {
-      params.compute_type = argv[++i];
+    } else if (arg == "--compute_dtype") {
+      params.compute_dtype = argv[++i];
     } else if (arg == "--model_name") {
       params.model_name = argv[++i];
       model_archs mt = model_name_to_arch::init().find(params.model_name);
@@ -733,7 +732,7 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
 }
 
 ne_ftype quant_params_to_ftype(const quant_params& params) {
-  if (params.compute_type == "ggml") {
+  if (params.compute_dtype == "ggml") {
     if (params.weight_dtype == "int4") {
       if (params.alg == "sym") {
         return NE_FTYPE_MOSTLY_Q4_0;
@@ -756,7 +755,7 @@ ne_ftype quant_params_to_ftype(const quant_params& params) {
 }
 
 ne_type quant_params_to_type(const quant_params& params) {
-  if (params.compute_type == "ggml") {
+  if (params.compute_dtype == "ggml") {
     if (params.weight_dtype == "int4") {
       if (params.alg == "sym") {
         return NE_TYPE_Q4_0;
