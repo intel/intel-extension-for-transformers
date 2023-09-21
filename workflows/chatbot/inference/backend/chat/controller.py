@@ -1823,17 +1823,17 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
         r = requests.post(worker_name + "/talkingbot/asr", json={"file_name": file_name}, timeout=1000) # stream=True
         # substitude keywords manually
         result_list = []
-        words = r.split(" ")
+        words = r.json().split(" ")
         for word in words:
             if word in keyword_list.keys():
                 word = keyword_list[word]
             result_list.append(word)
-        r = ' '.join(result_list)
+        asr_result = ' '.join(result_list)
     except requests.exceptions.RequestException as e:
         logger.error(f"Talkingbot fails: {worker_name}, {e}")
         return None
     print("+++++++asr+++++++")
-    return {"asr_result": r.json()}
+    return {"asr_result": asr_result.capitalize()+'.'}
 
 
 @app.post("/v1/aiphotos/talkingbot/create_embed")
