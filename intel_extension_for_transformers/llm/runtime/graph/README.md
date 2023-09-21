@@ -67,7 +67,7 @@ output = model.generate(prompt, streamer, max_new_tokens=30)
 ### 3. Run LLM with Script
 You can use the following script to run, including convertion, quantization and inference.
 ```
-python scripts/run_llm.py model-path --weight_dtype int4 -p "She opened the door and see"
+python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
 LLM one-click running script args explanations:
