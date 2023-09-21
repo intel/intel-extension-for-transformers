@@ -63,7 +63,7 @@ class _BaseQBitsAutoModelClass:
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         calib_func = kwargs.pop("calib_func", None)
         quantization_config = kwargs.pop("quantization_config", None)
-        use_llm_runtime = kwargs.pop("use_llm_runtime", False)
+        use_llm_runtime = kwargs.pop("use_llm_runtime", True)
         if isinstance(quantization_config, MixedPrecisionConfig):
             kwargs["torch_dtype"] = torch.bfloat16
         if load_in_8bit or load_in_4bit or quantization_config is not None:
