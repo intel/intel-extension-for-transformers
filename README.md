@@ -75,11 +75,19 @@ print(model.generate(prompt, streamer, max_new_tokens=30))
 ## 🎯Validated PModels
 Below, you will find the average values for Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
 
-| Model |  FP32 | INT4 group size 32 | INT4 group size 128 | 
+| Model |  FP32         | INT4 group size 32 | INT4 group size 128 | 
 |---------------------|:----------------------:|-----------------------|-----------------------------------|
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 0.643 | 0.644 | 0.64 |
 | [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 0.69 | 0.69 | 0.685 |
-
+| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 0.689 | 0.682 | 0.68 |
+| [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) | 0.674 | 0.672 | 0.669 |
+| [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat) | 0.672 | 0.67 | 0.666 |
+| [tiiuae/falcon-7b](https://huggingface.co/tiiuae/falcon-7b) | 0.698 | 0.694 | 0.693 |
+| [baichuan-inc/baichuan-7B](https://huggingface.co/baichuan-inc/baichuan-7B) | 0.474 | 0.471 | 0.47 |
+| [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b) | 0.65 | 0.647 | 0.643 |
+| [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 0.613 | 0.609 | 0.609 |
+| [databricks/dolly-v2-7b](https://huggingface.co/databricks/dolly-v2-7b) | 0.631 | 0.627 | 0.623 |
+| [tiiuae/falcon-40b-instruct](https://huggingface.co/tiiuae/falcon-40b-instruct) | 0.756 | 0.757 | 0.755 |
 
 
 ## 📖Documentation
