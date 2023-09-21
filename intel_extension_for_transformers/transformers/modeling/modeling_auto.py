@@ -61,7 +61,6 @@ class _BaseQBitsAutoModelClass:
         import intel_extension_for_transformers.transformers.modeling.modeling_map
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
-        calib_func = kwargs.pop("calib_func", None)
         quantization_config = kwargs.pop("quantization_config", None)
         use_llm_runtime = kwargs.pop("use_llm_runtime", False)
         device_map = kwargs.get("device_map", None)
@@ -152,7 +151,7 @@ class _BaseQBitsAutoModelClass:
                     convert_to_quantized_model,
                 )
 
-                convert_to_quantized_model(model, quantization_config)
+                model = convert_to_quantized_model(model, quantization_config)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             logger.info("Applying SmoothQuant.")
@@ -162,15 +161,16 @@ class _BaseQBitsAutoModelClass:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
-            if quantization_config.tokenizer is None:
-                logger.error(
-                    "Please provide the tokenizer or provide calib_func directly,"
-                    + " the following is how to get tokenizer. \n"
-                    + " from transformer import AutoTokenizer \n"
-                    + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
-                )
-                exit(0)
+            calib_func = quantization_config.calib_func
             if calib_func is None:
+                if quantization_config.tokenizer is None:
+                    logger.error(
+                        "Please provide the tokenizer or provide calib_func directly,"
+                        + " the following is how to get tokenizer. \n"
+                        + " from transformer import AutoTokenizer \n"
+                        + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+                    )
+                    exit(0)
                 from datasets import load_dataset
                 from torch.utils.data import DataLoader
 

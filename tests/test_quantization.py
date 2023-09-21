@@ -1,3 +1,5 @@
+from ast import LShift
+from math import isclose
 import numpy as np
 import os
 import onnx
@@ -310,33 +312,45 @@ class TestQuantization(unittest.TestCase):
                                                 )
         self.assertTrue(isinstance(q_model.model, torch.jit.ScriptModule))
         # weight-only
+        #RTN
         woq_config = WeightOnlyQuantConfig()
         woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=woq_config
                                                 )
         output = woq_model(dummy_input)
-        self.assertTrue(float(output[0][0][0][0]), -7.139640808105469)
+        self.assertTrue(isclose(float(output[0][0][0][0]), -6.498642921447754, rel_tol=1e-04))
+        #AWQ
+        woq_config = WeightOnlyQuantConfig(calib_iters=5, tokenizer=tokenizer, algorithm="AWQ")
+        woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=woq_config
+                                                )
+        output = woq_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), -7.122483253479004, rel_tol=1e-04))
+        #TEQ
+        woq_config = WeightOnlyQuantConfig(calib_iters=5, tokenizer=tokenizer, algorithm="TEQ")
+        woq_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
+                                                    quantization_config=woq_config
+                                                )
+        output = woq_model(dummy_input)
+        self.assertTrue(isclose(float(output[0][0][0][0]), -6.576327323913574, rel_tol=1e-04))
         # amp
         amp_config = MixedPrecisionConfig() 
         amp_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=amp_config
                                                 )
         output = amp_model(dummy_input)
-        self.assertTrue(float(output[0][0][0][0]), -7.347761154174805)
-        
-    
-        # bitsandbytes
+        self.assertTrue(isclose(float(output[0][0][0][0]), -7.78125, rel_tol=1e-04))
+        # bitsandbytes, for cpu is fp32 model
         bab_config = BitsAndBytesConfig()
         bab_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                     quantization_config=bab_config
                                                 )
-
         # load_in_4bit
         bit4_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
                                                      load_in_4bit=True
                                                 )
         output = bit4_model(dummy_input)
-        self.assertTrue(float(output[0][0][0][0]), -8.0592)
+        self.assertTrue(isclose(float(output[0][0][0][0]), -8.059162139892578, rel_tol=1e-04))
 
         # load_in_8bit
         bit8_model = AutoModelForCausalLM.from_pretrained(model_name_or_path,
@@ -344,7 +358,7 @@ class TestQuantization(unittest.TestCase):
                                                      device_map="cpu"
                                                 )
         output = bit8_model(dummy_input)
-        self.assertTrue(float(output[0][0][0][0]), -7.2695)
+        self.assertTrue(isclose(float(output[0][0][0][0]), -7.2695, rel_tol=1e-04))
 
 
 if __name__ == "__main__":

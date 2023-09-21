@@ -111,6 +111,8 @@ function run_benchmark {
     if [[ ${int8} == "true" ]]; then
         if [ "${topology}" = "gpt_j_woq_rtn" ]; then
             extra_cmd=$extra_cmd" --woq"
+        elif [ "${topology}" = "gpt_j_woq_bab" ]; then
+            extra_cmd=$extra_cmd" --bitsandbytes"
         elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
             extra_cmd=$extra_cmd" --load_in_4bit True"
         elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
