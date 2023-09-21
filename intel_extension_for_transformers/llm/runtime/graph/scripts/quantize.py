@@ -66,7 +66,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--compute_type",
         type=str,
-        help="Gemm computation data type: int8/fp32/ggml (default: ggml)",
+        help="Gemm computation data type: int8/fp32/bf16/ggml (default: ggml)",
         default="ggml",
     )
     args = parser.parse_args(args_in)
