@@ -29,7 +29,7 @@
 ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
-ARG ITREX_VER=xinyuye/nc_migrate
+ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 # See http://bugs.python.org/issue19846
@@ -113,7 +113,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install -e .
 
 # Download ITREX code
-ARG ITREX_VER=xinyuye/nc_migrate
+ARG ITREX_VER=main
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers && \
