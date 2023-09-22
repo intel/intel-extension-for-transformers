@@ -91,6 +91,42 @@ register_conv_template(
     )
 )
 
+# Rag with context template
+register_conv_template(
+    Conversation(
+        name="rag_with_context",
+        system_message="Have a conversation with a human, answer the following questions as best you can. \
+        You can refer to the following document and context.\n",
+        roles=("### Question: ", "### Context: ", "### Response: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+# Rag without context template
+register_conv_template(
+    Conversation(
+        name="rag_without_context",
+        system_message="Have a conversation with a human, answer the following questions as best you can. \
+        You can refer to the following document and context.\n",
+        roles=("### Question: ", "### Response: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+# Intent template
+register_conv_template(
+    Conversation(
+        name="intent",
+        system_message="Please identify the intent of the provided context. \
+        You may only respond with \"chitchat\" or \"QA\" without explanations \
+        or engaging in conversation.\n",
+        roles=("Context:", "Intent:"),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
 
 class PromptTemplate:
     def __init__(self, name="one_shot"):

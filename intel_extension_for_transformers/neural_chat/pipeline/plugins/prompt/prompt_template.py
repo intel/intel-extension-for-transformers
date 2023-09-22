@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
+
 """The function for generating the target prompt."""
 
 def generate_qa_prompt(query, context=None, history=None):
@@ -44,7 +46,7 @@ def generate_prompt(query, history=None):
 
 
 def generate_intent_prompt(query):
-    prompt = """Please identify the intent of the provided context. \
-        You may only respond with "chitchat" or "QA" without explanations \
-        or engaging in conversation.\nContext:{}\nIntent:""".format(query)
-    return prompt
+    conv = PromptTemplate("intent")
+    conv.append_message(conv.roles[0], query)
+    conv.append_message(conv.roles[1], None)
+    return conv.get_prompt()
