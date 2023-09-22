@@ -190,7 +190,7 @@ class GemmInterfaceParallelAB {
       }
       if constexpr (_LaunchA || _LaunchB) {
 #pragma omp barrier
-        (void)(0);  // make msvc happy
+        (void)(0);  // make msvc happy with c++20
       }
       int colidx, rowidx, rowsize, colsize;
       para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
