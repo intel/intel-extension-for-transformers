@@ -1,6 +1,8 @@
 import copy
+import os
 import torch
 import unittest
+import shutil
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
 from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
@@ -19,6 +21,29 @@ class M(torch.nn.Module):
 llama_model_path = "fxmarty/tiny-llama-fast-tokenizer"
 
 class TestWeightOnly(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        cls.workspace = "./woq_config_tmp"
+        # if workspace not exist, crate it
+        if not os.path.exists(cls.workspace):
+            os.mkdir(cls.workspace)
+    
+    @classmethod
+    def tearDownClass(cls) -> None:
+        shutil.rmtree(cls.workspace, ignore_errors=True)
+    
+    def test_woq_config(self):
+        config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
+        diff_res = config.to_diff_dict()
+        ref_config = {'weight_dtype': 'int4_fullrange'}
+        self.assertEqual(diff_res, ref_config)
+        print(diff_res)
+        print(config.to_dict())
+        print(config.to_json_string())
+        config.to_json_file(f"{self.workspace}/config.json")
+        print(config)
+
     def test_int8(self):
         raw_wei = torch.rand(2, 32, dtype=torch.float)
         compress_wei = torch.ops.weight_only_jblasop.qbits_quantize(
