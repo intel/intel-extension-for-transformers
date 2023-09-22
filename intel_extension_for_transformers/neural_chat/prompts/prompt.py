@@ -96,7 +96,7 @@ register_conv_template(
     Conversation(
         name="rag_with_context_memory",
         system_message="Have a conversation with a human, answer the following questions as best you can." + \
-        " You can refer to the following document and context.\n",
+            " You can refer to the following document and context.\n",
         roles=("### Question: ", "### Context: ", "### Chat History: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
@@ -107,7 +107,8 @@ register_conv_template(
 register_conv_template(
     Conversation(
         name="rag_without_context",
-        system_message="Have a conversation with a human. You are required to generate suitable response to the user input.\n",
+        system_message="Have a conversation with a human. " + \
+            "You are required to generate suitable response to the user input.\n",
         roles=("### Input: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
@@ -119,8 +120,8 @@ register_conv_template(
     Conversation(
         name="intent",
         system_message="Please identify the intent of the provided context." + \
-        " You may only respond with \"chitchat\" or \"QA\" without explanations" + \
-        " or engaging in conversation.\n",
+            " You may only respond with \"chitchat\" or \"QA\" without explanations" + \
+            " or engaging in conversation.\n",
         roles=("Context:", "Intent:"),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
