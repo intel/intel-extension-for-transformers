@@ -41,8 +41,8 @@ class Agent_QA():
                             + '/assets/docs/'):
             self.input_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
                             + '/assets/docs/'
-        elif os.path.exists(os.path.join(asset_path, '/docs/')):
-            self.input_path = os.path.join(asset_path, '/docs/')
+        elif os.path.exists(os.path.join(asset_path, 'docs/')):
+            self.input_path = os.path.join(asset_path, 'docs/')
         else:
             print("The given file path is unavailable, please check and try again!")
             print("The current script path is {}".format(script_dir))
