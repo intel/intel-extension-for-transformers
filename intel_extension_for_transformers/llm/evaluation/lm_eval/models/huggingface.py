@@ -410,7 +410,7 @@ class AutoCausalLM(HuggingFaceAutoLM):
 
         self.model_format = model_format
         if self.model_format == "onnx":
-            if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) or \
+            if not os.path.exists(os.path.join(pretrained, "decoder_model.onnx")) and \
                not os.path.exists(os.path.join(pretrained, "decoder_model_merged.onnx")):
                 raise ValueError(
                 "Couldn't find decoder_model.onnx or decoder_model_merged.onnx in {}.".format(pretrained)
