@@ -308,7 +308,7 @@ class FinetuningArguments:
         default="auto",
         metadata={
             "help": "What device to use for finetuning.",
-            "choices": ["cpu", "cuda", "habana", "auto"],
+            "choices": ["cpu", "cuda", "hpu", "auto"],
         },
     )
     lora_all_linear: bool = field(

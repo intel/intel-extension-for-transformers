@@ -20,9 +20,7 @@ jobs:
           submodules: "recursive"
 
       - name: Build Docker Image
-        run: |
-          cd workflows/chatbot/inference/docker
-          docker build ./ --target hpu -f ./Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
+        run: docker build --no-cache ./ --target hpu -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |
@@ -32,7 +30,7 @@ jobs:
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer-hpu" bash -c "cd /root/chatbot && source activate && conda activate chatbot-demo; python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --habana --use_hpu_graphs --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer-hpu" bash -c "cd /root/chatbot; python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --habana --use_hpu_graphs --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
         if: success() || failure()

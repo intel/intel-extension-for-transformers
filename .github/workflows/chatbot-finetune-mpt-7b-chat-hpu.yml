@@ -20,9 +20,7 @@ jobs:
           submodules: "recursive"
 
       - name: Build Docker Image
-        run: |
-          cd workflows/chatbot/fine_tuning/docker
-          docker build ./ --target hpu -f ./Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
+        run: docker build --no-cache ./ --target hpu -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-hpu:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         id: master_container
@@ -51,7 +49,9 @@ jobs:
             --dataset_concatenation \
             --do_train \
             --tokenizer_name \"EleutherAI/gpt-neox-20b\" \
-            --habana \
+            --use_fast_tokenizer True \
+            --max_eval_samples 64 \
+            --device hpu \
             --use_habana \
             --use_lazy_mode "
           
