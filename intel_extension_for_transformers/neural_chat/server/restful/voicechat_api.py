@@ -120,5 +120,5 @@ async def create_speaker_embedding(file: UploadFile = File(...)):
     audio = AudioSegment.from_file(f"tmp_spk_{file_name}")
     audio.export(f"{spk_id}", format="mp3")
 
-    router.handle_create_speaker_embedding()
+    router.handle_create_speaker_embedding(spk_id)
     return {"spk_id": spk_id}
