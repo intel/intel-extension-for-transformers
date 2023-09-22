@@ -11083,6 +11083,31 @@ static bool ne_graph_find(const struct ne_cgraph* cgraph, const struct ne_tensor
   return false;
 }
 
+// gmml_unary
+
+static struct ne_tensor * ne_unary_impl(
+        struct ne_context * ctx,
+        struct ne_tensor * a,
+        enum ne_unary_op op,
+        bool inplace) {
+    bool is_node = false;
+
+    if (!inplace && (a->grad)) {
+        is_node = true;
+    }
+
+    struct ne_tensor * result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
+
+    ne_set_op_params_i32(result, 0, (int32_t) op);
+
+    result->op   = NE_OP_UNARY;
+    result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
+    result->src[0] = a;
+
+    return result;
+}
+
+
 static struct ne_tensor* ne_graph_get_parent(const struct ne_cgraph* cgraph, const struct ne_tensor* node) {
   for (int i = 0; i < cgraph->n_nodes; i++) {
     struct ne_tensor* parent = cgraph->nodes[i];

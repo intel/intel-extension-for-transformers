@@ -46,6 +46,8 @@ enum ne_op {
   NE_OP_RMS_NORM,
   NE_OP_RMS_NORM_BACK,
 
+  NE_OP_UNARY,
+
   NE_OP_MUL_MAT,
   NE_OP_MUL_MAT_BIAS,
   NE_OP_SCALE,

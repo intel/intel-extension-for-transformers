@@ -482,6 +482,19 @@ enum ne_opt_result {
   NE_LINESEARCH_INVALID_PARAMETERS,
 };
 
+enum ne_unary_op {
+    NE_UNARY_OP_ABS,
+    NE_UNARY_OP_SGN,
+    NE_UNARY_OP_NEG,
+    NE_UNARY_OP_STEP,
+    NE_UNARY_OP_TANH,
+    NE_UNARY_OP_ELU,
+    NE_UNARY_OP_RELU,
+    NE_UNARY_OP_GELU,
+    NE_UNARY_OP_GELU_QUICK,
+    NE_UNARY_OP_SILU,
+};
+
 // optimization parameters
 //
 //   see ne.c (ne_opt_default_params) for default values
