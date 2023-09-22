@@ -23,7 +23,7 @@ from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
-from ..prompts import prepare_prompt, PromptTemplate
+from ..prompts import PromptTemplate
 
 
 def construct_parameters(query, model_name, device, config):
@@ -247,7 +247,7 @@ class BaseModel(ABC):
         Returns:
             Conversation: A default conversation template.
         """
-        return get_conv_template("one_shot")
+        return get_conv_template("zero_shot")
 
     def get_conv_template(self, model_path: str, task: str = "") -> Conversation:
         """
