@@ -47,6 +47,29 @@ class UnitTest(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
+    
+    def test_retrieval_append(self):
+        plugins.retrieval.enable = True
+        plugins.retrieval.args["append"] = True
+        plugins.retrieval.args["input_path"] = "../../assets/docs/"
+        plugins.retrieval.args["persist"] = "./check_append"
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        self.assertIsNotNone(response)
+        
+        plugins.retrieval.args["append"] = False
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+                                plugins=plugins)
+        chatbot = build_chatbot(config)
+        response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        self.assertIsNotNone(response)
+        plugins.retrieval.args["append"] = True
+        plugins.retrieval.args["persist"] = "./output"
+        plugins.retrieval.enable = False
 
     def test_voice_chat(self):
         plugins.tts.enable = True
