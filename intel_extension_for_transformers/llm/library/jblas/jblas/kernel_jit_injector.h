@@ -554,17 +554,18 @@ class eltwise_injector {
                                   Ymm vmm_pol_idx) {
       Ymm ymm_coeff(vmm_coeff.getIdx());
       Ymm ymm_pol_idx(vmm_pol_idx.getIdx());
-      h->vmovups(ymm_coeff, coeffs_address(coeff_idx, 0));
-      h->vpermps(ymm_coeff, ymm_pol_idx, ymm_coeff);
-      h->vpslld(ymm_mask, ymm_pol_idx, 28);
-      h->vblendvps(ymm_coeff, ymm_coeff, coeffs_address(coeff_idx, 16),
-                   ymm_mask);
+      Xbyak::Address idx_addr =
+          h->ptr[p_table +
+                 table_off(tanh_pol_table, coeff_idx * tanh_n_polynomials) +
+                 ymm_pol_idx * sizeof(float)];
+      h->vcmpps(ymm_mask, ymm_mask, ymm_mask, _cmp_eq_oq);
+      h->vgatherdps(vmm_coeff, idx_addr, ymm_mask);
     };
 
     // because tanh(x) = -tanh(-x), we extract sign to make x postive
     // and reapply sign at the end
     h->vmovups(ymm_src_original, ymm_src);
-    h->vpabsd(ymm_src, ymm_src);
+    h->vandps(ymm_src, ymm_src, table_val(positive_mask));
 
     // We compute the indices for the table lookup
     h->vmovups(ymm_indices, ymm_src);
