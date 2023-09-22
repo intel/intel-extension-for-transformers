@@ -1895,8 +1895,6 @@ void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_a
   GetCPUDevice();
   const bool use_jit = _cd->AVX512_BF16() && (p.seq_off == 0);
 
-  jblas::utils::timer<jblas::utils::microseconds> tm;
-  tm.start();
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < p.batch_size; ++ibs) {
     for (int ihn = 0; ihn < p.head_num; ++ihn) {
@@ -1920,9 +1918,6 @@ void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_a
       }
     }
   }
-  const auto t_kern = tm.stop();
-  const auto data_size = sizeof(*p.src) * p.batch_size * p.head_num * p.seq_size * p.head_size;
-  // printf("t: %f us\tBandwidth: %f GB/s\n", t_kern, data_size / t_kern / 1000.f);
 }
 
 #ifdef __GNUC__
