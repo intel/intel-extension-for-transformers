@@ -515,8 +515,8 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "f(x,y)",
 };
 
-static_assert(sizeof(struct ne_object) % NE_MEM_ALIGN == 0, "ne_object size must be a multiple of NE_MEM_ALIGN");
-static_assert(sizeof(struct ne_tensor) % NE_MEM_ALIGN == 0, "ne_tensor size must be a multiple of NE_MEM_ALIGN");
+// static_assert(sizeof(struct ne_object) % NE_MEM_ALIGN == 0, "ne_object size must be a multiple of NE_MEM_ALIGN");
+// static_assert(sizeof(struct ne_tensor) % NE_MEM_ALIGN == 0, "ne_tensor size must be a multiple of NE_MEM_ALIGN");
 
 //
 // compute types

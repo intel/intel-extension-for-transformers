@@ -125,6 +125,7 @@ struct ne_tensor {
   struct ne_tensor* src0;
   struct ne_tensor* src1;
   struct ne_tensor* opt[NE_MAX_OPT];
+  struct ne_tensor * view_src;
 
   // thread scheduling
   int n_tasks;
