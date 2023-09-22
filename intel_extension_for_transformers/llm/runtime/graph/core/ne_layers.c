@@ -910,8 +910,10 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
 
   if (data == NULL && !ctx->no_alloc) {
     if (type == NE_TYPE_JBLAS) {
+      //printf("*********************************************, __LINE__=%d\n", __LINE__);
       size_needed = size;
     } else {
+      //printf("*********************************************, __LINE__=%d\n", __LINE__);
       size_needed += NE_TYPE_SIZE[type] * (ne[0] / NE_BLCK_SIZE[type]);
       for (int i = 1; i < n_dims; i++) {
         size_needed *= ne[i];
@@ -924,6 +926,7 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
   struct ne_object* const obj_new = (struct ne_object*)(mem_buffer + cur_end);
 
   if (ctx->scratch.data == NULL || data != NULL) {
+    //printf("*********************************************, __LINE__=%d\n", __LINE__);
     size_needed += sizeof(struct ne_tensor);
 
     if (cur_end + size_needed + NE_OBJECT_SIZE > ctx->mem_size) {
@@ -939,6 +942,7 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
         .next = NULL,
     };
   } else {
+    //printf("*********************************************, __LINE__=%d\n", __LINE__);
     if (ctx->scratch.offs + size_needed > ctx->scratch.size) {
       NE_PRINT("%s: not enough space in the scratch memory\n", __func__);
       assert(false);
@@ -952,6 +956,7 @@ struct ne_tensor* ne_new_tensor_impl(struct ne_context* ctx, enum ne_type type, 
       return NULL;
     }
 
+    //printf("*********************************************, __LINE__=%d\n", __LINE__);
     data = (char* const)ctx->scratch.data + ctx->scratch.offs;
 
     *obj_new = (struct ne_object){
@@ -2560,15 +2565,17 @@ struct ne_tensor* ne_view_1d(struct ne_context* ctx, struct ne_tensor* a, int64_
   bool is_node = false;
 
   if (a->grad) {
+    printf("----------------------------------------------------is_node == True \n");
     is_node = true;
   }
 
+  printf("ne0 = %d, offset = %d, a->type = %d\n", ne0, offset, a->type);
   struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 1, &ne0, (char*)a->data + offset, NE_SIZE_CALC);
 
   result->op = NE_OP_VIEW;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
-  result->src1 = NULL;
+  //result->src1 = NULL;
 
   if (is_node) {
     memcpy(result->padding, &offset, sizeof(offset));
@@ -5074,6 +5081,14 @@ static void ne_compute_forward_mul_f32(const struct ne_compute_params* params, c
       }
     }
   }
+#ifdef KERNEL_DEBUG
+    printf("ne_compute_forward_mul_f32 = %f", *(float*)dst->data);
+    for (int i = 1; i < 500; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_mul(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -5978,6 +5993,14 @@ static void ne_compute_forward_rms_norm_f32(const struct ne_compute_params* para
       }
     }
   }
+#ifdef KERNEL_DEBUG
+    printf("ne_compute_forward_rms_norm_f32 = %f", *(float*)dst->data);
+    for (int i = 1; i < 3; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_rms_norm(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6271,6 +6294,34 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
       ne_vec_dot_f32(ne00, &dst_col[ir], (float*)(src0_row + ir * nb01), (float*)src1_col);
     }
   }
+
+#ifdef KERNEL_DEBUG
+    printf("src0->ne[0]=%d, src0->ne[1]=%d, src0->ne[2]=%d, src0->ne[3]=%d\n", src0->ne[0], src0->ne[1], src0->ne[2], src0->ne[3]);
+    printf("src1->ne[0]=%d, src1->ne[1]=%d, src1->ne[2]=%d, src1->ne[3]=%d\n", src1->ne[0], src1->ne[1], src1->ne[2], src1->ne[3]);
+    printf("src0->nb[0]=%d, src0->nb[1]=%d, src0->nb[2]=%d, src0->nb[3]=%d\n", src0->nb[0], src0->nb[1], src0->nb[2], src0->nb[3]);
+    printf("src1->nb[0]=%d, src1->nb[1]=%d, src1->nb[2]=%d, src1->nb[3]=%d\n", src1->nb[0], src1->nb[1], src1->nb[2], src1->nb[3]);
+
+    printf("ne_compute_forward_mul_mat_f32 src0 = %f", *(float*)src0->data);
+    for (int i = 1; i < 500; i++) {
+      printf("   %f", ((float*)src0->data)[i]);
+    }
+
+    printf("\n");
+
+    printf("ne_compute_forward_mul_mat_f32 src1 = %f", *(float*)src1->data);
+    for (int i = 1; i < 500; i++) {
+      printf("   %f", ((float*)src1->data)[i]);
+    }
+
+    printf("\n");
+
+    printf("ne_compute_forward_mul_mat_f32 = %f", *(float*)dst->data);
+    for (int i = 1; i < 3; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6407,6 +6458,15 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   //    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX task %d/%d: %d us, acc = %d\n", ith, nth, (int) (t1
   //    - t0), (int) acc);
   //}
+
+#ifdef KERNEL_DEBUG
+    printf("ne_compute_forward_mul_mat_f16_f32 = %f", *(float*)dst->data);
+    for (int i = 1; i < 3; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6541,6 +6601,14 @@ static void ne_compute_forward_mul_mat_q_f32(const struct ne_compute_params* par
   //    printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX task %d/%d: %d us, acc = %d\n", ith, nth, (int) (t1
   //    - t0), (int) acc);
   //}
+#ifdef KERNEL_DEBUG
+    printf("ne_compute_forward_mul_mat_q_f32 = %f", *(float*)dst->data);
+    for (int i = 1; i < 3; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_mul_mat_q_f32_jblas(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -6617,6 +6685,14 @@ static void ne_compute_forward_mul_mat_q_f32_jblas(const struct ne_compute_param
     return;
   }
   jblas_f32f32_forward((float*)src1->data, src0->data, (float*)dst->data, ne1, ne0, ne10, ne10, ne0, params->wdata);
+  #ifdef KERNEL_DEBUG
+    printf("ne_compute_forward_mul_mat_q_f32_jblas = %f", *(float*)dst->data);
+    for (int i = 1; i < 3; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_mul_mat(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7033,6 +7109,14 @@ static void ne_compute_forward_get_rows_q(const struct ne_compute_params* params
     dequantize_row_q((const void*)((char*)src0->data + r * src0->nb[1]), (float*)((char*)dst->data + i * dst->nb[1]),
                      nc);
   }
+#ifdef KERNEL_DEBUG
+    printf("ne_compute_forward_get_rows_q = %f", *(float*)dst->data);
+    for (int i = 1; i < 3; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_get_rows_f16(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7058,6 +7142,15 @@ static void ne_compute_forward_get_rows_f16(const struct ne_compute_params* para
       ((float*)((char*)dst->data + i * dst->nb[1]))[j] = NE_FP16_TO_FP32(v);
     }
   }
+
+#ifdef KERNEL_DEBUG
+  printf("ne_compute_forward_get_rows_f16 = %f", *(float*)dst->data);
+    for (int i = 1; i < 3; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_get_rows_f32(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7080,10 +7173,20 @@ static void ne_compute_forward_get_rows_f32(const struct ne_compute_params* para
 
     ne_vec_cpy_f32(nc, (float*)((char*)dst->data + i * dst->nb[1]), (float*)((char*)src0->data + r * src0->nb[1]));
   }
+
+#ifdef KERNEL_DEBUG
+    printf("ne_compute_forward_get_rows_f32 = %f", *(float*)dst->data);
+    for (int i = 1; i < 3; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_get_rows(const struct ne_compute_params* params, const struct ne_tensor* src0,
                                         const struct ne_tensor* src1, struct ne_tensor* dst) {
+  // printf("ne_compute_forward_get_rows src0->type = %d \n", src0->type);
   switch (src0->type) {
     case NE_TYPE_Q4_0:
     case NE_TYPE_Q4_1:

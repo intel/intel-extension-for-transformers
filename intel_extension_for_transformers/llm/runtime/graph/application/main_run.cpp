@@ -76,6 +76,9 @@ int main(int argc, char** argv) {
   if (gpt_params_parse(argc, argv, params) == false) {
     return 1;
   }
+#ifdef KERNEL_DEBUG
+  params.n_threads = 1;
+#endif
 
   model_archs mt = model_name_to_arch::init().find(params.model_name);
   if (mt == MODEL_UNKNOWN) {
@@ -214,7 +217,8 @@ int main(int argc, char** argv) {
       embd_inp.emplace_back(i);
     }
   } else {
-    embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
+    //embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
+    embd_inp.insert(embd_inp.begin(), {195, 9875, 31213, 32889, 196});
   }
 
   const int n_ctx = model_n_ctx(ctx);
