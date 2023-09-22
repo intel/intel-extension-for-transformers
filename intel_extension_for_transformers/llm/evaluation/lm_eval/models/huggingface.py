@@ -557,7 +557,7 @@ class AutoSeq2SeqLM(HuggingFaceAutoLM):
                                                   pretrained,
                                                   use_cache=True)
 
-            if os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
+            elif os.path.exists(os.path.join(pretrained, "decoder_with_past_model.onnx")):
                 sessions = ORTModelForSeq2SeqLM.load_model(
                                 os.path.join(pretrained, 'encoder_model.onnx'),
                                 os.path.join(pretrained, 'decoder_model.onnx'),
