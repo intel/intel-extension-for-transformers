@@ -40,8 +40,13 @@ class UnitTest(unittest.TestCase):
         except subprocess.CalledProcessError as e:
             print("Error while executing command:", e)
         self.client_executor = VoiceChatClientExecutor()
+    
+    def tearDown(self) -> None:
+        for filename in os.listdir("."):
+            if filename.endswith(".wav"):
+                os.remove(filename)
 
-    def test_text_chat(self):
+    def test_voice_chat(self):
         audio_path = \
            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
         if os.path.exists(audio_path):

@@ -199,53 +199,63 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
                  port: int=8000,
                  audio_input_path: str=None,
                  audio_output_path: str=None):
-        url = 'http://' + server_ip + ":" + str(port) + '/v1/voicechat/completions'
+        asr_url = 'http://' + server_ip + ":" + str(port) + '/v1/talkingbot/asr'
+        tts_url = 'http://' + server_ip + ":" + str(port) + '/v1/talkingbot/llm_tts'
         outpath = audio_output_path if audio_output_path is not None else " "
         with open(audio_input_path, "rb") as wav_file:
             # Prepare the file for streaming
             files = {
                 "file": ("audio.wav", wav_file, "audio/wav"),
-                "voice": (None, "default"),
-                "audio_output_path": (None, outpath)
             }
+            response = requests.post(asr_url, files=files)
 
-            response = requests.post(url, files=files, stream=True)
-            chunk_number = 0
-            audio_buffer = b""
-            for chunk in response.iter_content(chunk_size=1024):
-                if b"\n\ndata: [DONE]\n\n" in chunk:
-                    chunk_without_data_done = chunk.split(b"\n\ndata: [DONE]\n\n")[0]
-                    audio_buffer += chunk_without_data_done
-                    audio_filename = f"audio_{chunk_number}.wav"
-                    audio_data = base64.b64decode(audio_buffer)
-                    with open(audio_filename, "wb") as audio_file:
-                        audio_file.write(audio_data)
-                        print("{} generate...".format(audio_filename))
-                    audio_buffer = b""
-                elif b"\n\ndata: b'" in chunk:
-                    chunk_without_data_end_prefix = chunk.split(b"\n\ndata: b'")[0]
-                    audio_buffer += chunk_without_data_end_prefix
-                    audio_filename = f"audio_{chunk_number}.wav"
-                    audio_data = base64.b64decode(audio_buffer)
-                    with open(audio_filename, "wb") as audio_file:
-                        audio_file.write(audio_data)
-                        print("{} generate...".format(audio_filename))
-                    chunk_number+=1
-                    audio_buffer = chunk.split(b"\n\ndata: b'")[1]
-                elif b"data: b'" in chunk:
-                    chunk_without_data_prefix = chunk.split(b"data: b'")[1]
-                    audio_buffer += chunk_without_data_prefix
-                elif b"\n\n" in chunk:
-                    audio_buffer += chunk.split(b"\n\n")[0]
-                    audio_filename = f"audio_{chunk_number}.wav"
-                    audio_data = base64.b64decode(audio_buffer)
-                    with open(audio_filename, "wb") as audio_file:
-                        audio_file.write(audio_data)
-                        print("{} generate...".format(audio_filename))
-                    audio_buffer = chunk.split(b"\n\n")[1]
-                    chunk_number+=1
-                else:
-                    audio_buffer += chunk
+            # Check if the response status code is 200 (OK)
+            if response.status_code == 200:
+                response_data = json.loads(response.text)
+                asr_result = response_data.get("asr_result", "")
+                data = {
+                    "text": asr_result,
+                    "voice": "default",
+                    "knowledge_id": "default",
+                    "audio_output_path": (None, outpath)
+                }
+                response = requests.post(tts_url, json=data, stream=True)
+                chunk_number = 0
+                audio_buffer = b""
+                for chunk in response.iter_content(chunk_size=1024):
+                    if b"\n\ndata: [DONE]\n\n" in chunk:
+                        chunk_without_data_done = chunk.split(b"\n\ndata: [DONE]\n\n")[0]
+                        audio_buffer += chunk_without_data_done
+                        audio_filename = f"audio_{chunk_number}.wav"
+                        audio_data = base64.b64decode(audio_buffer)
+                        with open(audio_filename, "wb") as audio_file:
+                            audio_file.write(audio_data)
+                            print("{} generate...".format(audio_filename))
+                        audio_buffer = b""
+                    elif b"\n\ndata: b'" in chunk:
+                        chunk_without_data_end_prefix = chunk.split(b"\n\ndata: b'")[0]
+                        audio_buffer += chunk_without_data_end_prefix
+                        audio_filename = f"audio_{chunk_number}.wav"
+                        audio_data = base64.b64decode(audio_buffer)
+                        with open(audio_filename, "wb") as audio_file:
+                            audio_file.write(audio_data)
+                            print("{} generate...".format(audio_filename))
+                        chunk_number+=1
+                        audio_buffer = chunk.split(b"\n\ndata: b'")[1]
+                    elif b"data: b'" in chunk:
+                        chunk_without_data_prefix = chunk.split(b"data: b'")[1]
+                        audio_buffer += chunk_without_data_prefix
+                    elif b"\n\n" in chunk:
+                        audio_buffer += chunk.split(b"\n\n")[0]
+                        audio_filename = f"audio_{chunk_number}.wav"
+                        audio_data = base64.b64decode(audio_buffer)
+                        with open(audio_filename, "wb") as audio_file:
+                            audio_file.write(audio_data)
+                            print("{} generate...".format(audio_filename))
+                        audio_buffer = chunk.split(b"\n\n")[1]
+                        chunk_number+=1
+                    else:
+                        audio_buffer += chunk
 
 
 class FinetuningClientExecutor(BaseCommandExecutor):
