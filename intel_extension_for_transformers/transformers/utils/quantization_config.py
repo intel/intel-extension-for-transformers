@@ -198,8 +198,6 @@ class WeightOnlyQuantConfig:
         """
 
         output = copy.deepcopy(self.__dict__)
-        output["compute_dtype"] = str(output["compute_dtype"]).split(".")[1]
-
         return output
 
     def __repr__(self):
