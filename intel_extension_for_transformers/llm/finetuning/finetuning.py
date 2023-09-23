@@ -330,35 +330,21 @@ class Finetuning:
                 torch.float16 if training_args.fp16 else
                     (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
-            if (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
+            model = AutoModelForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                from_tf=bool(".ckpt" in model_args.model_name_or_path),
+                config=config,
+                cache_dir=model_args.cache_dir,
+                device_map=self.device_map,
+                quantization_config=self.bitsandbytes_quant_config,
+                revision=model_args.model_revision,
+                use_auth_token=True if model_args.use_auth_token else None,
+                trust_remote_code=True if model_args.trust_remote_code else None,
+                torch_dtype=model_dtype,
+                low_cpu_mem_usage=True,
+            )
+            if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
                 re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                    config=config,
-                    cache_dir=model_args.cache_dir,
-                    device_map=self.device_map,
-                    quantization_config=self.bitsandbytes_quant_config,
-                    revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
-                    trust_remote_code=True if model_args.trust_remote_code else None,
-                    torch_dtype=model_dtype,
-                    low_cpu_mem_usage=True,
-                )
-            else:
-                model = AutoModelForCausalLM.from_pretrained(
-                    model_args.model_name_or_path,
-                    from_tf=bool(".ckpt" in model_args.model_name_or_path),
-                    config=config,
-                    cache_dir=model_args.cache_dir,
-                    device_map=self.device_map,
-                    quantization_config=self.bitsandbytes_quant_config,
-                    revision=model_args.model_revision,
-                    use_auth_token=True if model_args.use_auth_token else None,
-                    trust_remote_code=True if model_args.trust_remote_code else None,
-                    torch_dtype=model_dtype,
-                    low_cpu_mem_usage=True,
-                )
                 tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
         else:
             raise ValueError(
@@ -549,7 +535,8 @@ class Finetuning:
                                 user_model=unwrapped_model,
                                 device=unwrapped_model.device.type,
                                 batch_size=training_args.per_device_eval_batch_size,
-                                tasks=finetune_args.lm_eval_tasks,)
+                                tasks=finetune_args.lm_eval_tasks,
+                                limit=data_args.max_eval_samples)
                         self.logger.info(results)
 
         if finetune_args.task == "summarization":

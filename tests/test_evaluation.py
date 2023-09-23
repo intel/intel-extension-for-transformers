@@ -102,6 +102,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
+
+        # test evaluate encoder_model + decoder_model_merged
         results = evaluate(
             model="hf-seq2seq",
             model_args='pretrained="./t5-past",tokenizer="./t5-past",dtype=float32',
@@ -111,7 +113,21 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
 
-        cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation-with-past t5/'
+        # test evaluate encoder_model + decoder_model + decoder_with_past_model
+        merged_model_path = "./t5-past/decoder_model_merged.onnx"
+        if os.path.exists(merged_model_path):
+            os.remove(merged_model_path)
+            results = evaluate(
+                model="hf-seq2seq",
+                model_args='pretrained="./t5-past",tokenizer="./t5-past",dtype=float32',
+                tasks=["piqa"],
+                limit=20,
+                model_format="onnx"
+            )
+            self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
+
+        # test evaluate encoder_model + decoder_model
+        cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation t5/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
@@ -130,6 +146,8 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
+
+        # test evaluate decoder_model_merged
         results = evaluate(
             model="hf-causal",
             model_args='pretrained="./gptj-past",tokenizer="./gptj-past",dtype=float32',
@@ -139,6 +157,20 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
+        # test evaluate decoder_model + decoder_with_past_model
+        merged_model_path = "./gptj-past/decoder_model_merged.onnx"
+        if os.path.exists(merged_model_path):
+            os.remove(merged_model_path)
+            results = evaluate(
+                model="hf-causal",
+                model_args='pretrained="./gptj-past",tokenizer="./gptj-past",dtype=float32',
+                tasks=["piqa"],
+                limit=20,
+                model_format="onnx"
+            )
+            self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
+
+        # test evaluate decoder_model
         cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation gptj/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
