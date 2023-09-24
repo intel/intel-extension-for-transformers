@@ -157,7 +157,9 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 
 
 ## 📃Selected Publications/Events
+
 * Intel Innovation'23 Keynote: [Intel Innovation 2023 Keynote by Greg Lavender](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
+* Blog on Intel Community: [NeuralChat: A Customizable Chatbot Framework](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/NeuralChat-A-Customizable-Chatbot-Framework/post/1526789) (Sep 2023)
 * Blog published on Medium: [NeuralChat: A Customizable Chatbot Framework](https://medium.com/intel-analytics-software/make-your-own-chatbot-within-a-few-minutes-with-neuralchat-a-customizable-chatbot-framework-139b4bdec8d1) (Sep 2023)
 * Blog published on Medium: [Faster Stable Diffusion Inference with Intel Extension for Transformers](https://medium.com/intel-analytics-software/faster-stable-diffusion-inference-with-intel-extension-for-transformers-on-intel-platforms-7e0f563186b0) (July 2023)
 * Blog of Intel Developer News: [The Moat Is Trust, Or Maybe Just Responsible AI](https://www.intel.com/content/www/us/en/developer/articles/technical/moat-is-trust-minimizing-risks-generative-ai.html) (July 2023)

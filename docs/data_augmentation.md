@@ -35,6 +35,7 @@ pip install transformers
 ```bash
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
 cd itrex
+pip install -r requirements.txt
 pip install -v .
 ```
 
