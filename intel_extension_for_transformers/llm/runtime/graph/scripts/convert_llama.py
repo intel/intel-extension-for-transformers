@@ -1009,8 +1009,7 @@ class OutputFile:
             params.n_embd,
             params.n_mult,
             params.n_head,
-            0,
-            # params.n_head_kv,  # h_head_kv (multi_query attention)
+            params.n_head_kv, # n_head_kv (multi_query attention)
             params.n_layer,
             params.n_embd // params.n_head,  # rot (obsolete)
             file_type.value,

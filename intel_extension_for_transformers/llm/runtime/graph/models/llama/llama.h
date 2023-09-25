@@ -45,7 +45,7 @@ class Llama : public IModel {
  private:
   model_archs arch = MODEL_LLAMA;
   std::unique_ptr<model_model_loader> ml;
-  uint32_t n_layer, n_embd, n_ff, n_vocab;
+  uint32_t n_layer, n_embd, n_ff, n_vocab, n_head_kv;
   int n_ctx, n_gpu_layer;
   bool use_mmap, use_mlock, vocab_only;
   model_scratch scratch;

@@ -67,12 +67,12 @@ void Llama::init(const char* path_model, model_context& lctx, int n_ctx_, int n_
   auto& hparams = model.hparams;
   hparams.n_ctx = n_ctx;
   n_ff = ((2 * (4 * hparams.n_embd) / 3 + hparams.n_mult - 1) / hparams.n_mult) * hparams.n_mult;
-  int n_ff_70b = 28672;
   fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
   fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);
   fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);
   fprintf(stderr, "%s: n_mult     = %u\n", __func__, hparams.n_mult);
   fprintf(stderr, "%s: n_head     = %u\n", __func__, hparams.n_head);
+  fprintf(stderr, "%s: n_head_kv    = %u\n", __func__, hparams.n_head_kv);
   fprintf(stderr, "%s: n_layer    = %u\n", __func__, hparams.n_layer);
   fprintf(stderr, "%s: n_rot      = %u\n", __func__, hparams.n_rot);
   fprintf(stderr, "%s: n_ff       = %u\n", __func__, n_ff);
@@ -80,7 +80,7 @@ void Llama::init(const char* path_model, model_context& lctx, int n_ctx_, int n_
   n_embd = hparams.n_embd;
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
-  int n_head_kv = 8;
+  n_head_kv = hparams.n_head_kv;
   scratch = llama_mem_req(n_layer);
   model.scratchs = scratch;
 }
@@ -89,7 +89,6 @@ void Llama::init(const char* path_model, model_context& lctx, int n_ctx_, int n_
 void Llama::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
   auto& model = lctx.model;
   auto& ctx = model.ctx;
-  int n_ff_70b = 28672;
   size_t ctx_size;
   size_t mmapped_size;
   ml->calc_sizes(&ctx_size, &mmapped_size);
@@ -134,17 +133,24 @@ void Llama::load(model_context& lctx, model_progress_callback progress_callback,
 
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".attention.wq.weight", {n_embd, n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, 1024}, backend);
-    layer.attn[2] = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, 1024}, backend);
+    if (n_head_kv == 8){
+      n_ff = 28672;
+      layer.attn[1] = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, n_embd/n_head_kv}, backend);
+      layer.attn[2] = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, n_embd/n_head_kv}, backend);
+    } else {
+      layer.attn[1] = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, n_embd}, backend);
+      layer.attn[2] = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, n_embd}, backend);
+    }
+    
     layer.attn[3] = ml->get_tensor(layers_i + ".attention.wo.weight", {n_embd, n_embd}, backend);
 
     // ffn norm
     layer.norm[1] = ml->get_tensor(layers_i + ".ffn_norm.weight", {n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] = ml->get_tensor(layers_i + ".feed_forward.w1.weight", {n_embd, n_ff_70b}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".feed_forward.w2.weight", {n_ff_70b, n_embd}, backend);
-    layer.ffn[2] = ml->get_tensor(layers_i + ".feed_forward.w3.weight", {n_embd, n_ff_70b}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + ".feed_forward.w1.weight", {n_embd, n_ff}, backend);
+    layer.ffn[1] = ml->get_tensor(layers_i + ".feed_forward.w2.weight", {n_ff, n_embd}, backend);
+    layer.ffn[2] = ml->get_tensor(layers_i + ".feed_forward.w3.weight", {n_embd, n_ff}, backend);
 
     if (backend != NE_BACKEND_CPU) {
       vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
