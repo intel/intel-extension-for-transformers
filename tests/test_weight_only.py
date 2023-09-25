@@ -125,7 +125,7 @@ class TestWeightOnly(unittest.TestCase):
     #     self.assertTrue(accuracy > 90)
 
     def test_auto_model(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime= False)
         module_list = []
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
@@ -134,7 +134,7 @@ class TestWeightOnly(unittest.TestCase):
 
     def test_auto_model_with_config(self):
         config = WeightOnlyQuantConfig()
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, quantization_config=config)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, quantization_config=configi, use_llm_runtime= False)
         module_list = []
         for name, module in model.named_modules():
             if isinstance(module, QuantizedLinearQBits):
