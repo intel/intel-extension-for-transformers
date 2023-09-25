@@ -22,9 +22,9 @@ from constants import WORKER_HEART_BEAT_INTERVAL
 from inference import load_model, generate_stream
 from utils import (build_logger, server_error_msg, pretty_print_semaphore)
 
-from itrex.workflows.chatbot.inference.backend.chat.voice_utils.asr import AudioSpeechRecognition
-from itrex.workflows.chatbot.inference.backend.chat.voice_utils.tts import TextToSpeech
-from itrex.intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.english_normalizer import EnglishNormalizer
+from voice_utils.asr import AudioSpeechRecognition
+from voice_utils.tts import TextToSpeech
+from voice_utils.english_normalizer import EnglishNormalizer
 from sklearn import preprocessing
 
 GB = 1 << 30
