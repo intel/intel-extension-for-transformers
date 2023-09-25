@@ -93,9 +93,9 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
-  std::cout << "N  " << N << std::endl;
-  std::cout << "*tokens  " << *tokens << std::endl;
-  std::cout << "ne_element_size(embd) " << ne_element_size(embd) << std::endl;
+  //std::cout << "N  " << N << std::endl;
+  //std::cout << "*tokens  " << *tokens << std::endl;
+  //std::cout << "ne_element_size(embd) " << ne_element_size(embd) << std::endl;
   memcpy(embd->data, tokens, N * ne_element_size(embd));
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
