@@ -19,7 +19,7 @@ jobs:
         run: cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
 
       - name: Build Docker Image
-        run: docker build ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f workflows/chatbot/fine_tuning/docker/Dockerfile -t chatbotfinetune-mpi:latest && yes | docker container prune && yes | docker image prune
+        run: docker build --no-cache ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-mpi:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container on socket 0
         id: master_container
@@ -45,6 +45,7 @@ jobs:
           docker exec "chatbotfinetune-mpi-s0" bash -c "cd /root/chatbot; source ./bash_setup.sh; mpirun -f ./hosts2 -n 2 -ppn 1 -genv OMP_NUM_THREADS=48 sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat_mpi.sh"
 
       - name: Print Logs and Check Finetuning Status
+        if: success() || failure()
         run: |
           sh .github/workflows/script/chatbot/finish_ft_mpt-7b-chat_mpi.sh          
 

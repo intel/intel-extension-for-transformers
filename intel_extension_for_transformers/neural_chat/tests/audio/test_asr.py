@@ -17,27 +17,49 @@
 
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr import AudioSpeechRecognition
 import unittest
-import shutil
+import os
 import torch
 
 class TestASR(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.asr = AudioSpeechRecognition("openai/whisper-small", device=device)
-        if not torch.cuda.is_available():
+        try:
+            import habana_frameworks.torch.hpu as hthpu
+            self.is_hpu_available = True
+        except ImportError:
+            self.is_hpu_available = False
+        try:
+            import intel_extension_for_pytorch as intel_ipex
+            self.is_ipex_available = True
+        except ImportError:
+            self.is_ipex_available = False
+        if self.is_hpu_available:
+            self.device = "hpu"
+        else:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.asr = AudioSpeechRecognition("openai/whisper-small", device=self.device)
+        if self.device == "cpu" and self.is_ipex_available:
             self.asr_bf16 = AudioSpeechRecognition("openai/whisper-small", bf16=True)
+        else:
+            self.asr_bf16 = None
 
     def test_audio2text(self):
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
-        text = self.asr.audio2text(audio_path)
+        if os.path.exists(audio_path):
+            text = self.asr.audio2text(audio_path)
+        else:
+            text = self.asr.audio2text("../../assets/audio/welcome.wav")
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
     def test_audio2text_bf16(self):
-        if torch.cuda.is_available():
+        if self.asr_bf16 is None:
             return
         audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
-        text = self.asr_bf16.audio2text(audio_path)
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
+        if os.path.exists(audio_path):
+            text = self.asr_bf16.audio2text(audio_path)
+        else:
+            text = self.asr_bf16.audio2text("../../assets/audio/welcome.wav")
         self.assertEqual(text.lower(), "Welcome to Neural Chat".lower())
 
 if __name__ == "__main__":

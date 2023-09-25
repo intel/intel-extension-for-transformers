@@ -75,6 +75,9 @@ endif()
 
 option(NE_BUILD_TESTS            "neural_engine: build tests"    ${NE_STANDALONE})
 option(NE_BUILD_EXAMPLES         "neural_engine: build examples" ${NE_STANDALONE})
+if(NE_BUILD_TESTS)
+  add_compile_definitions(NE_BUILD_TESTS)
+endif()
 
 option(NE_PROFILING              "neural_engine: use Profiling"                                  OFF)
 if (NE_PROFILING)

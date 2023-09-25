@@ -399,6 +399,7 @@ dbmdz
 DBMDZ
 dbox
 dbs
+dcbadge
 DCMAKE
 dcn
 ddp
@@ -662,7 +663,9 @@ gestaltit
 getitem
 getsize
 GetStrides
+GenAI
 GFLOPs
+gg
 gh
 gid
 Gimpel
@@ -1074,6 +1077,7 @@ mnist
 MNIST
 mnli
 MNLI
+mnZDVAbm
 mobilebert
 MobileBERT
 mobilenet
@@ -1917,6 +1921,7 @@ VOCdevkit
 VOCmAP
 VOCMApMetrics
 VOCRecord
+vercel
 voxel
 voxels
 vram
@@ -1961,6 +1966,7 @@ workspace
 wrt
 wwm
 www
+Wxk3J3ZJkU
 xad
 xception
 Xception
@@ -2290,3 +2296,12 @@ Habana
 customizable
 mosaicml
 mpt
+ChatGLM
+chatglm
+gptj
+gptneox
+bdec
+neuralchat
+Livestream
+RbKRELWP
+youtube

@@ -2,6 +2,7 @@ transformers>=4.32.0
 peft
 fschat
 torch
+torchaudio
 intel_extension_for_pytorch
 num2words
 speechbrain
@@ -17,7 +18,6 @@ langchain
 python-docx
 scikit-learn
 farm-haystack
-numpy==1.23.5
 librosa
 beautifulsoup4
 InstructorEmbedding
@@ -28,9 +28,15 @@ starlette
 yacs
 uvicorn
 optimum
-optimum[habana]
+optimum-intel
 sentence_transformers
 unstructured
 markdown
 rouge_score
 openpyxl
+numpy==1.23.5
+tiktoken==0.4.0
+lm_eval
+accelerate
+optimum.intel
+cchardet

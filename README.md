@@ -2,12 +2,15 @@
   
 Intel® Extension for Transformers
 ===========================
-<h3> An innovative toolkit to accelerate Transformer-based models on Intel platforms</h3>
+<h3>An Innovative Transformer-based Toolkit to Accelerate GenAI/LLM Everywhere</h3>
 
-[Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
+[![](https://dcbadge.vercel.app/api/server/Wxk3J3ZJkU?compact=true&style=flat-square)](https://discord.gg/Wxk3J3ZJkU)
+[![Release Notes](https://img.shields.io/github/v/release/intel/intel-extension-for-transformers)](https://github.com/intel/intel-extension-for-transformers/releases)
+
+[🏭Architecture](./docs/architecture.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💬NeuralChat](./intel_extension_for_transformers/neural_chat)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[😃Inference](./intel_extension_for_transformers/llm/runtime/graph)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[💻Examples](./docs/examples.md)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[📖Documentations](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html)
 </div>
 
-## 🚀 Latest News
+## 🚀Latest News
 * <b>NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is now available for you to create your own chatbot within minutes!</b> It supports a rich set of plugins [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md), and multiple architectures such as Intel® Xeon® Scalable Processors and Habana Gaudi® Accelerator.</b> Check out the below sample code and have a try now!
 
 ```python
@@ -17,11 +20,19 @@ chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
-* <b>[NeuralChat v1.1](https://huggingface.co/Intel/neural-chat-7b-v1-1), a fine-tuned chat model based on [MPT-7B](https://huggingface.co/mosaicml/mpt-7b) using a mixed set of instruction datasets, is available on Hugging Face, together with the release of INT8 quantization recipes and benchmark results.</b>
+* <b>[💬NeuralChat v1.1](https://huggingface.co/Intel/neural-chat-7b-v1-1), a fine-tuned chat model based on [MPT-7B](https://huggingface.co/mosaicml/mpt-7b) using a mixed set of instruction datasets, is available on Hugging Face, together with the release of INT8 quantization recipes and benchmark results.</b>
 
 ---
 <div align="left">
 
+## 🏃Installation
+### Quick Install from Pypi
+```bash
+pip install intel-extension-for-transformers
+```
+> For more installation method, please refer to [Installation Page](docs/installation.md)
+
+## 🌟Introduction
 Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the below key features and examples:
 
 
@@ -36,17 +47,10 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 *  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of plugins and SOTA optimizations
 
 
-*  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels. It already enabled [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/application/ChatGPTNEOX), [LLAMA-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatLLAMA), [MPT-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatMPT) and [FALCON-7B](intel_extension_for_transformers/llm/runtime/graph/application/ChatFALCON)
+*  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels, supporting [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/models/gptneox), [LLAMA](intel_extension_for_transformers/llm/runtime/graph/models/llama), [MPT](intel_extension_for_transformers/llm/runtime/graph/models/mpt), [FALCON](intel_extension_for_transformers/llm/runtime/graph/models/falcon), [BLOOM-7B](intel_extension_for_transformers/llm/runtime/graph/models/bloom), [OPT](intel_extension_for_transformers/llm/runtime/graph/models/opt), [ChatGLM2-6B](intel_extension_for_transformers/llm/runtime/graph/models/chatglm), [GPT-J-6B](intel_extension_for_transformers/llm/runtime/graph/models/gptj) and [Dolly-v2-3B](intel_extension_for_transformers/llm/runtime/graph/models/gptneox)
 
 
-## Installation
-### Install from Pypi
-```bash
-pip install intel-extension-for-transformers
-```
-> For more installation method, please refer to [Installation Page](docs/installation.md)
-
-## Getting Started
+## 🌱Getting Started
 ### Sentiment Analysis with Quantization
 #### Prepare Dataset
 ```python
@@ -82,7 +86,7 @@ output = model(**input).logits.argmax().item()
 
 > For more quick samples, please refer to [Get Started Page](docs/get_started.md). For more validated examples, please refer to [Support Model Matrix](docs/examples.md)
 
-## Validated Performance
+## 🎯Validated Performance
 
 
 | Model |  FP32 | BF16 | INT8 |
@@ -94,7 +98,7 @@ output = model(**input).logits.argmax().item()
 
 
 
-## Documentation
+## 📖Documentation
 <table>
 <thead>
   <tr>
@@ -159,14 +163,17 @@ output = model(**input).logits.argmax().item()
 </table>
 
 
-## Selected Publications/Events
+## 📃Selected Publications/Events
+* Blog on Intel Community: [NeuralChat: A Customizable Chatbot Framework](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/NeuralChat-A-Customizable-Chatbot-Framework/post/1526789) (Sep 2023)
+* Keynote: [Intel Innovation 2023 Livestream - Day2](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
+* Blog published on Medium: [NeuralChat: A Customizable Chatbot Framework](https://medium.com/intel-analytics-software/make-your-own-chatbot-within-a-few-minutes-with-neuralchat-a-customizable-chatbot-framework-139b4bdec8d1) (Sep 2023)
 * Blog published on Medium: [Faster Stable Diffusion Inference with Intel Extension for Transformers](https://medium.com/intel-analytics-software/faster-stable-diffusion-inference-with-intel-extension-for-transformers-on-intel-platforms-7e0f563186b0) (July 2023)
 * Blog of Intel Developer News: [The Moat Is Trust, Or Maybe Just Responsible AI](https://www.intel.com/content/www/us/en/developer/articles/technical/moat-is-trust-minimizing-risks-generative-ai.html) (July 2023)
 * Blog of Intel Developer News: [Create Your Own Custom Chatbot](https://www.intel.com/content/www/us/en/developer/articles/technical/train-large-language-models-create-custom-chatbot.html) (July 2023)
 * Blog of Intel Developer News: [Accelerate Llama 2 with Intel AI Hardware and Software Optimizations](https://www.intel.com/content/www/us/en/developer/articles/news/llama2.html) (July 2023)
 * Arxiv: [An Efficient Sparse Inference Software Accelerator for Transformer-based Language Models on CPUs](https://arxiv.org/abs/2306.16601) (June 2023)
 * Blog published on Medium: [Simplify Your Custom Chatbot Deployment](https://medium.com/intel-analytics-software/simplify-your-custom-chatbot-deployment-on-intel-platforms-c8a911d906cf) (June 2023)
-* Blog published on Medium: [Create Your Own Custom Chatbot](https://medium.com/intel-analytics-software/create-your-own-chatbot-on-cpus-b8d186cfefb2) (April 2023)
+
 
 > View [Full Publication List](./docs/publication.md).
 ## Additional Content
@@ -176,6 +183,6 @@ output = model(**input).logits.argmax().item()
 * [Legal Information](./docs/legal.md)
 * [Security Policy](SECURITY.md)
 
-## Collaborations
+## 💁Collaborations
 
-Welcome to raise any interesting ideas on model compression techniques and LLM-based chatbot development! Feel free to reach [us](mailto:inc.maintainers@intel.com) and look forward to our collaborations on Intel Extension for Transformers!
+Welcome to raise any interesting ideas on model compression techniques and LLM-based chatbot development! Feel free to reach [us](mailto:itrex.maintainers@intel.com) and look forward to our collaborations on Intel Extension for Transformers!

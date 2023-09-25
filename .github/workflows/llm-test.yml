@@ -6,7 +6,7 @@ on:
     paths:
        - '.github/workflows/llm-test.yml'
        - '.github/workflows/script/models/run_llm.sh'
-       - "intel_extension_for_transformers/backends/**"
+       - "intel_extension_for_transformers/llm/runtime/deprecated/**"
        - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
        - "!intel_extension_for_transformers/llm/runtime/graph/**"
        - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
@@ -52,6 +52,7 @@ jobs:
           cd ${{ github.workspace }}
           conda activate llm-test || source activate llm-test 
           pip install build --upgrade
+          pip install -r requirements.txt
           python setup.py sdist bdist_wheel
           pip install dist/intel_extension_for_transformers*.whl
           pip list
@@ -95,8 +96,6 @@ jobs:
           fi
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
 
       - name: Download Summary Log
         uses: actions/download-artifact@v3

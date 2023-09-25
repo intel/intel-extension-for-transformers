@@ -16,19 +16,15 @@
 # limitations under the License.
 
 import os
-import torch
-import transformers
 from .retrieval_base import Retriever
-from .detector import IntentDetector
-from .indexing import DocumentIndexing
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt import generate_qa_prompt, generate_prompt
-from intel_extension_for_transformers.neural_chat.plugins import register_plugin
+from .detector.intent_detection import IntentDetector
+from .indexing.indexing import DocumentIndexing
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
+    import generate_qa_prompt, generate_prompt
 
-
-@register_plugin("retrieval")
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
-                 embedding_model="hkunlp/instructor-large", max_length=512, retrieval_type="dense",
+                 embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
                  document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5}):
         self.model = None
         self.tokenizer = None

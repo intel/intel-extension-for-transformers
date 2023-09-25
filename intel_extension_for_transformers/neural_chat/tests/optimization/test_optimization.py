@@ -36,6 +36,10 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
         print(response)
+        print("Inference with streaming mode.")
+        for new_text in chatbot.predict_stream(query="Tell me about Intel Xeon Scalable Processors."):
+            print(new_text, end="", flush=True)
+        print("\n")
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_weight_only_quant(self):

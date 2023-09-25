@@ -10,27 +10,27 @@ neuralchat help
 ### Text Chat
 - Command Line
     ```bash
-    neuralchat textchat --prompt 
+    neuralchat predict --query "Tell me about Intel Xeon Scalable Processors."
     ```
 
 - Python API
     ```python
-    from neuralchat.cli.cli_commands import TextChatExecutor
+    from neuralchat.cli.cli_commands import TextVoiceChatExecutor
 
-    textchat = TextChatExecutor()
-    textchat(prompt="Tell me about Intel Xeon Scalable Processors.")
+    textchat = TextVoiceChatExecutor()
+    textchat(query="Tell me about Intel Xeon Scalable Processors.")
     ```
 ### Voice Chat
 - Command Line
     ```bash
-    neuralchat_client voicechat --input "../assets/audio/say_hello.wav" --output "response.wav"
+    neuralchat predict --query "../../assets/audio/sample.wav" --output_audio_path "response.wav"
     ```
 
 - Python API
     ```python
-    from neuralchat.cli.cli_commands import VoiceChatExecutor
+    from neuralchat.cli.cli_commands import TextVoiceChatExecutor
 
-    voicechat = VoiceChatExecutor()
-    voicechat(input="../assets/audio/say_hello.wav", output="response.wav")
+    voicechat = TextVoiceChatExecutor()
+    voicechat(query="../../assets/audio/say_hello.wav", output_audio_path="response.wav")
     ```
 

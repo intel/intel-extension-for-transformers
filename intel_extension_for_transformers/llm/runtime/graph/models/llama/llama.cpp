@@ -160,7 +160,6 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
               ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
                               n_embd / n_head_kv, N));
       }
-      
 
     } else {
       Qcur = ne_rope_inplace(

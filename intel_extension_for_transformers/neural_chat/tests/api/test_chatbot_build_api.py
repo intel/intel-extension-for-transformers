@@ -39,8 +39,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_customized_pipelinecfg(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                tokenizer_name_or_path="EleutherAI/gpt-neox-20b",
-                                device="cpu")
+                                tokenizer_name_or_path="EleutherAI/gpt-neox-20b")
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
@@ -64,12 +63,16 @@ class TestChatbotBuilder(unittest.TestCase):
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
         gen_config = GenerationConfig(max_new_tokens=64)
-        response = chatbot.predict(query= \
-          "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav", \
-          config=gen_config)
+        audio_path = \
+            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"
+        if os.path.exists(audio_path):
+            response = chatbot.predict(query=audio_path, config=gen_config)
+        else:
+            response = chatbot.predict(query="../../assets/audio/sample.wav", config=gen_config)
+
         self.assertIsNotNone(response)
         print("output audio path: ", response)
-        self.assertTrue(os.path.exists(plugins.tts.args["output_audio_path"]))
+        self.assertTrue(os.path.exists("./output_audio.wav"))
 
     def test_build_chatbot_with_safety_checker_plugin(self):
         plugins.safety_checker.enable = True

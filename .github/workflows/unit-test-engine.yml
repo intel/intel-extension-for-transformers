@@ -70,6 +70,7 @@ jobs:
           fi
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
+          -v ~/.cache/oneAPI:/cache \
           -v /tf_dataset2:/tf_dataset2 \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
@@ -112,8 +113,6 @@ jobs:
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
-        with:
-          submodules: "recursive"
         
       - name: Download UT PR Log
         uses: actions/download-artifact@v3

@@ -16,10 +16,9 @@
 # limitations under the License.
 """Check the intent of the input user query with LLM."""
 
-import transformers
-import torch
-from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt import generate_intent_prompt
-from intel_extension_for_transformers.llm.inference import predict
+from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
+    import generate_intent_prompt
+from intel_extension_for_transformers.neural_chat.models.model_utils import predict
 
 class IntentDetector:
     def __init__(self):

@@ -27,3 +27,6 @@ Generally We use [Azure Cloud](https://azure.microsoft.com/en-us/pricing/purchas
 
     (1) Use [Extension Test](https://inteltf-jenk.sh.intel.com/view/nlp-toolkit-validation/job/nlp-toolkit-validation-top-mr-extension/) to specify the version. If you do not have permission for extension test, please contact [Maintainers](inc.maintainers@intel.com)
 
+3. How to run tests locally
+
+    Please refer to test scripts and usage [README](../.github/workflows/README.md)

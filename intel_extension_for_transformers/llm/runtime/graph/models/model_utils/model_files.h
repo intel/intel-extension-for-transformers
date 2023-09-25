@@ -23,6 +23,12 @@
 #include <cstdio>
 #endif
 
+#if UINTPTR_MAX == 0xFFFFFFFF
+#define NE_MEM_ALIGN 4
+#else
+#define NE_MEM_ALIGN 16
+#endif
+
 #include "core/ne_layers.h"
 #include "models/model_utils/util.h"
 #include "models/models.h"
@@ -254,13 +260,11 @@ struct model_file_loader {
     hparams.word_embed_proj_dim = file.read_u32();
     hparams.do_layer_norm_before = bool(file.read_u32());
 
-    // For ChatGLM-1 & 2
-    hparams.bos_token_id = file.read_u32();
-    hparams.eos_token_id = file.read_u32();
-    hparams.pad_token_id = file.read_u32();
-    hparams.sep_token_id = file.read_u32();
+    // For ChatGLM-2
     hparams.multi_query_group_num = file.read_u32();
     hparams.ffn_hidden_size = file.read_u32();
+
+    // For ChatGLM-2
     hparams.inner_hidden_size = file.read_u32();
   }
 
@@ -268,6 +272,8 @@ struct model_file_loader {
     vocab.id_to_token.resize(hparams.n_vocab);
     file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
     file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.pad_token_id, sizeof(model_vocab::id));
+    file.read_raw(&vocab.sep_token_id, sizeof(model_vocab::id));
 
     for (uint32_t i = 0; i < hparams.n_vocab; i++) {
       uint32_t len = file.read_u32();
@@ -373,10 +379,6 @@ struct model_file_saver {
     file.write_u32(hparams.word_embed_proj_dim);
     file.write_u32(static_cast<int>(hparams.do_layer_norm_before));
 
-    file.write_u32(hparams.bos_token_id);
-    file.write_u32(hparams.eos_token_id);
-    file.write_u32(hparams.pad_token_id);
-    file.write_u32(hparams.sep_token_id);
     file.write_u32(hparams.multi_query_group_num);
     file.write_u32(hparams.ffn_hidden_size);
     file.write_u32(hparams.inner_hidden_size);
@@ -388,6 +390,8 @@ struct model_file_saver {
     uint32_t n_vocab = any_file_loader->hparams.n_vocab;
     file.write_raw(&(any_file_loader->vocab.bos_token_id), sizeof(model_vocab::id));
     file.write_raw(&(any_file_loader->vocab.eos_token_id), sizeof(model_vocab::id));
+    file.write_raw(&(any_file_loader->vocab.pad_token_id), sizeof(model_vocab::id));
+    file.write_raw(&(any_file_loader->vocab.sep_token_id), sizeof(model_vocab::id));
     for (uint32_t i = 0; i < n_vocab; i++) {
       const auto& token_score = any_file_loader->vocab.id_to_token.at(i);
       file.write_u32((uint32_t)token_score.tok.size());
@@ -495,9 +499,15 @@ struct model_model_loader {
 
   void calc_sizes(size_t* ctx_size_p, size_t* mmapped_size_p) const {
     *ctx_size_p = *mmapped_size_p = 0;
+    size_t size_needed = 0;
     for (const model_load_tensor& lt : tensors_map.tensors) {
       *ctx_size_p += sizeof(struct ne_tensor) + NE_OBJECT_SIZE;
-      *(use_mmap ? mmapped_size_p : ctx_size_p) += lt.size;
+      if (lt.type == NE_TYPE_JBLAS) {
+        size_needed = lt.size;
+      } else {
+        size_needed = (lt.size + NE_MEM_ALIGN - 1) / NE_MEM_ALIGN * NE_MEM_ALIGN;
+      }
+      *(use_mmap ? mmapped_size_p : ctx_size_p) += size_needed;
     }
   }
 

@@ -46,9 +46,9 @@ if not SKIP_RUNTIME:
 cwd = os.path.dirname(os.path.abspath(__file__))
 
 # define install requirements
-install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml', 'evaluate']
-opt_install_requires_list = ['neural_compressor', 'transformers', 'optimum-intel', 'peft']
-project_name = "intel_extension_for_transformers"
+install_requires_list = ['packaging', 'numpy', 'schema', 'pyyaml']
+opt_install_requires_list = ['neural_compressor', 'transformers']
+
 
 packages_list = find_packages()
 install_requires_list.extend(opt_install_requires_list)
@@ -57,11 +57,12 @@ install_requires_list.extend(opt_install_requires_list)
 class CMakeExtension(Extension):
     """CMakeExtension class."""
 
-    def __init__(self, name, sourcedir="", lib_only=False):
+    def __init__(self, name, sourcedir="", lib_only=False, compile=True):
         """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
         self.optional = lib_only  # we only deliver shared object but not as a python extension module
+        self.compile = compile
 
 
 class CMakeBuild(build_ext):
@@ -106,6 +107,8 @@ class CMakeBuild(build_ext):
         return files
 
     def build_extension(self, ext: CMakeExtension) -> None:
+        if not ext.compile:
+            return
         # Must be in this form due to bug in .resolve() only fixed in Python 3.10+
         ext_fullpath = Path.cwd() / self.get_ext_fullpath(ext.name)
         extdir = ext_fullpath.parent.resolve()
@@ -239,16 +242,27 @@ def check_submodules():
 
 
 if __name__ == '__main__':
-    ext_modules=[CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr', True)]
+    ext_modules = [CMakeExtension(
+        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr', lib_only=True)]
     if not SKIP_RUNTIME:
         check_submodules()
-        ext_modules.append(CMakeExtension(
-            "intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"))
+        ext_modules.extend([
+            CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.gptj_cpp", "intel_extension_for_transformers/llm/runtime/graph/"),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.falcon_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.gptneox_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.dolly_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.llama_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.mpt_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.starcoder_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.opt_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.bloom_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False)
+            ])
         cmdclass={'build_ext': CMakeBuild}
 
     setup(
-        name=project_name,
+        name="intel-extension-for-transformers",
         author="Intel AIA/AIPC Team",
         author_email="feng.tian@intel.com, haihao.shen@intel.com,hanwen.chang@intel.com, penghui.cheng@intel.com",
         description="Repository of Intel® Intel Extension for Transformers",
@@ -257,7 +271,7 @@ if __name__ == '__main__':
         keywords='quantization, auto-tuning, post-training static quantization, post-training dynamic quantization, quantization-aware training, tuning strategy',
         license='Apache 2.0',
         url="https://github.com/intel/intel-extension-for-transformers",
-        ext_modules = ext_modules,
+        ext_modules=ext_modules,
         packages=find_packages(),
         package_dir={'': '.'},
         # otherwise CMakeExtension's source files will be included in final installation
@@ -265,7 +279,7 @@ if __name__ == '__main__':
         package_data={
             '': ['*.yaml'],
         },
-        cmdclass = cmdclass if not SKIP_RUNTIME else {},
+        cmdclass=cmdclass if not SKIP_RUNTIME else {},
         install_requires=install_requires_list,
         entry_points={
             'console_scripts': [

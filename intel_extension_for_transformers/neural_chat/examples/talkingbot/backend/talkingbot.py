@@ -15,7 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from intel_extension_for_transformers.neural_chat import NeuralChatServerExecutor
-server_executor = NeuralChatServerExecutor()
-server_executor(config_file="./talkingbot.yaml", log_file="./log/neuralchat.log")
+
+def main():
+    server_executor = NeuralChatServerExecutor()
+    server_executor(config_file="./talkingbot.yaml", log_file="./talkingbot.log")
+
+if __name__ == "__main__":
+    main()

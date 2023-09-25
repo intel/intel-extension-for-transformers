@@ -21,7 +21,6 @@ import torch
 from accelerate import init_empty_weights
 from neural_compressor import quantization
 from neural_compressor.config import PostTrainingQuantConfig
-from .nn import QuantizedLinearQBits, QuantizedLinearINT4, QuantizedLinearINT8
 
 
 logger = logging.getLogger(__name__)
@@ -108,6 +107,7 @@ def _replace_linear(
 
         if isinstance(module, torch.nn.Linear) and name not in modules_to_not_convert:
             # Check if the current key is not in the `modules_to_not_convert`
+            from .nn import QuantizedLinearQBits  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
                     in_features = module.in_features
@@ -167,6 +167,76 @@ def _replace_linear(
 
 
 def convert_to_quantized_model(model, config):
+    calib_dataloader = config.calib_dataloader
+    calib_func = config.calib_func
+    if calib_dataloader is None and config.algorithm in ['TEQ', 'AWQ']:
+        from datasets import load_dataset
+        from torch.utils.data import DataLoader
+
+        calib_dataset = config.calib_dataset
+        calib_iters = config.calib_iters
+        calib_dataset = load_dataset(calib_dataset, split="train")
+        calib_dataset = calib_dataset.shuffle(seed=42)
+        if config.tokenizer is None:
+            logger.error(
+                "Please provide the tokenizer or provide calib_func directly,"
+                + " the following is how to get tokenizer. \n"
+                + " from transformer import AutoTokenizer \n"
+                + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+            )
+            exit(0)           
+
+        def tokenize_function(examples):
+            if "prompt" in examples:
+                example = config.tokenizer(examples["prompt"])
+            elif "text" in examples:
+                example = config.tokenizer(examples["text"])
+            elif "code" in examples:
+                example = config.tokenizer(examples["code"])
+            else:
+                logger.error(
+                    "Please check dataset prompt identifier,"
+                    + " NeelNanda/pile-10k is default used calibration dataset."
+                )
+                exit(0)
+            return example
+
+        tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+        tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+
+        def collate_batch(batch):
+            input_ids_padded = []
+            for text in batch:
+                input_ids = text["input_ids"]
+                input_ids = (
+                    input_ids[:512] if len(input_ids) > 512 else input_ids
+                )
+                input_ids_padded.append(input_ids)
+            return torch.vstack(input_ids_padded)
+        calib_dataloader = DataLoader(
+            tokenized_dataset,
+            batch_size=1,
+            shuffle=False,
+            collate_fn=collate_batch,
+        )
+    if calib_func is None and config.algorithm in ['AWQ']:
+        def default_calib_func(model):
+            """
+            This is the default calibration function, the dataset is NeelNanda/pile-10k,
+            the default calib_iters is 100.
+            """
+            for i, (input_ids) in enumerate(calib_dataloader):
+                if i >= calib_iters:
+                    break
+                model(
+                    input_ids=input_ids,
+                )
+        calib_func = default_calib_func
+        logger.info(
+            "The default calibration funcation is used, "
+            + "the calibration dataset is NeelNanda/pile-10k,"
+            + "batchsize is 1 and calibration iteration is 100."
+        )
     bits = 1  # only for int8
     if config.weight_dtype == "int8":
         dtype = "int8"
@@ -184,14 +254,21 @@ def convert_to_quantized_model(model, config):
                     "dtype":dtype,
                     "group_size": config.group_size,  # -1 (per-channel)
                     "scheme": config.scheme,
-                    "algorithm": "RTN", 
+                    "algorithm": config.algorithm, 
                 },
             },
         },
         recipes={
-            "rtn_args":{"sym_full_range": True if "fullrange" in config.weight_dtype else False,
-                        "mse_range": config.mse_range},
+            "rtn_args":{"enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                        "enable_mse_search": config.mse_range},
         },
     )
-    inc_model = quantization.fit(model, conf)
+    # TEQ: set calib_func=None, use default training func as calib_func
+    # RTN: doesn't need calib_func
+    if config.algorithm in ['TEQ','RTN']:
+        calib_func=None
+    inc_model = quantization.fit(model,
+                                conf,
+                                calib_func=calib_func,
+                                calib_dataloader=calib_dataloader)
     return replace_linear(inc_model.model, None, None, config)

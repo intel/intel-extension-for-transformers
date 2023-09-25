@@ -676,16 +676,15 @@ void quant_print_usage(int argc, char** argv, const quant_params& params) {
   fprintf(stderr,
           "  --config              path to the configuration file (default: "
           ")\n");
-  fprintf(stderr, "  --nthread N           number of threads to use (default: 1)\n");
-  fprintf(stderr, "  --bits N              number of bits to use for quantization (default: 4)\n");
-  fprintf(stderr, "  --alg                 qquantization algorithm to use: sym/asym (default: sym)\n");
-  fprintf(stderr, "  --block_size N        block size (default: 32)\n");
-  fprintf(stderr, "  --scale_dtype dtype   fp32/bf16 type for scales (default: fp32)\n");
+  fprintf(stderr, "  --nthread             number of threads to use (default: 1)\n");
+  fprintf(stderr, "  --weight_dtype        number of bits to use for quantization (default: int4)\n");
+  fprintf(stderr, "  --alg                 quantization algorithm to use: sym/asym (default: sym)\n");
+  fprintf(stderr, "  --group_size          group size (default: 32)\n");
+  fprintf(stderr, "  --scale_dtype         fp32/bf16 type for scales (default: fp32)\n");
+  fprintf(stderr, "  --compute_dtype       data type of Gemm computation: int8/bf16/fp32 (default: int8)\n");
+  fprintf(stderr, "  --use_ggml            enable ggml for quantization and inference\n");
   fprintf(stderr,
-          "  --compute_type             Gemm computation data type: int8/fp32/ggml (default: "
-          "ggml)\n");
-  fprintf(stderr,
-          "  --model_name               model name like falcon / llama (default: "
+          "  --model_name          model name like falcon / llama (default: "
           "unknown)\n");
   fprintf(stderr, "\n");
 }
@@ -701,16 +700,18 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       params.config = argv[++i];
     } else if (arg == "--nthread") {
       params.nthread = std::stoi(argv[++i]);
-    } else if (arg == "--bits") {
-      params.bits = std::stoi(argv[++i]);
+    } else if (arg == "--weight_dtype") {
+      params.weight_dtype = argv[++i];
     } else if (arg == "--alg") {
       params.alg = argv[++i];
-    } else if (arg == "--block_size") {
-      params.block_size = std::stoi(argv[++i]);
+    } else if (arg == "--group_size") {
+      params.group_size = std::stoi(argv[++i]);
     } else if (arg == "--scale_dtype") {
       params.scale_dtype = argv[++i];
-    } else if (arg == "--compute_type") {
-      params.compute_type = argv[++i];
+    } else if (arg == "--compute_dtype") {
+      params.compute_dtype = argv[++i];
+    } else if (arg == "--use_ggml") {
+      params.use_ggml = true;
     } else if (arg == "--model_name") {
       params.model_name = argv[++i];
       model_archs mt = model_name_to_arch::init().find(params.model_name);
@@ -723,6 +724,8 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
       quant_print_usage(argc, argv, params);
       exit(0);
     } else {
+      quant_print_usage(argc, argv, params);
+      fprintf(stderr, "unrecognized arguments: %s", arg.c_str());
       exit(0);
     }
   }
@@ -731,20 +734,20 @@ bool quant_params_parse(int argc, char** argv, quant_params& params) {
 }
 
 ne_ftype quant_params_to_ftype(const quant_params& params) {
-  if (params.compute_type == "ggml") {
-    if (params.bits == 4) {
+  if (params.use_ggml) {
+    if (params.weight_dtype == "int4") {
       if (params.alg == "sym") {
         return NE_FTYPE_MOSTLY_Q4_0;
       } else {
         return NE_FTYPE_MOSTLY_Q4_1;
       }
-    } else if (params.bits == 5) {
+    } else if (params.weight_dtype == "int5") {
       if (params.alg == "sym") {
         return NE_FTYPE_MOSTLY_Q5_0;
       } else {
         return NE_FTYPE_MOSTLY_Q5_1;
       }
-    } else if (params.bits == 8) {
+    } else if (params.weight_dtype == "int8") {
       return NE_FTYPE_MOSTLY_Q8_0;
     }
   } else {
@@ -754,20 +757,20 @@ ne_ftype quant_params_to_ftype(const quant_params& params) {
 }
 
 ne_type quant_params_to_type(const quant_params& params) {
-  if (params.compute_type == "ggml") {
-    if (params.bits == 4) {
+  if (params.use_ggml) {
+    if (params.weight_dtype == "int4") {
       if (params.alg == "sym") {
         return NE_TYPE_Q4_0;
       } else {
         return NE_TYPE_Q4_1;
       }
-    } else if (params.bits == 5) {
+    } else if (params.weight_dtype == "int5") {
       if (params.alg == "sym") {
         return NE_TYPE_Q5_0;
       } else {
         return NE_TYPE_Q5_1;
       }
-    } else if (params.bits == 8) {
+    } else if (params.weight_dtype == "int8") {
       return NE_TYPE_Q8_0;
     }
   } else {
@@ -1112,4 +1115,65 @@ bool console_readline(console_state& con_st, std::string& line) {
 
   fflush(con_st.out);
   return has_more;
+}
+
+std::string build_prompt_glm2(const std::vector<std::string>& history) {
+  std::ostringstream oss_prompt;
+  for (size_t i = 0; i < history.size(); i += 2) {
+    oss_prompt << "[Round " << i / 2 + 1 << "]\n\n问：" << history[i] << "\n\n答：";
+    if (i < history.size() - 1) {
+      oss_prompt << history[i + 1] << "\n\n";
+    }
+  }
+  return oss_prompt.str();
+}
+
+std::string build_prompt_glm1(const std::vector<std::string>& history) {
+  std::ostringstream oss_prompt;
+  if (history.size() == 1) {
+    oss_prompt << history.front();
+  } else {
+    for (size_t i = 0; i < history.size(); i += 2) {
+      oss_prompt << "[Round " << i / 2 << "]\n问：" << history[i] << "\n答：";
+      if (i < history.size() - 1) {
+        oss_prompt << history[i + 1] << "\n";
+      }
+    }
+  }
+  return oss_prompt.str();
+}
+
+static std::string regex_replace(const std::string& input, const std::regex& regex,
+                                 std::function<std::string(const std::smatch&)> format) {
+  std::ostringstream oss;
+  int last_index = 0;
+  for (auto it = std::sregex_iterator(input.begin(), input.end(), regex); it != std::sregex_iterator(); it++) {
+    oss << it->prefix() << format(*it);
+    last_index = it->position() + it->length();
+  }
+  oss << input.substr(last_index);
+  return oss.str();
+}
+
+std::string postprocess(const std::string& text) {
+  std::string output;
+
+  // newline token
+  {
+    static const std::regex pattern(R"(<n>)");
+    output = std::regex_replace(text, pattern, "\n");
+  }
+  // tab token
+  {
+    static const std::regex pattern(R"(<\|tab\|>)");
+    output = std::regex_replace(output, pattern, "\t");
+  }
+  // blank tokens
+  {
+    static const std::regex pattern(R"(<\|blank_(\d+)\|>)");
+    output =
+        regex_replace(output, pattern, [](const std::smatch& sm) { return std::string(std::stoi(sm[1].str()), ' '); });
+  }
+
+  return output;
 }

@@ -19,7 +19,7 @@ import unicodedata
 import PyPDF2
 import pandas as pd
 import re, json
-from langchain.document_loaders import TextLoader, UnstructuredMarkdownLoader
+from langchain.document_loaders import UnstructuredMarkdownLoader
 from docx import Document as DDocument
 from bs4 import BeautifulSoup
 
@@ -172,8 +172,6 @@ def get_chuck_data(content, max_length, input):
     count = 0
     current_paragraph = ""
     for sub_sen in sentences:
-        if sub_sen == "":
-            continue
         count +=1
         sentence_length = len(sub_sen)
         if current_length + sentence_length <= max_length:

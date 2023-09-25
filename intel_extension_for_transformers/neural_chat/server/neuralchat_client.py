@@ -26,6 +26,7 @@ import requests
 from .base_executor import BaseCommandExecutor
 from .server_commands import cli_client_command_register
 from ..cli.log import logger
+import base64
 
 
 __all__ = [
@@ -78,6 +79,11 @@ class TextChatClientExecutor(BaseCommandExecutor):
             type=int,
             default=128,
             help='The maximum number of new tokens to generate, the value should be set between 32 and 2048')
+        self.parser.add_argument(
+            '--stream',
+            type=bool,
+            default=False,
+            help='support streaming output')
 
 
     def execute(self, argv: List[str]) -> bool:
@@ -91,6 +97,7 @@ class TextChatClientExecutor(BaseCommandExecutor):
         top_k = args.top_k
         repetition_penalty = args.repetition_penalty
         max_new_tokens = args.max_new_tokens
+        stream = args.stream
 
         try:
             time_start = time.time()
@@ -103,7 +110,8 @@ class TextChatClientExecutor(BaseCommandExecutor):
                 top_p=top_p,
                 top_k=top_k,
                 repetition_penalty=repetition_penalty,
-                max_new_tokens=max_new_tokens)
+                max_new_tokens=max_new_tokens,
+                stream=stream)
             time_end = time.time()
             time_consume = time_end - time_start
             response_dict = res.json()
@@ -125,7 +133,8 @@ class TextChatClientExecutor(BaseCommandExecutor):
                  top_p: float=0.75,
                  top_k: int=1,
                  repetition_penalty: float=1.1,
-                 max_new_tokens: int=128):
+                 max_new_tokens: int=128,
+                 stream: bool=False):
         """
         Python API to call an executor.
         """
@@ -138,7 +147,8 @@ class TextChatClientExecutor(BaseCommandExecutor):
             "top_p": top_p,
             "top_k": top_k,
             "repetition_penalty": repetition_penalty,
-            "max_new_tokens": max_new_tokens
+            "max_new_tokens": max_new_tokens,
+            "stream": stream
         }
 
         res = requests.post(url, json.dumps(request))
@@ -158,7 +168,7 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
             '--audio_input_path', type=str, default=None, help='Input aduio path.')
         self.parser.add_argument(
             '--audio_output_path', type=str, default=None, help='Output aduio path.')
-        
+
     def execute(self, argv: List[str]) -> bool:
         args = self.parser.parse_args(argv)
         server_ip = args.server_ip
@@ -183,22 +193,69 @@ class VoiceChatClientExecutor(BaseCommandExecutor):
             logger.error("Failed to generate text response.")
             logger.error(e)
             return False
-        
+
     def __call__(self,
                  server_ip: str="127.0.0.1",
                  port: int=8000,
                  audio_input_path: str=None,
                  audio_output_path: str=None):
-        url = 'http://' + server_ip + ":" + str(port) + '/v1/voicechat/completions'
+        asr_url = 'http://' + server_ip + ":" + str(port) + '/v1/talkingbot/asr'
+        tts_url = 'http://' + server_ip + ":" + str(port) + '/v1/talkingbot/llm_tts'
         outpath = audio_output_path if audio_output_path is not None else " "
         with open(audio_input_path, "rb") as wav_file:
+            # Prepare the file for streaming
             files = {
                 "file": ("audio.wav", wav_file, "audio/wav"),
-                "voice": (None, "pat"),
-                "audio_output_path": (None, outpath)
             }
-            res = requests.post(url, files=files)
-            return res
+            response = requests.post(asr_url, files=files)
+
+            # Check if the response status code is 200 (OK)
+            if response.status_code == 200:
+                response_data = json.loads(response.text)
+                asr_result = response_data.get("asr_result", "")
+                data = {
+                    "text": asr_result,
+                    "voice": "default",
+                    "knowledge_id": "default",
+                    "audio_output_path": (None, outpath)
+                }
+                response = requests.post(tts_url, json=data, stream=True)
+                chunk_number = 0
+                audio_buffer = b""
+                for chunk in response.iter_content(chunk_size=1024):
+                    if b"\n\ndata: [DONE]\n\n" in chunk:
+                        chunk_without_data_done = chunk.split(b"\n\ndata: [DONE]\n\n")[0]
+                        audio_buffer += chunk_without_data_done
+                        audio_filename = f"audio_{chunk_number}.wav"
+                        audio_data = base64.b64decode(audio_buffer)
+                        with open(audio_filename, "wb") as audio_file:
+                            audio_file.write(audio_data)
+                            print("{} generate...".format(audio_filename))
+                        audio_buffer = b""
+                    elif b"\n\ndata: b'" in chunk:
+                        chunk_without_data_end_prefix = chunk.split(b"\n\ndata: b'")[0]
+                        audio_buffer += chunk_without_data_end_prefix
+                        audio_filename = f"audio_{chunk_number}.wav"
+                        audio_data = base64.b64decode(audio_buffer)
+                        with open(audio_filename, "wb") as audio_file:
+                            audio_file.write(audio_data)
+                            print("{} generate...".format(audio_filename))
+                        chunk_number+=1
+                        audio_buffer = chunk.split(b"\n\ndata: b'")[1]
+                    elif b"data: b'" in chunk:
+                        chunk_without_data_prefix = chunk.split(b"data: b'")[1]
+                        audio_buffer += chunk_without_data_prefix
+                    elif b"\n\n" in chunk:
+                        audio_buffer += chunk.split(b"\n\n")[0]
+                        audio_filename = f"audio_{chunk_number}.wav"
+                        audio_data = base64.b64decode(audio_buffer)
+                        with open(audio_filename, "wb") as audio_file:
+                            audio_file.write(audio_data)
+                            print("{} generate...".format(audio_filename))
+                        audio_buffer = chunk.split(b"\n\n")[1]
+                        chunk_number+=1
+                    else:
+                        audio_buffer += chunk
 
 
 class FinetuningClientExecutor(BaseCommandExecutor):
@@ -239,7 +296,7 @@ class FinetuningClientExecutor(BaseCommandExecutor):
             logger.error("Failed to finetune.")
             logger.error(e)
             return False
-        
+
     def __call__(self,
                  server_ip: str="127.0.0.1",
                  port: int=8000,

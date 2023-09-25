@@ -65,7 +65,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     if args.outtype== "f16":
         ftype = 1
     
-    tokenizer = AutoTokenizer.from_pretrained(dir_model)
+    tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
     config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
     hparams = config.to_dict()
     print("Loading model: ", dir_model)
@@ -98,14 +98,11 @@ def main(args_in: Optional[List[str]] = None) -> None:
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
-
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
-    fout.write(struct.pack("i", 0))
     
     fout.write(struct.pack("i", int(hparams.get("bos_token_id", -1))))
     fout.write(struct.pack("i", int(hparams.get("eos_token_id", -1))))
+    fout.write(struct.pack("i", 0))
+    fout.write(struct.pack("i", 0))
 
     reverse_vocab = {id: encoded_tok for encoded_tok, id in tokenizer.vocab.items()}
     byte_encoder = bytes_to_unicode()

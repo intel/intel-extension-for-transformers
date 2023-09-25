@@ -18,6 +18,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstring>
+#include <functional>
 #include <vector>
 
 #include "jit_blas.h"
@@ -68,7 +69,6 @@ struct bf16 {
   bf16() : x(0) {}
 
 #if CompileBF16()
-#pragma GCC push_options
 #pragma GCC target("avx512vl", "avx512bf16")
   explicit bf16(float vf32) : x(bit_cast<uint16_t>(_mm_cvtness_sbh(vf32))) {}
 #else
@@ -100,11 +100,9 @@ struct bf16 {
 #else
     bf16f32 tmp = {0.f};
     tmp.f32 = _v;
-#if 0
     // See document of VCVTNEPS2BF16 in Intel® 64 and IA-32 Architectures Software Developer’s Manual Volume 2
     const auto lsb = tmp.bf16[1] & 1;
     tmp.u += 0x7fff + lsb;
-#endif
     x = tmp.bf16[1];
 #endif
   }
@@ -200,6 +198,22 @@ struct f4x2 : bit4x2 {
   f4x2() : bit4x2() {}
 };
 
+template <typename T>
+inline constexpr JBLAS_DTYPE jblas_dtype = std::is_same_v<T, double>    ? JBLAS_DTYPE::JblasF64
+                                           : std::is_same_v<T, float>   ? JBLAS_DTYPE::JblasF32
+                                           : std::is_same_v<T, bf16>    ? JBLAS_DTYPE::JblasBF16
+                                           : std::is_same_v<T, int8_t>  ? JBLAS_DTYPE::JblasS8
+                                           : std::is_same_v<T, uint8_t> ? JBLAS_DTYPE::JblasU8
+                                                                        : (assert(0), JBLAS_DTYPE::JblasF32);
+
+inline constexpr size_t jblas_dtype_size(const JBLAS_DTYPE t) {
+  return t == JblasF64    ? sizeof(double)
+         : t == JblasF32  ? sizeof(float)
+         : t == JblasBF16 ? sizeof(bf16)
+         : t == JblasS8   ? sizeof(int8_t)
+         : t == JblasU8   ? sizeof(uint8_t)
+                          : (assert(false), 0);
+}
 #ifndef _WIN32
 #include <err.h>
 #include <errno.h>
@@ -466,6 +480,7 @@ class CpuDevice {
   inline bool AVX512_VNNI() { return mHasAVX512_VNNI; }
   inline bool AMX_INT8() { return mHasAMX_INT8; }
   inline bool AMX_BF16() { return mHasAMX_BF16; }
+  inline bool AVX512_BF16() { return mHasAVX512_BF16; }
   inline bool AVX512_FP16() { return mHasAVX512_FP16; }
 #define ADD_FLAG(isa) mHas##isa = _cpu.has(_cpu.t##isa)
   CpuDevice() {
@@ -479,6 +494,7 @@ class CpuDevice {
     ADD_FLAG(AVX_VNNI);
     ADD_FLAG(AMX_BF16);
     ADD_FLAG(AMX_INT8);
+    ADD_FLAG(AVX512_BF16);
     ADD_FLAG(AVX512_FP16);
     numcores = _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::CoreLevel);
     ompthreads = omp_get_max_threads();
@@ -495,14 +511,17 @@ class CpuDevice {
   }
 
   void print() {
-    printf("AVX:%d AVX2:%d AVX512F:%d AVX_VNNI:%d AVX512_VNNI:%d AMX_INT8:%d AMX_BF16:%d AVX512_FP16:%d\n", mHasAVX,
-           mHasAVX2, mHasAVX512F, mHasAVX_VNNI, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16, mHasAVX512_FP16);
+    printf(
+        "AVX:%d AVX2:%d AVX512F:%d AVX_VNNI:%d AVX512_VNNI:%d AMX_INT8:%d AMX_BF16:%d AVX512_BF16:%d AVX512_FP16:%d\n",
+        mHasAVX, mHasAVX2, mHasAVX512F, mHasAVX_VNNI, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16, mHasAVX512_BF16,
+        mHasAVX512_FP16);
   }
 #undef ADD_FLAG
 
  protected:
   uint32_t L2Cache, L1Cache;
-  bool mHasAVX2, mHasAVX_VNNI, mHasAVX, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16, mHasAVX512F, mHasAVX512_FP16;
+  bool mHasAVX2, mHasAVX_VNNI, mHasAVX, mHasAVX512_VNNI, mHasAMX_INT8, mHasAMX_BF16, mHasAVX512F, mHasAVX512_BF16,
+      mHasAVX512_FP16;
   int numcores;
   int ompthreads;
   int numthreads;
@@ -1065,4 +1084,56 @@ class CpuBase {
 };
 
 }  // namespace utils
+
+static float fp4_bnb_dequant_fp32_LUT[] = {
+    0.00000000f,        5.208333333e-03f,   0.66666667f,        1.00000000f,        0.33333333f,
+    0.50000000f,        0.16666667f,        0.25000000f,        -1.f * 0.00000000f, -1.f * 5.208333333e-03f,
+    -1.f * 0.66666667f, -1.f * 1.00000000f, -1.f * 0.33333333f, -1.f * 0.50000000f, -1.f * 0.16666667f,
+    -1.f * 0.25000000f};
+
+static float fp4_e2m1_dequant_fp32_LUT[] = {
+    0.f,
+    0.010416666666666666f,
+    0.16666666666666666f,
+    0.25f,
+    0.333333333333333f,
+    0.5f,
+    0.6666666666666f,
+    1.f,
+    -1.f * 0.f,
+    -1.f * 0.010416666666666666f,
+    -1.f * 0.16666666666666666f,
+    -1.f * 0.25f,
+    -1.f * 0.333333333333333f,
+    -1.f * 0.5f,
+    -1.f * 0.6666666666666f,
+    -1.f * 1.f,
+};
+
+static float nf4_dequant_fp32_LUT[] = {0.f,
+                                       -0.6961928009986877f,
+                                       -0.5250730514526367f,
+                                       -0.39491748809814453f,
+                                       -0.28444138169288635f,
+                                       -0.18477343022823334f,
+                                       -0.09105003625154495f,
+                                       -1.f,
+                                       0.07958029955625534f,
+                                       0.16093020141124725f,
+                                       0.24611230194568634f,
+                                       0.33791524171829224f,
+                                       0.44070982933044434f,
+                                       0.5626170039176941f,
+                                       0.7229568362236023f,
+                                       1.0f};
+
+// Calcuate instruction(s) size (in bytes). Example:
+// const int s = get_inst_size([](Xbyak::CodeGenerator* c) { c->vmovups(c->ptr[c->rax], c->zmm0); });
+// printf("inst_size: %d\n", s);
+inline size_t get_inst_size(std::function<void(Xbyak::CodeGenerator*)> inst) {
+  Xbyak::CodeGenerator code;
+  code.resetSize();
+  inst(&code);
+  return code.getSize();
+}
 }  // namespace jblas

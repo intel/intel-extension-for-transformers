@@ -225,9 +225,21 @@ class LlamaAttention(nn.Module):
         key_states = self.k_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         value_states = self.v_proj(hidden_states).view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
 
+        
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
             kv_seq_len += past_key_value[0].shape[-2]
+            
+        past_length = 0
+        device = query_states.device
+        input_shape = hidden_states.size()[:-1]
+        if position_ids is None:
+            position_ids = torch.arange(past_length, 
+                                        torch.tensor(input_shape[-1]) + torch.tensor(past_length),
+                                        dtype=torch.long,
+                                        device=device)
+            position_ids = position_ids.unsqueeze(0).view(-1, input_shape[-1])
+            
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
         # [bsz, nh, t, hd]
@@ -915,3 +927,4 @@ class LlamaForSequenceClassification(LlamaPreTrainedModel):
             hidden_states=transformer_outputs.hidden_states,
             attentions=transformer_outputs.attentions,
         )
+
