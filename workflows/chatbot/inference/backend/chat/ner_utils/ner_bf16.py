@@ -168,6 +168,7 @@ def inference(query):
     location = []
     name = []
     organization = []
+    s_time = []
     for ent in new_doc.ents:
         if (ent.label_ == 'GPE'):
             location.append(ent.text)
@@ -177,7 +178,10 @@ def inference(query):
             name.append(ent)
         elif (ent.label_ == 'ORG'):
             organization.append(ent)
-
+        elif (ent.label_ == 'DATE' or ent.label_ == 'TIME'):
+            s_time.append(ent)
+    if s_time == []:
+        mentioned_time = {"time": [], "period": []}
     location = list(set(location))
 
     result_period = []

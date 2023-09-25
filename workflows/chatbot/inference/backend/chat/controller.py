@@ -1320,10 +1320,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         query_flag = True
         time_points = ner_result['time']
         sql_conditions = []
-        today = datetime.date.today()
         for loc in time_points:
-            if today == loc:
-                continue
             sql_conditions.append(f' image_info.captured_time LIKE "%{loc}%" ')
         sql = 'OR'.join(sql_conditions)
         if query_sql[-1] == ')':
@@ -1340,7 +1337,6 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         periods = ner_result['period']
         logger.info(f'[NER query] periods: {periods}')
         sql_conditions = []
-        today = datetime.date.today()
         for period in periods:
             from_time = period['from']
             to_time = period['to']
