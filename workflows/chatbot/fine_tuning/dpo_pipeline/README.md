@@ -17,7 +17,7 @@ We select 12k examples from [Orca](https://arxiv.org/abs/2306.02707) style datas
 ## 3. Training
 
 ```
-python dpo_clm.py --model_name_or_path "meta-llama/Llama-2-7b-hf" --output_dir "llama2_7b-dpo" --per_device_train_batch_size 2 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True
+python dpo_clm.py --model_name_or_path "meta-llama/Llama-2-7b-hf" --output_dir "llama2_7b-dpo" --per_device_train_batch_size 1 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True
 ```
 
 
