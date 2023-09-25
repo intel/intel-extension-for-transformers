@@ -1,7 +1,9 @@
 matrix:
 - name: Markdown
-  hunspell:
-    d: en_US.ISO8859-15
+  aspell:
+    lang: en
+    d: en_US
+    mode: markdown
   dictionary:
     wordlists:
       - ${VAL_REPO}/nlp_dict.txt

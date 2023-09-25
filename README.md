@@ -164,6 +164,7 @@ output = model(**input).logits.argmax().item()
 
 
 ## 📃Selected Publications/Events
+* Blog on Intel Community: [NeuralChat: A Customizable Chatbot Framework](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/NeuralChat-A-Customizable-Chatbot-Framework/post/1526789) (Sep 2023)
 * Keynote: [Intel Innovation 2023 Livestream - Day2](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
 * Blog published on Medium: [NeuralChat: A Customizable Chatbot Framework](https://medium.com/intel-analytics-software/make-your-own-chatbot-within-a-few-minutes-with-neuralchat-a-customizable-chatbot-framework-139b4bdec8d1) (Sep 2023)
 * Blog published on Medium: [Faster Stable Diffusion Inference with Intel Extension for Transformers](https://medium.com/intel-analytics-software/faster-stable-diffusion-inference-with-intel-extension-for-transformers-on-intel-platforms-7e0f563186b0) (July 2023)
