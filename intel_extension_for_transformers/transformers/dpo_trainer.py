@@ -354,4 +354,5 @@ class DPOTrainer(Trainer):
         for key, metrics in self._stored_metrics[train_eval].items():
             logs[key] = torch.tensor(metrics).mean().item()
         del self._stored_metrics[train_eval]
+        # pylint: disable=E1101
         return super().log(logs)
