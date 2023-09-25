@@ -15,11 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
-model_name = "mosaicml/mpt-7b"
+
+model_name = "/mnt/disk1/data2/zhenweil/models/mpt/mpt-7b"
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8")
+prompt = "Once upon a time, a little girl"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+input_ids = tokenizer(prompt, return_tensors="pt").input_ids
 
 model = AutoModel.from_pretrained(model_name, quantization_config=woq_config)
+gen_tokens = model.generate(input_ids.tolist()[0], max_new_tokens=30)
 
-prompt = "Once upon a time, a little girl"
-print(model.generate(prompt, max_new_tokens=30))
+gen_text = tokenizer.batch_decode(gen_tokens)[0]
+print(gen_text)

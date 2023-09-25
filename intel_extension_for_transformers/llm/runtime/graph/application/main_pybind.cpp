@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <utility>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include "common.h"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
@@ -57,7 +58,7 @@ class Model {
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
                   float repeat_penalty, const std::string& post_process);
   void reinit();
-  std::string generate(const std::string& prompt, bool sentence_mode = true);
+  std::vector<int> generate(const std::vector<int>& prompt, bool sentence_mode = true);
   bool is_token_end() { return token_eos; }
   static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
                          const std::string& alg, int group_size, const std::string& scale_dtype,
@@ -73,8 +74,8 @@ class Model {
   std::vector<model_token> last_n_tokens;
   bool token_eos = false;
 
-  std::string generate_one_token(const std::string& prompt);
-  std::string generate_tokens(const std::string& prompt);
+  // std::string generate_one_token(const std::string& prompt);
+  // std::string generate_tokens(const std::string& prompt);
   int post_process(float* logits);
 };
 
@@ -108,45 +109,81 @@ void Model::reinit() {
   curr_input_ids.clear();
 }
 
-std::string Model::generate_one_token(const std::string& prompt) {
-  if (curr_input_ids.empty()) {
-    auto embd_inp = ::model_tokenize(ctx, prompt, false);
-    curr_input_ids = embd_inp;
-  }
-  for (auto item : curr_input_ids) {
-    last_n_tokens.erase(last_n_tokens.begin());
-    last_n_tokens.push_back(item);
-  }
-  model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
-  n_past += curr_input_ids.size();
+// std::string Model::generate_one_token(const std::string& prompt) {
+//   if (curr_input_ids.empty()) {
+//     auto embd_inp = ::model_tokenize(ctx, prompt, false);
+//     curr_input_ids = embd_inp;
+//   }
+//   for (auto item : curr_input_ids) {
+//     last_n_tokens.erase(last_n_tokens.begin());
+//     last_n_tokens.push_back(item);
+//   }
+//   model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+//   n_past += curr_input_ids.size();
 
-  float* logits = model_get_logits(ctx);
-  int next_token_id = post_process(logits);
-  curr_input_ids = {next_token_id};
+//   float* logits = model_get_logits(ctx);
+//   int next_token_id = post_process(logits);
+//   curr_input_ids = {next_token_id};
 
-  if (next_token_id == ctx->vocab.eos_token_id || n_past - prompt.size() == params.n_predict) {
-    token_eos = true;
-  }
+//   if (next_token_id == ctx->vocab.eos_token_id || n_past - prompt.size() == params.n_predict) {
+//     token_eos = true;
+//   }
 
-  auto next_token = model_token_to_str(ctx, next_token_id);
-  if (strcmp(next_token, "<|endoftext|>") == 0) {
-    token_eos = true;
-  }
+//   auto next_token = model_token_to_str(ctx, next_token_id);
+//   if (strcmp(next_token, "<|endoftext|>") == 0) {
+//     token_eos = true;
+//   }
 
-  return next_token;
-}
+//   return next_token;
+// }
 
-std::string Model::generate_tokens(const std::string& prompt) {
+// std::string Model::generate_tokens(const std::string& prompt) {
+//   int n_past = 0;
+//   int n_remain = params.n_predict;
+//   int max_length = 512;
+//   auto embd_inp = ::model_tokenize(ctx, prompt, false);
+//   int n_eval = embd_inp.size();
+//   std::vector<int> curr_input_ids(embd_inp);
+//   std::vector<int> output_ids;
+//   output_ids.reserve(max_length);
+//   std::string ret;
+//   ret += prompt;
+//   while (output_ids.size() < n_remain) {
+//     for (auto item : curr_input_ids) {
+//       last_n_tokens.erase(last_n_tokens.begin());
+//       last_n_tokens.push_back(item);
+//     }
+//     model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+//     n_past += curr_input_ids.size();
+
+//     float* logits = model_get_logits(ctx);
+//     int next_token_id = post_process(logits);
+//     curr_input_ids = {next_token_id};
+
+//     output_ids.push_back(next_token_id);
+//     ret += model_token_to_str(ctx, next_token_id);
+
+//     if (next_token_id == model_token_eos()) {
+//       break;
+//     }
+//   }
+
+//   return ret;
+// }
+
+std::vector<int> Model::generate(const std::vector<int>& input_ids, bool sentence_mode) {
   int n_past = 0;
   int n_remain = params.n_predict;
   int max_length = 512;
-  auto embd_inp = ::model_tokenize(ctx, prompt, false);
+  auto embd_inp = input_ids;
   int n_eval = embd_inp.size();
   std::vector<int> curr_input_ids(embd_inp);
   std::vector<int> output_ids;
   output_ids.reserve(max_length);
-  std::string ret;
-  ret += prompt;
+  printf("input ids:\n");
+  for (auto item : input_ids) {
+    print("--- %d\n", item);
+  }
   while (output_ids.size() < n_remain) {
     for (auto item : curr_input_ids) {
       last_n_tokens.erase(last_n_tokens.begin());
@@ -160,22 +197,13 @@ std::string Model::generate_tokens(const std::string& prompt) {
     curr_input_ids = {next_token_id};
 
     output_ids.push_back(next_token_id);
-    ret += model_token_to_str(ctx, next_token_id);
 
     if (next_token_id == model_token_eos()) {
       break;
     }
   }
 
-  return ret;
-}
-
-std::string Model::generate(const std::string& prompt, bool sentence_mode) {
-  if (sentence_mode) {
-    return generate_tokens(prompt);
-  }
-
-  return generate_one_token(prompt);
+  return output_ids;
 }
 
 int Model::post_process(float* logits) {
@@ -300,7 +328,7 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"),
            py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
            py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("post_process") = "topk")
-      .def("generate", &Model::generate, "Generate tokens with prompt", py::arg("prompt"),
+      .def("generate", &Model::generate, "Generate tokens with prompt", py::arg("input_ids"),
            py::arg("sentence_mode") = true)
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
                   py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,

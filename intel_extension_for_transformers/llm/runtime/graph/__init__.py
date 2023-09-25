@@ -65,17 +65,17 @@ class Model:
 
         # 1. convert model
         fp32_bin = "ne_{}_f32.bin".format(model_type)
-        convert_model(model_name, fp32_bin, "f32")
+        # convert_model(model_name, fp32_bin, "f32")
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
-        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
+        # self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
         
         self.model_type = model_type
         self.bin_file = quant_bin
         
         # clean
-        os.remove(fp32_bin)
+        # os.remove(fp32_bin)
 
 
     def init_from_bin(self, model_name, model_path, **kwargs):
@@ -88,12 +88,12 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, prompt, streamer = None, sentence_mode = True, **kwargs):
+    def generate(self, input_ids, streamer = None, sentence_mode = True, **kwargs):
         # TODO support streamer
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
         
-        out = self.model.generate(prompt = prompt, sentence_mode = sentence_mode)
+        out = self.model.generate(input_ids = input_ids, sentence_mode = sentence_mode)
         return out
 
     def is_token_end(self):
