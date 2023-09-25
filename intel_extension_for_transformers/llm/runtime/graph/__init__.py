@@ -48,14 +48,14 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.opt_cpp as cpp_model
         elif model_name == "bloom":
             import intel_extension_for_transformers.llm.runtime.graph.bloom_cpp as cpp_model
-        elif model_name == "chatglm2":
+        elif model_name == "chatglm":
             import intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp as cpp_model
         else:
             raise TypeError("Unspported model type {}!".format(model_name))
         self.module = cpp_model
 
     def init(self, model_name, **kwargs):
-        config = AutoConfig.from_pretrained(model_name)
+        config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
         model_type = model_maps.get(config.model_type, config.model_type)
         self.__import_package(model_type)
 

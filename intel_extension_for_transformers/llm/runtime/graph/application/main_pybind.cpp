@@ -140,7 +140,27 @@ std::string Model::generate_tokens(const std::string& prompt) {
   int n_past = 0;
   int n_remain = params.n_predict;
   int max_length = 512;
-  auto embd_inp = ::model_tokenize(ctx, prompt, false);
+  std::vector<int> embd_inp;
+  //  embd_inp = ::model_tokenize(ctx, prompt, false);
+  // tokenize the prompt
+  bool add_bos = false;
+  if (params.model_arch == MODEL_LLAMA) {
+    add_bos = true;
+  }
+  if (params.model_arch == MODEL_CHATGLM2) {
+    std::vector<std::string> prompts;
+    prompts.push_back(params.prompt);
+    std::string prompt = build_prompt_glm2(prompts);
+    embd_inp = ::model_tokenize(ctx, prompt, false);
+    embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
+  } else if (params.model_arch == MODEL_CHATGLM) {
+    for (auto& i : params.ids) {
+      embd_inp.emplace_back(i);
+    }
+  } else {
+    embd_inp = ::model_tokenize(ctx, params.prompt, add_bos);
+  }
+
   int n_eval = embd_inp.size();
   std::vector<int> curr_input_ids(embd_inp);
   std::vector<int> output_ids;
@@ -161,6 +181,7 @@ std::string Model::generate_tokens(const std::string& prompt) {
 
     output_ids.push_back(next_token_id);
     ret += model_token_to_str(ctx, next_token_id);
+    // s = postprocess(s);
 
     if (next_token_id == model_token_eos()) {
       break;
