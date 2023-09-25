@@ -17,18 +17,23 @@
 
 #include "vec_base.hpp"
 
-inline fp32x16 set1_fp32x16(const float x);
+fp32x16 set1_fp32x16(const float x);
+REGISTER_KERNEL_T(set1_fp32x16, fp32x16, float);
 
-inline int32x16 set1_int8x16(const int8_t x);
+s8x16 set1_s8x16(const int8_t x);
+REGISTER_KERNEL_T(set1_s8x16, s8x16, int8_t);
 
-inline int32x16 set1_int16x16(const int16_t x);
+s16x16 set1_s16x16(const int16_t x);
+REGISTER_KERNEL_T(set1_s16x16, s16x16, int16_t);
 
-inline int32x16 set1_fp16x16(const uint16_t x);
+fp16x16 set1_fp16x16(const uint16_t x);
+REGISTER_KERNEL_T(set1_fp16x16, fp16x16, uint16_t);
 
-inline int32x16 set1_int32x16(const int16_t x);
+s32x16 set1_s32x16(const int32_t x);
+REGISTER_KERNEL_T(set1_s32x16, s32x16, int32_t);
 
-inline int32x16 setzero_int32x16();
+s32x16 setzero_s32x16();
 
-inline fp32x16 setzero_fp32x16();
+fp32x16 setzero_fp32x16();
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_VEC_SET_HPP_
