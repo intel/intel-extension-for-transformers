@@ -132,19 +132,21 @@ elif args.bitsandbytes:
 # `BitsAndBytesConfig` and (`load_in_4bit` or `load_in_8bit`) is alternative for WeightOnlyQuant.
 if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
-                                                        quantization_config=quantization_config,
-                                            )
+                                                      quantization_config=quantization_config,
+                                                      use_llm_runtime=False
+                                                      )
     if args.sq:
         config.save_pretrained(args.output_dir)
         user_model.save(args.output_dir)
 elif args.load_in_4bit or args.load_in_8bit:
     # CPU device usage is provided by intel-extension-for-transformers.
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
-                                                    load_in_4bit=args.load_in_4bit,
-                                                    load_in_8bit=args.load_in_8bit
-                                                    )
+                                                      load_in_4bit=args.load_in_4bit,
+                                                      load_in_8bit=args.load_in_8bit,
+                                                      use_llm_runtime=False
+                                                      )
 elif not args.int8 or not args.int8_bf16_mixed:
-    user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config)
+    user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, use_llm_runtime=False)
     # peft
     if args.peft_model_id is not None:
         from peft import PeftModel
