@@ -48,21 +48,23 @@ class DPOTrainer(Trainer):
         model (`transformers.PreTrainedModel`):
             The model to train, preferably an `AutoModelForSequenceClassification`.
         ref_model (`PreTrainedModelWrapper`):
-            Hugging Face transformer model with a casual language modelling head. Used for implicit reward computation and loss. If no
-            reference model is provided, the trainer will create a reference model with the same architecture as the model to be optimized.
+            Hugging Face transformer model with a casual language modelling head. 
+            Used for implicit reward computation and loss. If no
+            reference model is provided, the trainer will 
+            create a reference model with the same architecture as the model to be optimized.
         beta (`float`, defaults to 0.1):
             The beta factor in DPO loss. Higher beta means less divergence from the initial policy.
         args (`transformers.TrainingArguments`):
             The arguments to use for training.
         data_collator (`transformers.DataCollator`):
-            The data collator to use for training. If None is specified, the default data collator (`DPODataCollatorWithPadding`) will be used
-            which will pad the sequences to the maximum length of the sequences in the batch, given a dataset of paired sequences.
+            The data collator to use for training. If None is specified,
+            the default data collator (`DPODataCollatorWithPadding`) will be used
+            which will pad the sequences to the maximum length of the sequences in the batch,
+            given a dataset of paired sequences.
         label_pad_token_id (`int`, defaults to `-100`):
             The label pad token id. This argument is required if you want to use the default data collator.
         padding_value (`int`, defaults to `0`):
             The padding value. This argument is required if you want to use the default data collator.
-        truncation_mode (`str`, defaults to `keep_end`):
-            The truncation mode to use, either `keep_end` or `keep_start`. This argument is required if you want to use the default data collator.
         train_dataset (`datasets.Dataset`):
             The dataset to use for training.
         eval_dataset (`datasets.Dataset`):
@@ -71,9 +73,11 @@ class DPOTrainer(Trainer):
             The tokenizer to use for training. This argument is required if you want to use the default data collator.
             The callbacks to use for training.
         max_length (`int`, defaults to `None`):
-            The maximum length of the sequences in the batch. This argument is required if you want to use the default data collator.
+            The maximum length of the sequences in the batch.
+            This argument is required if you want to use the default data collator.
         peft_config (`Dict`, defaults to `None`):
-            The PEFT configuration to use for training. If you pass a PEFT configuration, the model will be wrapped in a PEFT model.
+            The PEFT configuration to use for training. If you pass a PEFT configuration,
+            the model will be wrapped in a PEFT model.
         is_encoder_decoder (`Optional[bool]`, `optional`, defaults to `None`):
             If no model is provided, we need to know if the model_init returns an encoder-decoder.
         disable_dropout (`bool`, defaults to `True`):
@@ -99,7 +103,7 @@ class DPOTrainer(Trainer):
     ):
         if not is_peft_available() and peft_config is not None:
             raise ValueError(
-                "PEFT is not installed and you passed a `peft_config` in the trainer's kwargs, please install it to use the PEFT models"
+                "PEFT is not installed and you passed a `peft_config` in the trainer's kwargs"
             )
         elif is_peft_available() and peft_config is not None:
             if getattr(model, "is_loaded_in_8bit", False) or getattr(model, "is_loaded_in_4bit", False):
@@ -153,7 +157,7 @@ class DPOTrainer(Trainer):
         if self.ref_model is None:
             if not hasattr(self.accelerator.unwrap_model(self.model), "disable_adapter"):
                 raise ValueError(
-                    "You are using a `peft` version that does not support `disable_adapter`. Please update your `peft` version to the latest version."
+                    "You are using a `peft` version that does not support `disable_adapter`."
                 )
         else:
             if self.is_deepspeed_enabled:
@@ -172,19 +176,6 @@ class DPOTrainer(Trainer):
         reference_free: bool = False,
     ) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
         """Compute the DPO loss for a batch of policy and reference model log probabilities.
-
-        Args:
-            policy_chosen_logps: Log probabilities of the policy model for the chosen responses. Shape: (batch_size,)
-            policy_rejected_logps: Log probabilities of the policy model for the rejected responses. Shape: (batch_size,)
-            reference_chosen_logps: Log probabilities of the reference model for the chosen responses. Shape: (batch_size,)
-            reference_rejected_logps: Log probabilities of the reference model for the rejected responses. Shape: (batch_size,)
-            beta: Temperature parameter for the DPO loss, typically something in the range of 0.1 to 0.5. We ignore the reference model as beta -> 0.
-            reference_free: If True, we ignore the _provided_ reference model and implicitly use a reference model that assigns equal probability to all responses.
-
-        Returns:
-            A tuple of three tensors: (losses, chosen_rewards, rejected_rewards).
-            The losses tensor contains the DPO loss for each example in the batch.
-            The chosen_rewards and rejected_rewards tensors contain the rewards for the chosen and rejected responses, respectively.
         """
         pi_logratios = policy_chosen_logps - policy_rejected_logps
         ref_logratios = reference_chosen_logps - reference_rejected_logps
@@ -210,11 +201,14 @@ class DPOTrainer(Trainer):
 
         Args:
             logits: Logits of the model (unnormalized). Shape: (batch_size, sequence_length, vocab_size)
-            labels: Labels for which to compute the log probabilities. Label tokens with a value of label_pad_token_id are ignored. Shape: (batch_size, sequence_length)
-            average_log_prob: If True, return the average log probability per (non-masked) token. Otherwise, return the sum of the log probabilities of the (non-masked) tokens.
+            labels: Labels for which to compute the log probabilities.
+               Label tokens with a value of label_pad_token_id are ignored. Shape: (batch_size, sequence_length)
+            average_log_prob: If True, return the average log probability per (non-masked) token.
+               Otherwise, return the sum of the log probabilities of the (non-masked) tokens.
 
         Returns:
-            A tensor of shape (batch_size,) containing the average/sum log probabilities of the given labels under the given logits.
+            A tensor of shape (batch_size,) containing the average/sum log
+               probabilities of the given labels under the given logits.
         """
         if logits.shape[:-1] != labels.shape:
             raise ValueError("Logits (batch and sequence length dim) and labels must have the same shape.")
@@ -341,82 +335,6 @@ class DPOTrainer(Trainer):
         if return_outputs:
             return (loss, metrics)
         return loss
-
-    def get_batch_samples(self, model, batch: Dict[str, torch.LongTensor]) -> Tuple[str, str]:
-        """Generate samples from the model and reference model for the given batch of inputs."""
-
-        policy_output = model.generate(
-            batch["prompt_input_ids"],
-            attention_mask=batch["prompt_attention_mask"],
-            max_length=self.config.max_length,
-            do_sample=True,
-            pad_token_id=self.tokenizer.pad_token_id,
-        )
-
-        if self.ref_model is None:
-            with self.accelerator.unwrap_model(self.model).disable_adapter():
-                reference_output = self.model.generate(
-                    batch["prompt_input_ids"],
-                    attention_mask=batch["prompt_attention_mask"],
-                    max_length=self.config.max_length,
-                    do_sample=True,
-                    pad_token_id=self.tokenizer.pad_token_id,
-                )
-        else:
-            reference_output = self.ref_model.generate(
-                batch["prompt_input_ids"],
-                attention_mask=batch["prompt_attention_mask"],
-                max_length=self.config.max_length,
-                do_sample=True,
-                pad_token_id=self.tokenizer.pad_token_id,
-            )
-
-        policy_output = pad_to_length(policy_output, self.config.max_length, self.tokenizer.pad_token_id)
-        policy_output_decoded = self.tokenizer.batch_decode(policy_output, skip_special_tokens=True)
-
-        reference_output = pad_to_length(reference_output, self.config.max_length, self.tokenizer.pad_token_id)
-        reference_output_decoded = self.tokenizer.batch_decode(reference_output, skip_special_tokens=True)
-
-        return policy_output_decoded, reference_output_decoded
-
-    def prediction_step(
-        self,
-        model: Union[PreTrainedModel, nn.Module],
-        inputs: Dict[str, Union[torch.Tensor, Any]],
-        prediction_loss_only: bool,
-        ignore_keys: Optional[List[str]] = None,
-    ):
-        if not self.use_dpo_data_collator:
-            warnings.warn(
-                "prediction_step is only implemented for DPODataCollatorWithPadding, and you passed a datacollator that is different than "
-                "DPODataCollatorWithPadding - you might see unexpected behavior. Alternatively, you can implement your own prediction_step method if you are using a custom data collator"
-            )
-        if ignore_keys is None:
-            if hasattr(model, "config"):
-                ignore_keys = getattr(model.config, "keys_to_ignore_at_inference", [])
-            else:
-                ignore_keys = []
-
-        with torch.no_grad():
-            loss, metrics = self.get_batch_metrics(model, inputs, train_eval="eval")
-
-        # force log the metrics
-        if self.accelerator.is_main_process:
-            self.store_metrics(metrics, train_eval="eval")
-
-        if prediction_loss_only:
-            return (loss.detach(), None, None)
-
-        # logits for the chosen and rejected samples from model
-        logits_dict = {
-            "eval_logits/chosen": metrics["eval_logits/chosen"],
-            "eval_logits/rejected": metrics["eval_logits/rejected"],
-        }
-        logits = tuple(v for k, v in logits_dict.items() if k not in ignore_keys)
-        logits = torch.stack(logits).mean(axis=1)
-        labels = torch.zeros(logits.shape[0])
-
-        return (loss.detach(), logits, labels)
 
     def store_metrics(self, metrics: Dict[str, float], train_eval: Literal["train", "eval"] = "train") -> None:
         for key, value in metrics.items():
