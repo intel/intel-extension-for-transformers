@@ -161,7 +161,6 @@ std::string Model::generate_tokens(const std::string& prompt) {
 
     output_ids.push_back(next_token_id);
     ret += model_token_to_str(ctx, next_token_id);
-    // s = postprocess(s);
 
     if (next_token_id == model_token_eos()) {
       break;
