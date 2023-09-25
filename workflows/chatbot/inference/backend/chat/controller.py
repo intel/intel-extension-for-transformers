@@ -37,8 +37,7 @@ import ipaddress
 import pandas as pd
 from io import BytesIO
 from PIL import Image
-from ner import generate_query_from_prompt
-from ner_new import inference as inference_ner
+from itrex.workflows.chatbot.inference.backend.chat.ner_ustils.ner_new import inference as inference_ner
 from deepface import DeepFace
 from typing import List, Dict
 from fastapi import BackgroundTasks

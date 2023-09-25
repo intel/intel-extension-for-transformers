@@ -14,7 +14,7 @@ import uuid
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse, PlainTextResponse 
 import requests
-from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, GenerationConfig, StoppingCriteria, StoppingCriteriaList
+from transformers import AutoTokenizer, AutoModelForCausalLM, LlamaTokenizer, GenerationConfig, StoppingCriteria, StoppingCriteriaList, TextIteratorStreamer
 import torch
 import uvicorn
 
@@ -22,8 +22,10 @@ from constants import WORKER_HEART_BEAT_INTERVAL
 from inference import load_model, generate_stream
 from utils import (build_logger, server_error_msg, pretty_print_semaphore)
 
-from asr import AudioSpeechRecognition
-from tts import TextToSpeech
+from itrex.workflows.chatbot.inference.backend.chat.voice_utils.asr import AudioSpeechRecognition
+from itrex.workflows.chatbot.inference.backend.chat.voice_utils.tts import TextToSpeech
+from itrex.intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.utils.english_normalizer import EnglishNormalizer
+from sklearn import preprocessing
 
 GB = 1 << 30
 
@@ -208,7 +210,7 @@ def predict_stream(text, voice, knowledge_id):
                     **input_tokens,
                     **generation_kwargs,
                 )
-    generation_thread = Thread(target=generate_output)
+    generation_thread = threading.Thread(target=generate_output)
     generation_thread.start()
 
     buffered_texts = []
@@ -231,6 +233,7 @@ async def generate_audio(text, voice, knowledge_id):
     for idx, response in enumerate(predict_stream(text, voice, knowledge_id)):
         print(response)
         # TODO change this to sentence
+        normalizer = EnglishNormalizer()
         response = normalizer.correct_number(response)
         response = normalizer.correct_abbreviation(response)
         answer_speech_path = tts.text2speech(response, voice=voice)
