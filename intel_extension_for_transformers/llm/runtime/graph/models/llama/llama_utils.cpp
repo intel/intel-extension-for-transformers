@@ -133,15 +133,15 @@ void Llama::load(model_context& lctx, model_progress_callback progress_callback,
 
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".attention.wq.weight", {n_embd, n_embd}, backend);
-    if (n_head_kv == 8){
+    if (n_head_kv == 8) {
       n_ff = 28672;
-      layer.attn[1] = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, n_embd/n_head_kv}, backend);
-      layer.attn[2] = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, n_embd/n_head_kv}, backend);
+      layer.attn[1] = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, n_embd / n_head_kv}, backend);
+      layer.attn[2] = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, n_embd / n_head_kv}, backend);
     } else {
       layer.attn[1] = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, n_embd}, backend);
       layer.attn[2] = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, n_embd}, backend);
     }
-    
+
     layer.attn[3] = ml->get_tensor(layers_i + ".attention.wo.weight", {n_embd, n_embd}, backend);
 
     // ffn norm
