@@ -20,11 +20,15 @@ import subprocess
 from transformers import AutoTokenizer
 
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
+build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="main program llm running")
     parser.add_argument("--model_name", type=str, help="model name", required=True)
     parser.add_argument("-m", "--model", type=Path, help="path ne model", required=True)
+    parser.add_argument(
+        "--build_dir", type=Path, help="path to build directory", default=build_path
+    )
     parser.add_argument(
         "-p",
         "--prompt",
@@ -54,7 +58,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     )
     parser.add_argument(
         "-b",
-        "--batch_size",
+        "--batch_size_truncate",
         type=int,
         help="batch size for prompt processing (default: 512)",
         default=512,
@@ -94,9 +98,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     args = parser.parse_args(args_in)
     print(args)
     model_name = model_maps.get(args.model_name, args.model_name)
-    path = Path(
-        Path(__file__).parent.absolute(), "../build/bin/run_{}".format(model_name)
-    )
+    path = Path(args.build_dir, "./bin/run_{}".format(model_name))
     if not path.exists():
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
@@ -106,7 +108,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--prompt",         args.prompt])
     cmd.extend(["--n-predict",      str(args.n_predict)])
     cmd.extend(["--threads",        str(args.threads)])
-    cmd.extend(["--batch-size",     str(args.batch_size)])
+    cmd.extend(["--batch-size-truncate",     str(args.batch_size_truncate)])
     cmd.extend(["--ctx-size",       str(args.ctx_size)])
     cmd.extend(["--seed",           str(args.seed)])
     cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])

@@ -112,7 +112,7 @@ class TestVaeDecoder(unittest.TestCase):
         output = graph.inference([inputs_0])
 
         # onnxruntime
-        session = ort.InferenceSession(model_dir)
+        session = ort.InferenceSession(model_dir, providers=["CPUExecutionProvider"])
         x = torch.load(input_0_path).numpy()
 
         ortvalue = ort.OrtValue.ortvalue_from_numpy(x)

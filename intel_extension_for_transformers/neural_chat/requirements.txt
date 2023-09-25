@@ -28,6 +28,7 @@ starlette
 yacs
 uvicorn
 optimum
+optimum-intel
 sentence_transformers
 unstructured
 markdown
@@ -36,3 +37,6 @@ openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
 lm_eval
+accelerate
+optimum.intel
+cchardet

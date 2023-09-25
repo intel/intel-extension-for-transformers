@@ -53,12 +53,12 @@ make -j
 First you should download and convert the model to f32 format. You can also quantize the model to q4_0 format, but it is optional.
 
 ```shell
-python scripts/convert_model.py --outtype f32 --outfile EleutherAI/gpt-j-6b
+python scripts/convert.py --outtype f32 --outfile EleutherAI/gpt-j-6b
 ```
 Then quantize the model to q4_0 format(optional).
 
 ```shell
-python scripts/quant_bin.py --model_name gptj --model_file /path/to/your/ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
+python scripts/quantize.py --model_name gptj --model_file /path/to/your/ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
 ```
 
 ## Examples

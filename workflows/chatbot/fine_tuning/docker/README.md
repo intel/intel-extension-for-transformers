@@ -25,7 +25,7 @@ The instruction-following dataset is needed for the finetuning. We select two ki
 Assuming you have downloaded the model and dataset to your workspace /path/to/workspace/
 Please clone a ITREX repo to this path.
 ```bash
-git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-nlp-toolkit.git
+git clone https://github.com/intel/intel-extension-for-transformers
 ```
 
 
@@ -34,11 +34,11 @@ git clone https://github.com/intel-innersource/frameworks.ai.nlp-toolkit.intel-n
 
 ### On Xeon SPR Environment
 ```bash
-docker build --build-arg UBUNTU_VER=22.04 --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  /path/to/workspace/frameworks.ai.nlp-toolkit.intel-nlp-toolkit/workflows/chatbot/fine_tuning/docker/Dockerfile -t chatbot_finetune .   --target cpu
+docker build --build-arg UBUNTU_VER=22.04 --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy -f  ./intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbot_finetune .   --target cpu
 ```
 ### On Habana Gaudi Environment
 ```bash
-DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f Dockerfile  --target hpu
+DOCKER_BUILDKIT=1 docker build --network=host --tag chatbot_finetuning:latest  --build-arg https_proxy=$https_proxy --build-arg http_proxy=$http_proxy  ./ -f ./intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/docker/Dockerfile  --target hpu
 ```
 ## 5. Create Docker Container
 Before creating your docker container, make sure the model has been downloaded to local. 

@@ -910,51 +910,31 @@ static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, voi
                                                      int srcstride, int dststride, bool zeropadding) {
   char* srcptr = (char*)raw_srcptr;
   char* dstptr = (char*)raw_dstptr;
-#if CompileBF16()
-  constexpr int simd_proc_elt = 32;
-  auto col_body_loop = col / simd_proc_elt;
-  auto col_tail = col % simd_proc_elt;
-  const uint32_t tail_mask = (1U << col_tail) - 1;
-  int npadding = dststride - col * sizeof(utils::bf16);
-  for (int i = 0; i < row; i++) {
-    auto src = srcptr + i * srcstride;
-    auto dst = dstptr + i * dststride;
-    int j = 0;
-    for (; j < col_body_loop; j++) {
-      _mm512_storeu_epi16(
-          (dst + (j * simd_proc_elt) * sizeof(jblas::utils::bf16)),
-          (__m512i)_mm512_cvtne2ps_pbh(_mm512_loadu_ps(src + sizeof(float) * simd_proc_elt * j + sizeof(float) * 16),
-                                       _mm512_loadu_ps(src + sizeof(float) * simd_proc_elt * j + sizeof(float) * 0)));
-    }
-    if (col_tail > 0) {
-      _mm512_mask_storeu_epi16(
-          (dst + (j * simd_proc_elt) * sizeof(jblas::utils::bf16)), tail_mask,  //
-          (__m512i)_mm512_cvtne2ps_pbh(
-              _mm512_maskz_loadu_ps(tail_mask >> 16, src + sizeof(float) * simd_proc_elt * j + sizeof(float) * 16),
-              _mm512_maskz_loadu_ps(tail_mask >> 0, src + sizeof(float) * simd_proc_elt * j + sizeof(float) * 0)));
-    }
-    if (zeropadding && npadding) {
-      std::memset(dst + col * sizeof(utils::bf16), 0, npadding);
-    }
-  }
-#else
   constexpr int simd_proc_elt = 16;
   auto col_body_loop = col / simd_proc_elt;
   auto col_tail = col % simd_proc_elt;
   auto tail_mask = _cvtu32_mask16(0xffff >> (16 - col_tail));
   int npadding = dststride - col * sizeof(utils::bf16);
+  auto bf16_and_helper = _mm512_set1_epi32(0x00000001);
+  auto bf16_add_helper = _mm512_set1_epi32(0X00007FFF);
   for (int i = 0; i < row; i++) {
     auto src = srcptr + i * srcstride;
     auto dst = dstptr + i * dststride;
     int j = 0;
     for (; j < col_body_loop; j++) {
-      auto pack_bf16_value =
-          _mm512_cvtepi32_epi16(_mm512_srli_epi32(_mm512_loadu_si512(src + sizeof(float) * simd_proc_elt * j), 16));
+      auto round_bias = _mm512_loadu_si512(src + sizeof(float) * simd_proc_elt * j);
+      round_bias = _mm512_and_epi32(bf16_and_helper, _mm512_bsrli_epi128(round_bias, 2));
+      round_bias = _mm512_add_epi32(round_bias, bf16_add_helper);
+      auto round_fp32_v = _mm512_add_epi32(round_bias, _mm512_loadu_si512(src + sizeof(float) * simd_proc_elt * j));
+      auto pack_bf16_value = _mm512_cvtepi32_epi16(_mm512_srli_epi32(round_fp32_v, 16));
       _mm256_storeu_si256((__m256i*)(dst + (j * simd_proc_elt) * sizeof(jblas::utils::bf16)), pack_bf16_value);
     }
     if (col_tail > 0) {
-      auto pack_bf16_tail = _mm512_cvtepi32_epi16(
-          _mm512_srli_epi32(_mm512_maskz_loadu_epi32(tail_mask, src + sizeof(float) * simd_proc_elt * j), 16));
+      auto round_bias = _mm512_loadu_si512(src + sizeof(float) * simd_proc_elt * j);
+      round_bias = _mm512_and_epi32(bf16_and_helper, _mm512_bsrli_epi128(round_bias, 2));
+      round_bias = _mm512_add_epi32(round_bias, bf16_add_helper);
+      auto round_fp32_v = _mm512_add_epi32(round_bias, _mm512_loadu_si512(src + sizeof(float) * simd_proc_elt * j));
+      auto pack_bf16_tail = _mm512_cvtepi32_epi16(_mm512_srli_epi32(round_fp32_v, 16));
       _mm256_mask_storeu_epi16((__m256i*)(dst + (j * simd_proc_elt) * sizeof(jblas::utils::bf16)), tail_mask,
                                pack_bf16_tail);
     }
@@ -962,7 +942,6 @@ static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, voi
       std::memset(dst + col * sizeof(utils::bf16), 0, npadding);
     }
   }
-#endif
   return JblasSuccess;
 }
 
@@ -1022,7 +1001,6 @@ static inline JBLAS_CODE fp16_cvt_fp32_2D_write_back(const utils::fp16* src_ptr,
 
 static inline JBLAS_CODE bf16_cvt_fp32_2D_write_back(const utils::bf16* src_ptr, float* dst_ptr, int row, int col,
                                                      int src_step, int dst_step, bool zeropadding) {
-#if CompileBF16()
   const int npadding = (dst_step - col) * sizeof(float);
   constexpr int simd_proc_elt = 16;
   auto col_body = col / simd_proc_elt * simd_proc_elt;
@@ -1033,16 +1011,18 @@ static inline JBLAS_CODE bf16_cvt_fp32_2D_write_back(const utils::bf16* src_ptr,
     auto dst = dst_ptr + i * dst_step;
     int j = 0;
     for (; j < col_body; j += simd_proc_elt)
-      _mm512_storeu_ps(dst + j, _mm512_cvtpbh_ps((__m256bh)_mm256_loadu_ps(reinterpret_cast<float*>(src + j))));
+      _mm512_storeu_ps(
+          dst + j,
+          _mm512_castsi512_ps(_mm512_bslli_epi128(
+              _mm512_cvtepu16_epi32(_mm256_castps_si256(_mm256_loadu_ps(reinterpret_cast<float*>(src + j)))), 2)));
     if (col_tail > 0)
-      _mm512_mask_storeu_ps(dst + j, tail_mask,
-                            _mm512_cvtpbh_ps((__m256bh)_mm256_loadu_ps(reinterpret_cast<float*>(src + j))));
+      _mm512_mask_storeu_ps(
+          dst + j, tail_mask,
+          _mm512_castsi512_ps(_mm512_bslli_epi128(
+              _mm512_cvtepu16_epi32(_mm256_castps_si256(_mm256_loadu_ps(reinterpret_cast<float*>(src + j)))), 2)));
     if (zeropadding && npadding) std::memset(dst + col, 0, npadding);
   }
   return JblasSuccess;
-#else
-  return JblasNotSupport;
-#endif
 }
 
 #ifdef __GNUC__

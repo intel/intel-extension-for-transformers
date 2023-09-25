@@ -20,6 +20,7 @@
 import importlib
 import os
 from neural_compressor.utils.utility import LazyImport
+from neural_compressor.utils import logger
 
 
 CONFIG_NAME = "best_configure.yaml"

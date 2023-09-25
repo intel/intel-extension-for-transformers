@@ -52,6 +52,11 @@ class WeightOnlyQuantConfig:
         self.scheme = scheme
         self.algorithm = algorithm
         self.group_size = group_size
+        self.tokenizer = kwargs.pop("tokenizer", None)
+        self.calib_func = kwargs.pop("calib_func", None)
+        self.calib_dataset = kwargs.pop("calib_dataset", "NeelNanda/pile-10k")
+        self.calib_dataloader = kwargs.pop("calib_dataloader", None)
+        self.calib_iters = kwargs.pop("calib_iters", 100)
 
         if compute_dtype is None:
             self.compute_dtype = "fp32"
@@ -193,8 +198,6 @@ class WeightOnlyQuantConfig:
         """
 
         output = copy.deepcopy(self.__dict__)
-        output["compute_dtype"] = str(output["compute_dtype"]).split(".")[1]
-
         return output
 
     def __repr__(self):
