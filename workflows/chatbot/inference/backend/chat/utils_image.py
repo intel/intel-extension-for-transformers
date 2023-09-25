@@ -70,9 +70,19 @@ def get_address_from_gps(latitude, longitude, api_key):
     response = requests.get(base_url, params=params)
     data = response.json()
     if data['status'] == 'OK':
-        address = data['results'][0]['formatted_address']
+        address_components = data['results'][0]['address_components']
+        result = {}
+        for component in address_components:
+            if 'country' in component['types']:
+                result['country'] = component['long_name']
+            elif 'administrative_area_level_1' in component['types']:
+                result['city'] = component['long_name']
+            elif 'locality' in component['types']:
+                result['locality'] = component['long_name']
+            elif 'sublocality' in component['types']:
+                result['sublocality'] = component['long_name']
         print("Generate address elapsed time: ", time.time() - start_time)
-        return address
+        return result
     else:
         return None
     
