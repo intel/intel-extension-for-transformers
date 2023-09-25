@@ -66,6 +66,7 @@ class Model:
         # 1. convert model
         fp32_bin = "ne_{}_f32.bin".format(model_type)
         # convert_model(model_name, fp32_bin, "f32")
+        # TODO assert model exists
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
@@ -88,17 +89,17 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, input_ids, streamer = None, sentence_mode = True, **kwargs):
-        # TODO support streamer
+    def generate(self, input_ids, streamer = None, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
         # TODO support multi batch
-        # out = self.model.generate(input_ids = input_ids.tolist()[0], sentence_mode = sentence_mode)
         if streamer:
             while not self.is_token_end():
-                out = self.model.generate(input_ids = input_ids.tolist()[0], sentence_mode = sentence_mode)
+                out = self.model.generate(input_ids = input_ids.tolist()[0])
                 streamer.put(torch.tensor([out]))
-        return None
+            return None
+        else:
+            return self.model.generate(input_ids = input_ids.tolist()[0])
 
     def is_token_end(self):
         return self.model.is_token_end()
