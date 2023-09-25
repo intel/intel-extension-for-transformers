@@ -10,7 +10,7 @@ concurrency:
 jobs:
   finetuning:
     name: finetuning test
-    runs-on: lms-lab
+    runs-on: itrex-node
     steps:
       - name: Checkout
         uses: actions/checkout@v2
