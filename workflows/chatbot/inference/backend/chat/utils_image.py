@@ -74,13 +74,13 @@ def get_address_from_gps(latitude, longitude, api_key):
         result = {}
         for component in address_components:
             if 'country' in component['types']:
-                result['country'] = component['long_name']
+                result['country'] = component['long_name'].replace(' ', '').capitalize()
             elif 'administrative_area_level_1' in component['types']:
-                result['city'] = component['long_name']
+                result['administrative_area_level_1'] = component['long_name'].replace(' ', '').capitalize()
             elif 'locality' in component['types']:
-                result['locality'] = component['long_name']
+                result['locality'] = component['long_name'].replace(' ', '').capitalize()
             elif 'sublocality' in component['types']:
-                result['sublocality'] = component['long_name']
+                result['sublocality'] = component['long_name'].replace(' ', '').capitalize()
         print("Generate address elapsed time: ", time.time() - start_time)
         return result
     else:
