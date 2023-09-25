@@ -37,7 +37,7 @@ import ipaddress
 import pandas as pd
 from io import BytesIO
 from PIL import Image
-from ner_utils.ner_new import inference as inference_ner
+from ner_utils.ner_bf16 import inference as inference_ner
 from deepface import DeepFace
 from typing import List, Dict
 from fastapi import BackgroundTasks
