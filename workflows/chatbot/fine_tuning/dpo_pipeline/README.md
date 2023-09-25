@@ -17,7 +17,7 @@ We select 12k examples from [Orca](https://arxiv.org/abs/2306.02707) style datas
 ## 3. Training
 
 ```
-accelerate launch --mixed_precision bf16 --main_process_port 29505 dpo_llama2.py --model_name_or_path="Intel/neural-chat-7b-v1-1" --output_dir="neural-chat-7b-v1-1-dpo" --per_device_train_batch_size 8 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_r 16 --lora_dropout 0.05 --dataset_path "Intel/orca_dpo_pairs"
+python dpo_clm.py --model_name_or_path "meta-llama/Llama-2-7b-hf" --output_dir "llama2_7b-dpo" --per_device_train_batch_size 8 --gradient_accumulation_steps 8 --learning_rate 5e-4 --max_steps 1000 --save_steps 10 --lora_alpha 16 --lora_rank 16 --lora_dropout 0.05 --dataset_name Intel/orca_dpo_pairs --bf16 --use_auth_token True
 ```
 
 
