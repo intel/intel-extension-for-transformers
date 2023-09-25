@@ -65,17 +65,17 @@ class Model:
 
         # 1. convert model
         fp32_bin = "ne_{}_f32.bin".format(model_type)
-        convert_model(model_name, fp32_bin, "f32")
+        # convert_model(model_name, fp32_bin, "f32")
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
-        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
+        # self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
         
         self.model_type = model_type
         self.bin_file = quant_bin
         
         # clean
-        os.remove(fp32_bin)
+        # os.remove(fp32_bin)
 
 
     def init_from_bin(self, model_name, model_path, **kwargs):
@@ -93,10 +93,12 @@ class Model:
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
         # TODO support multi batch
-        out = self.model.generate(input_ids = input_ids.tolist()[0], sentence_mode = sentence_mode)
+        # out = self.model.generate(input_ids = input_ids.tolist()[0], sentence_mode = sentence_mode)
         if streamer:
-            streamer.put(torch.tensor([out]))
-        return out
+            while not self.is_token_end():
+                out = self.model.generate(input_ids = input_ids.tolist()[0], sentence_mode = sentence_mode)
+                streamer.put(torch.tensor([out]))
+        return None
 
     def is_token_end(self):
         return self.model.is_token_end()

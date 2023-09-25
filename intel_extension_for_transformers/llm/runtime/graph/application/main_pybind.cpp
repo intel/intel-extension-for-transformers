@@ -171,39 +171,66 @@ void Model::reinit() {
 //   return ret;
 // }
 
+// std::vector<int> Model::generate(const std::vector<int>& input_ids, bool sentence_mode) {
+//   int n_past = 0;
+//   int n_remain = params.n_predict;
+//   int max_length = 512;
+//   auto embd_inp = input_ids;
+//   int n_eval = embd_inp.size();
+//   std::vector<int> curr_input_ids(embd_inp);
+//   std::vector<int> output_ids;
+//   output_ids.reserve(max_length);
+//   printf("input ids:\n");
+//   for (auto item : input_ids) {
+//     printf("--- %d\n", item);
+//   }
+//   while (output_ids.size() < n_remain) {
+//     for (auto item : curr_input_ids) {
+//       last_n_tokens.erase(last_n_tokens.begin());
+//       last_n_tokens.push_back(item);
+//     }
+//     model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+//     n_past += curr_input_ids.size();
+
+//     float* logits = model_get_logits(ctx);
+//     int next_token_id = post_process(logits);
+//     curr_input_ids = {next_token_id};
+
+//     output_ids.push_back(next_token_id);
+
+//     if (next_token_id == model_token_eos()) {
+//       break;
+//     }
+//   }
+
+//   return output_ids;
+// }
+
 std::vector<int> Model::generate(const std::vector<int>& input_ids, bool sentence_mode) {
-  int n_past = 0;
-  int n_remain = params.n_predict;
-  int max_length = 512;
-  auto embd_inp = input_ids;
-  int n_eval = embd_inp.size();
-  std::vector<int> curr_input_ids(embd_inp);
-  std::vector<int> output_ids;
-  output_ids.reserve(max_length);
-  printf("input ids:\n");
-  for (auto item : input_ids) {
-    printf("--- %d\n", item);
+  if (curr_input_ids.empty()) {
+    curr_input_ids = input_ids;
   }
-  while (output_ids.size() < n_remain) {
-    for (auto item : curr_input_ids) {
-      last_n_tokens.erase(last_n_tokens.begin());
-      last_n_tokens.push_back(item);
-    }
-    model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
-    n_past += curr_input_ids.size();
+  for (auto item : curr_input_ids) {
+    last_n_tokens.erase(last_n_tokens.begin());
+    last_n_tokens.push_back(item);
+  }
+  model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+  n_past += curr_input_ids.size();
 
-    float* logits = model_get_logits(ctx);
-    int next_token_id = post_process(logits);
-    curr_input_ids = {next_token_id};
+  float* logits = model_get_logits(ctx);
+  int next_token_id = post_process(logits);
+  curr_input_ids = {next_token_id};
 
-    output_ids.push_back(next_token_id);
-
-    if (next_token_id == model_token_eos()) {
-      break;
-    }
+  if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() == params.n_predict) {
+    token_eos = true;
   }
 
-  return output_ids;
+  auto next_token = model_token_to_str(ctx, next_token_id);
+  if (strcmp(next_token, "<|endoftext|>") == 0) {
+    token_eos = true;
+  }
+
+  return {next_token_id};
 }
 
 int Model::post_process(float* logits) {

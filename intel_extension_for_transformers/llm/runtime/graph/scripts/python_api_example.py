@@ -32,8 +32,12 @@ gen_tokens = model.generate(input_ids.tolist()[0], max_new_tokens=30)
 streamer = TextStreamer(tokenizer)
 
 model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True)
+<<<<<<< HEAD
 gen_tokens = model.generate(input_ids, streamer=streamer, max_new_tokens=30)
 >>>>>>> add streamer
+=======
+gen_tokens = model.generate(input_ids, streamer=streamer, max_new_tokens=300)
+>>>>>>> update streamer mode
 
 # gen_text = tokenizer.batch_decode(gen_tokens)
 # print(gen_text)
