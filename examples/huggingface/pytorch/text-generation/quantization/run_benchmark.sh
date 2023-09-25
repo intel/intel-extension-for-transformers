@@ -70,7 +70,7 @@ function run_benchmark {
         extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
-        extra_cmd=$extra_cmd" --tasks ${iters}"
+        extra_cmd=$extra_cmd" --iters ${iters}"
     else
         echo "Error: No such mode: ${mode}"
         exit 1

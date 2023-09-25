@@ -18,7 +18,7 @@ pip install -r requirements.txt
 python setup.py install
 ```
 > Note:
-> Disable semi-compiler to avoid accuracy regression for mpt and neural-chat-v1-1 models, other > models don't need it.
+> Disable semi-compiler to avoid accuracy regression for mpt and neural-chat-v1-1 models, other models don't need it.
 > `export _DNNL_DISABLE_COMPILER_BACKEND=1`
 
 > Note: If `ImportError: /lib64/libstdc++.so.6: version ``GLIBCXX_3.4.29`` not found` error raised when import intel-extension-for-pytorch, it is due to the high gcc library request, there is the solution to find the correct version.
