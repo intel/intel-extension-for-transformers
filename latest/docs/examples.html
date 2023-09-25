@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Examples &mdash; Intel® Extension for Transformers 0.1.dev1+gab112aa documentation</title>
+  <title>Examples &mdash; Intel® Extension for Transformers 0.1.dev1+g60088fa documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -77,6 +77,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#sparse-reference-deployment-on-neural-engine">Sparse Reference Deployment on Neural Engine</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#early-exit">Early-Exit</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.html">Neural Engine Support Matrix</a></li>
@@ -133,6 +134,7 @@
 <p>6.1 <a class="reference external" href="#dense-reference-deployment-on-neural-engine">Dense Reference</a></p>
 <p>6.2 <a class="reference external" href="#sparse-reference-deployment-on-neural-engine">Sparse Reference</a></p>
 </li>
+<li><p><a class="reference external" href="#early-exit">Early-Exit</a></p></li>
 </ol>
 <p>Intel Extension for Transformers is a powerful toolkit with multiple model optimization techniques for Natural Language Processing Models, including quantization, pruning, distillation, auto distillation and orchestrate. Meanwhile Intel Extension for Transformers provides Transformers-accelerated Neural Engine, an optimized backend for NLP models to demonstrate the deployment.</p>
 <section id="quantization">
@@ -747,6 +749,32 @@
 </tbody>
 </table></section>
 </section>
+<section id="early-exit">
+<h2>Early-Exit<a class="headerlink" href="#early-exit" title="Link to this heading"></a></h2>
+<table>
+<thead>
+  <tr>
+    <th>Model</th>
+    <th>Task</th>
+    <th>Dataset</th>
+    <th>Early-Exit Type</th>
+  </tr>
+</thead>
+<tbody align="center">
+  <tr>
+    <td><a href="https://huggingface.co/bert-base-uncased">bert-base-uncased</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/mnli/train">MNLI</a></td>
+    <td><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-classification/early-exit/README.html">SWEET</a><br><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/docs/tutorials/pytorch/text-classification/SWEET.ipynb">notebook</a></td>
+  </tr>
+  <tr>
+    <td><a href="https://huggingface.co/philschmid/tiny-bert-sst2-distilled">philschmid/tiny-bert-sst2-distilled</a><br><a href="https://huggingface.co/textattack/roberta-base-SST-2">textattack/roberta-base-SST-2</a></td>
+    <td>text-classification</td>
+    <td><a href="https://huggingface.co/datasets/glue/viewer/sst2/train">SST-2</a></td>
+    <td><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/examples/huggingface/pytorch/text-classification/cascade-models/README.html">TangoBERT</a><br><a href="https://github.com/intel/intel-extension-for-transformers/blob/main/docs/tutorials/pytorch/text-classification/TangoBERT.ipynb">notebook</a></td>
+  </tr>
+</tbody>
+</table></section>
 </section>
 
 
@@ -766,7 +794,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5e22291180> 
+   <jinja2.runtime.BlockReference object at 0x7f55b57fb7c0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
