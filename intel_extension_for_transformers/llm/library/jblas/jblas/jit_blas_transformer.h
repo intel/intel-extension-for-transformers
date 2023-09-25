@@ -144,6 +144,7 @@ class QKVGemmInterfacePackWeightParallelAB {
       }
       if constexpr (_LaunchA || _LaunchB) {
 #pragma omp barrier
+        (void)(0);  // make msvc happy with c++20
       }
       launchT(_param, tidx, _paral, cb.mL2Cache);
     }

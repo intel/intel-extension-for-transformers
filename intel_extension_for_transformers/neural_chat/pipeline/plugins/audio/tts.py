@@ -202,6 +202,21 @@ class TextToSpeech():
 
     def post_llm_inference_actions(self, text_or_generator):
         if self.stream_mode:
-            return self.stream_text2speech(text_or_generator, self.output_audio_path, self.voice)
+            def cache_words_into_sentences():
+                buffered_texts = []
+                hitted_ends = ['.', '!', '?', ';', ':']
+                for new_text in text_or_generator:
+                    print(f"new text: ==={new_text}===")
+                    if len(new_text.strip()) == 0:
+                        continue
+                    buffered_texts.append(new_text)
+                    if(len(buffered_texts) > 5):
+                        if new_text.endswith('... ') or new_text.strip()[-1] in hitted_ends:
+                            yield ''.join(buffered_texts)
+                            buffered_texts = []
+                # output the trailing sequence
+                if len(buffered_texts) > 0:
+                    yield ''.join(buffered_texts)
+            return self.stream_text2speech(cache_words_into_sentences(), self.output_audio_path, self.voice)
         else:
             return self.text2speech(text_or_generator, self.output_audio_path, self.voice)

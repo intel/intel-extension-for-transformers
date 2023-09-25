@@ -447,6 +447,10 @@ static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, voi
   return JblasSuccess;
 }
 
+#ifdef __GNUC__
+#pragma GCC pop_options
+#else
+#endif
 #endif
 }  // namespace avx2
 }  // namespace kernel
