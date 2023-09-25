@@ -9,21 +9,29 @@ Intel® XeTLA based on [SYCL](https://registry.khronos.org/SYCL/specs/sycl-2020/
 
 **epilogue**: Some finalizing works after brgemm, it defines how brgemm fused with post-processing and update the final result to memory.
 
+**FPU**: Floating Point Processing Unit.
+
+**group**: Alias [work-group](#wg).
+
 **group API**: A group is a collection of threads that cooperatively work on the same problem. Within this collection, threads can be synchronized and exchang data through dedicated hardware features at a low cost.
 
 **kernel API**: The kernel is a collection of groups together to solve a specific problem.
 
 **SIMD**: Single Instruction Multiple Data
 
-**surface**: The entire data buffer in global memory or local memory.
-
 **SPMD**: Single Program Multiple Data
 
-**thread**: Alias to sub-group, hardware concept.
+**subgroup**: Alias [sub-group](#sg).
 
-**tile**: Sub-group level problem. It also involves underneath register storage and operations.
+**surface**: The entire data buffer in global memory or local memory.
+
+**thread**: Alias to subgroup, hardware concept.
+
+**tile**: Subgroup level problem. It also involves underneath register storage and operations.
 
 **xetla_exec_item**: The item structure to explict identify the group / local id information. Wrapped SYCL item related operations.
+
+**XMX**:  Intel Xe Matrix Extensions.
 
 
 ## [SYCL](https://registry.khronos.org/SYCL/specs/sycl-2020/html/sycl-2020.html#glossary):
@@ -69,8 +77,10 @@ Intel® XeTLA based on [SYCL](https://registry.khronos.org/SYCL/specs/sycl-2020/
 
 **range**: A representation of a number of work items or work-group within the index space of a SYCL kernel execution. Can be one, two or three dimensional. In the SYCL interface a work-group is represented by the group.
 
+<a id="sg"></a>
 **sub-group**: The SYCL sub-group (sycl::sub_group class) is a representation of a collection of related work-items within a work-group.
 
+<a id="wg"></a>
 **work-group**: The SYCL work-group (sycl::group class) is a representation of a collection of related work items that execute on a single compute unit. The work items in the group execute the same kernel-instance and share local memory and work-group functions.
 
 **work-item**:The SYCL work-item is a representation of a work-item among a collection of parallel executions of a kernel invoked on a device by a command. A work-item is executed by one or more processing elements as part of a work-group executing on a compute unit. A work-item is distinguished from other work items by its global id or the combination of its work-group id and its local id within a work-group.

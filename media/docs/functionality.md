@@ -2,6 +2,7 @@
 
 # Functionality
 
+- int8 - 8 bits integer
 - fp16 - half-precision floating-point
 - fp32 - single-precision floating-point
 - bf16 - bfloat16 (Brain Floating Point Format)
@@ -19,6 +20,7 @@ The following tables summarize GEMM kernel's feature set, organized API, data ty
 
 |**API** | **Data Type**                  | **Compute Engine** |**Layouts**            | **Unit Test**    |
 |-----------------|--------------------------------|------------------------|------------------|------------------|
+| **GEMM**        |  `int8 * int8 => { int8, int32 }`      |XMX| {N,T} x {N,T} => N |  [example](/tests/integration/gemm/int8) |
 | **GEMM**        |  `bf16 * bf16 => { bf16, fp32 }`       |XMX| {N,T} x {N,T} => N |  [example](/tests/integration/gemm/bf16) |
 | **GEMM**        |  `fp16 * fp16 => { fp16, fp32 }`       |XMX| {N,T} x {N,T} => N |  [example](/tests/integration/gemm/fp16) |
 | **GEMM**        |  `tf32 * tf32 => { tf32, fp32 }`       |XMX| {N,T} x {N,T} => N |  [example](/tests/integration/gemm/tf32) |
@@ -30,11 +32,11 @@ The following table summarizes epilogue APIs, organized by API and data type.Hyp
 
 |**API** | **Data Type**                   | **Unit Test**    |
 |-----------------|--------------------------------|------------------------|
-| **Bias Add**        |  `{ bf16, bf32, fp16, fp32, tf32 } `       |  [example](/examples/03_gemm_relu_bias) |
-| **GELU Forward**        |  `{ bf16, bf32, fp16, fp32, tf32 }`       |  [example](/tests/unit/epilogue_tile_op) |
-| **GELU Backward**        |  `{ bf16, bf32, fp16, fp32, tf32 }`       |  [example](/tests/unit/epilogue_tile_op) |
-| **RELU**        |  `{ bf16, bf32, fp16, fp32, tf32 }`       |  [example](/examples/03_gemm_relu_bias) |
-| **Residual Add**        |  `{ bf16, bf32, fp16, fp32, tf32 }`       |  [example](/tests/unit/epilogue_tile_op) |
+| **Bias Add**        |  `{ int8, bf16, bf32, fp16, fp32, tf32 }`       |  [example](/examples/03_gemm_relu_bias) |
+| **GELU Forward**        |  `{ int8, bf16, bf32, fp16, fp32, tf32 }`       |  [example](/tests/unit/epilogue_tile_op) |
+| **GELU Backward**        |  `{ int8, bf16, bf32, fp16, fp32, tf32 }`       |  [example](/tests/unit/epilogue_tile_op) |
+| **RELU**        |  `{ int8, bf16, bf32, fp16, fp32, tf32 }`       |  [example](/examples/03_gemm_relu_bias) |
+| **Residual Add**        |  `{ int8, bf16, bf32, fp16, fp32, tf32 }`       |  [example](/tests/unit/epilogue_tile_op) |
 
 ## Copyright
 Copyright (c) 2022-2023 Intel Corporation Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at

@@ -40,7 +40,7 @@
 ## [v0.3.1](https://github.com/intel/xetla/releases/tag/v0.3.1) (2023-05-22)
 - New Features
   * Initial open source release.
-  * Improved sub-group level fundamental features: core, tile, utils.
+  * Improved subgroup level fundamental features: core, tile, utils.
   * Enhanced basic BRGEMM micro-kernels for different data types as well as different epilogue flavours.
   * Unified the examples: basic BRGEMM, GEMM; fusion BRGEMM, GEMM; batched GEMM; MLP, GRU, MHA.
   * Added some unit test cases.
@@ -51,7 +51,7 @@
 ## v0.3.0 (2023-04-23)
 - New Features
   * Initial internal release.
-  * Sub-group level fundamental features: core, tile, utils.
+  * Subgroup level fundamental features: core, tile, utils.
   * Basic BRGEMM micro-kernels for different data types as well as different epilogue flavours.
   * Examples
     * Basic BRGEMM, GEMM; fusion BRGEMM, GEMM; batched GEMM; MLP, GRU, MHA.  

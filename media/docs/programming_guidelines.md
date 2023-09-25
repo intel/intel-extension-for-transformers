@@ -8,7 +8,7 @@ The central idea behind Intel® XeTLA revolves around the concept of `building b
 
 There are there groups of API for user, each serving with different purposes. 
 - [kernel-level API](https://github.com/pengzhao-intel/xetla/tree/main/include/kernel) is designed for the easiest user experience by combining various `group-level API`. For instance, `gemm_universal` is specifically tailored for GEMM (General Matrix Multiply), where users only need to set the input shapes of A, B, C, a few basic parameters and post functions,  without delving into the intricacies of computation. Of course, developers have the option to customize their own GEMM implementations using the `group-level API`, potentially achieving better performance for their specific input shapes.
-- [group-level API](https://github.com/pengzhao-intel/xetla/tree/main/include/group) serves as the primary component for building your own kernels. These group functions are mapped to `workgroup` and executed in the Dual Subslice (DSS) on the GPU. Therefore, it's crucial to understand how to divide the workload into smaller pieces and allocate it to the workgroups. One major performance concern is having too few workgroups to fully utilize all available DSS resources on the GPU.
+- [group-level API](https://github.com/pengzhao-intel/xetla/tree/main/include/group) serves as the primary component for building your own kernels. These group functions are mapped to `workgroup` and executed in the Xe core on the GPU. Therefore, it's crucial to understand how to divide the workload into smaller pieces and allocate it to the workgroups. One major performance concern is having too few workgroups to fully utilize all available DSS resources on the GPU.
 - [subgroup-level API](https://github.com/pengzhao-intel/xetla/tree/main/include/subgroup) represents the next lower level of group API. In most cases, creating high-performance kernels can be achieved using the `group-level API`. However, for developers who seek finer control over algorithm details, such as when to perform data prefetch or manage data reuse within a workgroup, the `subgroup-level API` offers the utmost flexibility.
 
 | API level | Example                                  |
@@ -80,7 +80,7 @@ The subgroup-level API includes:
 
 ## The Key Things for Better Performance
 Intel® XeTLA provides the basic building block of GEMM unit; however, it still needs to implement the kernel carefully for the better perforamnce in both algorithm and hardware level.
-1. Number of work-group / sub-group
+1. Number of group / subgroup
 2. K slicing algorithm
 3. Reuse register for post operations
 4. Data sharing through shared local memory
