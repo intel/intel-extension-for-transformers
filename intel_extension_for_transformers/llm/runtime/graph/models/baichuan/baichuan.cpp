@@ -22,6 +22,7 @@
 #include <exception>
 #include <fstream>
 #include <iterator>
+#include <iostream>
 #include <memory>
 #include <random>
 #include <string>
@@ -92,7 +93,9 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
-  ne_set_name(embd, "embd");
+  std::cout << "N  " << N << std::endl;
+  std::cout << "*tokens  " << *tokens << std::endl;
+  std::cout << "ne_element_size(embd) " << ne_element_size(embd) << std::endl;
   memcpy(embd->data, tokens, N * ne_element_size(embd));
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
@@ -108,11 +111,12 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
     struct ne_tensor* residual = inpL;
 
     // LayerNorm
-    cur = ne_norm(ctx0, inpL);
+    cur = ne_rms_norm(ctx0, inpL);
     cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
     // SelfAttention
     {
       // Linear::forward compute QKV
+      //printf("__line__=%d, pass\n", __LINE__);
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
 
       ne_tensor* query_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
@@ -135,13 +139,13 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
             ne_view_3d(ctx0, model.layers[il].k_cache, head_size, qlen, num_attention_heads,
                        model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
                        n_past * head_size * ne_element_size(model.layers[il].k_cache));  // [kv_heads, qlen, head_size]
-        ne_set_name(k_cache_view, "k_cache_view");
+        
 
         struct ne_tensor* v_cache_view =
             ne_view_3d(ctx0, model.layers[il].v_cache, qlen, head_size, num_attention_heads,
                        model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
                        n_past * ne_element_size(model.layers[il].v_cache));  // [kv_heads, head_size, qlen]
-        ne_set_name(v_cache_view, "v_cache_view");
+
 
         ne_build_forward_expand(&gf, ne_cpy(ctx0, key_layer, k_cache_view));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
@@ -155,12 +159,14 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
                                0);  // [kv_heads, head_size, klen]
 
       // attention
+      //printf("__line__=%d, pass\n", __LINE__);
       struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [heads, qlen, klen]
       if (n_past == 0) {
         attn_scores = ne_diag_mask_inf_inplace(ctx0, attn_scores, n_past);
       }
       ne_tensor* attn_probs = ne_soft_max_inplace(ctx0, attn_scores);  // [heads, qlen, klen]
 
+      //printf("__line__=%d, pass\n", __LINE__);
       ne_tensor* context_layer = ne_mul_mat(ctx0, value_layer, attn_probs);  // [heads, qlen, head_size]
       context_layer = ne_cont(ctx0, ne_permute(ctx0, context_layer, 0, 2, 1, 3));
       context_layer = ne_reshape_2d(ctx0, context_layer, hidden_size, qlen);
@@ -173,14 +179,17 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
     residual = cur;
 
     // post_attention_layernorm
-    struct ne_tensor* hidden_states = ne_norm(ctx0, cur);
+    struct ne_tensor* hidden_states = ne_rms_norm(ctx0, cur);
     hidden_states = ne_mul(ctx0, hidden_states, model.layers[il].norm[1]);
 
     // mlp.forward
+    //printf("__line__=%d, pass\n", __LINE__);
     struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
     gate = ne_silu(ctx0, gate);
+    //printf("__line__=%d, pass\n", __LINE__);
     struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[1], hidden_states);
     struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
+    //printf("__line__=%d, pass\n", __LINE__);
     mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[2], mlp_output);
 
     inpL = ne_add_inplace(ctx0, mlp_output, residual);
@@ -191,17 +200,26 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   struct ne_tensor* embeddings = NULL;
   // norm
   {
-    inpL = ne_norm(ctx0, inpL);
+    inpL = ne_rms_norm(ctx0, inpL);
     inpL = ne_mul(ctx0, inpL, model.others[1]);
   }
 
   lctx.use_buf(ctx0, -1);
+  //std::cout << "embd->ne[0] = " << embd->ne[0] << std::endl;
   if (embd->ne[0] > 1) {
+  // std::cout << "hidden_size = " << hidden_size << std::endl;
+  // std::cout << "(embd->ne[0] - 1) = " << (embd->ne[0] - 1) << std::endl;
+  // std::cout << "ne_element_size(inpL) = " << ne_element_size(inpL) << std::endl;
+  // std::cout << "&inpL = " << &inpL << std::endl;
     inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
   }
+  
   // lm_head
+  //printf("__line__=%d, pass\n", __LINE__);
   inpL = ne_mul_mat(ctx0, model.others[2], inpL);
 
+
+  //printf("__line__=%d, pass\n", __LINE__);
   ne_build_forward_expand(&gf, inpL);
   ne_graph_compute(ctx0, &gf);
 
