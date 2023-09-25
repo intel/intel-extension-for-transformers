@@ -41,7 +41,7 @@ tts:
     args:
         device: "cpu"
         voice: "default"
-        stream_mode: false
+        stream_mode: true
         output_audio_path: "./output_audio.wav"
 
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
