@@ -17,7 +17,7 @@
 import os
 from transformers import AutoConfig
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
-
+import torch
 model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 
 class Model:
@@ -92,8 +92,10 @@ class Model:
         # TODO support streamer
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
-        
-        out = self.model.generate(input_ids = input_ids, sentence_mode = sentence_mode)
+        # TODO support multi batch
+        out = self.model.generate(input_ids = input_ids.tolist()[0], sentence_mode = sentence_mode)
+        if streamer:
+            streamer.put(torch.tensor([out]))
         return out
 
     def is_token_end(self):

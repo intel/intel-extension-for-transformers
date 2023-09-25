@@ -182,7 +182,7 @@ std::vector<int> Model::generate(const std::vector<int>& input_ids, bool sentenc
   output_ids.reserve(max_length);
   printf("input ids:\n");
   for (auto item : input_ids) {
-    print("--- %d\n", item);
+    printf("--- %d\n", item);
   }
   while (output_ids.size() < n_remain) {
     for (auto item : curr_input_ids) {
