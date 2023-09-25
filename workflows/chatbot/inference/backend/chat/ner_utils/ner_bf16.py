@@ -54,8 +54,16 @@ print(f"Successfully loaded the bf16 model {model_name} into memory")
 
 
 def check_query_time(query, cur_time):
-    prompt = """Please determine the precise time mentioned in the user's query. Your response should consist only of an accurate time in the format 'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' If the user query does not include any time reference, please reply with 'None'.
-    \n\n###Current Time:\n{}\n\nUser Query:\n{}\n\nResponse:\n""".format(cur_time, query)
+    # prompt = """Please determine the precise time mentioned in the user's query. Your response should consist only of an accurate time in the format 'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' If the user query does not include any time reference, please reply with 'None'.
+    # \n\n###Current Time:\n{}\n\nUser Query:\n{}\n\nResponse:\n""".format(cur_time, query)
+    prompt = """### Instruction: Please thoughtfully identify the precise time range mentioned in the user's query based on the given current time. The response should follows the following requirements. \n
+    ### Requirements:
+    1. Your response should consist only of an accurate time in the format 'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' 
+    2. Please carefully check the accuracy of the identifiction results. 
+    3. The phrase "in the last month" means "in the thirty or so days up to and including today".\n
+    ### Current Time:\n{}\n
+    ### User Query:\n{}\n
+    ### Response:\n""".format(cur_time, query)
 
     return prompt
 
@@ -112,8 +120,8 @@ def inference(query):
     # inference for bf16
     generate_kwargs = dict(
         max_new_tokens=32,
-        temperature=0.4,
-        top_k=1,
+        temperature=0.01,
+        top_k=3,
         repetition_penalty=1.1,
     )
 
