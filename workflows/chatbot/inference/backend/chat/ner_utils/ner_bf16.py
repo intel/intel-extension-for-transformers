@@ -133,7 +133,7 @@ def inference(query):
         except Exception as e:
             raise Exception(e)
 
-    thread = Thread(target=generate_output, kwargs=generate_kwargs)
+    thread = Thread(target=generate_output)
     thread.start()
     text = ""
     for new_text in streamer:

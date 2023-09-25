@@ -1739,7 +1739,10 @@ async def handle_ai_photos_chat_to_image(request: Request):
     logger.info(f'<chatWithImage> generating chat to image for user {user_id} with query: {query}')
 
     try:
+        start_time = time.time()
         result = inference_ner(query)
+        end_time = time.time()
+        print("<chatWithImage> NER inference cost {} seconds.".format(end_time - start_time))
     except Exception as e:
         logger.error("<chatWithImage> "+str(e))
         raise Exception(e)
