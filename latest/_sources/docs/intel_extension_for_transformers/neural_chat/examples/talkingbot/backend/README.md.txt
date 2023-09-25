@@ -27,12 +27,15 @@ Install the following Python dependencies using Conda:
 ```shell
 conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y
 conda install jemalloc gperftools -c conda-forge -y
+conda install -q -y pyg -c pyg
+conda install -q -y pytorch cudatoolkit=11.3 -c pytorch
 ```
 
 Install other dependencies using pip:
 
 ```bash
 pip install -r ../../../requirements.txt
+pip install -U torch torchaudio --no-cache-dir
 ```
 
 # Configure the voicebot.yaml
