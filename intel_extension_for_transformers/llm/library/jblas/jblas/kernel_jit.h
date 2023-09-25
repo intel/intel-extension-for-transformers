@@ -252,7 +252,7 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
   static int constexpr VBytes = 32;
   JitMemcpy2DAvx2(
       int unroll_row,
-      std::vector<kernel::jit_injector::eltwise_injector>& injectors) {
+      std::vector<kernel::jit_injector::eltwise_injector> injectors) {
     generate(unroll_row, injectors);
   }
 
@@ -266,7 +266,7 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       static_assert(std::is_same<_SRC_T, float>::value &&
                     std::is_same<_DST_T, float>::value);
     static JitMemcpy2DAvx2 instance_withops(1, p);
-    // static JitMemcpy2DAvx2 instance4_withops(4, p);
+    static JitMemcpy2DAvx2 instance2_withops(2, p);
     static_assert(sizeof(_SRC_T) ==
                   sizeof(_DST_T));  // TODO SRC_T DST_T conversion copy
     auto param = params{(void*)srcptr,
@@ -276,16 +276,16 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
                         int(col * sizeof(_SRC_T)),
                         int(srcstep * sizeof(_SRC_T)),
                         int(dststep * sizeof(_DST_T))};
-    int row4 = 0;  // utils::padto_le(row, 4);
+    int row2 = utils::padto_le(row, 2);
     int irow = 0;
-    if (row4) {
-      param.row = row4;
-      // instance4_withops.mKernel(&param);
+    if (row2) {
+      param.row = row2;
+      instance2_withops.mKernel(&param);
     }
-    int rowtail = row - row4;
+    int rowtail = row - row2;
     if (rowtail) {
-      param.srcptr = (char*)param.srcptr + row4 * srcstep * sizeof(_SRC_T);
-      param.dstptr = (char*)param.dstptr + row4 * dststep * sizeof(_DST_T);
+      param.srcptr = (char*)param.srcptr + row2 * srcstep * sizeof(_SRC_T);
+      param.dstptr = (char*)param.dstptr + row2 * dststep * sizeof(_DST_T);
       param.row = rowtail;
       instance_withops.mKernel(&param);
     }
@@ -296,7 +296,7 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
   void generate(int unrollk,
                 std::vector<kernel::jit_injector::eltwise_injector>&
                     injectors) {  // unrollK=[1,2,4]
-    if (unrollk != 1 && unrollk != 2 && unrollk != 4) {
+    if (unrollk != 1 && unrollk != 2) {
       assert(false);
       return;
     }
@@ -334,10 +334,6 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
 
       load32(reg_colsize, ptr[parambase + OFFSET(col)]);
       load32(reg_rowsize, ptr[parambase + OFFSET(row)]);
-      if (unrollk == 4) {
-        imul(reg_tmp1, reg_srcstride, 3);
-        imul(reg_tmp2, reg_dststride, 3);
-      }
       int const ColUnroll = 4;
 
       for (int i = 0; i < unrollk * ColUnroll; i++) used_ymm_idx.insert(i);
@@ -362,23 +358,13 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       if (unrollk > 1) {
         for (int j = 0; j < unrollk; j++) {
           for (int i = 0; i < ColUnroll; i++) {
-            if (j == 3) {
-              vmovups(Xbyak::Ymm(i + j * ColUnroll),
-                      ptr[reg_tmpsrc + reg_tmp1 + i * VBytes]);
-              for (int k = 0; k < injectors.size(); k++)
-                injectors[k].vector_compute(Xbyak::Ymm(i + j * ColUnroll),
-                                            k * 3 * sizeof(float));
-              vmovups(ptr[reg_tmpdst + reg_tmp2 + i * VBytes],
-                      Xbyak::Ymm(i + j * ColUnroll));
-            } else {
-              vmovups(Xbyak::Ymm(i + j * ColUnroll),
-                      ptr[reg_tmpsrc + reg_srcstride * j + i * VBytes]);
-              for (int k = 0; k < injectors.size(); k++)
-                injectors[k].vector_compute(Xbyak::Ymm(i + j * ColUnroll),
-                                            k * 3 * sizeof(float));
-              vmovups(ptr[reg_tmpdst + reg_dststride * j + i * VBytes],
-                      Xbyak::Ymm(i + j * ColUnroll));
-            }
+            vmovups(Xbyak::Ymm(i + j * ColUnroll),
+                    ptr[reg_tmpsrc + reg_srcstride * j + i * VBytes]);
+            for (int k = 0; k < injectors.size(); k++)
+              injectors[k].vector_compute(Xbyak::Ymm(i + j * ColUnroll),
+                                          k * 3 * sizeof(float));
+            vmovups(ptr[reg_tmpdst + reg_dststride * j + i * VBytes],
+                    Xbyak::Ymm(i + j * ColUnroll));
           }
         }
       } else {
@@ -395,27 +381,19 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       add(reg_itercol, ColUnroll * VBytes);
       jmp(".colend", T_NEAR);
       L(".maskproc");
-      push(reg_tmp);
-      mov(reg_tmp, reg_colsize);
-      sub(reg_tmp, reg_itercol);
-      cmp(reg_tmp, VBytes);
+      mov(reg_tmp2, reg_colsize);
+      sub(reg_tmp2, reg_itercol);
+      cmp(reg_tmp2, VBytes);
       jb(".maskflag", T_NEAR);
-      cmp(reg_tmp, 0);
+      cmp(reg_tmp2, 0);
       jl(".maskend", T_NEAR);
       // tail=8
       if (unrollk > 1) {
         for (int j = 0; j < unrollk; j++) {
-          if (j == 3) {
-            vmovups(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_tmp1]);
-            for (int k = 0; k < injectors.size(); k++)
-              injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
-            vmovups(ptr[reg_tmpdst + reg_tmp2], Xbyak::Ymm(0));
-          } else {
-            vmovups(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_srcstride * j]);
-            for (int k = 0; k < injectors.size(); k++)
-              injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
-            vmovups(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0));
-          }
+          vmovups(Xbyak::Ymm(0), ptr[reg_tmpsrc + reg_srcstride * j]);
+          for (int k = 0; k < injectors.size(); k++)
+            injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
+          vmovups(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0));
         }
       } else {
         vmovups(Xbyak::Ymm(0), ptr[reg_tmpsrc]);
@@ -426,30 +404,20 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
       jl(".maskend", T_NEAR);
       L(".maskflag");
       // 0<tail<8
-      push(reg_ret);     // use it in temporary
-      mov(reg_ret.cvt32(), 1);
-      shlx(reg_ret.cvt32(), reg_ret.cvt32(), reg_tmp.cvt32());
-      sub(reg_ret.cvt32(), 1);
-      vmovd(Xbyak::Xmm(1), reg_ret.cvt32());
+      mov(reg_tmp1.cvt32(), 1);
+      shlx(reg_tmp1.cvt32(), reg_tmp1.cvt32(), reg_tmp2.cvt32());
+      sub(reg_tmp1.cvt32(), 1);
+      vmovd(Xbyak::Xmm(1), reg_tmp1.cvt32());
       vpbroadcastd(Xbyak::Ymm(1), Xbyak::Xmm(1));
       vpsllvd(Xbyak::Ymm(1), Xbyak::Ymm(1), ptr[rip + data_label]);
       if (unrollk > 1) {
         for (int j = 0; j < unrollk; j++) {
-          if (j == 3) {
-            vpmaskmovd(Xbyak::Ymm(0), Xbyak::Ymm(1),
-                       ptr[reg_tmpsrc + reg_tmp1]);
-            for (int k = 0; k < injectors.size(); k++)
-              injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
-            vpmaskmovd(ptr[reg_tmpdst + reg_tmp2], Xbyak::Ymm(0),
-                       Xbyak::Ymm(1));
-          } else {
-            vpmaskmovd(Xbyak::Ymm(0), Xbyak::Ymm(1),
-                       ptr[reg_tmpsrc + reg_srcstride * j]);
-            for (int k = 0; k < injectors.size(); k++)
-              injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
-            vpmaskmovd(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0),
-                       Xbyak::Ymm(1));
-          }
+          vpmaskmovd(Xbyak::Ymm(0), Xbyak::Ymm(1),
+                     ptr[reg_tmpsrc + reg_srcstride * j]);
+          for (int k = 0; k < injectors.size(); k++)
+            injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
+          vpmaskmovd(ptr[reg_tmpdst + reg_dststride * j], Xbyak::Ymm(0),
+                     Xbyak::Ymm(1));
         }
       } else {
         vpmaskmovd(Xbyak::Ymm(0), Xbyak::Ymm(1), ptr[reg_tmpsrc]);
@@ -457,9 +425,7 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
           injectors[k].vector_compute(Xbyak::Ymm(0), k * 3 * sizeof(float));
         vpmaskmovd(ptr[reg_tmpdst], Xbyak::Ymm(0), Xbyak::Ymm(1));
       }
-      pop(reg_ret);
       L(".maskend");
-      pop(reg_tmp);
       add(reg_tmpsrc, VBytes);
       add(reg_tmpdst, VBytes);
       add(reg_itercol, VBytes);

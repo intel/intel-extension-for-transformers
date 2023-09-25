@@ -54,7 +54,7 @@ class eltwise_injector {
                         const Xbyak::Reg64& table_reg) {
     h = ptr;
     p_table = table_reg;
-    assert(used_ymm_idx.size() <= 26);
+    assert(used_ymm_idx.size() <= 10);
     assign_ymm(used_ymm_idx, &ymm_mask);
     assign_ymm(used_ymm_idx, &ymm_aux0);
     assign_ymm(used_ymm_idx, &ymm_aux1);
@@ -734,7 +734,7 @@ class eltwise_injector {
     }
   }
   void assign_ymm(const std::set<int>& used_ymm_idx, Ymm* ymm) {
-    constexpr int max_ymm_idx = 32;
+    constexpr int max_ymm_idx = 16;
     for (int idx = 0; idx < max_ymm_idx; idx++) {
       if (used_ymm_idx.count(idx) == 0 && assign_vmm_idx.count(idx) == 0) {
         *ymm = Ymm(idx);
