@@ -65,17 +65,17 @@ class Model:
 
         # 1. convert model
         fp32_bin = "ne_{}_f32.bin".format(model_type)
-        # convert_model(model_name, fp32_bin, "f32")
+        convert_model(model_name, fp32_bin, "f32")
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
-        # self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
+        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
         
         self.model_type = model_type
         self.bin_file = quant_bin
         
         # clean
-        # os.remove(fp32_bin)
+        os.remove(fp32_bin)
 
 
     def init_from_bin(self, model_name, model_path, **kwargs):
