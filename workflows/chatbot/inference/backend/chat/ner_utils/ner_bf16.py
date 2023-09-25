@@ -52,6 +52,7 @@ tok.eos_token_id = model.generation_config.eos_token_id
 tok.bos_token_id = model.generation_config.bos_token_id
 print(f"Successfully loaded the bf16 model {model_name} into memory")
 
+month_date_list = [31, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30]
 
 def check_query_time(query, cur_time):
     # prompt = """Please determine the precise time mentioned in the user's query. Your response should consist only of an accurate time in the format 'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' If the user query does not include any time reference, please reply with 'None'.
@@ -66,7 +67,6 @@ def check_query_time(query, cur_time):
     ### Response:\n""".format(cur_time, query)
 
     return prompt
-
 
 def enforce_stop_tokens(text: str) -> str:
     """Cut off the text as soon as any stop words occur."""
@@ -103,7 +103,6 @@ def tokenization(prompt, tokenizer, device):
 
 def prepare_inputs(inputs, device):
     return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
-
 
 def inference(query):
     SHA_TZ = timezone(
@@ -197,9 +196,15 @@ def inference(query):
         from_time = mentioned_time['period'][2*sub]
         to_time = mentioned_time['period'][2*sub+1]
         result_period.append({"from": from_time, "to": to_time})
+    if 'last month' in query:
+        to_time = datetime.datetime.today()
+        now_month = to_time.month
+        from_time = to_time - timedelta(days=month_date_list[now_month-1])
+        result_period = [{"from": from_time, "to": to_time}]
     result = {"period": result_period, "time": mentioned_time['time'], 'location': location, "name": name, "organization": organization}
 
     return result
+
 
 # CUDA_VISIBLE_DEVICES=0 python test.py
 if __name__ == "__main__":
