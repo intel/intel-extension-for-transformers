@@ -10,7 +10,7 @@ concurrency:
 jobs:
   inference:
     name: inference test
-    runs-on: itrex-node
+    runs-on: lms-lab
     steps:
       - name: Checkout
         uses: actions/checkout@v2
