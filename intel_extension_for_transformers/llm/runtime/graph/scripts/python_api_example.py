@@ -16,10 +16,10 @@
 # limitations under the License.
 
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
-model_name = "/mnt/disk1/data2/zhenweil/models/chatglm2-6b"
+model_name = "mosaicml/mpt-7b"
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8")
 
-model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
+model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True)
 
-prompt = "你好"
+prompt = "Once upon a time, a little girl"
 print(model.generate(prompt, max_new_tokens=30))
