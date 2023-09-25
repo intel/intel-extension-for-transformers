@@ -1003,7 +1003,17 @@ def process_single_image(img_id, img_path, user_id):
     address = get_address_from_gps(latitude, longitude, api_key)
     if address:
         logger.info(f'[background - single] Image address: {address}')
-        update_image_attr(image={"image_id": img_id, "address": address}, attr='address')
+        address_components = []
+        if address.get('country', None):
+            address_components.append(address['country'])
+        if address.get('administrative_area_level_1', None):
+            address_components.append(address['administrative_area_level_1'])
+        if address.get('locality', None):
+            address_components.append(address['locality'])
+        if address.get('sublocality', None):
+            address_components.append(address['sublocality'])
+        formatted_address = ', '.join(address_components)
+        update_image_attr(image={"image_id": img_id, "address": formatted_address}, attr='address')
     else:
         address = None
         logger.info(f'[background - single] Can not get address from image.')
