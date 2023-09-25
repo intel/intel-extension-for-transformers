@@ -1,4 +1,4 @@
-transformers>=4.32.0
+transformers==4.32.1
 peft
 fschat
 num2words
