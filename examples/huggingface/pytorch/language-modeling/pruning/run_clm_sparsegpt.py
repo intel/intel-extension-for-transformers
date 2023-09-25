@@ -28,25 +28,22 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 import logging
 from datasets import load_dataset
-from huggingface_hub import Repository, create_repo
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 from torch.nn.functional import pad
 
-import transformers
 from transformers import (
     CONFIG_MAPPING,
     MODEL_MAPPING,
     AutoConfig,
-    AutoModelForCausalLM,
-    OPTForCausalLM,
+    # AutoModelForCausalLM,
     AutoTokenizer,
     SchedulerType,
     default_data_collator,
-    get_scheduler,
 )
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM
 
-from transformers.utils import check_min_version, get_full_repo_name, send_example_telemetry
+from transformers.utils import check_min_version, send_example_telemetry
 from transformers.utils.versions import require_version
 from timers import CPUTimer, GPUTimer
 from intel_extension_for_transformers.transformers.pruner import (WeightPruningConfig,
@@ -220,13 +217,13 @@ def parse_args():
     parser.add_argument(
         "--per_device_train_batch_size",
         type=int,
-        default=8,
+        default=1,
         help="Batch size (per device) for the training dataloader.",
     )
     parser.add_argument(
         "--per_device_eval_batch_size",
         type=int,
-        default=8,
+        default=16,
         help="Batch size (per device) for the evaluation dataloader.",
     )
     parser.add_argument(
@@ -271,7 +268,7 @@ def parse_args():
     parser.add_argument(
         "--block_size",
         type=int,
-        default=None,
+        default=512,
         help=(
             "Optional input sequence length after tokenization. The training dataset will be truncated in block of"
             " this size for training. Default to the model max input length for single sentence inputs (take into"
@@ -330,16 +327,21 @@ def parse_args():
             "If passed, LLM loading time and RAM consumption will be benefited."
         ),
     )
-    # pruning config
+    parser.add_argument(
+        "--trust_remote_code", default=True,
+        help="Transformers parameter: use the external repo"
+    )
+    
+     ### DDP mode config
+    parser.add_argument(
+        "--local_rank",
+        type=int, default=-1,
+        help="Automatic DDP Multi-GPU argument, do not modify")
+    
+    # Pruning config
     parser.add_argument(
         "--do_prune", action="store_true",
         help="Whether or not to prune the model"
-    )
-    parser.add_argument(
-        "--max_pruning_steps",
-        type=int,
-        default=None,
-        help="Total number of pruning steps to perform. If provided",
     )
     parser.add_argument(
         "--pruning_pattern",
@@ -348,13 +350,8 @@ def parse_args():
     )
     parser.add_argument(
         "--target_sparsity",
-        type=float, default=0.8,
+        type=float, default=0.5,
         help="Target sparsity of the model."
-    )
-    parser.add_argument(
-        "--pruning_frequency",
-        type=int, default=-1,
-        help="Sparse step frequency for iterative pruning, default to a quarter of pruning steps."
     )
     parser.add_argument(
         "--auto_slim", action="store_true",
@@ -366,22 +363,23 @@ def parse_args():
     )
     parser.add_argument(
         "--max_length",
-        type=int, default=2048,
+        type=int, default=512,
         help="Maximum data length the model can receive."
+    )
+    
+    # Evaluation config
+    parser.add_argument("--tasks", default=["lambada_openai"],
+        help="Usually chosen with ['lambada_openai','hellaswag','winogrande','piqa'"
     )
     parser.add_argument("--eval_fp16", action='store_true',
         help=" fp16",
     )
-    parser.add_argument("--tasks", default=["lambada_openai"],
-        help="Usually chosen with ['lambada_openai','hellaswag','winogrande','piqa'")
-    parser.add_argument(
-        "--trust_remote_code", default=True,
-        help="Transformers parameter: use the external repo")
-    ### DDP mode config
-    parser.add_argument(
-        "--local_rank",
-        type=int, default=-1,
-        help="Automatic DDP Multi-GPU argument, do not modify")
+    
+    # parser.add_argument(
+    #     "--cuda_eval",
+    #     type=int, default=-1,
+    #     help="Automatic DDP Multi-GPU argument, do not modify")
+    
     
     args = parser.parse_args()
         
@@ -661,9 +659,13 @@ def main():
             output_dir += "/before_slim"
         model.save_pretrained(output_dir)
         tokenizer.save_pretrained(output_dir)
+        logger.info(f"The model has been exported to {output_dir}")
         
     if device != 'cpu':
         model = model.to(device)
+        logger.info(f"*****  Evaluation in GPU mode.  *****")
+    else:
+        logger.info(f"*****  Evaluation in CPU mode.  *****")
     model.eval()
     if args.evaluation_dataset_name != None:
         dataset_eval = load_dataset(
@@ -718,4 +720,5 @@ def main():
     
 if __name__ == "__main__":
     main()
+
 
