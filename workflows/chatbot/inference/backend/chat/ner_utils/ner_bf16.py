@@ -200,7 +200,7 @@ def inference(query):
         to_time = datetime.datetime.today()
         now_month = to_time.month
         from_time = to_time - timedelta(days=month_date_list[now_month-1])
-        result_period = [{"from": from_time, "to": to_time}]
+        result_period = [{"from": str(from_time)[:10], "to": str(to_time)[:10]}]
     result = {"period": result_period, "time": mentioned_time['time'], 'location': location, "name": name, "organization": organization}
 
     return result
