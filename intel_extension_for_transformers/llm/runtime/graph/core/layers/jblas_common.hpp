@@ -63,8 +63,6 @@ static bool hasISA(const jblas::gemm::GemmCoreType* set, size_t len) {
         support |= _cd->AVX512F();
         break;
       case jblas::gemm::GemmCoreType::AVX2_4X24:
-        support |= _cd->AVX2();
-        break;
       case jblas::gemm::GemmCoreType::AVX2_2X48:
         support |= _cd->AVX2();
         break;
@@ -123,8 +121,10 @@ using GcCompBf16 = jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16;
 using GcCompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 using GcCompInt8 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI;
 
-constexpr jblas::gemm::GemmCoreType GcCompInt8KBlockSet[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK,
-                                                             jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK};
+constexpr jblas::gemm::GemmCoreType GcCompInt8KBlockSet[] = {
+    jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+    jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48,
+    jblas::gemm::GemmCoreType::AVX2_2X48};
 
 constexpr jblas::gemm::GemmCoreType GcCompInt8Set[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_SS,
                                                        jblas::gemm::GemmCoreType::AVX512_VNNI_8x48};
@@ -145,7 +145,16 @@ class Silu {
     float alpha = -1.f;
     typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
     static SiluKernel ker;
+    float tmp[M * N];
+    for (int i = 0; i < M; i++) {
+      ne_vec_silu_f32(N, tmp + i * N, cacheptr + i * cachestep);
+    }
     auto ret = ker.forward(cacheptr, cachestep, M_offset, N_offset, M, N, param);
+    for (int i = 0; i < M; i++) {
+      float* res = _param.C + M_offset * _param.ldc + N_offset + i * _param.ldc;
+      for (int j = 0; j < N; j++)
+        if (fabs(res[j] - tmp[i * N + j]) > 0.1) printf("%f,%f\n", res[j], tmp[i * N + j]);
+    }
     return JblasSuccess;
   }
 };
@@ -447,6 +456,96 @@ class FFNFusedInterface {
               cb.mL2Cache};
           mLauncher.launch(_config,
                            {_param.Seq, _param.FOut, _param.FMid, _param.paramA2, _param.paramW2, _param.param2, NULL});
+        }
+      }
+    }
+    return JblasSuccess;
+  }
+
+ protected:
+  _Launcher_T mLauncher;
+  _SiluLauncher_T mActLauncher;
+};
+
+template <class _SiluLauncher_T, class _Launcher_T>
+class FPFFNFusedInterface {
+ public:
+  static_assert(std::is_same<typename _Launcher_T::AParam, typename _SiluLauncher_T::AParam>::value,
+                "Prologue A param of the 2 Launcher (w/wo SILU) should be the same.");
+  struct Arguments {
+    const int Seq, Fin, FMid, FOut;
+    const typename _Launcher_T::AParam paramA;
+    const typename _SiluLauncher_T::BParam paramW1;
+    const typename _Launcher_T::BParam paramW2, paramW3;
+    const typename _SiluLauncher_T::EpiParam param1;
+    const typename _Launcher_T::EpiParam param2, param3;
+  };
+  using Config = typename _Launcher_T::ParallelConfig;
+  using ActConfig = typename _SiluLauncher_T::ParallelConfig;
+  using ActivationType = typename _Launcher_T::PrologueA;
+  using WeightType = typename _Launcher_T::PrologueB;
+  using GemmCore = typename _Launcher_T::GemmCore;
+  using LArguments = typename _Launcher_T::Param;
+  using CParam = typename _Launcher_T::EpiParam;
+  using Parallel = jblas::utils::parallel::Parallel2DGemmKBlockFixed<GemmCore>;
+  ActivationType* getActivationPtr() { return &mLauncher.mProA; }
+  // forward=packB+compute
+  JBLAS_CODE compute(const Arguments& _param) {
+    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    if (bptr == nullptr) {
+      return JblasInvalidParam;
+    }
+    // dynamic quantization: Seq*Fin
+    auto cb = jblas::utils::CpuBase();
+
+    Parallel _paral = Parallel();   // w1&w3 from Seq* Fin=>FMid
+    Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout
+    _paral.update(_param.Seq, _param.FMid, _param.Fin, bptr->mBlockSize, cb.mNumThreads);
+    _paral2.update(_param.Seq, _param.FOut, _param.FMid, bptr->mBlockSize, cb.mNumThreads);
+
+    omp_set_num_threads(cb.mNumThreads);
+#pragma omp parallel
+    {
+      int tidx = omp_get_thread_num();
+      {
+        int colidx, rowidx, rowsize, colsize;
+        _paral.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+        if (rowsize > 0 && colsize > 0) {
+          ActConfig _actconfig{
+              rowidx, colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(), cb.mL2Cache};
+          Config _config{rowidx,     colidx, rowsize, colsize, _paral.getMStep(), _paral.getNStep(), _paral.getKStep(),
+                         cb.mL2Cache};
+          mActLauncher.launch(
+              _actconfig, {_param.Seq, _param.FMid, _param.Fin, _param.paramA, _param.paramW1, _param.param1, NULL});
+          mLauncher.launch(_config,
+                           {_param.Seq, _param.FMid, _param.Fin, _param.paramA, _param.paramW3, _param.param3, NULL});
+          int row_r = jblas::utils::remainsize(rowidx, _paral.mRows, rowsize);
+          int col_r = jblas::utils::remainsize(colidx, _paral.mCols, colsize);
+
+          // TODO(Yu): replace the naive inplace eltwise mul
+          for (int i = 0; i < row_r; i++) {
+            for (int j = 0; j < col_r; j++) {
+              _param.param1.C[(rowidx + i) * _param.param1.ldc + colidx + j] *=
+                  _param.param3.C[(rowidx + i) * _param.param3.ldc + colidx + j];
+            }
+          }
+        }
+      }
+#pragma omp barrier
+      {
+        int colidx, rowidx, rowsize, colsize;
+        _paral2.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
+        if (rowsize > 0 && colsize > 0) {
+          Config _config{
+              rowidx,     colidx, rowsize, colsize, _paral2.getMStep(), _paral2.getNStep(), _paral2.getKStep(),
+              cb.mL2Cache};
+          mLauncher.launch(_config, {_param.Seq,
+                                     _param.FOut,
+                                     _param.FMid,
+                                     {_param.param1.C, _param.param1.ldc},
+                                     _param.paramW2,
+                                     _param.param2,
+                                     NULL});
         }
       }
     }
@@ -847,9 +946,13 @@ using DefaultGemmFp32 =
                                                              jblas::prologue::gemm::ActivationBase, ProB, Epi>;
 using AddGeluGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
+using GemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+using SiluGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::SiluFp32>;
 
 using AddGeluGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
+using GemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+using SiluGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::SiluFp32>;
 }  // namespace avx512f
 namespace avx2 {
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
@@ -858,9 +961,13 @@ using DefaultGemmFp32 =
                                                              jblas::prologue::gemm::ActivationBase, ProB, Epi>;
 using AddGeluGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::AddFp32>;
+using GemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+using SiluGemmS8KBlock = DefaultGemmFp32<WeiS8Fp32, custom::epilogue::SiluFp32>;
 
 using AddGeluGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::AddFp32>;
+using GemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
+using SiluGemmS4KBlock = DefaultGemmFp32<WeiS4ClipFp32, custom::epilogue::SiluFp32>;
 }  // namespace avx2
 namespace amx_bf16 {
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
