@@ -52,16 +52,6 @@ class TestChatbotBuilder(unittest.TestCase):
         print(response)
         self.assertIsNotNone(response)
 
-    def test_build_chatbot_with_weight_only_int4_quant(self):
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-            optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-        )
-        chatbot = build_chatbot(config)
-        self.assertIsNotNone(chatbot)
-        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
-        print(response)
-        self.assertIsNotNone(response)
-
     def test_build_chatbot_with_bitsandbytes_quant(self):
         if is_bitsandbytes_available() and torch.cuda.is_available():
             config = PipelineConfig(

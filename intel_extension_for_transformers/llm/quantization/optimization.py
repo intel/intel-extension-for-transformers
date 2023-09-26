@@ -36,21 +36,33 @@ class Optimization:
         if isinstance(config, WeightOnlyQuantConfig):
             print("Applying Weight Only Quantization.")
             if config.weight_dtype == "int4":
-                optimized_model = AutoModel.from_pretrained(model.name, quantization_config=config,
+                optimized_model = AutoModel.from_pretrained(model.config._name_or_path, quantization_config=config,
                                                   use_llm_runtime=True, trust_remote_code=True)
             else:
                 from neural_compressor import PostTrainingQuantConfig, quantization
+                if config.weight_dtype is None:
+                    config.weight_dtype = 'int4_fullrange'
+                bits = 1  # only for int8
+                if config.weight_dtype == "int8":
+                    dtype = "int8"
+                    bits = 8
+                elif "int4" in config.weight_dtype:
+                    dtype = "int4"
+                else:
+                    dtype = config.weight_dtype
                 op_type_dict = {
                     '.*':{ 	# re.match
                         "weight": {
-                            'bits': config.bits, # 1-8 bits
+                            'bits': bits, # 1-8 bits
+                            "dtype":dtype,
                             'group_size': config.group_size,  # -1 (per-channel)
                             'scheme': config.scheme, # sym/asym
                             'algorithm': config.algorithm, # RTN/AWQ/TEQ
                         },
                     },
                 }
-                recipes = {"rtn_args": {"enable_full_range": config.enable_full_range}}
+                recipes = {"enable_full_range": True if "fullrange" in config.weight_dtype else False,
+                        "enable_mse_search": config.mse_range}
                 conf = PostTrainingQuantConfig(
                     approach='weight_only',
                     op_type_dict=op_type_dict,
