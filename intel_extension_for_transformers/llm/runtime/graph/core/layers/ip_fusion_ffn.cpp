@@ -122,6 +122,36 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(float* activation, SS4Fp3
         delete quanA2;
       }
     }
+  } else if (w1ptr->mCoreType == GcCompFp32::TYPE) {
+    if (_cd->AVX512F()) {
+      using GemmKernel = custom::wrapper::kblock::avx512f::GemmS4KBlock;
+      using SiluGemmKernel = custom::wrapper::kblock::avx512f::SiluGemmS4KBlock;
+      using FusedInter = custom::wrapper::transformer::FPFFNFusedInterface<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      GemmKernel::AParam paramA = {activation, lda};
+      SiluGemmKernel::BParam paramW1 = {w1ptr};
+      GemmKernel::BParam paramW2 = {w2ptr};
+      GemmKernel::BParam paramW3 = {w3ptr};
+      SiluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo, NULL};
+      GemmKernel::EpiParam param3 = {tmp2, ldtmp2, NULL};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramW1, paramW2, paramW3, param1, param2, param3});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = custom::wrapper::kblock::avx2::GemmS4KBlock;
+      using SiluGemmKernel = custom::wrapper::kblock::avx2::SiluGemmS4KBlock;
+      using FusedInter = custom::wrapper::transformer::FPFFNFusedInterface<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1ptr, w2ptr, w3ptr, tmp1, ldtmp1, output, ldo, NULL,
+                            tmp2, ldtmp2, NULL});
+    }
   }
   return ret;
 }

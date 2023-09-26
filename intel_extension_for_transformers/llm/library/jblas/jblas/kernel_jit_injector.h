@@ -101,6 +101,12 @@ class eltwise_injector {
       case GELU:
         gelu_compute_vector_fwd(ymm_src);
         break;
+      case LOW_PRECISION_EXP:
+        low_precision_exp_compute_vector_fwd(ymm_src);
+        break;
+      case SWISH:
+        swish_compute_vector_fwd(ymm_src, const_p_offset);
+        break;
       default:
         assert(false);
         break;
@@ -119,11 +125,14 @@ class eltwise_injector {
 
  private:
   void reigster_table_entries() {
-    static const table_t common_values{{zero, {0x00000000, true}},      {half, {0x3f000000, true}},
-                                       {one, {0x3f800000, true}},       {two, {0x40000000, true}},
-                                       {minus_one, {0xbf800000, true}}, {minus_two, {0xc0000000, true}},
-                                       {ln2f, {0x3f317218, true}},      {positive_mask, {0x7fffffff, true}},
-                                       {sign_mask, {0x80000000, true}}, {exponent_bias, {0x0000007f, true}}};
+    static const table_t common_values{
+        {zero, {0x00000000, true}},          {half, {0x3f000000, true}},
+        {one, {0x3f800000, true}},           {two, {0x40000000, true}},
+        {minus_one, {0xbf800000, true}},     {minus_two, {0xc0000000, true}},
+        {ln2f, {0x3f317218, true}},          {one_epi32, {0x00000001, true}},
+        {positive_mask, {0x7fffffff, true}}, {sign_mask, {0x80000000, true}},
+        {exponent_bias, {0x0000007f, true}},
+    };
 
     static constexpr std::array<float, 3> exp_approx_f32_coeff{0.35815147f, 0.96963238f, 1.f};
     static const table_t low_precision_exp_consts{
@@ -502,6 +511,32 @@ class eltwise_injector {
     h->vmulps(zmm_src, zmm_src, zmm_aux2);
     h->vmulps(zmm_src, zmm_src, table_val(two));
   }
+  void low_precision_exp_compute_vector_fwd(const Xbyak::Ymm& ymm_src) {
+    auto code = [&](Xbyak::CodeGenerator* h, const Ymm& dst, const Ymm& src,
+                    const Xbyak::Operand& log2e, const Xbyak::Operand& ln2,
+                    const Xbyak::Operand& coeff0, const Xbyak::Operand& coeff1,
+                    const Xbyak::Operand& coeff2,
+                    const std::array<Ymm, 2>& tmp) {
+      h->vmulps(tmp[0], src, log2e);  // x / ln2
+      h->vroundps(tmp[0], tmp[0],
+                  (_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC));  // round up
+      const auto& z = tmp[0];
+      h->vmulps(tmp[1], tmp[0], ln2);
+      h->vsubps(tmp[1], src, tmp[1]);  // x mod ln2 (can we use fmsub?)
+      h->vmovaps(dst, coeff1);
+      h->vfmadd231ps(dst, tmp[1], coeff0);  // dst = f * c0 + c1
+      h->vfmadd213ps(dst, tmp[1], coeff2);  // dst = (f * c0 + c1) * f + c2
+      h->vcvtps2dq(z, z);
+      h->vmovdqu(tmp[1], table_val(one_epi32));
+      h->vpsllvd(z, tmp[1], z);  // 2^z
+      h->vcvtdq2ps(z, z);
+      h->vmulps(dst, dst, z);  // dst = exp(f) * 2^z
+    };
+    code(h, ymm_src, ymm_src, table_val(exp_log2ef), table_val(ln2f),  //
+         table_val(low_precision_exp_const_v0),
+         table_val(low_precision_exp_const_v1),
+         table_val(low_precision_exp_const_v2), {ymm_aux1, ymm_aux2});
+  }
   void low_precision_exp_compute_vector_fwd(const Xbyak::Zmm& zmm_src) {
     auto code = [&](Xbyak::CodeGenerator* h, const Zmm& dst, const Zmm& src, const Xbyak::Operand& log2e,
                     const Xbyak::Operand& ln2, const Xbyak::Operand& coeff0, const Xbyak::Operand& coeff1,
@@ -519,6 +554,14 @@ class eltwise_injector {
     code(h, zmm_src, zmm_src, table_val(exp_log2ef), table_val(ln2f),  //
          table_val(low_precision_exp_const_v0), table_val(low_precision_exp_const_v1),
          table_val(low_precision_exp_const_v2), {zmm_aux1, zmm_aux2});
+  }
+  void swish_compute_vector_fwd(const Xbyak::Ymm& ymm_src, int const_p_offset) {
+    h->vbroadcastss(ymm_aux0, h->ptr[reg_rt_const_p + const_p_offset]);
+    h->vmulps(ymm_aux0, ymm_aux0, ymm_src);
+    low_precision_exp_compute_vector_fwd(ymm_aux0);
+    h->vaddps(ymm_aux0, ymm_aux0, table_val(one));
+    h->vrcpps(ymm_aux0, ymm_aux0);
+    h->vmulps(ymm_src, ymm_src, ymm_aux0);
   }
   void swish_compute_vector_fwd(const Xbyak::Zmm& zmm_src, int const_p_offset) {
     h->vmovups(zmm_aux0, zmm_src);
@@ -773,24 +816,25 @@ class eltwise_injector {
   };
 
   enum key_t {
-    zero = 0,                             // 0.f
-    half,                                 // 0.5f
-    one,                                  // 1.f  or  mask for exponent bits
-    two,                                  // 2.f
-    three,                                // 3.f
-    six,                                  // 6.f
-    minus_one,                            // -1.f  or  changes sign to opposite
-    minus_two,                            // -2.f
-    minus_three,                          // -3.f
-    ln2f,                                 // 0.69314718f
-    positive_mask,                        // changes sign to positive
-    sign_mask,                            // gets sign value
-    exponent_bias,                        // (127 = 2^7 - 1), gets exponent bits
-    exp_log2ef,                           // 1.44269502f - formula-based for approx
-    exp_ln_flt_max_f,                     // logf(FLT_MAX) - max normal value
-    exp_ln_flt_min_f,                     // logf(FLT_MIN) - min normal value
-    exp_pol,                              // see correspondent table for float values
-    gelu_tanh_fitting_const,              // 0.044715f
+    zero = 0,                 // 0.f
+    half,                     // 0.5f
+    one,                      // 1.f  or  mask for exponent bits
+    two,                      // 2.f
+    three,                    // 3.f
+    six,                      // 6.f
+    minus_one,                // -1.f  or  changes sign to opposite
+    minus_two,                // -2.f
+    minus_three,              // -3.f
+    ln2f,                     // 0.69314718f
+    one_epi32,                // 1 in int32
+    positive_mask,            // changes sign to positive
+    sign_mask,                // gets sign value
+    exponent_bias,            // (127 = 2^7 - 1), gets exponent bits
+    exp_log2ef,               // 1.44269502f - formula-based for approx
+    exp_ln_flt_max_f,         // logf(FLT_MAX) - max normal value
+    exp_ln_flt_min_f,         // logf(FLT_MIN) - min normal value
+    exp_pol,                  // see correspondent table for float values
+    gelu_tanh_fitting_const,  // 0.044715f
     gelu_tanh_fitting_const_times_three,  // 0.134145f
     gelu_tanh_sqrt_two_over_pi,           // sqrtf(2.f/pi) = 0.797884f
     gelu_tanh_flt_max_x,

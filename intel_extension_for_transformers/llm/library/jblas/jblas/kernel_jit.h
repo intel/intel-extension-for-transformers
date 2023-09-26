@@ -293,9 +293,10 @@ class JitMemcpy2DAvx2 : protected jblas::xbyak::JitAvx2 {
   }
 
  protected:
-  void generate(int unrollk,
-                std::vector<kernel::jit_injector::eltwise_injector>&
-                    injectors) {  // unrollK=[1,2,4]
+  void generate(
+      int unrollk,
+      std::vector<kernel::jit_injector::eltwise_injector>& injectors) {
+    // unrollK=[1,2]
     if (unrollk != 1 && unrollk != 2) {
       assert(false);
       return;
