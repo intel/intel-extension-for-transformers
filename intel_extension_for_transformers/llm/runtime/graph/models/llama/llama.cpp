@@ -120,7 +120,6 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   memcpy(embd->data, tokens, N * ne_element_size(embd));
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
-  // printf("inpL shape %d, %d  \n:", (inpL->ne[0]),(inpL->ne[1]));
   for (int il = 0; il < n_layer; ++il) {
     struct ne_tensor* inpSA = inpL;
 
