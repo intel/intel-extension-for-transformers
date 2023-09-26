@@ -23,30 +23,9 @@ woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-model = AutoModel.from_pretrained(model_name, quantization_config=woq_config)
-gen_tokens = model.generate(input_ids.tolist()[0], max_new_tokens=30)
-=======
-=======
-print(input_ids)
->>>>>>> update
-=======
->>>>>>> update
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
 streamer = TextStreamer(tokenizer)
 
-<<<<<<< HEAD
-model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True)
-<<<<<<< HEAD
-gen_tokens = model.generate(input_ids, streamer=streamer, max_new_tokens=30)
->>>>>>> add streamer
-=======
-=======
-model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True, trust_remote_code=True)
->>>>>>> use chatglm2
-gen_tokens = model.generate(input_ids, streamer=streamer, max_new_tokens=300)
->>>>>>> update streamer mode
+model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 
