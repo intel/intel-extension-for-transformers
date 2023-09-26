@@ -2565,7 +2565,6 @@ struct ne_tensor* ne_view_1d(struct ne_context* ctx, struct ne_tensor* a, int64_
   bool is_node = false;
 
   if (a->grad) {
-    printf("----------------------------------------------------is_node == True \n");
     is_node = true;
   }
 
@@ -6296,27 +6295,31 @@ static void ne_compute_forward_mul_mat_f32(const struct ne_compute_params* param
   }
 
 #ifdef KERNEL_DEBUG
+    printf("\n");
+    
     printf("src0->ne[0]=%d, src0->ne[1]=%d, src0->ne[2]=%d, src0->ne[3]=%d\n", src0->ne[0], src0->ne[1], src0->ne[2], src0->ne[3]);
     printf("src1->ne[0]=%d, src1->ne[1]=%d, src1->ne[2]=%d, src1->ne[3]=%d\n", src1->ne[0], src1->ne[1], src1->ne[2], src1->ne[3]);
+    printf("dst->ne[0]=%d, dst->ne[1]=%d, dst->ne[2]=%d, dst->ne[3]=%d\n", dst->ne[0], dst->ne[1], dst->ne[2], dst->ne[3]);
     printf("src0->nb[0]=%d, src0->nb[1]=%d, src0->nb[2]=%d, src0->nb[3]=%d\n", src0->nb[0], src0->nb[1], src0->nb[2], src0->nb[3]);
     printf("src1->nb[0]=%d, src1->nb[1]=%d, src1->nb[2]=%d, src1->nb[3]=%d\n", src1->nb[0], src1->nb[1], src1->nb[2], src1->nb[3]);
+    printf("dst->nb[0]=%d, dst->nb[1]=%d, dst->nb[2]=%d, dst->nb[3]=%d\n", dst->nb[0], dst->nb[1], dst->nb[2], dst->nb[3]);
 
-    printf("ne_compute_forward_mul_mat_f32 src0 = %f", *(float*)src0->data);
-    for (int i = 1; i < 500; i++) {
-      printf("   %f", ((float*)src0->data)[i]);
-    }
+    // printf("ne_compute_forward_mul_mat_f32 src0 = %f", *(float*)src0->data);
+    // for (int i = 1; i < 500; i++) {
+    //   printf("   %f", ((float*)src0->data)[i]);
+    // }
 
-    printf("\n");
+    // printf("\n");
 
-    printf("ne_compute_forward_mul_mat_f32 src1 = %f", *(float*)src1->data);
-    for (int i = 1; i < 500; i++) {
-      printf("   %f", ((float*)src1->data)[i]);
-    }
+    // printf("ne_compute_forward_mul_mat_f32 src1 = %f", *(float*)src1->data);
+    // for (int i = 1; i < 10000; i++) {
+    //   printf("   %f", ((float*)src1->data)[i]);
+    // }
 
-    printf("\n");
+    // printf("\n");
 
     printf("ne_compute_forward_mul_mat_f32 = %f", *(float*)dst->data);
-    for (int i = 1; i < 3; i++) {
+    for (int i = 1; i < dst->ne[0] * dst->ne[1] * dst->ne[2] * dst->ne[3]; i++) {
       printf("   %f", ((float*)dst->data)[i]);
     }
 
@@ -6460,8 +6463,32 @@ static void ne_compute_forward_mul_mat_f16_f32(const struct ne_compute_params* p
   //}
 
 #ifdef KERNEL_DEBUG
+
+    printf("\n");
+
+    printf("src0->ne[0]=%d, src0->ne[1]=%d, src0->ne[2]=%d, src0->ne[3]=%d\n", src0->ne[0], src0->ne[1], src0->ne[2], src0->ne[3]);
+    printf("src1->ne[0]=%d, src1->ne[1]=%d, src1->ne[2]=%d, src1->ne[3]=%d\n", src1->ne[0], src1->ne[1], src1->ne[2], src1->ne[3]);
+    printf("dst->ne[0]=%d, dst->ne[1]=%d, dst->ne[2]=%d, dst->ne[3]=%d\n", dst->ne[0], dst->ne[1], dst->ne[2], dst->ne[3]);
+    printf("src0->nb[0]=%d, src0->nb[1]=%d, src0->nb[2]=%d, src0->nb[3]=%d\n", src0->nb[0], src0->nb[1], src0->nb[2], src0->nb[3]);
+    printf("src1->nb[0]=%d, src1->nb[1]=%d, src1->nb[2]=%d, src1->nb[3]=%d\n", src1->nb[0], src1->nb[1], src1->nb[2], src1->nb[3]);
+    printf("dst->nb[0]=%d, dst->nb[1]=%d, dst->nb[2]=%d, dst->nb[3]=%d\n", dst->nb[0], dst->nb[1], dst->nb[2], dst->nb[3]);
+
+    // printf("ne_compute_forward_mul_mat_f16_f32 src0 = %f", *(float*)src0->data);
+    // for (int i = 1; i < 500; i++) {
+    //   printf("   %f", ((float*)src0->data)[i]);
+    // }
+
+    // printf("\n");
+
+    // printf("ne_compute_forward_mul_mat_f16_f32 src1 = %f", *(float*)src1->data);
+    // for (int i = 1; i < 500; i++) {
+    //   printf("   %f", ((float*)src1->data)[i]);
+    // }
+
+    // printf("\n");
+
     printf("ne_compute_forward_mul_mat_f16_f32 = %f", *(float*)dst->data);
-    for (int i = 1; i < 3; i++) {
+    for (int i = 1; i < dst->ne[0] * dst->ne[1] * dst->ne[2] * dst->ne[3]; i++) {
       printf("   %f", ((float*)dst->data)[i]);
     }
 
@@ -7415,6 +7442,38 @@ static void ne_compute_forward_diag_mask_f32(const struct ne_compute_params* par
       }
     }
   }
+
+#ifdef KERNEL_DEBUG
+    printf("\n");
+    
+    printf("src0->ne[0]=%d, src0->ne[1]=%d, src0->ne[2]=%d, src0->ne[3]=%d\n", src0->ne[0], src0->ne[1], src0->ne[2], src0->ne[3]);
+    printf("src1->ne[0]=%d, src1->ne[1]=%d, src1->ne[2]=%d, src1->ne[3]=%d\n", src1->ne[0], src1->ne[1], src1->ne[2], src1->ne[3]);
+    printf("dst->ne[0]=%d, dst->ne[1]=%d, dst->ne[2]=%d, dst->ne[3]=%d\n", dst->ne[0], dst->ne[1], dst->ne[2], dst->ne[3]);
+    printf("src0->nb[0]=%d, src0->nb[1]=%d, src0->nb[2]=%d, src0->nb[3]=%d\n", src0->nb[0], src0->nb[1], src0->nb[2], src0->nb[3]);
+    printf("src1->nb[0]=%d, src1->nb[1]=%d, src1->nb[2]=%d, src1->nb[3]=%d\n", src1->nb[0], src1->nb[1], src1->nb[2], src1->nb[3]);
+    printf("dst->nb[0]=%d, dst->nb[1]=%d, dst->nb[2]=%d, dst->nb[3]=%d\n", dst->nb[0], dst->nb[1], dst->nb[2], dst->nb[3]);
+
+    printf("ne_compute_forward_diag_mask_f32 src0 = %f", *(float*)src0->data);
+    for (int i = 1; i < src0->ne[0] * src0->ne[1] * src0->ne[2] * src0->ne[3]; i++) {
+      printf("   %f", ((float*)src0->data)[i]);
+    }
+
+    printf("\n");
+
+    // printf("ne_compute_forward_mul_mat_f32 src1 = %f", *(float*)src1->data);
+    // for (int i = 1; i < 10000; i++) {
+    //   printf("   %f", ((float*)src1->data)[i]);
+    // }
+
+    // printf("\n");
+
+    printf("ne_compute_forward_diag_mask_f32 = %f", *(float*)dst->data);
+    for (int i = 1; i < dst->ne[0] * dst->ne[1] * dst->ne[2] * dst->ne[3]; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_diag_mask_inf(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7510,6 +7569,36 @@ static void ne_compute_forward_soft_max_f32(const struct ne_compute_params* para
     }
 #endif
   }
+
+#ifdef KERNEL_DEBUG
+    printf("\n");
+
+    printf("src0->ne[0]=%d, src0->ne[1]=%d, src0->ne[2]=%d, src0->ne[3]=%d\n", src0->ne[0], src0->ne[1], src0->ne[2], src0->ne[3]);
+    printf("dst->ne[0]=%d, dst->ne[1]=%d, dst->ne[2]=%d, dst->ne[3]=%d\n", dst->ne[0], dst->ne[1], dst->ne[2], dst->ne[3]);
+    printf("src0->nb[0]=%d, src0->nb[1]=%d, src0->nb[2]=%d, src0->nb[3]=%d\n", src0->nb[0], src0->nb[1], src0->nb[2], src0->nb[3]);
+    printf("dst->nb[0]=%d, dst->nb[1]=%d, dst->nb[2]=%d, dst->nb[3]=%d\n", dst->nb[0], dst->nb[1], dst->nb[2], dst->nb[3]);
+
+    // printf("ne_compute_forward_mul_mat_f32 src0 = %f", *(float*)src0->data);
+    // for (int i = 1; i < 500; i++) {
+    //   printf("   %f", ((float*)src0->data)[i]);
+    // }
+
+    // printf("\n");
+
+    // printf("ne_compute_forward_mul_mat_f32 src1 = %f", *(float*)src1->data);
+    // for (int i = 1; i < 10000; i++) {
+    //   printf("   %f", ((float*)src1->data)[i]);
+    // }
+
+    // printf("\n");
+
+    printf("ne_compute_forward_soft_max_f32 = %f", *(float*)dst->data);
+    for (int i = 1; i < dst->ne[0] * dst->ne[1] * dst->ne[2] * dst->ne[3]; i++) {
+      printf("   %f", ((float*)dst->data)[i]);
+    }
+
+    printf("\n");
+#endif
 }
 
 static void ne_compute_forward_soft_max(const struct ne_compute_params* params, const struct ne_tensor* src0,
