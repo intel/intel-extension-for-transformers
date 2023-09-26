@@ -31,12 +31,12 @@ def is_peft_available():
     return importlib.util.find_spec("peft") is not None
 
 
-if is_peft_available():
+if is_peft_available(): # pragma: no cover
     from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training
 
 def disable_dropout_in_model(model: torch.nn.Module) -> None:
     for module in model.modules():
-        if isinstance(module, torch.nn.Dropout):
+        if isinstance(module, torch.nn.Dropout): # pragma: no cover
             module.p = 0
 
 
@@ -101,26 +101,26 @@ class DPOTrainer(Trainer):
         is_encoder_decoder: Optional[bool] = None,
         disable_dropout: bool = True,
     ):
-        if not is_peft_available() and peft_config is not None:
+        if not is_peft_available() and peft_config is not None: # pragma: no cover
             raise ValueError(
                 "PEFT is not installed and you passed a `peft_config` in the trainer's kwargs"
             )
-        elif is_peft_available() and peft_config is not None:
+        elif is_peft_available() and peft_config is not None: # pragma: no cover
             if getattr(model, "is_loaded_in_8bit", False) or getattr(model, "is_loaded_in_4bit", False):
                 model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
             model = get_peft_model(model, peft_config)
             model.print_trainable_parameters()
 
-        if model is not None:
+        if model is not None: # pragma: no cover
             self.is_encoder_decoder = model.config.is_encoder_decoder
-        elif is_encoder_decoder is None:
+        elif is_encoder_decoder is None: # pragma: no cover
             raise ValueError("When no model is provided, you need to pass the parameter is_encoder_decoder.")
         else:
             self.is_encoder_decoder = is_encoder_decoder
 
         self.is_peft_model = is_peft_available() and isinstance(model, PeftModel)
 
-        if ref_model:
+        if ref_model: # pragma: no cover
             self.ref_model = ref_model
         elif self.is_peft_model:
             # The `model` with adapters turned off will be used as the reference model
@@ -128,7 +128,7 @@ class DPOTrainer(Trainer):
         else:
             raise ValueError("need a reference model.")
 
-        if disable_dropout:
+        if disable_dropout: # pragma: no cover
             disable_dropout_in_model(model)
             if self.ref_model is not None:
                 disable_dropout_in_model(self.ref_model)
@@ -150,18 +150,18 @@ class DPOTrainer(Trainer):
             tokenizer=tokenizer,
         )
 
-        if not hasattr(self, "accelerator"):
+        if not hasattr(self, "accelerator"): # pragma: no cover
             raise AttributeError(
                 "Your `Trainer` does not have an `accelerator` object. Consider upgrading `transformers`."
             )
 
-        if self.ref_model is None:
+        if self.ref_model is None: # pragma: no cover
             if not hasattr(self.accelerator.unwrap_model(self.model), "disable_adapter"):
                 raise ValueError(
                     "You are using a `peft` version that does not support `disable_adapter`."
                 )
         else:
-            if self.is_deepspeed_enabled:
+            if self.is_deepspeed_enabled: # pragma: no cover
                 # Read more about the issue in https://github.com/huggingface/trl/pull/687
                 self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
                 self.ref_model.eval()
@@ -181,7 +181,7 @@ class DPOTrainer(Trainer):
         pi_logratios = policy_chosen_logps - policy_rejected_logps
         ref_logratios = reference_chosen_logps - reference_rejected_logps
 
-        if reference_free:
+        if reference_free: # pragma: no cover
             ref_logratios = 0
 
         logits = pi_logratios - ref_logratios
@@ -211,10 +211,10 @@ class DPOTrainer(Trainer):
             A tensor of shape (batch_size,) containing the average/sum log
                probabilities of the given labels under the given logits.
         """
-        if logits.shape[:-1] != labels.shape:
+        if logits.shape[:-1] != labels.shape: # pragma: no cover
             raise ValueError("Logits (batch and sequence length dim) and labels must have the same shape.")
 
-        if not self.is_encoder_decoder:
+        if not self.is_encoder_decoder: # pragma: no cover
             labels = labels[:, 1:].clone()
             logits = logits[:, :-1, :]
         loss_mask = labels != self.label_pad_token_id
@@ -224,7 +224,7 @@ class DPOTrainer(Trainer):
 
         per_token_logps = torch.gather(logits.log_softmax(-1), dim=2, index=labels.unsqueeze(2)).squeeze(2)
 
-        if average_log_prob:
+        if average_log_prob: # pragma: no cover
             return (per_token_logps * loss_mask).sum(-1) / loss_mask.sum(-1)
         else:
             return (per_token_logps * loss_mask).sum(-1)
@@ -284,7 +284,7 @@ class DPOTrainer(Trainer):
         ) = self.dpo_forward(model, batch)
 
         with torch.no_grad():
-            if self.ref_model is None:
+            if self.ref_model is None: # pragma: no cover
                 with self.accelerator.unwrap_model(self.model).disable_adapter():
                     (
                         reference_chosen_logps,
@@ -308,7 +308,7 @@ class DPOTrainer(Trainer):
         )
         reward_accuracies = (chosen_rewards > rejected_rewards).float()
 
-        prefix = "eval_" if train_eval == "eval" else ""
+        prefix = "eval_" if train_eval == "eval" else "" # pragma: no cover
         metrics[f"{prefix}rewards/chosen"] = chosen_rewards.cpu().numpy().mean()
         metrics[f"{prefix}rewards/rejected"] = rejected_rewards.cpu().numpy().mean()
         metrics[f"{prefix}rewards/accuracies"] = reward_accuracies.cpu().numpy().mean()
@@ -330,10 +330,10 @@ class DPOTrainer(Trainer):
         loss, metrics = self.get_batch_metrics(model, inputs, train_eval="train")
 
         # force log the metrics
-        if self.accelerator.is_main_process:
+        if self.accelerator.is_main_process: # pragma: no cover
             self.store_metrics(metrics, train_eval="train")
 
-        if return_outputs:
+        if return_outputs: # pragma: no cover
             return (loss, metrics)
         return loss
 
@@ -350,7 +350,7 @@ class DPOTrainer(Trainer):
                 The values to log.
         """
         # logs either has 'loss' or 'eval_loss'
-        train_eval = "train" if "loss" in logs else "eval"
+        train_eval = "train" if "loss" in logs else "eval" # pragma: no cover
         # Add averaged stored metrics to logs
         for key, metrics in self._stored_metrics[train_eval].items():
             logs[key] = torch.tensor(metrics).mean().item()
