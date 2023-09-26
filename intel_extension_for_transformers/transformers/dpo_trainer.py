@@ -109,6 +109,7 @@ class DPOTrainer(Trainer):
             if getattr(model, "is_loaded_in_8bit", False) or getattr(model, "is_loaded_in_4bit", False):
                 model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
             model = get_peft_model(model, peft_config)
+            model.print_trainable_parameters()
 
         if model is not None:
             self.is_encoder_decoder = model.config.is_encoder_decoder

@@ -432,8 +432,8 @@ if __name__ == "__main__":
 
     # 6. train
     dpo_trainer.train()
-    dpo_trainer.save_model(script_args.output_dir)
+    dpo_trainer.save_model(training_args.output_dir)
 
     # 7. save
-    output_dir = os.path.join(script_args.output_dir, "final_checkpoint")
+    output_dir = os.path.join(training_args.output_dir, "final_checkpoint")
     dpo_trainer.model.save_pretrained(output_dir)
