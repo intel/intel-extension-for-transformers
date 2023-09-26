@@ -11,7 +11,8 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
-* <b>NeuralChat, a customizable chatbot framework under Intel® Extension for Transformers, is now available for you to create your own chatbot within minutes!</b> It supports a rich set of plugins [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md), and multiple architectures such as Intel® Xeon® Scalable Processors and Habana Gaudi® Accelerator.</b> Check out the below sample code and have a try now!
+* <b>NeuralChat has been showcased in [Intel Innovation’23 Keynote](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) and [Google Cloud Next'23](https://cloud.google.com/blog/topics/google-cloud-next/welcome-to-google-cloud-next-23) to demonstrate GenAI/LLM capabilities on Intel Xeon Scalable Processors.</b>
+* <b>NeuralChat supports custom chatbot development and deployment on broad Intel HWs such as Xeon Scalable Processors, Gaudi2, Xeon CPU Max Series, Data Center GPU Max Series, Arc Series, and Core Processors. Check out [Notebooks](./intel_extension_for_transformers/neural_chat/docs/full_notebooks.md) and below sample code. </b>
 
 ```python
 # pip install intel-extension-for-transformers
@@ -20,7 +21,7 @@ chatbot = build_chatbot()
 response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```
 
-* <b>[💬NeuralChat v1.1](https://huggingface.co/Intel/neural-chat-7b-v1-1), a fine-tuned chat model based on [MPT-7B](https://huggingface.co/mosaicml/mpt-7b) using a mixed set of instruction datasets, is available on Hugging Face, together with the release of INT8 quantization recipes and benchmark results.</b>
+* <b>LLM runtime extends Hugging Face Transformers API to provide seamless low precision inference for popular LLMs, supporting mainstream low precision data types such as INT8/FP8/INT4/FP4/NF4.</b>
 
 ---
 <div align="left">
@@ -30,7 +31,7 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```bash
 pip install intel-extension-for-transformers
 ```
-> For more installation method, please refer to [Installation Page](docs/installation.md)
+> For more installation methods, please refer to [Installation Page](docs/installation.md)
 
 ## 🌟Introduction
 Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the below key features and examples:
@@ -44,59 +45,51 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 *  Optimized Transformer-based model packages such as [Stable Diffusion](examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion), [GPT-J-6B](examples/huggingface/pytorch/text-generation/deployment), [GPT-NEOX](examples/huggingface/pytorch/language-modeling/quantization#2-validated-model-list), [BLOOM-176B](examples/huggingface/pytorch/language-modeling/inference#BLOOM-176B), [T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list), [Flan-T5](examples/huggingface/pytorch/summarization/quantization#2-validated-model-list) and end-to-end workflows such as [SetFit-based text classification](docs/tutorials/pytorch/text-classification/SetFit_model_compression_AGNews.ipynb) and [document level sentiment analysis (DLSA)](workflows/dlsa) 
 
-*  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of plugins and SOTA optimizations
+*  [NeuralChat](intel_extension_for_transformers/neural_chat), a customizable chatbot framework to create your own chatbot within minutes by leveraging a rich set of plugins [Knowledge Retrieval](./intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/README.md), [Speech Interaction](./intel_extension_for_transformers/neural_chat/pipeline/plugins/audio/README.md), [Query Caching](./intel_extension_for_transformers/neural_chat/pipeline/plugins/caching/README.md), [Security Guardrail](./intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md).
 
 
 *  [Inference](intel_extension_for_transformers/llm/runtime/graph) of Large Language Model (LLM) in pure C/C++ with weight-only quantization kernels, supporting [GPT-NEOX](intel_extension_for_transformers/llm/runtime/graph/models/gptneox), [LLAMA](intel_extension_for_transformers/llm/runtime/graph/models/llama), [MPT](intel_extension_for_transformers/llm/runtime/graph/models/mpt), [FALCON](intel_extension_for_transformers/llm/runtime/graph/models/falcon), [BLOOM-7B](intel_extension_for_transformers/llm/runtime/graph/models/bloom), [OPT](intel_extension_for_transformers/llm/runtime/graph/models/opt), [ChatGLM2-6B](intel_extension_for_transformers/llm/runtime/graph/models/chatglm), [GPT-J-6B](intel_extension_for_transformers/llm/runtime/graph/models/gptj) and [Dolly-v2-3B](intel_extension_for_transformers/llm/runtime/graph/models/gptneox)
 
 
 ## 🌱Getting Started
-### Sentiment Analysis with Quantization
-#### Prepare Dataset
+Below are the sample code to enable weight-only low precision inference. See more [examples](intel_extension_for_transformers/llm/runtime/graph).
+
+### INT4 Inference 
 ```python
-from datasets import load_dataset, load_metric
-from transformers import AutoConfig,AutoModelForSequenceClassification,AutoTokenizer
-
-raw_datasets = load_dataset("glue", "sst2")
-tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english")
-raw_datasets = raw_datasets.map(lambda e: tokenizer(e['sentence'], truncation=True, padding='max_length', max_length=128), batched=True)
-```
-#### Quantization
-```python
-from intel_extension_for_transformers.transformers import QuantizationConfig, metrics, objectives
-from intel_extension_for_transformers.transformers.trainer import NLPTrainer
-
-config = AutoConfig.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",num_labels=2)
-model = AutoModelForSequenceClassification.from_pretrained("distilbert-base-uncased-finetuned-sst-2-english",config=config)
-model.config.label2id = {0: 0, 1: 1}
-model.config.id2label = {0: 'NEGATIVE', 1: 'POSITIVE'}
-# Replace transformers.Trainer with NLPTrainer
-# trainer = transformers.Trainer(...)
-trainer = NLPTrainer(model=model, 
-    train_dataset=raw_datasets["train"], 
-    eval_dataset=raw_datasets["validation"],
-    tokenizer=tokenizer
-)
-q_config = QuantizationConfig(metrics=[metrics.Metric(name="eval_loss", greater_is_better=False)])
-model = trainer.quantize(quant_config=q_config)
-
-input = tokenizer("I like Intel Extension for Transformers", return_tensors="pt")
-output = model(**input).logits.argmax().item()
+from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
+prompt = "Once upon a time, a little girl"
+config = WeightOnlyQuantConfig(compute_dtype="int8")
+model = AutoModel.from_pretrained("Intel/neural-chat-7b-v1-1", quantization_config=config)
+print(model.generate(prompt, max_new_tokens=30))
 ```
 
-> For more quick samples, please refer to [Get Started Page](docs/get_started.md). For more validated examples, please refer to [Support Model Matrix](docs/examples.md)
+### INT8 Inference
+```python
+from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
+prompt = "Once upon a time, a little girl"
+config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
+model = AutoModel.from_pretrained("Intel/neural-chat-7b-v1-1", quantization_config=config)
+print(model.generate(prompt, max_new_tokens=30))
+```
 
-## 🎯Validated Performance
+## 🎯Validated  Models
+Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
+The next token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
 
+| Model |  FP32         | INT4 (Group size 32) | INT4 (Group size 128) | Next Token Latency   | 
+|---------------------|:----------------------:|:-----------------------:|:----------------------------:|:------------:| 
+| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 0.643 | 0.644 | 0.64 | 21.98ms|
+| [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 0.69 | 0.69 | 0.685 | 24.55ms|
+| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 0.689 | 0.682 | 0.68 | 24.84ms|
+| [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) | 0.674 | 0.672 | 0.669 | 80.16ms|
+| [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat) | 0.672 | 0.67 | 0.666 | 35.84ms|
+| [tiiuae/falcon-7b](https://huggingface.co/tiiuae/falcon-7b) | 0.698 | 0.694 | 0.693 |36.1ms|
+| [baichuan-inc/baichuan-7B](https://huggingface.co/baichuan-inc/baichuan-7B) | 0.474 | 0.471 | 0.47 | Coming Soon |
+| [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b) | 0.65 | 0.647 | 0.643 | Coming Soon |
+| [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 0.613 | 0.609 | 0.609 |22.02ms|
+| [tiiuae/falcon-40b-instruct](https://huggingface.co/tiiuae/falcon-40b-instruct) | 0.756 | 0.757 | 0.755 | Coming Soon |
 
-| Model |  FP32 | BF16 | INT8 |
-|---------------------|:----------------------:|-----------------------|-----------------------------------|
-| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 4163.67 (ms) | 1879.61 (ms) | 1612.24 (ms) |
-| [CompVis/stable-diffusion-v1-4](https://huggingface.co/CompVis/stable-diffusion-v1-4) | 10.33 (s) | 3.02 (s) | N/A |
-
-> Note*: GPT-J-6B software/hardware configuration please refer to [text-generation](./examples/huggingface/pytorch/text-generation/README.md). Stable-diffusion software/hardware configuration please refer to [text-to-image](./examples/huggingface/pytorch/text-to-image/deployment/stable_diffusion/README.md)
-
-
+Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) 
 
 ## 📖Documentation
 <table>
@@ -164,8 +157,9 @@ output = model(**input).logits.argmax().item()
 
 
 ## 📃Selected Publications/Events
+
+* Intel Innovation'23 Keynote: [Intel Innovation 2023 Keynote by Greg Lavender](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
 * Blog on Intel Community: [NeuralChat: A Customizable Chatbot Framework](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/NeuralChat-A-Customizable-Chatbot-Framework/post/1526789) (Sep 2023)
-* Keynote: [Intel Innovation 2023 Livestream - Day2](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
 * Blog published on Medium: [NeuralChat: A Customizable Chatbot Framework](https://medium.com/intel-analytics-software/make-your-own-chatbot-within-a-few-minutes-with-neuralchat-a-customizable-chatbot-framework-139b4bdec8d1) (Sep 2023)
 * Blog published on Medium: [Faster Stable Diffusion Inference with Intel Extension for Transformers](https://medium.com/intel-analytics-software/faster-stable-diffusion-inference-with-intel-extension-for-transformers-on-intel-platforms-7e0f563186b0) (July 2023)
 * Blog of Intel Developer News: [The Moat Is Trust, Or Maybe Just Responsible AI](https://www.intel.com/content/www/us/en/developer/articles/technical/moat-is-trust-minimizing-risks-generative-ai.html) (July 2023)
@@ -182,6 +176,11 @@ output = model(**input).logits.argmax().item()
 * [Contribution Guidelines](./docs/contributions.md)
 * [Legal Information](./docs/legal.md)
 * [Security Policy](SECURITY.md)
+
+
+## Acknowledgements
+* Excellent open-source projects: [bitsandbytes](https://github.com/TimDettmers/bitsandbytes), [FastChat](https://github.com/lm-sys/FastChat), [fastRAG](https://github.com/IntelLabs/fastRAG), [ggml](https://github.com/ggerganov/ggml), [gptq](https://github.com/IST-DASLab/gptq), [llama.cpp](https://github.com/ggerganov/llama.cpp), [lm-evauation-harness](https://github.com/EleutherAI/lm-evaluation-harness), [peft](https://github.com/huggingface/peft), [trl](https://github.com/huggingface/trl), and many others.
+
 
 ## 💁Collaborations
 

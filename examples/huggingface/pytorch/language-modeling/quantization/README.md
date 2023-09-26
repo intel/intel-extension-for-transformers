@@ -12,6 +12,7 @@ The script `run_clm_no_trainer.py` supports `GPTJ`, `OPT`, `LLaMA`, `BLOOM`, `MP
 # Installation
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
 cd itrex
+pip install -r requirements.txt
 pip install -v .
 cd examples/huggingface/pytorch/language-modeling/quantization
 pip install -r requirements.txt
