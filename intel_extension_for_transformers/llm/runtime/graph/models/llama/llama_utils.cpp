@@ -66,7 +66,7 @@ void Llama::init(const char* path_model, model_context& lctx, int n_ctx_, int n_
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
   auto& hparams = model.hparams;
   hparams.n_ctx = n_ctx;
-  n_ff = ((2 * (4 * hparams.n_embd) / 3 + hparams.n_mult - 1) / hparams.n_mult) * hparams.n_mult;
+  n_ff = hparams.ffn_hidden_size;
   fprintf(stderr, "%s: n_vocab    = %u\n", __func__, hparams.n_vocab);
   fprintf(stderr, "%s: n_ctx      = %u\n", __func__, hparams.n_ctx);
   fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);
@@ -134,7 +134,6 @@ void Llama::load(model_context& lctx, model_progress_callback progress_callback,
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".attention.wq.weight", {n_embd, n_embd}, backend);
     if (n_head_kv == 8) {
-      n_ff = 28672;
       layer.attn[1] = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, n_embd / n_head_kv}, backend);
       layer.attn[2] = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, n_embd / n_head_kv}, backend);
     } else {

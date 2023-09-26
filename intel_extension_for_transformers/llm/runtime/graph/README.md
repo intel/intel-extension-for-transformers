@@ -39,6 +39,7 @@ We support the following models:
 ### 1. Build LLM Runtime
 Linux
 ```shell
+git submodule update --init --recursive
 mkdir build
 cd build
 cmake .. -G Ninja

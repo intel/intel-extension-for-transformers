@@ -153,7 +153,7 @@ class Params:
     n_head: int
     n_layer: int
     n_head_kv: int
-    f_norm_eps: float
+    ffn_hidden_size: int
 
     @staticmethod
     def guessed(model: 'LazyModel') -> 'Params':
@@ -177,7 +177,7 @@ class Params:
         n_layer          = config["num_hidden_layers"]
         n_head           = config["num_attention_heads"]
         n_head_kv        = config["num_key_value_heads"] if "num_key_value_heads" in config else n_head
-        f_norm_eps       = config["rms_norm_eps"]
+        ffn_hidden_size       = config["intermediate_size"]
 
         return Params(
             n_vocab          = n_vocab,
@@ -186,7 +186,7 @@ class Params:
             n_mult           = 256,
             n_head           = n_head,
             n_head_kv        = n_head_kv,
-            f_norm_eps       = f_norm_eps,
+            ffn_hidden_size       = ffn_hidden_size,
         )
 
     # LLaMA v2 70B params.json
@@ -200,7 +200,7 @@ class Params:
         n_layer          = config["n_layers"]
         n_head           = config["n_heads"]
         n_head_kv        = config["n_kv_heads"] if "n_kv_heads" in config else n_head
-        f_norm_eps       = config["norm_eps"]
+        ffn_hidden_size       = config["intermediate_size"]
         # hack to determine LLaMA v1 vs v2 vs CodeLlama
 
         if n_vocab == -1:
@@ -213,7 +213,7 @@ class Params:
             n_layer          = n_layer,
             n_head           = n_head,
             n_head_kv        = n_head_kv,
-            f_norm_eps       = f_norm_eps,
+            ffn_hidden_size      = ffn_hidden_size,
         )
 
     @staticmethod
@@ -1023,7 +1023,7 @@ class OutputFile:
         self.fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
         
         self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", params.ffn_hidden_size))
         self.fout.write(struct.pack("i", 0))
 
         self.fout.write(struct.pack("i", 1)) # TODO, bos_token_id = 0 in https://huggingface.co/decapoda-research/llama-7b-hf/blob/main/config.json but bos_token_id = 1 in llama.cpp
