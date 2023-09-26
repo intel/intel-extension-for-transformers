@@ -14,6 +14,7 @@ conda install gperftools jemalloc==5.2.1 -c conda-forge -y
 # Installation
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
 cd itrex
+pip install -r requirements.txt
 pip install -v .
 cd examples/huggingface/pytorch/language-modeling/pruning
 pip install -r requirements.txt
@@ -69,3 +70,4 @@ The last word acc of the 1x1 pattern sparse model using [the sparseGPT script](e
 | bigscience/bloom-7b1 | CLM | wikitext-2-raw-v1 | lambada_openai | 40% | BF16 | 0.5723 | 0.5513 | -3.67% |
 | decapoda-research/llama-13b-hf | CLM | wikitext-2-raw-v1 | lambada_openai | 50% | FP32 | 0.7627 | 0.7584 | -0.56% |
 | decapoda-research/llama-13b-hf | CLM | wikitext-2-raw-v1 | lambada_openai | 50% | BF16 | 0.7601 | 0.7545 | -0.74% |
+
