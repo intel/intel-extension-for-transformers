@@ -12,8 +12,8 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 ## Supported Models
 
-We support the following models:
-### Text generation models
+LLM Runtime supports the following models:
+### Text Generation
 | model name | INT8 | INT4|
 |---|:---:|:---:|
 |[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf), [LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)| ✅ | ✅ | 
@@ -27,14 +27,14 @@ We support the following models:
 |[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |  
 |[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |
 
-### Code generation models
+### Code Generation
 | model name | INT8 | INT4|
 |---|:---:|:---:|
 |[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf), [Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ | 
 |[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
 
 
-## How to use
+## How to Use
 
 ### 1. Install LLM Runtime
 Install from binary
@@ -63,7 +63,7 @@ cmake --build . -j
 
 ### 2. Run LLM with Python API
 
-You can use the python api to simplely run HF model.
+You can use Python API to run Hugging Face model simply. Here is the sample code:
 ```python
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
@@ -73,14 +73,14 @@ prompt = "Once upon a time, a little girl"
 output = model.generate(prompt, max_new_tokens=30)
 ```
 
-### 3. Run LLM with Script
-You can use the following script to run, including convertion, quantization and inference.
+### 3. Run LLM with Python Script
+You can run LLM with one-click python script including convertion, quantization and inference.
 ```
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
 Augument description of run.py:
-| Augument         | Description                                                             |
+| Augument         | Description                                                              |
 | --------------    | ----------------------------------------------------------------------- |
 | model           | directory containing model file or model id                               |
 | --weight_dtype  | data type of quantized weight (default: int4)                             |
@@ -101,9 +101,10 @@ Augument description of run.py:
 
 
 ## Advanced Usage
+Besides the one-click script, LLM Runtime also offers the detailed script: 1) convert and quantize, and 2) inference.
 
-### 1. Convert and Quantize LLM model
-LLM Runtime assumes the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
+### 1. Convert and Quantize LLM
+LLM Runtime assumes the compatible model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
 
 ```bash
 
@@ -140,9 +141,9 @@ Augument description of quantize.py:
 | --use_ggml      | enable ggml for quantization and inference                  |
 
 
-### 2. Inference model with C++ script API
+### 2. Inference LLM
 
-We supply LLM running script to run supported models with c++ api conveniently.
+We provide LLM inference script to run the quantized model. Please reach [us](mailto:itrex.maintainers@intel.com) if you want to run using C++ API directly.
 ```bash
 # recommed to use numactl to bind cores in Intel cpus for better performance
 # if you use different core numbers, please also  change -t arg value
