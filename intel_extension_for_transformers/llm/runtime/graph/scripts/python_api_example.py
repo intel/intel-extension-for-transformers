@@ -18,17 +18,21 @@
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 
-model_name = "/mnt/disk1/data2/zhenweil/models/chatglm2-6b"
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8")
-prompt = "你好"
+model_name = "THUDM/chatglm2-6b"  # or local path to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+prompt = "小明的妈妈有三个孩子，老大叫大毛，老二叫二毛，老三叫什么？"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 model = AutoModel.from_pretrained(model_name, quantization_config=woq_config)
 gen_tokens = model.generate(input_ids.tolist()[0], max_new_tokens=30)
 =======
+=======
+print(input_ids)
+>>>>>>> update
 streamer = TextStreamer(tokenizer)
 
 <<<<<<< HEAD
@@ -43,25 +47,3 @@ model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, us
 gen_tokens = model.generate(input_ids, streamer=streamer, max_new_tokens=300)
 >>>>>>> update streamer mode
 
-# gen_text = tokenizer.batch_decode(gen_tokens)
-# print(gen_text)
-"""
-
-from transformers import AutoTokenizer, TextStreamer, MptForCausalLM
-# from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
-
-model_name = "/mnt/disk1/data2/zhenweil/models/mpt/mpt-7b"
-# woq_config = WeightOnlyQuantConfig(compute_dtype="int8")
-prompt = "Once upon a time, a little girl"
-
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-input_ids = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
-
-model = MptForCausalLM.from_pretrained(model_name)
-import pudb; pudb.set_trace()
-gen_tokens = model.generate(input_ids, streamer=streamer, max_new_tokens=30)
-
-# gen_text = tokenizer.batch_decode(gen_tokens)
-# print(gen_text)
-"""
