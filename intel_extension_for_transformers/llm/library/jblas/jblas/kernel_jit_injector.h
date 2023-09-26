@@ -465,6 +465,52 @@ class eltwise_injector {
 
     set_table_term_offset();
   }
+  void exp_compute_vector_fwd(const Xbyak::Ymm& ymm_src) {
+    /* exp code */
+    h->vcmpps(ymm_mask, ymm_src, table_val(exp_ln_flt_min_f), _cmp_lt_os);
+    h->vminps(ymm_src, ymm_src, table_val(exp_ln_flt_max_f));
+    h->vmaxps(ymm_src, ymm_src, table_val(exp_ln_flt_min_f));
+    h->vmovups(ymm_aux1, ymm_src);
+    h->vmulps(ymm_src, ymm_src, table_val(exp_log2ef));
+    h->vaddps(ymm_src, ymm_src, table_val(half));
+    h->vroundps(ymm_aux2, ymm_src, _op_floor);
+
+    // keep ymm_src = fx for further computations
+    h->vmovups(ymm_src, ymm_aux2);
+
+    // x = x - fx * ln2
+    h->vfnmadd231ps(ymm_aux1, ymm_aux2, table_val(ln2f));
+
+    // We do not count 2^n here, because n can reach 128 and 2^128 is not
+    // representable by fp32, so to get around this problem, instead of
+    // computing 2^n * exp(r) will be counted 2*2^(n-1)*exp(r), because 2^127
+    // and 2 are numbers representable in fp32.
+
+    // compute 2^(n-1)
+    h->vsubps(ymm_src, ymm_src, table_val(one));
+    h->vcvtps2dq(ymm_aux2, ymm_src);
+    h->vpaddd(ymm_aux2, ymm_aux2, table_val(exponent_bias));
+    h->vpslld(ymm_aux2, ymm_aux2, n_mantissa_bits);
+
+    // use ymm_src as tmp ymm_zero when applying mask
+    h->vxorps(ymm_src, ymm_src, ymm_src);
+
+    // set zeroes at those points which were < log(FLT_MIN)
+    h->vblendvps(ymm_aux2, ymm_aux2, ymm_aux2, ymm_mask);
+
+    // compute polynomial
+    h->vmovups(ymm_src, table_val(exp_pol, 4));
+    h->vfmadd213ps(ymm_src, ymm_aux1, table_val(exp_pol, 3));
+    h->vfmadd213ps(ymm_src, ymm_aux1, table_val(exp_pol, 2));
+    h->vfmadd213ps(ymm_src, ymm_aux1, table_val(exp_pol, 1));
+    h->vfmadd213ps(ymm_src, ymm_aux1, table_val(exp_pol, 0));
+    h->vfmadd213ps(ymm_src, ymm_aux1, table_val(one));
+
+    // y = y * 2^n
+
+    h->vmulps(ymm_src, ymm_src, ymm_aux2);
+    h->vmulps(ymm_src, ymm_src, table_val(two));
+  }
   void exp_compute_vector_fwd(const Xbyak::Zmm& zmm_src) {
     /* exp code */
     h->vcmpps(k_mask, zmm_src, table_val(exp_ln_flt_min_f), _cmp_lt_os);
@@ -562,6 +608,35 @@ class eltwise_injector {
     h->vaddps(ymm_aux0, ymm_aux0, table_val(one));
     h->vrcpps(ymm_aux0, ymm_aux0);
     h->vmulps(ymm_src, ymm_src, ymm_aux0);
+
+    // onednn
+
+    // h->sub(h->rsp, 32);
+    // h->movups(h->ptr[h->rsp], ymm_src);
+    // h->vbroadcastss(ymm_aux0, h->ptr[reg_rt_const_p + const_p_offset]);
+    // h->vmulps(ymm_src, ymm_src, ymm_aux0);
+    // h->vmovups(ymm_aux3, ymm_src);
+    // // we store the original sign and make x negative
+    // h->vandps(ymm_aux3, ymm_aux3, table_val(sign_mask));
+    // h->vorps(ymm_src, ymm_src, table_val(sign_mask));
+
+    // exp_compute_vector_fwd(ymm_src);
+    // // dup exp(x)
+    // h->vmovups(ymm_aux1, ymm_src);
+    // // (exp(x) + 1)
+    // h->vaddps(ymm_aux1, ymm_aux1, table_val(one));
+    // // y = exp(x) / (exp(x) + 1)
+    // h->vdivps(ymm_src, ymm_src, ymm_aux1);
+
+    // // Now we have to apply the "symmetry" based on original sign
+    // h->vmovups(ymm_aux2, table_val(one));
+    // h->vsubps(ymm_aux2, ymm_aux2, ymm_src);
+    // h->vmovups(ymm_mask, ymm_aux3);
+    // h->vblendvps(ymm_aux2, ymm_aux2, ymm_src, ymm_mask);
+    // h->vmovups(ymm_src, ymm_aux2);
+    // h->vmovups(ymm_aux0, h->ptr[h->rsp]);
+    // h->add(h->rsp, 32);
+    // h->vmulps(ymm_src, ymm_src, ymm_aux0);
   }
   void swish_compute_vector_fwd(const Xbyak::Zmm& zmm_src, int const_p_offset) {
     h->vmovups(zmm_aux0, zmm_src);

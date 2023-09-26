@@ -121,10 +121,8 @@ using GcCompBf16 = jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16;
 using GcCompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 using GcCompInt8 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI;
 
-constexpr jblas::gemm::GemmCoreType GcCompInt8KBlockSet[] = {
-    jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-    jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48,
-    jblas::gemm::GemmCoreType::AVX2_2X48};
+constexpr jblas::gemm::GemmCoreType GcCompInt8KBlockSet[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK,
+                                                             jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK};
 
 constexpr jblas::gemm::GemmCoreType GcCompInt8Set[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_SS,
                                                        jblas::gemm::GemmCoreType::AVX512_VNNI_8x48};
@@ -145,16 +143,7 @@ class Silu {
     float alpha = -1.f;
     typename SiluKernel::Param param{_param.C, _param.ldc, &alpha};
     static SiluKernel ker;
-    float tmp[M * N];
-    for (int i = 0; i < M; i++) {
-      ne_vec_silu_f32(N, tmp + i * N, cacheptr + i * cachestep);
-    }
     auto ret = ker.forward(cacheptr, cachestep, M_offset, N_offset, M, N, param);
-    for (int i = 0; i < M; i++) {
-      float* res = _param.C + M_offset * _param.ldc + N_offset + i * _param.ldc;
-      for (int j = 0; j < N; j++)
-        if (fabs(res[j] - tmp[i * N + j]) > 0.1) printf("%f,%f\n", res[j], tmp[i * N + j]);
-    }
     return JblasSuccess;
   }
 };

@@ -38,9 +38,13 @@ bool jblas_fusion_FFN_SiLu_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr,
       if (sameKernel) {
         if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32) ||
             w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
-          constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
-          support = contains(w1tmp->mCoreType, GcCompInt8KBlockSet, EleNum);
-          support &= hasISA(GcCompInt8KBlockSet, EleNum);
+          constexpr jblas::gemm::GemmCoreType cores[] = {
+              jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+              jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48,
+              jblas::gemm::GemmCoreType::AVX2_2X48};
+          constexpr size_t EleNum = sizeof(cores) / sizeof(GcCompInt8KBlockSet[0]);
+          support = contains(w1tmp->mCoreType, cores, EleNum);
+          support &= hasISA(cores, EleNum);
         } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
                    w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
           constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
