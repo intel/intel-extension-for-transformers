@@ -1,5 +1,6 @@
 Full Publications/Events (14)
 ==========
+
 ## 2023 (11)
 * Keynote: [Intel Innovation 2023 Livestream - Day2](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
 * Hands-On Lab at Intel Innovation 2023: [Demystifying Generative AI: Develop and Optimize Your Own Talking Chatbot](./pubs/AI010_Demystifying%20Generative%20AI%20Build%20Your%20Own%20Talking%20Chatbot.pdf) (Sep 2023)
