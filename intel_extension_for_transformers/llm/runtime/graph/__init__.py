@@ -94,13 +94,18 @@ class Model:
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
         # TODO support multi batch
+        assert(input_ids.shape[0] == 1, "Unsupport multi-batch input ids.")
         if streamer:
+            ret = input_ids.tolist()
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
                 streamer.put(torch.tensor([out]))
-            return None
+                ret[0].extend(out)
+            return ret
         else:
-            return self.model.generate(input_ids = input_ids.tolist()[0])
+            ret = input_ids.tolist()
+            ret[0].extend(self.model.generate_tokens(input_ids = input_ids.tolist()[0]))
+            return ret
 
     def is_token_end(self):
         return self.model.is_token_end()
