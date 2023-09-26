@@ -59,7 +59,7 @@ Below are the sample code to enable weight-only low precision inference. See mor
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 
-model_name = "Intel/neural-chat-7b-v1-1"
+model_name = "THUDM/chatglm2-6b"
 config = WeightOnlyQuantConfig(compute_dtype="int8")
 prompt = "Once upon a time, a little girl"
 
@@ -76,7 +76,7 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 
-model_name = "Intel/neural-chat-7b-v1-1" 
+model_name = "THUDM/chatglm2-6b" 
 config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
 prompt = "Once upon a time, a little girl"
 
