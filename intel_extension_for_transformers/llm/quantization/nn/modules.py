@@ -21,7 +21,7 @@ import torch
 from functools import reduce
 from operator import mul
 from peft.tuners.lora import LoraLayer
-from ..autograd import matmul_4bit
+from intel_extension_for_transformers.llm.quantization.autograd import matmul_kbit
 
 
 torch.ops.load_library(
@@ -84,6 +84,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         blocksize=32,
         scheme="sym",
         device=None,
+        do_dequant=False
     ):
         super().__init__(input_features, output_features, bias, device)
         self.compute_dtype = compute_dtype
@@ -91,6 +92,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         self.blocksize = blocksize
         self.scheme = scheme
         self.weight_dtype = weight_dtype
+        self.do_dequant = do_dequant
 
     def forward(self, x: torch.Tensor):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually
@@ -104,9 +106,9 @@ class QuantizedLinearQBits(torch.nn.Linear):
         m = reduce(mul, shape[0:-1])
         out = torch.zeros(m, self.out_features, dtype=x.dtype)
         bias = None if self.bias is None else self.bias.data
-        torch.ops.weight_only_jblasop.qbits_linear(
-            x.view(m, shape[-1]), self.weight.data, bias, out,
-            self.out_features, self.bias is not None, self.compute_dtype, self.weight_dtype
+        out = matmul_kbit(
+            x.view(m, shape[-1]), self.weight, bias, out,
+            self.compute_dtype, self.weight_dtype, do_dequant=self.do_dequant
         )
         shape[-1] = self.out_features
         out = out.view(shape)
@@ -204,3 +206,33 @@ class QuantizedLinearQBits(torch.nn.Linear):
 #     ):
 #         super().__init__(input_features, output_features, bias, compute_dtype, compress_statistics,
 #                          "s8_scalef32", blocksize, scheme, device)
+
+
+if __name__ == "__main__":
+    batch_size = 5
+    input_features, output_features = 10, 20
+    bias=True
+    compute_dtype="bf16"
+    weight_dtype='nf4_scalef32'
+    blocksize=32
+    scheme="sym"
+    device=None
+    do_dequant=False
+    linear = torch.nn.Linear(input_features, output_features)
+    inputs = torch.randn((batch_size, input_features))
+    output_ori = linear(inputs)
+    print(output_ori)
+    qlinear = QuantizedLinearQBits(
+        input_features, output_features,
+        bias=bias,
+        compute_dtype=compute_dtype,
+        weight_dtype=weight_dtype,
+        blocksize=blocksize,
+        scheme=scheme,
+        device=device,
+        do_dequant=do_dequant
+    )
+    qlinear.set_weights_bias(linear.weight.data, linear.bias)
+    output = qlinear(inputs)
+    print(output)
+    print(torch.abs(output_ori-output))
