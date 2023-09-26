@@ -3,7 +3,7 @@
 LLM Runtime is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from [llama.cpp](https://github.com/ggerganov/llama.cpp), which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it not easy for developers to support a new model. Our LLM Runtime has the following features:
 
 - Modular design to support new models
-- Highly optimized low precision kernels
+- [Highly optimized low precision kernels](core/README.md)
 - Utilize AMX, VNNI and AVX512F instruction set
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization 
@@ -12,11 +12,11 @@ LLM Runtime is designed to provide the efficient inference of large language mod
 
 ## Supported Models
 
-We support the following models:
-### Text generation models
+LLM Runtime supports the following models:
+### Text Generation
 | model name | INT8 | INT4|
 |---|:---:|:---:|
-|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
+|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf), [LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)| ✅ | ✅ | 
 |[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
 |[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ | 
 |[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ | 
@@ -27,25 +27,34 @@ We support the following models:
 |[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |  
 |[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |
 
-### Code generation models
+### Code Generation
 | model name | INT8 | INT4|
 |---|:---:|:---:|
 |[Code-LLaMA-7B](https://huggingface.co/codellama/CodeLlama-7b-hf), [Code-LLaMA-13B](https://huggingface.co/codellama/CodeLlama-13b-hf)| ✅ | ✅ | 
 |[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| ✅ | ✅ | 
 
 
-## How to use
+## How to Use
 
-### 1. Build LLM Runtime
-Linux
+### 1. Install LLM Runtime
+Install from binary
 ```shell
+pip install intel-extension-for-transformers
+```
+
+Build from source
+```shell
+# Linux
+git submodule update --init --recursive
 mkdir build
 cd build
 cmake .. -G Ninja
 ninja
 ```
-Windows: install VisualStudio 2022(a validated veresion), search 'Developer PowerShell for VS 2022' and open it, then run the following cmds.
+
 ```powershell
+# Windows
+# Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
 mkdir build
 cd build
 cmake ..
@@ -54,24 +63,24 @@ cmake --build . -j
 
 ### 2. Run LLM with Python API
 
-You can use the python api to simplely run HF model.
+You can use Python API to run Hugging Face model simply. Here is the sample code:
 ```python
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
-model_name = "EleutherAI/gpt-j-6b"     # support model id of HF or local PATH to model
+model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 model = AutoModel.from_pretrained(model_name, quantization_config=woq_config)
 prompt = "Once upon a time, a little girl"
 output = model.generate(prompt, max_new_tokens=30)
 ```
 
-### 3. Run LLM with Script
-You can use the following script to run, including convertion, quantization and inference.
+### 3. Run LLM with Python Script
+You can run LLM with one-click python script including convertion, quantization and inference.
 ```
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
-LLM one-click running script args explanations:
-| arg               | explanation                                                             |
+Augument description of run.py:
+| Augument         | Description                                                              |
 | --------------    | ----------------------------------------------------------------------- |
 | model           | directory containing model file or model id                               |
 | --weight_dtype  | data type of quantized weight (default: int4)                             |
@@ -91,10 +100,11 @@ LLM one-click running script args explanations:
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 
 
-## Advanced use
+## Advanced Usage
+Besides the one-click script, LLM Runtime also offers the detailed script: 1) convert and quantize, and 2) inference.
 
-### 1. Convert and Quantize LLM model
-LLM Runtime assumes the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
+### 1. Convert and Quantize LLM
+LLM Runtime assumes the compatible model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
 
 ```bash
 
@@ -116,8 +126,8 @@ python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_fil
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_dtype int8
 
 ```
-quantization args explanations:
-| arg             | explanation                                                 |
+Augument description of quantize.py:
+| Augument        | Description                                                 |
 | --------------  | ----------------------------------------------------------- |
 | --model_file    | path to the fp32 model                                      |
 | --out_file      | path to the quantized model                                 |
@@ -131,9 +141,9 @@ quantization args explanations:
 | --use_ggml      | enable ggml for quantization and inference                  |
 
 
-### 2. Inference model with C++ script API
+### 2. Inference LLM
 
-We supply LLM running script to run supported models with c++ api conveniently.
+We provide LLM inference script to run the quantized model. Please reach [us](mailto:itrex.maintainers@intel.com) if you want to run using C++ API directly.
 ```bash
 # recommed to use numactl to bind cores in Intel cpus for better performance
 # if you use different core numbers, please also  change -t arg value
@@ -147,8 +157,8 @@ OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/inference.py --model_name
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/inference.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
 ```
 
-LLM running script args explanations:
-| arg               | explanation                                                             |
+Augument description of inference.py:
+| Augument          | Description                                                             |
 | --------------    | ----------------------------------------------------------------------- |
 | --model_name      | model name                                                              |
 | -m / --model      | path to the executed model                                              |

@@ -35,7 +35,7 @@ static const model_scratch llama_mem_req(int n_layers) {
     case 60:
       return {512ull * MB, 512ull * MB, 3124ull * MB};
     case 80:
-      return {1024ull * MB, 1024ull * MB, 5120ull * MB};
+      return {2048ull * MB, 2048ull * MB, 10240ull * MB};
     default:
       MODEL_ASSERT(false);
   }
@@ -45,7 +45,7 @@ class Llama : public IModel {
  private:
   model_archs arch = MODEL_LLAMA;
   std::unique_ptr<model_model_loader> ml;
-  uint32_t n_layer, n_embd, n_ff, n_vocab;
+  uint32_t n_layer, n_embd, n_ff, n_vocab, n_head, n_head_kv;
   int n_ctx, n_gpu_layer;
   bool use_mmap, use_mlock, vocab_only;
   model_scratch scratch;

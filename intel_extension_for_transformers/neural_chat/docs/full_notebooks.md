@@ -11,6 +11,7 @@ Welcome to use Jupyter Notebooks to explore how to build and customize chatbots 
 | 1.3     | Building Chatbot on Intel XPU                 | Learn how to create chatbot on XPU                      | [Notebook](./notebooks/build_chatbot_on_xpu.ipynb) |
 | 1.4     | Building Chatbot on Habana Gaudi1/Gaudi2      | Learn how to create chatbot on Habana Gaudi1/Gaudi2     | [Notebook](./notebooks/build_chatbot_on_habana_gaudi.ipynb) |
 | 1.5     | Building Chatbot on Nvidia A100               | Learn how to create chatbot on Nvidia A100              | [Notebook](./notebooks/build_chatbot_on_nv_a100.ipynb)   |
+| 1.6     | Building Chatbot on Intel CPU Windows PC      | Learn how to create chatbot on Windows PC               | [Notebook](../examples/talkingbot_pc/build_talkingbot_on_pc.ipynb) |
 | 2       | Deploying Chatbots                            |                                                           |                                                         |
 | 2.1     | Deploying Chatbot on Intel CPU ICX            | Learn how to deploy chatbot on ICX                    | [Notebook](./notebooks/deploy_chatbot_on_icx.ipynb) |
 | 2.2     | Deploying Chatbot on Intel CPU SPR            | Learn how to deploy chatbot on SPR                    | [Notebook](./notebooks/deploy_chatbot_on_spr.ipynb) |

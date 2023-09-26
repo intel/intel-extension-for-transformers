@@ -46,10 +46,14 @@ class TextToSpeech():
         self.output_audio_path = output_audio_path
         self.stream_mode = stream_mode
         self.spk_model_name = "speechbrain/spkrec-xvect-voxceleb"
-        self.speaker_model = EncoderClassifier.from_hparams(
-            source=self.spk_model_name,
-            run_opts={"device": "cpu"},
-            savedir=os.path.join("/tmp", self.spk_model_name))
+        try:
+            self.speaker_model = EncoderClassifier.from_hparams(
+                source=self.spk_model_name,
+                run_opts={"device": "cpu"},
+                savedir=os.path.join("/tmp", self.spk_model_name))
+        except Exception as e:
+            print(f"[TTS Warning] speaker model fail to load, so speaker embedding creating is disabled.")
+            self.speaker_model = None
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
         self.vocoder.eval()
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -89,6 +93,8 @@ class TextToSpeech():
 
         driven_audio_path: the driven audio of that speaker
         """
+        if self.speaker_model is None:
+            raise Exception("Unable to create a speaker embedding! Please check the speaker model.")
         audio_dataset = Dataset.from_dict({"audio":
             [driven_audio_path]}).cast_column("audio", Audio(sampling_rate=16000))
         waveform = audio_dataset[0]["audio"]['array']
