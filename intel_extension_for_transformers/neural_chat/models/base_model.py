@@ -23,13 +23,12 @@ from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
 from .model_utils import load_model, predict, predict_stream, MODELS
-from ..prompts import prepare_prompt
+from ..prompts import PromptTemplate
 
 
 def construct_parameters(query, model_name, device, config):
     params = {}
-    prompt = prepare_prompt(query, config.task, MODELS[model_name]["tokenizer"])
-    params["prompt"] = prompt
+    params["prompt"] = query
     params["temperature"] = config.temperature
     params["top_k"] = config.top_k
     params["top_p"] = config.top_p
@@ -66,6 +65,7 @@ class BaseModel(ABC):
         self.intent_detection = False
         self.cache = None
         self.device = None
+        self.conv_template = None
 
     def match(self, model_path: str):
         """
@@ -153,6 +153,7 @@ class BaseModel(ABC):
                             query = response
         assert query is not None, "Query cannot be None."
 
+        query = self.prepare_prompt(query, self.model_name, config.task)
         response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
 
         # plugin post actions
@@ -214,6 +215,7 @@ class BaseModel(ABC):
         assert query is not None, "Query cannot be None."
 
         # LLM inference
+        query = self.prepare_prompt(query, self.model_name, config.task)
         response = predict(**construct_parameters(query, self.model_name, self.device, config))
 
         # plugin post actions
@@ -265,7 +267,39 @@ class BaseModel(ABC):
         Returns:
             Conversation: A default conversation template.
         """
-        return get_conv_template("one_shot")
+        return get_conv_template("zero_shot")
+
+    def get_conv_template(self, model_path: str, task: str = "") -> Conversation:
+        """
+        Get the conversation template for the given model path or given task.
+
+        Args:
+            model_path (str): Path to the model.
+            task (str): Task type, one of [completion, chat, summarization].
+
+        Returns:
+            Conversation: A conversation template.
+        """
+        if self.conv_template:
+            return
+        if not task:
+            self.conv_template = PromptTemplate(self.get_default_conv_template(model_path).name)
+        else:
+            if task == "completion":
+                name = "alpaca_without_input"
+            elif task == "chat":
+                name = "neural-chat-7b-v2"
+            elif task == "summarization":
+                name = "summarization"
+            else:
+                raise NotImplementedError(f"Unsupported task {task}.")
+            self.conv_template = PromptTemplate(name)
+
+    def prepare_prompt(self, prompt: str, model_path: str, task: str = ""):
+        self.get_conv_template(model_path, task)
+        self.conv_template.append_message(self.conv_template.roles[0], prompt)
+        self.conv_template.append_message(self.conv_template.roles[1], None)
+        return self.conv_template.get_prompt()
 
     def register_plugin_instance(self, plugin_name, instance):
         """
