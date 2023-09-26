@@ -81,6 +81,7 @@ void Llama::init(const char* path_model, model_context& lctx, int n_ctx_, int n_
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
   n_head_kv = hparams.n_head_kv;
+  n_head = hparams.n_head;
   scratch = llama_mem_req(n_layer);
   model.scratchs = scratch;
 }
@@ -133,7 +134,7 @@ void Llama::load(model_context& lctx, model_progress_callback progress_callback,
 
     // qkv GEMM
     layer.attn[0] = ml->get_tensor(layers_i + ".attention.wq.weight", {n_embd, n_embd}, backend);
-    if (n_head_kv == 8) {
+    if (n_head != n_head_kv) {  // In order to distinguish whether it is llama2-70B or not.
       layer.attn[1] = ml->get_tensor(layers_i + ".attention.wk.weight", {n_embd, n_embd / n_head_kv}, backend);
       layer.attn[2] = ml->get_tensor(layers_i + ".attention.wv.weight", {n_embd, n_embd / n_head_kv}, backend);
     } else {
