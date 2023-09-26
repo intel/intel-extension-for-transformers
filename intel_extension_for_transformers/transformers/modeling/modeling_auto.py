@@ -61,7 +61,8 @@ class _BaseQBitsAutoModelClass:
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
-        use_llm_runtime = kwargs.pop("use_llm_runtime", False)
+
+        use_llm_runtime = kwargs.pop("use_llm_runtime", True)
         device_map = kwargs.get("device_map", None)
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
@@ -120,6 +121,7 @@ class _BaseQBitsAutoModelClass:
                         quantization_config.weight_dtype == "int8"
                         and quantization_config.compute_dtype == torch_dtype
                     ), f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
+
         if isinstance(quantization_config, MixedPrecisionConfig):
             kwargs["torch_dtype"] = torch.bfloat16
             logger.info("Mixed Precision done.")
@@ -141,7 +143,7 @@ class _BaseQBitsAutoModelClass:
                     alg=quantization_config.scheme,
                     group_size=quantization_config.group_size,
                     scale_dtype=quantization_config.scale_dtype,
-                    compute_type=quantization_config.compute_dtype
+                    compute_dtype=quantization_config.compute_dtype
                 )
                 return model
             else:
