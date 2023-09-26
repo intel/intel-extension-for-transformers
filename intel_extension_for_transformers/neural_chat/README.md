@@ -157,4 +157,4 @@ Welcome to use Jupyter notebooks to explore how to create, deploy, and customize
 | #5     | Deploying Chatbot with Load Balance       | Learn how to deploy chatbot with load balance on SPR    | [Notebook](./docs/notebooks/chatbot_with_load_balance.ipynb) |
 
 
-📖D Please refer to [HERE](docs/full_notebooks.md) for the full notebooks.
+🌟Please refer to [HERE](docs/full_notebooks.md) for the full notebooks.
