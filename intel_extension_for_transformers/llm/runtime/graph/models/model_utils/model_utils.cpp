@@ -57,14 +57,14 @@
 
 static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype,
                           const int batch_size, const int beam_size) {
-  const int n_head_kv = std::max(hparams.n_head_kv, 1U);
+  const int n_head_kv = 1U;
   int32_t k_size, v_size;
   get_batch_kv_elements_from_gpt_params(hparams, wtype, &k_size, &v_size);
 
-  const int64_t n_elements_k = n_head_kv * hparams.n_layer * batch_size * beam_size * k_size;
-  const int64_t n_elements_v = n_head_kv * hparams.n_layer * batch_size * beam_size * v_size;
+  const int64_t n_elements_k = hparams.n_layer * batch_size * beam_size * k_size;
+  const int64_t n_elements_v = hparams.n_layer * batch_size * beam_size * v_size;
   const auto wsize = wtype == NE_TYPE_JBLAS ? 1 : ne_type_size(wtype);
-  NE_ASSERT(wtype != NE_TYPE_JBLAS || n_head_kv == 1);
+  NE_ASSERT(wtype != NE_TYPE_JBLAS);
 
   cache.buf.resize((n_elements_k + n_elements_v) * wsize + 2u * MB);
 
