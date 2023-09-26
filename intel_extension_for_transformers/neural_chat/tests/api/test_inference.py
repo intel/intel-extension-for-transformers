@@ -19,7 +19,7 @@ import os
 import unittest
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot, optimize_model
 from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig, GenerationConfig, AMPConfig,
+    PipelineConfig, GenerationConfig, MixedPrecisionConfig,
 )
 from intel_extension_for_transformers.neural_chat import plugins
 
@@ -62,7 +62,7 @@ class UnitTest(unittest.TestCase):
         self.assertTrue(os.path.exists("./response.wav"))
 
     def test_quantization(self):
-        config = AMPConfig()
+        config = MixedPrecisionConfig()
         optimize_model(model="facebook/opt-125m", config=config)
 
     def test_text_chat_stream(self):

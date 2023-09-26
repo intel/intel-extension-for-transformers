@@ -20,7 +20,7 @@ import torch
 from transformers import BitsAndBytesConfig
 from transformers.utils.bitsandbytes import is_bitsandbytes_available
 from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat.config import PipelineConfig, WeightOnlyQuantizationConfig
+from intel_extension_for_transformers.neural_chat.config import PipelineConfig, WeightOnlyQuantConfig
 
 
 class TestChatbotBuilder(unittest.TestCase):
@@ -44,7 +44,17 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_weight_only_quant(self):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-            optimization_config=WeightOnlyQuantizationConfig()
+            optimization_config=WeightOnlyQuantConfig()
+        )
+        chatbot = build_chatbot(config)
+        self.assertIsNotNone(chatbot)
+        response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
+        print(response)
+        self.assertIsNotNone(response)
+
+    def test_build_chatbot_with_weight_only_int4_quant(self):
+        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+            optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
         )
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)

@@ -38,9 +38,9 @@ from transformers import (
 )
 from transformers.deepspeed import is_deepspeed_available
 from transformers.utils import is_bitsandbytes_available, is_offline_mode
-from intel_extension_for_transformers.neural_chat.config import (
-    AMPConfig,
-    WeightOnlyQuantizationConfig,
+from intel_extension_for_transformers.transformers import (
+    MixedPrecisionConfig,
+    WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
 
@@ -299,7 +299,7 @@ def load_model(
     elif device == "cpu":
         set_cpu_running_env()
 
-    if isinstance(optimization_config, AMPConfig):
+    if isinstance(optimization_config, MixedPrecisionConfig):
         dtype = optimization_config.dtype
     else:
         dtype = "float32"
@@ -400,7 +400,7 @@ def load_model(
     if model.generation_config.eos_token_id is None:
         model.generation_config.eos_token_id = tokenizer.eos_token_id
 
-    if isinstance(optimization_config, WeightOnlyQuantizationConfig):
+    if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
         model = optimize_model(model, optimization_config)
 
