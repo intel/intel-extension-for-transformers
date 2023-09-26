@@ -1,5 +1,3 @@
-import sys
-sys.path.append("/data2/lkk/intel-extension-for-transformers")
 import os
 import unittest
 from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
@@ -18,8 +16,7 @@ import torch.utils.data as data
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
-# MODEL_NAME = "hf-internal-testing/tiny-random-GPTJForCausalLM"
-MODEL_NAME = "/models/tiny-random-GPTJForCausalLM"
+MODEL_NAME = "hf-internal-testing/tiny-random-GPTJForCausalLM"
 
 def find_all_linear_names(model):
     cls = torch.nn.Linear
@@ -161,7 +158,4 @@ class TestDPO(unittest.TestCase):
         self.trainer.train()
 
 if __name__ == "__main__":
-    # unittest.main()
-    t = TestDPO()
-    t.setUpClass()
-    t.test_dpo()
+    unittest.main()
