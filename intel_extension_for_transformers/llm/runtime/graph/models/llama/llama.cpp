@@ -137,7 +137,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     ne_tensor *Qcur, *Kcur, *Vcur;
     if (jblas_fusion_QKV_f32f32_support(model.layers[il].attn[0]->data, model.layers[il].attn[1]->data,
                                         model.layers[il].attn[2]->data, N, model.layers[il].attn[0]->ne[1],
-                                        model.layers[il].attn[0]->ne[0])&&n_head == n_head_kv) {  // fused execution of QKV
+                                        model.layers[il].attn[0]->ne[0]) &&
+        n_head == n_head_kv) {  // fused execution of QKV
       struct ne_tensor* QKVcur =
           ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
       Qcur = ne_rope_inplace(
@@ -152,7 +153,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
           n_past, n_rot, 0, 0);
       Vcur = ne_transpose(
           ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, N * n_embd, 2 * N * n_embd * ne_element_size(QKVcur)),
-                          n_embd, N));
+                              n_embd, N));
     } else {
       Qcur = ne_rope_inplace(
           ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), n_embd / n_head, n_head, N),
@@ -167,7 +168,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     ne_set_name(Kcur, "Kcur");
     ne_set_name(Vcur, "Vcur");
     // self-attention
-    if (!run_mha_reordered||n_head != n_head_kv) {
+    if (!run_mha_reordered || n_head != n_head_kv) {
       // store key and value to memory
       {
         struct ne_tensor* k = ne_view_1d(ctx0, kv_self.k, N * n_embd_gqa,
