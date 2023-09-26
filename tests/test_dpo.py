@@ -1,9 +1,10 @@
 import os
 import unittest
-from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer
+from intel_extension_for_transformers.transformers.dpo_trainer import DPOTrainer, is_peft_available, disable_dropout_in_model
 
 from transformers import (
     AutoConfig,
+    Trainer,
     AutoModelForCausalLM,
     AutoTokenizer,
     TrainingArguments,
@@ -12,7 +13,7 @@ import copy
 import torch
 from peft import LoraConfig
 import torch.utils.data as data
-
+from torch.utils.data import DataLoader
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["DISABLE_MLFLOW_INTEGRATION"] = "true"
@@ -87,17 +88,17 @@ class TestDPO(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.model = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME, load_in_4bit=True, low_cpu_mem_usage=True,
-            torch_dtype=torch.float16,
+            MODEL_NAME, load_in_4bit=False, low_cpu_mem_usage=True,
+            torch_dtype=torch.float32,
         )
         self.model_ref = AutoModelForCausalLM.from_pretrained(
-            MODEL_NAME, load_in_4bit=True, low_cpu_mem_usage=True,
-            torch_dtype=torch.float16,
+            MODEL_NAME, load_in_4bit=False, low_cpu_mem_usage=True,
+            torch_dtype=torch.float32,
         )
         self.train_dataset = DummyDataset()
         self.eval_dataset = DummyDataset()
         # 4. initialize training arguments:
-        training_args = TrainingArguments(
+        self.training_args = TrainingArguments(
                 per_device_train_batch_size=1,
                 per_device_eval_batch_size=1,
                 max_steps=10,
@@ -113,7 +114,7 @@ class TestDPO(unittest.TestCase):
                 )
 
         target_modules = find_all_linear_names(self.model)
-        peft_config = LoraConfig(
+        self.peft_config = LoraConfig(
                 r=16,
                 lora_alpha=8,
                 lora_dropout=0.05,
@@ -125,13 +126,13 @@ class TestDPO(unittest.TestCase):
         self.trainer = DPOTrainer(
                 self.model,
                 self.model_ref,
-                args=training_args,
+                args=self.training_args,
                 data_collator=self.collate_fn,
                 beta=0.01,
                 train_dataset=self.train_dataset,
                 eval_dataset=self.eval_dataset,
                 tokenizer=self.train_dataset.tokenizer,
-                peft_config=peft_config,
+                peft_config=self.peft_config,
                 max_length=self.train_dataset.max_length,
                 )
 
@@ -154,9 +155,51 @@ class TestDPO(unittest.TestCase):
             attention_mask=attention_mask,
         )
 
-    def test_dpo(self):
+    def test_init(self):
+        self.trainer = DPOTrainer(
+                self.model,
+                self.model_ref,
+                args=self.training_args,
+                data_collator=self.collate_fn,
+                beta=0.01,
+                train_dataset=self.train_dataset,
+                eval_dataset=self.eval_dataset,
+                tokenizer=self.train_dataset.tokenizer,
+                peft_config=self.peft_config,
+                max_length=self.train_dataset.max_length,
+                )
+
+        self.assertTrue(isinstance(self.trainer, Trainer))
+
+    def test_dropout(self):
+        disable_dropout_in_model(self.model)
+
+        for module in self.model.modules():
+            if isinstance(module, torch.nn.Dropout):
+                self.assertEqual(module.p, 0)
+                break
+
+    def test_loss(self):
+        train_dataloader = DataLoader(self.train_dataset, shuffle=False, collate_fn=self.collate_fn, batch_size=1)
+
+        for each in train_dataloader:
+            input_ids = each["input_ids"].to(self.model.device)
+            attention_mask = each["attention_mask"].to(self.model.device)
+            labels = each["labels"].to(self.model.device)
+            inp = {"input_ids": input_ids, "attention_mask": attention_mask, "labels": labels}
+            loss = self.trainer.compute_loss(self.model, inp)
+            self.assertTrue(isinstance(loss, torch.Tensor))
+            break
+
+    def test_train(self):
         self.trainer.train()
         self.assertTrue(isinstance(self.trainer.model, torch.nn.Module))
+
+    def test_store_metrics(self):
+        self.trainer.store_metrics({"loss": 0.5}, "train")
+
+    def test_log(self):
+        self.trainer.log({"loss": 0.5})
 
 if __name__ == "__main__":
     unittest.main()
