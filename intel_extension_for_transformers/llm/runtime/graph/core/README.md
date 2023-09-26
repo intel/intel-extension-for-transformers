@@ -44,7 +44,7 @@ FFN | GPT-J<br>LLaMA<br>BLOOM<br>ChatGLM<br>Falcon<br>MPT | AMX_INT8, AVX512_VNN
 
 
 ## Fastest Configuration for CPUs
-Codename | Weight Config | Runtime ISA  
+codename | weight config | runtime ISA  
 ---|---|---
 Sapphire Rapids | any int4<br>group size=-1<br>compute type=int8 | AMX_INT8
 Ice Lake<br>Cascade Lake<br>Cooper Lake<br>Tiger Lake<br>Rocket Lake | any int4<br>group size=-1<br>compute type=int8 | AVX512_VNNI
