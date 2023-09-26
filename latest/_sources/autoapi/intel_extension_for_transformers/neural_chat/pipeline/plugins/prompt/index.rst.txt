@@ -6,12 +6,3 @@
 .. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt
 
 
-Submodules
-----------
-.. toctree::
-   :titlesonly:
-   :maxdepth: 1
-
-   prompt_template/index.rst
-
-

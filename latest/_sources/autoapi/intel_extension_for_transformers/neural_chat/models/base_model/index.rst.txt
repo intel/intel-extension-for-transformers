@@ -110,6 +110,19 @@ Functions
       :rtype: Conversation
 
 
+   .. py:method:: get_conv_template(model_path: str, task: str = '') -> fastchat.conversation.Conversation
+
+      Get the conversation template for the given model path or given task.
+
+      :param model_path: Path to the model.
+      :type model_path: str
+      :param task: Task type, one of [completion, chat, summarization].
+      :type task: str
+
+      :returns: A conversation template.
+      :rtype: Conversation
+
+
    .. py:method:: register_plugin_instance(plugin_name, instance)
 
       Register a plugin instance.

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.models.base_model &mdash; Intel® Extension for Transformers 0.1.dev1+ge647f3a documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.models.base_model &mdash; Intel® Extension for Transformers 0.1.dev1+gf852123 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -232,6 +232,26 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.get_conv_template">
+<span class="sig-name descname"><span class="pre">get_conv_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../../../../fastchat/conversation/index.html#fastchat.conversation.Conversation" title="fastchat.conversation.Conversation"><span class="pre">fastchat.conversation.Conversation</span></a></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.get_conv_template" title="Link to this definition"></a></dt>
+<dd><p>Get the conversation template for the given model path or given task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_path</strong> (<em>str</em>) – Path to the model.</p></li>
+<li><p><strong>task</strong> (<em>str</em>) – Task type, one of [completion, chat, summarization].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A conversation template.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="../../../../fastchat/conversation/index.html#fastchat.conversation.Conversation" title="fastchat.conversation.Conversation">Conversation</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.register_plugin_instance">
 <span class="sig-name descname"><span class="pre">register_plugin_instance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plugin_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/base_model.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.base_model.BaseModel.register_plugin_instance" title="Link to this definition"></a></dt>
 <dd><p>Register a plugin instance.</p>
@@ -274,7 +294,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fa055627670> 
+   <jinja2.runtime.BlockReference object at 0x7f45a4331d50> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
