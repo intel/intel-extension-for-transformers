@@ -73,8 +73,7 @@ RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
-    pip install datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
-    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install
+    pip install datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
