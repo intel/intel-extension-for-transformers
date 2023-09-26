@@ -20,10 +20,11 @@ from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQ
 
 model_name = "THUDM/chatglm2-6b"  # or local path to model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-prompt = "小明的妈妈有三个孩子，老大叫大毛，老二叫二毛，老三叫什么？"
+prompt = "She opened the door and see"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 
@@ -32,6 +33,8 @@ gen_tokens = model.generate(input_ids.tolist()[0], max_new_tokens=30)
 =======
 =======
 print(input_ids)
+>>>>>>> update
+=======
 >>>>>>> update
 streamer = TextStreamer(tokenizer)
 
