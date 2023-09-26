@@ -26,13 +26,10 @@ from datasets import Dataset
 from transformers import DataCollator, PreTrainedModel, PreTrainedTokenizerBase, Trainer, TrainingArguments
 from transformers.trainer_callback import TrainerCallback
 import importlib
+from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training
 
 def is_peft_available():
     return importlib.util.find_spec("peft") is not None
-
-
-if is_peft_available(): # pragma: no cover
-    from peft import PeftModel, get_peft_model, prepare_model_for_kbit_training
 
 def disable_dropout_in_model(model: torch.nn.Module) -> None:
     for module in model.modules():
@@ -78,8 +75,6 @@ class DPOTrainer(Trainer):
         peft_config (`Dict`, defaults to `None`):
             The PEFT configuration to use for training. If you pass a PEFT configuration,
             the model will be wrapped in a PEFT model.
-        is_encoder_decoder (`Optional[bool]`, `optional`, defaults to `None`):
-            If no model is provided, we need to know if the model_init returns an encoder-decoder.
         disable_dropout (`bool`, defaults to `True`):
             Whether or not to disable dropouts in `model` and `ref_model`.
     """
@@ -98,40 +93,19 @@ class DPOTrainer(Trainer):
         tokenizer: Optional[PreTrainedTokenizerBase] = None,
         max_length: Optional[int] = None,
         peft_config: Optional[Dict] = None,
-        is_encoder_decoder: Optional[bool] = None,
         disable_dropout: bool = True,
     ):
-        if not is_peft_available() and peft_config is not None: # pragma: no cover
-            raise ValueError(
-                "PEFT is not installed and you passed a `peft_config` in the trainer's kwargs"
-            )
-        elif is_peft_available() and peft_config is not None: # pragma: no cover
-            if getattr(model, "is_loaded_in_8bit", False) or getattr(model, "is_loaded_in_4bit", False):
-                model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
-            model = get_peft_model(model, peft_config)
-            model.print_trainable_parameters()
-
-        if model is not None: # pragma: no cover
-            self.is_encoder_decoder = model.config.is_encoder_decoder
-        elif is_encoder_decoder is None: # pragma: no cover
-            raise ValueError("When no model is provided, you need to pass the parameter is_encoder_decoder.")
-        else:
-            self.is_encoder_decoder = is_encoder_decoder
+        model = prepare_model_for_kbit_training(model, use_gradient_checkpointing=args.gradient_checkpointing)
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
 
         self.is_peft_model = is_peft_available() and isinstance(model, PeftModel)
 
-        if ref_model: # pragma: no cover
-            self.ref_model = ref_model
-        elif self.is_peft_model:
-            # The `model` with adapters turned off will be used as the reference model
-            self.ref_model = None
-        else:
-            raise ValueError("need a reference model.")
+        self.ref_model = ref_model
 
         if disable_dropout: # pragma: no cover
             disable_dropout_in_model(model)
-            if self.ref_model is not None:
-                disable_dropout_in_model(self.ref_model)
+            disable_dropout_in_model(self.ref_model)
 
         self.label_pad_token_id = label_pad_token_id
         self.padding_value = padding_value
@@ -150,23 +124,12 @@ class DPOTrainer(Trainer):
             tokenizer=tokenizer,
         )
 
-        if not hasattr(self, "accelerator"): # pragma: no cover
-            raise AttributeError(
-                "Your `Trainer` does not have an `accelerator` object. Consider upgrading `transformers`."
-            )
-
-        if self.ref_model is None: # pragma: no cover
-            if not hasattr(self.accelerator.unwrap_model(self.model), "disable_adapter"):
-                raise ValueError(
-                    "You are using a `peft` version that does not support `disable_adapter`."
-                )
+        if self.is_deepspeed_enabled: # pragma: no cover
+            # Read more about the issue in https://github.com/huggingface/trl/pull/687
+            self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
+            self.ref_model.eval()
         else:
-            if self.is_deepspeed_enabled: # pragma: no cover
-                # Read more about the issue in https://github.com/huggingface/trl/pull/687
-                self.ref_model = self.accelerator._prepare_deepspeed(self.ref_model)[0]
-                self.ref_model.eval()
-            else:
-                self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
+            self.ref_model = self.accelerator.prepare_model(self.ref_model, evaluation_mode=True)
 
     def dpo_loss(
         self,
@@ -174,15 +137,11 @@ class DPOTrainer(Trainer):
         policy_rejected_logps: torch.FloatTensor,
         reference_chosen_logps: torch.FloatTensor,
         reference_rejected_logps: torch.FloatTensor,
-        reference_free: bool = False,
     ) -> Tuple[torch.FloatTensor, torch.FloatTensor, torch.FloatTensor]:
         """Compute the DPO loss for a batch of policy and reference model log probabilities.
         """
         pi_logratios = policy_chosen_logps - policy_rejected_logps
         ref_logratios = reference_chosen_logps - reference_rejected_logps
-
-        if reference_free: # pragma: no cover
-            ref_logratios = 0
 
         logits = pi_logratios - ref_logratios
 
@@ -196,7 +155,6 @@ class DPOTrainer(Trainer):
         self,
         logits: torch.FloatTensor,
         labels: torch.LongTensor,
-        average_log_prob: bool = False,
     ) -> torch.FloatTensor:
         """Compute the log probabilities of the given labels under the given logits.
 
@@ -214,9 +172,8 @@ class DPOTrainer(Trainer):
         if logits.shape[:-1] != labels.shape: # pragma: no cover
             raise ValueError("Logits (batch and sequence length dim) and labels must have the same shape.")
 
-        if not self.is_encoder_decoder: # pragma: no cover
-            labels = labels[:, 1:].clone()
-            logits = logits[:, :-1, :]
+        labels = labels[:, 1:].clone()
+        logits = logits[:, :-1, :]
         loss_mask = labels != self.label_pad_token_id
 
         # dummy token; we'll ignore the losses on these tokens later
@@ -224,10 +181,7 @@ class DPOTrainer(Trainer):
 
         per_token_logps = torch.gather(logits.log_softmax(-1), dim=2, index=labels.unsqueeze(2)).squeeze(2)
 
-        if average_log_prob: # pragma: no cover
-            return (per_token_logps * loss_mask).sum(-1) / loss_mask.sum(-1)
-        else:
-            return (per_token_logps * loss_mask).sum(-1)
+        return (per_token_logps * loss_mask).sum(-1)
 
     def dpo_forward(
         self, model: nn.Module, batch: Dict[str, Union[List, torch.LongTensor]]
@@ -239,14 +193,8 @@ class DPOTrainer(Trainer):
 
         len_chosen = batch["input_ids"].shape[0] // 2
 
-        model_kwargs = (
-            {
-                "labels": batch["labels"],
-                "decoder_input_ids": batch.pop("decoder_input_ids", None),
-            }
-            if self.is_encoder_decoder
-            else {}
-        )
+        model_kwargs = {}
+
         all_logits = model(
             batch["input_ids"],
             attention_mask=batch["attention_mask"],
@@ -256,7 +204,6 @@ class DPOTrainer(Trainer):
         all_logps = self._get_batch_logps(
             all_logits,
             batch["labels"],
-            average_log_prob=False,
         )
 
         chosen_logps = all_logps[:len_chosen]
@@ -284,21 +231,12 @@ class DPOTrainer(Trainer):
         ) = self.dpo_forward(model, batch)
 
         with torch.no_grad():
-            if self.ref_model is None: # pragma: no cover
-                with self.accelerator.unwrap_model(self.model).disable_adapter():
-                    (
-                        reference_chosen_logps,
-                        reference_rejected_logps,
-                        _,
-                        _,
-                    ) = self.dpo_forward(self.model, batch)
-            else:
-                (
-                    reference_chosen_logps,
-                    reference_rejected_logps,
-                    _,
-                    _,
-                ) = self.dpo_forward(self.ref_model, batch)
+            (
+                reference_chosen_logps,
+                reference_rejected_logps,
+                _,
+                _,
+            ) = self.dpo_forward(self.ref_model, batch)
 
         losses, chosen_rewards, rejected_rewards = self.dpo_loss(
             policy_chosen_logps,

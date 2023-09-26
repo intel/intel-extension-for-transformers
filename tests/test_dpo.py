@@ -156,6 +156,7 @@ class TestDPO(unittest.TestCase):
 
     def test_dpo(self):
         self.trainer.train()
+        self.assertTrue(isinstance(self.trainer.model, torch.nn.Module))
 
 if __name__ == "__main__":
     unittest.main()
