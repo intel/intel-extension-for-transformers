@@ -17,7 +17,7 @@
 import os
 from transformers import AutoConfig
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
-
+import torch
 model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 
 class Model:
@@ -66,10 +66,12 @@ class Model:
         # 1. convert model
         fp32_bin = "ne_{}_f32.bin".format(model_type)
         convert_model(model_name, fp32_bin, "f32")
+        assert(os.path.exists(fp32_bin), "Fail to convert pytorch model")
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
         self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
+        assert(os.path.exists(quant_bin), "Fail to quantize model")
         
         self.model_type = model_type
         self.bin_file = quant_bin
@@ -88,13 +90,22 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, prompt, streamer = None, sentence_mode = True, **kwargs):
-        # TODO support streamer
+    def generate(self, input_ids, streamer = None, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
-        
-        out = self.model.generate(prompt = prompt, sentence_mode = sentence_mode)
-        return out
+        # TODO support multi batch
+        assert(input_ids.shape[0] == 1, "Unsupport multi-batch input ids.")
+        if streamer:
+            ret = input_ids.tolist()
+            while not self.is_token_end():
+                out = self.model.generate(input_ids = input_ids.tolist()[0])
+                streamer.put(torch.tensor([out]))
+                ret[0].extend(out)
+            return ret
+        else:
+            ret = input_ids.tolist()
+            ret[0].extend(self.model.generate_tokens(input_ids = input_ids.tolist()[0]))
+            return ret
 
     def is_token_end(self):
         return self.model.is_token_end()

@@ -65,12 +65,19 @@ cmake --build . -j
 
 You can use Python API to run Hugging Face model simply. Here is the sample code:
 ```python
+from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-model = AutoModel.from_pretrained(model_name, quantization_config=woq_config)
 prompt = "Once upon a time, a little girl"
-output = model.generate(prompt, max_new_tokens=30)
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+streamer = TextStreamer(tokenizer)
+
+model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
+
 ```
 
 ### 3. Run LLM with Python Script

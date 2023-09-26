@@ -143,7 +143,8 @@ class _BaseQBitsAutoModelClass:
                     alg=quantization_config.scheme,
                     group_size=quantization_config.group_size,
                     scale_dtype=quantization_config.scale_dtype,
-                    compute_dtype=quantization_config.compute_dtype
+                    compute_dtype=quantization_config.compute_dtype,
+                    use_ggml=quantization_config.use_ggml,
                 )
                 return model
             else:
