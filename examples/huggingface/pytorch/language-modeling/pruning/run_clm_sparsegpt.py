@@ -36,7 +36,6 @@ from transformers import (
     CONFIG_MAPPING,
     MODEL_MAPPING,
     AutoConfig,
-    # AutoModelForCausalLM,
     AutoTokenizer,
     SchedulerType,
     default_data_collator,
@@ -83,8 +82,6 @@ class Evaluator:
         step = 0
         for input_ids, label, label_indices in tqdm(self.dataloader):
             with torch.no_grad():
-                # if step == 0:
-                #     model = torch.jit.trace(model, input_ids)
                 step += 1
                 # timing
                 if step > warmup_steps: my_timer.__enter__()
@@ -374,11 +371,10 @@ def parse_args():
     parser.add_argument("--eval_fp16", action='store_true',
         help=" fp16",
     )
-    
-    # parser.add_argument(
-    #     "--cuda_eval",
-    #     type=int, default=-1,
-    #     help="Automatic DDP Multi-GPU argument, do not modify")
+    parser.add_argument(
+        "--cuda_eval",
+        type=int, default=-1,
+        help="Automatic DDP Multi-GPU argument, do not modify")
     
     
     args = parser.parse_args()
@@ -644,8 +640,6 @@ def main():
         torch.backends.cudnn.allow_tf32 = False
         use_cache = model.config.use_cache
         model.config.use_cache = False
-        # if torch.cuda.is_available():     # Larger models(e.g. 80G+) may not load into the video card memory.
-        #     model = model.cuda()
         device = args.device
         if device != 'cpu':
             device = "cuda:"+str(device)
@@ -661,7 +655,7 @@ def main():
         tokenizer.save_pretrained(output_dir)
         logger.info(f"The model has been exported to {output_dir}")
         
-    if device != 'cpu':
+    if device != 'cpu': 
         model = model.to(device)
         logger.info(f"*****  Evaluation in GPU mode.  *****")
     else:
