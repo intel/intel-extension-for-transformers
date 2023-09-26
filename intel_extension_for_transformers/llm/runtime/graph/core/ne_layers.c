@@ -2568,13 +2568,12 @@ struct ne_tensor* ne_view_1d(struct ne_context* ctx, struct ne_tensor* a, int64_
     is_node = true;
   }
 
-  printf("ne0 = %d, offset = %d, a->type = %d\n", ne0, offset, a->type);
   struct ne_tensor* result = ne_new_tensor_impl(ctx, a->type, 1, &ne0, (char*)a->data + offset, NE_SIZE_CALC);
 
   result->op = NE_OP_VIEW;
   result->grad = is_node ? ne_dup_tensor(ctx, result) : NULL;
   result->src0 = a;
-  //result->src1 = NULL;
+  result->src1 = NULL;
 
   if (is_node) {
     memcpy(result->padding, &offset, sizeof(offset));

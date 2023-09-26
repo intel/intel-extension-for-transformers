@@ -93,19 +93,15 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
-  //std::cout << "N  " << N << std::endl;
-  //std::cout << "*tokens  " << *tokens << std::endl;
-  //std::cout << "ne_element_size(embd) " << ne_element_size(embd) << std::endl;
   memcpy(embd->data, tokens, N * ne_element_size(embd));
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
-
   int hidden_size = inpL->ne[0];
   int qlen = inpL->ne[1];
   int head_size = hidden_size / num_attention_heads;
   for (int il = 0; il < n_layer; ++il) {
     struct ne_tensor* cur;
-
+    
     lctx.use_buf(ctx0, 0);
 
     struct ne_tensor* residual = inpL;
@@ -116,7 +112,6 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
     // SelfAttention
     {
       // Linear::forward compute QKV
-      //printf("__line__=%d, pass\n", __LINE__);
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
 
       ne_tensor* query_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
@@ -159,18 +154,20 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
                                0);  // [kv_heads, head_size, klen]
 
       // attention
-      //printf("__line__=%d, pass\n", __LINE__);
       struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [heads, qlen, klen]
+      attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, 1.f / std::sqrt(head_size)));
+      attn_scores = ne_alibi(ctx0, attn_scores, n_past, num_attention_heads, 8);
       if (n_past == 0) {
         attn_scores = ne_diag_mask_inf_inplace(ctx0, attn_scores, n_past);
       }
       ne_tensor* attn_probs = ne_soft_max_inplace(ctx0, attn_scores);  // [heads, qlen, klen]
 
-      //printf("__line__=%d, pass\n", __LINE__);
+      // ne_compute_forward_mul_mat_f16_f32
       ne_tensor* context_layer = ne_mul_mat(ctx0, value_layer, attn_probs);  // [heads, qlen, head_size]
       context_layer = ne_cont(ctx0, ne_permute(ctx0, context_layer, 0, 2, 1, 3));
       context_layer = ne_reshape_2d(ctx0, context_layer, hidden_size, qlen);
 
+      // F32 mul_mat
       cur = ne_mul_mat(ctx0, model.layers[il].attn[1], context_layer);
     }
 
@@ -183,13 +180,10 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
     hidden_states = ne_mul(ctx0, hidden_states, model.layers[il].norm[1]);
 
     // mlp.forward
-    //printf("__line__=%d, pass\n", __LINE__);
     struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
     gate = ne_silu(ctx0, gate);
-    //printf("__line__=%d, pass\n", __LINE__);
     struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[1], hidden_states);
     struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
-    //printf("__line__=%d, pass\n", __LINE__);
     mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[2], mlp_output);
 
     inpL = ne_add_inplace(ctx0, mlp_output, residual);
@@ -205,21 +199,13 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   }
 
   lctx.use_buf(ctx0, -1);
-  //std::cout << "embd->ne[0] = " << embd->ne[0] << std::endl;
   if (embd->ne[0] > 1) {
-  // std::cout << "hidden_size = " << hidden_size << std::endl;
-  // std::cout << "(embd->ne[0] - 1) = " << (embd->ne[0] - 1) << std::endl;
-  // std::cout << "ne_element_size(inpL) = " << ne_element_size(inpL) << std::endl;
-  // std::cout << "&inpL = " << &inpL << std::endl;
-    inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
+  inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
   }
   
   // lm_head
-  //printf("__line__=%d, pass\n", __LINE__);
   inpL = ne_mul_mat(ctx0, model.others[2], inpL);
 
-
-  //printf("__line__=%d, pass\n", __LINE__);
   ne_build_forward_expand(&gf, inpL);
   ne_graph_compute(ctx0, &gf);
 
