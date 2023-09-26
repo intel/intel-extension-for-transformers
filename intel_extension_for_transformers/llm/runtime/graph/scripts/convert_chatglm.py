@@ -333,6 +333,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     dir_model = args.model.as_posix()
     fname_out = args.outfile.as_posix()
 
+    with open(dir_model + '/config.json', "r", encoding="utf-8") as f:
+        hparams = json.load(f)
+
     # possible data types
     #   ftype == 0 -> float32
     #   ftype == 1 -> float16
@@ -345,7 +348,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     model = AutoModel.from_pretrained(
         dir_model, low_cpu_mem_usage=True, trust_remote_code=True
     )
-    hparams = model.config.to_dict()
 
     if hasattr(model.config, "multi_query_attention"):
         chatglm2_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)

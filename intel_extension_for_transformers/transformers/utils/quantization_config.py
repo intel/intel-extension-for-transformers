@@ -118,8 +118,8 @@ class WeightOnlyQuantConfig:
 
         if self.compute_dtype is None:
             self.compute_dtype = "int8"
-        elif self.compute_dtype not in ['int8', 'fp32']:
-            raise ValueError("compute_dtype must be 'int8', 'fp32'.")
+        elif self.compute_dtype not in ['int8', 'bf16', 'fp32']:
+            raise ValueError("compute_dtype must be 'int8', 'bf16', 'fp32'.")
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
