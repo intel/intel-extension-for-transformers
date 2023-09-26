@@ -42,7 +42,7 @@ Install from binary
 pip install intel-extension-for-transformers
 ```
 
-Build from Source
+Build from source
 ```shell
 # Linux
 git submodule update --init --recursive
@@ -55,7 +55,6 @@ ninja
 ```powershell
 # Windows
 # Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
-
 mkdir build
 cd build
 cmake ..
