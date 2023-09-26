@@ -52,6 +52,11 @@ class WeightOnlyQuantConfig:
         self.scheme = scheme
         self.algorithm = algorithm
         self.group_size = group_size
+        self.tokenizer = kwargs.pop("tokenizer", None)
+        self.calib_func = kwargs.pop("calib_func", None)
+        self.calib_dataset = kwargs.pop("calib_dataset", "NeelNanda/pile-10k")
+        self.calib_dataloader = kwargs.pop("calib_dataloader", None)
+        self.calib_iters = kwargs.pop("calib_iters", 100)
 
         if compute_dtype is None:
             self.compute_dtype = "fp32"
@@ -132,12 +137,8 @@ class WeightOnlyQuantConfig:
         r"""
         This method returns the quantization method used for the model.
         """
-        if self.weight_dtype == 8:
-            return "s8"
-        elif self.weight_dtype == 4 and self.weight_dtype == "s4fullrange":
-            return "s4fullrange"
-        else:
-            raise ValueError("Only support int8 and int4 quantization now!")
+        # TODO: For training only
+        pass
 
     @classmethod
     def from_dict(cls, config_dict, return_unused_kwargs, **kwargs):
@@ -193,8 +194,6 @@ class WeightOnlyQuantConfig:
         """
 
         output = copy.deepcopy(self.__dict__)
-        output["compute_dtype"] = str(output["compute_dtype"]).split(".")[1]
-
         return output
 
     def __repr__(self):

@@ -70,7 +70,7 @@ function run_benchmark {
         extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
-        extra_cmd=$extra_cmd" --tasks ${iters}"
+        extra_cmd=$extra_cmd" --iters ${iters}"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
@@ -113,6 +113,10 @@ function run_benchmark {
             extra_cmd=$extra_cmd" --woq"
         elif [ "${topology}" = "gpt_j_woq_bab" ]; then
             extra_cmd=$extra_cmd" --bitsandbytes"
+        elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
+            extra_cmd=$extra_cmd" --load_in_4bit True"
+        elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
+            extra_cmd=$extra_cmd" --load_in_8bit True"
         elif [ "${topology}" = "gpt_j_mp" ]; then
             extra_cmd=$extra_cmd" --mixed_precision"
         else

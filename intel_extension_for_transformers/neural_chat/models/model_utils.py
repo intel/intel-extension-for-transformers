@@ -37,8 +37,7 @@ from transformers import (
     StoppingCriteria,
 )
 from transformers.deepspeed import is_deepspeed_available
-from transformers.utils.bitsandbytes import is_bitsandbytes_available
-from transformers.utils import is_offline_mode
+from transformers.utils import is_bitsandbytes_available, is_offline_mode
 from intel_extension_for_transformers.neural_chat.config import (
     AMPConfig,
     WeightOnlyQuantizationConfig,
@@ -456,12 +455,12 @@ def load_model(
                     model = MPTTSModelForCausalLM(
                         model, config, use_cache=use_cache, model_dtype=torch.bfloat16
                     )
-        elif device == "cuda":
+        elif device in ["cuda", "xpu"]:
             if hasattr(model, "device") and model.device.type != device:
                 model = model.eval().to(device)
         else:
             raise ValueError(
-                f"Unsupported device {device}, only supports cpu, cuda and hpu now."
+                f"Unsupported device {device}, only supports cpu, xpu, cuda and hpu now."
             )
 
     if not model.config.is_encoder_decoder:
@@ -596,8 +595,8 @@ def predict_stream(**params):
         max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
     )
 
-    if device == "cpu" or device == "cuda":
-        if device == "cuda":
+    if device in ["cpu", "cuda", "xpu"]:
+        if device in ["cuda", "xpu"]:
             input_tokens = prepare_inputs(
                 input_tokens, model.device if hasattr(model, 'device') else torch.device(device)
             )
@@ -617,9 +616,12 @@ def predict_stream(**params):
             dtype = model.dtype if hasattr(model, 'dtype') else torch.bfloat16
             try:
                 with torch.no_grad():
-                    context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True) \
-                        if device == "cpu" else torch.cuda.amp.autocast( \
-                            enabled=True, dtype=dtype, cache_enabled=True)
+                    if device == "cpu":
+                        context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                    elif device == "cuda":
+                        context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+                    elif device == "xpu":
+                        context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
                     with context:
                         global output_token_len
                         output_token=model.generate(
@@ -680,7 +682,7 @@ def predict_stream(**params):
         generation_thread.start()
     else:
         raise ValueError(
-            f"Unsupported device type {device}, only supports cpu, cuda and hpu now."
+            f"Unsupported device type {device}, only supports cpu, xpu, cuda and hpu now."
         )
     output_word_len = 0
 
@@ -796,8 +798,8 @@ def predict(**params):
         max_new_tokens, input_token_len, get_stop_token_ids(model, tokenizer)
     )
 
-    if device == "cpu" or device == "cuda":
-        if device == "cuda":
+    if device in ["cpu", "cuda", "xpu"]:
+        if device in ["cuda", "xpu"]:
             input_tokens = prepare_inputs(
                 input_tokens, model.device if hasattr(model, 'device') else torch.device(device)
             )
@@ -814,8 +816,13 @@ def predict(**params):
         )
         dtype = model.dtype if hasattr(model, 'dtype') else torch.bfloat16
         with torch.no_grad():
-            context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True) \
-                if device == "cpu" else torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+            if device == "cpu":
+                context = torch.cpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+            elif device == "cuda":
+                context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+            elif device == "xpu":
+                context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
+            
             with context:
                 generation_output = model.generate(
                     **input_tokens,

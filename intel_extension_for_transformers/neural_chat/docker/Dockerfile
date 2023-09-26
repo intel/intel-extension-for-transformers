@@ -30,6 +30,7 @@ ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
 ARG ITREX_VER=main
+ARG PYTHON_VERSION=3.9
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 # See http://bugs.python.org/issue19846
@@ -59,18 +60,23 @@ RUN conda init bash && \
     unset -f conda && \
     export PATH=$CONDA_DIR/bin/:${PATH} && \
     conda config --add channels intel && \
-    conda create -yn neuralchat python=3.9 && \
+    conda create -yn neuralchat python=${PYTHON_VERSION} && \
     echo "conda activate neuralchat" >> ~/.bashrc && \
     source ~/.bashrc
 
+## If local torch whl are feasible, use localfile to install, avoiding donwloading time
+COPY ./torch*.whl /
+RUN if [ -f /torch-2.0.1+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torch-2.0.1+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
+RUN if [ -f /torchaudio-2.0.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchaudio-2.0.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
+RUN if [ -f /torchvision-0.15.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchvision-0.15.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
+
 RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
+    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -e . && \
+    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
-    pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
-    git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
-    cd /intel-extension-for-transformers && pip install -v . && \
-    cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
-    cd /intel-extension-for-transformers/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt
+    pip install datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
@@ -123,7 +129,7 @@ RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-
     pip install -r requirements_hpu.txt
 
 # Build ITREX
-RUN cd /intel-extension-for-transformers && pip install -v . && \
+RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     pip install transformers==4.32.0 && \
     pip install accelerate==0.22.0
 

@@ -1,0 +1,12 @@
+transformers>=4.32.0
+fschat
+evaluate
+accelerate
+yacs
+pydub
+python-multipart
+sentencepiece
+protobuf
+--extra-index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
+torch==2.0.1a0
+intel_extension_for_pytorch==2.0.110+xpu

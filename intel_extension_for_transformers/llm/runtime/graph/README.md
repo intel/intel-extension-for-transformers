@@ -3,7 +3,7 @@
 LLM Runtime is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from [llama.cpp](https://github.com/ggerganov/llama.cpp), which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it not easy for developers to support a new model. Our LLM Runtime has the following features:
 
 - Modular design to support new models
-- Highly optimized low precision kernels
+- [Highly optimized low precision kernels](core/README.md)
 - Utilize AMX, VNNI and AVX512F instruction set
 - Support CPU (x86 platforms only) and initial (Intel) GPU
 - Support 4bits and 8bits quantization 
@@ -16,7 +16,7 @@ We support the following models:
 ### Text generation models
 | model name | INT8 | INT4|
 |---|:---:|:---:|
-|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)| ✅ | ✅ | 
+|[LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf), [LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)| ✅ | ✅ | 
 |[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf)| ✅ | ✅ | 
 |[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| ✅ | ✅ | 
 |[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b)| ✅ | ✅ | 
@@ -39,6 +39,7 @@ We support the following models:
 ### 1. Build LLM Runtime
 Linux
 ```shell
+git submodule update --init --recursive
 mkdir build
 cd build
 cmake .. -G Ninja
@@ -59,31 +60,32 @@ You can use the python api to simplely run HF model.
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
 model_name = "EleutherAI/gpt-j-6b"     # support model id of HF or local PATH to model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-model = AutoModel.from_pretrained(model_name, quantization_config=woq_config, use_llm_runtime=True)
+model = AutoModel.from_pretrained(model_name, quantization_config=woq_config)
 prompt = "Once upon a time, a little girl"
-output = model.generate(prompt, streamer, max_new_tokens=30)
+output = model.generate(prompt, max_new_tokens=30)
 ```
 
 ### 3. Run LLM with Script
 You can use the following script to run, including convertion, quantization and inference.
 ```
-python scripts/run_llm.py model-path --weight_dtype int4 -p "She opened the door and see"
+python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
 LLM one-click running script args explanations:
 | arg               | explanation                                                             |
 | --------------    | ----------------------------------------------------------------------- |
-| model           | directory containing model file or model id                 |
-| --weight_dtype  | data type of quantized weight (default: int4)         |
-| --alg           | quantization algorithm to use: sym/asym (default: sym)      |
-| --block_size    | block size (default: 32)                                    |
-| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
-| --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
+| model           | directory containing model file or model id                               |
+| --weight_dtype  | data type of quantized weight (default: int4)                             |
+| --alg           | quantization algorithm to use: sym/asym (default: sym)                    |
+| --group_size    | group size (default: 32)                                                  |
+| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                                 |
+| --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)             |
+| --use_ggml      | enable ggml for quantization and inference                                |
 | -p / --prompt     | prompt to start generation with (default: empty)                        |
 | -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
 | -t / --threads    | number of threads to use during computation (default: 56)               |
-| -b / --batch_size_truncate | batch size for prompt processing (default: 512)                         |
-| -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                |
+| -b / --batch_size_truncate | batch size for prompt processing (default: 512)                |
+| -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                       |
 | -s / --seed       | NG seed (default: -1, use random seed for < 0)                          |
 | --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
 | --color           | colorise output to distinguish prompt and user input from generations   |
@@ -107,12 +109,12 @@ python scripts/convert.py --outtype f32 --outfile ne-f32.bin model_path
 # quantize weights of fp32 ggml bin
 # model_name: llama, llama2, mpt, falcon, gptj, starcoder, dolly
 # optimized INT4 model with group size 128 (recommended)
-python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 128 --compute_type int8
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 128 --compute_dtype int8
 
 # Alternativly you could run ggml q4_0 format like following
-python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_0.bin --weight_dtype int4 --use_ggml
 # optimized INT4 model with group size 32
-python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --block_size 32 --compute_type int8
+python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_dtype int8
 
 ```
 quantization args explanations:
@@ -120,13 +122,15 @@ quantization args explanations:
 | --------------  | ----------------------------------------------------------- |
 | --model_file    | path to the fp32 model                                      |
 | --out_file      | path to the quantized model                                 |
-| --config        | path to the configuration file (default: )                  |
+| --config        | path to the configuration file (default: "")                |
 | --nthread       | number of threads to use (default: 1)                       |
-| --weight_dtype  | data type of quantized weight (default: int4)         |
+| --weight_dtype  | data type of quantized weight: int4/int8 (default: int4)    |
 | --alg           | quantization algorithm to use: sym/asym (default: sym)      |
-| --block_size    | block size (default: 32)                                    |
-| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                   |
-| --compute_type  | Gemm computation data type: int8/fp32/ggml (default: ggml)  |
+| --group_size    | group size (default: 32)                                    |
+| --scale_dtype   | data type of scales: bf16/fp32 (default: fp32)              |
+| --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)  |
+| --use_ggml      | enable ggml for quantization and inference                  |
+
 
 ### 2. Inference model with C++ script API
 
