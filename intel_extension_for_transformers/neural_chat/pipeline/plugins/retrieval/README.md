@@ -65,7 +65,7 @@ search_type [str]: Select a ranking method for dense retrieval from "mmr", "simi
 
 search_kwargs [dict]: Used by dense retrieval. Should be in the same format like {"k":1, "fetch_k":5}. "k" is the amount of documents to return. "score_threshold" is the minimal relevance threshold for "similarity_score_threshold" search. "lambda_mult" is the diversity of results returned by "mmr". "fetch_k" determines the amount of documents to pass to the "mmr" algorithm. Default to {"k":1, "fetch_k":5}.
 
-append [bool]: Decide to use the local database or not. If override=True, the uploaded files will be continuously written into the database. If override=False, the existing database will be loaded.
+append [bool]: Decide to append the local database or not. If append=True, the uploaded files will be continuously written into the database. If append=False, the existing database will be loaded.
 
 index_name [str]: The index name for ElasticsearchDocumentStore.
 ```
