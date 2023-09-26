@@ -36,17 +36,26 @@ We support the following models:
 
 ## How to use
 
-### 1. Build LLM Runtime
-Linux
+### 1. Install LLM Runtime
+Install from binary
 ```shell
+pip install intel-extension-for-transformers
+```
+
+Build from Source
+```shell
+# Linux
 git submodule update --init --recursive
 mkdir build
 cd build
 cmake .. -G Ninja
 ninja
 ```
-Windows: install VisualStudio 2022(a validated veresion), search 'Developer PowerShell for VS 2022' and open it, then run the following cmds.
+
 ```powershell
+# Windows
+# Install VisualStudio 2022 and open 'Developer PowerShell for VS 2022'
+
 mkdir build
 cd build
 cmake ..
@@ -58,7 +67,7 @@ cmake --build . -j
 You can use the python api to simplely run HF model.
 ```python
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
-model_name = "EleutherAI/gpt-j-6b"     # support model id of HF or local PATH to model
+model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 model = AutoModel.from_pretrained(model_name, quantization_config=woq_config)
 prompt = "Once upon a time, a little girl"
@@ -71,8 +80,8 @@ You can use the following script to run, including convertion, quantization and 
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
-LLM one-click running script args explanations:
-| arg               | explanation                                                             |
+Augument description of run.py:
+| Augument         | Description                                                             |
 | --------------    | ----------------------------------------------------------------------- |
 | model           | directory containing model file or model id                               |
 | --weight_dtype  | data type of quantized weight (default: int4)                             |
@@ -92,7 +101,7 @@ LLM one-click running script args explanations:
 | --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
 
 
-## Advanced use
+## Advanced Usage
 
 ### 1. Convert and Quantize LLM model
 LLM Runtime assumes the same model format as [llama.cpp](https://github.com/ggerganov/llama.cpp) and [ggml](https://github.com/ggerganov/ggml). You can also convert the model by following the below steps:
@@ -117,8 +126,8 @@ python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_fil
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_dtype int8
 
 ```
-quantization args explanations:
-| arg             | explanation                                                 |
+Augument description of quantize.py:
+| Augument        | Description                                                 |
 | --------------  | ----------------------------------------------------------- |
 | --model_file    | path to the fp32 model                                      |
 | --out_file      | path to the quantized model                                 |
@@ -148,8 +157,8 @@ OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/inference.py --model_name
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/inference.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
 ```
 
-LLM running script args explanations:
-| arg               | explanation                                                             |
+Augument description of inference.py:
+| Augument          | Description                                                             |
 | --------------    | ----------------------------------------------------------------------- |
 | --model_name      | model name                                                              |
 | -m / --model      | path to the executed model                                              |
