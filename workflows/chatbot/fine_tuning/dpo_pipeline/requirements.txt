@@ -7,6 +7,5 @@ evaluate
 nltk
 rouge_score
 einops
-fairscale
 fire
 intel-extension-for-transformers
