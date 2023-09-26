@@ -65,18 +65,19 @@ class Model:
 
         # 1. convert model
         fp32_bin = "ne_{}_f32.bin".format(model_type)
-        # convert_model(model_name, fp32_bin, "f32")
-        # TODO assert model exists
+        convert_model(model_name, fp32_bin, "f32")
+        assert(os.path.exists(fp32_bin), "Fail to convert pytorch model")
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
-        # self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
+        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
+        assert(os.path.exists(quant_bin), "Fail to quantize model")
         
         self.model_type = model_type
         self.bin_file = quant_bin
         
         # clean
-        # os.remove(fp32_bin)
+        os.remove(fp32_bin)
 
 
     def init_from_bin(self, model_name, model_path, **kwargs):
