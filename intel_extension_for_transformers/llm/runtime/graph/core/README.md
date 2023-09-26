@@ -20,12 +20,12 @@ group size of weight tensor; support both symmetric and asymmetric quantization.
 ### Weight-only Quantization Support
 dtype | algo | group size
 --- | --- | ---
-int4 | symmetric int8 truncated quant<sup>2</sup> | multipler of 8, -1<sup>1</sup>
-int4 | symmetric int4 full range<sup>3</sup> | multipler of 8, -1<sup>1</sup>
-int4 | asymmetric int4 full range<sup>3</sup> | multipler of 8, -1<sup>1</sup>
-int8 | symmetric | multipler of 8, -1<sup>1</sup>
-fp4 | | multipler of 8
-nf4 | | multipler of 8
+int4 | symmetric int8 truncated quant<sup>2</sup> | multiplier of 8, -1<sup>1</sup>
+int4 | symmetric int4 full range<sup>3</sup> | multiplier of 8, -1<sup>1</sup>
+int4 | asymmetric int4 full range<sup>3</sup> | multiplier of 8, -1<sup>1</sup>
+int8 | symmetric | multiplier of 8, -1<sup>1</sup>
+fp4 | | multiplier of 8
+nf4 | | multiplier of 8
 
 <sup>1</sup>: group size=-1 means per channel quantization on output channel (or group size equals to input channel size).  
 <sup>2</sup>: truncated quant means keep the high 4 bits of int8 quantization result for model saving and computation.  
