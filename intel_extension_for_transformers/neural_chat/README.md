@@ -1,10 +1,9 @@
 <div align="center">
-
 NeuralChat
-===========================
+
 <h3> A customizable chatbot framework to create your own chatbot within minutes</h3>
 
----
+===========================
 <div align="left">
 
 ## Introduction
