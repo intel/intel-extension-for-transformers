@@ -230,7 +230,7 @@ struct generation_config {
   // likelihood of the sequence (i.e. negative), `length_penalty` > 0.0 promotes longer sequences, while
   // `length_penalty` < 0.0 encourages shorter sequences. (default = 1.0)
   float length_penalty = 1.0f;
-  bool do_early_stopping = false;  // TODO
+  bool do_early_stopping = false;
 };
 
 class beam_search_kv_cache_reorder;  //  forward declaration
