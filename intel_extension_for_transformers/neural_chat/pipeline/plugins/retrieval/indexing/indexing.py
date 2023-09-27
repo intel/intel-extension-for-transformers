@@ -133,7 +133,7 @@ class DocumentIndexing:
                     print("Please check your upload file and try again!")
                 if self.document_store == "inmemory":
                     document_store = InMemoryDocumentStore(use_gpu=False, use_bm25=True)
-                elif self.document_stor == "Elasticsearch":
+                elif self.document_store == "Elasticsearch":
                     document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
                                                                 port=9200, search_fields=["content", "title"])
 
