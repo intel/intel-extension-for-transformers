@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g5f9d99e documentation</title>
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g6ea8250 documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
@@ -90,23 +90,7 @@
 <h1>NeuralChat<a class="headerlink" href="#neuralchat" title="Link to this heading"></a></h1>
 <p><h3> A customizable chatbot framework to create your own chatbot within minutes</h3></p>
 <hr class="docutils" />
-<div align="left"><section id="content">
-<h2>Content<a class="headerlink" href="#content" title="Link to this heading"></a></h2>
-<ol>
-<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
-<li><p><a class="reference external" href="#installation">Installation</a></p></li>
-<li><p><a class="reference external" href="#getting-started">Getting Started</a></p>
-<p>3.1 <a class="reference external" href="#local-mode">Local Mode</a></p>
-<p>3.2 <a class="reference external" href="#server-mode">Server Mode</a></p>
-<p>3.2.1 <a class="reference external" href="#launch-server">Launch Server</a></p>
-<p>3.2.2 <a class="reference external" href="#access-server">Access Server</a></p>
-</li>
-<li><p><a class="reference external" href="#advanced-topics">Advanced Topics</a></p></li>
-<li><p><a class="reference external" href="#validated-model-list">Validated Model List</a></p></li>
-<li><p><a class="reference external" href="#jupyter-notebooks">Jupyter Notebooks</a></p></li>
-</ol>
-</section>
-<section id="introduction">
+<div align="left"><section id="introduction">
 <h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
 <p>NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.</p>
 <a target="_blank" href="./assets/pictures/neuralchat.png">
@@ -123,10 +107,10 @@
 </section>
 <section id="getting-started">
 <h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
-<p>NeuralChat could be deployed as local mode and server mode.</p>
-<section id="local-mode">
-<h3>Local Mode<a class="headerlink" href="#local-mode" title="Link to this heading"></a></h3>
-<p>NeuralChat can be simplify deployed on local machine after installation, and users can access it through:</p>
+<p>NeuralChat could be deployed locally or accessed through service.</p>
+<section id="deploy-chatbot-locally">
+<h3>Deploy Chatbot Locally<a class="headerlink" href="#deploy-chatbot-locally" title="Link to this heading"></a></h3>
+<p>NeuralChat can be deployed locally and users can run it through command line or python code.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Command line</span>
 neuralchat<span class="w"> </span>predict<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span>
 </pre></div>
@@ -139,19 +123,17 @@ neuralchat<span class="w"> </span>predict<span class="w"> </span>--query<span cl
 </pre></div>
 </div>
 </section>
-<section id="server-mode">
-<h3>Server Mode<a class="headerlink" href="#server-mode" title="Link to this heading"></a></h3>
-<p>NeuralChat can be deployed on remote machine as a service, and users can access it through curl with Restful API:</p>
+<section id="deploy-chatbot-service">
+<h3>Deploy Chatbot Service<a class="headerlink" href="#deploy-chatbot-service" title="Link to this heading"></a></h3>
+<p>NeuralChat can be deployed as a service and users can access it through curl with Restful API.</p>
 <section id="launch-service">
 <h4>Launch Service<a class="headerlink" href="#launch-service" title="Link to this heading"></a></h4>
-<p>Executing below command launches the chatbot service:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat_server<span class="w"> </span>start<span class="w"> </span>--config_file<span class="w"> </span>./server/config/neuralchat.yaml
 </pre></div>
 </div>
 </section>
 <section id="access-service">
 <h4>Access Service<a class="headerlink" href="#access-service" title="Link to this heading"></a></h4>
-<p>Using <code class="docutils literal notranslate"><span class="pre">curl</span></code> command like below to send a request to the chatbot service:</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;prompt&quot;: &quot;Tell me about Intel Xeon Scalable Processors.&quot;}&#39;</span><span class="w"> </span>http://127.0.0.1:80/v1/chat/completions
 </pre></div>
 </div>
@@ -207,7 +189,7 @@ neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<s
 </section>
 <section id="optimization">
 <h3>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h3>
-<p>NeuralChat provides several model optimization technologies, like <code class="docutils literal notranslate"><span class="pre">AMP(advanced</span> <span class="pre">mixed</span> <span class="pre">precision)</span></code> and <code class="docutils literal notranslate"><span class="pre">WeightOnly</span> <span class="pre">Quantization</span></code>, to allow user to define a customized chatbot.</p>
+<p>NeuralChat provides typical model optimization technologies, like <code class="docutils literal notranslate"><span class="pre">Automatic</span> <span class="pre">Mixed</span> <span class="pre">Precision</span> <span class="pre">(AMP)</span></code> and <code class="docutils literal notranslate"><span class="pre">Weight</span> <span class="pre">Only</span> <span class="pre">Quantization</span></code>, to allow user to define a customized chatbot.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Command line</span>
 neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/optimization/config/optimization.yaml
 </pre></div>
@@ -233,7 +215,7 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
 </section>
 <section id="selected-notebooks">
 <h2>Selected Notebooks<a class="headerlink" href="#selected-notebooks" title="Link to this heading"></a></h2>
-<p>Welcome to use Jupyter notebooks to explore how to run, deploy, and customize chatbots across multiple architectures, including Intel Xeon Scalable Processors (SPR, ICX), Intel Xeon CPU Max Series, Intel Habana Gaudi1/Gaudi2, and others. The selected notebooks are shown below and the full notebooks are available in <a class="reference external" href="docs/full_notebooks.html">here</a>.</p>
+<p>Welcome to use Jupyter notebooks to explore how to create, deploy, and customize chatbots on multiple architectures, including Intel Xeon Scalable Processors, Intel Gaudi2, Intel Xeon CPU Max Series, Intel Data Center GPU Max Series, Intel Arc Series, and Intel Core Processors, and others. The selected notebooks are shown below:</p>
 <table border="1" class="docutils">
 <thead>
 <tr>
@@ -247,35 +229,36 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
 <tr>
 <td>#1</td>
 <td>Getting Started on Intel CPU SPR</td>
-<td>Learn how to run chatbot on SPR</td>
+<td>Learn how to create chatbot on SPR</td>
 <td><a href="./docs/notebooks/build_chatbot_on_spr.ipynb">Notebook</a></td>
 </tr>
 <tr>
 <td>#2</td>
 <td>Getting Started on Habana Gaudi1/Gaudi2</td>
-<td>Learn how to run chatbot on Habana Gaudi1/Gaudi2</td>
+<td>Learn how to create chatbot on Habana Gaudi1/Gaudi2</td>
 <td><a href="./docs/notebooks/build_chatbot_on_habana_gaudi.ipynb">Notebook</a></td>
 </tr>
 <tr>
 <td>#3</td>
-<td>Deploying Chatbot Service on Intel CPU SPR</td>
-<td>Learn how to deploy chatbot service on SPR</td>
+<td>Deploying Chatbot on Intel CPU SPR</td>
+<td>Learn how to deploy chatbot on SPR</td>
 <td><a href="./docs/notebooks/deploy_chatbot_on_spr.ipynb">Notebook</a></td>
 </tr>
 <tr>
 <td>#4</td>
-<td>Deploying Chatbot Service on Habana Gaudi1/Gaudi2</td>
-<td>Learn how to deploy chatbot service on Intel Habana Gaudi1/Gaudi2</td>
+<td>Deploying Chatbot on Habana Gaudi1/Gaudi2</td>
+<td>Learn how to deploy chatbot on Habana Gaudi1/Gaudi2</td>
 <td><a href="./docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb">Notebook</a></td>
 </tr>
 <tr>
 <td>#5</td>
-<td>Deploying Chatbot Service with Load Balance on Intel CPU SPR</td>
-<td>Learn how to deploy chatbot service with load balance on SPR</td>
+<td>Deploying Chatbot with Load Balance</td>
+<td>Learn how to deploy chatbot with load balance on SPR</td>
 <td><a href="./docs/notebooks/chatbot_with_load_balance.ipynb">Notebook</a></td>
 </tr>
 </tbody>
-</table></section>
+</table><p>🌟Please refer to <a class="reference external" href="docs/full_notebooks.html">HERE</a> for the full notebooks.</p>
+</section>
 </section>
 
 
@@ -292,7 +275,7 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f28b8d2d690> 
+   <jinja2.runtime.BlockReference object at 0x7f97357b0fd0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

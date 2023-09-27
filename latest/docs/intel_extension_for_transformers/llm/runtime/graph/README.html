@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g5f9d99e documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g6ea8250 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -91,7 +91,7 @@
 <p>LLM Runtime is designed to provide the efficient inference of large language models (LLMs) on Intel platforms through the state-of-the-art (SOTA) model compression techniques. The work is highly inspired from <a class="reference external" href="https://github.com/ggerganov/llama.cpp">llama.cpp</a>, which organizes almost all the core code (e.g., kernels) in a single big file with a large number of pre-defined macros, thus making it not easy for developers to support a new model. Our LLM Runtime has the following features:</p>
 <ul class="simple">
 <li><p>Modular design to support new models</p></li>
-<li><p>Highly optimized low precision kernels</p></li>
+<li><p><a class="reference external" href="core/README.html">Highly optimized low precision kernels</a></p></li>
 <li><p>Utilize AMX, VNNI and AVX512F instruction set</p></li>
 <li><p>Support CPU (x86 platforms only) and initial (Intel) GPU</p></li>
 <li><p>Support 4bits and 8bits quantization</p></li>
@@ -101,12 +101,12 @@
 </div></blockquote>
 <section id="supported-models">
 <h2>Supported Models<a class="headerlink" href="#supported-models" title="Link to this heading"></a></h2>
-<p>We support the following models:</p>
-<section id="text-generation-models">
-<h3>Text generation models<a class="headerlink" href="#text-generation-models" title="Link to this heading"></a></h3>
+<p>LLM Runtime supports the following models:</p>
+<section id="text-generation">
+<h3>Text Generation<a class="headerlink" href="#text-generation" title="Link to this heading"></a></h3>
 <p>| model name | INT8 | INT4|
 |—|:—:|:—:|
-|<a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf">LLaMA2-7B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf">LLaMA2-13B</a>| ✅ | ✅ |
+|<a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-7b-chat-hf">LLaMA2-7B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-13b-chat-hf">LLaMA2-13B</a>, <a class="reference external" href="https://huggingface.co/meta-llama/Llama-2-70b-chat-hf">LLaMA2-70B</a>| ✅ | ✅ |
 |<a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">LLaMA-7B</a>, <a class="reference external" href="https://huggingface.co/decapoda-research/llama-13b-hf">LLaMA-13B</a>| ✅ | ✅ |
 |<a class="reference external" href="https://huggingface.co/EleutherAI/gpt-j-6b">GPT-J-6B</a>| ✅ | ✅ |
 |<a class="reference external" href="https://huggingface.co/EleutherAI/gpt-neox-20b">GPT-NeoX-20B</a>| ✅ | ✅ |
@@ -116,8 +116,8 @@
 |<a class="reference external" href="https://huggingface.co/bigscience/bloomz-7b1">BLOOM-7B</a>| ✅ | ✅ |
 |<a class="reference external" href="https://huggingface.co/facebook/opt-125m">OPT-125m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-350m">OPT-350m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-1.3b">OPT-1.3B</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-13b">OPT-13B</a>| ✅ | ✅ |<br />|<a class="reference external" href="https://huggingface.co/THUDM/chatglm-6b">ChatGLM-6B</a>, <a class="reference external" href="https://huggingface.co/THUDM/chatglm2-6b">ChatGLM2-6B</a>| ✅ | ✅ |</p>
 </section>
-<section id="code-generation-models">
-<h3>Code generation models<a class="headerlink" href="#code-generation-models" title="Link to this heading"></a></h3>
+<section id="code-generation">
+<h3>Code Generation<a class="headerlink" href="#code-generation" title="Link to this heading"></a></h3>
 <p>| model name | INT8 | INT4|
 |—|:—:|:—:|
 |<a class="reference external" href="https://huggingface.co/codellama/CodeLlama-7b-hf">Code-LLaMA-7B</a>, <a class="reference external" href="https://huggingface.co/codellama/CodeLlama-13b-hf">Code-LLaMA-13B</a>| ✅ | ✅ |
@@ -125,18 +125,25 @@
 </section>
 </section>
 <section id="how-to-use">
-<h2>How to use<a class="headerlink" href="#how-to-use" title="Link to this heading"></a></h2>
-<section id="build-llm-runtime">
-<h3>1. Build LLM Runtime<a class="headerlink" href="#build-llm-runtime" title="Link to this heading"></a></h3>
-<p>Linux</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>build
+<h2>How to Use<a class="headerlink" href="#how-to-use" title="Link to this heading"></a></h2>
+<section id="install-llm-runtime">
+<h3>1. Install LLM Runtime<a class="headerlink" href="#install-llm-runtime" title="Link to this heading"></a></h3>
+<p>Install from binary</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers
+</pre></div>
+</div>
+<p>Build from source</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Linux</span>
+git<span class="w"> </span>submodule<span class="w"> </span>update<span class="w"> </span>--init<span class="w"> </span>--recursive
+mkdir<span class="w"> </span>build
 <span class="nb">cd</span><span class="w"> </span>build
 cmake<span class="w"> </span>..<span class="w"> </span>-G<span class="w"> </span>Ninja
 ninja
 </pre></div>
 </div>
-<p>Windows: install VisualStudio 2022(a validated veresion), search ‘Developer PowerShell for VS 2022’ and open it, then run the following .htmls.</p>
-<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="n">mkdir</span> <span class="n">build</span>
+<div class="highlight-powershell notranslate"><div class="highlight"><pre><span></span><span class="c"># Windows</span>
+<span class="c"># Install VisualStudio 2022 and open &#39;Developer PowerShell for VS 2022&#39;</span>
+<span class="n">mkdir</span> <span class="n">build</span>
 <span class="nb">cd </span><span class="n">build</span>
 <span class="n">cmake</span> <span class="p">..</span>
 <span class="n">cmake</span> <span class="p">-</span><span class="n">-build</span> <span class="p">.</span> <span class="n">-j</span>
@@ -145,24 +152,30 @@ ninja
 </section>
 <section id="run-llm-with-python-api">
 <h3>2. Run LLM with Python API<a class="headerlink" href="#run-llm-with-python-api" title="Link to this heading"></a></h3>
-<p>You can use the python api to simplely run HF model.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModel</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
-<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;EleutherAI/gpt-j-6b&quot;</span>     <span class="c1"># support model id of HF or local PATH to model</span>
+<p>You can use Python API to run Hugging Face model simply. Here is the sample code:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">AutoTokenizer</span><span class="p">,</span> <span class="n">TextStreamer</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">AutoModel</span><span class="p">,</span> <span class="n">WeightOnlyQuantConfig</span>
+<span class="n">model_name</span> <span class="o">=</span> <span class="s2">&quot;Intel/neural-chat-7b-v1-1&quot;</span>     <span class="c1"># Hugging Face model_id or local model</span>
 <span class="n">woq_config</span> <span class="o">=</span> <span class="n">WeightOnlyQuantConfig</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s2">&quot;int4&quot;</span><span class="p">)</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">use_llm_runtime</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">prompt</span> <span class="o">=</span> <span class="s2">&quot;Once upon a time, a little girl&quot;</span>
-<span class="n">output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">streamer</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+<span class="n">tokenizer</span> <span class="o">=</span> <span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">input_ids</span>
+<span class="n">streamer</span> <span class="o">=</span> <span class="n">TextStreamer</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">AutoModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">quantization_config</span><span class="o">=</span><span class="n">woq_config</span><span class="p">,</span> <span class="n">trust_remote_code</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="run-llm-with-script">
-<h3>3. Run LLM with Script<a class="headerlink" href="#run-llm-with-script" title="Link to this heading"></a></h3>
-<p>You can use the following script to run, including convertion, quantization and inference.</p>
+<section id="run-llm-with-python-script">
+<h3>3. Run LLM with Python Script<a class="headerlink" href="#run-llm-with-python-script" title="Link to this heading"></a></h3>
+<p>You can run LLM with one-click python script including convertion, quantization and inference.</p>
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">scripts</span><span class="o">/</span><span class="n">run</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="n">model</span><span class="o">-</span><span class="n">path</span><span class="w"> </span><span class="o">--</span><span class="n">weight_dtype</span><span class="w"> </span><span class="n">int4</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="s">&quot;She opened the door and see&quot;</span>
 </pre></div>
 </div>
-<p>LLM one-click running script args explanations:
-| arg               | explanation                                                             |
+<p>Augument description of run.py:
+| Augument         | Description                                                              |
 | ————–    | ———————————————————————– |
 | model           | directory containing model file or model id                               |
 | –weight_dtype  | data type of quantized weight (default: int4)                             |
@@ -182,11 +195,12 @@ ninja
 | –keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |</p>
 </section>
 </section>
-<section id="advanced-use">
-<h2>Advanced use<a class="headerlink" href="#advanced-use" title="Link to this heading"></a></h2>
-<section id="convert-and-quantize-llm-model">
-<h3>1. Convert and Quantize LLM model<a class="headerlink" href="#convert-and-quantize-llm-model" title="Link to this heading"></a></h3>
-<p>LLM Runtime assumes the same model format as <a class="reference external" href="https://github.com/ggerganov/llama.cpp">llama.cpp</a> and <a class="reference external" href="https://github.com/ggerganov/ggml">ggml</a>. You can also convert the model by following the below steps:</p>
+<section id="advanced-usage">
+<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
+<p>Besides the one-click script, LLM Runtime also offers the detailed script: 1) convert and quantize, and 2) inference.</p>
+<section id="convert-and-quantize-llm">
+<h3>1. Convert and Quantize LLM<a class="headerlink" href="#convert-and-quantize-llm" title="Link to this heading"></a></h3>
+<p>LLM Runtime assumes the compatible model format as <a class="reference external" href="https://github.com/ggerganov/llama.cpp">llama.cpp</a> and <a class="reference external" href="https://github.com/ggerganov/ggml">ggml</a>. You can also convert the model by following the below steps:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># convert the model directly use model id in Hugging Face. (recommended)</span>
 python<span class="w"> </span>scripts/convert.py<span class="w"> </span>--outtype<span class="w"> </span>f32<span class="w"> </span>--outfile<span class="w"> </span>ne-f32.bin<span class="w"> </span>EleutherAI/gpt-j-6b
 
@@ -205,8 +219,8 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>llama2<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--group_size<span class="w"> </span><span class="m">32</span><span class="w"> </span>--compute_dtype<span class="w"> </span>int8
 </pre></div>
 </div>
-<p>quantization args explanations:
-| arg             | explanation                                                 |
+<p>Augument description of quantize.py:
+| Augument        | Description                                                 |
 | ————–  | ———————————————————– |
 | –model_file    | path to the fp32 model                                      |
 | –out_file      | path to the quantized model                                 |
@@ -219,9 +233,9 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 | –compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)  |
 | –use_ggml      | enable ggml for quantization and inference                  |</p>
 </section>
-<section id="inference-model-with-c-script-api">
-<h3>2. Inference model with C++ script API<a class="headerlink" href="#inference-model-with-c-script-api" title="Link to this heading"></a></h3>
-<p>We supply LLM running script to run supported models with c++ api conveniently.</p>
+<section id="inference-llm">
+<h3>2. Inference LLM<a class="headerlink" href="#inference-llm" title="Link to this heading"></a></h3>
+<p>We provide LLM inference script to run the quantized model. Please reach <a class="reference external" href="mailto:itrex&#46;maintainers&#37;&#52;&#48;intel&#46;com">us</a> if you want to run using C++ API directly.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># recommed to use numactl to bind cores in Intel cpus for better performance</span>
 <span class="c1"># if you use different core numbers, please also  change -t arg value</span>
 <span class="c1"># please type prompt about codes when run `StarCoder`, for example, -p &quot;def fibonnaci(&quot;.</span>
@@ -234,8 +248,8 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 <span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--repeat_penalty<span class="w"> </span><span class="m">1</span>.2
 </pre></div>
 </div>
-<p>LLM running script args explanations:
-| arg               | explanation                                                             |
+<p>Augument description of inference.py:
+| Augument          | Description                                                             |
 | ————–    | ———————————————————————– |
 | –model_name      | model name                                                              |
 | -m / –model      | path to the executed model                                              |
@@ -271,7 +285,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f28b8e27ac0> 
+   <jinja2.runtime.BlockReference object at 0x7f97357b2440> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
