@@ -75,11 +75,11 @@ struct check_store_type {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory info
 /// payload indicates the destination of store operation.
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, contains the data to be stored.
 /// @param payload Is the payload object with type payload_t. Contains all the information for stores.
 template <cache_hint L1 = cache_hint::write_back,
-        cache_hint L3 = cache_hint::write_back, typename tile_t,
+        cache_hint L2 = cache_hint::write_back, typename tile_t,
         typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_global_2d_xe>
@@ -155,7 +155,7 @@ tile_store(tile_t &tile, payload_t &payload) {
                         = st_blk_size_y * block_size_x * arr_len;
                 auto st_blk = combine_blk.xetla_select<store_elems, 1>(
                         ii * store_elems);
-                xetla_tstore_global<dtype, store_elems, L1, L3>(tdesc, st_blk);
+                xetla_tstore_global<dtype, store_elems, L1, L2>(tdesc, st_blk);
                 xetla_update_tdesc_offsety(
                         tdesc.xetla_format<uint32_t>(), st_blk_size_y);
             }
@@ -175,7 +175,7 @@ tile_store(tile_t &tile, payload_t &payload) {
                 gpu::xetla::detail::xetla_set_block_widthx_widthy_arrlen(
                         tdesc.xetla_format<uint32_t>(),
                         block_widthx_widthy_arrlen);
-                xetla_tstore_global<dtype, blk_remained_elems, L1, L3>(
+                xetla_tstore_global<dtype, blk_remained_elems, L1, L2>(
                         tdesc, st_blk);
             }
         }
@@ -218,7 +218,7 @@ tile_store(tile_t &tile, payload_t &payload) {
                         = remained_st_blk_size_y * block_size_x * arr_len;
                 auto st_blk = combine_blk.xetla_select<store_elems, 1>(
                         ii * store_elems);
-                xetla_tstore_global<dtype, store_elems, L1, L3>(tdesc, st_blk);
+                xetla_tstore_global<dtype, store_elems, L1, L2>(tdesc, st_blk);
                 xetla_update_tdesc_offsety(
                         tdesc.xetla_format<uint32_t>(), remained_st_blk_size_y);
             }
@@ -238,7 +238,7 @@ tile_store(tile_t &tile, payload_t &payload) {
                 gpu::xetla::detail::xetla_set_block_widthx_widthy_arrlen(
                         tdesc.xetla_format<uint32_t>(),
                         block_widthx_widthy_arrlen);
-                xetla_tstore_global<dtype, final_store_elems, L1, L3>(
+                xetla_tstore_global<dtype, final_store_elems, L1, L2>(
                         tdesc, st_blk);
             }
         }
@@ -252,11 +252,11 @@ tile_store(tile_t &tile, payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory info
 /// payload indicates the destination of store operation
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, contains the data to be stored.
 /// @param payload Is the payload object with type payload_t. Contains all the information for stores.
 template <cache_hint L1 = cache_hint::write_back,
-        cache_hint L3 = cache_hint::write_back, typename tile_t,
+        cache_hint L2 = cache_hint::write_back, typename tile_t,
         typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_global_block_1d_xe>
@@ -279,13 +279,13 @@ tile_store(tile_t &tile, payload_t &payload) {
             uint32_t address_offset = offset_x * sizeof(dtype);
 
             xetla_store_global<store_dtype, 64, data_size::default_size, L1,
-                    L3>(payload.base_ptr, payload.base_offset + address_offset,
+                    L2>(payload.base_ptr, payload.base_offset + address_offset,
                     reg_sub.xetla_format<store_dtype>());
         }
     }
     constexpr uint32_t tail_len = store_len % 64;
     uint32_t tail_offset = store_len / 64 * 64 * scale_factor;
-    detail::process_1d_tail<tail_len, 32, detail::process_flag::store, L1, L3>(
+    detail::process_1d_tail<tail_len, 32, detail::process_flag::store, L1, L2>(
             tile, payload, tail_offset);
 }
 
@@ -297,11 +297,11 @@ tile_store(tile_t &tile, payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory info
 /// payload indicates the destination of store operation
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, contains the data to be stored.
 /// @param payload Is the payload object with type payload_t. Contains all the information for stores.
 template <cache_hint L1 = cache_hint::uncached,
-        cache_hint L3 = cache_hint::write_back, typename tile_t,
+        cache_hint L2 = cache_hint::write_back, typename tile_t,
         typename payload_t,
         typename oob_check_tag = global_atomic_oob_check_on_tag>
 __XETLA_API typename std::enable_if_t<
@@ -353,7 +353,7 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
 
                 xetla_tatomic_store_global<dtype, payload_t::num_channel, L1,
-                        L3, op_kind>(payload.base_pointer + address_offset
+                        L2, op_kind>(payload.base_pointer + address_offset
                                 + payload.channel_offset,
                         reg_sub.xetla_select<payload_t::store_elems, 1>(
                                 sub_block_y * block_size_x),
@@ -388,7 +388,7 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
                         + (sub_block_y + offset_y) * payload.pitch_in_bytes;
 
                 xetla_tatomic_store_global<dtype, payload_t::num_channel, L1,
-                        L3, op_kind>((uint64_t)payload.base_pointer
+                        L2, op_kind>((uint64_t)payload.base_pointer
                                 + address_offset + payload.channel_offset,
                         reg_sub.xetla_select<payload_t::store_elems, 1>(
                                 sub_block_y * block_size_x),
@@ -406,11 +406,11 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory info
 /// payload indicates the destination of store operation
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, contains the data to be stored.
 /// @param payload Is the payload object with type payload_t. Contains all the information for stores.
 template <cache_hint L1 = cache_hint::write_back,
-        cache_hint L3 = cache_hint::write_back, typename tile_t,
+        cache_hint L2 = cache_hint::write_back, typename tile_t,
         typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_local_scatter_xe>
@@ -479,11 +479,11 @@ tile_store(tile_t &tile, payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory info
 /// payload indicates the destination of store operation
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, contains the data to be stored.
 /// @param payload Is the payload object with type payload_t. Contains all the information for stores.
 template <cache_hint L1 = cache_hint::write_back,
-        cache_hint L3 = cache_hint::write_back, typename tile_t,
+        cache_hint L2 = cache_hint::write_back, typename tile_t,
         typename payload_t>
 __XETLA_API typename std::enable_if_t<detail::check_store_type<tile_t,
         payload_t>::is_local_scatter_vnni_col_xe>
@@ -557,11 +557,11 @@ tile_store(tile_t &tile, payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory info
 /// payload indicates the destination of store operation
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, contains the data to be stored.
 /// @param payload Is the payload object with type payload_t. Contains all the information for stores.
 template <cache_hint L1 = cache_hint::write_back,
-        cache_hint L3 = cache_hint::write_back, typename tile_t,
+        cache_hint L2 = cache_hint::write_back, typename tile_t,
         typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_local_block_1d_xe
@@ -632,11 +632,11 @@ tile_store(tile_t &tile, payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory info
 /// payload indicates the destination of store operation
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, contains the data to be stored.
 /// @param payload Is the payload object with type payload_t. Contains all the information for stores.
 template <cache_hint L1 = cache_hint::write_back,
-        cache_hint L3 = cache_hint::write_back, typename tile_t,
+        cache_hint L2 = cache_hint::write_back, typename tile_t,
         typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_store_type<tile_t, payload_t>::is_local_block_1d_xe
@@ -662,7 +662,7 @@ tile_store(tile_t &tile, payload_t &payload) {
         }
     }
     detail::process_1d_tail<store_len % 64, 32, detail::process_flag::store, L1,
-            L3>(tile, payload, store_len / 64 * 64 * scale_factor);
+            L2>(tile, payload, store_len / 64 * 64 * scale_factor);
 }
 
 } // namespace gpu::xetla::subgroup

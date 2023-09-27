@@ -47,6 +47,16 @@ struct dispatch_policy_kslicing {
     static constexpr gpu_arch arch_tag = arch_tag_;
 };
 
+/// @brief StreamK GEMM implementation.
+/// A special GEMM implementation to avoid tail effects when GEMM shape does not fit the machine
+/// Implements variable K-slicing for effective load-balancing and performs inter-group reduction.
+/// Implementation loosely based on this paper - https://arxiv.org/pdf/2301.03598.pdf
+/// @tparam arch_tag_ Is the HW architecture.
+template <gpu_arch arch_tag_ = gpu_arch::Xe>
+struct dispatch_policy_streamK {
+    static constexpr gpu_arch arch_tag = arch_tag_;
+};
+
 /// @brief Blocked dispatch GEMM_UNIVERSAL implementation.
 /// A GEMM_UNIVERSAL implementation to provide a composition point of gemm and epilogue.
 /// @tparam wg_num_n_ Is the x-dir workgroup number of repeat block.

@@ -87,7 +87,7 @@ struct xetla_mha_attn_reg_fwd_t {
             group::compute_attr_t<dtype_sfx, dtype_bin, dtype_acc>,
             bgm_perf_tuning_knob, gpu_arch::Xe>;
 
-    static constexpr uint32_t l3_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 1;
     static constexpr uint16_t sfx_type_size = sizeof(dtype_sfx);
     static_assert((sfx_type_size == 1) || (sfx_type_size == 2)
             || (sfx_type_size == 4));
@@ -195,45 +195,49 @@ struct xetla_mha_attn_reg_fwd_t {
     using matC_16x2048_t = subgroup::tile_t<dtype_sfx, mat_16x2048_tile_desc_t>;
     using matC_128x64_t = subgroup::tile_t<dtype_sfx, mat_128x64_tile_desc_t>;
 
-    using matC_128x128_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            mat_128x128_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<mat_128x128_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
-    using matC_128x256_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            mat_128x256_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<mat_128x256_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_128x128_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, mat_128x128_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<mat_128x128_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_128x256_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, mat_128x256_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<mat_128x256_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
     using matC_64x384_payload_t = subgroup::mem_payload_t<dtype_sfx,
             mat_64x384_tile_desc_t,
-            (l3_kslicing > 1)
+            (global_kslicing > 1)
                     ? msg_type::atomic_add
                     : subgroup::msg_type_v<mat_64x384_tile_desc_t, mem_space_c>,
             mem_layout_c, mem_space_c, gpu_arch::Xe>;
     using matC_64x512_payload_t = subgroup::mem_payload_t<dtype_sfx,
             mat_64x512_tile_desc_t,
-            (l3_kslicing > 1)
+            (global_kslicing > 1)
                     ? msg_type::atomic_add
                     : subgroup::msg_type_v<mat_64x512_tile_desc_t, mem_space_c>,
             mem_layout_c, mem_space_c, gpu_arch::Xe>;
-    using matC_32x1024_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            mat_32x1024_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<mat_32x1024_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
-    using matC_16x2048_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            mat_16x2048_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<mat_16x2048_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_32x1024_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, mat_32x1024_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<mat_32x1024_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_16x2048_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, mat_16x2048_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<mat_16x2048_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
     using matC_128x64_payload_t = subgroup::mem_payload_t<dtype_sfx,
             mat_128x64_tile_desc_t,
-            (l3_kslicing > 1)
+            (global_kslicing > 1)
                     ? msg_type::atomic_add
                     : subgroup::msg_type_v<mat_128x64_tile_desc_t, mem_space_c>,
             mem_layout_c, mem_space_c, gpu_arch::Xe>;
@@ -1693,7 +1697,7 @@ struct xetla_mha_attn_reg_bwd_t {
             group::compute_attr_t<dtype_sfx, dtype_bin, dtype_acc>,
             bgm_perf_tuning_knob, gpu_arch::Xe>;
 
-    static constexpr uint32_t l3_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 1;
     static constexpr uint16_t sfx_type_size = sizeof(dtype_sfx);
     static_assert((sfx_type_size == 1) || (sfx_type_size == 2)
             || (sfx_type_size == 4));
@@ -1832,42 +1836,48 @@ struct xetla_mha_attn_reg_bwd_t {
     using matC_16x2048_t
             = subgroup::tile_t<dtype_sfx, matC_16x2048_tile_desc_t>;
 
-    using matC_128x128_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            matC_128x128_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<matC_128x128_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
-    using matC_128x256_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            matC_128x256_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<matC_128x256_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
-    using matC_64x384_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            matC_64x384_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<matC_64x384_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
-    using matC_64x512_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            matC_64x512_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<matC_64x512_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
-    using matC_32x1024_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            matC_32x1024_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<matC_32x1024_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
-    using matC_16x2048_payload_t = subgroup::mem_payload_t<dtype_sfx,
-            matC_16x2048_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<matC_16x2048_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_128x128_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, matC_128x128_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<matC_128x128_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_128x256_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, matC_128x256_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<matC_128x256_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_64x384_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, matC_64x384_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<matC_64x384_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_64x512_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, matC_64x512_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<matC_64x512_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_32x1024_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, matC_32x1024_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<matC_32x1024_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_16x2048_payload_t
+            = subgroup::mem_payload_t<dtype_sfx, matC_16x2048_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<matC_16x2048_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
 
     using matC_128x64_tile_desc_t
             = subgroup::tile_desc_t<matAcc_128x64_t::tile_desc::tile_size_x,
@@ -1907,15 +1917,16 @@ struct xetla_mha_attn_reg_bwd_t {
     using matC_256x64_trnp_af_t
             = subgroup::tile_t<dtype_bot, matC_256x64_trnp_af_tile_desc_t>;
 
-    using matC_128x64_payload_t = subgroup::mem_payload_t<dtype_bot,
-            matC_128x64_tile_desc_t,
-            (l3_kslicing > 1) ? msg_type::atomic_add
-                              : subgroup::msg_type_v<matC_128x64_tile_desc_t,
-                                      mem_space_c>,
-            mem_layout_c, mem_space_c, gpu_arch::Xe>;
+    using matC_128x64_payload_t
+            = subgroup::mem_payload_t<dtype_bot, matC_128x64_tile_desc_t,
+                    (global_kslicing > 1)
+                            ? msg_type::atomic_add
+                            : subgroup::msg_type_v<matC_128x64_tile_desc_t,
+                                    mem_space_c>,
+                    mem_layout_c, mem_space_c, gpu_arch::Xe>;
     using matC_128x64_trnp_a_payload_t = subgroup::mem_payload_t<dtype_bot,
             matC_128x64_trnp_a_tile_desc_t,
-            (l3_kslicing > 1)
+            (global_kslicing > 1)
                     ? msg_type::atomic_add
                     : subgroup::msg_type_v<matC_128x64_trnp_a_tile_desc_t,
                             mem_space_c>,
@@ -1926,14 +1937,14 @@ struct xetla_mha_attn_reg_bwd_t {
             mem_layout_c, mem_space_c, gpu_arch::Xe>;
     using matC_128x64_trnp_af_payload_t = subgroup::mem_payload_t<dtype_bot,
             matC_128x64_trnp_af_tile_desc_t,
-            (l3_kslicing > 1)
+            (global_kslicing > 1)
                     ? msg_type::atomic_add
                     : subgroup::msg_type_v<matC_128x64_trnp_af_tile_desc_t,
                             mem_space_c>,
             mem_layout_c, mem_space_c, gpu_arch::Xe>;
     using matC_256x64_trnp_af_payload_t = subgroup::mem_payload_t<dtype_bot,
             matC_256x64_trnp_af_tile_desc_t,
-            (l3_kslicing > 1)
+            (global_kslicing > 1)
                     ? msg_type::atomic_add
                     : subgroup::msg_type_v<matC_256x64_trnp_af_tile_desc_t,
                             mem_space_c>,

@@ -28,5 +28,6 @@
 #include "group/epilogue/epilogue_policy.hpp"
 #include "group/epilogue/impl/default_xe.hpp"
 #include "group/epilogue/impl/quant_tile_op_xe.hpp"
+#include "group/epilogue/impl/streamK_op_xe.hpp"
 #include "group/epilogue/impl/tile_op_xe.hpp"
 #include "group/tile_shape.hpp"

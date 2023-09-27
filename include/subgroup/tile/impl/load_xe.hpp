@@ -60,12 +60,12 @@ struct check_load_type {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory information
 /// Payload indicates the source of load operation.
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, holds the return data of the loads.
 /// @param payload Is the payload object with type payload_t. Contains all the information for loads.
 /// @return No return, update in place.
 template <cache_hint L1 = cache_hint::cached,
-        cache_hint L3 = cache_hint::cached, typename tile_t, typename payload_t>
+        cache_hint L2 = cache_hint::cached, typename tile_t, typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_load_type<tile_t, payload_t>::is_global_2d_xe>
 tile_load(tile_t &tile, payload_t &payload) {
@@ -204,7 +204,7 @@ tile_load(tile_t &tile, payload_t &payload) {
                         = xetla_tload_global<load_dtype,
                                 ld_blk_height * block_size_x * arr_len
                                         / scale_factor,
-                                L1, L3, trans, mem_transform>(tdesc);
+                                L1, L2, trans, mem_transform>(tdesc);
 
                 if constexpr (reg_transpose && trans) {
                     reg_blk.xetla_select<load_elems, 1>(ii * load_elems)
@@ -251,7 +251,7 @@ tile_load(tile_t &tile, payload_t &payload) {
                 reg_blk.xetla_select<load_elems, 1>(remained_start)
                         .xetla_format<native_type_t<load_dtype>>()
                         = xetla_tload_global<load_dtype,
-                                (load_elems / scale_factor), L1, L3, trans,
+                                (load_elems / scale_factor), L1, L2, trans,
                                 mem_transform>(tdesc);
             }
         }
@@ -293,7 +293,7 @@ tile_load(tile_t &tile, payload_t &payload) {
                         = xetla_tload_global<load_dtype,
                                 (ld_blk_height * block_size_x * arr_len
                                         / scale_factor),
-                                L1, L3, trans, mem_transform>(tdesc);
+                                L1, L2, trans, mem_transform>(tdesc);
 
                 if constexpr (reg_transpose && trans) {
                     reg_blk.xetla_select<load_elems, 1>(ii * load_elems)
@@ -336,7 +336,7 @@ tile_load(tile_t &tile, payload_t &payload) {
                 reg_blk.xetla_select<final_load_elems, 1>(final_start)
                         .xetla_format<native_type_t<load_dtype>>()
                         = xetla_tload_global<load_dtype,
-                                final_load_elems / scale_factor, L1, L3, trans,
+                                final_load_elems / scale_factor, L1, L2, trans,
                                 mem_transform>(tdesc);
             }
         }
@@ -355,12 +355,12 @@ tile_load(tile_t &tile, payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory information.
 /// Payload indicates the source of load operation.
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, holds the return data of the loads.
 /// @param payload Is the payload object with type payload_t. Contains all the information for loads.
 /// @return No return, update in place.
 template <cache_hint L1 = cache_hint::cached,
-        cache_hint L3 = cache_hint::cached, typename tile_t, typename payload_t>
+        cache_hint L2 = cache_hint::cached, typename tile_t, typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_load_type<tile_t, payload_t>::is_global_block_1d_xe>
 tile_load(tile_t &tile, payload_t &payload) {
@@ -381,13 +381,13 @@ tile_load(tile_t &tile, payload_t &payload) {
                     = tile.reg.xetla_select<64 * scale_factor, 1>(offset_x);
             uint32_t address_offset = offset_x * sizeof(dtype);
             reg_sub.xetla_format<load_dtype>() = xetla_load_global<load_dtype,
-                    64, data_size::default_size, L1, L3>(
+                    64, data_size::default_size, L1, L2>(
                     payload.base_ptr, payload.base_offset + address_offset);
         }
     }
     constexpr uint32_t tail_len = load_len % 64;
     uint32_t tail_offset = load_len / 64 * 64 * scale_factor;
-    detail::process_1d_tail<tail_len, 32, detail::process_flag::load, L1, L3>(
+    detail::process_1d_tail<tail_len, 32, detail::process_flag::load, L1, L2>(
             tile, payload, tail_offset);
 }
 
@@ -399,12 +399,12 @@ tile_load(tile_t &tile, payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory information.
 /// Payload indicates the source of load operation.
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, holds the return data of the loads.
 /// @param payload Is the payload object with type payload_t. Contains all the information for loads.
 /// @return No return, update in place.
 template <cache_hint L1 = cache_hint::cached,
-        cache_hint L3 = cache_hint::cached, typename tile_t, typename payload_t>
+        cache_hint L2 = cache_hint::cached, typename tile_t, typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_load_type<tile_t, payload_t>::is_local_scatter_xe>
 tile_load(tile_t &tile, payload_t &payload) {
@@ -481,12 +481,12 @@ tile_load(tile_t &tile, payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct describing the memory information.
 /// Payload indicates the source of load operation.
 /// @tparam L1 Is the cache hint for L1 cache.
-/// @tparam L3 Is the cache hint for L3 cache.
+/// @tparam L2 Is the cache hint for L2 cache.
 /// @param tile Is the tile object with type tile_t, holds the return data of the loads.
 /// @param payload Is the payload object with type payload_t. Contains all the information for loads.
 /// @return No return, update in place.
 template <cache_hint L1 = cache_hint::cached,
-        cache_hint L3 = cache_hint::cached, typename tile_t, typename payload_t>
+        cache_hint L2 = cache_hint::cached, typename tile_t, typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_load_type<tile_t, payload_t>::is_local_block_1d_xe>
 tile_load(tile_t &tile, payload_t &payload) {
@@ -511,7 +511,7 @@ tile_load(tile_t &tile, payload_t &payload) {
         }
     }
     detail::process_1d_tail<load_len % 64, 32, detail::process_flag::load, L1,
-            L3>(tile, payload, load_len / 64 * 64 * scale_factor);
+            L2>(tile, payload, load_len / 64 * 64 * scale_factor);
 }
 
 } // namespace gpu::xetla::subgroup

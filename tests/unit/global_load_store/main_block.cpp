@@ -58,8 +58,8 @@ TEST(load_store_block_default_ref, esimd) {
 /// Test global load/ store datatype + datasize test
 /// Tested case:
 /// - different datatype for xetla_load_global + xetla_store_global block load/store.
-/// - xetla_load_global API with [dst] [2 src] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
-/// - xetla_store_global API with [no return] [3 src] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
+/// - xetla_load_global API with [dst] [2 src] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
+/// - xetla_store_global API with [no return] [3 src] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
 ///------------------------------------------------------------------
 template <typename T>
 class load_store_block_datatype_test : public ::testing::Test {};
@@ -89,7 +89,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(
 /// Test global block load cache hint
 /// Tested case:
 /// - different cache hint for xetla_load_global block store.
-/// - xetla_load_global API with [dst] [2 src] [datatype int] [SIMD16] [data_size::default_size] [different L1 L3 cache hint].
+/// - xetla_load_global API with [dst] [2 src] [datatype int] [SIMD16] [data_size::default_size] [different L1 L2 cache hint].
 ///------------------------------------------------------------------
 template <typename T>
 class load_block_cache_test : public ::testing::Test {};
@@ -98,18 +98,18 @@ TYPED_TEST_SUITE_P(load_block_cache_test);
 
 TYPED_TEST_P(load_block_cache_test, esimd) {
     constexpr cache_hint L1H = std::tuple_element_t<0, TypeParam>::value;
-    constexpr cache_hint L3H = std::tuple_element_t<1, TypeParam>::value;
+    constexpr cache_hint L2H = std::tuple_element_t<1, TypeParam>::value;
 
     cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate
             = std::bind(load_store_result_validate<int>, _1, _2, _3, 16);
-    kernel_run<int, global_load_block_cache<int, 16, L1H, L3H>>(
+    kernel_run<int, global_load_block_cache<int, 16, L1H, L2H>>(
             nd_range, result_validate);
 }
 
 REGISTER_TYPED_TEST_SUITE_P(load_block_cache_test, esimd);
 
-/// @brief Valid Combination of L1 L3 cache for LOAD
+/// @brief Valid Combination of L1 L2 cache for LOAD
 /// Bspec link: https://gfxspecs.intel.com/Predator/Home/Index/53560
 ///
 using valid_load_cache_hints
@@ -124,7 +124,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(
 /// Test global block store cache hint
 /// Tested case:
 /// - different cache hint for xetla_store_global block store.
-/// - xetla_store_global API with [no return] [3 src] [datatype int] [SIMD16] [data_size::default_size] [different L1 L3 cache hint].
+/// - xetla_store_global API with [no return] [3 src] [datatype int] [SIMD16] [data_size::default_size] [different L1 L2 cache hint].
 ///------------------------------------------------------------------
 template <typename T>
 class store_block_cache_test : public ::testing::Test {};
@@ -133,18 +133,18 @@ TYPED_TEST_SUITE_P(store_block_cache_test);
 
 TYPED_TEST_P(store_block_cache_test, esimd) {
     constexpr cache_hint L1H = std::tuple_element_t<0, TypeParam>::value;
-    constexpr cache_hint L3H = std::tuple_element_t<1, TypeParam>::value;
+    constexpr cache_hint L2H = std::tuple_element_t<1, TypeParam>::value;
 
     cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate
             = std::bind(load_store_result_validate<int>, _1, _2, _3, 16);
-    kernel_run<int, global_store_block_cache<int, 16, L1H, L3H>>(
+    kernel_run<int, global_store_block_cache<int, 16, L1H, L2H>>(
             nd_range, result_validate);
 }
 
 REGISTER_TYPED_TEST_SUITE_P(store_block_cache_test, esimd);
 
-/// @brief Valid Combination of L1 L3 cache for STORE
+/// @brief Valid Combination of L1 L2 cache for STORE
 /// Bspec link: https://gfxspecs.intel.com/Predator/Home/Index/53561
 ///
 using valid_store_cache_hints
@@ -159,7 +159,7 @@ INSTANTIATE_TYPED_TEST_SUITE_P(global_load_store_block, store_block_cache_test,
 /// Test global prefetch cache hint
 /// Tested case:
 /// - different cache hint for xetla_prefetch_global.
-/// - xetla_prefetch_global API with [dst] [2 src] [datatype int] [SIMD16] [data_size::default_size] [different L1 L3 cache hint].
+/// - xetla_prefetch_global API with [dst] [2 src] [datatype int] [SIMD16] [data_size::default_size] [different L1 L2 cache hint].
 ///------------------------------------------------------------------
 template <typename T>
 class prefetch_block_cache_test : public ::testing::Test {};
@@ -168,18 +168,18 @@ TYPED_TEST_SUITE_P(prefetch_block_cache_test);
 
 TYPED_TEST_P(prefetch_block_cache_test, esimd) {
     constexpr cache_hint L1H = std::tuple_element_t<0, TypeParam>::value;
-    constexpr cache_hint L3H = std::tuple_element_t<1, TypeParam>::value;
+    constexpr cache_hint L2H = std::tuple_element_t<1, TypeParam>::value;
 
     cl::sycl::nd_range<1> nd_range({1}, {1});
     auto result_validate
             = std::bind(load_store_result_validate<int>, _1, _2, _3, 16);
-    kernel_run<int, global_prefetch_block<int, 16, L1H, L3H>>(
+    kernel_run<int, global_prefetch_block<int, 16, L1H, L2H>>(
             nd_range, result_validate);
 }
 
 REGISTER_TYPED_TEST_SUITE_P(prefetch_block_cache_test, esimd);
 
-/// @brief Valid Combination of L1 L3 cache for LOAD (PREFETCH)
+/// @brief Valid Combination of L1 L2 cache for LOAD (PREFETCH)
 /// Bspec link: https://gfxspecs.intel.com/Predator/Home/Index/53560
 ///
 using valid_prefetch_cache_hints
@@ -193,9 +193,9 @@ INSTANTIATE_TYPED_TEST_SUITE_P(global_load_store_block,
 /// Test global prefetch datatype + datasize test
 /// Tested case:
 /// - different datatype for xetla_prefetch_global xetla_load_global + xetla_store_global block load/store.
-/// - xetla_prefetch_global API with [dst] [2 src] [different datatype] [SIMD16] [data_size::default_size] [L1 L3 cache hint CA,CA].
-/// - xetla_load_global API with [dst] [2 src] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
-/// - xetla_store_global API with [no return] [3 src] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
+/// - xetla_prefetch_global API with [dst] [2 src] [different datatype] [SIMD16] [data_size::default_size] [L1 L2 cache hint CA,CA].
+/// - xetla_load_global API with [dst] [2 src] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
+/// - xetla_store_global API with [no return] [3 src] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
 ///------------------------------------------------------------------
 template <typename T>
 class prefetch_block_datatype_test : public ::testing::Test {};

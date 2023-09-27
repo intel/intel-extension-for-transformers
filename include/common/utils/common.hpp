@@ -43,16 +43,16 @@ constexpr uint32_t get_element_size_code() {
     }
 }
 
-template <cache_hint L1H, cache_hint L3H>
+template <cache_hint L1H, cache_hint L2H>
 constexpr uint32_t get_load_cache_hint_code() {
-    check_lsc_cache_hint<lsc_action::load, L1H, L3H>();
-    if (L1H == cache_hint::none && L3H == cache_hint::none) {
+    check_lsc_cache_hint<lsc_action::load, L1H, L2H>();
+    if (L1H == cache_hint::none && L2H == cache_hint::none) {
         return 0;
-    } else if (L3H == cache_hint::uncached) {
+    } else if (L2H == cache_hint::uncached) {
         if (L1H == cache_hint::uncached) { return 1; }
         if (L1H == cache_hint::cached) { return 3; }
         if (L1H == cache_hint::streaming) { return 5; }
-    } else if (L3H == cache_hint::cached) {
+    } else if (L2H == cache_hint::cached) {
         if (L1H == cache_hint::uncached) { return 2; }
         if (L1H == cache_hint::cached) { return 4; }
         if (L1H == cache_hint::streaming) { return 6; }
@@ -60,30 +60,30 @@ constexpr uint32_t get_load_cache_hint_code() {
     }
 }
 
-template <cache_hint L1H, cache_hint L3H>
+template <cache_hint L1H, cache_hint L2H>
 constexpr uint32_t get_prefetch_cache_hint_code() {
-    check_lsc_cache_hint<lsc_action::prefetch, L1H, L3H>();
-    if (L3H == cache_hint::uncached) {
+    check_lsc_cache_hint<lsc_action::prefetch, L1H, L2H>();
+    if (L2H == cache_hint::uncached) {
         if (L1H == cache_hint::uncached) { return 1; }
         if (L1H == cache_hint::cached) { return 3; }
         if (L1H == cache_hint::streaming) { return 5; }
-    } else if (L3H == cache_hint::cached) {
+    } else if (L2H == cache_hint::cached) {
         if (L1H == cache_hint::uncached) { return 2; }
         if (L1H == cache_hint::cached) { return 4; }
         if (L1H == cache_hint::streaming) { return 6; }
     }
 }
 
-template <cache_hint L1H, cache_hint L3H>
+template <cache_hint L1H, cache_hint L2H>
 constexpr uint32_t get_store_cache_hint_code() {
-    check_lsc_cache_hint<lsc_action::store, L1H, L3H>();
-    if (L1H == cache_hint::none && L3H == cache_hint::none) {
+    check_lsc_cache_hint<lsc_action::store, L1H, L2H>();
+    if (L1H == cache_hint::none && L2H == cache_hint::none) {
         return 0;
-    } else if (L3H == cache_hint::uncached) {
+    } else if (L2H == cache_hint::uncached) {
         if (L1H == cache_hint::uncached) { return 1; }
         if (L1H == cache_hint::write_through) { return 3; }
         if (L1H == cache_hint::streaming) { return 5; }
-    } else if (L3H == cache_hint::write_back) {
+    } else if (L2H == cache_hint::write_back) {
         if (L1H == cache_hint::uncached) { return 2; }
         if (L1H == cache_hint::write_through) { return 4; }
         if (L1H == cache_hint::streaming) { return 6; }
@@ -91,16 +91,16 @@ constexpr uint32_t get_store_cache_hint_code() {
     }
 }
 
-template <cache_hint L1H, cache_hint L3H>
+template <cache_hint L1H, cache_hint L2H>
 constexpr uint32_t get_atomic_cache_hint_code() {
-    check_lsc_cache_hint<lsc_action::atomic, L1H, L3H>();
-    if (L1H == cache_hint::none && L3H == cache_hint::none) {
+    check_lsc_cache_hint<lsc_action::atomic, L1H, L2H>();
+    if (L1H == cache_hint::none && L2H == cache_hint::none) {
         return 0;
-    } else if (L3H == cache_hint::uncached) {
+    } else if (L2H == cache_hint::uncached) {
         if (L1H == cache_hint::uncached) { return 1; }
         if (L1H == cache_hint::write_through) { return 3; }
         if (L1H == cache_hint::streaming) { return 5; }
-    } else if (L3H == cache_hint::write_back) {
+    } else if (L2H == cache_hint::write_back) {
         if (L1H == cache_hint::uncached) { return 2; }
         if (L1H == cache_hint::write_through) { return 4; }
         if (L1H == cache_hint::streaming) { return 6; }

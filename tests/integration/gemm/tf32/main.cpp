@@ -37,7 +37,8 @@ template <class Test>
 using tf32_gemm_func = tf32_gemm_test_func<typename Test::data_type_a,
         typename Test::data_type_b, typename Test::data_type_c, float,
         Test::wg_m, Test::wg_n, Test::sg_m, Test::sg_n, Test::sg_k,
-        Test::layout_a, Test::layout_b, Test::l3_kslicing, Test::slm_kslicing>;
+        Test::layout_a, Test::layout_b, Test::global_kslicing,
+        Test::local_kslicing>;
 
 using namespace cl::sycl;
 

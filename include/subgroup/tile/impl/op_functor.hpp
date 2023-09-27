@@ -582,6 +582,112 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, arch_tag,
     }
 };
 
+/// @brief Is the element-wise reduce op functor, specialized for streamK dispatch
+///Load partial sum from scratchspace
+///Reduce in GRF
+///Store zero to scratchspace
+///Do these steps with smaller tiles to minimize GRF pressure
+/// @tparam reduce_kind Is the reduce type, can be sum, prod, min and max.
+/// @tparam dtype_in Is the memory side buffer data type.
+/// @tparam arch_tag Is the hardware architecture tag.
+template <reduce_op reduce_kind, typename dtype_in,
+        gpu_arch arch_tag = gpu_arch::Xe>
+struct elemwise_reduce_op_streamK_t {};
+/// @brief Is the element-wise reduce op functor, specialized for Xe architecture.
+template <reduce_op reduce_kind_, typename dtype_in_>
+struct elemwise_reduce_op_streamK_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
+    using dtype_in = dtype_in_;
+    using mem_desc_in_t
+            = mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>;
+    using shape_t = typename mem_desc_in_t::shape_t;
+    using coord_t = typename mem_desc_in_t::coord_t;
+    using base_t = typename mem_desc_in_t::base_t;
+    static constexpr reduce_op reduce_kind = reduce_kind_;
+
+    struct arguments_t {
+        shape_t shape;
+        base_t base;
+        inline arguments_t() = default;
+        inline arguments_t(base_t base_, shape_t shape_)
+            : base(base_), shape(shape_) {}
+    };
+    template <typename matAcc_t>
+    __XETLA_API KERNEL_FUNC void operator()(matAcc_t &matAcc,
+            const coord_t &coord, const arguments_t &args,
+            uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
+        using dtype_acc = typename matAcc_t::dtype;
+        static constexpr uint32_t tile_size_x = matAcc_t::tile_size_x;
+        static constexpr uint32_t tile_size_y = matAcc_t::tile_size_y;
+        static constexpr uint32_t block_size_x = matAcc_t::block_size_x;
+        static constexpr uint32_t block_size_y = matAcc_t::block_size_y;
+        static constexpr int32_t num_block_x = matAcc_t::num_block_x;
+        static constexpr int32_t num_block_y = matAcc_t::num_block_y;
+        static constexpr uint32_t tile_elems = matAcc_t::tile_elems;
+        static constexpr uint32_t block_elems = matAcc_t::block_elems;
+
+        using mat_in_tile_desc_t = tile_desc_t<block_size_x, block_size_y,
+                block_size_x, block_size_y, reg_layout::tiled>;
+        using mat_in_tile_t = tile_t<dtype_in, mat_in_tile_desc_t>;
+        using mat_in_payload_t = mem_payload_t<dtype_in, mat_in_tile_desc_t,
+                msg_type_v<mat_in_tile_desc_t, mem_desc_in_t::space>,
+                mem_desc_in_t::layout, mem_desc_in_t::space, gpu_arch::Xe>;
+        mem_desc_in_t mem_desc_in(args.base, args.shape, coord);
+        mat_in_tile_t mat_in;
+        mat_in_tile_t mat_zero(0);
+        mat_in_payload_t mat_in_payload(mem_desc_in);
+
+#pragma unroll
+        for (int i = 0; i < tile_size_y / block_size_y; i++) {
+#pragma unroll
+            for (int j = 0; j < num_block_x; j++) {
+
+                tile_load<cache_hint::cached, cache_hint::cached>(
+                        mat_in, mat_in_payload);
+                auto dst_reg = matAcc.reg.xetla_select<block_elems, 1>(
+                        (i * num_block_x + j) * block_elems);
+
+                auto src_reg = mat_in.reg;
+                dst_reg = reduce_helper<reduce_kind, dtype_acc, block_elems>(
+                        src_reg, dst_reg);
+
+                subgroup::tile_store<cache_hint::uncached,
+                        cache_hint::write_back>(mat_zero, mat_in_payload);
+                mat_in_payload.template update_tdesc<tdesc_update_dir::x_dir>(
+                        block_size_x);
+            }
+            mat_in_payload.template update_tdesc<tdesc_update_dir::x_dir>(
+                    -num_block_x * block_size_x);
+            mat_in_payload.template update_tdesc<tdesc_update_dir::y_dir>(
+                    block_size_y);
+        }
+        // process the tail
+        if constexpr ((tile_size_y % block_size_y) != 0) {
+            constexpr uint32_t tail_start_y
+                    = tile_size_y / block_size_y * block_size_y;
+            constexpr int32_t tail_size_y = tile_size_y % block_size_y;
+            constexpr int32_t tail_block_elems = tail_size_y * block_size_x;
+#pragma unroll
+            for (int j = 0; j < num_block_x; j++) {
+
+                tile_load<cache_hint::cached, cache_hint::cached>(
+                        mat_in, mat_in_payload);
+                auto dst_reg = matAcc.reg.xetla_select<tail_block_elems, 1>(
+                        tail_start_y * tile_size_x + j * tail_block_elems);
+                auto src_reg = mat_in.reg.xetla_select<tail_block_elems, 1>(
+                        tail_start_y * tile_size_x + j * tail_block_elems);
+                dst_reg = reduce_helper<reduce_kind, dtype_acc,
+                        tail_block_elems>(src_reg, dst_reg);
+
+                subgroup::tile_store<cache_hint::uncached,
+                        cache_hint::write_back>(mat_zero, mat_in_payload);
+
+                mat_in_payload.template update_tdesc<tdesc_update_dir::x_dir>(
+                        block_size_x);
+            }
+        }
+    }
+};
+
 /// @brief Is the dropout op functor.
 /// Load the mask from memory and get input from matAcc,
 /// do the scaling and zero out, update the output in place.

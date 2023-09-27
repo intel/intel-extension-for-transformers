@@ -73,7 +73,7 @@ enum class msg_type : uint8_t {
     // prefetch_1d = 5
 };
 
-/// L1 or L3 cache hint kinds.
+/// L1 or L2 cache hint kinds.
 enum class cache_hint : uint8_t {
     none = 0,
     uncached = 1,
@@ -112,7 +112,7 @@ enum class fence_op : uint8_t {
     discard = 3, /// direct and clean lines are discarded w/o eviction
     clean = 4, /// dirty lines are written to memory, but retained in cache
     /// in clean state
-    flushl3 = 5, /// flush only L3
+    flushl2 = 5, /// flush only L2
 };
 /// The scope that xetla_fence operation should apply to
 enum class fence_scope : uint8_t {
@@ -220,24 +220,24 @@ __XETLA_API void xetla_wait(uint16_t val) {
 
 enum class lsc_action { prefetch, load, store, atomic };
 
-template <lsc_action Action, cache_hint L1H, cache_hint L3H>
+template <lsc_action Action, cache_hint L1H, cache_hint L2H>
 constexpr void check_lsc_cache_hint() {
     if constexpr (Action == lsc_action::prefetch) {
         // https://gfxspecs.intel.com/Predator/Home/Index/53560
         static_assert(
-                ((L3H == cache_hint::uncached || L3H == cache_hint::cached)
+                ((L2H == cache_hint::uncached || L2H == cache_hint::cached)
                         && (L1H == cache_hint::uncached
                                 || L1H == cache_hint::cached
                                 || L1H == cache_hint::streaming)),
                 "cache hint type not supported!");
     } else if constexpr (Action == lsc_action::load) {
         // https://gfxspecs.intel.com/Predator/Home/Index/53560
-        static_assert((L1H == cache_hint::none && L3H == cache_hint::none)
-                        || ((L3H == cache_hint::uncached)
+        static_assert((L1H == cache_hint::none && L2H == cache_hint::none)
+                        || ((L2H == cache_hint::uncached)
                                 && (L1H == cache_hint::uncached
                                         || L1H == cache_hint::cached
                                         || L1H == cache_hint::streaming))
-                        || ((L3H == cache_hint::cached)
+                        || ((L2H == cache_hint::cached)
                                 && (L1H == cache_hint::uncached
                                         || L1H == cache_hint::cached
                                         || L1H == cache_hint::streaming
@@ -245,12 +245,12 @@ constexpr void check_lsc_cache_hint() {
                 "unsupported cache hint!");
     } else if constexpr (Action == lsc_action::store) {
         // https://gfxspecs.intel.com/Predator/Home/Index/53561
-        static_assert((L1H == cache_hint::none && L3H == cache_hint::none)
-                        || ((L3H == cache_hint::uncached)
+        static_assert((L1H == cache_hint::none && L2H == cache_hint::none)
+                        || ((L2H == cache_hint::uncached)
                                 && (L1H == cache_hint::uncached
                                         || L1H == cache_hint::write_through
                                         || L1H == cache_hint::streaming))
-                        || ((L3H == cache_hint::write_back)
+                        || ((L2H == cache_hint::write_back)
                                 && (L1H == cache_hint::uncached
                                         || L1H == cache_hint::write_through
                                         || L1H == cache_hint::streaming
@@ -258,10 +258,10 @@ constexpr void check_lsc_cache_hint() {
                 "unsupported cache hint!");
     } else if constexpr (Action == lsc_action::atomic) {
         // https://gfxspecs.intel.com/Predator/Home/Index/53561
-        static_assert((L1H == cache_hint::none && L3H == cache_hint::none)
+        static_assert((L1H == cache_hint::none && L2H == cache_hint::none)
                         || (L1H == cache_hint::uncached
-                                && (L3H == cache_hint::uncached
-                                        || L3H == cache_hint::write_back)),
+                                && (L2H == cache_hint::uncached
+                                        || L2H == cache_hint::write_back)),
                 "unsupported cache hint!");
     }
 }

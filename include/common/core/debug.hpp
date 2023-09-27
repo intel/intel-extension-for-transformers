@@ -36,7 +36,7 @@ static constexpr size_t dims_local_start = 1 + max_dims;
 
 static constexpr size_t nd_item_offset
         = reg_start - element_num * sizeof(element_type);
-ESIMD_PRIVATE ESIMD_REGISTER(nd_item_offset)
+static inline ESIMD_PRIVATE ESIMD_REGISTER(nd_item_offset)
         __ESIMD_NS::simd<element_type, element_num> saved_nd_item;
 
 template <size_t dims>

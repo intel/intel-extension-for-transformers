@@ -50,10 +50,10 @@ struct check_prefetch_type {
 /// @tparam payload_t Is the mem_payload_t struct illustrating memory info
 /// payload indicates the source of prefetch operation.
 /// @tparam L1 Is cache hint for L1 cache.
-/// @tparam L3 Is cache hint for L3 cache.
+/// @tparam L2 Is cache hint for L2 cache.
 /// @param payload Is the payload object with type payload_t. Contains all the information for prefetches.
 template <cache_hint L1 = cache_hint::cached,
-        cache_hint L3 = cache_hint::cached, typename payload_t>
+        cache_hint L2 = cache_hint::cached, typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_prefetch_type<payload_t>::is_global_2d_xe>
 tile_prefetch(payload_t &payload) {
@@ -64,7 +64,7 @@ tile_prefetch(payload_t &payload) {
 
 #pragma unroll
     for (int i = 0; i < num_tdesc; i++) {
-        xetla_tprefetch_global<dtype, L1, L3>(tdesc_2d.row(i));
+        xetla_tprefetch_global<dtype, L1, L2>(tdesc_2d.row(i));
     }
 }
 
@@ -74,10 +74,10 @@ tile_prefetch(payload_t &payload) {
 /// @tparam payload_t Is the mem_payload_t struct illustrating memory info
 /// payload indicates the source of prefetch operation
 /// @tparam L1 Is cache hint for L1 cache.
-/// @tparam L3 Is cache hint for L3 cache.
+/// @tparam L2 Is cache hint for L2 cache.
 /// @param payload Is the payload object with type payload_t. Contains all the information for prefetches.
 template <cache_hint L1 = cache_hint::cached,
-        cache_hint L3 = cache_hint::cached, typename payload_t>
+        cache_hint L2 = cache_hint::cached, typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_prefetch_type<payload_t>::is_global_block_1d_xe>
 tile_prefetch(payload_t &payload) {
@@ -92,13 +92,13 @@ tile_prefetch(payload_t &payload) {
             uint32_t offset_x = j * 64 * payload_t::scale_factor;
             uint32_t address_offset = offset_x * sizeof(dtype);
             xetla_prefetch_global<prefetch_dtype, 64, data_size::default_size,
-                    L1, L3>(
+                    L1, L2>(
                     payload.base_ptr, payload.base_offset + address_offset);
         }
     }
     constexpr uint32_t tail_len = prefetch_len % 64;
     uint32_t tail_offset = prefetch_len / 64 * 64 * payload_t::scale_factor;
-    detail::process_1d_tail<tail_len, 32, L1, L3, payload_t>(
+    detail::process_1d_tail<tail_len, 32, L1, L2, payload_t>(
             payload, tail_offset);
 }
 
@@ -106,10 +106,10 @@ tile_prefetch(payload_t &payload) {
 /// Current shared local memory prefetch is not supported yet. Only used to keep the consistency with global prefetch.
 /// @tparam payload_t Is the mem_payload_t struct illustrating memory info.
 /// @tparam L1 Is cache hint for L1 cache.
-/// @tparam L3 Is cache hint for L3 cache.
+/// @tparam L2 Is cache hint for L2 cache.
 /// @param payload Is the payload object with type payload_t. Contains all the information for prefetches.
 template <cache_hint L1 = cache_hint::cached,
-        cache_hint L3 = cache_hint::cached, typename payload_t>
+        cache_hint L2 = cache_hint::cached, typename payload_t>
 __XETLA_API typename std::enable_if_t<
         detail::check_prefetch_type<payload_t>::is_local_xe>
 tile_prefetch(payload_t &payload) {}

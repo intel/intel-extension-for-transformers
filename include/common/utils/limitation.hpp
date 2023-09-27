@@ -22,8 +22,6 @@
 #include "common/core/common.hpp"
 #include "common/utils/tensor_descriptor.hpp"
 
-using namespace gpu::xetla::detail;
-
 #define IN_RANGE(x, l, r) ((x) >= (l) && (x) <= (r))
 
 namespace gpu::xetla {
@@ -80,10 +78,14 @@ public:
         if (!check_common(tdesc)) { return false; }
 
         bool ret = false;
-        uint8_t block_width = xetla_get_block_width_x(tdesc) + 1;
-        uint8_t block_height = xetla_get_block_width_y(tdesc) + 1;
-        uint8_t array_len = xetla_get_block_array_len(tdesc) + 1;
-        int32_t block_start_x = xetla_get_tensor_offset_x(tdesc);
+        uint32_t block_width
+                = gpu::xetla::detail::xetla_get_block_width_x(tdesc) + 1;
+        uint32_t block_height
+                = gpu::xetla::detail::xetla_get_block_width_y(tdesc) + 1;
+        uint8_t array_len
+                = gpu::xetla::detail::xetla_get_block_array_len(tdesc) + 1;
+        int32_t block_start_x
+                = gpu::xetla::detail::xetla_get_tensor_offset_x(tdesc);
 
         ret = ((block_width * block_height * element_size)
                 <= (32 * bytes_per_grf));
@@ -208,9 +210,12 @@ public:
     static inline bool check_store(xetla_tdescriptor tdesc) {
         if (!check_common(tdesc)) { return false; }
 
-        uint8_t block_width = xetla_get_block_width_x(tdesc) + 1;
-        uint8_t block_height = xetla_get_block_width_y(tdesc) + 1;
-        uint8_t array_len = xetla_get_block_array_len(tdesc) + 1;
+        uint32_t block_width
+                = gpu::xetla::detail::xetla_get_block_width_x(tdesc) + 1;
+        uint32_t block_height
+                = gpu::xetla::detail::xetla_get_block_width_y(tdesc) + 1;
+        uint8_t array_len
+                = gpu::xetla::detail::xetla_get_block_array_len(tdesc) + 1;
 
         bool ret = false;
 
@@ -418,16 +423,25 @@ private:
     }
 
     static inline bool check_common(xetla_tdescriptor tdesc) {
-        uint64_t base = xetla_get_tensor_base_address(tdesc);
-        uint32_t surface_width = xetla_get_tensor_width_x(tdesc) + 1;
-        uint32_t surface_height = xetla_get_tensor_width_y(tdesc) + 1;
-        uint32_t surface_pitch = xetla_get_tensor_pitch_x(tdesc) + 1;
-        int32_t block_start_x = xetla_get_tensor_offset_x(tdesc);
-        int32_t block_start_y = xetla_get_tensor_offset_y(tdesc);
+        uint64_t base
+                = gpu::xetla::detail::xetla_get_tensor_base_address(tdesc);
+        uint32_t surface_width
+                = gpu::xetla::detail::xetla_get_tensor_width_x(tdesc) + 1;
+        uint32_t surface_height
+                = gpu::xetla::detail::xetla_get_tensor_width_y(tdesc) + 1;
+        uint32_t surface_pitch
+                = gpu::xetla::detail::xetla_get_tensor_pitch_x(tdesc) + 1;
+        int32_t block_start_x
+                = gpu::xetla::detail::xetla_get_tensor_offset_x(tdesc);
+        int32_t block_start_y
+                = gpu::xetla::detail::xetla_get_tensor_offset_y(tdesc);
 
-        uint8_t block_width = xetla_get_block_width_x(tdesc) + 1;
-        uint8_t block_height = xetla_get_block_width_y(tdesc) + 1;
-        uint8_t array_len = xetla_get_block_array_len(tdesc) + 1;
+        uint32_t block_width
+                = gpu::xetla::detail::xetla_get_block_width_x(tdesc) + 1;
+        uint32_t block_height
+                = gpu::xetla::detail::xetla_get_block_width_y(tdesc) + 1;
+        uint8_t array_len
+                = gpu::xetla::detail::xetla_get_block_array_len(tdesc) + 1;
 
         if (check_surface(base, surface_width, surface_height, surface_pitch)
                 && check_block(block_start_x, block_start_y, block_width,

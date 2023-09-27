@@ -20,6 +20,18 @@
 #pragma once
 
 #include "common/utils/common.hpp"
+
+__XETLA_API constexpr uint32_t div_round_up(uint32_t n, uint32_t d) {
+    return (n + d - 1) / d;
+}
+
+//Pad the given allocation size upto nearest cacheline
+__XETLA_API constexpr uint32_t cacheline_align_up(size_t size) {
+
+    const int CACHELINE_SIZE = 256;
+    return (size + CACHELINE_SIZE - 1) / CACHELINE_SIZE * CACHELINE_SIZE;
+}
+
 namespace gpu::xetla {
 
 /// @addtogroup xetla_util_misc

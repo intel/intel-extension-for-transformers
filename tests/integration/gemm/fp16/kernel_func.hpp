@@ -26,7 +26,7 @@ using namespace gpu::xetla::subgroup;
 template <typename dtype_a, typename dtype_b, typename dtype_c,
         typename dtype_acc, uint32_t wg_m, uint32_t wg_n, uint32_t sg_m,
         uint32_t sg_n, uint32_t sg_k, mem_layout layout_a, mem_layout layout_b,
-        uint32_t l3_kslicing, uint32_t slm_kslicing, mma_engine engine>
+        uint32_t global_kslicing, uint32_t local_kslicing, mma_engine engine>
 struct fp16_gemm_test_func {
     using tile_shape = tile_shape_t<wg_n, wg_m, sg_n, sg_m>;
     static constexpr uint32_t periodic_sync_interval = 8;
@@ -55,8 +55,8 @@ struct fp16_gemm_test_func {
     using epilogue_t = epilogue_t<epilogue_policy_default<gpu_arch::Xe>,
             tile_shape, mem_desc_output_c>;
 
-    using gemm_op_t = gemm_universal_t<
-            dispatch_policy_kslicing<l3_kslicing, slm_kslicing, gpu_arch::Xe>,
+    using gemm_op_t = gemm_universal_t<dispatch_policy_kslicing<global_kslicing,
+                                               local_kslicing, gpu_arch::Xe>,
             gemm_t, epilogue_t>;
     static const char *func_name() { return "fp16_gemm_test_func"; }
 

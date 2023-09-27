@@ -24,8 +24,8 @@ using namespace std::placeholders;
 /// Test global load datatype + datasize test with mask
 /// Tested case:
 /// - different datatype for xetla_load_global + xetla_store_global block scatter.
-/// - xetla_load_global API with [dst] [2 src] [4 channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
-/// - xetla_store_global API with [no return] [3 src] [all channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
+/// - xetla_load_global API with [dst] [2 src] [4 channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
+/// - xetla_store_global API with [no return] [3 src] [all channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
 ///------------------------------------------------------------------
 template <typename T>
 class load_scatter_datatype_test : public ::testing::Test {};
@@ -55,9 +55,9 @@ INSTANTIATE_TYPED_TEST_SUITE_P(
 /// Test global prefetch datatype + datasize test with mask
 /// Tested case:
 /// - different datatype for xetla_prefetch block scatter.
-/// - xetla_prefetch_global API with [dst] [2 src] [4 channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
-/// - xetla_load_global API with [dst] [2 src] [4 channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
-/// - xetla_store_global API with [no return] [3 src] [all channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
+/// - xetla_prefetch_global API with [dst] [2 src] [4 channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
+/// - xetla_load_global API with [dst] [2 src] [4 channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
+/// - xetla_store_global API with [no return] [3 src] [all channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
 ///------------------------------------------------------------------
 template <typename T>
 class prefetch_scatter_datatype_test : public ::testing::Test {};
@@ -88,8 +88,8 @@ INSTANTIATE_TYPED_TEST_SUITE_P(
 /// Test global store datatype + datasize test with mask
 /// Tested case:
 /// - different datatype for xetla_load_global + xetla_store_global block scatter.
-/// - xetla_load_global API with [dst] [2 src] [all channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
-/// - xetla_store_global API with [no return] [3 src] [4 channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L3 cache hint].
+/// - xetla_load_global API with [dst] [2 src] [all channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
+/// - xetla_store_global API with [no return] [3 src] [4 channel enabled] [different datatype] [SIMD16] [data_size::default_size] [default L1 L2 cache hint].
 ///------------------------------------------------------------------
 template <typename T>
 class store_scatter_datatype_test : public ::testing::Test {};

@@ -31,7 +31,7 @@ KERNEL_FUNC inline void load2D_D32_A64_CA_CA(
     desc |= 0x0 << 7; // disable vnni transform
     desc += 0x2 << 9; // 32bit data
     desc += 0x0 << 15; // transpose off
-    desc += 0x4 << 17; // L1 cached L3 cached
+    desc += 0x4 << 17; // L1 cached L2 cached
     desc += numDst
             << 20; // Response length. 31 represents 32 with hidden -1. The rest doesn't use -1.
     desc += 0x1 << 25; // Msg length
@@ -53,7 +53,7 @@ KERNEL_FUNC inline void prefetch2D_D32_A64_CA_CA(xetla_vector<T1, n1> payload) {
     desc |= 0x0 << 7; // disable vnni transform
     desc += 0x2 << 9; // 32bit data
     desc += 0x0 << 15; // transpose off
-    desc += 0x4 << 17; // L1 cached L3 cached
+    desc += 0x4 << 17; // L1 cached L2 cached
     desc += 0
             << 20; // Response length, prefetch=0. 31 represents 32 with hidden -1. The rest doesn't use -1.
     desc += 0x1 << 25; // Msg length
@@ -73,7 +73,7 @@ KERNEL_FUNC inline void store2D_D32_A64_WB_WB(
 
     uint32_t desc = 7; // store 2D block
     desc += 0x2 << 9; // 32bit data
-    desc += 0x7 << 17; // L1 writeback L3 writeback
+    desc += 0x7 << 17; // L1 writeback L2 writeback
     desc += 0
             << 20; // Response length. 31 represents 32 with hidden -1. The rest doesn't use -1.
     desc += 0x1 << 25; // Msg length

@@ -41,6 +41,7 @@
 /// @} xetla_util
 #include "common/utils/common.hpp"
 #include "common/utils/execution_item.hpp"
+#include "common/utils/fastmath.hpp"
 #include "common/utils/memory_descriptor.hpp"
 #include "common/utils/misc.hpp"
 #include "common/utils/rand.hpp"

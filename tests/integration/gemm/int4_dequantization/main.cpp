@@ -53,8 +53,8 @@ public:
     static constexpr size_t sg_k = 32;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 64;
-    static constexpr size_t slm_kslicing = 2;
-    static constexpr size_t l3_kslicing = 1;
+    static constexpr size_t local_kslicing = 2;
+    static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = fp16;
@@ -75,8 +75,8 @@ public:
     static constexpr size_t sg_k = 64;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 128;
-    static constexpr size_t slm_kslicing = 4;
-    static constexpr size_t l3_kslicing = 2;
+    static constexpr size_t local_kslicing = 4;
+    static constexpr size_t global_kslicing = 2;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = fp16;
@@ -97,8 +97,8 @@ public:
     static constexpr size_t sg_k = 32;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 32;
-    static constexpr size_t slm_kslicing = 2;
-    static constexpr size_t l3_kslicing = 1;
+    static constexpr size_t local_kslicing = 2;
+    static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = fp16;
@@ -119,8 +119,8 @@ public:
     static constexpr size_t sg_k = 64;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 32;
-    static constexpr size_t slm_kslicing = 8;
-    static constexpr size_t l3_kslicing = 1;
+    static constexpr size_t local_kslicing = 8;
+    static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = fp16;
@@ -141,8 +141,8 @@ public:
     static constexpr size_t sg_k = 32;
     static constexpr size_t dequant_s = 128;
     static constexpr size_t num_buffer = 16;
-    static constexpr size_t slm_kslicing = 1;
-    static constexpr size_t l3_kslicing = 1;
+    static constexpr size_t local_kslicing = 1;
+    static constexpr size_t global_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = fp16;
@@ -157,8 +157,8 @@ void dequantize_gemm_run(int iter) {
     constexpr size_t matrix_m = Test::mat_m;
     constexpr size_t matrix_n = Test::mat_n;
     constexpr size_t matrix_k = Test::mat_k;
-    constexpr uint32_t l3_kslicing = Test::l3_kslicing;
-    constexpr uint32_t slm_kslicing = Test::slm_kslicing;
+    constexpr uint32_t global_kslicing = Test::global_kslicing;
+    constexpr uint32_t local_kslicing = Test::local_kslicing;
 
     constexpr size_t wg_tile_m = Test::wg_m;
     constexpr size_t wg_tile_n = Test::wg_n;
@@ -228,7 +228,7 @@ void dequantize_gemm_run(int iter) {
             mem_desc_c_t>;
     using gemm_op_t = xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
-                    l3_kslicing, slm_kslicing, gpu_arch::Xe>,
+                    global_kslicing, local_kslicing, gpu_arch::Xe>,
             gemm_t, epilogue_t>;
 
     size_t size_acc = gemm_op_t::get_acc_buf_size(matrix_m, matrix_n);

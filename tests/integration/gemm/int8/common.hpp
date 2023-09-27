@@ -55,8 +55,8 @@ public:
     static constexpr size_t sg_m = 32;
     static constexpr size_t sg_n = 64;
     static constexpr size_t sg_k = 64;
-    static constexpr uint32_t l3_kslicing = 1;
-    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 1;
+    static constexpr uint32_t local_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = int8_t;
@@ -75,8 +75,8 @@ public:
     static constexpr size_t sg_m = 32;
     static constexpr size_t sg_n = 64;
     static constexpr size_t sg_k = 64;
-    static constexpr uint32_t l3_kslicing = 1;
-    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 1;
+    static constexpr uint32_t local_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::col_major;
     using data_type_a = int8_t;
@@ -95,8 +95,8 @@ public:
     static constexpr size_t sg_m = 32;
     static constexpr size_t sg_n = 64;
     static constexpr size_t sg_k = 32;
-    static constexpr uint32_t l3_kslicing = 1;
-    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 1;
+    static constexpr uint32_t local_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::col_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = int8_t;
@@ -115,8 +115,8 @@ public:
     static constexpr size_t sg_m = 24;
     static constexpr size_t sg_n = 64;
     static constexpr size_t sg_k = 32;
-    static constexpr uint32_t l3_kslicing = 1;
-    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 1;
+    static constexpr uint32_t local_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::col_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = int8_t;
@@ -135,8 +135,8 @@ public:
     static constexpr size_t sg_m = 24;
     static constexpr size_t sg_n = 64;
     static constexpr size_t sg_k = 32;
-    static constexpr uint32_t l3_kslicing = 1;
-    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 1;
+    static constexpr uint32_t local_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = int8_t;
@@ -154,8 +154,8 @@ public:
     static constexpr size_t sg_m = 32;
     static constexpr size_t sg_n = 64;
     static constexpr size_t sg_k = 32;
-    static constexpr uint32_t l3_kslicing = 1;
-    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 1;
+    static constexpr uint32_t local_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = int8_t;
@@ -174,8 +174,8 @@ public:
     static constexpr size_t sg_m = 32;
     static constexpr size_t sg_n = 64;
     static constexpr size_t sg_k = 32;
-    static constexpr uint32_t l3_kslicing = 2;
-    static constexpr uint32_t slm_kslicing = 1;
+    static constexpr uint32_t global_kslicing = 2;
+    static constexpr uint32_t local_kslicing = 1;
     static constexpr mem_layout layout_a = mem_layout::row_major;
     static constexpr mem_layout layout_b = mem_layout::row_major;
     using data_type_a = int8_t;
@@ -189,7 +189,7 @@ using int8_gemm_func = int8gemm_test_func<typename Test::data_type_a,
         typename Test::data_type_b, typename Test::data_type_c,
         typename Test::data_type_acc, Test::wg_m, Test::wg_n, Test::sg_m,
         Test::sg_n, Test::sg_k, Test::layout_a, Test::layout_b,
-        Test::l3_kslicing, Test::slm_kslicing, Test::engine>;
+        Test::global_kslicing, Test::local_kslicing, Test::engine>;
 
 template <class Test>
 class result_validate {

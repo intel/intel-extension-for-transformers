@@ -901,6 +901,7 @@ private:
                                                        : normal_prefetch_width);
     static constexpr uint32_t block_size_h
             = load_store_attr::max_load_height_in_elem;
+    //could have over-prefetch, but that's should be fine
     static constexpr uint32_t max_num_block_w
             = (mem_tile_size_w + block_size_w - 1) / block_size_w;
     static constexpr uint32_t num_coop_sg = num_coop_sg_;
