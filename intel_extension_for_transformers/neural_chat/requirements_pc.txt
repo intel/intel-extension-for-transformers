@@ -1,6 +1,8 @@
-transformers>=4.32.0
+transformers==4.32.1
+peft
 fschat
 num2words
+speechbrain
 paddlepaddle
 paddlespeech==1.4.1
 shortuuid
@@ -22,10 +24,16 @@ pydantic
 starlette
 yacs
 uvicorn
+optimum
+optimum-intel
+sentence_transformers
 unstructured
 markdown
 rouge_score
 openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
-cchardet
+lm_eval
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchaudio

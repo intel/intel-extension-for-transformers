@@ -17,7 +17,7 @@
 
 from .base_model import BaseModel, register_model_adapter
 import logging
-from fastchat.conversation import get_conv_template, Conversation, register_conv_template, SeparatorStyle
+from fastchat.conversation import get_conv_template, Conversation
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
@@ -25,41 +25,6 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
-
-# neuralchat-v2 prompt template
-register_conv_template(
-    Conversation(
-        name="neural-chat-7b-v2",
-        system_message="""### System:
-    - You are a helpful assistant chatbot trained by Intel.
-    - You answer questions.
-    - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-    - You are more than just an information source, you are also able to write poetry, \
-short stories, and make jokes.</s>\n""",
-        roles=("### User:", "### Assistant:"),
-        sep_style=SeparatorStyle.NO_COLON_TWO,
-        sep="\n",
-        sep2="</s>",
-    )
-)
-
-# neuralchat-v1.1 prompt template
-register_conv_template(
-    Conversation(
-        name="neural-chat-7b-v1.1",
-        system_template="""<|im_start|>system
-{system_message}""",
-        system_message="""- You are a helpful assistant chatbot trained by Intel.
-- You answer questions.
-- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.""",
-        roles=("<|im_start|>user", "<|im_start|>assistant"),
-        sep_style=SeparatorStyle.CHATML,
-        sep="<|im_end|>",
-        stop_token_ids=[50278, 0],
-    )
-)
-
 
 class NeuralChatModel(BaseModel):
     def match(self, model_path: str):

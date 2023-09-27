@@ -1,0 +1,11 @@
+datasets
+torch
+transformers>=4.32.0
+sentencepiece
+peft
+evaluate
+nltk
+rouge_score
+einops
+fire
+intel-extension-for-transformers

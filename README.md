@@ -56,20 +56,36 @@ Below are the sample code to enable weight-only low precision inference. See mor
 
 ### INT4 Inference 
 ```python
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
+
+model_name = "EleutherAI/gpt-j-6B"
+config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, a little girl"
-config = WeightOnlyQuantConfig(compute_dtype="int8")
-model = AutoModel.from_pretrained("Intel/neural-chat-7b-v1-1", quantization_config=config)
-print(model.generate(prompt, max_new_tokens=30))
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+
+model = AutoModel.from_pretrained(model_name, quantization_config=config)
+gen_tokens = model.generate(inputs, max_new_tokens=300)
+gen_text = tokenizer.batch_decode(gen_tokens)
 ```
 
 ### INT8 Inference
 ```python
+from transformers import AutoTokenizer
 from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
-prompt = "Once upon a time, a little girl"
+
+model_name = "EleutherAI/gpt-j-6B" 
 config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
-model = AutoModel.from_pretrained("Intel/neural-chat-7b-v1-1", quantization_config=config)
-print(model.generate(prompt, max_new_tokens=30))
+prompt = "Once upon a time, a little girl"
+
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+inputs = tokenizer(prompt, return_tensors="pt").input_ids
+
+model = AutoModel.from_pretrained(model_name, quantization_config=config)
+gen_tokens = model.generate(inputs, max_new_tokens=300)
+gen_text = tokenizer.batch_decode(gen_tokens)
 ```
 
 ## 🎯Validated  Models

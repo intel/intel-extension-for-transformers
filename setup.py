@@ -57,12 +57,11 @@ install_requires_list.extend(opt_install_requires_list)
 class CMakeExtension(Extension):
     """CMakeExtension class."""
 
-    def __init__(self, name, sourcedir="", lib_only=False, compile=True):
+    def __init__(self, name, sourcedir="", lib_only=False):
         """Init a CMakeExtension object."""
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
         self.optional = lib_only  # we only deliver shared object but not as a python extension module
-        self.compile = compile
 
 
 class CMakeBuild(build_ext):
@@ -107,8 +106,6 @@ class CMakeBuild(build_ext):
         return files
 
     def build_extension(self, ext: CMakeExtension) -> None:
-        if not ext.compile:
-            return
         # Must be in this form due to bug in .resolve() only fixed in Python 3.10+
         ext_fullpath = Path.cwd() / self.get_ext_fullpath(ext.name)
         extdir = ext_fullpath.parent.resolve()
@@ -248,18 +245,9 @@ if __name__ == '__main__':
         check_submodules()
         ext_modules.extend([
             CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.gptj_cpp", "intel_extension_for_transformers/llm/runtime/graph/"),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.falcon_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.gptneox_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.dolly_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.llama_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.mpt_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.starcoder_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.opt_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.bloom_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False),
-            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp", "intel_extension_for_transformers/llm/runtime/graph/", compile=False)
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.Model", "intel_extension_for_transformers/llm/runtime/graph/"),
             ])
-        cmdclass={'build_ext': CMakeBuild}
+    cmdclass={'build_ext': CMakeBuild}
 
     setup(
         name="intel-extension-for-transformers",
