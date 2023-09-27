@@ -225,14 +225,14 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       std::vector<ne_tensor*> v_bs(batch_size);
       for (int i = 0; i < batch_size; ++i) {
         if (run_mha_fp16) {
-          // batch K
+          // batch V
           Vcur_bs[i] = ne_view_4d(ctx0, Vcur, n_embd / n_head, n_head, N, 1, ne_element_size(Vcur) * n_embd / n_head,
                                   ne_element_size(Vcur) * n_embd, ne_element_size(Vcur) * n_embd * N,
                                   i * ne_element_size(Vcur) * n_embd * N);
           v_bs[i] = ne_view_1d(ctx0, kv_self.v, n_embd * N * 1,
                                (ne_element_size(kv_self.v) * n_embd) * (il * n_ctx * kv_n_ctx_block + n_past) +
                                    i * n_ctx * n_embd * ne_element_size(kv_self.v));
-          // batch V
+          // batch K
           Kcur_bs[i] = ne_permute(ctx0,
                                   ne_reshape_4d(ctx0,
                                                 ne_view_2d(ctx0, Kcur, n_embd, N, ne_element_size(Kcur) * n_embd,
