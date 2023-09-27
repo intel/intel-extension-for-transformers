@@ -146,8 +146,14 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(float* activation, SS4Fp3
       int ldtmp1 = fmid;
       int ldtmp2 = fmid;
       int ldo = fout;
-      ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1ptr, w2ptr, w3ptr, tmp1, ldtmp1, output, ldo, NULL,
-                            tmp2, ldtmp2, NULL});
+      GemmKernel::AParam paramA = {activation, lda};
+      SiluGemmKernel::BParam paramW1 = {w1ptr};
+      GemmKernel::BParam paramW2 = {w2ptr};
+      GemmKernel::BParam paramW3 = {w3ptr};
+      SiluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo, NULL};
+      GemmKernel::EpiParam param3 = {tmp2, ldtmp2, NULL};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramW1, paramW2, paramW3, param1, param2, param3});
     }
   }
   return ret;
@@ -193,6 +199,42 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32_f32f32_forward(float* activation, SS8Fp3
       quanA2.assign((int8_t*)workspace + offset);
       ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1ptr,
                             w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,    tmp2, ldtmp2, NULL});
+    }
+  } else if (w1ptr->mCoreType == GcCompFp32::TYPE) {
+    if (_cd->AVX512F()) {
+      using GemmKernel = custom::wrapper::kblock::avx512f::GemmS8KBlock;
+      using SiluGemmKernel = custom::wrapper::kblock::avx512f::SiluGemmS8KBlock;
+      using FusedInter = custom::wrapper::transformer::FPFFNFusedInterface<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      GemmKernel::AParam paramA = {activation, lda};
+      SiluGemmKernel::BParam paramW1 = {w1ptr};
+      GemmKernel::BParam paramW2 = {w2ptr};
+      GemmKernel::BParam paramW3 = {w3ptr};
+      SiluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo, NULL};
+      GemmKernel::EpiParam param3 = {tmp2, ldtmp2, NULL};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramW1, paramW2, paramW3, param1, param2, param3});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = custom::wrapper::kblock::avx2::GemmS8KBlock;
+      using SiluGemmKernel = custom::wrapper::kblock::avx2::SiluGemmS8KBlock;
+      using FusedInter = custom::wrapper::transformer::FPFFNFusedInterface<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      GemmKernel::AParam paramA = {activation, lda};
+      SiluGemmKernel::BParam paramW1 = {w1ptr};
+      GemmKernel::BParam paramW2 = {w2ptr};
+      GemmKernel::BParam paramW3 = {w3ptr};
+      SiluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo, NULL};
+      GemmKernel::EpiParam param3 = {tmp2, ldtmp2, NULL};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramW1, paramW2, paramW3, param1, param2, param3});
     }
   }
   return ret;
@@ -551,10 +593,6 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS
       int lda = fin;
       int ldtmp1 = fmid;
       int ldo = fout;
-      // FusedInter::Arguments::paramA paramA={activation, lda};
-      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
-      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
-      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
       ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
                             broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
     } else if (_cd->AVX2()) {
@@ -565,10 +603,6 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS
       int lda = fin;
       int ldtmp1 = fmid;
       int ldo = fout;
-      // FusedInter::Arguments::paramA paramA={activation, lda};
-      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
-      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
-      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
       ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
                             broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
     }
@@ -581,10 +615,6 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS
       int lda = fin;
       int ldtmp1 = fmid;
       int ldo = fout;
-      // FusedInter::Arguments::paramA paramA={activation, lda};
-      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
-      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
-      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
       ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
                             broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
     }
@@ -653,10 +683,6 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32_f32f32_forward(float* activation, SS
       int lda = fin;
       int ldtmp1 = fmid;
       int ldo = fout;
-      // FusedInter::Arguments::paramA paramA={activation, lda};
-      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
-      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
-      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
       ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
                             broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
     } else if (_cd->AVX2()) {
@@ -667,10 +693,6 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32_f32f32_forward(float* activation, SS
       int lda = fin;
       int ldtmp1 = fmid;
       int ldo = fout;
-      // FusedInter::Arguments::paramA paramA={activation, lda};
-      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
-      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
-      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
       ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
                             broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
     }
