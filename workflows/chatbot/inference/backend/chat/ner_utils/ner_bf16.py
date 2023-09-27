@@ -22,6 +22,8 @@ nlp = spacy.load("en_core_web_lg")
 model_name ="/home/tme/Llama-2-7b-chat-hf/"
 print(f"Starting to load the model {model_name} into memory")
 
+
+# ============== set up env and prepare models and configs ================
 set_cpu_running_env()
 torch_dtype = torch.bfloat16
 config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
@@ -54,6 +56,8 @@ print(f"Successfully loaded the bf16 model {model_name} into memory")
 
 month_date_list = [31, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30]
 
+
+# ================= util functions ===================
 def check_query_time(query, cur_time):
     # prompt = """Please determine the precise time mentioned in the user's query. Your response should consist only of an accurate time in the format 'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' If the user query does not include any time reference, please reply with 'None'.
     # \n\n###Current Time:\n{}\n\nUser Query:\n{}\n\nResponse:\n""".format(cur_time, query)
@@ -68,42 +72,14 @@ def check_query_time(query, cur_time):
 
     return prompt
 
+
 def enforce_stop_tokens(text: str) -> str:
     """Cut off the text as soon as any stop words occur."""
     stopwords = ["</s"]
     return re.split("|".join(stopwords), text)[0]
 
-def max_input_len(input_text_length):
-    if input_text_length <= 128:
-        return 128
-    elif input_text_length <= 512:
-        return 512
-    elif input_text_length <= 2048:
-        return 2048
-    else:
-        print("Max support length is 4096")
-        return 4096
 
-def tokenization(prompt, tokenizer, device):
-    if device == "hpu":
-        input_tokens_no_pad = tokenizer([prompt], return_tensors="pt")
-        input_token_len = input_tokens_no_pad.input_ids.shape[-1]
-        input_tokens = tokenizer.batch_encode_plus(
-            [prompt],
-            return_tensors="pt",
-            padding="max_length",
-            max_length=max_input_len(input_token_len),
-        )
-    else:
-        input_tokens = tokenizer.batch_encode_plus(
-            [prompt], return_tensors="pt", padding=True
-        )
-        input_token_len = input_tokens.input_ids.shape[-1]
-    return input_tokens, input_token_len
-
-def prepare_inputs(inputs, device):
-    return {k:v.to(device=device) for k,v in inputs.items() if torch.is_tensor(v)}
-
+# ================= inference =================
 def inference(query):
     SHA_TZ = timezone(
         timedelta(hours=8),
@@ -116,6 +92,8 @@ def inference(query):
     inputs= tok(prompt, return_token_type_ids=False, return_tensors="pt")
     streamer = TextIteratorStreamer(tok, skip_prompt=True, skip_special_tokens=False)
     
+    cur_time = time.time()
+
     # inference for bf16
     generate_kwargs = dict(
         max_new_tokens=32,
@@ -146,6 +124,10 @@ def inference(query):
     for new_text in streamer:
         text += new_text
     text = enforce_stop_tokens(text)
+
+    print(f'inference time: {time.time() - cur_time}')
+    cur_time = time.time()
+
     doc = nlp(text)
     mentioned_time = {"time":[], "period":[]}
     for ent in doc.ents:
