@@ -15,9 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from typing import Union
 from intel_extension_for_transformers.transformers import (
     AutoModel,
+    AutoModelForSeq2SeqLM,
+    AutoModelForCausalLM,
     MixedPrecisionConfig,
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
@@ -30,14 +33,32 @@ class Optimization:
         ):
         self.optimization_config = optimization_config
 
-    def optimize(self, model):
+    def optimize(self, model, use_llm_runtime=False):
         optimized_model = model
         config = self.optimization_config
         if isinstance(config, WeightOnlyQuantConfig):
             print("Applying Weight Only Quantization.")
-            if config.weight_dtype == "int4":
-                optimized_model = AutoModel.from_pretrained(model.config._name_or_path, quantization_config=config,
-                                                  use_llm_runtime=True, trust_remote_code=True)
+            if use_llm_runtime:
+                if re.search("flan-t5", model.config._name_or_path, re.IGNORECASE):
+                        optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
+                            model.config._name_or_path,
+                            quantization_config=config,
+                            use_llm_runtime=True,
+                            trust_remote_code=True)
+                elif (
+                    re.search("gpt", model.config._name_or_path, re.IGNORECASE)
+                    or re.search("mpt", model.config._name_or_path, re.IGNORECASE)
+                    or re.search("bloom", model.config._name_or_path, re.IGNORECASE)
+                    or re.search("llama", model.config._name_or_path, re.IGNORECASE)
+                    or re.search("opt", model.config._name_or_path, re.IGNORECASE)
+                    or re.search("neural-chat-7b-v1", model.config._name_or_path, re.IGNORECASE)
+                    or re.search("neural-chat-7b-v2", model.config._name_or_path, re.IGNORECASE)
+                ):
+                    optimized_model = AutoModelForCausalLM.from_pretrained(
+                        model.config._name_or_path,
+                        quantization_config=config,
+                        use_llm_runtime=True,
+                        trust_remote_code=True)
             else:
                 from neural_compressor import PostTrainingQuantConfig, quantization
                 if config.weight_dtype is None:
@@ -51,7 +72,7 @@ class Optimization:
                 else:
                     dtype = config.weight_dtype
                 op_type_dict = {
-                    '.*':{ 	# re.match
+                    '.*':{ # re.match
                         "weight": {
                             'bits': bits, # 1-8 bits
                             "dtype":dtype,
