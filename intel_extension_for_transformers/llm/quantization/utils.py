@@ -169,12 +169,12 @@ def _replace_linear(
 def convert_to_quantized_model(model, config):
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
+    calib_iters = config.calib_iters
     if calib_dataloader is None and config.algorithm in ['TEQ', 'AWQ']:
         from datasets import load_dataset
         from torch.utils.data import DataLoader
 
         calib_dataset = config.calib_dataset
-        calib_iters = config.calib_iters
         calib_dataset = load_dataset(calib_dataset, split="train")
         calib_dataset = calib_dataset.shuffle(seed=42)
         if config.tokenizer is None:
