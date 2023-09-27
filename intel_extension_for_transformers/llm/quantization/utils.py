@@ -17,6 +17,7 @@
 
 
 import logging
+import os
 import torch
 from accelerate import init_empty_weights
 from neural_compressor import quantization
@@ -175,7 +176,8 @@ def convert_to_quantized_model(model, config):
         from torch.utils.data import DataLoader
 
         calib_dataset = config.calib_dataset
-        calib_dataset = load_dataset(calib_dataset, split="train")
+        if isinstance(calib_dataset, (str, bytes, os.PathLike)):
+            calib_dataset = load_dataset(calib_dataset, split="train")
         calib_dataset = calib_dataset.shuffle(seed=42)
         if config.tokenizer is None:
             logger.error(
