@@ -410,6 +410,7 @@ class LoadingModelConfig:
     use_hpu_graphs: bool = False
     use_cache: bool = True
     use_deepspeed: bool = False
+    use_llm_runtime: bool = False
 
 class PipelineConfig:
     def __init__(self,

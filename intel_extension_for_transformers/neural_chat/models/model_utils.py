@@ -269,6 +269,7 @@ def load_model(
     use_deepspeed=False,
     optimization_config=None,
     hf_access_token=None,
+    use_llm_runtime=False
 ):
     """
     Load the model and initialize the tokenizer.
@@ -402,7 +403,7 @@ def load_model(
 
     if isinstance(optimization_config, WeightOnlyQuantConfig):
         from intel_extension_for_transformers.neural_chat.chatbot import optimize_model
-        model = optimize_model(model, optimization_config)
+        model = optimize_model(model, optimization_config, use_llm_runtime)
 
     if device == "hpu":
         if peft_path:
