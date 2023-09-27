@@ -1,7 +1,7 @@
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR})
 
-add_subdirectory(01_basic_gemm)
+add_subdirectory(01_gemm_universal)
 add_subdirectory(02_basic_gemm)
 add_subdirectory(03_gemm_relu_bias)
 add_subdirectory(04_gemm_polynomial)

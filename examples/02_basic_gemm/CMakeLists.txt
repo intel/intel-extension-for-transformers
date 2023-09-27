@@ -1,4 +1,4 @@
-set(TARGET group_level_gemm)
+set(TARGET basic_gemm)
 
 #build test
 add_executable(${TARGET} basic_gemm.cpp)
