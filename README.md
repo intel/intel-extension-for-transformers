@@ -43,6 +43,7 @@ One of the key features of Intel® XeTLA is its ability to abstract and hide det
 - [Functionality](/media/docs/functionality.md) describes kernel-level API feature list.
 - [API Reference](https://intel.github.io/xetla) provides a comprehensive reference of the library APIs.
 - [Programming Guidelines](/media/docs/programming_guidelines.md) explains programming model, functionalities, implementation details, and annotated examples.
+- [Construct A Gemm](/media/docs/construct_a_gemm.md) describes how to construct a gemm.
 - [Terminology](/media/docs/terminology.md) describes terms used in the project.
 - [Changelog](/CHANGELOG.md) detailed listing of releases and updates.
  

@@ -51,6 +51,14 @@ using remove_const_t = typename std::remove_const<T>::type;
 #endif
 
 #define XETLA_MARKER(message) [[deprecated(message)]]
+#define XETLA_WARNING(msg) __SYCL_WARNING(msg)
+
+template <auto val>
+XETLA_MARKER("Help function to print value")
+inline constexpr void XETLA_PRINT() {}
+template <typename type>
+XETLA_MARKER("Help function to print type")
+inline constexpr void XETLA_PRINT() {}
 
 __XETLA_API int32_t xetla_get_hw_thread_id() {
     return __ESIMD_ENS::get_hw_thread_id();

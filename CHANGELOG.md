@@ -1,6 +1,21 @@
 [README](/README.md) > **Changelog**
 # Changelog
 
+## [v0.3.5](https://github.com/intel/xetla/releases/tag/v0.3.5) (2023-09-28)
+- New Features
+  * Enhanced limitation checking.
+  * Refined GEMM APIs’ name.
+  * Supported GEMM APIs load B from SLM.
+  * Supported GEMM of any (odd) shapes.
+  * Supported Streaming-K.
+  * Enhanced L3 K-slicing support.
+  * Improved GEMM's performance for large-N (M, N, K) shapes.
+  * Fixed tile load/store bugs.
+  * Enhanced examples, tests, and updated documents.
+
+- Known Issues
+    - Refer to [Limitations](/media/docs/limitations.md).
+
 ## [v0.3.4](https://github.com/intel/xetla/releases/tag/v0.3.4) (2023-08-18)
 - New Features
   * Enabled limitation checking.
