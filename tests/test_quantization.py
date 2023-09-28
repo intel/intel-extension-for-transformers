@@ -296,8 +296,7 @@ class TestQuantization(unittest.TestCase):
             WeightOnlyQuantConfig,
             SmoothQuantConfig,
             BitsAndBytesConfig
-
-        ) 
+        )
         from intel_extension_for_transformers.transformers import AutoModelForCausalLM
         fp32_model = AutoModelForCausalLM.from_pretrained(model_name_or_path, use_llm_runtime=False)
         dummy_input = fp32_model.dummy_inputs["input_ids"]
