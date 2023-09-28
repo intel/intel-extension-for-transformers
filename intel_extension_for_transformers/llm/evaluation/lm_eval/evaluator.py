@@ -15,48 +15,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 import json
 import logging
 import os
-from lm_eval import tasks, evaluator, utils
+
+from lm_eval import evaluator, utils
 from intel_extension_for_transformers.transformers.utils import logger
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", required=True)
-    parser.add_argument("--model_args", default="")
-    parser.add_argument(
-        "--tasks", default=None, choices=utils.MultiChoice(tasks.ALL_TASKS)  # pylint: disable=E1101
-    )
-    parser.add_argument("--provide_description", action="store_true")
-    parser.add_argument("--num_fewshot", type=int, default=0)
-    parser.add_argument("--batch_size", type=str, default=1)
-    parser.add_argument(
-        "--max_batch_size",
-        type=int,
-        default=None,
-        help="Maximal batch size to try with --batch_size auto",
-    )
-    parser.add_argument("--device", type=str, default=None)
-    parser.add_argument("--output_path", default=None)
-    parser.add_argument(
-        "--limit",
-        type=float,
-        default=None,
-        help="Limit the number of examples per task. "
-        "If <1, limit is a percentage of the total number of examples.",
-    )
-    parser.add_argument("--data_sampling", type=float, default=None)
-    parser.add_argument("--no_cache", action="store_true")
-    parser.add_argument("--decontamination_ngrams_path", default=None)
-    parser.add_argument("--description_dict_path", default=None)
-    parser.add_argument("--check_integrity", action="store_true")
-    parser.add_argument("--write_out", action="store_true", default=False)
-    parser.add_argument("--output_base_path", type=str, default=None)
+class LMParameters:
+    model_args = ""
+    tasks = "lambada_openai"
+    provide_description = False
+    num_fewshot = 0
+    batch_size = 1
+    max_batch_size = None
+    device = None
+    output_path = None
+    limit = None
+    data_samping = None
+    no_cache = False
+    decontamination_ngrams_path = None
+    description_dict_path = None
+    check_integrity = False
+    write_out = False
+    output_base_path = None
 
-    return parser.parse_args()
 
+args = LMParameters()
 def evaluate(model,
              tasks=None,
              batch_size=None,
@@ -64,17 +49,12 @@ def evaluate(model,
              limit=None,
              no_cache=True):
 
-    args = parse_args()
-
-    if tasks is None:
-        task_names = tasks.ALL_TASKS
-    else:
-        task_names = utils.pattern_match(args.tasks.split(","), tasks.ALL_TASKS)    # pylint: disable=E1101
-    print(f"Selected Tasks: {task_names}")
     if batch_size is not None:
         args.batch_size = batch_size
     if device is None:
         args.device = "cpu"
+    else:
+        args.device = device
     if limit is not None:
         args.limit = limit
         print(
@@ -84,14 +64,14 @@ def evaluate(model,
     if args.description_dict_path:
         with open(args.description_dict_path, "r") as f:
             description_dict = json.load(f)
-    
+
     if no_cache:
         logger.info("no_cache is used for lm_eval evaluation.")
 
     results = evaluator.simple_evaluate(
         model=model,
         model_args=args.model_args,
-        tasks=task_names,
+        tasks=tasks,
         num_fewshot=args.num_fewshot,
         batch_size=args.batch_size,
         max_batch_size=args.max_batch_size,

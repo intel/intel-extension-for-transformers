@@ -48,12 +48,14 @@ class HFAutoLM(BaseLM):
         model=None,
         tokenizer=None,
         config=None,
+        model_type=None,
         trust_remote_code=True,
         device="cpu",
         batch_size=1,
         dtype: Optional[Union[str, torch.dtype]] = "auto",
         add_special_tokens=None,
         max_length=None,
+        max_gen_toks: Optional[int] = 256,
         with_greedy=False,
         model_format="torch",
     ):
@@ -63,12 +65,14 @@ class HFAutoLM(BaseLM):
         self.model_name_or_path = model_name_or_path
         self.model = model
         self.config = config
+        self.model_type = model_type
         self._device = device
         self._batch_size = batch_size
         self._dtype = dtype
         self._with_greedy = with_greedy
         self._max_length = max_length
         self._add_special_tokens = add_special_tokens
+        self._max_gen_toks = max_gen_toks
         self.num_beam = 1 if with_greedy else 4
 
         if self.model_format == "torch" and model is None:
@@ -93,7 +97,8 @@ class HFAutoLM(BaseLM):
             self.model = self._create_onnx_model(self.model_name_or_path)
         if self.config is None and hasattr(self.model, "config"):
             self.config = self.model.config
-
+        if self.model_type is None and hasattr(self.model, "config") and hasattr(self.model.config, "model_type"):
+            self.model_type = self.model.config.model_type
         if tokenizer is not None:
             self.tokenizer = tokenizer
         elif model_name_or_path is not None:
@@ -110,7 +115,7 @@ class HFAutoLM(BaseLM):
             )
         if self.AUTO_STRUCTURE == "Causal":
             self.tokenizer.padding_side = "left"
-        assert self.tokenizer is None, "Please set tokenizer parameter in HFCausalLM or HFSeq2SeqLM."
+        assert self.tokenizer is not None, "Please set tokenizer parameter in HFCausalLM or HFSeq2SeqLM."
 
     def _create_onnx_model(self, model_name_or_path):
         assert (
@@ -348,7 +353,7 @@ class HFAutoLM(BaseLM):
         if self.batch_size == "auto":
             # using rolling window with maximum context
             print("Passed argument batch_size = auto. Detecting largest batch size")
-            batch_size = self._detect_batch_size()
+            batch_size = self._detect_batch_size()   # pylint: disable=E1101
             print(f"Determined Largest batch size: {batch_size}")
             adaptive_batch_size = batch_size
 
@@ -380,8 +385,8 @@ class HFAutoLM(BaseLM):
 
             token_context = self.tok_encode_batch(context)
 
-            responses = self._model_generate(
-                inputs=token_context,
+            responses = self._model_generate(    # pylint: disable=E1123, E1120
+                inputs=token_context,  
                 max_tokens=max_tokens,
                 stop=until,
             )
@@ -404,7 +409,7 @@ class HFCausalLM(HFAutoLM):
     def _model_call(
         self, inputs: TokenSequence, labels: Optional[TokenSequence] = None
     ) -> TokenSequence:
-        if self.config.model_type != "chatglm":
+        if self.model_type != "chatglm":
             pass
         else:
             input_bs, input_len = inputs.shape
@@ -449,7 +454,7 @@ class HFCausalLM(HFAutoLM):
             stopping_criteria=stopping_criteria,
             do_sample=False,
         )
-        return utils.select_continuation_from_batch_left_padding(
+        return utils.select_continuation_from_batch_left_padding(    # pylint: disble=E1102
             generations, max_context_size=inputs["input_ids"].size(1)
         )
 
@@ -524,7 +529,7 @@ class HFSeq2SeqLM(HFAutoLM):
                     ),
                 )
             )
-            contexts, conts = utils.split_and_pad_windows(
+            contexts, conts = utils.split_and_pad_windows(    # pylint: disable=E1101
                 rolling_token_windows,
                 pad_token_id=self.eot_token_id,
                 max_seq_len=self.max_length,

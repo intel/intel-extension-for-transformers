@@ -49,7 +49,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p.communicate()
 
 
-    def test_evaluate_for_casualLM(self):
+    def test_evaluate_for_CasualLM(self):
         from intel_extension_for_transformers.llm.evaluation.lm_eval import HFCausalLM, evaluate
         clm_model = HFCausalLM(model=self.clm_model, tokenizer=self.clm_tokenizer)
         results = evaluate(
@@ -194,8 +194,7 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
-        tokenizer = LlamaTokenizer.from_pretrained("./llama")
-        model = HFCausalLM(model_name_or_path="./llama", tokenizer=tokenizer, model_format="onnx")   
+        model = HFCausalLM(model_name_or_path="./llama", model_format="onnx")   
         results = evaluate(
             model= model,
             tasks=["piqa"],
