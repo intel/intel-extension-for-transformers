@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 def replace_linear(model, modules_to_not_convert=None, current_key_name=None, quantization_config=None):
     if modules_to_not_convert is None:
-        modules_to_not_convert = []
+        modules_to_not_convert = ["lm_head"]
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(quantization_config.llm_int8_skip_modules)
     model, is_replaced = _replace_linear(

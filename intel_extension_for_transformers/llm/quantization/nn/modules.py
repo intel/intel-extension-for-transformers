@@ -20,7 +20,9 @@ import os
 import torch
 from functools import reduce
 from operator import mul
-from peft.tuners.lora import LoraLayer
+from peft.peft_model import PEFT_TYPE_TO_MODEL_MAPPING, PeftType
+from peft.tuners.lora import LoraLayer, LoraModel
+from peft.utils.other import transpose
 from intel_extension_for_transformers.llm.quantization.autograd import matmul_kbit
 
 
@@ -50,27 +52,6 @@ class ParamsQBits(torch.nn.Parameter):
         self.data = data
         return self
 
-# class Params4Bits(torch.nn.Parameter):
-    # def __new__(
-    #         cls,
-    #         data=None,
-    #         requires_grad=True,
-    #         quant_state=None,
-    #         blocksize=32,
-    #         compress_statistics=True,
-    #         quant_dtype='nf4'
-    # ):
-    #     if data is None:
-    #         data = torch.empty(0)
-
-    #     self = torch.Tensor._make_subclass(cls, data, requires_grad)
-    #     self.blocksize = blocksize
-    #     self.compress_statistics = compress_statistics
-    #     self.quant_dtype = quant_dtype
-    #     self.quant_state = quant_state
-    #     self.data = data
-    #     return self
-
 
 class QuantizedLinearQBits(torch.nn.Linear):
     def __init__(
@@ -84,7 +65,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
         blocksize=32,
         scheme="sym",
         device=None,
-        do_dequant=False
     ):
         super().__init__(input_features, output_features, bias, device)
         self.compute_dtype = compute_dtype
@@ -92,7 +72,6 @@ class QuantizedLinearQBits(torch.nn.Linear):
         self.blocksize = blocksize
         self.scheme = scheme
         self.weight_dtype = weight_dtype
-        self.do_dequant = do_dequant
 
     def forward(self, x: torch.Tensor):
         # weights are cast automatically as Int8Params, but the bias has to be cast manually
@@ -108,7 +87,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
         bias = None if self.bias is None else self.bias.data
         out = matmul_kbit(
             x.view(m, shape[-1]), self.weight, bias, out,
-            self.compute_dtype, self.weight_dtype, do_dequant=self.do_dequant
+            self.compute_dtype, self.weight_dtype, do_dequant=self.training
         )
         shape[-1] = self.out_features
         out = out.view(shape)
@@ -125,114 +104,152 @@ class QuantizedLinearQBits(torch.nn.Linear):
         if bias is not None:
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
+class QuantizedLoraLinearQBits(QuantizedLinearQBits, LoraLayer):
+    # Lora implemented in a dense layer
+    def __init__(
+        self,
+        adapter_name,
+        in_features,
+        out_features,
+        r: int = 0,
+        lora_alpha: int = 1,
+        lora_dropout: float = 0.0,
+        **kwargs,
+    ) -> None:
+        QuantizedLinearQBits.__init__(
+            self,
+            in_features,
+            out_features,
+            bias=kwargs.get("bias", True),
+            compute_dtype=kwargs.get("compute_dtype", "fp32"),
+            compress_statistics=kwargs.get("compress_statistics", True),
+            weight_dtype=kwargs.get("weight_dtype", "s4fullrange_scalef32"),
+            blocksize=kwargs.get("blocksize", 32),
+            scheme=kwargs.get("scheme", "sym"),
+            device=kwargs.get("device",None)
+        )
+        LoraLayer.__init__(self, in_features=in_features, out_features=out_features)
 
-# class QuantizedLinearINT4(QuantizedLinearQBits, LoraLayer):
-#     def __init__(
-#         self,
-#         input_features,
-#         output_features,
-#         bias=True,
-#         compute_dtype="fp32",
-#         compress_statistics=True,
-#         weight_dtype="s4fullrange_scalef32",
-#         blocksize=32,
-#         scheme="sym",
-#         device=None,
-#         use_lora=True,
-#         r=8,
-#         lora_alpha=16,
-#         lora_dropout=0.01,
-#     ):
-#         QuantizedLinearQBits.__init__(self, input_features, output_features, bias, compute_dtype, compress_statistics,
-#                                       weight_dtype, blocksize, scheme, device)
-#         self.use_lora = use_lora
-#         if self.use_lora:
-#             LoraLayer.__init__(self, input_features, output_features)
-#             self._r = r
-#             self._lora_alpha = lora_alpha
-#             self._lora_dropout = lora_dropout
+        # Freezing the pre-trained weight matrix
+        self.weight.requires_grad = False
 
-#     def forward(self, x: torch.Tensor):
-#         if self.bias is not None and self.bias.dtype != x.dtype:
-#             self.bias.data = self.bias.data.to(x.dtype)
+        init_lora_weights = kwargs.pop("init_lora_weights", True)
+        self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
+        self.active_adapter = adapter_name
 
-#         # if getattr(self.weight, 'quant_state', None) is None:
-#         #     print('FP4 quantization state not initialized. Please call .quantize_weights().')
-#         inp_dtype = x.dtype
-#         if self.compute_dtype is not None:
-#             x = x.to(self.compute_dtype)
+    def merge(self):
+        if self.merged:
+            print(
+                f"Already following adapters were merged {','.join(self.merged_adapters)}. "
+                f"You are now additionally merging {','.join(self.active_adapters)}."
+            )
+        for active_adapter in self.active_adapters:
+            if active_adapter not in self.lora_A.keys():
+                continue
+            lora_data = self.get_delta_weight(active_adapter)
+            w_dequant = torch.zeros(self.out_features, self.in_features, dtype=lora_data.dtype)
+            torch.ops.weight_only_jblasop.qbits_dequantize(
+                self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
+            w_data = w_dequant + lora_data
+            weight = torch.ops.weight_only_jblasop.qbits_quantize(
+                w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
+            self.weight = ParamsQBits(
+                data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
+                compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
+            )
+            self.merged = True
 
-#         bias = None if self.bias is None else self.bias.to(self.compute_dtype)
-#         out = matmul_4bit(x, self.weight, bias=bias, quant_state=self.weight.quant_state)
-#         x = x.to(self.lora_A[self.active_adapter].weight.dtype)
+    def unmerge(self):
+        if not self.merged:
+            print("Already unmerged. Nothing to do.")
+            return
+        while len(self.merged_adapters) > 0:
+            active_adapter = self.merged_adapters.pop()
+            if active_adapter not in self.lora_A.keys():
+                continue
+            lora_data = self.get_delta_weight(active_adapter)
+            w_dequant = torch.zeros(self.out_features, self.in_features, dtype=lora_data.dtype)
+            torch.ops.weight_only_jblasop.qbits_dequantize(
+                self.weight.data, w_dequant, True, self.compute_dtype, self.weight_dtype)
+            w_data = w_dequant - lora_data
+            weight = torch.ops.weight_only_jblasop.qbits_quantize(
+                w_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
+            self.weight = ParamsQBits(
+                data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
+                compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
+            )
+            self.merged = False
 
-#         if self.use_lora:
-#             out += (
-#                 self.lora_B[self.active_adapter](
-#                     self.lora_A[self.active_adapter](self.lora_dropout[self.active_adapter](x))
-#                 )
-#                 * self.scaling[self.active_adapter]
-#             )
+    def get_delta_weight(self, adapter):
+        return (
+            transpose(
+                self.lora_B[adapter].weight @ self.lora_A[adapter].weight,
+                False,
+            )
+            * self.scaling[adapter]
+        )
 
-#         return out
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.disable_adapters:
+            if self.merged:
+                self.unmerge()
+            result = super().forward(x)
+        elif self.merged:
+            result = super().forward(x)
+        else:
+            result = super().forward(x)
+            # As per Tim Dettmers, for 4bit, we need to defensively clone here.
+            # The reason is that in some cases, an error can occur that backprop
+            # does not work on a manipulated view. This issue may be solved with
+            # newer PyTorch versions but this would need extensive testing to be
+            # sure.
+            result = result.clone()
 
-#     def set_weights_bias(self, weight_data, bias=None):
-#         weight = torch.ops.weight_only_jblasop.qbits_quantize(
-#             weight_data, True, self.blocksize, self.compute_dtype, self.weight_dtype)
-#         self.weight = ParamsQBits(
-#             data=weight, requires_grad=False, quant_state={"scheme": self.scheme}, blocksize=self.blocksize,
-#             compress_statistics=self.compress_statistics, quant_dtype=self.weight_dtype
-#         )
-#         self.weight.requires_grad = False
-#         if bias is not None:
-#             self.bias = torch.nn.Parameter(bias, requires_grad=False)
+            for active_adapter in self.active_adapters:
+                if active_adapter not in self.lora_A.keys():
+                    continue
+                lora_A = self.lora_A[active_adapter]
+                lora_B = self.lora_B[active_adapter]
+                dropout = self.lora_dropout[active_adapter]
+                scaling = self.scaling[active_adapter]
 
-#         if self.use_lora:
-#             self.active_adapter = 'default'
-#             LoraLayer.update_layer(self, self.active_adapter, self._r, self._lora_alpha, self._lora_dropout, True)
+                requires_conversion = not torch.is_autocast_enabled()
+                if requires_conversion:
+                    expected_dtype = result.dtype
+                    x = x.to(lora_A.weight.dtype)
 
-# class QuantizedLinearINT8(QuantizedLinearQBits):
-#     def __init__(
-#         self,
-#         input_features,
-#         output_features,
-#         bias=True,
-#         compute_dtype="fp32",
-#         scale_dtype="fp32",
-#         compress_statistics=True,
-#         blocksize=32,
-#         scheme="sym",
-#         device=None,
-#     ):
-#         super().__init__(input_features, output_features, bias, compute_dtype, compress_statistics,
-#                          "s8_scalef32", blocksize, scheme, device)
+                output = lora_B(lora_A(dropout(x)))
+                if requires_conversion:
+                    output = output.to(expected_dtype)
+                output = output * scaling
+                result += output
+
+        return result
+
+    @property
+    def active_adapters(self):
+        if isinstance(self.active_adapter, str):
+            return [self.active_adapter]
+        # is already a list of str
+        return self.active_adapter
 
 
-if __name__ == "__main__":
-    batch_size = 5
-    input_features, output_features = 10, 20
-    bias=True
-    compute_dtype="bf16"
-    weight_dtype='nf4_scalef32'
-    blocksize=32
-    scheme="sym"
-    device=None
-    do_dequant=False
-    linear = torch.nn.Linear(input_features, output_features)
-    inputs = torch.randn((batch_size, input_features))
-    output_ori = linear(inputs)
-    print(output_ori)
-    qlinear = QuantizedLinearQBits(
-        input_features, output_features,
-        bias=bias,
-        compute_dtype=compute_dtype,
-        weight_dtype=weight_dtype,
-        blocksize=blocksize,
-        scheme=scheme,
-        device=device,
-        do_dequant=do_dequant
-    )
-    qlinear.set_weights_bias(linear.weight.data, linear.bias)
-    output = qlinear(inputs)
-    print(output)
-    print(torch.abs(output_ori-output))
+class QBitsLoraModel(LoraModel):
+    _create_new_module_ = LoraModel._create_new_module
+
+    def _create_new_module(self, lora_config, adapter_name, target, **kwargs):
+        if isinstance(target, QuantizedLinearQBits):
+            bias = kwargs.pop("bias", False)
+            in_features, out_features = target.in_features, target.out_features
+            if kwargs["fan_in_fan_out"]:
+                print(
+                    "fan_in_fan_out is set to True but the target module is `torch.nn.Linear`. "
+                    "Setting fan_in_fan_out to False."
+                )
+                kwargs["fan_in_fan_out"] = lora_config.fan_in_fan_out = False
+            new_module = QuantizedLoraLinearQBits(adapter_name, in_features, out_features, bias=bias, **kwargs)
+        else:
+            new_module = QBitsLoraModel._create_new_module_(lora_config, adapter_name, target, **kwargs)
+        return new_module
+
+PEFT_TYPE_TO_MODEL_MAPPING[PeftType.LORA] = QBitsLoraModel
