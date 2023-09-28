@@ -27,7 +27,7 @@ jobs:
         run: |
           cid=$(docker ps -q --filter "name=chatbotfinetune-hpu-s0")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot --name="chatbotfinetune-hpu-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-hpu:latest
+          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v ./:/root/chatbot --name="chatbotfinetune-hpu-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-hpu:latest
 
       - name: Run Finetuning
         run: |
