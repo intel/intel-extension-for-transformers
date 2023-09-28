@@ -3,6 +3,13 @@ name: Chatbot finetune on mosaicml/mpt-7b-chat
 on:
   workflow_call:
 
+env:
+  REPO_DIR: "/intel-extension-for-transformers"
+  REPO_TAG: "latest"
+  DOCKER_FILE_NAME: "intel_extension_for_transformers/neural_chat/docker/Dockerfile"
+  CONTAINER_NAME: "chatbotfinetune-mpi"
+  EXTRA_CONTAINER_NAME: "chatbotinfer"
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-ft-mpt-7b
   cancel-in-progress: true
@@ -10,45 +17,53 @@ concurrency:
 jobs:
   finetuning:
     name: finetuning test
-    runs-on: lms-lab
+    runs-on: itrex-node
     steps:
+      - name: Docker Clean Up
+        run: |
+          docker ps -a
+          if [[ $(docker ps -a | grep -i '${{ env.CONTAINER_NAME }}') ]]; then
+              docker start ${{ env.CONTAINER_NAME }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.CONTAINER_NAME }} bash -c "ls -a ${{ env.REPO_DIR }} && rm -fr ${{ env.REPO_DIR }}/* && rm -fr ${{ env.REPO_DIR }}/.* || true"
+          fi
+          if [[ $(docker ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
+              docker start ${{ env.EXTRA_CONTAINER_NAME }}
+              echo "remove left files through container ..."
+              docker exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a ${{ env.REPO_DIR }} && rm -fr ${{ env.REPO_DIR }}/* && rm -fr ${{ env.REPO_DIR }}/.* || true"
+          fi
       - name: Checkout
         uses: actions/checkout@v2
 
       - name: Load environment variables
-        run: 
-          cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
-      - name: Prepare Cache
-        run: cp ${{ env.CACHE }}/torch/* ./
+        run: cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
 
       - name: Build Docker Image
         run: 
-          ITREX_VER=${{ github.sha }} || true
-          
-          docker build --no-cache ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-mpi:latest && yes | docker container prune && yes | docker image prune
+          docker build --no-cache ./ --target cpu --build-arg ITREX_VER=${{ github.sha }} -f ${{ env.DOCKER_FILE_NAME }} -t ${{ env.CONTAINER_NAME }}:${{ env.REPO_TAG }} && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container on socket 0
         id: master_container
         run: |
-          cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s0")
+          cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}-s0")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          numactl --cpunodebind=0 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-mpi-s0" --hostname="chatbotfinetune-container-mpi-s0" chatbotfinetune-mpi:latest
-          master=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-mpi-s0")
+          numactl --localalloc --physcpubind=0,2,4,6 -- docker run -tid -v ${{ env.CACHE_DIR }}:/root/.cache -v .:/root/chatbot --name="${{ env.CONTAINER_NAME }}-s0" --hostname="chatbotfinetune-container-mpi-s0" ${{ env.CONTAINER_NAME }}:${{ env.REPO_TAG }}
+          master=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "${{ env.CONTAINER_NAME }}-s0")
           echo "master_node=$master" >> $GITHUB_OUTPUT
 
       - name: Start Docker Container on socket 1
         id: slave_container
         run: |
-          cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s1")
+          cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}-s1")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          numactl --cpunodebind=1 -- docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotfinetune-mpi-s1" --hostname="chatbotfinetune-container-mpi-s1" chatbotfinetune-mpi:latest
-          slave=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "chatbotfinetune-mpi-s1")
+          numactl --localalloc --physcpubind=8,10,12,14 -- docker run -tid -v ${{ env.CACHE_DIR }}:/root/.cache -v .:/root/chatbot --name="${{ env.CONTAINER_NAME }}-s1" --hostname="chatbotfinetune-container-mpi-s1" ${{ env.CONTAINER_NAME }}:${{ env.REPO_TAG }}
+          slave=$(docker inspect -f "{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}" "${{ env.CONTAINER_NAME }}-s1")
           echo "slave_node=$slave" >> $GITHUB_OUTPUT
 
       - name: Run Finetuning
         run: |
           sh .github/workflows/script/chatbot/prepare_ft_mpt-7b-chat_mpi.sh ${{ steps.master_container.outputs.master_node }} ${{ steps.slave_container.outputs.slave_node }}
-          docker exec "chatbotfinetune-mpi-s0" bash -c "cd /root/chatbot; source ./bash_setup.sh; mpirun -f ./hosts2 -n 2 -ppn 1 -genv OMP_NUM_THREADS=48 sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat_mpi.sh"
+          docker exec "${{ env.CONTAINER_NAME }}-s0" bash -c "cd /root/chatbot; source ./bash_setup.sh; mpirun -f ./hosts2 -n 2 -ppn 1 -genv OMP_NUM_THREADS=48 sh .github/workflows/script/chatbot/start_ft_mpt-7b-chat_mpi.sh"
 
       - name: Print Logs and Check Finetuning Status
         if: success() || failure()
@@ -58,9 +73,9 @@ jobs:
       - name: Stop Container
         if: success() || failure()
         run: |
-          cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s0")
+          cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}-s0")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          cid=$(docker ps -q --filter "name=chatbotfinetune-mpi-s1")
+          cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}-s1")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
 
       - name: Test Summary
