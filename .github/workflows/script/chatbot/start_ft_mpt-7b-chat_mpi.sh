@@ -3,7 +3,7 @@ hname=$(hostname -s)
 python3 workflows/chatbot/fine_tuning/instruction_tuning_pipeline/finetune_clm.py \
     --model_name_or_path mosaicml/mpt-7b-chat \
     --train_file .github/workflows/sample_data/alpaca_data_sample_45.json \
-    --bf16 True \
+    --bf16 False \
     --output_dir ./mpt_peft_finetuned_model \
     --num_train_epochs 1 \
     --per_device_train_batch_size 4 \
