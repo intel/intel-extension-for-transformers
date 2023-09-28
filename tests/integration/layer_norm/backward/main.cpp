@@ -157,7 +157,7 @@ void ln_bwd_run() {
     auto buffer_mask = alloc_device_and_init<uint8_t>(
             size_mask,
             [&drop_threshold](uint8_t *data, size_t idx) {
-                data[idx] = (generate_random<double>(0.0, double(RAND_MAX))
+                data[idx] = (generate_real_random<double>(0.0, double(RAND_MAX))
                                     > drop_threshold)
                         ? 0
                         : 1;

@@ -276,13 +276,13 @@ void dequantize_gemm_run(int iter) {
         A_h[i] = random_float();
     }
     for (unsigned i = 0; i < size_b; ++i) {
-        B_h[i] = uint8_t(rand());
+        B_h[i] = uint8_t(random_uint8());
     }
     for (unsigned i = 0; i < size_scale; ++i) {
         scale_h[i] = random_float();
     }
     for (unsigned i = 0; i < size_zero_pt; ++i) {
-        zero_pt_h[i] = uint8_t(rand());
+        zero_pt_h[i] = uint8_t(random_uint8());
     }
     for (unsigned i = 0; i < size_c; ++i) {
         C_h[i] = 0;

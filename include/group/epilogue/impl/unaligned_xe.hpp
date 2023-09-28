@@ -30,10 +30,10 @@ namespace gpu::xetla::group {
 
 /// @brief Is the epilogue functor specialized for epilogue_policy_default and Xe architecture.
 template <typename tile_shape_, typename mem_desc_c_t_, gpu_arch arch_tag_>
-class epilogue_t<epilogue_policy_default<arch_tag_>, tile_shape_, mem_desc_c_t_,
-        std::enable_if_t<((arch_tag_ == gpu_arch::Xe))>> {
+class epilogue_t<epilogue_policy_unaligned<arch_tag_>, tile_shape_,
+        mem_desc_c_t_, std::enable_if_t<((arch_tag_ == gpu_arch::Xe))>> {
 public:
-    using epilogue_policy = epilogue_policy_default<arch_tag_>;
+    using epilogue_policy = epilogue_policy_unaligned<arch_tag_>;
     using tile_shape = tile_shape_;
     using mem_desc_c_t = mem_desc_c_t_;
     static constexpr gpu_arch arch_tag = arch_tag_;
@@ -64,7 +64,7 @@ private:
 
 public:
     static constexpr msg_type msg_type_c
-            = (mem_space_c == mem_space::global ? msg_type::block_2d
+            = (mem_space_c == mem_space::global ? msg_type::unaligned_2d
                                                 : msg_type::scatter);
 
     /// @brief Default epilogue.

@@ -222,10 +222,8 @@ public:
     using mem_desc_zero_pt_t = mem_desc_t<dtype_zero_pt, mem_layout::row_major,
             mem_space::global>;
 
-    static constexpr bool is_2d_block_a
-            = matA_payload_t::message_type == msg_type::block_2d;
-    static constexpr bool is_2d_block_b
-            = matB_payload_t::message_type == msg_type::block_2d;
+    static constexpr msg_type msg_type_a = matA_payload_t::message_type;
+    static constexpr msg_type msg_type_b = matB_payload_t::message_type;
 
     /// @brief Arguments for gemm.
     /// User should prepare matA_base_desc, matB_base_desc, inner_loop_count...

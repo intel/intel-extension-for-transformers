@@ -75,6 +75,61 @@ struct tile_load_store_func {
     }
 };
 
+template <typename dtype, int dst_swidth, int dst_sheight, int dst_spitch,
+        int twidth, int theight, int bwidth, int bheight,
+        bool transform = false, bool transpose = false,
+        int src_spitch = dst_spitch, gpu_arch arch_tag = gpu_arch::Xe>
+struct tile_load_store_unaligned_2d_func {
+    static KERNEL_FUNC inline void run(
+            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+
+        constexpr int ele_per_dw
+                = transform ? sizeof(uint32_t) / sizeof(dtype) : 1;
+
+        static constexpr reg_layout a_reg_layout
+                = transform ? reg_layout::vnni_tiled : reg_layout::tiled;
+        static constexpr mem_layout a_mem_layout
+                = transpose ? mem_layout::col_major : mem_layout::row_major;
+
+        using tile_desc_a
+                = tile_desc_t<twidth, theight, bwidth, bheight, a_reg_layout>;
+        using tile_desc_c = tile_desc_t<twidth * ele_per_dw,
+                theight / ele_per_dw, bwidth * ele_per_dw, bheight / ele_per_dw,
+                reg_layout::tiled>;
+
+        using matA_t = tile_t<dtype, tile_desc_a>;
+        using matC_t = tile_t<dtype, tile_desc_c>;
+
+        using payload_load_t
+                = mem_payload_t<dtype, tile_desc_a, msg_type::unaligned_2d,
+                        a_mem_layout, mem_space::global, arch_tag>;
+        using prefetch_payload_t = prefetch_payload_t<dtype, tile_desc_a,
+                a_mem_layout, mem_space::global, 1, arch_tag>;
+        using payload_store_t
+                = mem_payload_t<dtype, tile_desc_c, msg_type::unaligned_2d,
+                        mem_layout::row_major, mem_space::global, arch_tag>;
+
+        matA_t matA;
+        matC_t matC;
+
+        mem_desc_t<dtype, a_mem_layout, mem_space::global> mem_desc_a(
+                {a}, {dst_swidth, dst_sheight, src_spitch}, {0, 0});
+        mem_desc_t<dtype, mem_layout::row_major, mem_space::global> mem_desc_c(
+                {c},
+                {dst_swidth * ele_per_dw, dst_sheight / ele_per_dw,
+                        dst_spitch * ele_per_dw},
+                {0, 0});
+
+        payload_load_t payload_load(mem_desc_a);
+        prefetch_payload_t payload_prefetch(mem_desc_a);
+        payload_store_t payload_store(mem_desc_c);
+        tile_prefetch(payload_prefetch);
+        tile_load(matA, payload_load);
+        matC.reg = matA.reg;
+        tile_store(matC, payload_store);
+    }
+};
+
 template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         int theight, int bwidth, int bheight, bool check_boundary = false,
         bool check_oob = true, bool transform = false, bool transpose = false,

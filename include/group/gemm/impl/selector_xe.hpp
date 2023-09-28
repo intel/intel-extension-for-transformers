@@ -68,6 +68,30 @@ public:
             pre_processing>;
 };
 
+/// @brief Selects scatter && xmx based brgemm.
+template <typename dtype_a, typename dtype_b, mem_layout mem_layout_a,
+        mem_layout mem_layout_b, mem_space mem_space_a, mem_space mem_space_b,
+        int alignment_a, int alignment_b, typename dtype_acc,
+        typename tile_shape, int k_stride, gpu_arch arch_tag, int stages,
+        int sync_freq>
+class gemm_selector_t<dtype_a, dtype_b, mem_layout_a, mem_layout_b, mem_space_a,
+        mem_space_b, alignment_a, alignment_b, dtype_acc, tile_shape, k_stride,
+        mma_engine::xmx, arch_tag, stages, sync_freq,
+        std::enable_if_t<!detail::check_2d_block_pitch_alignment<dtype_a,
+                dtype_b, alignment_a, alignment_b, arch_tag>::value>> {
+    using mem_desc_a = mem_desc_t<dtype_a, mem_layout_a, mem_space_a>;
+    using mem_desc_b = mem_desc_t<dtype_b, mem_layout_b, mem_space_b>;
+    using compute_attr = compute_attr_t<dtype_a, dtype_b, dtype_acc>;
+    using perf_tuning_knob = perf_tuning_knob_t<k_stride, stages, sync_freq>;
+    using compute_policy = compute_policy_unaligned_xmx<compute_attr,
+            perf_tuning_knob, arch_tag>;
+    using pre_processing = pre_processing_default_t<tile_shape, arch_tag>;
+
+public:
+    using gemm = gemm_t<compute_policy, tile_shape, mem_desc_a, mem_desc_b,
+            pre_processing>;
+};
+
 /// @brief Selects 2d block && fpu based gemm.
 template <typename dtype_a, typename dtype_b, mem_layout mem_layout_a,
         mem_layout mem_layout_b, mem_space mem_space_a, mem_space mem_space_b,

@@ -112,7 +112,7 @@ void ln_fwd_run() {
             size_mask,
             [&drop_threshold](uint8_t *data, size_t idx) {
                 data[idx] = static_cast<uint8_t>(
-                        (generate_random<double>(0.0, double(RAND_MAX))
+                        (generate_real_random<double>(0.0, double(RAND_MAX))
                                 > drop_threshold)
                                 ? 0
                                 : 1);

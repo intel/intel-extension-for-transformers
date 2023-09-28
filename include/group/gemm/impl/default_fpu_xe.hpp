@@ -165,10 +165,9 @@ public:
     // current no slm path
     static constexpr uint32_t slm_size = 0;
 
-    static constexpr bool is_2d_block_a
-            = matA_payload_t::message_type == msg_type::block_2d;
-    static constexpr bool is_2d_block_b
-            = matB_payload_t::message_type == msg_type::block_2d;
+    static constexpr msg_type msg_type_a = matA_payload_t::message_type;
+    static constexpr msg_type msg_type_b = matB_payload_t::message_type;
+
     using pre_processing_arg_t = typename pre_processing_t::arguments_t;
 
     /// @brief Arguments for gemm.

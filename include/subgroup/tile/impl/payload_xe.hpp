@@ -550,6 +550,189 @@ public:
     }
 };
 
+/// @brief Is to describe the global memory surface for unaligned-2d load/store
+/// for each block in one tile, a payload message is prepared here.
+/// in tile_load case, memory transpose, register transpose, memory transform
+/// and dword transpose can be enable.
+/// While in tile store case, we only support row major store, no register
+/// operations can be applied.
+/// @tparam dtype Is the data type
+/// @tparam tile_desc_ Is the tile descriptor
+/// @tparam mem_layout_ Is the memory layout
+template <typename dtype_, typename tile_desc_>
+struct mem_payload_t<dtype_, tile_desc_, msg_type::unaligned_2d,
+        mem_layout::row_major, mem_space::global, gpu_arch::Xe> {
+    using dtype = dtype_;
+    using tile_desc = tile_desc_;
+    static constexpr mem_space memory_space = mem_space::global;
+    static constexpr mem_layout memory_layout = mem_layout::row_major;
+    static constexpr msg_type message_type = msg_type::unaligned_2d;
+    static constexpr gpu_arch arch_tag = gpu_arch::Xe;
+
+private:
+    static constexpr uint32_t tile_size_x = tile_desc::tile_size_x;
+    static constexpr uint32_t tile_size_y = tile_desc::tile_size_y;
+    static constexpr uint32_t block_size_x = tile_desc::block_size_x;
+    static constexpr uint32_t block_size_y = tile_desc::block_size_y;
+
+    using this_payload_t
+            = mem_payload_t<dtype, tile_desc, msg_type::unaligned_2d,
+                    mem_layout::row_major, mem_space::global, gpu_arch::Xe>;
+
+public:
+    static constexpr bool mem_transpose
+            = memory_layout == mem_layout::col_major;
+
+    static constexpr reg_layout register_layout = tile_desc::register_layout;
+    static constexpr bool reg_transpose
+            = register_layout == reg_layout::transpose_tiled;
+    static constexpr bool trans = mem_transpose ^ reg_transpose;
+
+    static constexpr bool mem_transform = (sizeof(dtype) < 4) && !mem_transpose
+            && (register_layout == reg_layout::vnni_tiled
+                    || register_layout == reg_layout::vnni_tiled_col_major);
+
+    static constexpr uint32_t tile_bytes
+            = tile_size_x * tile_size_y * sizeof(dtype);
+    static constexpr uint32_t block_bytes
+            = block_size_x * block_size_y * sizeof(dtype);
+
+    using mem_dtype = dtype;
+
+    // for pvc, we can use simd16 or simd32
+    static constexpr uint32_t min_store_bytes = 16 * sizeof(dtype);
+    static constexpr uint32_t max_store_bytes = 32 * sizeof(dtype);
+    static constexpr uint32_t num_channel
+            = ((tile_bytes % max_store_bytes) == 0
+                      && (block_bytes % max_store_bytes) == 0)
+            ? 32
+            : 16;
+    // static constexpr uint32_t num_channel = 32;
+
+    static constexpr uint32_t num_channel_x = block_size_x;
+    static constexpr uint32_t num_channel_y = num_channel / num_channel_x;
+
+    xetla_vector<uint32_t, num_channel> channel_offset;
+    xetla_vector<uint32_t, num_channel> step_x;
+    xetla_vector<uint32_t, num_channel> step_y;
+
+    uint64_t base_offset;
+    uint32_t base_x;
+    uint32_t base_y;
+    uint32_t width_in_elems;
+    uint32_t height_in_elems;
+
+    mem_dtype *base_ptr;
+    uint32_t pitch_in_bytes;
+
+    inline mem_payload_t(
+            mem_desc_t<dtype, memory_layout, memory_space> &mem_tdesc) {
+        pitch_in_bytes = mem_tdesc.shape.stride * sizeof(dtype);
+        base_x = mem_tdesc.coord.x;
+        base_y = mem_tdesc.coord.y;
+        width_in_elems = mem_tdesc.shape.x;
+        height_in_elems = mem_tdesc.shape.y;
+        base_offset = base_y * pitch_in_bytes + base_x * sizeof(dtype);
+        base_ptr = (mem_dtype *)mem_tdesc.base.base;
+
+        xetla_vector<uint32_t, num_channel> channel_index
+                = xetla_vector_gen<uint32_t, num_channel>(0, 1);
+        step_x = channel_index % num_channel_x;
+        step_y = channel_index / num_channel_x;
+        channel_offset = step_x * sizeof(dtype) + step_y * pitch_in_bytes;
+    }
+
+    inline mem_payload_t(dtype *p, int surface_width, int surface_height,
+            int surface_pitch, int surface_offset_x, int surface_offset_y) {
+        pitch_in_bytes = surface_pitch * sizeof(dtype);
+        base_x = surface_offset_x;
+        base_y = surface_offset_y;
+        width_in_elems = surface_width;
+        height_in_elems = surface_height;
+        base_offset = base_y * pitch_in_bytes + base_x * sizeof(dtype);
+        base_ptr = (mem_dtype *)p;
+
+        xetla_vector<uint32_t, num_channel> channel_index
+                = xetla_vector_gen<uint32_t, num_channel>(0, 1);
+        step_x = channel_index % num_channel_x;
+        step_y = channel_index / num_channel_x;
+        channel_offset = step_x * sizeof(dtype) + step_y * pitch_in_bytes;
+    }
+
+    __XETLA_API void init(
+            mem_desc_t<dtype, memory_layout, memory_space> &mem_tdesc) {
+        pitch_in_bytes = mem_tdesc.shape.stride * sizeof(dtype);
+        base_x = mem_tdesc.coord.x;
+        base_y = mem_tdesc.coord.y;
+        width_in_elems = mem_tdesc.shape.x;
+        height_in_elems = mem_tdesc.shape.y;
+        base_offset = base_y * pitch_in_bytes + base_x * sizeof(dtype);
+        base_ptr = (mem_dtype *)mem_tdesc.base.base;
+
+        xetla_vector<uint32_t, num_channel> channel_index
+                = xetla_vector_gen<uint32_t, num_channel>(0, 1);
+        step_x = channel_index % num_channel_x;
+        step_y = channel_index / num_channel_x;
+        channel_offset = step_x * sizeof(dtype) + step_y * pitch_in_bytes;
+    }
+
+    __XETLA_API void init(dtype *p, int surface_width, int surface_height,
+            int surface_pitch, int surface_offset_x, int surface_offset_y) {
+        pitch_in_bytes = surface_pitch * sizeof(dtype);
+        base_x = surface_offset_x;
+        base_y = surface_offset_y;
+        width_in_elems = surface_width;
+        height_in_elems = surface_height;
+        base_offset = base_y * pitch_in_bytes + base_x * sizeof(dtype);
+        base_ptr = (mem_dtype *)p;
+
+        xetla_vector<uint32_t, num_channel> channel_index
+                = xetla_vector_gen<uint32_t, num_channel>(0, 1);
+        step_x = channel_index % num_channel_x;
+        step_y = channel_index / num_channel_x;
+        channel_offset = step_x * sizeof(dtype) + step_y * pitch_in_bytes;
+    }
+
+    inline mem_payload_t(const this_payload_t &rhs) {
+        this->base_offset = rhs.base_offset;
+        this->base_ptr = rhs.base_ptr;
+        this->pitch_in_bytes = rhs.pitch_in_bytes;
+        this->base_x = rhs.base_x;
+        this->base_y = rhs.base_y;
+        this->width_in_elems = rhs.width_in_elems;
+        this->height_in_elems = rhs.height_in_elems;
+
+        this->step_x = rhs.step_x;
+        this->step_y = rhs.step_y;
+    }
+
+    inline mem_payload_t() = default;
+    inline this_payload_t &operator=(const this_payload_t &rhs) {
+        this->base_offset = rhs.base_offset;
+        this->base_ptr = rhs.base_ptr;
+        this->pitch_in_bytes = rhs.pitch_in_bytes;
+        this->base_x = rhs.base_x;
+        this->base_y = rhs.base_y;
+        this->width_in_elems = rhs.width_in_elems;
+        this->height_in_elems = rhs.height_in_elems;
+
+        this->step_x = rhs.step_x;
+        this->step_y = rhs.step_y;
+        return *this;
+    }
+
+    template <tdesc_update_dir update_dir = tdesc_update_dir::x_dir>
+    __XETLA_API void update_tdesc(int offset) {
+        if constexpr (update_dir == tdesc_update_dir::x_dir) {
+            base_offset += int64_t(offset) * sizeof(dtype);
+            base_x += offset;
+        } else {
+            base_offset += int64_t(offset) * pitch_in_bytes;
+            base_y += offset;
+        }
+    }
+};
+
 /// @brief Is to describe the shared local memory surface for scatter load/store
 /// 1. data located in shared local memory 2. tile will be loaded / stored in scatter mode
 /// @tparam dtype Is the data type
@@ -757,6 +940,10 @@ public:
     uint32_t cyclic_count;
     uint32_t wg_width_in_bytes;
     uint32_t wg_height_in_elems;
+
+    // Be aware of the risks: Rule of three (copy constructor, copy assignment, destructor)
+    // Please check if you need to add self-define destructor
+    // ~mem_payload_t(){}
     inline mem_payload_t(
             mem_desc_t<dtype, memory_layout, memory_space> mem_tdesc) {
         xetla_tdescriptor base_tdesc = mem_tdesc.get_tdesc();

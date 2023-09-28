@@ -27,6 +27,9 @@ template <int idx, typename tile_op_args_t>
 struct tile_op_arg_helper_t {
     tile_op_args_t args;
     inline tile_op_arg_helper_t(tile_op_args_t args_) : args(args_) {}
+    // Be aware of the risks: Rule of three (copy constructor, copy assignment, destructor)
+    // Please check if you need to add self-define destructor
+    // ~tile_op_arg_helper_t(){}
     inline tile_op_arg_helper_t(
             const tile_op_arg_helper_t<idx, tile_op_args_t> &args_helper)
         : args(args_helper.args) {}

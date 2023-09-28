@@ -96,9 +96,6 @@ private:
     using dtype_c = typename mem_desc_c_t::dtype;
     static constexpr mem_layout mem_layout_c = mem_desc_c_t::layout;
     static constexpr mem_space mem_space_c = mem_desc_c_t::space;
-    static constexpr msg_type msg_type_c
-            = (mem_space_c == mem_space::global ? msg_type::block_2d
-                                                : msg_type::scatter);
 
     /// @brief Updates tile base descriptor based on the tid.
     __XETLA_API static void update_sg_tile_tdesc(
@@ -111,7 +108,9 @@ private:
     }
 
 public:
-    static constexpr bool is_2d_block_c = msg_type_c == msg_type::block_2d;
+    static constexpr msg_type msg_type_c
+            = (mem_space_c == mem_space::global ? msg_type::block_2d
+                                                : msg_type::scatter);
 
     /// @brief Default epilogue.
     /// 1) Call tile_op/chained_tile_op 2) Call quant_op

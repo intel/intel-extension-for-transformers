@@ -34,8 +34,8 @@ using namespace gpu::xetla;
 
 #define DEVICE_MEM_ALIGNMENT (64)
 
-#define random_float() (generate_random<double>())
-
+#define random_float() (generate_real_random<double>())
+#define random_uint8() (generate_int_random<unsigned>(0, 255))
 template <typename data_type>
 inline auto getTypeName() {
     fprintf(stderr, "FAIL: Not implemented specialization\n");
@@ -89,12 +89,48 @@ inline auto getTypeName<gpu::xetla::tf32>() {
 enum class test_result { complete = 0, skip = 1, fail = 2 };
 
 template <typename result_type>
-inline result_type generate_random(result_type a = 0.0, result_type b = 1.0) {
+inline result_type generate_real_random(
+        result_type a = 0.0, result_type b = 1.0) {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine engine(seed);
     std::uniform_real_distribution<result_type> distribution(a, b);
 
     return distribution(engine);
+}
+
+template <typename result_type>
+inline result_type generate_int_random(
+        result_type a = 0, result_type b = 65535) {
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine engine(seed);
+    std::uniform_int_distribution<result_type> distribution(a, b);
+
+    return distribution(engine);
+}
+
+template <typename data_type>
+inline data_type *alloc_device(
+        size_t size, sycl::device &device, sycl::context &context) {
+    auto device_ptr = static_cast<data_type *>(aligned_alloc_device(
+            DEVICE_MEM_ALIGNMENT, size * sizeof(data_type), device, context));
+    return device_ptr;
+}
+
+template <typename data_type>
+inline data_type *alloc_host(size_t size) {
+    auto host_ptr = static_cast<data_type *>(malloc(size * sizeof(data_type)));
+    return host_ptr;
+}
+
+template <typename data_type>
+inline data_type *alloc_host_and_init(size_t size,
+        std::function<void(data_type *data, size_t elements)> init_func) {
+    auto host_ptr = static_cast<data_type *>(malloc(size * sizeof(data_type)));
+
+    for (size_t i = 0; i < size; ++i) {
+        init_func(host_ptr, i);
+    }
+    return host_ptr;
 }
 
 template <typename data_type>

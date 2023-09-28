@@ -27,12 +27,12 @@ namespace gpu::xetla::group {
 /// @addtogroup xetla_gemm
 /// @{
 
-/// @brief Is the gemm functor for Xe architecture and matrix engine.
+/// @brief Is the gemm functor for unaligned input, Xe architecture and matrix engine.
 template <typename compute_attr_, typename perf_tuning_knob_,
         typename tile_shape_, typename mem_desc_a_t_, typename mem_desc_b_t_,
         typename pre_processing_t_, gpu_arch arch_tag_>
-class gemm_t<
-        compute_policy_default_xmx<compute_attr_, perf_tuning_knob_, arch_tag_>,
+class gemm_t<compute_policy_unaligned_xmx<compute_attr_, perf_tuning_knob_,
+                     arch_tag_>,
         tile_shape_, // tile shape of workgroup-level gemm
         mem_desc_a_t_, // memory attribute of matA
         mem_desc_b_t_, // memory attribute of matB
@@ -43,7 +43,7 @@ public:
     using mem_desc_b_t = mem_desc_b_t_;
     using tile_shape = tile_shape_;
     using pre_processing_t = pre_processing_t_;
-    using compute_policy = compute_policy_default_xmx<compute_attr_,
+    using compute_policy = compute_policy_unaligned_xmx<compute_attr_,
             perf_tuning_knob_, arch_tag_>;
     static constexpr uint32_t k_stride = compute_policy::k_stride;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
@@ -119,8 +119,8 @@ private:
             block_size_x_a, block_size_y_a, reg_layout_a>;
     using matA_t = subgroup::tile_t<dtype_a, matA_tile_desc_t>;
     using matA_payload_t = subgroup::mem_payload_t<dtype_a, matA_tile_desc_t,
-            is_local_a ? msg_type::scatter : msg_type::block_2d, mem_layout_a,
-            mem_space_a, arch_tag>;
+            is_local_a ? msg_type::scatter : msg_type::unaligned_2d,
+            mem_layout_a, mem_space_a, arch_tag>;
     using matA_acc_t = subgroup::tile_t<dtype_mma_a, matA_tile_desc_t>;
     using matA_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_a,
             subgroup::tile_desc_t<tile_size_x_a, tile_size_y_a, 1, 1>,
@@ -132,8 +132,8 @@ private:
             block_size_x_b, block_size_y_b, reg_layout_b>;
     using matB_t = subgroup::tile_t<dtype_b, matB_tile_desc_t>;
     using matB_payload_t = subgroup::mem_payload_t<dtype_b, matB_tile_desc_t,
-            is_local_b ? msg_type::scatter : msg_type::block_2d, mem_layout_b,
-            mem_space_b, arch_tag>;
+            is_local_b ? msg_type::scatter : msg_type::unaligned_2d,
+            mem_layout_b, mem_space_b, arch_tag>;
     using matB_acc_t = subgroup::tile_t<dtype_mma_b, matB_tile_desc_t>;
     using matB_prefetch_payload_t = subgroup::prefetch_payload_t<dtype_b,
             subgroup::tile_desc_t<tile_size_x_b, tile_size_y_b, 1, 1>,

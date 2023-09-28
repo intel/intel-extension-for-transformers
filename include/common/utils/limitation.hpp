@@ -481,6 +481,20 @@ struct check_load<gpu_arch::Xe, dtype, mem_dtype> {
                 "tile 1d only support D32/D64");
     };
 
+    template <bool mem_transform, size_t block_size_x>
+    struct unaligned_2d {
+        using load_store_attr = typename arch_attr_t<
+                gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
+        static constexpr int32_t max_vnni_block_width
+                = load_store_attr::max_vnni_load_width_in_elems;
+        static_assert(!mem_transform || block_size_x <= max_vnni_block_width,
+                "For VNNI transform, the maximum block width is 16 width.");
+        static constexpr int32_t max_block_width
+                = load_store_attr::max_load_width_in_bytes / sizeof(dtype);
+        static_assert((max_block_width % block_size_x) == 0,
+                "max_block_width should be a multiply of block size x.");
+    };
+
     template <mem_layout memory_layout, size_t block_size_x, size_t tile_bytes,
             size_t min_bytes, size_t block_bytes, size_t num_channel_x,
             size_t num_channel>
@@ -525,6 +539,17 @@ struct check_store<gpu_arch::Xe, dtype, mem_dtype> {
     struct global_1d {
         static_assert(sizeof(mem_dtype) == 4 || sizeof(mem_dtype) == 8,
                 "tile 1d only support D32/D64");
+    };
+
+    template <size_t block_size_x>
+    struct unaligned_2d {
+        using load_store_attr = typename arch_attr_t<
+                gpu_arch::Xe>::template load_store_attr<msg_type::block_2d>;
+
+        static constexpr int32_t max_block_width
+                = load_store_attr::max_load_width_in_bytes / sizeof(dtype);
+        static_assert((max_block_width % block_size_x) == 0,
+                "max_block_width should be a multiply of block size x.");
     };
 
     template <size_t tile_bytes, size_t min_store_bytes, size_t block_bytes,

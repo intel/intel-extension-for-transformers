@@ -109,6 +109,8 @@ class gemm_universal_t<dispatch_policy_kslicing<num_global_kslicing_,
 
     static constexpr uint32_t counter_size = 8;
 
+    static constexpr uint32_t alignment = 8 / sizeof(dtype_acc);
+
     using tile_shape_cnt = group::tile_shape_t<ks_coop_num_x * wg_size_x,
             ks_coop_num_y * wg_size_y, ks_coop_num_x, ks_coop_num_y>;
 
@@ -281,7 +283,8 @@ public:
     /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
     /// @return Expected accumulation buffer size in unit of elements.
     static size_t get_acc_buf_size(uint32_t matrix_m, uint32_t matrix_n) {
-        return matrix_m * matrix_n;
+        size_t aligned_n = (matrix_n + alignment - 1) / alignment * alignment;
+        return matrix_m * aligned_n;
     };
 
     /// @brief Host helper function to get the expected counter buffer size of the current GEMM_UNIVERSAL config.
@@ -300,43 +303,42 @@ public:
     /// @return Check result.
     static bool can_implement(arguments_t &args) {
         bool implementable = true;
-        if (gemm_t::is_2d_block_a) {
-            implementable
-                    &= kernel::block_2d<gpu_arch::Xe, dtype_a>::check_tensor(
-                            (uint64_t)(args.matA_base.base),
-                            gemm_t::is_col_major_a ? args.matrix_m
-                                                   : args.matrix_k,
-                            gemm_t::is_col_major_a ? args.matrix_k
-                                                   : args.matrix_m,
-                            args.matA_ld);
-        } else {
-            implementable &= kernel::general_1d<gpu_arch::Xe,
-                    dtype_a>::check_alignment(args.matA_base.base,
-                    args.matA_ld);
+        if (gemm_t::msg_type_a != msg_type::unaligned_2d) {
+            if (gemm_t::msg_type_a == msg_type::block_2d) {
+                implementable &= kernel::block_2d<gpu_arch::Xe,
+                        dtype_a>::check_tensor((uint64_t)(args.matA_base.base),
+                        gemm_t::is_col_major_a ? args.matrix_m : args.matrix_k,
+                        gemm_t::is_col_major_a ? args.matrix_k : args.matrix_m,
+                        args.matA_ld);
+            } else {
+                implementable &= kernel::general_1d<gpu_arch::Xe,
+                        dtype_a>::check_alignment(args.matA_base.base,
+                        args.matA_ld);
+            }
         }
-        if (gemm_t::is_2d_block_b) {
-            implementable
-                    &= kernel::block_2d<gpu_arch::Xe, dtype_b>::check_tensor(
-                            (uint64_t)(args.matB_base.base),
-                            gemm_t::is_col_major_b ? args.matrix_k
-                                                   : args.matrix_n,
-                            gemm_t::is_col_major_b ? args.matrix_n
-                                                   : args.matrix_k,
-                            args.matB_ld);
-        } else {
-            implementable &= kernel::general_1d<gpu_arch::Xe,
-                    dtype_b>::check_alignment(args.matB_base.base,
-                    args.matB_ld);
+        if (gemm_t::msg_type_b != msg_type::unaligned_2d) {
+            if (gemm_t::msg_type_b == msg_type::block_2d) {
+                implementable &= kernel::block_2d<gpu_arch::Xe,
+                        dtype_b>::check_tensor((uint64_t)(args.matB_base.base),
+                        gemm_t::is_col_major_b ? args.matrix_k : args.matrix_n,
+                        gemm_t::is_col_major_b ? args.matrix_n : args.matrix_k,
+                        args.matB_ld);
+            } else {
+                implementable &= kernel::general_1d<gpu_arch::Xe,
+                        dtype_b>::check_alignment(args.matB_base.base,
+                        args.matB_ld);
+            }
         }
-        if (epilogue_t::is_2d_block_c) {
-            implementable
-                    &= kernel::block_2d<gpu_arch::Xe, dtype_c>::check_tensor(
-                            (uint64_t)(args.matC_base.base), args.matrix_n,
-                            args.matrix_m, args.matC_ld);
-        } else {
-            implementable &= kernel::general_1d<gpu_arch::Xe,
-                    dtype_c>::check_alignment(args.matC_base.base,
-                    args.matC_ld);
+        if (epilogue_t::msg_type_c != msg_type::unaligned_2d) {
+            if (epilogue_t::msg_type_c == msg_type::block_2d) {
+                implementable &= kernel::block_2d<gpu_arch::Xe,
+                        dtype_c>::check_tensor((uint64_t)(args.matC_base.base),
+                        args.matrix_n, args.matrix_m, args.matC_ld);
+            } else {
+                implementable &= kernel::general_1d<gpu_arch::Xe,
+                        dtype_c>::check_alignment(args.matC_base.base,
+                        args.matC_ld);
+            }
         }
 
         return implementable;
@@ -449,8 +451,16 @@ public:
                     = group_range_x * tile_shape_cnt::wg_tile_size_x;
             uint32_t cnt_size_y
                     = group_range_y * tile_shape_cnt::wg_tile_size_y;
+
+            uint32_t acc_aligned_n
+                    = (args.matrix_n + alignment - 1) / alignment * alignment;
+
+            uint32_t acc_boundary_n = (start_n + wg_tile_n) > acc_aligned_n
+                    ? acc_aligned_n
+                    : start_n + wg_tile_n;
+
             mem_desc_acc_t mem_desc_acc(args.acc_base,
-                    {boundary_n, boundary_m, args.matrix_n},
+                    {acc_boundary_n, boundary_m, acc_aligned_n},
                     {acc_start_x, acc_start_y});
             mem_desc_cnt_t mem_desc_cnt(args.cnt_base,
                     {cnt_size_x, cnt_size_y, cnt_size_x},

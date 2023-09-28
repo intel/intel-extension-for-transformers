@@ -259,3 +259,12 @@ TEST(tile_load_store_1d_boundary, esimd) {
                     true>,
             128 * 1024, 32, 4294968320U>(nd_range, result_validate);
 }
+
+TEST(tile_load_store_unaligned_2d, esimd) {
+    cl::sycl::nd_range<1> nd_range({1}, {1});
+    auto result_validate = std::bind(tile_load_store_result_validate<int>, _1,
+            _2, _3, 127, 63, 32, 32, 0);
+    kernel_run<int,
+            tile_load_store_unaligned_2d_func<int, 127, 63, 127, 32, 32, 16,
+                    16>>(nd_range, result_validate);
+}

@@ -52,6 +52,14 @@ struct epilogue_policy_quant_op {
     using quant_op = quant_op_t_;
     static constexpr gpu_arch arch_tag = arch_tag_;
 };
+
+/// @brief Epilogue policy for store unaligned C.
+/// @tparam update_method_ Is the store method of matC.
+/// @tparam arch_ Is the HW architecture.
+template <gpu_arch arch_tag_>
+struct epilogue_policy_unaligned {
+    static constexpr gpu_arch arch_tag = arch_tag_;
+};
 /// @} xetla_epilogue
 
 } // namespace gpu::xetla::group
