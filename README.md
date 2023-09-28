@@ -92,7 +92,7 @@ gen_text = tokenizer.batch_decode(gen_tokens)
 Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
 The next token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
 
-| Model |  FP32         | INT4 (Group size 32) | INT4 (Group size 128) | Next Token Latency   | 
+| Model |  FP32         | INT4 Accuracy (Group size 32) | INT4 Accuracy (Group size 128) | Next Token Latency   | 
 |---------------------|:----------------------:|:-----------------------:|:----------------------------:|:------------:| 
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 0.643 | 0.644 | 0.64 | 21.98ms|
 | [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 0.69 | 0.69 | 0.685 | 24.55ms|
