@@ -15,7 +15,7 @@ from transformers import (
     Trainer
 )
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits
+from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits, QuantizedLoraLinearQBits
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 
@@ -135,8 +135,7 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(module_list) > 0)
 
     def test_nf4_training(self):
-        config = WeightOnlyQuantConfig(load_in_4bit=True, device_map='cpu', compute_dtype=torch.float32)
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, quantization_config=config)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True)
         peft_config = LoraConfig(
             r=8,
             lora_alpha=16,
@@ -147,6 +146,14 @@ class TestWeightOnly(unittest.TestCase):
         )
         model = get_peft_model(model, peft_config)
         model.print_trainable_parameters()
+        lora_weights = {}
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLoraLinearQBits) and "nf4" in module.weight_dtype:
+                lora_weights[name] = [
+                    getattr(module.lora_A, module.active_adapter).weight.clone(),
+                    getattr(module.lora_B, module.active_adapter).weight.clone()
+                ]
+        self.assertTrue(len(lora_weights) > 0)
 
         trainer = Trainer(
             model=model,
@@ -155,6 +162,43 @@ class TestWeightOnly(unittest.TestCase):
             args=TrainingArguments(output_dir='tmp', logging_steps=50, num_train_epochs=1000, learning_rate=1e-4)
         )
         trainer.train()
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLoraLinearQBits) and "nf4" in module.weight_dtype:
+                self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter).weight).any())
+                self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter).weight).any())
+
+    def test_int8_training(self):
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True)
+        peft_config = LoraConfig(
+            r=8,
+            lora_alpha=16,
+            lora_dropout=0.05,
+            target_modules=None,
+            bias="none",
+            task_type=TaskType.CAUSAL_LM,
+        )
+        model = get_peft_model(model, peft_config)
+        model.print_trainable_parameters()
+        lora_weights = {}
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
+                lora_weights[name] = [
+                    getattr(module.lora_A, module.active_adapter).weight.clone(),
+                    getattr(module.lora_B, module.active_adapter).weight.clone()
+                ]
+        self.assertTrue(len(lora_weights) > 0)
+
+        trainer = Trainer(
+            model=model,
+            train_dataset=DummyDataset(),
+            eval_dataset=DummyDataset(),
+            args=TrainingArguments(output_dir='tmp', logging_steps=50, num_train_epochs=1000, learning_rate=1e-4)
+        )
+        trainer.train()
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLoraLinearQBits) and "s8" in module.weight_dtype:
+                self.assertTrue((lora_weights[name][0] != getattr(module.lora_A, module.active_adapter).weight).any())
+                self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter).weight).any())
 
 if __name__ == "__main__":
     unittest.main()

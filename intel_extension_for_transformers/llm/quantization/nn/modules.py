@@ -247,6 +247,11 @@ class QBitsLoraModel(LoraModel):
                     "Setting fan_in_fan_out to False."
                 )
                 kwargs["fan_in_fan_out"] = lora_config.fan_in_fan_out = False
+            kwargs["compute_dtype"] = target.compute_dtype
+            kwargs["compress_statistics"] = target.compress_statistics
+            kwargs["weight_dtype"] = target.weight_dtype
+            kwargs["blocksize"] = target.blocksize
+            kwargs["scheme"] = target.scheme
             new_module = QuantizedLoraLinearQBits(adapter_name, in_features, out_features, bias=bias, **kwargs)
         else:
             new_module = QBitsLoraModel._create_new_module_(lora_config, adapter_name, target, **kwargs)
