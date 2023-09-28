@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument("--model", required=True)
     parser.add_argument("--model_args", default="")
     parser.add_argument(
-        "--tasks", default=None, choices=utils.MultiChoice(tasks.ALL_TASKS)  # disable pylint: E1101
+        "--tasks", default=None, choices=utils.MultiChoice(tasks.ALL_TASKS)  # pylint: disable=E1101
     )
     parser.add_argument("--provide_description", action="store_true")
     parser.add_argument("--num_fewshot", type=int, default=0)
@@ -69,7 +69,7 @@ def evaluate(model,
     if tasks is None:
         task_names = tasks.ALL_TASKS
     else:
-        task_names = utils.pattern_match(args.tasks.split(","), tasks.ALL_TASKS)    # disable pylint: E1101
+        task_names = utils.pattern_match(args.tasks.split(","), tasks.ALL_TASKS)    # pylint: disable=E1101
     print(f"Selected Tasks: {task_names}")
     if batch_size is not None:
         args.batch_size = batch_size
