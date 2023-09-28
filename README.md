@@ -197,7 +197,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 ## Acknowledgements
 * Excellent open-source projects: [bitsandbytes](https://github.com/TimDettmers/bitsandbytes), [FastChat](https://github.com/lm-sys/FastChat), [fastRAG](https://github.com/IntelLabs/fastRAG), [ggml](https://github.com/ggerganov/ggml), [gptq](https://github.com/IST-DASLab/gptq), [llama.cpp](https://github.com/ggerganov/llama.cpp), [lm-evauation-harness](https://github.com/EleutherAI/lm-evaluation-harness), [peft](https://github.com/huggingface/peft), [trl](https://github.com/huggingface/trl), and many others.
 
-* Multiple teams at Intel and other contributors have contributed to Intel® Extension for Transformers v1.2, including ITREX team, Ikko Eltociear Ashimine, Hardik Kamboj, Sangjune Park, Kevin Ta, Huiyan Cao, Xigui Wang, Jiafu Zhang, Tyler Titsworth, Yi Wang, Samanway Sadhu, Jiqing Feng, Jonathan Mamou and Niroop Ammbashankar.
+* Thanks to all the contributors including Ikko Eltociear Ashimine, Hardik Kamboj, Sangjune Park, Kevin Ta, Huiyan Cao, Xigui Wang, Jiafu Zhang, Tyler Titsworth, Yi Wang, Samanway Sadhu, Jiqing Feng, Jonathan Mamou and Niroop Ammbashankar.
 
 ## 💁Collaborations
 
