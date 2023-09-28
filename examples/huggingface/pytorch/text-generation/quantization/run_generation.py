@@ -36,18 +36,6 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument("--peft_model_id", type=str, default=None, help="model_name_or_path of peft model")
-# ============Benchmark configs==============
-parser.add_argument("--benchmark", action="store_true")
-parser.add_argument("--iters", default=100, type=int, help="num iter")
-parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
-# ============Accuracy configs==============
-parser.add_argument("--accuracy", action="store_true")
-parser.add_argument("--batch_size", default=56, type=int,
-                    help="batch size num.")
-parser.add_argument("--save_accuracy_path", default=None,
-                    help="Save accuracy results path.")
-parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, \
-                    help="tasks list for accuracy validation")
 # ============MixedPrecision configs==============
 parser.add_argument("--mixed_precision", action="store_true")
 # ============SmoothQuant configs==============
@@ -67,6 +55,16 @@ parser.add_argument("--woq_enable_full_range", action="store_true")
 parser.add_argument("--bitsandbytes", action="store_true")
 parser.add_argument("--load_in_4bit", type=bool, default=False)
 parser.add_argument("--load_in_8bit", type=bool, default=False)
+# ============Benchmark configs==============
+parser.add_argument("--benchmark", action="store_true")
+parser.add_argument("--iters", default=100, type=int, help="num iter")
+parser.add_argument("--num_warmup", default=10, type=int, help="num warmup")
+# ============LM-EVAL Accuracy configs==============
+parser.add_argument("--accuracy", action="store_true")
+parser.add_argument("--batch_size", default=56, type=int,
+                    help="batch size num.")
+parser.add_argument("--tasks", nargs='+', default=["lambada_openai"], type=str, \
+                    help="tasks list for accuracy validation")
 # =======================================
 args = parser.parse_args()
 
@@ -201,18 +199,15 @@ if args.benchmark:
     print("Throughput: {} samples/sec".format(throughput))
 
 if args.accuracy:
-    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+    from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate, HFCausalLM
+    user_model = HFCausalLM(model=user_model, tokenizer=tokenizer)
     results = evaluate(
-        model="hf-causal",
-        model_args='pretrained='+args.model+',tokenizer='+args.model+',dtype=float32',
-        user_model=user_model,
+        model=user_model,
         batch_size=args.batch_size,
         tasks=args.tasks,
     )
     dumped = json.dumps(results, indent=2)
-    if args.save_accuracy_path:
-        with open(args.save_accuracy_path, "w") as f:
-            f.write(dumped)
+
     for task_name in args.tasks:
         if task_name == "wikitext":
             print("Accuracy for %s is: %s" % (task_name, results["results"][task_name]["word_perplexity"]))

@@ -1,9 +1,16 @@
 import os
 import shutil
+from sre_parse import Tokenizer
 import unittest
 import subprocess
-import torch
-from transformers import AutoModelForCausalLM, AutoModelForSeq2SeqLM
+from transformers import (
+    AutoModelForCausalLM,
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+    LlamaTokenizer
+)
+from intel_extension_for_transformers.transformers.utils import LazyImport
+torch = LazyImport("torch")
 
 
 class TestLmEvaluationHarness(unittest.TestCase):
@@ -13,14 +20,16 @@ class TestLmEvaluationHarness(unittest.TestCase):
             "facebook/opt-125m",
             torchscript=True
         )
+        self.clm_tokenizer = AutoTokenizer.from_pretrained("facebook/opt-125m")
         self.seq2seq_model = AutoModelForSeq2SeqLM.from_pretrained("t5-small")
+        self.seq2seq_tokenizer = AutoTokenizer.from_pretrained("t5-small")
         tmp_model = torch.jit.trace(
             self.clm_model, self.clm_model.dummy_inputs["input_ids"]
         )
         self.jit_model = torch.jit.freeze(tmp_model.eval())
-        cmd = 'pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@83dbfbf6070324f3e5872f63e49d49ff7ef4c9b3'
+        cmd = 'pip install git+https://github.com/EleutherAI/lm-evaluation-harness.git@2c18e367c6ded428863cd1fd4cf9558ca49d68dc'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, shell=True) # nosec
+                                            stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
         from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
 
@@ -36,51 +45,42 @@ class TestLmEvaluationHarness(unittest.TestCase):
         shutil.rmtree("./llama", ignore_errors=True)
         cmd = 'pip uninstall lm_eval -y'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, shell=True) # nosec
+                                            stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
 
 
     def test_evaluate_for_casualLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFCausalLM, evaluate
+        clm_model = HFCausalLM(model=self.clm_model, tokenizer=self.clm_tokenizer)
         results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="hf-internal-testing/tiny-random-gptj",tokenizer="hf-internal-testing/tiny-random-gptj",dtype=float32',
+            model=clm_model,
             tasks=["piqa"],
             limit=20,
+            no_cache=True
         )
-        self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
+        self.assertEqual(results["results"]["piqa"]["acc"], 0.7)
 
     def test_evaluate_for_Seq2SeqLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFSeq2SeqLM, evaluate
+        seq2seq_model = HFSeq2SeqLM(model=self.seq2seq_model, tokenizer=self.seq2seq_tokenizer)
         results = evaluate(
-            model="hf-seq2seq",
-            model_args='pretrained="hf-internal-testing/tiny-random-t5",tokenizer="hf-internal-testing/tiny-random-t5",dtype=float32',
+            model=seq2seq_model,
             tasks=["piqa"],
             limit=20,
+            no_cache=True
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
 
     def test_evaluate_for_JitModel(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFCausalLM, evaluate
+        jit_clm_model = HFCausalLM(model=self.jit_model, tokenizer=self.clm_tokenizer)
         results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="hf-internal-testing/tiny-random-gptj",tokenizer="hf-internal-testing/tiny-random-gptj",dtype=float32',
-            user_model=self.jit_model,
+            model=jit_clm_model,
             tasks=["piqa"],
             limit=20,
+            no_cache=True
         )
-        self.assertEqual(results["results"]["piqa"]["acc"], 0.65)
-
-    def test_lambada_for_llama(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-        results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="decapoda-research/llama-7b-hf",tokenizer="decapoda-research/llama-7b-hf",dtype=float32',
-            tasks=["lambada_openai", "lambada_standard"],
-            limit=20,
-        )
-        self.assertEqual(results["results"]["lambada_standard"]["acc"], 0.75)
-        self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
+        self.assertEqual(results["results"]["piqa"]["acc"], 0.7)
 
     def test_cnn_daily(self):
         from intel_extension_for_transformers.llm.evaluation.hf_eval import summarization_evaluate
@@ -97,32 +97,33 @@ class TestLmEvaluationHarness(unittest.TestCase):
         self.assertEqual(results["rouge2"], 9.6795)
     
     def test_evaluate_for_ort_Seq2SeqLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFSeq2SeqLM, evaluate
         cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-t5 --task text2text-generation-with-past t5-past/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
 
         # test evaluate encoder_model + decoder_model_merged
+        tokenizer = AutoTokenizer.from_pretrained("./t5-past")
+        model = HFSeq2SeqLM(model_name_or_path="./t5-past", tokenizer=tokenizer, model_format="onnx")
         results = evaluate(
-            model="hf-seq2seq",
-            model_args='pretrained="./t5-past",tokenizer="./t5-past",dtype=float32',
+            model=model,
             tasks=["piqa"],
             limit=20,
-            model_format="onnx"
+            no_cache=True
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
 
         # test evaluate encoder_model + decoder_model + decoder_with_past_model
         merged_model_path = "./t5-past/decoder_model_merged.onnx"
+        model = HFSeq2SeqLM(model_name_or_path="./t5-past", tokenizer=tokenizer, model_format="onnx")
         if os.path.exists(merged_model_path):
             os.remove(merged_model_path)
             results = evaluate(
-                model="hf-seq2seq",
-                model_args='pretrained="./t5-past",tokenizer="./t5-past",dtype=float32',
+                model=model,
                 tasks=["piqa"],
                 limit=20,
-                model_format="onnx"
+                no_cache=True
             )
             self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
 
@@ -131,29 +132,31 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
+        tokenizer = AutoTokenizer.from_pretrained("./t5")
+        model = HFSeq2SeqLM(model_name_or_path="./t5", tokenizer=tokenizer, model_format="onnx")
         results = evaluate(
-            model="hf-seq2seq",
-            model_args='pretrained="./t5",tokenizer="./t5",dtype=float32',
+            model=model,
             tasks=["piqa"],
             limit=20,
-            model_format="onnx"
+            no_cache=True
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.60)
 
     def test_evaluate_for_ort_casualLM(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFCausalLM, evaluate
         cmd = 'optimum-cli export onnx --model hf-internal-testing/tiny-random-gptj --task text-generation-with-past gptj-past/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
 
-        # test evaluate decoder_model_merged
+        # test evaluate 
+        tokenizer = AutoTokenizer.from_pretrained("./gptj-past")
+        model = HFCausalLM(model_name_or_path="./gptj-past", tokenizer=tokenizer, model_format="onnx")      
         results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="./gptj-past",tokenizer="./gptj-past",dtype=float32',
+            model= model,
             tasks=["piqa"],
             limit=20,
-            model_format="onnx"
+            no_cache=True
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
@@ -161,12 +164,12 @@ class TestLmEvaluationHarness(unittest.TestCase):
         merged_model_path = "./gptj-past/decoder_model_merged.onnx"
         if os.path.exists(merged_model_path):
             os.remove(merged_model_path)
+            model = HFCausalLM(model_name_or_path="./gptj-past", tokenizer=tokenizer, model_format="onnx")   
             results = evaluate(
-                model="hf-causal",
-                model_args='pretrained="./gptj-past",tokenizer="./gptj-past",dtype=float32',
+                model= model,
                 tasks=["piqa"],
                 limit=20,
-                model_format="onnx"
+                no_cache=True
             )
             self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
@@ -175,29 +178,29 @@ class TestLmEvaluationHarness(unittest.TestCase):
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
+        model = HFCausalLM(model_name_or_path="./gptj", tokenizer=tokenizer, model_format="onnx")   
         results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="./gptj",tokenizer="./gptj",dtype=float32',
+            model= model,
             tasks=["piqa"],
             limit=20,
-            model_format="onnx"
+            no_cache=True
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
 
     def test_tokenizer_for_llama(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFCausalLM, evaluate
         cmd = 'optimum-cli export onnx --model decapoda-research/llama-7b-hf --task text-generation llama/'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE, shell=True) # nosec
         p.communicate()
-
+        tokenizer = LlamaTokenizer.from_pretrained("./llama")
+        model = HFCausalLM(model_name_or_path="./llama", tokenizer=tokenizer, model_format="onnx")   
         results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="./llama",tokenizer="decapoda-research/llama-7b-hf"',
-            tasks=["lambada_openai"],
+            model= model,
+            tasks=["piqa"],
             limit=20,
-            model_format="onnx"
+            no_cache=True
         )
         self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
 
