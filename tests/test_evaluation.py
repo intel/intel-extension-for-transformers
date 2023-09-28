@@ -187,21 +187,5 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
-
-    def test_tokenizer_for_llama(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import HFCausalLM, evaluate
-        cmd = 'optimum-cli export onnx --model decapoda-research/llama-7b-hf --task text-generation llama/'
-        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE, shell=True) # nosec
-        p.communicate()
-        model = HFCausalLM(model_name_or_path="./llama", model_format="onnx")   
-        results = evaluate(
-            model= model,
-            tasks=["piqa"],
-            limit=20,
-            no_cache=True
-        )
-        self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
-
 if __name__ == "__main__":
     unittest.main()

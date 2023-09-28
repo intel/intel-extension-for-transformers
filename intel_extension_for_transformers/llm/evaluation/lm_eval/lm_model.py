@@ -86,7 +86,7 @@ class HFAutoLM(BaseLM):
 
         if self.model_format == "onnx" and model_name_or_path is None:
             logger.error(
-                'Args model is necessary when model_format="torch". \n'
+                'Args model_name_or_path is necessary when model_format="onnx". \n'
                 + "the following is the correct usage, \n"
                 + 'model = HFCausalLM(model_name_or_path=model_name_or_path, model_format="onnx") \n'
                 + ' or model = HFSeq2SeqLM(model_name_or_path=model_name_or_path,model_format="onnx")'
@@ -454,7 +454,7 @@ class HFCausalLM(HFAutoLM):
             stopping_criteria=stopping_criteria,
             do_sample=False,
         )
-        return utils.select_continuation_from_batch_left_padding(    # pylint: disble=E1102
+        return utils.select_continuation_from_batch_left_padding(    # pylint: disable=E1101
             generations, max_context_size=inputs["input_ids"].size(1)
         )
 
