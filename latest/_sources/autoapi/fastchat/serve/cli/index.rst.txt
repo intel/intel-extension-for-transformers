@@ -12,3 +12,65 @@
 
 
 
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.serve.cli.SimpleChatIO
+   fastchat.serve.cli.RichChatIO
+
+
+
+
+.. py:class:: SimpleChatIO
+
+
+
+
+   Helper class that provides a standard way to create an ABC using
+   inheritance.
+
+   .. py:method:: prompt_for_input(role) -> str
+
+      Prompt for input from a role.
+
+
+   .. py:method:: prompt_for_output(role: str)
+
+      Prompt for output from a role.
+
+
+   .. py:method:: stream_output(output_stream, skip_echo_len: int)
+
+      Stream output.
+
+
+
+.. py:class:: RichChatIO
+
+
+
+
+   Helper class that provides a standard way to create an ABC using
+   inheritance.
+
+   .. py:method:: prompt_for_input(role) -> str
+
+      Prompt for input from a role.
+
+
+   .. py:method:: prompt_for_output(role: str)
+
+      Prompt for output from a role.
+
+
+   .. py:method:: stream_output(output_stream, skip_echo_len: int)
+
+      Stream output from a role.
+
+
+
