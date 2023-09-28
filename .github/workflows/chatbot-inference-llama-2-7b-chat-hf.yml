@@ -56,7 +56,7 @@ jobs:
         run: |
           cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}infer")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v ${{ env.CACHE_DIR }}:/root/.cache -v ./:/root/chatbot --name=${{ env.CONTAINER_NAME }}infer --hostname="chatbotinfer-container" ${{ env.CONTAINER_NAME }}infer:${{ env.REPO_TAG }}
+          docker run -tid -v ${{ env.CACHE_DIR }}:/root/.cache -v ${{ github.workspace }}:/root/chatbot --name=${{ env.CONTAINER_NAME }}infer --hostname="chatbotinfer-container" ${{ env.CONTAINER_NAME }}infer:${{ env.REPO_TAG }}
 
       - name: Run Inference Test
         run: |
