@@ -12,7 +12,7 @@
 - T - Column Major Matrix
 - {N,T} x {N,T} - All combinations, i.e., NN, NT, TN, TT
 - FPU - Floating Point Processing Unit
-- XMX - Matrix Engine
+- XMX - Intel Xe Matrix Extensions
 
 ## GEMM
 

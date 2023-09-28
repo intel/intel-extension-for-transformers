@@ -1,4 +1,4 @@
-# Construct High Performance GEMM by XeTLA API
+# Construct a High Performance GEMM
 
 In this document, we will demonstrate how to construct a General Matrix Multiply (GEMM) operation using the XeTLA API, both at the kernel and workgroup levels. Additionally, we will explore the relationship between the GEMM shape and other relevant parameters, as well as when to employ the `splitK` or `streamK` algorithms.
 
@@ -122,8 +122,8 @@ class epilogue_t {};
 - `tile_shape` is the problem size of each group and subgroup.
 - `mem_desc_c` is the description of buffer `c`, which includes `memory data type`, `memory space` and `memory layout`...
 
-In example [03_gemm_fusion](/examples/03_gemm_fusion), a chain of operations is effectively fused into the GEMM computation. 
-First, using pre-defined post-operations `bias_add` and `relu`, and then pass it to `epilogue_policy::tile_op_t`.
+In example [03_gemm_relu_bias](/examples/03_gemm_relu_bias), a chain of operations is effectively fused into the GEMM computation. 
+First, using pre-defined post-operations `relu` and `bias_add`, and then pass it to `epilogue_policy::tile_op_t`.
 
 ```c++
 using tile_op_t = chained_tile_op_t<

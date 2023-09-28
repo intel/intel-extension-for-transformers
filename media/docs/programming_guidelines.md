@@ -39,7 +39,7 @@ auto gpu_event = queue.submit([&](handler &cgh) {
     });
 });
 ```
-For a runnable code example, you can refer to the code in [01_basic_gemm](/examples/01_basic_gemm), which also includes explanations of the idea behind the implementation.
+For a runnable code example, you can refer to the code in [01_gemm_universal](/examples/01_gemm_universal), which also includes explanations of the idea behind the implementation.
 
 ## Group-level API 
 The use of a `group-level API` in parallel computing provides several notable advantages. Firstly, it offers developers greater flexibility in constructing custom kernels tailored to their specific needs. This flexibility extends to workload distribution across GPU workgroups. In this context, the allocation of workgroups is based on the output matrix C, with each workgroup handling a distinct sub-matrix sized `wg_tile_m` * `wg_tile_n`. Within each workgroup, intricate computations related to the `K` dimension are encapsulated within the GEMM building block, sparing developers from delving into these details at the group level

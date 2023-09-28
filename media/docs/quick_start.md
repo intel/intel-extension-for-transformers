@@ -70,7 +70,7 @@ Total Test time (real) =  16.55 sec
 ## Run Examples
 ```bash
 $ cd ${XETLA_REPO}/build
-$ examples/01_basic_gemm/basic_gemm
+$ examples/01_gemm_universal/gemm_universal
 ```
 output like:
 

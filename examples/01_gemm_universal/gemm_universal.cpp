@@ -19,7 +19,7 @@
 enum class kslicing_impl_t { none = 0, global = 1, local = 2 };
 
 template <kslicing_impl_t kslicing_type = kslicing_impl_t::none>
-void basic_gemm_run(uint32_t iter) {
+void gemm_universal_run(uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
     // Please contact us for support.
@@ -145,7 +145,7 @@ void basic_gemm_run(uint32_t iter) {
             queue, device, context);
 
     if constexpr (kslicing_type != kslicing_impl_t::none) {
-        std::cout << "basic_gemm_universal with "
+        std::cout << "gemm_universal with "
                   << (kslicing_type == kslicing_impl_t::global ? "global"
                                                                : "local")
                   << " cooperation" << std::endl;
@@ -169,7 +169,7 @@ void basic_gemm_run(uint32_t iter) {
 
     uint32_t warmup = 10;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k;
-    profiling_helper prof("basic_gemm_universal", ops, "gflops");
+    profiling_helper prof("gemm_universal", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
         if constexpr (kslicing_type == kslicing_impl_t::global) {
@@ -228,15 +228,15 @@ int main() {
     // in group range, i.e. from (0, i_w, j_w) to (k_w, i_w, j_w)
 
     // More detailed description referring to the cooperation (kslicing) could
-    // be found in the example 01_basic_gemm with custom implementation
+    // be found in the example 01_gemm_universal with custom implementation
 
     // basic gemm_universal
-    basic_gemm_run<kslicing_impl_t::none>(10);
+    gemm_universal_run<kslicing_impl_t::none>(10);
 
     // basic gemm_universal with workgroup cooperation
-    // basic_gemm_run<kslicing_impl_t::global>(10);
+    // gemm_universal_run<kslicing_impl_t::global>(10);
 
     // basic gemm_universal with thread cooperation
-    // basic_gemm_run<kslicing_impl_t::local>(10);
+    // gemm_universal_run<kslicing_impl_t::local>(10);
     return (0);
 }

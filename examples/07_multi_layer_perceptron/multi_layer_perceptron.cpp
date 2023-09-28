@@ -200,7 +200,7 @@ void mlp_run(uint32_t iter) {
                     // where:
                     //   <r, c>: block matrix selector
                     // Note:
-                    //   - checkout 01_basic_gemm example for more description
+                    //   - checkout 01_gemm_universal example for more description
 
                     // [MLP] Suppose for each xetla_exec_item<3> ei,
                     // the index tuple (i, j) assigned to it has the following value:
