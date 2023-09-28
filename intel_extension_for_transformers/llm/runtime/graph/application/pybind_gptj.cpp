@@ -50,7 +50,8 @@ bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval,
 extern "C" {
 void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, float temp, float repeat_penalty,
                 bool perplexity, int n_ctx, const char* model_file, bool beam_search = false, int beam_size = 4,
-                int batch_size = 1, int n_threads = 56, int min_new_tokens = 0, float length_penalty = 1.0) {
+                int batch_size = 1, int n_threads = 56, int min_new_tokens = 0, float length_penalty = 1.0,
+                bool do_early_stopping = false) {
   gpt_params params;
   params.n_threads = n_threads;
   params.seed = seed;
@@ -68,6 +69,7 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   params.batch_size = batch_size;
   params.beam_search = beam_search;
   params.beam_size = beam_size;
+  params.memory_type = KV_MEM_TYPE_F16;  // TODO MEMORY_AUTO for MHA
   // params.use_mmap = false;
   // params.use_mlock= true;
   model_init_backend();
@@ -80,6 +82,7 @@ void* init_gptj(int seed, int n_predict, int n_batch, int top_k, float top_p, fl
   }
   ctx->generation_conf.min_new_tokens = min_new_tokens;
   ctx->generation_conf.length_penalty = length_penalty;
+  ctx->generation_conf.do_early_stopping = do_early_stopping;
   return (void*)ctx;
 }
 
@@ -220,13 +223,17 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  auto gptj_in_all_bs = init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, argv[1], true, 4, 1, 56, 30, 1.0);
+  auto gptj_in_all_bs =
+      init_gptj(1234, 32, 32, 40, 1.0, 0.8, 1.02, false, 2048, argv[1], true, 4, 1, 56, 30, 1.0, true);
   std::vector<void*> ctxs = {gptj_in_all_bs};
   for (auto gptj_in_all : ctxs) {
     auto res = eval_gptj_char(
         gptj_in_all,
-        //"she opened the door and see",
+        // "she opened the door and see",
+        // "Once upon a time",
+        // "Tell me 10 things about jazz music",
         // "A spaceship lands on the moon",
+        // "What is the meaning of life?",
         "2017: It is done, and submitted. You can play 'Survival of the Tastiest' on Android, and on the web. Playing "
         "on the web works, but you have to simulate multiple touch for table moving and that can be a bit confusing. "
         "There is a lot I'd like to talk about. I will go through every topic, insted of making the typical what went "

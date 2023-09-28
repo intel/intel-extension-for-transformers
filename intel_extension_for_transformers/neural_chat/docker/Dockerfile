@@ -71,7 +71,7 @@ RUN if [ -f /torchaudio-2.0.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##
 RUN if [ -f /torchvision-0.15.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchvision-0.15.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
 
 RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
-    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -e . && \
+    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \

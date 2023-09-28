@@ -57,16 +57,16 @@ Below are the sample code to enable weight-only low precision inference. See mor
 ### INT4 Inference 
 ```python
 from transformers import AutoTokenizer
-from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "EleutherAI/gpt-j-6B"
+model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 
-model = AutoModel.from_pretrained(model_name, quantization_config=config)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
 gen_tokens = model.generate(inputs, max_new_tokens=300)
 gen_text = tokenizer.batch_decode(gen_tokens)
 ```
@@ -74,16 +74,16 @@ gen_text = tokenizer.batch_decode(gen_tokens)
 ### INT8 Inference
 ```python
 from transformers import AutoTokenizer
-from intel_extension_for_transformers.transformers import AutoModel, WeightOnlyQuantConfig
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "EleutherAI/gpt-j-6B" 
+model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
 config = WeightOnlyQuantConfig(compute_dtype="bf16", weight_dtype="int8")
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 inputs = tokenizer(prompt, return_tensors="pt").input_ids
 
-model = AutoModel.from_pretrained(model_name, quantization_config=config)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
 gen_tokens = model.generate(inputs, max_new_tokens=300)
 gen_text = tokenizer.batch_decode(gen_tokens)
 ```
@@ -173,7 +173,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 
 
 ## 📃Selected Publications/Events
-
+* Blog published on Medium: [NeuralChat: Simplifying Supervised Instruction Fine-tuning and Reinforcement Aligning for Chatbots](https://medium.com/@NeuralCompressor/neuralchat-simplifying-supervised-instruction-fine-tuning-and-reinforcement-aligning-for-chatbots-d034bca44f69) (Sep 2023)
 * Intel Innovation'23 Keynote: [Intel Innovation 2023 Keynote by Greg Lavender](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
 * Blog on Intel Community: [NeuralChat: A Customizable Chatbot Framework](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/NeuralChat-A-Customizable-Chatbot-Framework/post/1526789) (Sep 2023)
 * Blog published on Medium: [NeuralChat: A Customizable Chatbot Framework](https://medium.com/intel-analytics-software/make-your-own-chatbot-within-a-few-minutes-with-neuralchat-a-customizable-chatbot-framework-139b4bdec8d1) (Sep 2023)
