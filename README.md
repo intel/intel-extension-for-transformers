@@ -68,7 +68,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
 gen_tokens = model.generate(inputs, max_new_tokens=300)
-gen_text = tokenizer.batch_decode(gen_tokens)
+outputs = tokenizer.batch_decode(gen_tokens)
 ```
 
 ### INT8 Inference
@@ -85,7 +85,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
 gen_tokens = model.generate(inputs, max_new_tokens=300)
-gen_text = tokenizer.batch_decode(gen_tokens)
+outputs = tokenizer.batch_decode(gen_tokens)
 ```
 
 ## 🎯Validated  Models
