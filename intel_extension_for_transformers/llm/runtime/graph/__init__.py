@@ -15,10 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from transformers import AutoConfig, AutoTokenizer
-from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
+
 import torch
+from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
+from transformers import AutoConfig, AutoTokenizer
+
 model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
+
 
 class Model:
     def __init__(self):
@@ -73,8 +76,7 @@ class Model:
 
         # check cache and quantization
         output_path = "runtime_outs"
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
+        os.makedirs(output_path, exist_ok=True)
         fp32_bin = "{}/ne_{}_f32.bin".format(output_path, model_type)
         quant_bin = "{}/ne_{}_q.bin".format(output_path, model_type)
 
@@ -91,9 +93,8 @@ class Model:
         if not_quant:
             print("FP32 model will be used.")
             return
-        self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **quant_kwargs)
+        self.module.Model.quant_model(model_path=fp32_bin, out_path=quant_bin, **quant_kwargs)
         assert os.path.exists(quant_bin), "Fail to quantize model"
-        
         # clean
         os.remove(fp32_bin)
 
@@ -110,9 +111,7 @@ class Model:
 
     def quant_model(self, model_name, model_path, out_path, **quant_kwargs):
         self.__import_package(model_name)
-        self.module.Model.quant_model(model_path = model_path,
-                                    out_path = out_path, **quant_kwargs)
-
+        self.module.Model.quant_model(model_path=model_path, out_path=out_path, **quant_kwargs)
 
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, stopping_criteria=None,  **generate_kwargs):
         max_new_tokens = generate_kwargs.get("max_new_tokens", -1)
@@ -129,8 +128,7 @@ class Model:
             ret = input_ids.tolist()
 
         beam_search = False
-        if ("num_beams" in generate_kwargs and generate_kwargs["num_beams"] > 1) and not \
-            generate_kwargs.get("do_sample", False):
+        if (generate_kwargs.get("num_beams", 1) > 1) and not generate_kwargs.get("do_sample", False):
             beam_search = True
         if not beam_search:
             # TODO support multi batch
@@ -142,12 +140,14 @@ class Model:
                 Make sure that `num_beams` is set to 1."
             if self.generate_round == 0 and not ignore_prompt:
                 streamer.put(input_ids)
-        
+
         if interactive:
             self.model.reset_token_end()
         out_count = 0
+        input_list = input_ids.tolist()
         while True:
-            response = self.model.generate(input_ids = input_ids.tolist())
+            response = self.model.generate(input_ids=input_list)
+            input_list = []  # next-token stage will use previous output
             if len(response) == 0:
                 break
             if streamer:
@@ -158,14 +158,23 @@ class Model:
                 if stopping_criteria(torch.tensor(ret), None):
                     break
             elif ret[0][-1] == self.tokenizer.eos_token_id or \
-                (max_new_tokens != -1 and out_count > max_new_tokens):
+                    (max_new_tokens != -1 and out_count > max_new_tokens):
                 break
             out_count += 1
         if streamer:
             streamer.end()
-            
+
         self.generate_round += 1
         return ret
 
     def is_token_end(self):
         return self.model.is_token_end()
+
+    def __call__(self, input_ids, reinit=False, **kwargs):
+        if self.model is None:
+            self.init_from_bin(self.model_type, self.bin_file, **kwargs)
+            self.generate_round = 0
+        elif reinit:
+            self.model.reinit()
+            self.generate_round = 0
+        return self.model.evaluate(input_ids.tolist())
