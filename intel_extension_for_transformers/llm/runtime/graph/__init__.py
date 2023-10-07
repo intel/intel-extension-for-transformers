@@ -26,6 +26,7 @@ class Model:
         self.model = None
         self.model_type = None
         self.bin_file = None
+        self.generate_round = 0
 
     def __import_package(self, model_name):
         if self.module:
@@ -66,12 +67,12 @@ class Model:
         # 1. convert model
         fp32_bin = "ne_{}_f32.bin".format(model_type)
         convert_model(model_name, fp32_bin, "f32")
-        assert(os.path.exists(fp32_bin), "Fail to convert pytorch model")
+        assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
         self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
-        assert(os.path.exists(quant_bin), "Fail to quantize model")
+        assert os.path.exists(quant_bin), "Fail to quantize model"
         
         self.model_type = model_type
         self.bin_file = quant_bin
@@ -90,23 +91,29 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, input_ids, streamer = None, **kwargs):
+    def generate(self, input_ids, streamer=None, reinit=True, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
-        else:
+            self.generate_round = 0
+        elif reinit:
             self.model.reinit()
+            self.generate_round = 0
+
+        ret = [[]]
+        if self.generate_round == 0:
+            ret[0].extend(input_ids.tolist())
 
         # TODO support multi batch
-        assert(input_ids.shape[0] == 1, "Unsupport multi-batch input ids.")
+        assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
+        self.generate_round += 1
+
         if streamer:
-            ret = input_ids.tolist()
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
                 streamer.put(torch.tensor([out]))
                 ret[0].extend(out)
             return ret
         else:
-            ret = input_ids.tolist()
             ret[0].extend(self.model.generate_tokens(input_ids = input_ids.tolist()[0]))
             return ret
 
