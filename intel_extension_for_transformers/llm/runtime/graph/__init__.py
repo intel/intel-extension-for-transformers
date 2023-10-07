@@ -93,6 +93,9 @@ class Model:
     def generate(self, input_ids, streamer = None, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
+        else:
+            self.model.reinit()
+
         # TODO support multi batch
         assert(input_ids.shape[0] == 1, "Unsupport multi-batch input ids.")
         if streamer:

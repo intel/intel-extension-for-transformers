@@ -103,9 +103,14 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
 
 void Model::reinit() {
   n_past = 0;
+  last_n_tokens.clear();
   last_n_tokens.resize(n_ctx, 0);
   token_eos = false;
   curr_input_ids.clear();
+  // model_free(ctx);
+  // ctx = model_init_from_gpt_params(params);
+  ctx->n_sample = 0;
+  ctx->t_sample_us = 0;
 }
 
 std::vector<int> Model::generate(const std::vector<int>& input_ids) {
