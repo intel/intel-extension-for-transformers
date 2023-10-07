@@ -1,7 +1,7 @@
 transformers>=4.32.0
 peft
 fschat
-intel_extension_for_pytorch
+intel_extension_for_pytorch==2.0.100
 num2words
 speechbrain
 paddlepaddle
@@ -36,5 +36,5 @@ numpy==1.23.5
 tiktoken==0.4.0
 lm_eval
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch
-torchaudio
+torch==2.0.0
+torchaudio==2.0.0
