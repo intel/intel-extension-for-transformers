@@ -64,7 +64,7 @@ def inference(query):
     print("-------------")
     print(result_text)
 
-    print(f'[ inference time ] {time.time() - cur_time}')
+    print(f'[ post process time ] {time.time() - cur_time}')
     cur_time = time.time()
 
     doc = nlp(result_text)

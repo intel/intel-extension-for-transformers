@@ -148,10 +148,12 @@ def inference(query):
                 else:
                     mentioned_time["time"].append(ent.text)
     print("mentioned_time: ", mentioned_time)
-    print(len(mentioned_time["period"]))
     if len(mentioned_time["period"]) % 2 != 0:
         mentioned_time["time"] = list(set(mentioned_time["time"]+mentioned_time["period"]))
         mentioned_time["period"] = []
+
+    print(f'time process time: {time.time() - cur_time}')
+    cur_time = time.time()
 
     new_doc = nlp(query)
     location = []
@@ -173,6 +175,9 @@ def inference(query):
         mentioned_time = {"time": [], "period": []}
     location = list(set(location))
 
+    print(f'location process time: {time.time() - cur_time}')
+    cur_time = time.time()
+
     result_period = []
     for sub in range(len(mentioned_time['period'])//2):
         from_time = mentioned_time['period'][2*sub]
@@ -184,6 +189,9 @@ def inference(query):
         from_time = to_time - timedelta(days=month_date_list[now_month-1])
         result_period = [{"from": str(from_time)[:10], "to": str(to_time)[:10]}]
     result = {"period": result_period, "time": mentioned_time['time'], 'location': location, "name": name, "organization": organization}
+
+    print(f'post process time: {time.time() - cur_time}')
+    cur_time = time.time()
 
     return result
 

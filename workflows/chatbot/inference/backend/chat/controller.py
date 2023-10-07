@@ -38,6 +38,7 @@ import pandas as pd
 from io import BytesIO
 from PIL import Image
 from ner_utils.ner_bf16 import inference as inference_ner
+from ner_utils.ner_int8 import inference as inference_int8
 from deepface import DeepFace
 from typing import List, Dict
 from fastapi import BackgroundTasks
@@ -1748,7 +1749,8 @@ async def handle_ai_photos_chat_to_image(request: Request):
 
     try:
         start_time = time.time()
-        result = inference_ner(query)
+        # result = inference_ner(query)
+        result = inference_int8(query)
         end_time = time.time()
         print("<chatWithImage> NER inference cost {} seconds.".format(end_time - start_time))
     except Exception as e:
