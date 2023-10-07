@@ -1183,10 +1183,12 @@ def get_type_obj_from_attr(attr, user_id):
                 continue
             example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE address="{item}" and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)[0]
         
-        # if item == None or item == 'None' or item == 'null':
-        #     item = 'default'
         image_name = example_image_path.split('/')[-1]
         image_path = format_image_path(user_id, image_name)
+        # simplify address name
+        if attr == 'address':
+            item_list = item.split(', ')[1:]
+            item = ', '.join(item_list)
         select_result[item] = image_path
 
     logger.info(f'type list: {select_result}')
@@ -1219,7 +1221,7 @@ def get_images_by_type(user_id, type, subtype) -> List:
     if type == 'address':
         if subtype == 'default':
             subtype = 'None'
-        sql=f"SELECT image_id, image_path FROM image_info WHERE user_id='{user_id}' AND exist_status='active' AND address='{subtype}';"
+        sql=f"SELECT image_id, image_path FROM image_info WHERE user_id='{user_id}' AND exist_status='active' AND address LIKE '%{subtype}%';"
 
     elif type == 'time':
         if subtype == 'None':
