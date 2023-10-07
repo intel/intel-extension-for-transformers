@@ -121,6 +121,20 @@ std::vector<int> Model::generate(const std::vector<int>& input_ids) {
     last_n_tokens.erase(last_n_tokens.begin());
     last_n_tokens.push_back(item);
   }
+  // infinite text generation via context swapping
+  // if we run out of context:
+  // - take the n_keep first tokens from the original prompt (via n_past)
+  // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
+  if (n_past + curr_input_ids.size() > n_ctx) {
+    const int n_left = n_past - params.n_keep;
+
+    // always keep the first token - BOS
+    n_past = std::max(1, params.n_keep);
+
+    // insert n_left/2 tokens at the start of embd from last_n_tokens
+    curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - curr_input_ids.size(),
+                last_n_tokens.end() - curr_input_ids.size());
+  }
   model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
   n_past += curr_input_ids.size();
 
@@ -152,6 +166,20 @@ std::vector<int> Model::generate_tokens(const std::vector<int>& input_ids) {
     for (auto item : curr_input_ids) {
       last_n_tokens.erase(last_n_tokens.begin());
       last_n_tokens.push_back(item);
+    }
+    // infinite text generation via context swapping
+    // if we run out of context:
+    // - take the n_keep first tokens from the original prompt (via n_past)
+    // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
+    if (n_past + curr_input_ids.size() > n_ctx) {
+      const int n_left = n_past - params.n_keep;
+
+      // always keep the first token - BOS
+      n_past = std::max(1, params.n_keep);
+
+      // insert n_left/2 tokens at the start of embd from last_n_tokens
+      curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - curr_input_ids.size(),
+                  last_n_tokens.end() - curr_input_ids.size());
     }
     model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
     n_past += curr_input_ids.size();
