@@ -91,17 +91,17 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, input_ids, streamer=None, reinit=True, **kwargs):
+    def generate(self, input_ids, streamer=None, interactive=False, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
             self.generate_round = 0
-        elif reinit:
+        elif not interactive:
             self.model.reinit()
             self.generate_round = 0
 
         ret = [[]]
         if self.generate_round == 0:
-            ret[0].extend(input_ids.tolist())
+            ret = input_ids.tolist()
 
         # TODO support multi batch
         assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
