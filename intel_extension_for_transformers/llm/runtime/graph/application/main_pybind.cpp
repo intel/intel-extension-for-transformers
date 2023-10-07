@@ -107,8 +107,6 @@ void Model::reinit() {
   last_n_tokens.resize(n_ctx, 0);
   token_eos = false;
   curr_input_ids.clear();
-  // model_free(ctx);
-  // ctx = model_init_from_gpt_params(params);
   ctx->n_sample = 0;
   ctx->t_sample_us = 0;
 }
