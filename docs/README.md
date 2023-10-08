@@ -1,8 +1,10 @@
-# Docs
+# Docs of overview and installation
 These documents provide a detailed description of the functionalities of Intel Extension for Transformers.
 [architecture.md](architecture.md) offers an overview of Intel Extension for Transformers, encompassing various architectural levels.
 
 You can fine install guidelines in [installation.md](installation.md).
+
+# Docs of optimizaton and inference
 
 Optimization docs: [quantization.md](quantization.md), [pruning.md](pruning.md), [autodistillation.md](autodistillation.md), [distillation.md](distillation.md), 
 
@@ -11,12 +13,16 @@ Optimization docs: [quantization.md](quantization.md), [pruning.md](pruning.md),
 [get_started.md](get_started.md) guides you to use optimization API and sparse inference. We also provide examples in [examples.md](examples.md). P.S, smoothquant, weight-only quantization and cpp inference are not in these documents. SmoothQuant: [smoothquant.md](smoothquant.md), weight-only quantization: [weightonlyquant.md](weightonlyquant.md).
 
 
+# Docs of other functionalities
+
 These utils may help you:
 [data_augmentation.md](data_augmentation.md) does NLP datasets augmentation.
 [benchmark.md](benchmark.md) is used to measure the model performance. 
 [metrics.md](metrics.md) defines which metric will be used to measure the model.
 To measure the status of the tuning model, you can refer to [objectives.md](objectives.md).
 [pipeline.md](pipeline.md) makes it simple to use any model from the Hub for inference on tasks.
+
+# Docs of contribution and legal
 
 You are invited to commit your code; kindly adhere to the guidelines specified in [contributions.md](contributions.md) and maintain a positive demeanor as outlined in [code_of_conduct.md](code_of_conduct.md). The approvers for each component can be found in [component_owner.md](component_owner.md).
 
