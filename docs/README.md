@@ -10,7 +10,7 @@ Optimization docs: [quantization.md](quantization.md), [pruning.md](pruning.md),
 
 [export.md](export.md) provides PyTorch to onnx including int8 model.
 
-[get_started.md](get_started.md) guides you to use optimization API and sparse inference. Comprehensive API guidance is available in [githubio](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html) which built with [api_doc](api_doc) and [build_docs](build_docs), you can ignore the two folders. 
+[get_started.md](get_started.md) guides you to use optimization API and sparse inference. Comprehensive API guidance is available in [API doc](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html), generated using [api_doc](api_doc) and [build_docs](build_docs). You may disregard the two mentioned folders. 
 
 We also provide examples in [examples.md](examples.md). P.S, smoothquant, weight-only quantization and cpp inference are not in these documents. SmoothQuant: [smoothquant.md](smoothquant.md), weight-only quantization: [weightonlyquant.md](weightonlyquant.md).
 
