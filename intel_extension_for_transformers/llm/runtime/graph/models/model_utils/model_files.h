@@ -358,7 +358,7 @@ struct model_file_saver {
     fprintf(stderr, "model.cpp: saving model to %s\n", fname);
     write_magic();
     write_hparams(new_ftype);
-    write_vocab();
+    // write_vocab();
   }
   void write_magic() {
     file.write_u32(MODEL_FILE_MAGIC);    // magic
