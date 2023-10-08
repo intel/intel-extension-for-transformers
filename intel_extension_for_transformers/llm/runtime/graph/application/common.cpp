@@ -561,11 +561,12 @@ gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits
   return logits_id[idx].second;
 }
 
-gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float* logits,
+gpt_vocab::id gpt_sample_top_k_top_p_repeat(const float* logits,
                                             const int32_t* last_n_tokens_data, size_t last_n_tokens_data_size,
                                             int top_k, double top_p, double temp, int repeat_last_n,
-                                            float repeat_penalty, std::mt19937& rng) {
-  int n_logits = vocab.id_to_token.size();
+                                            float repeat_penalty) {
+  int n_logits = 50432;
+  std::mt19937 rng(1234);
 
   const auto* plogits = logits;
 

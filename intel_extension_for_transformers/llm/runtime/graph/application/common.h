@@ -136,10 +136,10 @@ bool gpt_vocab_init(const std::string& fname, gpt_vocab& vocab);
 gpt_vocab::id gpt_sample_top_k_top_p(const gpt_vocab& vocab, const float* logits, int top_k, double top_p, double temp,
                                      std::mt19937& rng);
 
-gpt_vocab::id gpt_sample_top_k_top_p_repeat(const gpt_vocab& vocab, const float* logits,
+gpt_vocab::id gpt_sample_top_k_top_p_repeat(const float* logits,
                                             const int32_t* last_n_tokens_data, size_t last_n_tokens_data_size,
                                             int top_k, double top_p, double temp, int repeat_last_n,
-                                            float repeat_penalty, std::mt19937& rng);
+                                            float repeat_penalty);
 
 struct quant_params {
   std::string model_file = "";
