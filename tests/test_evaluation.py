@@ -42,7 +42,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
         shutil.rmtree("./gptj", ignore_errors=True)
         shutil.rmtree("./gptj-past", ignore_errors=True)
         shutil.rmtree("./evaluation_results.json", ignore_errors=True)
-        shutil.rmtree("./llama", ignore_errors=True)
         cmd = 'pip uninstall lm_eval -y'
         p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
                                             stderr=subprocess.PIPE, shell=True) # nosec

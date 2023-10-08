@@ -66,6 +66,7 @@ def evaluate(model,
             description_dict = json.load(f)
 
     if no_cache:
+        args.no_cache = no_cache
         logger.info("no_cache is used for lm_eval evaluation.")
 
     results = evaluator.simple_evaluate(

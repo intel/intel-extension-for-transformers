@@ -97,8 +97,11 @@ class HFAutoLM(BaseLM):
             self.model = self._create_onnx_model(self.model_name_or_path)
         if self.config is None and hasattr(self.model, "config"):
             self.config = self.model.config
-            if hasattr(self.model, "model") and not hasattr(self.model.model, "config"):
-                setattr(self.model.model, "config", self.config)
+        if not hasattr(self.model, "config"):
+            if self.config is not None:
+                setattr(self.model, "config", self.config)
+            else:
+                logger.warning("Please provide model config.")
         if self.model_type is None and hasattr(self.model, "config") and hasattr(self.model.config, "model_type"):
             self.model_type = self.model.config.model_type
         if tokenizer is not None:
