@@ -8,11 +8,17 @@ Optimization docs: [quantization.md](quantization.md), [pruning.md](pruning.md),
 
 [export.md](export.md) provides PyTorch to onnx including int8 model.
 
-[get_started.md](get_started.md) guides you to use optimization API and sparse inference. We also provide examples in [examples.md](examples.md). P.S, smoothquant, woq and cpp inference are not in these documents.
+[get_started.md](get_started.md) guides you to use optimization API and sparse inference. We also provide examples in [examples.md](examples.md). P.S, smoothquant, weight-only quantization and cpp inference are not in these documents. SmoothQuant: [smoothquant.md](smoothquant.md), weight-only quantization: [weightonlyquant.md](weightonlyquant.md).
 
 
 These utils may help you:
 [data_augmentation.md](data_augmentation.md) does NLP datasets augmentation.
 [benchmark.md](benchmark.md) is used to measure the model performance. 
+[metrics.md](metrics.md) defines which metric will be used to measure the model.
+To measure the status of the tuning model, you can refer to [objectives.md](objectives.md).
+[pipeline.md](pipeline.md) makes it simple to use any model from the Hub for inference on tasks.
 
 You are invited to commit your code; kindly adhere to the guidelines specified in [contributions.md](contributions.md) and maintain a positive demeanor as outlined in [code_of_conduct.md](code_of_conduct.md). The approvers for each component can be found in [component_owner.md](component_owner.md).
+
+
+[publication.md](publication.md) lists the publication related to this project. [release.md](release.md) provides links to all releases. License and legal information can be found in [legal.md](legal.md)
