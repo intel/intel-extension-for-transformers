@@ -206,7 +206,7 @@ struct model_file_loader {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
     read_magic();
     read_hparams();
-    read_vocab();
+    // read_vocab();
     read_tensor_metadata(file_idx, tensors_map);
   }
   void read_magic() {
@@ -266,10 +266,11 @@ struct model_file_loader {
 
     // For ChatGLM-2
     hparams.inner_hidden_size = file.read_u32();
+
+    vocab.id_to_token.resize(hparams.n_vocab);
   }
 
   void read_vocab() {
-    vocab.id_to_token.resize(hparams.n_vocab);
     file.read_raw(&vocab.bos_token_id, sizeof(model_vocab::id));
     file.read_raw(&vocab.eos_token_id, sizeof(model_vocab::id));
     file.read_raw(&vocab.pad_token_id, sizeof(model_vocab::id));
@@ -300,6 +301,7 @@ struct model_file_loader {
       shard.ne.resize(n_dims);
       file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
       std::string name = file.read_string(name_len);
+      printf("tensor name: %s\n", name.c_str());
       if (n_dims < 1 || n_dims > 2) {
         throw format("model.cpp: tensor '%s' should not be %u-dimensional", name.c_str(), n_dims);
       }

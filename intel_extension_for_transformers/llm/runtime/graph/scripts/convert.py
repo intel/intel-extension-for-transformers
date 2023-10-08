@@ -115,10 +115,10 @@ class ConvertMPT(ConvertModel):
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))
 
-        self.fout.write(struct.pack("i", int(-1 if (self.hparams.get("bos_token_id", -1)) is None else (self.hparams.get("bos_token_id", -1)))))
-        self.fout.write(struct.pack("i", int(-1 if (self.hparams.get("eos_token_id", -1)) is None else (self.hparams.get("eos_token_id", -1)))))
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
+        # self.fout.write(struct.pack("i", int(-1 if (self.hparams.get("bos_token_id", -1)) is None else (self.hparams.get("bos_token_id", -1)))))
+        # self.fout.write(struct.pack("i", int(-1 if (self.hparams.get("eos_token_id", -1)) is None else (self.hparams.get("eos_token_id", -1)))))
+        # self.fout.write(struct.pack("i", 0))
+        # self.fout.write(struct.pack("i", 0))
 
     def write_vocab(self):
         # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
@@ -210,7 +210,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     else:
         dir_model = args.model
 
-    model = ConvertMPT(args.outfile, dir_model)
+    model = ConvertMPT(args.outfile, dir_model, False)
+    # import pudb; pudb.set_trace()
     model.convert()
 
 
