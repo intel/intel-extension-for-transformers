@@ -141,7 +141,6 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
-
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">woq core</a></td>
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">TP</a></td>
   </tr>
