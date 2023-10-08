@@ -118,8 +118,8 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
   <tr>
     <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs">Neural Engine</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/README.md">Kernel Libraries</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">LLM Runtime</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core">Kernel Libraries</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">MODEL COMPRESSION</th>
@@ -137,13 +137,12 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">NEURAL ENGINE</th>
+    <th colspan="8" align="center">LLM Runtime</th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/onnx_compile.md">Model Compilation</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/add_customized_pattern.md">Custom Pattern</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/deploy_and_integration.md">Deployment</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/engine_profiling.md">Profiling</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Kernel Libs</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">KERNEL LIBRARIES</th>
