@@ -137,12 +137,13 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
   </tr>
   <tr>
-    <th colspan="6" align="center">LLM Runtime</th>
+    <th colspan="8" align="center">LLM Runtime</th>
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Kernel Libs</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
+    <td colspan="2" align="center"><a href="intel-extension-for-transformers/examples/huggingface/pytorch/text-generation/deployment/README.md">Text generation example</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">KERNEL LIBRARIES</th>
