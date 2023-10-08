@@ -67,7 +67,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     
     tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
     config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
-    hparams = config.to_dict()
+    with open(os.path.join(dir_model,"config.json"), "r", encoding="utf-8") as f:
+        hparams = json.load(f)
     if hparams["architectures"][0] != "FalconForCausalLM":
         print("Model architecture not supported: " + hparams["architectures"][0])
         sys.exit(1)
