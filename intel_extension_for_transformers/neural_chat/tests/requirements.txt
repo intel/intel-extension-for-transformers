@@ -1,9 +1,9 @@
 transformers>=4.32.0
 peft
 fschat
-torch
+torch==2.0.1
 torchaudio
-intel_extension_for_pytorch
+intel_extension_for_pytorch==2.0.100
 num2words
 speechbrain
 paddlepaddle
