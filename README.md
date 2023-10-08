@@ -146,10 +146,9 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
   <tr>
     <th colspan="8" align="center">KERNEL LIBRARIES</th>
   </tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">woq kernels</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">woq kernels</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/library/jblas/README.md">jblas(WIP)</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/library/kernels/README.md">Sparse GEMM Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/library/kernels/README.md">Sparse GEMM Kernels</a></td>
 
   <tr>
     <th colspan="8" align="center">ALGORITHMS</th>
