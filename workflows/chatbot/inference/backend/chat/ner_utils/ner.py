@@ -14,7 +14,7 @@ from transformers import (
 
 nlp = spacy.load("en_core_web_lg")
 
-model_name ="/home/ubuntu/Llama-2-7b-chat-hf/"
+model_name ="/home/tme/Llama-2-7b-chat-hf/"
 print(f"Starting to load the model {model_name} into memory")
 
 config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)

@@ -34,7 +34,8 @@ import random
 import datetime
 from datetime import timedelta, timezone
 import pandas as pd
-from ner_utils.ner_bf16 import inference as inference_ner
+from ner_utils.ner import inference as inference_fp32
+from ner_utils.ner_bf16 import inference as inference_bf16
 from ner_utils.ner_int8 import inference as inference_int8
 from deepface import DeepFace
 from typing import List, Dict
@@ -807,23 +808,23 @@ def update_image_tags(image):
     image_info = check_image_status(image_id)
     update_sql = 'UPDATE image_info SET '
     update_sql_list = []
-    old_tags = eval(image_info[10])
+    old_tags = eval(image_info['other_tags'])
     logger.info(f'[Update Tags] old_tags: {old_tags}')
     tag_name_list = []
     for key, value in tags.items():
-        if key == 'time' and value != image_info[3]:
+        if key == 'time' and value != image_info['captured_time']:
             update_sql_list.append(f' captured_time="{value}" ')
             tag_name_list.append('time')
-        elif key == 'latitude' and value != image_info[5]:
+        elif key == 'latitude' and value != image_info['latitude']:
             update_sql_list.append(f' latitude="{value}" ')
             tag_name_list.append('latitude')
-        elif key == 'longitude' and value != image_info[6]:
+        elif key == 'longitude' and value != image_info['longitude']:
             update_sql_list.append(f' longitude="{value}" ')
             tag_name_list.append('longitude')
-        elif key == 'altitude' and value != image_info[7]:
+        elif key == 'altitude' and value != image_info['altitude']:
             update_sql_list.append(f' altitude="{value}" ')
             tag_name_list.append('altitude')
-        elif key == 'location' and value != image_info[8]:
+        elif key == 'location' and value != image_info['address']:
             update_sql_list.append(f' address="{value}" ')
             tag_name_list.append('location')
             
@@ -866,20 +867,23 @@ def format_image_path(user_id: str, image_name: str) -> str:
     return image_path
 
 
-def format_image_info(image_info: tuple) -> dict:
+def format_image_info(image_info: dict) -> dict:
     image_item = {}
-    image_item['image_id'] = image_info[0]
-    image_item['user_id'] = image_info[1]
-    image_name = image_info[2].split('/')[-1]
-    image_item['image_path'] = format_image_path(image_info[1], image_name)
-    image_item['caption'] = image_info[4]
-    image_item['checked'] = True if image_info[9] else False
+    image_item['image_id'] = image_info['image_id']
+    image_item['user_id'] = image_info['user_id']
+    image_name = image_info['image_path'].split('/')[-1]
+    image_item['image_path'] = format_image_path(image_info['user_id'], image_name)
+    image_item['caption'] = image_info['caption']
     tag_list = {}
-    if image_info[3]:
-        tag_list['time'] = datetime.datetime.date(image_info[3])
-    if image_info[8] != 'None':
-        tag_list['location'] = image_info[8]
-    other_tags = eval(image_info[10])
+    if image_info['captured_time']:
+        tag_list['time'] = datetime.datetime.date(image_info['captured_time'])
+    if image_info['address'] != 'None':
+        if ', ' in image_info['address']:
+            address_list = image_info['address'].split(', ')
+            tag_list['location'] = ', '.join(address_list[1:])
+        else:
+            tag_list['location'] = image_info['address']
+    other_tags = eval(image_info['other_tags'])
     tag_list.update(other_tags)
     image_item['tag_list'] = tag_list
     return image_item
@@ -892,7 +896,7 @@ def delete_single_image(user_id, image_id):
         info = f'[Delete] Image {image_id} does not exist in MySQL.'
         logger.error(info)
         raise Exception(info)
-    image_path = image_path[0]
+    image_path = image_path['image_path']
     
     import shutil
     image_path_dst = IMAGE_ROOT_PATH+'/deleted/user'+str(user_id)
@@ -1104,7 +1108,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
     # 3. add new faces for current image (no reference in db)
     logger.info(f'[background - face] Adding new faces for image {image_id}')
     for cur_xywh in face_xywh_list:
-        face_cnt = mysql_db.fetch_all(sql="SELECT COUNT(*) FROM face_info;")[0][0]
+        face_cnt = mysql_db.fetch_one(sql="SELECT COUNT(*) AS cnt FROM face_info;")['cnt']
         tag = 'person'+str(face_cnt+1)
         face_sql = f"INSERT INTO face_info VALUES(null, '{tag}');"
         try:
@@ -1114,7 +1118,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
             logger.error("[background - face] "+str(e))
             raise Exception(f"Exception ocurred while inserting new face into face_info: {e}")
         logger.info(f"[background - face] face {tag} inserted into db.")
-        face_id = mysql_db.fetch_one(f"SELECT * FROM face_info WHERE face_tag='{tag}';")[0]
+        face_id = mysql_db.fetch_one(f"SELECT * FROM face_info WHERE face_tag='{tag}';")['face_id']
         logger.info(f"[background - face] new face id is: {face_id}")
         img_face_sql = f"INSERT INTO image_face VALUES(null, {image_id}, '{image_path}', {face_id}, '{cur_xywh}', '{user_id}', '{tag}');"
         try:
@@ -1137,24 +1141,25 @@ def get_type_obj_from_attr(attr, user_id):
     else:
         return {}
 
-    select_list = list(mysql_db.fetch_all(sql=select_sql))
+    select_list = mysql_db.fetch_all(sql=select_sql)
     select_result = {}
     for item in select_list:
-        item = item[0]
         logger.info(f"current item of {attr} is: {item}")
         if attr == 'time':
+            item = item['date']
             if item == None:
                 continue
-            example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE DATEDIFF(captured_time, "{item}") = 0 and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)[0]
+            example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE DATEDIFF(captured_time, "{item}") = 0 and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)['image_path']
         elif attr == 'address':
+            item = item['address']
             if item == None or item == 'None' or item == 'null':
                 continue
-            example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE address="{item}" and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)[0]
+            example_image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE address="{item}" and user_id="{user_id}" and exist_status="active" LIMIT 1;', params=None)['image_path']
         
         image_name = example_image_path.split('/')[-1]
         image_path = format_image_path(user_id, image_name)
         # simplify address name
-        if attr == 'address':
+        if attr == 'address' and ', ' in item:
             item_list = item.split(', ')[1:]
             item = ', '.join(item_list)
         select_result[item] = image_path
@@ -1166,8 +1171,8 @@ def get_type_obj_from_attr(attr, user_id):
 def get_process_status(user_id):
     logger.info(f'Geting process status of user {user_id}')
 
-    total_cnt = mysql_db.fetch_one(sql=f"SELECT COUNT(*) FROM image_info WHERE user_id='{user_id}' AND exist_status='active';")[0]
-    processing_cnt = mysql_db.fetch_one(sql=f"SELECT COUNT(*) FROM image_info WHERE user_id='{user_id}' AND exist_status='active' AND process_status='processing';")[0]
+    total_cnt = mysql_db.fetch_one(sql=f"SELECT COUNT(*) AS cnt FROM image_info WHERE user_id='{user_id}' AND exist_status='active';")['cnt']
+    processing_cnt = mysql_db.fetch_one(sql=f"SELECT COUNT(*) AS cnt FROM image_info WHERE user_id='{user_id}' AND exist_status='active' AND process_status='processing';")['cnt']
     result = {}
     result['total_image'] = total_cnt
     result['processing_image'] = processing_cnt
@@ -1199,32 +1204,29 @@ def get_images_by_type(user_id, type, subtype) -> List:
         logger.error(f'no label {subtype} in {type}')
         return []
     else:
-        images = list(images)
         result = []
         for image in images:
-            image_name = image[1].split('/')[-1]
+            image_name = image['image_path'].split('/')[-1]
             image_path = format_image_path(user_id, image_name)
-            obj = {"image_id": image[0], "image_path": image_path}
+            obj = {"image_id": image['image_id'], "image_path": image_path}
             result.append(obj)
         return result
 
 
 def get_face_list_by_user_id(user_id: str) -> List[Dict]:
     logger.info(f'getting face list of user {user_id}')
-    group_by_face_sql = f'SELECT group_concat(image_face.image_path), group_concat(image_face.face_tag) FROM image_face INNER JOIN image_info ON image_info.image_id=image_face.image_id WHERE image_info.user_id = "{user_id}" AND image_info.exist_status="active" GROUP BY face_id;'
+    group_by_face_sql = f'SELECT group_concat(image_face.image_path) AS image_path, group_concat(image_face.face_tag) AS face_tag FROM image_face INNER JOIN image_info ON image_info.image_id=image_face.image_id WHERE image_info.user_id = "{user_id}" AND image_info.exist_status="active" GROUP BY face_id;'
     try:
         query_list = mysql_db.fetch_all(sql=group_by_face_sql)
     except Exception as e:
         logger.error(e)
         raise Exception(e)
-    query_list = list(query_list)
     logger.info(f'query result list: {query_list}')
     response_person = {}
     for item in query_list:
         logger.info(f'current item: {item}')
-        face_tag, img_path = item[1].split(',')[0], item[0].split(',')[0]
-        image_name = img_path.split('/')[-1]
-        response_person[face_tag] = format_image_path(user_id, image_name)
+        image_name = item['image_path'].split('/')[-1]
+        response_person[item['face_tag']] = format_image_path(user_id, image_name)
     logger.info(f'person list: {response_person}')
     return response_person
 
@@ -1244,7 +1246,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         for name in names:   
             sql_conditions.append(f' image_face.face_tag LIKE "%{name}%" ')
         for face_tag in face_list:
-            face_tag = face_tag[0]
+            face_tag = face_tag['face_tag']
             if face_tag in query:
                 logger.info(f'[NER query] other face detected in db: [{face_tag}]')
                 sql_conditions.append(f' image_face.face_tag LIKE "%{face_tag}%" ')
@@ -1321,9 +1323,9 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         raise Exception("[NER query] "+str(e))
     result_image_list = []
     for res in query_result:
-        image_name = res[1].split('/')[-1]
+        image_name = res['image_path'].split('/')[-1]
         image_path = format_image_path(user_id, image_name)
-        item = {"image_id": res[0], "imgSrc": image_path}
+        item = {"image_id": res['image_id'], "imgSrc": image_path}
         result_image_list.append(item)
     logger.info(f'[NER query] result: {result_image_list}')
     return result_image_list
@@ -1429,7 +1431,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
         except Exception as e:
             logger.info("<uploadImages> "+str(e))
             return JSONResponse(content=f'Database select failed for image {img_path}', status_code=500)
-        img_id = result[0]
+        img_id = result['image_id']
         frontend_path = format_image_path(user_id, img_name)
         item = {'img_id': img_id, 'img_path': frontend_path}
         logger.info(f'<uploadImages> Image id is {img_id}, image path is {frontend_path}')
@@ -1454,10 +1456,10 @@ def handle_ai_photos_get_all_images(request: Request):
 
     try:
         result_list = []
-        image_list = list(mysql_db.fetch_all(sql=f'SELECT image_id, image_path FROM image_info WHERE user_id="{user_id}" AND exist_status="active";'))
+        image_list = mysql_db.fetch_all(sql=f'SELECT image_id, image_path FROM image_info WHERE user_id="{user_id}" AND exist_status="active";')
         for image in image_list:
-            image_name = image[1].split('/')[-1]
-            result_list.append({"image_id": image[0], "image_path": format_image_path(user_id, image_name)})
+            image_name = image['image_path'].split('/')[-1]
+            result_list.append({"image_id": image['image_id'], "image_path": format_image_path(user_id, image_name)})
     except Exception as e:
         return JSONResponse(content=e, status_code=500)
     else:
@@ -1563,6 +1565,21 @@ async def handel_ai_photos_delete_Image(request: Request):
     return "Succeed"
 
 
+@app.post("/v1/aiphotos/deleteUser")
+def handle_ai_photos_delete_user(request: Request):
+    user_id = request.client.host
+    logger.info(f'<deleteUser> user ip is: {user_id}')
+    check_user_ip(user_id)
+
+    try:
+        delete_user_infos(user_id)
+    except Exception as e:
+        logger.error("<deleteUser> "+str(e))
+        raise Exception(e)
+
+    return "Succeed"
+
+
 @app.post("/v1/aiphotos/updateLabel")
 async def handle_ai_photos_update_label(request: Request):
     # check request user
@@ -1616,7 +1633,7 @@ async def handel_ai_photos_update_tags(request: Request):
 
     except Exception as e:
         logger.error("<updateTags> "+str(e))
-        return Response(content=str(e), status_code=status.HTTP_400_BAD_REQUEST)
+        return Response(content=str(e), status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
         logger.info('<updateTags> Image tags updated successfully.')
 
@@ -1639,21 +1656,6 @@ async def handel_ai_photos_update_caption(request: Request):
         except Exception as e:
             logger.error("<updateCaption> "+str(e))
             return Response(content=str(e), status_code=status.HTTP_400_BAD_REQUEST)
-
-    return "Succeed"
-
-
-@app.post("/v1/aiphotos/deleteUser")
-def handle_ai_photos_delete_user(request: Request):
-    user_id = request.client.host
-    logger.info(f'<deleteUser> user ip is: {user_id}')
-    check_user_ip(user_id)
-
-    try:
-        delete_user_infos(user_id)
-    except Exception as e:
-        logger.error("<deleteUser> "+str(e))
-        raise Exception(e)
 
     return "Succeed"
 
