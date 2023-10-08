@@ -102,6 +102,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     attn_shape_t attn_shape = {
         /* .batch_size = */ batch_size,
         /* .head_num = */ n_head,
+        /* .heads_kv = */ n_head,  // GPT-J does not have MQA/GQA
         /* .head_size = */ n_embd / n_head,
         /* .sl_q = */ N,  // Note: make sure that jblas reordered attn supports next token inferencing
         /* .sl_kv = */ n_past + N,
@@ -109,7 +110,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
                jblas_reordered_attn_fp32_support(&attn_shape)));
     kv_shape_t kv_shape{
-        /* .head_num = */ static_cast<uint32_t>(n_head),
+        /* .heads_kv = */ static_cast<uint32_t>(n_head),
         /* .head_size = */ static_cast<uint32_t>(n_embd / n_head),
         /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
     };
