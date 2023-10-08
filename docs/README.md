@@ -12,6 +12,7 @@ Optimization docs: [quantization.md](quantization.md), [pruning.md](pruning.md),
 
 [get_started.md](get_started.md) guides you to use optimization API and sparse inference. We also provide examples in [examples.md](examples.md). P.S, smoothquant, weight-only quantization and cpp inference are not in these documents. SmoothQuant: [smoothquant.md](smoothquant.md), weight-only quantization: [weightonlyquant.md](weightonlyquant.md).
 
+[tutorials/pytorch/](tutorials/pytorch) provides tutorials of many tasks.
 
 # Docs of other functionalities
 
@@ -27,4 +28,5 @@ To measure the status of the tuning model, you can refer to [objectives.md](obje
 You are invited to commit your code; kindly adhere to the guidelines specified in [contributions.md](contributions.md) and maintain a positive demeanor as outlined in [code_of_conduct.md](code_of_conduct.md). The approvers for each component can be found in [component_owner.md](component_owner.md).
 
 
-[publication.md](publication.md) lists the publication related to this project. [release.md](release.md) provides links to all releases. License and legal information can be found in [legal.md](legal.md)
+[publication.md](publication.md) lists the publication related to this project, some of them can be found in [pubs/](pubs/).
+[release.md](release.md) provides links to all releases. License and legal information can be found in [legal.md](legal.md)
