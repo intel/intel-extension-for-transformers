@@ -27,7 +27,6 @@ class ConvertModel:
         self.out_file = out_file
         self.with_vocab = with_vocab
         self.dir_model = dir_model
-        # self.fout = open(out_file, "wb")
         self.ftype = 0
         self.fout = None
         
@@ -84,6 +83,7 @@ class ConvertModel:
     def convert(self):
         self.fout = open(self.out_file, "wb")
         self.load_model()
+        self.write_head()
         self.write_params()
         if self.with_vocab:
             self.write_vocab()
@@ -119,6 +119,61 @@ class ConvertMPT(ConvertModel):
         self.fout.write(struct.pack("i", int(-1 if (self.hparams.get("eos_token_id", -1)) is None else (self.hparams.get("eos_token_id", -1)))))
         self.fout.write(struct.pack("i", 0))
         self.fout.write(struct.pack("i", 0))
+
+    def write_vocab(self):
+        # ref: https://github.com/openai/gpt-2/blob/master/src/encoder.py
+        def bytes_to_unicode():
+
+            """
+            Returns list of utf-8 byte and a corresponding list of unicode strings.
+            The reversible bpe codes work on unicode strings.
+            This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
+            When you're at something like a 10B token dataset you end up needing around 5K for decent coverage.
+            This is a signficant percentage of your normal, say, 32K bpe vocab.
+            To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
+            And avoids mapping to whitespace/control characters the bpe code barfs on.
+            """
+            bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
+            cs = bs[:]
+            n = 0
+            for b in range(2**8):
+                if b not in bs:
+                    bs.append(b)
+                    cs.append(2**8+n)
+                    n += 1
+
+            cs = [chr(n) for n in cs]
+
+            return dict(zip(bs, cs))
+        vocab_size = self.hparams["vocab_size"]
+
+        encoder = self.tokenizer.vocab
+        # Add added_tokens (special tokens) to the encoder
+        encoder.update(self.tokenizer.get_added_vocab())
+
+        byte_encoder = bytes_to_unicode()
+        byte_decoder = {v:k for k, v in byte_encoder.items()}
+
+        counter = 0
+        # sort by value
+        for key in sorted(encoder, key=encoder.get):
+            # workaround for key error when c not found
+            text=""
+            for c in key:
+                if c not in byte_decoder:
+                    text += c
+                else:
+                    text += chr(byte_decoder[c] )
+            text = bytearray( text, encoding="utf-8" )
+            self.fout.write(struct.pack("i", len(text)))
+            self.fout.write(text)
+            counter += 1
+
+        # Repeat last token until vocab_size
+        while counter < vocab_size:
+            self.fout.write(struct.pack("i", len(text)))
+            self.fout.write(text)
+            counter += 1
 
 def convert_model(model, outfile, outtype):
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
