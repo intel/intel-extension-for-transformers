@@ -16,11 +16,109 @@ import numpy as np
 from pathlib import Path
 import argparse
 from typing import List, Optional
-from transformers import AutoConfig
 import subprocess
+import struct
+from transformers import AutoModelForCausalLM, AutoTokenizer, AutoConfig
 
 model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
 
+class ConvertModel:
+    def __init__(self, out_file, dir_model, with_vocab=True):
+        self.out_file = out_file
+        self.with_vocab = with_vocab
+        self.dir_model = dir_model
+        # self.fout = open(out_file, "wb")
+        self.ftype = 0
+        self.fout = None
+        
+    def load_model(self):
+        self.tokenizer = AutoTokenizer.from_pretrained(self.dir_model, trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained(self.dir_model, low_cpu_mem_usage=True, trust_remote_code=True)
+        self.hparams = self.model.config.to_dict()
+
+    def write_head(self):
+        self.fout.write(struct.pack("i", 0x67676D6C))
+
+    def write_params(self):
+        pass
+
+    def write_weight(self):
+        list_vars = self.model.state_dict()
+        for name in list_vars.keys():
+            print(name, list_vars[name].shape, list_vars[name].dtype)
+        for name in list_vars.keys():
+            data = list_vars[name].squeeze().numpy()
+            print("Processing variable: " + name + " with shape: ", data.shape)
+
+            n_dims = len(data.shape)
+
+            # ftype == 0 -> float32, ftype == 1 -> float16
+            ftype_cur = 0
+            if self.ftype != 0:
+                if name[-7:] == ".weight" and n_dims == 2:
+                    print("  Converting to float16")
+                    data = data.astype(np.float16)
+                    ftype_cur = 1
+                else:
+                    print("  Converting to float32")
+                    data = data.astype(np.float32)
+                    ftype_cur = 0
+            else:
+                if data.dtype != np.float32:
+                    print("  Converting to float32")
+                    data = data.astype(np.float32)
+                    ftype_cur = 0
+
+            # header
+            str = name.encode("utf-8")
+            self.fout.write(struct.pack("iii", n_dims, len(str), ftype_cur))
+            for i in range(n_dims):
+                self.fout.write(struct.pack("i", data.shape[n_dims - 1 - i]))
+            self.fout.write(str)
+
+            # data
+            data.tofile(self.fout)
+    def write_vocab(self):
+        pass
+
+    def convert(self):
+        self.fout = open(self.out_file, "wb")
+        self.load_model()
+        self.write_params()
+        if self.with_vocab:
+            self.write_vocab()
+        self.write_weight()
+
+        self.fout.close()
+
+class ConvertMPT(ConvertModel):
+    def __init__(self, out_file, dir_model, with_vocab=True):
+        super().__init__(out_file, dir_model, with_vocab)
+
+    def write_params(self):
+        self.fout.write(struct.pack("i", self.hparams["vocab_size"]))
+        self.fout.write(struct.pack("i", self.hparams["d_model"]))
+        self.fout.write(struct.pack("i", self.hparams["d_model"]))
+        self.fout.write(struct.pack("i", self.hparams["n_heads"]))
+        self.fout.write(struct.pack("i", self.hparams.get("n_head_kv", 0)))  # multi-query attention
+        self.fout.write(struct.pack("i", self.hparams["n_layers"]))
+        self.fout.write(struct.pack("i", self.hparams["n_layers"]))
+        self.fout.write(struct.pack("i", self.ftype))
+        self.fout.write(struct.pack("i", self.hparams["max_seq_len"]))
+        self.fout.write(struct.pack("f", self.hparams["attn_config"]["alibi_bias_max"]))
+        self.fout.write(struct.pack("f", self.hparams["attn_config"]["clip_qkv"] or 0.0))
+        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
+        self.fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
+
+        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", 0))
+
+        self.fout.write(struct.pack("i", int(-1 if (self.hparams.get("bos_token_id", -1)) is None else (self.hparams.get("bos_token_id", -1)))))
+        self.fout.write(struct.pack("i", int(-1 if (self.hparams.get("eos_token_id", -1)) is None else (self.hparams.get("eos_token_id", -1)))))
+        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", 0))
 
 def convert_model(model, outfile, outtype):
     config = AutoConfig.from_pretrained(model, trust_remote_code=True)
@@ -57,7 +155,8 @@ def main(args_in: Optional[List[str]] = None) -> None:
     else:
         dir_model = args.model
 
-    convert_model(dir_model, args.outfile, args.outtype)
+    model = ConvertMPT(args.outfile, dir_model)
+    model.convert()
 
 
 if __name__ == "__main__":
