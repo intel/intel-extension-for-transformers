@@ -137,7 +137,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">LLM Runtime</th>
+    <th colspan="6" align="center">LLM Runtime</th>
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
@@ -151,6 +151,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/profiling.md">Profiling</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
+
   <tr>
     <th colspan="8" align="center">ALGORITHMS</th>
   </tr>
