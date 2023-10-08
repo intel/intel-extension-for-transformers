@@ -1,5 +1,6 @@
 from config.config import get_settings
-from pymysql import connect
+from pymysql import connect, cursors
+from contextlib import contextmanager
 
 global_settings = get_settings()
 
@@ -11,6 +12,7 @@ class MysqlDb(object):
         self._user = global_settings.mysql_user
         self._passwd = global_settings.mysql_password
         self._charset = 'utf8'
+        self._connect()
 
     def _connect(self):
         self._conn = connect(host=self._host,
@@ -18,38 +20,30 @@ class MysqlDb(object):
                              user=self._user,
                              passwd=self._passwd,
                              db=self._db,
-                             charset=self._charset)
+                             charset=self._charset,
+                             cursorclass=cursors.DictCursor)
         self._cursor = self._conn.cursor()
 
     def _close(self):
         self._cursor.close()
         self._conn.close()
 
-# =================== ADD =======================
-    def set_db(self, db):
-        self._db = db
+    @contextmanager
+    def transaction(self):
+        try:
+            yield
+            self._conn.commit()
+        except Exception as e:
+            self._conn.rollback()
+            raise e
 
     def fetch_one(self, sql, params=None):
-        result = None
-        try:
-            self._connect()
-            self._cursor.execute(sql, params)
-            result = self._cursor.fetchone()
-            self._close()
-        except Exception as e:
-            raise Exception(e)
-        return result
+        self._cursor.execute(sql, params)
+        return self._cursor.fetchone()
 
     def fetch_all(self, sql, params=None):
-        lst = ()
-        try:
-            self._connect()
-            self._cursor.execute(sql, params)
-            lst = self._cursor.fetchall()
-            self._close()
-        except Exception as e:
-            raise Exception(e)
-        return lst
+        self._cursor.execute(sql, params)
+        return self._cursor.fetchall()
 
     def insert(self, sql, params):
         return self._edit(sql, params)
@@ -61,12 +55,4 @@ class MysqlDb(object):
         return self._edit(sql, params)
 
     def _edit(self, sql, params):
-        count = 0
-        try:
-            self._connect()
-            count = self._cursor.execute(sql, params)
-            self._conn.commit()
-            self._close()
-        except Exception as e:
-            raise Exception(e)
-        return count
+        return self._cursor.execute(sql, params)
