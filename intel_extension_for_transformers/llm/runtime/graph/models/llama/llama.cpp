@@ -168,6 +168,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     ne_set_name(Kcur, "Kcur");
     ne_set_name(Vcur, "Vcur");
     // self-attention
+    const float attn_scale = 1.0f / sqrtf(static_cast<float>(n_embd) / n_head);
     if (!run_mha_reordered || n_head != n_head_kv) {
       // store key and value to memory
       {
@@ -198,7 +199,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       ne_set_name(KQ, "KQ");
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scale = ne_new_f32(ctx0, 1.0f / sqrtf(float(n_embd) / n_head));
+      struct ne_tensor* KQ_scale = ne_new_f32(ctx0, attn_scale);
       ne_set_name(KQ_scale, "1/sqrt(n_embd/n_head)");
 
       // KQ_scaled shape [n_past + N, N, n_head, 1]
@@ -273,8 +274,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;           // us nb0 for layout
       ne_set_name(V, "V");
 
-      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head),
-                                                n_past == 0);  // no causal mask on next-token cases
+      ne_attn_flags_t attn_flags = 0;
+      if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
+      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
       struct ne_tensor* KQV_merged_contiguous =
           ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
       ne_set_name(KQV_merged_contiguous, "KQV_merged_contiguous");

@@ -53,7 +53,7 @@ typedef struct attn_bf16_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
+  ne_attn_flags_t attn_flags;
   int batch_size, head_num, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
@@ -71,7 +71,7 @@ typedef struct attn_fp32_fp16_fp16_fp32_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
+  ne_attn_flags_t attn_flags;
   int batch_size, head_num, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
@@ -90,7 +90,7 @@ typedef struct attn_fp16_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
+  ne_attn_flags_t attn_flags;
   int batch_size, head_num, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
@@ -106,7 +106,7 @@ typedef struct attn_int8_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
+  ne_attn_flags_t attn_flags;
   int batch_size, head_num, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
@@ -141,7 +141,7 @@ typedef struct jblas_reordered_attn_fp32_fp32_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
+  ne_attn_flags_t attn_flags;
   int batch_size, head_num, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;

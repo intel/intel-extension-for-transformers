@@ -3122,7 +3122,7 @@ struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, str
 // ne_flash_attn
 
 struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k, struct ne_tensor* v,
-                                float scale, bool masked) {
+                                float scale, ne_attn_flags_t flags) {
   NE_ASSERT(ne_can_mul_mat(k, q));
   int batch = q->ne[3];
   int headnum = q->ne[2];
@@ -3149,7 +3149,7 @@ struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, str
   result->opt[0] = v;
   result->opt[1] = tmp_t;
   *(float*)result->padding = scale;
-  *(bool*)&result->padding[sizeof(scale)] = masked;
+  *(ne_attn_flags_t*)&result->padding[sizeof(scale)] = flags;
   return result;
 }
 
@@ -8880,7 +8880,7 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
   int step_v_head_num = v->nb[2] / veles;
   int step_v_bs = k->nb[3] / veles;
   float scale = *(float*)dst->padding;
-  bool mask = *(bool*)&dst->padding[sizeof(scale)];
+  ne_attn_flags_t flags = *(bool*)&dst->padding[sizeof(scale)];
   attn_fp32_fp16_fp16_fp32_fwd_args_t args = {
       .Q = (float*)q->data,
       .K = (ne_fp16_t*)k->data,
@@ -8892,7 +8892,7 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
       .dst_sc = 1.f,
       .tmp = tmp->data,
       .QK_scale = scale,
-      .is_causal = mask,
+      .attn_flags = flags,
       .batch_size = batch,
       .head_num = headnum,
       .head_size = headsize,
@@ -8933,7 +8933,7 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
   // const int64_t seq_past = seq_all - seq_cur;
 
   float scale = *(float*)dst->padding;
-  bool mask = *(bool*)&dst->padding[sizeof(scale)];
+  ne_attn_flags_t flags = *(ne_attn_flags_t*)&dst->padding[sizeof(scale)];
 
   NE_ASSERT(k->type == NE_TYPE_JBLAS && v->type == NE_TYPE_JBLAS);
   ATTN_FWD_LAYOUT K_layout = *(ATTN_FWD_LAYOUT*)(&k->nb[0]);
@@ -8950,7 +8950,7 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
       .dst_sc = 1.f,
       .tmp = tmp->data,
       .QK_scale = scale,
-      .is_causal = mask,
+      .attn_flags = flags,
       .batch_size = batch,
       .head_num = headnum,
       .head_size = headsize,

@@ -57,7 +57,7 @@ struct attn_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
+  ne_attn_flags_t attn_flags;
   int batch_size, head_num, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
@@ -137,10 +137,12 @@ class ScaleExpAccSumFp32 {
     int ld_dst;  // #elements
     float scale;
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+    float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
 
   JBLAS_CODE forward(const float* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
+    assert(("alibi not supported!", p.alibi_slope == 0.f));
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_sum = p.dst_sum + M_offset;
 #if MHA_2ND_EXP && CompileBF16()
@@ -668,7 +670,10 @@ class MHAInterface {
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     const auto cb = CpuBase();
     omp_set_num_threads(cb.mNumThreads);
-    assert(!p.is_causal || p.sl_q <= p.sl_kv);
+    const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
+    const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+    assert(!is_causal || p.sl_q <= p.sl_kv);
+    assert(("alibi not supported!", !is_alibi));
     const auto sl_diff = p.sl_kv - p.sl_q;
 
     // prepare memory for packed weight
@@ -749,7 +754,7 @@ class MHAInterface {
           // ptr to Q / dst matrix of the current head
           const auto head_q = p.Q + ibs * p.step_q_bs + ihn * p.step_q_head_num;
           const auto head_dst = p.dst + ibs * p.step_dst_bs + ihn * p.step_dst_head_num;
-          const auto unmasked_size = p.is_causal ? std::min(p.sl_kv, p.sl_kv - p.sl_q + i_m + M_TILE - 1 + 1) : p.sl_kv;
+          const auto unmasked_size = is_causal ? std::min(p.sl_kv, p.sl_kv - p.sl_q + i_m + M_TILE - 1 + 1) : p.sl_kv;
 
           const auto unmasked_size_pad_qk = std::min(p.sl_kv, padto(unmasked_size, GemmQK::NTILE));
           const auto unmasked_size_pad_pv = std::min(p.sl_kv, padto(unmasked_size, GemmPV::KTILE));
@@ -778,7 +783,8 @@ class MHAInterface {
                       /* .dst_sum = */ exp_sum - i_m,              // pretend that there is a whole exp sum
                       /* .ld_dst = */ ld_tmp_exp,
                       /* .scale = */ p.QK_scale,
-                      /* .causal_offset = */ p.is_causal ? sl_diff : -1,
+                      /* .causal_offset = */ is_causal ? sl_diff : -1,
+                      /* .alibi_slope = */ 0.f,
                   },
                   /* .workspace = */ nullptr,
               });
@@ -848,10 +854,12 @@ class ScaleTrackMax<ISA_T, fp16, float> {
     int ld_dst;  // #elements
     float scale;
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+    float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
 
   JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
+    assert(("alibi not supported!", p.alibi_slope == 0.f));
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_max = p.dst_max + M_offset;
 #if CompileFP16()
@@ -916,13 +924,14 @@ class ScaleTrackMax<ISA_T, float, float> {
     int ld_dst;  // #elements
     float scale;
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+    float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
 
   JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_max = p.dst_max + M_offset;
-#if CompileFP16()
+#if CompileAVX512F()
 #if MHA_2ND_EXP
     const auto v_scale = _mm512_set1_ps(p.scale);
 
@@ -983,10 +992,12 @@ class ScaleTrackMax<ISA_T, int32_t, float> {
     int ld_dst;  // #elements
     float scale;
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+    float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
 
   JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
+    assert(("alibi not supported!", p.alibi_slope == 0.f));
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_max = p.dst_max + M_offset;
 #if CompileAVX512F()
@@ -1316,7 +1327,10 @@ class MHAStableInterface {
     assert((p.V_layout != ATTN_FWD_LAYOUT_PLAIN || p.step_k_sl == 1));
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     omp_set_num_threads(cb.mNumThreads);
-    assert(!p.is_causal || p.sl_q <= p.sl_kv);
+    const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
+    const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+    assert(!is_causal || p.sl_q <= p.sl_kv);
+    assert(("alibi not supported!", !is_alibi));
     const auto sl_diff = p.sl_kv - p.sl_q;
 
     Parallel2DRowMajor parl;  // main parallel scheme
@@ -1356,7 +1370,7 @@ class MHAStableInterface {
           const auto head_k = p.K + ibs * p.step_k_bs + ihn * p.step_k_head_num;
           const auto head_v = p.V + ibs * p.step_v_bs + ihn * p.step_v_head_num;
           const auto head_dst = p.dst + ibs * p.step_dst_bs + ihn * p.step_dst_head_num;
-          const auto unmasked_size = p.is_causal ? std::min(p.sl_kv, sl_diff + i_m + M_TILE - 1 + 1) : p.sl_kv;
+          const auto unmasked_size = is_causal ? std::min(p.sl_kv, sl_diff + i_m + M_TILE - 1 + 1) : p.sl_kv;
 
           const auto unmasked_size_pad_qk = std::min(p.sl_kv, padto(unmasked_size, GemmQK::NTILE));
           const auto unmasked_size_pad_pv = std::min(p.sl_kv, padto(unmasked_size, GemmPV::KTILE));
@@ -1399,18 +1413,19 @@ class MHAStableInterface {
                       /* .dst_sum = */ s_max - i_m,         // pretend that there is a whole S mat
                       /* .ld_dst = */ ld_tmp_s,
                       /* .scale = */ p.QK_scale * p.Q_sc * p.K_sc,
-                      /* .causal_offset = */ p.is_causal ? sl_diff : -1,
+                      /* .causal_offset = */ is_causal ? sl_diff : -1,
+                      /* .alibi_slope = */ 0.f,
                   },
                   /* .workspace = */ nullptr,
               });
 
           // softmax (with pre-computed row_max)
-          const auto unmasked_size_start = p.is_causal ? std::min(sl_diff + i_m + 1, p.sl_kv) : p.sl_kv;
+          const auto unmasked_size_start = is_causal ? std::min(sl_diff + i_m + 1, p.sl_kv) : p.sl_kv;
           float expsum[M_TILE]{};  // maximum for each row of the S matrix
           const auto softmax_npad_size = padto(unmasked_size_pad_pv, GemmPV::KTILE);
-          InplacePrecomputeMaxSoftmax<float, PType>::forward(                 //
-              m_size, unmasked_size_start, softmax_npad_size,                 // m / n
-              p.is_causal, tmp_s, tmp_p, s_max, expsum, ld_tmp_s, ld_tmp_p);  //
+          InplacePrecomputeMaxSoftmax<float, PType>::forward(               //
+              m_size, unmasked_size_start, softmax_npad_size,               // m / n
+              is_causal, tmp_s, tmp_p, s_max, expsum, ld_tmp_s, ld_tmp_p);  //
 
           const auto pv_scale = expsum;
           for (int i = 0; i < M_TILE; ++i) pv_scale[i] = p.V_sc / UINT8_MAX / expsum[i] / p.dst_sc;
@@ -1638,7 +1653,10 @@ void jblas_fusion_attn_forward<float, bf16, bf16, float>(const attn_fwd_args_t<f
 
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
 void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
-  assert(!p.is_causal || p.sl_q <= p.sl_kv);
+  const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
+  const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+  assert(!is_causal || p.sl_q <= p.sl_kv);
+  assert(("alibi not supported!", !is_alibi));
   attn_shape_t attn_shape{
       p.batch_size, p.head_num, p.head_size, p.sl_q, p.sl_kv,
   };
@@ -1677,7 +1695,7 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
         const auto v_curr = p.V + ibs * p.step_v_bs + ihn * p.step_v_head_num;
 
         const auto sl_diff = p.sl_kv - p.sl_q;
-        const auto unmasked = p.is_causal ? sl_diff + i + 1 : p.sl_kv;
+        const auto unmasked = is_causal ? sl_diff + i + 1 : p.sl_kv;
         const auto curr_row = std::unique_ptr<float[]>(new float[unmasked]);
 
         // Q x K
@@ -1822,7 +1840,7 @@ void jblas_reordered_attn_fp32_forward(const jblas_reordered_attn_fp32_fp32_fwd_
       /* .dst_sc = */ params->dst_sc,
       /* .tmp = */ params->tmp,
       /* .QK_scale = */ params->QK_scale,
-      /* .is_causal = */ params->is_causal,
+      /* .attn_flags = */ params->attn_flags,
       /* .batch_size = */ params->batch_size,
       /* .head_num = */ params->head_num,
       /* .head_size = */ params->head_size,
