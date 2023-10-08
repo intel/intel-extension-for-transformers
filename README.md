@@ -119,7 +119,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">LLM Runtime</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core">weight only core</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core">WeightOnlyQuant core</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">MODEL COMPRESSION</th>
@@ -143,7 +143,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
 
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">woq core</a></td>
-    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">TP</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">KERNEL LIBRARIES</th>
