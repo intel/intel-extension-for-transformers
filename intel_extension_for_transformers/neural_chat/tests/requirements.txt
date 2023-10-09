@@ -36,4 +36,4 @@ rouge_score
 openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
-lm_eval
+git+https://github.com/EleutherAI/lm-evaluation-harness.git@2c18e367c6ded428863cd1fd4cf9558ca49d68dc
