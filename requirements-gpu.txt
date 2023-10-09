@@ -1,0 +1,9 @@
+ninja
+cmake
+py-cpuinfo
+setuptools>=65
+setuptools_scm[toml]>=6.2
+ --extra-index-url https://download.pytorch.org/whl/cpu
+accelerate
+datasets
+texttable
