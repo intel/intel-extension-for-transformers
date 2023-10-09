@@ -524,16 +524,14 @@ class Finetuning:
 
         if finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model.eval()
-            from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
+            from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate, HFCausalLM
+            unwrapped_model = HFCausalLM(model=unwrapped_model, tokenizer=tokenizer)
             with training_args.main_process_first(desc="lm_eval"):
                 if is_main_process(training_args.local_rank):
                     with torch.no_grad():
                         results = evaluate(
-                                model="hf-causal",
-                                model_args='pretrained='+model_args.model_name_or_path+\
-                                        ',tokenizer='+model_args.model_name_or_path+',dtype=float16',
-                                user_model=unwrapped_model,
-                                device=unwrapped_model.device.type,
+                                model=unwrapped_model,
+                                device=unwrapped_model.model.device.type,
                                 batch_size=training_args.per_device_eval_batch_size,
                                 tasks=finetune_args.lm_eval_tasks,
                                 limit=data_args.max_eval_samples)
