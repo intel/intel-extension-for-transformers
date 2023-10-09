@@ -116,18 +116,50 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 </thead>
 <tbody>
   <tr>
-    <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">LLM Runtime</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core">WeightOnlyQuant OPs</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">LLM Runtime</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">MODEL COMPRESSION</th>
+    <th colspan="8" align="center">NeuralChat</th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="docs/smoothquant.md">SmoothQuant</a>/<a href="docs/weightonlyquant.md">WeightOnlyQuant</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/notebooks/deploy_chatbot_on_spr.ipynb">Chatbot on Intel CPU</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/notebooks/deploy_chatbot_on_xpu.ipynb">Chatbot on Intel GPU</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb">Chatbot on Gaudi</a></td>
+  </tr>
+  <tr>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/examples/talkingbot_pc/build_talkingbot_on_pc.ipynb">Chatbot on Client</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/full_notebooks.md">More</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">LLM Runtime</th>
+  </tr>
+ <tr>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Low Precision Kernels</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2"><a href="examples/huggingface/pytorch/language-modeling/nas/README.md">Neural Architecture Search</a></td>
+    <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
+    <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a>/<a href="docs/objectives.md">Objectives</a></td>
+    <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">HuggingFace Transformers Extension</th>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/TBD">SmoothQuant</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/TBD">Weight-only Quantization (INT4/FP4/NF4)</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/TBD">QLoRA on CPU</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">Model Compression</th>
+  <tr>
+  <tr>
+    <td colspan="2" align="center"><a href="docs/quantization.md">Quantization</a></td>
     <td colspan="2" align="center"><a href="docs/pruning.md">Pruning</a></td>
-    <td colspan="2" align="center" colspan="2"><a href="docs/distillation.md">Distillation</a></td>
+    <td colspan="2" align="center"><a href="docs/distillation.md">Distillation</a></td>
     <td align="center" colspan="2"><a href="examples/huggingface/pytorch/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
   </tr>
   <tr>
@@ -137,34 +169,18 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">LLM Runtime</th>
+    <td align="center" colspan="2"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
+    <td align="center" colspan="3"><a href="docs/examples.md#early-exit">Early Exit</a></td>
+    <td align="center" colspan="3"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
-    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">WeightOnlyQuant OPs</a></td>
-    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
-  </tr>
-  <tr>
-    <th colspan="8" align="center">KERNEL LIBRARIES</th>
-  </tr>
-    <td colspan="4" align="center"><a href="intel_extension_for_transformers/llm/library/jblas/README.md">Jblas(WIP)</a></td>
-    <td colspan="4" align="center"><a href="intel_extension_for_transformers/llm/library/kernels/README.md">Sparse GEMM Kernels</a></td>
-
-  <tr>
-    <th colspan="8" align="center">ALGORITHMS</th>
-  </tr>
-  <tr>
-    <td align="center" colspan="4"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
-    <td align="center" colspan="4"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
-  </tr>
-  <tr>
-    <th colspan="8" align="center">TUTORIALS AND RESULTS</a></th>
+    <th colspan="8" align="center">Tutorials & Results</a></th>
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="docs/tutorials/pytorch">Tutorials</a></td>
-    <td colspan="2" align="center"><a href="docs/examples.md">Supported Models</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph#supported-models">LLM List</a></td>
+    <td colspan="2" align="center"><a href="docs/examples.md">General Model List</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/validated_data.md">Kernel Performance</a></td>
   </tr>
 </tbody>
 </table>
