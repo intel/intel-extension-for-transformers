@@ -79,7 +79,7 @@ class Model {
 };
 
 void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
-                       int threads, float repeat_penalty, const std::string& post_process) {
+                       int threads, float repeat_penalty, const std::string& post_process, int num_beams, bool do_sample, int top_k, float top_p) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
@@ -91,6 +91,10 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
   params.seed = seed;
   params.n_threads = threads;
   params.repeat_penalty = repeat_penalty;
+  params.beam_size = num_beams;
+  params.do_sample = do_sample;
+  params.top_k = top_k;
+  params.top_p = top_p;
 
   n_past = 0;
   token_eos = false;
@@ -195,10 +199,131 @@ std::vector<int> Model::generate_tokens(const std::vector<int>& input_ids) {
   return output_ids;
 }
 
+int Model::post_greedy_search(float* logits) {
+  int id = std::max_element(logits, logits + n_vocab) - logits;
+  return id;
+}
+
+int Model::post_beam_search(float* logits) {
+  // TODO: to implement
+  fprintf(stderr, "beam search is not supported!\n");
+  return -1;
+}
+
+int Model::post_sample_top_k_top_p_repeat(float* logits) {
+  int n_logits = 50432;
+  std::mt19937 rng(1234);
+
+  const auto* plogits = logits;
+
+  const auto last_n_tokens = std::vector<int32_t>(last_n_tokens_data, last_n_tokens_data + last_n_tokens_data_size);
+
+  if (temp <= 0) {
+    // select the token with the highest logit directly
+    float max_logit = plogits[0];
+    gpt_vocab::id max_id = 0;
+
+    for (int i = 1; i < n_logits; ++i) {
+      if (plogits[i] > max_logit) {
+        max_logit = plogits[i];
+        max_id = i;
+      }
+    }
+    return max_id;
+  }
+
+  std::vector<std::pair<double, gpt_vocab::id>> logits_id;
+  logits_id.reserve(n_logits);
+
+  {
+    const float scale = 1.0f / temp;
+    for (int i = 0; i < n_logits; ++i) {
+      // repetition penalty from ctrl paper (https://arxiv.org/abs/1909.05858)
+      // credit https://github.com/facebookresearch/llama/compare/main...shawwn:llama:main
+      if (repeat_last_n > 0 &&
+          std::find(last_n_tokens.end() - repeat_last_n, last_n_tokens.end(), i) != last_n_tokens.end()) {
+        // if score < 0 then repetition penalty has to multiplied to reduce the previous token probability
+        if (plogits[i] < 0.0f) {
+          logits_id.push_back(std::make_pair(plogits[i] * scale * repeat_penalty, i));
+        } else {
+          logits_id.push_back(std::make_pair(plogits[i] * scale / repeat_penalty, i));
+        }
+      } else {
+        logits_id.push_back(std::make_pair(plogits[i] * scale, i));
+      }
+    }
+  }
+
+  // find the top K tokens
+  std::partial_sort(logits_id.begin(), logits_id.begin() + top_k, logits_id.end(),
+                    [](const std::pair<double, gpt_vocab::id>& a, const std::pair<double, gpt_vocab::id>& b) {
+                      return a.first > b.first;
+                    });
+
+  logits_id.resize(top_k);
+
+  double maxl = -INFINITY;
+  for (const auto& kv : logits_id) {
+    maxl = std::max(maxl, kv.first);
+  }
+
+  // compute probs for the top K tokens
+  std::vector<double> probs;
+  probs.reserve(logits_id.size());
+
+  double sum = 0.0;
+  for (const auto& kv : logits_id) {
+    double p = exp(kv.first - maxl);
+    probs.push_back(p);
+    sum += p;
+  }
+
+  // normalize the probs
+  for (auto& p : probs) {
+    p /= sum;
+  }
+
+  if (top_p < 1.0f) {
+    double cumsum = 0.0f;
+    for (int i = 0; i < top_k; i++) {
+      cumsum += probs[i];
+      if (cumsum >= top_p) {
+        top_k = i + 1;
+        probs.resize(top_k);
+        logits_id.resize(top_k);
+        break;
+      }
+    }
+
+    cumsum = 1.0 / cumsum;
+    for (int i = 0; i < (int)probs.size(); i++) {
+      probs[i] *= cumsum;
+    }
+  }
+
+  //    printf("\n");
+  //    for (int i = 0; i < (int) probs.size(); i++) {
+  //    for (int i = 0; i < 10; i++) {
+  //        printf("%d: '%s' %f\n", i, vocab.id_to_token.at(logits_id[i].second).c_str(), probs[i]);
+  //    }
+
+  std::discrete_distribution<> dist(probs.begin(), probs.end());
+  int idx = dist(rng);
+
+  return logits_id[idx].second;
+}
+
 int Model::post_process(float* logits) {
+  if (params.beam_size > 1) {
+    post_beam_search(logits);
+  } else if (params.do_sample) {
+    post_sample_top_k_top_p_repeat(logits);
+  } else {
+    post_greedy_search(logits);
+  }
   // int alpha_frequency = 0;
   // int alpha_presence = 0;
-  int repeat_last_n = 64;
+  // int repeat_last_n = 64;
   // int top_k = 40;
   // float tfs_z = 1.00f;
   // float typical_p = 1.00f;
@@ -228,9 +353,9 @@ int Model::post_process(float* logits) {
   // model_sample_temperature(ctx, &candidates_p, temp);
   // int id = model_sample_token(ctx, &candidates_p);
 
-  int id = gpt_sample_top_k_top_p_repeat(logits, last_n_tokens.data(), 
-              last_n_tokens.size(), 50432, 1.000, 0.800, repeat_last_n, 1.020);
-  return id;
+  // int id = gpt_sample_top_k_top_p_repeat(logits, last_n_tokens.data(), 
+  //             last_n_tokens.size(), 50432, 1.000, 0.800, repeat_last_n, 1.020);
+  // return id;
 }
 
 int Model::quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
