@@ -39,6 +39,7 @@ class WeightOnlyQuantConfig:
         group_size=32,
         scheme="sym",
         algorithm="RTN",
+        use_ggml=False,
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_2_str
@@ -57,6 +58,7 @@ class WeightOnlyQuantConfig:
         self.calib_dataset = kwargs.pop("calib_dataset", "NeelNanda/pile-10k")
         self.calib_dataloader = kwargs.pop("calib_dataloader", None)
         self.calib_iters = kwargs.pop("calib_iters", 100)
+        self.use_ggml = use_ggml
 
         if compute_dtype is None:
             self.compute_dtype = "fp32"
@@ -116,8 +118,8 @@ class WeightOnlyQuantConfig:
 
         if self.compute_dtype is None:
             self.compute_dtype = "int8"
-        elif self.compute_dtype not in ['int8', 'fp32']:
-            raise ValueError("compute_dtype must be 'int8', 'fp32'.")
+        elif self.compute_dtype not in ['int8', 'bf16', 'fp32']:
+            raise ValueError("compute_dtype must be 'int8', 'bf16', 'fp32'.")
 
         if self.weight_dtype is None:
             self.weight_dtype = "int4"
@@ -137,12 +139,8 @@ class WeightOnlyQuantConfig:
         r"""
         This method returns the quantization method used for the model.
         """
-        if self.weight_dtype == 8:
-            return "s8"
-        elif self.weight_dtype == 4 and self.weight_dtype == "s4fullrange":
-            return "s4fullrange"
-        else:
-            raise ValueError("Only support int8 and int4 quantization now!")
+        # TODO: For training only
+        pass
 
     @classmethod
     def from_dict(cls, config_dict, return_unused_kwargs, **kwargs):
@@ -198,8 +196,6 @@ class WeightOnlyQuantConfig:
         """
 
         output = copy.deepcopy(self.__dict__)
-        output["compute_dtype"] = str(output["compute_dtype"]).split(".")[1]
-
         return output
 
     def __repr__(self):

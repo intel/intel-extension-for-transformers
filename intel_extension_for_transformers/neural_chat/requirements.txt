@@ -1,7 +1,7 @@
 transformers>=4.32.0
 peft
 fschat
-torch
+torch==2.0.0
 torchaudio
 intel_extension_for_pytorch
 num2words
@@ -14,7 +14,7 @@ evaluate
 pydub
 python-multipart
 PyPDF2
-langchain
+langchain==0.0.304
 python-docx
 scikit-learn
 farm-haystack
@@ -38,4 +38,4 @@ numpy==1.23.5
 tiktoken==0.4.0
 lm_eval
 accelerate
-optimum.intel
+cchardet

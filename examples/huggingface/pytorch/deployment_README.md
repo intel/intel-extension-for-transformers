@@ -22,6 +22,7 @@ conda create -n <env name> python=3.7 absl-py -y
 
 ``` bash
 cd <intel_extension_for_transformers_folder>
+pip install -r requirements.txt
 pip install [-v|--verbose] [-e] .  # add -e for editable installation (i.e. setuptools “develop mode”)
 ```
 
