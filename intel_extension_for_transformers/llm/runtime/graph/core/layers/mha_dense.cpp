@@ -19,9 +19,11 @@
 #include <cassert>
 #include <cmath>
 #include <random>
+#include <vector>
 
 #ifdef NE_TESTS
 #include <memory>
+#include <tuple>
 
 #include "layers/ne_test_layers_utils.hpp"
 #endif
@@ -1335,7 +1337,8 @@ class MHAStableInterface {
     const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
     assert(!is_causal || p.sl_q <= p.sl_kv);
     assert(("alibi not supported!", !is_alibi));
-    assert(("GQA not supported!", p.head_num == p.heads_kv));
+    assert(("head_num must be a multiple of heads_kv!", p.head_num % p.heads_kv == 0));
+    const auto group_heads = p.head_num / p.heads_kv;
     const auto sl_diff = p.sl_kv - p.sl_q;
 
     Parallel2DRowMajor parl;  // main parallel scheme
@@ -1366,16 +1369,16 @@ class MHAStableInterface {
           const int i_m = task_id % m_tiles * M_TILE;
           const int ibs = ibat / p.head_num;
           const int ihn = ibat % p.head_num;
+          const int ihkv = ihn / group_heads;
           const int m_size = std::min(M_TILE, p.sl_q - i_m);
-          // TODO(Yi): heads_kv
 
           float s_max[M_TILE]{};  // maximum for each row of the S matrix
           std::fill_n(s_max, M_TILE, -INFINITY);
 
           // ptr to Q / dst matrix of the current head
           const auto head_q = p.Q + ibs * p.step_q_bs + ihn * p.step_q_head_num;
-          const auto head_k = p.K + ibs * p.step_k_bs + ihn * p.step_k_head_num;
-          const auto head_v = p.V + ibs * p.step_v_bs + ihn * p.step_v_head_num;
+          const auto head_k = p.K + ibs * p.step_k_bs + ihkv * p.step_k_head_num;
+          const auto head_v = p.V + ibs * p.step_v_bs + ihkv * p.step_v_head_num;
           const auto head_dst = p.dst + ibs * p.step_dst_bs + ihn * p.step_dst_head_num;
           const auto unmasked_size = is_causal ? std::min(p.sl_kv, sl_diff + i_m + M_TILE - 1 + 1) : p.sl_kv;
 
@@ -1413,7 +1416,7 @@ class MHAStableInterface {
                       /* .B = */ head_k,
                       /* .ldb = */ qk_prok_ldb,
                       /* .is_padded = */ true,
-                  },  // V should be pre-transposed
+                  },  // K should be pre-transposed
                   /* .paramC = */
                   QKEpiArgs{
                       /* .dst = */ tmp_s - i_m * ld_tmp_s,  // pretend that there is a whole S mat
@@ -1664,15 +1667,19 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
   const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
   assert(!is_causal || p.sl_q <= p.sl_kv);
   assert(("alibi not supported!", !is_alibi));
-  assert(("GQA not supported!", p.head_num == p.heads_kv));
+  assert(("head_num must be a multiple of heads_kv!", p.head_num % p.heads_kv == 0));
+  const auto group_heads = p.head_num / p.heads_kv;
   attn_shape_t attn_shape{
       p.batch_size, p.head_num, p.heads_kv, p.head_size, p.sl_q, p.sl_kv,
   };
   const auto workspace_size = jblas_fusion_attn_workspace_size(&attn_shape);
   static std::mt19937 rng;
   static std::uniform_int_distribution<> dist;
+#ifdef NE_TESTS
   init_vector(p.tmp, workspace_size, INT8_MIN - 1, INT8_MAX + 1, dist(rng));
+#else
   std::fill_n(p.tmp, workspace_size, 'f');
+#endif
   const bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
                             std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
                             (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1));
@@ -1696,13 +1703,12 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
   for (int ibs = 0; ibs < p.batch_size; ++ibs)
     for (int ihn = 0; ihn < p.head_num; ++ihn)
       for (int i = 0; i < p.sl_q; ++i) {
+        const auto ihkv = ihn / group_heads;
         const auto q_curr = p.Q + ibs * p.step_q_bs + ihn * p.step_q_head_num + i * p.step_q_sl;
         const auto dst_curr = p.dst + ibs * p.step_dst_bs + ihn * p.step_dst_head_num + i * p.step_dst_sl;
 
-        // TODO(Yi): heads_kv
-
-        const auto k_curr = p.K + ibs * p.step_k_bs + ihn * p.step_k_head_num;
-        const auto v_curr = p.V + ibs * p.step_v_bs + ihn * p.step_v_head_num;
+        const auto k_curr = p.K + ibs * p.step_k_bs + ihkv * p.step_k_head_num;
+        const auto v_curr = p.V + ibs * p.step_v_bs + ihkv * p.step_v_head_num;
 
         const auto sl_diff = p.sl_kv - p.sl_q;
         const auto unmasked = is_causal ? sl_diff + i + 1 : p.sl_kv;
@@ -2003,8 +2009,10 @@ class TestMhaDese {
     return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 32, 128, 64}, 64, false);
     return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 32, 64, 128}, 256, false);
     return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 80, 128, 77}, 256, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 1, 80, 128, 77}, 256, false);
     return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 256, 63, 63}, 256, false);
     return_success &= test_reorder_pipe<float, float, float, float>({3, 4, 4, 256, 1, 384}, 384, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({3, 4, 2, 256, 1, 384}, 384, false);
     return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 64, 64, 64}, 128, true);
     printf("Test suit done: %s\n", __FUNCTION__);
   }
@@ -2168,7 +2176,7 @@ class TestMhaDese {
     const auto head_size = s.head_size;
     const auto sl_q = s.sl_q;
     const auto sl_kv = s.sl_kv;
-    assert(("GQA not supported!", s.head_num == s.heads_kv));
+    assert(("head_num must be a multiple of heads_kv!", head_num % heads_kv == 0));
 
     printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
     printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,

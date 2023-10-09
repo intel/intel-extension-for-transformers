@@ -27,7 +27,9 @@ typedef struct attn_shape_t {
 size_t jblas_fusion_attn_workspace_size(const attn_shape_t* params);
 
 typedef struct kv_shape_t {
-  uint32_t heads_kv, head_size, sl_kv_max;
+  uint32_t heads_kv;   // number of heads in K/V matrix
+  uint32_t head_size;  // channel dimension of each head
+  uint32_t sl_kv_max;  // maximum length of sequence (affect internal step size)
 } kv_shape_t;
 
 typedef enum ATTN_FWD_LAYOUT {

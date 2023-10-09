@@ -8946,8 +8946,9 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
   const int64_t headnum = q->ne[2];
   const int64_t heads_kv = k->ne[2];
   const int64_t batch = q->ne[3];
-  const int64_t embedsize = headnum * headsize;
   const int64_t seq_all = k->ne[1];
+  const int64_t q_ele_size = ne_element_size(q);
+  const int64_t dst_ele_size = ne_element_size(dst);
   // const int64_t seq_past = seq_all - seq_cur;
 
   float scale = *(float*)dst->padding;
@@ -8979,9 +8980,9 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
       .K_layout = K_layout,
       .V_layout = V_layout,
       .dst_layout = ATTN_FWD_LAYOUT_PLAIN,
-      .step_q_bs = seq_cur * embedsize,
-      .step_q_head_num = headsize,
-      .step_q_sl = embedsize,
+      .step_q_bs = q->nb[3] / q_ele_size,
+      .step_q_head_num = q->nb[2] / q_ele_size,
+      .step_q_sl = q->nb[1] / q_ele_size,
 
       .stride_k_bs = k->nb[3],
       .stride_k_head_num = k->nb[2],
@@ -8993,9 +8994,10 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
       .stride_v_sl = 0,
       .stride_v_head_size = v->nb[1],
 
-      .step_dst_bs = seq_cur * embedsize,
-      .step_dst_head_num = headsize,
-      .step_dst_sl = embedsize,
+      // dst in (head_size, n_head, seq, bs)
+      .step_dst_bs = dst->nb[3] / dst_ele_size,
+      .step_dst_head_num = dst->nb[1] / dst_ele_size,
+      .step_dst_sl = dst->nb[2] / dst_ele_size,
   };
   jblas_reordered_attn_fp32_forward(&args);
 }
