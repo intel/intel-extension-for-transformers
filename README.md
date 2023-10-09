@@ -129,7 +129,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
   </tr>
   <tr>
     <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/examples/talkingbot_pc/build_talkingbot_on_pc.ipynb">Chatbot on Client</a></td>
-    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/full_notebooks.md">More</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/full_notebooks.md">More Notebooks</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">LLM Runtime</th>
@@ -138,12 +138,6 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Low Precision Kernels</a></td>
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
-  </tr>
-  <tr>
-    <td align="center" colspan="2"><a href="examples/huggingface/pytorch/language-modeling/nas/README.md">Neural Architecture Search</a></td>
-    <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
-    <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a>/<a href="docs/objectives.md">Objectives</a></td>
-    <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
   </tr>
   <tr>
     <th colspan="8" align="center">HuggingFace Transformers Extension</th>
