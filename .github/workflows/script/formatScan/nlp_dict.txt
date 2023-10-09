@@ -2340,5 +2340,14 @@ Niroop
 QLoRA
 Samanway
 Sangjune
-SmoothQuant
 Xigui
+NeelNanda
+SPIQ
+SmoothQuantConfig
+TSModelForCausalLM
+cdot
+dequantization
+dequantized
+dq
+frac
+zp

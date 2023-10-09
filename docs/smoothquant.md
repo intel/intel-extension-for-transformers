@@ -291,7 +291,7 @@ In our experiments, an $\alpha$ range of [0.3, 0.7] with a step_size of 0.05 is 
 ## Example
 We have extended the `from_pretrained` function so that `quantization_config` can accept [`SmoothQuantConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L251), We provide built-in calibration function with calibration dataset `NeelNanda/pile-10k` and calib_iters `100`, if you would like to use built-in calibration function, tokenizer is necessary, if you would like to use customer calibration function, please provide calibration function to parameter `calib_func` directly.
 
-Let us define the sq_config with `SmoothQuantConfig` first, SmoothQuantConfig provides many parameters, please see defination.
+Let us define the sq_config with `SmoothQuantConfig` first, SmoothQuantConfig provides many parameters, please see definition.
 ```bash
 from intel_extension_for_transformers.transformers import SmoothQuantConfig, AutoTokenizer
 model_name_or_path = "Intel/neural-chat-7b-v1-1"
