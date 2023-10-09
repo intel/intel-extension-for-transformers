@@ -159,13 +159,14 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
   <tr>
     <td align="center" colspan="2"><a href="examples/huggingface/pytorch/language-modeling/nas/README.md">Neural Architecture Search</a></td>
     <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
-    <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a>/<a href="docs/objectives.md">Objectives</a></td>
-    <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
+    <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a></td>
+    <td align="center" colspan="2"><a href="docs/objectives.md">Objectives</a></td>
   </tr>
   <tr>
+    <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
     <td align="center" colspan="2"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
-    <td align="center" colspan="3"><a href="docs/examples.md#early-exit">Early Exit</a></td>
-    <td align="center" colspan="3"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
+    <td align="center" colspan="2"><a href="docs/examples.md#early-exit">Early Exit</a></td>
+    <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
   </tr>
   <tr>
     <th colspan="8" align="center">TUTORIALS & RESULTS</a></th>
