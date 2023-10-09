@@ -4,7 +4,7 @@ These documents provide a detailed description of the functionalities of Intel E
 
 You can fine install guidelines in [installation.md](installation.md).
 
-# Docs of optimizaton and inference
+# Docs of optimization and inference
 
 Optimization docs: [quantization.md](quantization.md), [pruning.md](pruning.md), [autodistillation.md](autodistillation.md), [distillation.md](distillation.md), 
 

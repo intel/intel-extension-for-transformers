@@ -133,7 +133,7 @@ python3 run_generation.py \
     --temperature 0.2
 
 ```
->Note: "mbpp" is Python programming datasets, please change the calibration dataset to get better results if you want to evaluate on other programing tasks (eg, multiple-lua).
+>Note: "mbpp" is Python programming datasets, please change the calibration dataset to get better results if you want to evaluate on other programming tasks (eg, multiple-lua).
 
 To run the container (here from image `evaluation-harness-multiple`) to quantize and evaluate on `CURDIR`, or another file mount it with -v, specify n_samples and allow code execution with --allow_code_execution (and add the number of problems --limit if it was used during generation):
 ```bash
