@@ -120,7 +120,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td colspan="4" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">LLM Runtime</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">NeuralChat</th>
+    <th colspan="8" align="center">NEURALCHAT</th>
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/notebooks/deploy_chatbot_on_spr.ipynb">Chatbot on Intel CPU</a></td>
@@ -132,7 +132,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/full_notebooks.md">More Notebooks</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">LLM Runtime</th>
+    <th colspan="8" align="center">LLM RUNTIME</th>
   </tr>
  <tr>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
@@ -140,7 +140,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">LLM Compression</th>
+    <th colspan="8" align="center">LLM COMPRESSION</th>
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/TBD">SmoothQuant</a></td>
@@ -148,7 +148,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/TBD">QLoRA on CPU</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">Model Compression</th>
+    <th colspan="8" align="center">GENERAL COMPRESSION</th>
   <tr>
   <tr>
     <td colspan="2" align="center"><a href="docs/quantization.md">Quantization</a></td>
@@ -168,7 +168,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <td align="center" colspan="3"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
   </tr>
   <tr>
-    <th colspan="8" align="center">Tutorials & Results</a></th>
+    <th colspan="8" align="center">TUTORIALS & RESULTS</a></th>
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="docs/tutorials/pytorch">Tutorials</a></td>
