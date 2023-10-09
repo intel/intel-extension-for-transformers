@@ -131,7 +131,7 @@ std::vector<int> Model::generate(const std::vector<int>& input_ids) {
 
     // insert n_left/2 tokens at the start of embd from last_n_tokens
     curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - curr_input_ids.size(),
-                last_n_tokens.end() - curr_input_ids.size());
+                          last_n_tokens.end() - curr_input_ids.size());
   }
   model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
   n_past += curr_input_ids.size();
@@ -177,7 +177,7 @@ std::vector<int> Model::generate_tokens(const std::vector<int>& input_ids) {
 
       // insert n_left/2 tokens at the start of embd from last_n_tokens
       curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - curr_input_ids.size(),
-                  last_n_tokens.end() - curr_input_ids.size());
+                            last_n_tokens.end() - curr_input_ids.size());
     }
     model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
     n_past += curr_input_ids.size();
