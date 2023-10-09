@@ -1,7 +1,7 @@
 transformers>=4.32.0
 peft
 fschat
-torch
+torch==2.0.0
 torchaudio
 intel_extension_for_pytorch
 num2words
