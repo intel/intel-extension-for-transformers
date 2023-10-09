@@ -12,7 +12,7 @@ Intel® Extension for Transformers
 
 ## 🚀Latest News
 * <b>NeuralChat has been showcased in [Intel Innovation’23 Keynote](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) and [Google Cloud Next'23](https://cloud.google.com/blog/topics/google-cloud-next/welcome-to-google-cloud-next-23) to demonstrate GenAI/LLM capabilities on Intel Xeon Scalable Processors.</b>
-* <b>NeuralChat supports custom chatbot development and deployment on broad Intel HWs such as Xeon Scalable Processors, Gaudi2, Xeon CPU Max Series, Data Center GPU Max Series, Arc Series, and Core Processors. Check out [Notebooks](./intel_extension_for_transformers/neural_chat/docs/full_notebooks.md) and below sample code. </b>
+* <b>NeuralChat supports custom chatbot development and deployment on broad Intel HWs such as Xeon Scalable Processors, Gaudi2, Xeon CPU Max Series, Data Center GPU Max Series, Arc Series, and Core Processors. Check out [Notebooks](./intel_extension_for_transformers/neural_chat/docs/full_notebooks.md) and see below sample code. </b>
 
 ```python
 # pip install intel-extension-for-transformers
@@ -68,7 +68,7 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
 gen_tokens = model.generate(inputs, max_new_tokens=300)
-gen_text = tokenizer.batch_decode(gen_tokens)
+outputs = tokenizer.batch_decode(gen_tokens)
 ```
 
 ### INT8 Inference
@@ -85,14 +85,14 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=config)
 gen_tokens = model.generate(inputs, max_new_tokens=300)
-gen_text = tokenizer.batch_decode(gen_tokens)
+outputs = tokenizer.batch_decode(gen_tokens)
 ```
 
 ## 🎯Validated  Models
 Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
 The next token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
 
-| Model |  FP32         | INT4 (Group size 32) | INT4 (Group size 128) | Next Token Latency   | 
+| Model |  FP32         | INT4 Accuracy (Group size 32) | INT4 Accuracy (Group size 128) | Next Token Latency   | 
 |---------------------|:----------------------:|:-----------------------:|:----------------------------:|:------------:| 
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 0.643 | 0.644 | 0.64 | 21.98ms|
 | [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 0.69 | 0.69 | 0.685 | 24.55ms|
@@ -173,7 +173,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 
 
 ## 📃Selected Publications/Events
-
+* Blog published on Medium: [NeuralChat: Simplifying Supervised Instruction Fine-tuning and Reinforcement Aligning for Chatbots](https://medium.com/@NeuralCompressor/neuralchat-simplifying-supervised-instruction-fine-tuning-and-reinforcement-aligning-for-chatbots-d034bca44f69) (Sep 2023)
 * Intel Innovation'23 Keynote: [Intel Innovation 2023 Keynote by Greg Lavender](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) (Sep 2023)
 * Blog on Intel Community: [NeuralChat: A Customizable Chatbot Framework](https://community.intel.com/t5/Blogs/Tech-Innovation/Artificial-Intelligence-AI/NeuralChat-A-Customizable-Chatbot-Framework/post/1526789) (Sep 2023)
 * Blog published on Medium: [NeuralChat: A Customizable Chatbot Framework](https://medium.com/intel-analytics-software/make-your-own-chatbot-within-a-few-minutes-with-neuralchat-a-customizable-chatbot-framework-139b4bdec8d1) (Sep 2023)
