@@ -15,5 +15,6 @@
 set(TARGET gptj)
 add_library_w_warning(${TARGET} gptj.cpp gptj_utils.cpp ${MODEL_UTILS_SOURCE})
 target_compile_features(${TARGET} PUBLIC cxx_std_11) # don't bump
+target_compile_definitions(gptj PUBLIC -DMODEL_NAME="gptj")
 set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(${TARGET} PUBLIC ne_layers ${LLAMA_EXTRA_LIBS} jblas::jblas)

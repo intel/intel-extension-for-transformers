@@ -196,6 +196,8 @@ struct model_load_tensors_map {
   std::unordered_map<std::string, size_t> name_to_idx;
 };
 
+void read_gptj_hparams(model_file* file, model_hparams* hparams);
+
 struct model_file_loader {
   model_file file;
   model_file_version file_version;
@@ -245,29 +247,38 @@ struct model_file_loader {
     throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
   }
   void read_hparams() {
-    hparams.with_vocab = bool(file.read_u32());
-    hparams.n_vocab = file.read_u32();
-    hparams.n_embd = file.read_u32();
-    hparams.n_mult = file.read_u32();
-    hparams.n_head = file.read_u32();
-    hparams.n_head_kv = file.read_u32();
-    hparams.n_layer = file.read_u32();
-    hparams.n_rot = file.read_u32();
-    hparams.ftype = (enum ne_ftype)file.read_u32();
-    hparams.max_seq_len = file.read_u32();
-    file.read_raw(&hparams.alibi_bias_max, sizeof(float));
-    file.read_raw(&hparams.clip_qkv, sizeof(float));
-    hparams.par_res = file.read_u32();
+    std::string model_name;
+#ifdef MODEL_NAME
+    model_name = MODEL_NAME;
+#endif
+    fprintf(stderr, "model_name:%s\n", model_name.c_str());
+    if (model_name == "gptj") {
+      read_gptj_hparams(&file, &hparams);
+    }
+    // fprintf(stderr, "model_name:%s\n", model_name.c_str());// << std::endl;
+    // hparams.with_vocab = bool(file.read_u32());
+    // hparams.n_vocab = file.read_u32();
+    // hparams.n_embd = file.read_u32();
+    // hparams.n_mult = file.read_u32();
+    // hparams.n_head = file.read_u32();
+    // hparams.n_head_kv = file.read_u32();
+    // hparams.n_layer = file.read_u32();
+    // hparams.n_rot = file.read_u32();
+    // hparams.ftype = (enum ne_ftype)file.read_u32();
+    // hparams.max_seq_len = file.read_u32();
+    // file.read_raw(&hparams.alibi_bias_max, sizeof(float));
+    // file.read_raw(&hparams.clip_qkv, sizeof(float));
+    // hparams.par_res = file.read_u32();
 
-    hparams.word_embed_proj_dim = file.read_u32();
-    hparams.do_layer_norm_before = bool(file.read_u32());
+    // hparams.word_embed_proj_dim = file.read_u32();
+    // hparams.do_layer_norm_before = bool(file.read_u32());
 
-    // For ChatGLM-2
-    hparams.multi_query_group_num = file.read_u32();
-    hparams.ffn_hidden_size = file.read_u32();
+    // // For ChatGLM-2
+    // hparams.multi_query_group_num = file.read_u32();
+    // hparams.ffn_hidden_size = file.read_u32();
 
-    // For ChatGLM-2
-    hparams.inner_hidden_size = file.read_u32();
+    // // For ChatGLM-2
+    // hparams.inner_hidden_size = file.read_u32();
 
     vocab.id_to_token.resize(hparams.n_vocab);
   }
@@ -303,7 +314,6 @@ struct model_file_loader {
       shard.ne.resize(n_dims);
       file.read_raw(shard.ne.data(), sizeof(shard.ne[0]) * n_dims);
       std::string name = file.read_string(name_len);
-      printf("tensor name: %s\n", name.c_str());
       if (n_dims < 1 || n_dims > 2) {
         throw format("model.cpp: tensor '%s' should not be %u-dimensional", name.c_str(), n_dims);
       }

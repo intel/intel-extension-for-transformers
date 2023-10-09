@@ -188,27 +188,14 @@ class ConvertGPTJ(ConvertModel):
 
     def write_params(self):
         self.fout.write(struct.pack("i", self.with_vocab))
-        values = [
-            self.hparams["vocab_size"],
-            self.hparams["n_embd"],
-            self.hparams["n_embd"] // self.hparams["n_head"],
-            self.hparams["n_head"],
-            self.hparams.get("n_head_kv", 0),  # multi-query attention
-            self.hparams["n_layer"],
-            self.hparams["rotary_dim"],
-            self.ftype
-        ]
-        self.fout.write(struct.pack("i" * len(values), *values))
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("f", 0))
-        self.fout.write(struct.pack("f", 0))
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))  # word_embed_proj_dim (for opt)
-        self.fout.write(struct.pack("i", 0))  # do_layer_norm_before (for opt)
 
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
-        self.fout.write(struct.pack("i", 0))
+        self.fout.write(struct.pack("i", self.hparams["vocab_size"]))
+        self.fout.write(struct.pack("i", self.hparams["n_positions"]))
+        self.fout.write(struct.pack("i", self.hparams["n_embd"]))
+        self.fout.write(struct.pack("i", self.hparams["n_head"]))
+        self.fout.write(struct.pack("i", self.hparams["n_layer"]))
+        self.fout.write(struct.pack("i", self.hparams["rotary_dim"]))
+        self.fout.write(struct.pack("i", self.ftype))
 
     def write_vocab(self):
         self.fout.write(struct.pack("i", int(-1 if (self.hparams.get("bos_token_id", -1)) is None else (self.hparams.get("bos_token_id", -1)))))

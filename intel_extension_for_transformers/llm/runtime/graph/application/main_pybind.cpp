@@ -127,10 +127,10 @@ std::vector<int> Model::generate(const std::vector<int>& input_ids) {
     token_eos = true;
   }
 
-  auto next_token = model_token_to_str(ctx, next_token_id);
-  if (strcmp(next_token, "<|endoftext|>") == 0) {
-    token_eos = true;
-  }
+  // auto next_token = model_token_to_str(ctx, next_token_id);
+  // if (strcmp(next_token, "<|endoftext|>") == 0) {
+  //   token_eos = true;
+  // }
 
   return {next_token_id};
 }
@@ -165,37 +165,7 @@ std::vector<int> Model::generate_tokens(const std::vector<int>& input_ids) {
 }
 
 int Model::post_process(float* logits) {
-  int alpha_frequency = 0;
-  int alpha_presence = 0;
-  int repeat_last_n = 64;
-  int top_k = 40;
-  float tfs_z = 1.00f;
-  float typical_p = 1.00f;
-  float top_p = 0.95f;
-  float temp = 0.80f;
-  std::vector<model_token_data> candidates;
-  candidates.reserve(n_vocab);
-  for (model_token token_id = 0; token_id < n_vocab; token_id++) {
-    candidates.emplace_back(model_token_data{token_id, logits[token_id], 0.0f});
-  }
-  model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
-
-  // Apply penalties
-  float nl_logit = logits[model_token_nl()];
-  auto last_n_repeat = std::min(std::min((int)last_n_tokens.size(), repeat_last_n), n_ctx);
-  model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-                                  last_n_repeat, params.repeat_penalty);
-  model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
-                                                last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-                                                last_n_repeat, alpha_frequency, alpha_presence);
-  // int id = model_sample_token_greedy(ctx, &candidates_p);
-  // Temperature sampling
-  model_sample_top_k(ctx, &candidates_p, top_k, 1);
-  model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
-  model_sample_typical(ctx, &candidates_p, typical_p, 1);
-  model_sample_top_p(ctx, &candidates_p, top_p, 1);
-  model_sample_temperature(ctx, &candidates_p, temp);
-  int id = model_sample_token(ctx, &candidates_p);
+  int id = std::max_element(logits, logits + n_vocab) - logits;
   return id;
 }
 

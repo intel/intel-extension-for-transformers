@@ -18,7 +18,7 @@
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "/mnt/disk1/data2/zhenweil/models/mpt/mpt-7b"  # or local path to model
+model_name = "/mnt/disk1/data2/zhenweil/models/gpt_j/gpt-j-6B"  # or local path to model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, a little girl"
 
@@ -28,6 +28,6 @@ streamer = TextStreamer(tokenizer)
 
 from intel_extension_for_transformers.llm.runtime.graph import Model
 model = Model()
-model.init_from_bin("mpt", "ne-mpt-q4_0.bin", max_new_tokens=300, seed=12)
+model.init_from_bin("gptj", "gptj_f32_wo_vocab.bin", max_new_tokens=300, seed=12)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 

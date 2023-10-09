@@ -2507,3 +2507,14 @@ std::vector<model_token> beam_search(model_context* lctx, const int& n_predict, 
   beam_search_flow bsf(lctx);
   return bsf.loop(tokens_inp, n_tokens, n_threads);
 }
+
+void read_gptj_hparams(model_file* file, model_hparams* hparams) {
+  hparams->with_vocab = bool(file->read_u32());
+  hparams->n_vocab = file->read_u32();
+  hparams->n_mult = file->read_u32();
+  hparams->n_embd = file->read_u32();
+  hparams->n_head = file->read_u32();
+  hparams->n_layer = file->read_u32();
+  hparams->n_rot = file->read_u32();
+  hparams->ftype = (enum ne_ftype)file->read_u32();
+}
