@@ -91,8 +91,24 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--keep",
         type=int,
-        help="number of tokens to keep from the initial prompt (default: 0, -1 = all)  ",
+        help="number of tokens to keep from the initial prompt (default: 0, -1 = all)",
         default=0,
+    )
+    parser.add_argument(
+        "--memory-f32",
+        action="store_true",
+        help="Use fp32 for the data type of kv memory",
+    )
+    parser.add_argument(
+        "--memory-f16",
+        action="store_true",
+        help="Use fp16 for the data type of kv memory",
+    )
+    parser.add_argument(
+        "--memory-auto",
+        action="store_true",
+        help="Try with jblas flash attn managed format for kv memory (Currently GCC13 & AMX required); "
+        "fall back to fp16 if failed (default option for kv-memory)",
     )
 
     args = parser.parse_args(args_in)
@@ -113,8 +129,15 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--seed",           str(args.seed)])
     cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])
     cmd.extend(["--keep",           str(args.keep)])
-    # if args.color:
-    #     cmd.append(" --color")
+    if args.color:
+        cmd.append(" --color")
+    if args.memory_f32:
+        cmd.extend(["--memory-f32"])
+    if args.memory_f16:
+        cmd.extend(["--memory-f16"])
+    if args.memory_auto:
+        cmd.extend(["--memory-auto"])
+
 
     if (args.model_name == "chatglm"):
         tokenizer = AutoTokenizer.from_pretrained(args.glm_tokenizer, trust_remote_code=True)
@@ -123,7 +146,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         token_ids_str = ', '.join(token_ids_list)
         print(token_ids_str)
         cmd.extend(["--ids", token_ids_str])
-        
+
     print("cmd:", cmd)
     subprocess.run(cmd)
 
