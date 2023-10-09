@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+gf44719d documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g05b7f90 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -114,7 +114,8 @@
 |<a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">MPT-7B</a>, <a class="reference external" href="https://huggingface.co/mosaicml/mpt-30b">MPT-30B</a>| ✅ | ✅ |
 |<a class="reference external" href="https://huggingface.co/tiiuae/falcon-7b">Falcon-7B</a>, <a class="reference external" href="https://huggingface.co/tiiuae/falcon-40b">Falcon-40B</a>| ✅ | ✅ |
 |<a class="reference external" href="https://huggingface.co/bigscience/bloomz-7b1">BLOOM-7B</a>| ✅ | ✅ |
-|<a class="reference external" href="https://huggingface.co/facebook/opt-125m">OPT-125m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-350m">OPT-350m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-1.3b">OPT-1.3B</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-13b">OPT-13B</a>| ✅ | ✅ |<br />|<a class="reference external" href="https://huggingface.co/THUDM/chatglm-6b">ChatGLM-6B</a>, <a class="reference external" href="https://huggingface.co/THUDM/chatglm2-6b">ChatGLM2-6B</a>| ✅ | ✅ |</p>
+|<a class="reference external" href="https://huggingface.co/facebook/opt-125m">OPT-125m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-350m">OPT-350m</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-1.3b">OPT-1.3B</a>, <a class="reference external" href="https://huggingface.co/facebook/opt-13b">OPT-13B</a>| ✅ | ✅ |
+|<a class="reference external" href="https://huggingface.co/THUDM/chatglm-6b">ChatGLM-6B</a>, <a class="reference external" href="https://huggingface.co/THUDM/chatglm2-6b">ChatGLM2-6B</a>| ✅ | ✅ |</p>
 </section>
 <section id="code-generation">
 <h3>Code Generation<a class="headerlink" href="#code-generation" title="Link to this heading"></a></h3>
@@ -262,7 +263,8 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 | –repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
 | –color           | colorise output to distinguish prompt and user input from generations   |
 | –keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
-| –glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |</p>
+| –glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
+| –memory-f32 <br> –memory-f16 <br> –memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 &amp; AMX) and fall back to fp16 if failed |</p>
 </section>
 <section id="tensor-parallelism-cross-nodes-sockets">
 <h3>3. Tensor Parallelism cross nodes/sockets<a class="headerlink" href="#tensor-parallelism-cross-nodes-sockets" title="Link to this heading"></a></h3>
@@ -285,7 +287,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f0da3961ae0> 
+   <jinja2.runtime.BlockReference object at 0x7fdd008fcdc0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
