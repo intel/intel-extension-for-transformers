@@ -115,7 +115,7 @@ neuralchat finetune --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeli
 # Python code
 from intel_extension_for_transformers.neural_chat import finetune_model, TextGenerationFinetuningConfig
 finetune_cfg = TextGenerationFinetuningConfig() # support other finetuning config
-finetuned_model = finetune_model(finetune_cfg)
+finetune_model(finetune_cfg)
 ```
 
 ### Optimization
