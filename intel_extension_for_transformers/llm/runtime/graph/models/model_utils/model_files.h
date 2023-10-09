@@ -206,7 +206,8 @@ struct model_file_loader {
     fprintf(stderr, "model.cpp: loading model from %s\n", fname);
     read_magic();
     read_hparams();
-    // read_vocab();
+    if (hparams.with_vocab)
+      read_vocab();
     read_tensor_metadata(file_idx, tensors_map);
   }
   void read_magic() {
@@ -244,6 +245,7 @@ struct model_file_loader {
     throw format("unknown (magic, version) combination: %08x, %08x; is this really a NE file?", magic, version);
   }
   void read_hparams() {
+    hparams.with_vocab = bool(file.read_u32());
     hparams.n_vocab = file.read_u32();
     hparams.n_embd = file.read_u32();
     hparams.n_mult = file.read_u32();
@@ -353,19 +355,22 @@ struct model_file_loader {
 struct model_file_saver {
   model_file file;
   model_file_loader* any_file_loader;
+  model_hparams hparams;
   model_file_saver(const char* fname, model_file_loader* any_file_loader, enum ne_ftype new_ftype)
       : file(fname, "wb"), any_file_loader(any_file_loader) {
     fprintf(stderr, "model.cpp: saving model to %s\n", fname);
+    hparams = any_file_loader->hparams;
     write_magic();
     write_hparams(new_ftype);
-    // write_vocab();
+    if (hparams.with_vocab)
+      write_vocab();
   }
   void write_magic() {
     file.write_u32(MODEL_FILE_MAGIC);    // magic
     file.write_u32(MODEL_FILE_VERSION);  // version
   }
   void write_hparams(enum ne_ftype new_ftype) {
-    const model_hparams& hparams = any_file_loader->hparams;
+    file.write_u32(static_cast<int>(hparams.with_vocab));
     file.write_u32(hparams.n_vocab);
     file.write_u32(hparams.n_embd);
     file.write_u32(hparams.n_mult);

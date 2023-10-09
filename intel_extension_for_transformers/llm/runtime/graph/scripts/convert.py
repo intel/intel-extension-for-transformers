@@ -96,6 +96,7 @@ class ConvertMPT(ConvertModel):
         super().__init__(out_file, dir_model, with_vocab)
 
     def write_params(self):
+        self.fout.write(struct.pack("i", self.with_vocab))
         self.fout.write(struct.pack("i", self.hparams["vocab_size"]))
         self.fout.write(struct.pack("i", self.hparams["d_model"]))
         self.fout.write(struct.pack("i", self.hparams["d_model"]))

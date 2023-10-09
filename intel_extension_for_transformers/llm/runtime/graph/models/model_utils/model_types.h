@@ -118,6 +118,7 @@ struct model_hparams {
   uint32_t n_layer = 32;
   uint32_t n_rot = 64;
   enum ne_ftype ftype = NE_FTYPE_MOSTLY_F16;
+  bool with_vocab = true;
   int32_t max_seq_len = 0;            // for mpt
   float alibi_bias_max = 0;           // for mpt
   float clip_qkv = 0;                 // for mpt
