@@ -2,7 +2,9 @@
 source /intel-extension-for-transformers/.github/workflows/script/change_color.sh
 
 cd /intel-extension-for-transformers
-export CMAKE_ARGS="-DNE_DNNL_CACHE_DIR=/cache"
+if [[ -d /cache ]]; then
+    export CMAKE_ARGS="-DNE_DNNL_CACHE_DIR=/cache"
+fi
 $BOLD_YELLOW && echo "---------------- git submodule update --init --recursive -------------" && $RESET
 git config --global --add safe.directory "*"
 git submodule update --init --recursive

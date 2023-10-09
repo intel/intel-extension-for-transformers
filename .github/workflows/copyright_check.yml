@@ -20,7 +20,7 @@ env:
 
 jobs:
   format-scan:
-    runs-on: itrex-node-spell
+    runs-on: intel-ubuntu-latest
     strategy:
       matrix:
         job_name: ["copyright"]

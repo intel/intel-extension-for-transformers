@@ -127,7 +127,7 @@ jobs:
            
            
   Generate-Report:
-    runs-on: itrex-node-spell
+    runs-on: intel-ubuntu-latest
     needs: [unit-test]
     steps:
       - name: Checkout out Repo

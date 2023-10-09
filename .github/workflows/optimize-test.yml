@@ -156,7 +156,7 @@ jobs:
           retention-days: 60 # 1 <= retention-days <= 90
     
   Genreate-Report:
-    runs-on: itrex-node-spell
+    runs-on: intel-ubuntu-latest
     needs: [Optimize-Workflow]
     steps:
       - name: Docker Clean Up

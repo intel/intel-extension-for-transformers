@@ -20,7 +20,7 @@ env:
     EXTRA_CONTAINER_NAME2: "utTest"
 jobs:
   format-scan:
-    runs-on: itrex-node-spell
+    runs-on: intel-ubuntu-latest
     steps:
       - name: Docker Clean Up
         run: |
