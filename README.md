@@ -143,8 +143,8 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
     <th colspan="8" align="center">LLM COMPRESSION</th>
   </tr>
   <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/TBD">SmoothQuant</a></td>
-    <td colspan="3" align="center"><a href="intel_extension_for_transformers/TBD">Weight-only Quantization (INT4/FP4/NF4)</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/TBD">SmoothQuant (INT8)</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/TBD">Weight-only Quantization (INT4/FP4/NF4/INT8)</a></td>
     <td colspan="3" align="center"><a href="intel_extension_for_transformers/TBD">QLoRA on CPU</a></td>
   </tr>
   <tr>
