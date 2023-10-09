@@ -56,7 +56,7 @@ class Model {
     if (ctx) model_free(ctx);
   }
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
-                  float repeat_penalty, const std::string& post_process);
+                  float repeat_penalty, int num_beams, bool do_sample, int top_k, float top_p);
   void reinit();
   std::vector<int> generate(const std::vector<int>& input_ids);
   std::vector<int> generate_tokens(const std::vector<int>& input_ids);
@@ -76,10 +76,13 @@ class Model {
   bool token_eos = false;
 
   int post_process(float* logits);
+  int post_greedy_search(float* logits);
+  int post_beam_search(float* logits);
+  int post_sample_top_k_top_p_repeat(float* logits);
 };
 
 void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
-                       int threads, float repeat_penalty, const std::string& post_process, int num_beams, bool do_sample, int top_k, float top_p) {
+                       int threads, float repeat_penalty, int num_beams, bool do_sample, int top_k, float top_p) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
@@ -95,6 +98,8 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
   params.do_sample = do_sample;
   params.top_k = top_k;
   params.top_p = top_p;
+
+  printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k, params.top_p);
 
   n_past = 0;
   token_eos = false;
@@ -211,13 +216,13 @@ int Model::post_beam_search(float* logits) {
 }
 
 int Model::post_sample_top_k_top_p_repeat(float* logits) {
-  int n_logits = 50432;
+  int n_logits = n_vocab;
   std::mt19937 rng(1234);
 
   const auto* plogits = logits;
-
-  const auto last_n_tokens = std::vector<int32_t>(last_n_tokens_data, last_n_tokens_data + last_n_tokens_data_size);
-
+  float temp = 0.8; // TODO: update this
+  int repeat_last_n = 64;
+  float repeat_penalty = 1.02;
   if (temp <= 0) {
     // select the token with the highest logit directly
     float max_logit = plogits[0];
@@ -255,12 +260,12 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
   }
 
   // find the top K tokens
-  std::partial_sort(logits_id.begin(), logits_id.begin() + top_k, logits_id.end(),
+  std::partial_sort(logits_id.begin(), logits_id.begin() + params.top_k, logits_id.end(),
                     [](const std::pair<double, gpt_vocab::id>& a, const std::pair<double, gpt_vocab::id>& b) {
                       return a.first > b.first;
                     });
 
-  logits_id.resize(top_k);
+  logits_id.resize(params.top_k);
 
   double maxl = -INFINITY;
   for (const auto& kv : logits_id) {
@@ -283,14 +288,14 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
     p /= sum;
   }
 
-  if (top_p < 1.0f) {
+  if (params.top_p < 1.0f) {
     double cumsum = 0.0f;
-    for (int i = 0; i < top_k; i++) {
+    for (int i = 0; i < params.top_k; i++) {
       cumsum += probs[i];
-      if (cumsum >= top_p) {
-        top_k = i + 1;
-        probs.resize(top_k);
-        logits_id.resize(top_k);
+      if (cumsum >= params.top_p) {
+        params.top_k = i + 1;
+        probs.resize(params.top_k);
+        logits_id.resize(params.top_k);
         break;
       }
     }
@@ -314,13 +319,14 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
 }
 
 int Model::post_process(float* logits) {
-  if (params.beam_size > 1) {
-    post_beam_search(logits);
-  } else if (params.do_sample) {
-    post_sample_top_k_top_p_repeat(logits);
-  } else {
-    post_greedy_search(logits);
-  }
+  // printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k, params.top_p);
+  if (params.beam_size > 1)
+    return post_beam_search(logits);
+  
+  if (params.do_sample)
+    return post_sample_top_k_top_p_repeat(logits);
+  
+  return post_greedy_search(logits);
   // int alpha_frequency = 0;
   // int alpha_presence = 0;
   // int repeat_last_n = 64;
@@ -444,7 +450,8 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def(py::init())
       .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"),
            py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
-           py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("post_process") = "topk")
+           py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, 
+           py::arg("num_beams") = 1, py::arg("do_sample") = false, py::arg("top_k") = 5, py::arg("top_p") = 0.8)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
