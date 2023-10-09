@@ -21,7 +21,6 @@ from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumen
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceInstructEmbeddings
-from langchain.vectorstores import Chroma
 from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 
