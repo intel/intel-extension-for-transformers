@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <utility>
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 #include "common.h"
 #include "models/model_utils/model_types.h"
 #include "models/model_utils/model_config.h"
@@ -57,7 +58,8 @@ class Model {
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
                   float repeat_penalty, const std::string& post_process);
   void reinit();
-  std::string generate(const std::string& prompt, bool sentence_mode = true);
+  std::vector<int> generate(const std::vector<int>& input_ids);
+  std::vector<int> generate_tokens(const std::vector<int>& input_ids);
   bool is_token_end() { return token_eos; }
   static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
                          const std::string& alg, int group_size, const std::string& scale_dtype,
@@ -73,8 +75,6 @@ class Model {
   std::vector<model_token> last_n_tokens;
   bool token_eos = false;
 
-  std::string generate_one_token(const std::string& prompt);
-  std::string generate_tokens(const std::string& prompt);
   int post_process(float* logits);
 };
 
@@ -103,19 +103,35 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
 
 void Model::reinit() {
   n_past = 0;
+  last_n_tokens.clear();
   last_n_tokens.resize(n_ctx, 0);
   token_eos = false;
   curr_input_ids.clear();
+  ctx->n_sample = 0;
+  ctx->t_sample_us = 0;
 }
 
-std::string Model::generate_one_token(const std::string& prompt) {
+std::vector<int> Model::generate(const std::vector<int>& input_ids) {
   if (curr_input_ids.empty()) {
-    auto embd_inp = ::model_tokenize(ctx, prompt, false);
-    curr_input_ids = embd_inp;
+    curr_input_ids = input_ids;
   }
   for (auto item : curr_input_ids) {
     last_n_tokens.erase(last_n_tokens.begin());
     last_n_tokens.push_back(item);
+  }
+  // infinite text generation via context swapping
+  // if we run out of context:
+  // - take the n_keep first tokens from the original prompt (via n_past)
+  // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
+  if (n_past + curr_input_ids.size() > n_ctx) {
+    const int n_left = n_past - params.n_keep;
+
+    // always keep the first token - BOS
+    n_past = std::max(1, params.n_keep);
+
+    // insert n_left/2 tokens at the start of embd from last_n_tokens
+    curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - curr_input_ids.size(),
+                          last_n_tokens.end() - curr_input_ids.size());
   }
   model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
   n_past += curr_input_ids.size();
@@ -124,7 +140,7 @@ std::string Model::generate_one_token(const std::string& prompt) {
   int next_token_id = post_process(logits);
   curr_input_ids = {next_token_id};
 
-  if (next_token_id == ctx->vocab.eos_token_id || n_past - prompt.size() == params.n_predict) {
+  if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() == params.n_predict) {
     token_eos = true;
   }
 
@@ -133,24 +149,35 @@ std::string Model::generate_one_token(const std::string& prompt) {
     token_eos = true;
   }
 
-  return next_token;
+  return {next_token_id};
 }
 
-std::string Model::generate_tokens(const std::string& prompt) {
-  int n_past = 0;
+std::vector<int> Model::generate_tokens(const std::vector<int>& input_ids) {
   int n_remain = params.n_predict;
-  int max_length = 512;
-  auto embd_inp = ::model_tokenize(ctx, prompt, false);
-  int n_eval = embd_inp.size();
-  std::vector<int> curr_input_ids(embd_inp);
   std::vector<int> output_ids;
-  output_ids.reserve(max_length);
-  std::string ret;
-  ret += prompt;
+
+  if (curr_input_ids.empty()) {
+    curr_input_ids = input_ids;
+  }
+
   while (output_ids.size() < n_remain) {
     for (auto item : curr_input_ids) {
       last_n_tokens.erase(last_n_tokens.begin());
       last_n_tokens.push_back(item);
+    }
+    // infinite text generation via context swapping
+    // if we run out of context:
+    // - take the n_keep first tokens from the original prompt (via n_past)
+    // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
+    if (n_past + curr_input_ids.size() > n_ctx) {
+      const int n_left = n_past - params.n_keep;
+
+      // always keep the first token - BOS
+      n_past = std::max(1, params.n_keep);
+
+      // insert n_left/2 tokens at the start of embd from last_n_tokens
+      curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - curr_input_ids.size(),
+                            last_n_tokens.end() - curr_input_ids.size());
     }
     model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
     n_past += curr_input_ids.size();
@@ -158,24 +185,14 @@ std::string Model::generate_tokens(const std::string& prompt) {
     float* logits = model_get_logits(ctx);
     int next_token_id = post_process(logits);
     curr_input_ids = {next_token_id};
-
     output_ids.push_back(next_token_id);
-    ret += model_token_to_str(ctx, next_token_id);
-
-    if (next_token_id == model_token_eos()) {
+    if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() == params.n_predict) {
+      token_eos = true;
       break;
     }
   }
 
-  return ret;
-}
-
-std::string Model::generate(const std::string& prompt, bool sentence_mode) {
-  if (sentence_mode) {
-    return generate_tokens(prompt);
-  }
-
-  return generate_one_token(prompt);
+  return output_ids;
 }
 
 int Model::post_process(float* logits) {
@@ -300,8 +317,8 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"),
            py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
            py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("post_process") = "topk")
-      .def("generate", &Model::generate, "Generate tokens with prompt", py::arg("prompt"),
-           py::arg("sentence_mode") = true)
+      .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
+      .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
                   py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
                   py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "ggml", py::arg("use_ggml") = false)

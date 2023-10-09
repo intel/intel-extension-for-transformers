@@ -21,14 +21,14 @@ from haystack.document_stores import InMemoryDocumentStore, ElasticsearchDocumen
 from langchain.vectorstores.chroma import Chroma
 from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceInstructEmbeddings
-from langchain.vectorstores import Chroma
 from haystack.schema import Document as SDocument
 from .context_utils import load_unstructured_data, laod_structured_data, get_chuck_data
 
 
 class DocumentIndexing:
     def __init__(self, retrieval_type="dense", document_store=None, persist_dir="./output",
-                 process=True, embedding_model="hkunlp/instructor-large", max_length=512):
+                 process=True, embedding_model="hkunlp/instructor-large", max_length=512,
+                 index_name=None):
         """
         Wrapper for document indexing. Support dense and sparse indexing method.
         """
@@ -38,6 +38,7 @@ class DocumentIndexing:
         self.persist_dir = persist_dir
         self.embedding_model = embedding_model
         self.max_length = max_length
+        self.index_name = index_name
         
         
     def parse_document(self, input):
@@ -80,7 +81,18 @@ class DocumentIndexing:
                     print("This file {} is ignored. Will support this file format soon.".format(filename))
         return paragraphs
     
-    
+    def load(self, input):
+        if self.retrieval_type=="dense":
+            embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
+            vectordb = Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
+        else:
+            if self.document_store == "inmemory":
+                vectordb = self.KB_construct(input)
+            else:
+                vectordb = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+                                                      port=9200, search_fields=["content", "title"])
+        return vectordb
+            
     def KB_construct(self, input):
         """
         Construct the local knowledge base based on the uploaded file/files.
@@ -121,7 +133,7 @@ class DocumentIndexing:
                 if self.document_store == "inmemory":
                     document_store = InMemoryDocumentStore(use_gpu=False, use_bm25=True)
                 elif self.document_stor == "Elasticsearch":
-                    document_store = ElasticsearchDocumentStore(host="localhost", index="elastic_index_1",
+                    document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
                                                                 port=9200, search_fields=["content", "title"])
 
                 documents = []

@@ -66,8 +66,10 @@ compile_quant(quant_chatglm   quant_model.cpp chatglm   chatglm)
 compile_quant(quant_chatglm2  quant_model.cpp chatglm2   chatglm2)
 
 # all models running
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-add_subdirectory(third_party/pybind11)
+if (NE_PYTHON_API)
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+  add_subdirectory(third_party/pybind11)
+endif()
 
 set(mymap_gptj 1)
 set(mymap_falcon 2)
@@ -91,14 +93,12 @@ function(compile_run TARGET SRC MODEL_NAME MODEL_LIB)
     add_dependencies(${TARGET} BUILD_INFO)
   endif()
 
-
-  pybind11_add_module("${MODEL_NAME}_cpp" main_pybind.cpp)
-  target_link_libraries("${MODEL_NAME}_cpp" PRIVATE ne_layers ${MODEL_LIB} common)
-  target_compile_definitions("${MODEL_NAME}_cpp" PUBLIC -DMODEL_NAME="${MODEL_NAME}" -DMODEL_NAME_ID=${mymap_${MODEL_NAME}})
+  if (NE_PYTHON_API)
+    pybind11_add_module("${MODEL_NAME}_cpp" main_pybind.cpp)
+    target_link_libraries("${MODEL_NAME}_cpp" PRIVATE ne_layers ${MODEL_LIB} common)
+    target_compile_definitions("${MODEL_NAME}_cpp" PUBLIC -DMODEL_NAME="${MODEL_NAME}" -DMODEL_NAME_ID=${mymap_${MODEL_NAME}})
+  endif()
 endfunction()
-
-
-
 
 compile_run(run_gptj      main_run.cpp gptj      gptj)
 compile_run(run_falcon    main_run.cpp falcon    falcon)

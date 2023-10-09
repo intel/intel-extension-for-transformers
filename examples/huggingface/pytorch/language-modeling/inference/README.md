@@ -14,6 +14,7 @@ conda install gperftools jemalloc==5.2.1 -c conda-forge -y
 # Installation
 git clone https://github.com/intel/intel-extension-for-transformers.git itrex
 cd itrex
+pip install -r requirements.txt
 pip install -v .
 cd examples/huggingface/pytorch/language-modeling/inference
 pip install -r requirements.txt

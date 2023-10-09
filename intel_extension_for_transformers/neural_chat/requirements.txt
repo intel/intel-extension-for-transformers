@@ -1,8 +1,8 @@
 transformers>=4.32.0
 peft
 fschat
-torch
-torchaudio
+torch==2.0.1
+torchaudio==2.0.2
 intel_extension_for_pytorch
 num2words
 speechbrain
@@ -38,5 +38,4 @@ numpy==1.23.5
 tiktoken==0.4.0
 lm_eval
 accelerate
-optimum.intel
 cchardet
