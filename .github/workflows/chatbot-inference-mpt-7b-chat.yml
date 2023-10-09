@@ -23,8 +23,8 @@ jobs:
       - name: Docker Clean Up
         run: |
           docker ps -a
-          if [[ $(docker ps -a | grep -i ^'${{ env.CONTAINER_NAME }}') ]]; then
-            docker_names=$(docker ps -a | grep "${{ env.CONTAINER_NAME }}" | awk '{print $NF}')
+          if [[ $(docker ps -a | grep -i ^'${{ env.CONTAINER_NAME }}-${{ runner.name }}') ]]; then
+            docker_names=$(docker ps -a | grep "${{ env.CONTAINER_NAME }}-${{ runner.name }}" | awk '{print $NF}')
             for docker_name in $(echo -e ${docker_names});
             do 
               docker start ${docker_name}
@@ -48,22 +48,22 @@ jobs:
 
       - name: Build Docker Image
         run: 
-          docker build --no-cache ./ --target cpu --build-arg ITREX_VER=${{ github.head_ref }} -f ${{ env.DOCKER_FILE_NAME }} -t ${{ env.CONTAINER_NAME }}infer:${{ env.REPO_TAG }} && yes | docker container prune && yes | docker image prune
+          docker build --no-cache ./ --target cpu --build-arg ITREX_VER=${{ github.head_ref }} -f ${{ env.DOCKER_FILE_NAME }} -t ${{ env.CONTAINER_NAME }}-${{ runner.name }}infer:${{ env.REPO_TAG }} && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container
         run: |
-          cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}infer")
+          cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}-${{ runner.name }}infer")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v ${{ env.CACHE_DIR }}:/root/.cache -v ${{ github.workspace }}:/root/chatbot --name=${{ env.CONTAINER_NAME }}infer --hostname="chatbotinfer-container" ${{ env.CONTAINER_NAME }}infer:${{ env.REPO_TAG }}
+          docker run -tid -v ${{ env.CACHE_DIR }}:/root/.cache -v ${{ github.workspace }}:/root/chatbot --name=${{ env.CONTAINER_NAME }}-${{ runner.name }}infer --hostname="chatbotinfer-container" ${{ env.CONTAINER_NAME }}-${{ runner.name }}infer:${{ env.REPO_TAG }}
 
       - name: Run Inference Test
         run: |
-          docker exec ${{ env.CONTAINER_NAME }}infer bash -c "cd /root/chatbot && source activate && conda activate neuralchat; python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec ${{ env.CONTAINER_NAME }}-${{ runner.name }}infer bash -c "cd /root/chatbot && source activate && conda activate neuralchat; python workflows/chatbot/inference/generate.py --base_model_path \"mosaicml/mpt-7b-chat\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
         if: success() || failure()
         run: |
-          cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}infer")
+          cid=$(docker ps -q --filter "name=${{ env.CONTAINER_NAME }}-${{ runner.name }}infer")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
 
       - name: Test Summary
