@@ -217,7 +217,8 @@ int Model::post_beam_search(float* logits) {
 
 int Model::post_sample_top_k_top_p_repeat(float* logits) {
   int n_logits = n_vocab;
-  std::mt19937 rng(1234);
+  std::random_device rd;
+  std::mt19937 rng{rd()};
 
   const auto* plogits = logits;
   float temp = 0.8; // TODO: update this
@@ -320,48 +321,15 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
 
 int Model::post_process(float* logits) {
   // printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k, params.top_p);
-  if (params.beam_size > 1)
+  if (params.beam_size > 1) {
     return post_beam_search(logits);
+  }
   
-  if (params.do_sample)
+  if (params.do_sample) {
     return post_sample_top_k_top_p_repeat(logits);
+  }
   
   return post_greedy_search(logits);
-  // int alpha_frequency = 0;
-  // int alpha_presence = 0;
-  // int repeat_last_n = 64;
-  // int top_k = 40;
-  // float tfs_z = 1.00f;
-  // float typical_p = 1.00f;
-  // float top_p = 0.95f;
-  // float temp = 0.80f;
-  // std::vector<model_token_data> candidates;
-  // candidates.reserve(n_vocab);
-  // for (model_token token_id = 0; token_id < n_vocab; token_id++) {
-  //   candidates.emplace_back(model_token_data{token_id, logits[token_id], 0.0f});
-  // }
-  // model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
-
-  // // Apply penalties
-  // float nl_logit = logits[model_token_nl()];
-  // auto last_n_repeat = std::min(std::min((int)last_n_tokens.size(), repeat_last_n), n_ctx);
-  // model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-  //                                 last_n_repeat, params.repeat_penalty);
-  // model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
-  //                                               last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
-  //                                               last_n_repeat, alpha_frequency, alpha_presence);
-  // // int id = model_sample_token_greedy(ctx, &candidates_p);
-  // // Temperature sampling
-  // model_sample_top_k(ctx, &candidates_p, top_k, 1);
-  // model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
-  // model_sample_typical(ctx, &candidates_p, typical_p, 1);
-  // model_sample_top_p(ctx, &candidates_p, top_p, 1);
-  // model_sample_temperature(ctx, &candidates_p, temp);
-  // int id = model_sample_token(ctx, &candidates_p);
-
-  // int id = gpt_sample_top_k_top_p_repeat(logits, last_n_tokens.data(), 
-  //             last_n_tokens.size(), 50432, 1.000, 0.800, repeat_last_n, 1.020);
-  // return id;
 }
 
 int Model::quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,

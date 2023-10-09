@@ -31,6 +31,6 @@ streamer = TextStreamer(tokenizer)
 
 from intel_extension_for_transformers.llm.runtime.graph import Model
 model = Model()
-model.init_from_bin("mpt", "/mnt/disk2/data/zhenweil/codes/ggml/mpt_ne.bin", max_new_tokens=300, num_beams=1)
+model.init_from_bin("mpt", "/mnt/disk2/data/zhenweil/codes/ggml/mpt_ne.bin", max_new_tokens=30, num_beams=1, do_sample=True, top_k=40, top_p=0.95)
 
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
