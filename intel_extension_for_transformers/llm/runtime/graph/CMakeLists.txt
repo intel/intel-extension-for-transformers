@@ -91,7 +91,7 @@ option(NE_GELU_VEC               "neural_engine: enable vec in gelu"            
 if (NE_GELU_VEC)
     add_compile_definitions(NE_GELU_USE_VEC)
 endif()
-option(PYTHON_API              "neural_engine: use python api"                                  OFF)
+option(NE_PYTHON_API              "neural_engine: use python api"                                  OFF)
 
 if(NE_BUILD_TESTS)
     enable_testing()

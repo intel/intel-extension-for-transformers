@@ -57,14 +57,12 @@
 
 static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype,
                           const int batch_size, const int beam_size) {
-  const int n_head_kv = 1U;
   int32_t k_size, v_size;
   get_batch_kv_elements_from_gpt_params(hparams, wtype, &k_size, &v_size);
 
   const int64_t n_elements_k = hparams.n_layer * batch_size * beam_size * k_size;
   const int64_t n_elements_v = hparams.n_layer * batch_size * beam_size * v_size;
   const auto wsize = wtype == NE_TYPE_JBLAS ? 1 : ne_type_size(wtype);
-  NE_ASSERT(wtype != NE_TYPE_JBLAS);
 
   cache.buf.resize((n_elements_k + n_elements_v) * wsize + 2u * MB);
 
@@ -1105,6 +1103,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
     const attn_shape_t attn_shape = {
         /* .batch_size = */ ctx->batch_size * ctx->beam_size,
         /* .head_num = */ static_cast<int>(hparams.n_head),
+        /* .heads_kv = */ static_cast<int>(hparams.n_head_kv),
         /* .head_size = */ static_cast<int>(hparams.n_embd / hparams.n_head),
         /* .sl_q = */ 1,  // for next-token inference
         /* .sl_kv = */ static_cast<int>(hparams.n_ctx),
@@ -1448,6 +1447,7 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   attn_shape_t attn_shape = {
       /* .batch_size = */ lparams.batch_size * lparams.beam_size,
       /* .head_num = */ static_cast<int>(model_hparams.n_head),
+      /* .heads_kv = */ static_cast<int>(model_hparams.n_head_kv),
       /* .head_size = */ static_cast<int>(model_hparams.n_embd / model_hparams.n_head),
       /* .sl_q = */ 1,  // Note: make sure that jblas reordered attn supports next token inferencing
       /* .sl_kv = */ static_cast<int>(model_hparams.n_ctx),
@@ -1473,14 +1473,14 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
 
 void get_batch_kv_elements_from_gpt_params(const struct model_hparams& hparams, ne_type wtype, int32_t* k_size,
                                            int32_t* v_size) {
-  const auto n_head = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
+  const auto heads_kv = hparams.n_head_kv > 0 ? hparams.n_head_kv : hparams.n_head;
   const auto head_size = hparams.n_embd / hparams.n_head;
   if (wtype == NE_TYPE_F16 || wtype == NE_TYPE_F32) {
-    *k_size = hparams.n_ctx * n_head * head_size;
-    *v_size = hparams.n_ctx * n_head * head_size;
+    *k_size = hparams.n_ctx * heads_kv * head_size;
+    *v_size = hparams.n_ctx * heads_kv * head_size;
   } else if (wtype == NE_TYPE_JBLAS) {
     kv_shape_t kv_shape = {
-        /* .head_num = */ n_head,
+        /* .heads_kv = */ heads_kv,
         /* .head_size = */ head_size,
         /* .sl_kv_max = */ hparams.n_ctx,
     };
