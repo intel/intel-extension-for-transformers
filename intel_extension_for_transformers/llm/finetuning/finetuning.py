@@ -245,8 +245,11 @@ class Finetuning:
     def finetune(self):
         model_args, data_args, training_args, finetune_args = \
             self.model_args, self.data_args, self.training_args, self.finetune_args
-        if not (is_bitsandbytes_available() and torch.cuda.is_available() and training_args.device.type == "cuda"):
+        if training_args.device.type != "cpu" and \
+            not (is_bitsandbytes_available() and torch.cuda.is_available() and training_args.device.type == "cuda"):
             finetune_args.qlora = False
+        self.device_map = None
+        self.bitsandbytes_quant_config = None
         if finetune_args.qlora:
             # finetune_args.lora_all_linear = True
             finetune_args.peft = "lora"
@@ -254,23 +257,21 @@ class Finetuning:
                 torch.float16 if training_args.fp16 else
                     (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
-            self.device_map = "auto"
-            self.bitsandbytes_quant_config = BitsAndBytesConfig(
-                load_in_4bit=finetune_args.bits == 4,
-                load_in_8bit=finetune_args.bits == 8,
-                llm_int8_threshold=6.0,
-                llm_int8_has_fp16_weight=False,
-                bnb_4bit_compute_dtype=compute_dtype,
-                bnb_4bit_use_double_quant=finetune_args.double_quant,
-                bnb_4bit_quant_type=finetune_args.quant_type,
-            )
+            if training_args.device.type == "cuda":
+                self.device_map = "auto"
+                self.bitsandbytes_quant_config = BitsAndBytesConfig(
+                    load_in_4bit=finetune_args.bits == 4,
+                    load_in_8bit=finetune_args.bits == 8,
+                    llm_int8_threshold=6.0,
+                    llm_int8_has_fp16_weight=False,
+                    bnb_4bit_compute_dtype=compute_dtype,
+                    bnb_4bit_use_double_quant=finetune_args.double_quant,
+                    bnb_4bit_quant_type=finetune_args.quant_type,
+                )
             if finetune_args.bits not in [4, 8]:
                 raise NotImplementedError(
                     f"Unsupported bits {finetune_args.bits}, only support 4 and 8 now."
                 )
-        else:
-            self.device_map = None
-            self.bitsandbytes_quant_config = None
 
         config = self.load_model_config(self.model_args)
         if config.architectures[0].endswith("ForCausalLM"):
@@ -330,6 +331,8 @@ class Finetuning:
                 torch.float16 if training_args.fp16 else
                     (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
+            if finetune_args.qlora and training_args.device.type == "cpu":
+                from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
             model = AutoModelForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -342,6 +345,8 @@ class Finetuning:
                 trust_remote_code=True if model_args.trust_remote_code else None,
                 torch_dtype=model_dtype,
                 low_cpu_mem_usage=True,
+                load_in_4bit=finetune_args.bits==4,
+                load_in_8bit=finetune_args.bits==8,
             )
             if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
                 re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
@@ -704,6 +709,8 @@ class Finetuning:
                     torch.float16 if training_args.fp16 else
                         (torch.bfloat16 if training_args.bf16 else torch.float32)
                 )
+                if finetune_args.qlora and training_args.device.type == "cpu":
+                    from intel_extension_for_transformers.transformers.modeling import AutoModelForSeq2SeqLM
                 model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_args.model_name_or_path,
                     from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -714,6 +721,8 @@ class Finetuning:
                     revision=model_args.model_revision,
                     use_auth_token=True if model_args.use_auth_token else None,
                     torch_dtype=model_dtype,
+                    load_in_4bit=finetune_args.bits==4,
+                    load_in_8bit=finetune_args.bits==8,
                 )
                 model.resize_token_embeddings(len(tokenizer))
             else:
