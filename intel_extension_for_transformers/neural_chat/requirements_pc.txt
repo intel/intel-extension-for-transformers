@@ -11,7 +11,7 @@ evaluate
 pydub
 python-multipart
 PyPDF2
-langchain
+langchain==0.0.304
 python-docx
 scikit-learn
 farm-haystack
@@ -35,5 +35,5 @@ numpy==1.23.5
 tiktoken==0.4.0
 lm_eval
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch
+torch==2.0.0
 torchaudio

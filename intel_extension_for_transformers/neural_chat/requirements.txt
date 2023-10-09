@@ -1,7 +1,7 @@
 transformers>=4.32.0
 peft
 fschat
-torch==2.0.1
+torch==2.0.0
 torchaudio
 intel_extension_for_pytorch==2.0.100
 num2words
@@ -14,7 +14,7 @@ evaluate
 pydub
 python-multipart
 PyPDF2
-langchain
+langchain==0.0.304
 python-docx
 scikit-learn
 farm-haystack
