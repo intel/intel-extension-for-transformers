@@ -18,7 +18,7 @@ concurrency:
 jobs:
   inference:
     name: inference test
-    runs-on: itrex-node
+    runs-on: neuralchat-node
     steps:
       - name: Docker Clean Up
         run: |
@@ -44,10 +44,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v3
-
-      - name: Load environment variables
-        run: 
-          cat ~/actions-runner/.env >> $GITHUB_ENV
 
 
       - name: Build Docker Image
