@@ -86,7 +86,6 @@ typedef enum NE_ATTN_FLAG {
 } NE_ATTN_FLAG;
 typedef uint32_t ne_attn_flags_t;
 
-
 // convert FP16 <-> FP32
 NE_API float ne_fp16_to_fp32(ne_fp16_t x);
 NE_API ne_fp16_t ne_fp32_to_fp16(float x);
@@ -175,6 +174,13 @@ NE_API void ne_set_name(struct ne_tensor* tensor, const char* name);
 //
 // operations on tensors with backpropagation
 //
+
+typedef void (*ne_debug_callback_t)(const struct ne_tensor* t);
+
+// Run a callback function during graph forwarding.
+// Usage (in C++): `cur = ne_debug_op(ctx0, cur, [](const ne_tensor* cur) { std::cout << cur->data[0]; });`
+// Note that the lambda expression must not have any captures.
+NE_API struct ne_tensor* ne_debug_op(struct ne_context* ctx, struct ne_tensor* a, ne_debug_callback_t cb);
 
 NE_API struct ne_tensor* ne_dup(struct ne_context* ctx, struct ne_tensor* a);
 

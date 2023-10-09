@@ -447,9 +447,10 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "ALL_REDUCE",
     "TP_CONCAT",
     "DUMP_TENSOR",
+    "DEBUG",
 };
 
-static_assert(NE_OP_COUNT == 61, "NE_OP_COUNT != 61");
+static_assert(NE_OP_COUNT == 62, "NE_OP_COUNT != 62");
 
 static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "none",
@@ -513,6 +514,7 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
 
     "f(x)",
     "f(x,y)",
+    "debug(x)",
 };
 
 static_assert(sizeof(struct ne_object) % NE_MEM_ALIGN == 0, "ne_object size must be a multiple of NE_MEM_ALIGN");
@@ -1340,6 +1342,15 @@ struct ne_tensor* ne_dup_impl(struct ne_context* ctx, struct ne_tensor* a, bool 
   result->src0 = a;
   result->src1 = NULL;
 
+  return result;
+}
+
+struct ne_tensor* ne_debug_op(struct ne_context* ctx, struct ne_tensor* a, ne_debug_callback_t cb) {
+  struct ne_tensor* result = ne_view_tensor(ctx, a);
+  result->op = NE_OP_DEBUG;
+  result->src0 = a;
+  static_assert(sizeof(void*) <= sizeof(result->padding), "No enough space for function ptr!");
+  *((void**)(result->padding)) = cb;
   return result;
 }
 
@@ -3929,6 +3940,13 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
   } else {
     NE_ASSERT(false);  // TODO: implement
   }
+}
+
+static void ne_compute_forward_debug(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                     struct ne_tensor* dst) {
+  if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) return;
+  const ne_debug_callback_t cb = *((void**)(dst->padding));
+  cb(src0);
 }
 
 static void ne_compute_forward_dup(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -9697,6 +9715,9 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
     case NE_OP_NONE: {
       // nop
     } break;
+    case NE_OP_DEBUG: {
+      ne_compute_forward_debug(params, tensor->src0, tensor);
+    } break;
     case NE_OP_COUNT: {
       NE_ASSERT(false);
     } break;
@@ -10200,6 +10221,7 @@ static void ne_compute_backward(struct ne_context* ctx, struct ne_tensor* tensor
     case NE_OP_MAP_BINARY: {
       NE_ASSERT(false);  // not supported
     } break;
+    case NE_OP_DEBUG:
     case NE_OP_NONE: {
       // nop
     } break;
@@ -10740,6 +10762,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_SPLIT:
         case NE_OP_ALL_REDUCE:
         case NE_OP_TP_CONCAT:
+        case NE_OP_DEBUG:
         case NE_OP_DUMP_TENSOR: {
           node->n_tasks = 1;
         } break;
