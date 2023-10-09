@@ -2,7 +2,7 @@ transformers>=4.32.0
 peft
 fschat
 torch==2.0.0
-torchaudio
+torchaudio==2.0.0
 intel_extension_for_pytorch
 num2words
 speechbrain

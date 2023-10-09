@@ -36,4 +36,4 @@ tiktoken==0.4.0
 lm_eval
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.0.0
-torchaudio
+torchaudio==2.0.0
