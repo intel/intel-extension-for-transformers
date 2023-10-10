@@ -17,7 +17,7 @@
 
 """The wrapper for Chroma retriever based on langchain"""
 
-from langchain.vectorstores import Chroma
+from langchain.vectorstores.chroma import Chroma
 
 class ChromaRetriever():
     """Retrieve the document database with Chroma database using dense retrieval."""
