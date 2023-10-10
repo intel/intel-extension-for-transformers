@@ -1708,8 +1708,7 @@ async def handle_ai_photos_chat_to_image(request: Request):
 
     try:
         start_time = time.time()
-        # result = inference_ner(query)
-        result = inference_int8(query)
+        result = inference_bf16(query)
         end_time = time.time()
         print("<chatWithImage> NER inference cost {} seconds.".format(end_time - start_time))
     except Exception as e:
