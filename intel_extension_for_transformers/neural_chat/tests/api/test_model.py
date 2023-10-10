@@ -32,7 +32,12 @@ class TestChatGlmModel(unittest.TestCase):
         result = ChatGlmModel().match(model_path='/models/chatglm2-6b-int4')
         self.assertTrue(result)
 
-    def test_get_default_conv_template(self):
+    def test_get_default_conv_template_1(self):
+        text = r"Conversation(name='chatglm', system_template='{system_message}', system_message='', roles=('问', '答'), messages=[], offset=0, sep_style=<SeparatorStyle.CHATGLM: 8>, sep='\n', sep2=None, stop_str=None, stop_token_ids=None)"
+        result = ChatGlmModel().get_default_conv_template(model_path='/models/chatglm-6b')
+        self.assertEqual(text, str(result))
+
+    def test_get_default_conv_template_2(self):
         text = r"Conversation(name='chatglm2', system_template='{system_message}', system_message='', roles=('问', '答'), messages=[], offset=0, sep_style=<SeparatorStyle.CHATGLM: 8>, sep='\n\n', sep2=None, stop_str=None, stop_token_ids=None)"
         result = ChatGlmModel().get_default_conv_template(model_path='/models/chatglm2-6b-int4')
         self.assertEqual(text, str(result))
