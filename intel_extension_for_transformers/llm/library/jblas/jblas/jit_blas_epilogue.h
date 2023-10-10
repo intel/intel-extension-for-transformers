@@ -69,9 +69,8 @@ class CustomAccumulatorWriteBackWithEltop {
     auto COffset = M_offset * _param.ldc + N_offset;
     auto cptr = _param.C + COffset;
     if constexpr (std::is_same<_SRC_T, float>::value && std::is_same<_DST_T, float>::value) {
-      return kernel::jit::CustomMemCpy::template forward<_OP>(cacheptr, cptr, M, N * sizeof(_DST_T),
-                                                              cachestep * sizeof(_SRC_T), _param.ldc * sizeof(_DST_T),
-                                                              _param.elt_const_v);
+      return kernel::wrapper::Memcpy2D::template forward<ISA_T, float, float>(
+          cacheptr, cptr, M, N, cachestep, _param.ldc, _param.elt_const_v, _OP);
     } else {
       assert(false);
     }

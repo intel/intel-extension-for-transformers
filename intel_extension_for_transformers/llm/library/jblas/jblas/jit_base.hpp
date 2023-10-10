@@ -218,19 +218,19 @@ class JitAmxtile : protected JitAvx512f {
     // Configure C tiles
     int t = 0;
     for (; t < CNum; ++t) {
-      tc.rows[t] = TILE_M;
-      tc.colb[t] = TILE_N * 4;
+      tc.rows[t] = uint8_t(TILE_M);
+      tc.colb[t] = uint16_t(TILE_N * 4);
     }
     // Configure A tiles
     for (; t < CNum + ANum; ++t) {
-      tc.rows[t] = TILE_M;
-      tc.colb[t] = TILE_K * elesize;
+      tc.rows[t] = uint8_t(TILE_M);
+      tc.colb[t] = uint16_t(TILE_K * elesize);
     }
     // Configure B tile. B effectively has 64 rows and 16 columns.
     int kpack = 4 / elesize;
     for (; t < CNum + ANum + BNum; ++t) {
-      tc.rows[t] = TILE_K / kpack;
-      tc.colb[t] = TILE_N * 4;
+      tc.rows[t] = uint8_t(TILE_K / kpack);
+      tc.colb[t] = uint16_t(TILE_N * 4);
     }
   }
 };
