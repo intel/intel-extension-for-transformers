@@ -30,13 +30,20 @@ from torch.utils.data import DataLoader, RandomSampler
 logger = logging.getLogger(__name__)
 
 
-def replace_linear(model, modules_to_not_convert=None, current_key_name=None, quantization_config=None):
+def replace_linear(
+        model,
+        modules_to_not_convert=None,
+        current_key_name=None,
+        quantization_config=None,
+        device=torch.device("cpu")
+):
+    model.to(device)
     if modules_to_not_convert is None:
         modules_to_not_convert = []
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(quantization_config.llm_int8_skip_modules)
     model, is_replaced = _replace_linear(
-        model, modules_to_not_convert, current_key_name, quantization_config
+        model, modules_to_not_convert, current_key_name, quantization_config, device=device,
     )
 
     if not is_replaced:
@@ -96,7 +103,12 @@ def convert_dtype_2_str(dtype):
 
 
 def _replace_linear(
-    model, modules_to_not_convert=None, current_key_name=None, quantization_config=None, is_replaced=False
+    model,
+    modules_to_not_convert=None,
+    current_key_name=None,
+    quantization_config=None,
+    is_replaced=False,
+    device=torch.device("cpu")
 ):
     """
     Private method that wraps the recursion for module replacement.
@@ -110,8 +122,8 @@ def _replace_linear(
         current_key_name.append(name)
 
         if isinstance(module, torch.nn.Linear) and name not in modules_to_not_convert:
+            from .nn import QuantizedLinearCPU  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
             # Check if the current key is not in the `modules_to_not_convert`
-            from .nn import QuantizedLinearQBits  # TODO: QuantizedLinearINT4, QuantizedLinearINT8
             if not any(key in ".".join(current_key_name) for key in modules_to_not_convert):
                 with init_empty_weights():
                     in_features = module.in_features
@@ -139,16 +151,25 @@ def _replace_linear(
                     #         scheme=quantization_config.scheme
                     #     )
                     #     is_replaced = True
-                    model._modules[name] = QuantizedLinearQBits(
-                        in_features,
-                        out_features,
-                        module.bias is not None,
-                        compute_dtype=quantization_config.compute_dtype,
-                        compress_statistics=False,
-                        weight_dtype=weight_dtype,
-                        blocksize=quantization_config.group_size,
-                        scheme=quantization_config.scheme
-                    )
+                    if device == "cpu" or device == torch.device("cpu"):
+                        model._modules[name] = QuantizedLinearCPU(
+                            in_features,
+                            out_features,
+                            module.bias is not None,
+                            compute_dtype=quantization_config.compute_dtype,
+                            compress_statistics=False,
+                            weight_dtype=weight_dtype,
+                            blocksize=quantization_config.group_size,
+                            scheme=quantization_config.scheme
+                        )
+                    elif device == "xpu" or device == torch.device("xpu"):
+                        prop = torch.xpu.get_device_properties()
+                        if prop == "ARC":
+                            pass
+                        elif prop == "PVC":
+                            pass
+                        else:
+                            pass
                     is_replaced = True
                     # Store the module class in case we need to transpose the weight later
                     model._modules[name].source_cls = type(module)
@@ -170,10 +191,14 @@ def _replace_linear(
     return model, is_replaced
 
 
-def convert_to_quantized_model(model, config):
+def convert_to_quantized_model(model, config, device=torch.device("cpu")):
+    if device == "xpu" or device == torch.device("xpu"):
+        import intel_extension_for_pytorch
+        assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
     calib_dataloader = config.calib_dataloader
     calib_func = config.calib_func
     calib_iters = config.calib_iters
+    model_device = next(model.parameters()).device
     if calib_dataloader is None and config.algorithm in ['TEQ', 'AWQ']:
         calib_dataset = config.calib_dataset
         if isinstance(calib_dataset, (str, bytes, os.PathLike)):
@@ -199,8 +224,12 @@ def convert_to_quantized_model(model, config):
                 if i >= calib_iters:
                     break
                 if isinstance(input, (tuple, list)):
+                    for key in input[0]:
+                        input[0][key] = input[0][key].to(model_device)
                     model(**input[0])
                 elif isinstance(input, dict):
+                    for key in input:
+                        input[key] = input[key].to(model_device)
                     model(**input)
         calib_func = default_calib_func
         logger.info(
@@ -242,4 +271,4 @@ def convert_to_quantized_model(model, config):
                                  conf,
                                  calib_func=calib_func,
                                  calib_dataloader=calib_dataloader)
-    return replace_linear(inc_model.model, None, None, config)
+    return replace_linear(inc_model.model, None, None, config, device=device)
