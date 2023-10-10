@@ -71,17 +71,20 @@ class _BaseQBitsAutoModelClass:
                 *model_args,
                 **kwargs,
             )
+            return model
         if load_in_8bit or load_in_4bit:
-            use_cpu = (
+            is_itrex = (
                 True
                 if device_map == torch.device("cpu")
                 or device_map == "cpu"
+                or device_map == torch.device("xpu")
+                or device_map == "xpu"
                 else False
             )
             if (
                 is_accelerate_available()
                 and is_bitsandbytes_available()
-                and not use_cpu
+                and not is_itrex
             ):
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path,
@@ -93,7 +96,7 @@ class _BaseQBitsAutoModelClass:
                 )
                 logger.info("WeightOnlyQuant bitsandbytes done.")
                 return model
-            logger.info("CPU device is used.")
+            logger.info("{} device is used.".format(device_map))
             if load_in_8bit or load_in_4bit or quantization_config is not None:
                 torch_dtype = kwargs.pop("torch_dtype", torch.float32)
             if load_in_4bit:
@@ -144,12 +147,15 @@ class _BaseQBitsAutoModelClass:
                 )
                 return model
             else:
+                if device_map == torch.device("xpu") or device_map == "xpu":
+                    import intel_extension_for_pytorch
+                    assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
                 quantization_config.post_init()
                 from intel_extension_for_transformers.llm.quantization.utils import (
                     convert_to_quantized_model,
                 )
 
-                model = convert_to_quantized_model(model, quantization_config)
+                model = convert_to_quantized_model(model, quantization_config, device=device_map)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             logger.info("Applying SmoothQuant.")

@@ -4,7 +4,7 @@ import torch
 import unittest
 import shutil
 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
-from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits
+from intel_extension_for_transformers.llm.quantization.nn.cpu.modules import QuantizedLinearCPU
 from intel_extension_for_transformers.llm.quantization.utils import convert_to_quantized_model, replace_linear
 from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig
 
@@ -128,7 +128,7 @@ class TestWeightOnly(unittest.TestCase):
         model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
         module_list = []
         for name, module in model.named_modules():
-            if isinstance(module, QuantizedLinearQBits):
+            if isinstance(module, QuantizedLinearCPU):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
 
@@ -139,7 +139,7 @@ class TestWeightOnly(unittest.TestCase):
         )
         module_list = []
         for name, module in model.named_modules():
-            if isinstance(module, QuantizedLinearQBits):
+            if isinstance(module, QuantizedLinearCPU):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)
 

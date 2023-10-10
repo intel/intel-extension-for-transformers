@@ -21,7 +21,7 @@ import torch
 from functools import reduce
 from operator import mul
 from peft.tuners.lora import LoraLayer
-from ..autograd import matmul_4bit
+from ...autograd import matmul_4bit
 
 
 torch.ops.load_library(
@@ -72,7 +72,7 @@ class ParamsQBits(torch.nn.Parameter):
     #     return self
 
 
-class QuantizedLinearQBits(torch.nn.Linear):
+class QuantizedLinearCPU(torch.nn.Linear):
     def __init__(
         self,
         input_features,
@@ -124,7 +124,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
             self.bias = torch.nn.Parameter(bias, requires_grad=False)
 
 
-# class QuantizedLinearINT4(QuantizedLinearQBits, LoraLayer):
+# class QuantizedLinearINT4(QuantizedLinearCPU, LoraLayer):
 #     def __init__(
 #         self,
 #         input_features,
@@ -141,7 +141,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
 #         lora_alpha=16,
 #         lora_dropout=0.01,
 #     ):
-#         QuantizedLinearQBits.__init__(self, input_features, output_features, bias, compute_dtype, compress_statistics,
+#         QuantizedLinearCPU.__init__(self, input_features, output_features, bias, compute_dtype, compress_statistics,
 #                                       weight_dtype, blocksize, scheme, device)
 #         self.use_lora = use_lora
 #         if self.use_lora:
@@ -189,7 +189,7 @@ class QuantizedLinearQBits(torch.nn.Linear):
 #             self.active_adapter = 'default'
 #             LoraLayer.update_layer(self, self.active_adapter, self._r, self._lora_alpha, self._lora_dropout, True)
 
-# class QuantizedLinearINT8(QuantizedLinearQBits):
+# class QuantizedLinearINT8(QuantizedLinearCPU):
 #     def __init__(
 #         self,
 #         input_features,
