@@ -1,0 +1,6 @@
+torch
+torchvision
+torchaudio
+spacy
+transformers
+intel_extension_for_pytorch
