@@ -34,9 +34,9 @@ import random
 import datetime
 from datetime import timedelta, timezone
 import pandas as pd
-from ner_utils.ner import inference as inference_fp32
+# from ner_utils.ner import inference as inference_fp32
 from ner_utils.ner_bf16 import inference as inference_bf16
-from ner_utils.ner_int8 import inference as inference_int8
+# from ner_utils.ner_int8 import inference as inference_int8
 from deepface import DeepFace
 from typing import List, Dict
 from fastapi import BackgroundTasks
@@ -1265,11 +1265,8 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     # get person name query
     face_list = mysql_db.fetch_all(sql=f"select image_face.face_tag from image_face inner join image_info on image_info.image_id=image_face.image_id where image_info.user_id='{user_id}' AND exist_status='active';", params=None)
     logger.info(f"[NER query] face list is: {face_list}")
-    if ner_result['name'] or face_list:
-        names = ner_result['name']
+    if face_list:
         sql_conditions = []
-        for name in names:   
-            sql_conditions.append(f' image_face.face_tag LIKE "%{name}%" ')
         for face_tag in face_list:
             face_tag = face_tag['face_tag']
             if face_tag in query:
@@ -1286,9 +1283,9 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         logger.info(f'[NER query] no person name in ner query')
 
     # get location query
-    if not ner_result.get('location', None):
-        logger.info(f'[NER query] no location in query')
-    else:
+    location_list = mysql_db.fetch_all(sql=f"select address from image_info where user_id='{user_id}' AND exist_status='active';", params=None)
+    logger.info(f"[NER query] location list is: {location_list}")
+    if ner_result['location'] or location_list:
         if not query_flag:
             query_sql += " WHERE "
         query_flag = True
@@ -1296,15 +1293,22 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         sql_conditions = []
         for loc in locations:
             sql_conditions.append(f' image_info.address LIKE "%{loc}%" ')
+        for db_location in location_list:
+            if db_location['address'] == 'None':
+                continue
+            db_loc = db_location['address'].split(', ')[1:]
+            db_loc = ', '.join(db_loc)
+            if db_loc in query:
+                sql_conditions.append(f' image_info.address LIKE "%{db_loc}%" ')
         sql = 'OR'.join(sql_conditions)
         if query_sql[-1] == ')':
             query_sql += ' AND '
         query_sql += '('+sql+')'
+    else:
+        logger.info(f'[NER query] no location in query')
         
     # get time query
-    if ner_result['time'] == []:
-        logger.info(f'[NER query] no time in query')
-    else:
+    if ner_result['time']:
         if not query_flag:
             query_sql += " WHERE "
         query_flag = True
@@ -1316,11 +1320,11 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         if query_sql[-1] == ')':
             query_sql += ' AND '
         query_sql += '('+sql+')'
+    else:
+        logger.info(f'[NER query] no time in query')
 
     # get time period query
-    if ner_result['period'] == []:
-        logger.info(f'[NER query] no time period in query')
-    else:
+    if ner_result['period']:
         if not query_flag:
             query_sql += " WHERE "
         query_flag = True
@@ -1335,6 +1339,8 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         if query_sql[-1] == ')':
             query_sql += ' AND '
         query_sql += '('+sql+')'
+    else:
+        logger.info(f'[NER query] no time period in query')
     
     if not query_flag:
         logger.info(f'[NER query] no compatible data for current query')

@@ -3,7 +3,7 @@ ps -ef |grep 'controller' |awk '{print $2}' |xargs kill -9
 ps -ef |grep 'model_worker' |awk '{print $2}' |xargs kill -9
 
 python -m controller --port 8000 &
-sleep 10
+sleep 20
 
 # KMP
 export KMP_BLOCKTIME=1
