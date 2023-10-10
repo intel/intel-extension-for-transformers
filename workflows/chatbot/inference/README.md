@@ -21,7 +21,7 @@ conda install cmake ninja mkl mkl-include -y
 conda install gperftools -c conda-forge -y
 
 # Install PyTorch
-python -m pip install  https://download.pytorch.org/whl/nightly/cpu/torch-2.1.0.dev20230711%2Bcpu-cp39-cp39-linux_x86_64.whl
+python -m pip install https://download.pytorch.org/whl/nightly/cpu/torch-2.1.0.dev20230711%2Bcpu-cp39-cp39-linux_x86_64.whl
 
 # Install IPEX with semi-compiler, require gcc 12.3
 rm -rf llvm-project && mkdir llvm-project && cd llvm-project
@@ -37,6 +37,7 @@ cd ../../
 
 git clone --branch llm_feature_branch https://github.com/intel/intel-extension-for-pytorch.git
 cd intel-extension-for-pytorch
+git checkout v2.1.0.dev+cpu.llm.mlperf
 git submodule sync && git submodule update --init --recursive
 export DNNL_GRAPH_BUILD_COMPILER_BACKEND=1
 export CXXFLAGS="${CXXFLAGS} -D__STDC_FORMAT_MACROS"
@@ -47,6 +48,7 @@ cd ../
 pip install transformers==4.31.0
 # Install others deps
 pip install cpuid accelerate datasets sentencepiece protobuf==3.20.3
+
 # Install intel-extension-for-transformers
 git clone https://github.com/intel/intel-extension-for-transformers.git
 cd intel-extension-for-transformers

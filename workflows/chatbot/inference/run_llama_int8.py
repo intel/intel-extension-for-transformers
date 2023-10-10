@@ -41,7 +41,16 @@ parser.add_argument(
     help="by default it is int8-fp32 mixed, to enable int8 mixed amp bf16 (work on platforms like SPR)",
 )
 parser.add_argument("--quantized-model-path", default="./saved_results/best_model.pt")
-parser.add_argument("--batch-size", default=1, type=int, help="batch size")
+parser.add_argument("--batch_size", default=1, type=int, help="batch size")
+#benchmark
+parser.add_argument("--prompt_size", default=32, type=int)
+parser.add_argument(
+    "--max-new-tokens", default=32, type=int, help="output max new tokens"
+)
+parser.add_argument("--num-iter", default=100, type=int, help="num iter")
+parser.add_argument("--num-warmup", default=10, type=int, help="num warmup")
+parser.add_argument("--benchmark", action="store_true")
+parser.add_argument("--token_latency", action="store_true")
 args = parser.parse_args()
 
 
@@ -178,6 +187,14 @@ calib_dataloader = DataLoader(
 )
 
 
+if args.jit and args.benchmark:
+    torch._C._jit_set_texpr_fuser_enabled(False)
+    if args.benchmark and (args.int8 or args.int8_bf16_mixed):
+        if not hasattr(user_model, "trace_graph"):
+            print("load_int8_model")
+            self_jit = torch.jit.load(args.quantized_model_path)
+            self_jit = torch.jit.freeze(self_jit.eval())
+            setattr(user_model, "trace_graph", self_jit)
 
 
 if args.ipex_smooth_quant:
@@ -217,4 +234,41 @@ if args.ipex_smooth_quant:
         self_jit.save(args.output_dir + "/best_model.pt")
 
 
+if args.benchmark:
+    num_beams = 1 if args.greedy else 4
+    generate_kwargs = dict(do_sample=False, temperature=0.9, num_beams=num_beams)
 
+
+    print("---- Prompt size:", args.prompt_size)
+    if args.token_latency:
+        if not hasattr(user_model.config, "token_latency"):
+            user_model.config.token_latency = True
+
+    total_time = 0.0
+    num_iter = args.num_iter
+    num_warmup = args.num_warmup
+    total_list = []
+    with torch.inference_mode(), torch.no_grad(), torch.cpu.amp.autocast(
+        enabled=amp_enabled
+    ):
+        for i in range(num_iter):
+            tic = time.time()
+            input_ids = torch.randint(1, tokenizer.vocab_size, size = (args.batch_size, args.prompt_size))
+            output = user_model.generate(
+                input_ids, max_new_tokens=args.max_new_tokens, **generate_kwargs
+            )
+            gen_ids = output[0] if args.token_latency else output
+            gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
+            toc = time.time()
+            input_tokens_lengths = [x.shape[0] for x in input_ids]
+            output_tokens_lengths = [x.shape[0] for x in gen_ids]
+            total_new_tokens = [
+                o - i if user_model.config.model_type != "t5" else o
+                for i, o in zip(input_tokens_lengths, output_tokens_lengths)
+            ]
+            #print(gen_text, total_new_tokens, flush=True)
+            print("Iteration: %d, Time: %.6f sec" % (i, toc - tic), flush=True)
+            if i >= num_warmup:
+                total_time += toc - tic
+                if args.token_latency:
+                    total_list.append(output[1])
