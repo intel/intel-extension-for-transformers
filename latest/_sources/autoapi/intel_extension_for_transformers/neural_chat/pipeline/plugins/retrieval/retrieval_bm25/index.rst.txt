@@ -19,7 +19,7 @@ Classes
 
 
 
-.. py:class:: SparseBM25Retriever
+.. py:class:: SparseBM25Retriever(document_store=None, top_k=1)
 
 
    Retrieve the document database with BM25 sparse algorithm.
