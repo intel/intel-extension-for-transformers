@@ -29,9 +29,10 @@ class MatMulKBit(torch.autograd.Function):
     @staticmethod
     def forward(ctx, A, B, out=None, bias=None, compute_dtype=None, weight_dtype=None):
         # 1. Dequantize
-        B_dequant = torch.zeros(out.shape[-1], A.shape[-1], dtype=A.dtype)
+        B_dequant = torch.zeros(out.shape[-1], A.shape[-1], dtype=torch.float)
         torch.ops.weight_only_jblasop.qbits_dequantize(
             B, B_dequant, True, compute_dtype, weight_dtype)
+        B_dequant = B_dequant.to(dtype=A.dtype)
 
         # default of pytorch behavior if inputs are empty
         ctx.is_empty = False

@@ -250,6 +250,8 @@ class Finetuning:
             finetune_args.qlora = False
         self.device_map = None
         self.bitsandbytes_quant_config = None
+        self.load_in_4bit = False
+        self.load_in_8bit = False
         if finetune_args.qlora:
             # finetune_args.lora_all_linear = True
             finetune_args.peft = "lora"
@@ -257,11 +259,13 @@ class Finetuning:
                 torch.float16 if training_args.fp16 else
                     (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
+            self.load_in_4bit = finetune_args.bits == 4
+            self.load_in_8bit = finetune_args.bits == 8
             if training_args.device.type == "cuda":
                 self.device_map = "auto"
                 self.bitsandbytes_quant_config = BitsAndBytesConfig(
-                    load_in_4bit=finetune_args.bits == 4,
-                    load_in_8bit=finetune_args.bits == 8,
+                    load_in_4bit=self.load_in_4bit,
+                    load_in_8bit=self.load_in_8bit,
                     llm_int8_threshold=6.0,
                     llm_int8_has_fp16_weight=False,
                     bnb_4bit_compute_dtype=compute_dtype,
@@ -289,10 +293,14 @@ class Finetuning:
     def find_all_linear_names(self, model):
         cls = torch.nn.Linear
         if self.finetune_args.qlora:
-            if self.finetune_args.bits == 8:
-                cls = bnb.nn.Linear8bitLt
-            elif self.finetune_args.bits == 4:
-                cls = bnb.nn.Linear4bit
+            if self.training_args.device.type == "cuda":
+                if self.finetune_args.bits == 8:
+                    cls = bnb.nn.Linear8bitLt
+                elif self.finetune_args.bits == 4:
+                    cls = bnb.nn.Linear4bit
+            elif self.training_args.device.type == "cpu":
+                from intel_extension_for_transformers.llm.quantization.nn.modules import QuantizedLinearQBits
+                cls = QuantizedLinearQBits
 
         lora_module_names = set()
         for name, module in model.named_modules():
@@ -333,6 +341,8 @@ class Finetuning:
             )
             if finetune_args.qlora and training_args.device.type == "cpu":
                 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+            else:
+                from transformers import AutoModelForCausalLM
             model = AutoModelForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -345,8 +355,8 @@ class Finetuning:
                 trust_remote_code=True if model_args.trust_remote_code else None,
                 torch_dtype=model_dtype,
                 low_cpu_mem_usage=True,
-                load_in_4bit=finetune_args.bits==4,
-                load_in_8bit=finetune_args.bits==8,
+                load_in_4bit=self.load_in_4bit,
+                load_in_8bit=self.load_in_8bit,
             )
             if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
                 re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
@@ -711,6 +721,8 @@ class Finetuning:
                 )
                 if finetune_args.qlora and training_args.device.type == "cpu":
                     from intel_extension_for_transformers.transformers.modeling import AutoModelForSeq2SeqLM
+                else:
+                    from transformers import AutoModelForSeq2SeqLM
                 model = AutoModelForSeq2SeqLM.from_pretrained(
                     model_args.model_name_or_path,
                     from_tf=bool(".ckpt" in model_args.model_name_or_path),
