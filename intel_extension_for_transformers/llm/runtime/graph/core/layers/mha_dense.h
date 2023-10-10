@@ -22,12 +22,14 @@ extern "C" {
 #endif
 
 typedef struct attn_shape_t {
-  int batch_size, head_num, head_size, sl_q, sl_kv;
+  int batch_size, head_num, heads_kv, head_size, sl_q, sl_kv;
 } attn_shape_t;
 size_t jblas_fusion_attn_workspace_size(const attn_shape_t* params);
 
 typedef struct kv_shape_t {
-  uint32_t head_num, head_size, sl_kv_max;
+  uint32_t heads_kv;   // number of heads in K/V matrix
+  uint32_t head_size;  // channel dimension of each head
+  uint32_t sl_kv_max;  // maximum length of sequence (affect internal step size)
 } kv_shape_t;
 
 typedef enum ATTN_FWD_LAYOUT {
@@ -53,8 +55,8 @@ typedef struct attn_bf16_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
-  int batch_size, head_num, head_size, sl_q, sl_kv;
+  ne_attn_flags_t attn_flags;
+  int batch_size, head_num, heads_kv, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
   int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
@@ -71,8 +73,8 @@ typedef struct attn_fp32_fp16_fp16_fp32_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
-  int batch_size, head_num, head_size, sl_q, sl_kv;
+  ne_attn_flags_t attn_flags;
+  int batch_size, head_num, heads_kv, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
   int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
@@ -90,8 +92,8 @@ typedef struct attn_fp16_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
-  int batch_size, head_num, head_size, sl_q, sl_kv;
+  ne_attn_flags_t attn_flags;
+  int batch_size, head_num, heads_kv, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
   int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
@@ -106,8 +108,8 @@ typedef struct attn_int8_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
-  int batch_size, head_num, head_size, sl_q, sl_kv;
+  ne_attn_flags_t attn_flags;
+  int batch_size, head_num, heads_kv, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
   int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
@@ -125,7 +127,7 @@ void jblas_reordered_attn_fp32_batch_kv_info(const kv_shape_t* params, kv_cache_
 typedef struct jblas_fusion_attn_fp32_update_kv_args_t {
   float* src;
   char* cache;
-  int batch_size, head_num, head_size, seq_off, seq_size, seq_max;
+  int batch_size, heads_kv, head_size, seq_off, seq_size, seq_max;
   int step_bs, step_head_num, step_seq, step_head_size;
 } jblas_fusion_attn_fp32_update_kv_args_t;
 // update k-cache and output the memory layout of it
@@ -141,8 +143,8 @@ typedef struct jblas_reordered_attn_fp32_fp32_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
-  int batch_size, head_num, head_size, sl_q, sl_kv;
+  ne_attn_flags_t attn_flags;
+  int batch_size, head_num, heads_kv, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
   int stride_k_bs, stride_k_head_num, stride_k_sl, stride_k_head_size;
