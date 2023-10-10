@@ -65,8 +65,7 @@ RUN conda init bash && \
     /bin/bash -c "source ~/.bashrc"
 
 SHELL ["/bin/bash", "--login", "-c"]
-ENV PATH=$CONDA_DIR/bin:$PATH
-RUN /bin/bash -c "source activate" && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
+RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
