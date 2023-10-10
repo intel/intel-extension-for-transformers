@@ -14,13 +14,13 @@ Smoothquant introduces a hyperparameter $\alpha$ as a smooth factor to calculate
     <img src="./imgs/smoothquant.png" height="250"/>
 </div>
 
-SmoothQuant method aims to split the quantization difficulty of weight and activation by using a fixed-value $\alpha$ for an entire model. However, as the distributions of activation outliers vary not only across different models but also across different layers within a model, [Neural Compressor](https://github.com/intel/neural-compressor) propose a method to obtain [layer-wise optimal $\alpha$ values](https://github.com/intel/neural-compressor/blob/master/docs/source/smooth_quant.md#our-enhancement) with the ability to tune automatically.
+SmoothQuant method aims to split the quantization difficulty of weight and activation by using a fixed-value $\alpha$ for an entire model. However, as the distributions of activation outliers vary not only across different models but also across different layers within a model, [Intel® Compressor](https://github.com/intel/neural-compressor) propose a method to obtain [layer-wise optimal](https://github.com/intel/neural-compressor/blob/master/docs/source/smooth_quant.md#our-enhancement) $\alpha$ values with the ability to tune automatically.
 
 
 ## Example
 We have extended the `from_pretrained` function so that `quantization_config` can accept [`SmoothQuantConfig`](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L251), We provide built-in calibration function with calibration dataset `NeelNanda/pile-10k` and calib_iters `100`, if you would like to use built-in calibration function, tokenizer is necessary, if you would like to use customer calibration function, please provide calibration function to parameter `calib_func` directly.
 
-Let us define the sq_config with `SmoothQuantConfig` first, SmoothQuantConfig provides many parameters, please see definition.
+Let us set the sq_config with `SmoothQuantConfig` first, SmoothQuantConfig provides many parameters, please see definition.
 ```bash
 from intel_extension_for_transformers.transformers import SmoothQuantConfig, AutoTokenizer
 model_name_or_path = "Intel/neural-chat-7b-v1-1"
