@@ -781,10 +781,11 @@ IMAGE_ROOT_PATH = "/home/nfs_images"
 # define global mysql instance
 sys.path.append("..")
 from database.mysqldb import MysqlDb
-mysql_db = MysqlDb()
+# mysql_db = MysqlDb()
 
 
 def check_user_ip(user_ip: str) -> bool:
+    mysql_db = MysqlDb()
     user_list = mysql_db.fetch_one(sql=f'select * from user_info where user_id = "{user_ip}";')
     logger.info(f'[Check IP] user list: {user_list}')
     if user_list == None:
@@ -792,13 +793,16 @@ def check_user_ip(user_ip: str) -> bool:
         cur_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with mysql_db.transaction():
             mysql_db.insert(sql=f"insert into user_info values('{user_ip}', '{cur_time}', null, 1);", params=None)
+    mysql_db._close()
     return True
 
 
 def check_image_status(image_id: str):
+    mysql_db = MysqlDb()
     image = mysql_db.fetch_one(sql=f'select * from image_info where image_id="{image_id}" and exist_status="active"',params=None)
     if image==None:
         raise ValueError(f'No image {image_id} saved in MySQL DB.')
+    mysql_db._close()
     return image
 
 
@@ -836,8 +840,10 @@ def update_image_tags(image):
     update_sql_tmp = ','.join(update_sql_list)
     final_sql = update_sql+update_sql_tmp+f' where  image_id={image_id}'
     logger.info(f'[Update Tags] update sql: {final_sql}')
+    mysql_db = MysqlDb()
     with mysql_db.transaction():
         mysql_db.update(sql=final_sql, params=None)
+    mysql_db._close()
 
 
 def update_image_attr(image, attr):
@@ -846,6 +852,7 @@ def update_image_attr(image, attr):
 
     new_attr = image[attr]
     try:
+        mysql_db = MysqlDb()
         if attr=='checked':
             new_checked = 1 if new_attr else 0
             with mysql_db.transaction():
@@ -856,6 +863,7 @@ def update_image_attr(image, attr):
     except Exception as e:
         logger.error(e)
     else:
+        mysql_db._close()
         logger.info(f'Image {attr} updated successfully.')
 
 
@@ -891,6 +899,7 @@ def format_image_info(image_info: dict) -> dict:
 
 def delete_single_image(user_id, image_id):
     logger.info(f'[Delete] Deleting image {image_id}')
+    mysql_db = MysqlDb()
     image_path = mysql_db.fetch_one(sql=f'SELECT image_path FROM image_info WHERE image_id={image_id}', params=None)
     if image_path==None:
         info = f'[Delete] Image {image_id} does not exist in MySQL.'
@@ -912,6 +921,8 @@ def delete_single_image(user_id, image_id):
     except Exception as e:
         logger.error(e)
         raise Exception(e)
+    finally:
+        mysql_db._close()
     logger.info(f'[Delete] Image {image_id} deleted successfully.')
 
 
@@ -1014,10 +1025,13 @@ def process_single_image(img_id, img_path, user_id):
 
     # update image status
     try:
+        mysql_db = MysqlDb()
         with mysql_db.transaction():
             mysql_db.update(sql=f"UPDATE image_info SET process_status='ready' WHERE image_id={img_id}", params=None)
     except Exception as e:
         logger.error("[background - single] "+str(e))
+    finally:
+        mysql_db._close()
     logger.info(f"[background - single] ----- finish image {img_path} processing -----")
 
 
@@ -1051,6 +1065,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
     logger.info(f'[background - face] Finding match faces in image database.')
     assert face_cnt == len(dfs)
     logger.info(f'[background - face] dfs: {dfs}')
+    mysql_db = MysqlDb()
     for df in dfs:
         # no face matched for current face of image, add new faces later
         if len(df) <= 1:
@@ -1128,6 +1143,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
             logger.error("[background - face] "+str(e))
             raise Exception(f"Exception ocurred while inserting new face into image_face: {e}")
         logger.info(f"[background - face] img_face {img_face_sql} inserted into db.")
+    mysql_db._close()
     logger.info(f"[background - face] Image {image_id} face process finished.")
 
 
@@ -1141,6 +1157,7 @@ def get_type_obj_from_attr(attr, user_id):
     else:
         return {}
 
+    mysql_db = MysqlDb()
     select_list = mysql_db.fetch_all(sql=select_sql)
     select_result = {}
     for item in select_list:
@@ -1164,15 +1181,17 @@ def get_type_obj_from_attr(attr, user_id):
             item = ', '.join(item_list)
         select_result[item] = image_path
 
+    mysql_db._close()
     logger.info(f'type list: {select_result}')
     return select_result
 
 
 def get_process_status(user_id):
     logger.info(f'Geting process status of user {user_id}')
-
+    mysql_db = MysqlDb()
     total_cnt = mysql_db.fetch_one(sql=f"SELECT COUNT(*) AS cnt FROM image_info WHERE user_id='{user_id}' AND exist_status='active';")['cnt']
     processing_cnt = mysql_db.fetch_one(sql=f"SELECT COUNT(*) AS cnt FROM image_info WHERE user_id='{user_id}' AND exist_status='active' AND process_status='processing';")['cnt']
+    mysql_db._close()
     result = {}
     result['total_image'] = total_cnt
     result['processing_image'] = processing_cnt
@@ -1198,7 +1217,9 @@ def get_images_by_type(user_id, type, subtype) -> List:
         sql = f"SELECT image_info.image_id, image_info.image_path FROM image_face INNER JOIN image_info ON image_info.image_id=image_face.image_id WHERE image_info.user_id='{user_id}' AND image_info.exist_status='active' AND image_face.face_tag='{subtype}'"
 
     logger.info(f'sql: {sql}')
+    mysql_db = MysqlDb()
     images = mysql_db.fetch_all(sql=sql, params=None)
+    mysql_db._close()
     logger.info(f"image list: {images}")
     if len(images) == 0:
         logger.error(f'no label {subtype} in {type}')
@@ -1217,10 +1238,13 @@ def get_face_list_by_user_id(user_id: str) -> List[Dict]:
     logger.info(f'getting face list of user {user_id}')
     group_by_face_sql = f'SELECT group_concat(image_face.image_path) AS image_path, group_concat(image_face.face_tag) AS face_tag FROM image_face INNER JOIN image_info ON image_info.image_id=image_face.image_id WHERE image_info.user_id = "{user_id}" AND image_info.exist_status="active" GROUP BY face_id;'
     try:
+        mysql_db = MysqlDb()
         query_list = mysql_db.fetch_all(sql=group_by_face_sql)
     except Exception as e:
         logger.error(e)
         raise Exception(e)
+    finally:
+        mysql_db._close()
     logger.info(f'query result list: {query_list}')
     response_person = {}
     for item in query_list:
@@ -1236,6 +1260,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     logger.info(f'[NER query] start query from ner results')
     query_sql = "SELECT image_info.image_id, image_info.image_path FROM image_info "
     query_flag = False
+    mysql_db = MysqlDb()
 
     # get person name query
     face_list = mysql_db.fetch_all(sql=f"select image_face.face_tag from image_face inner join image_info on image_info.image_id=image_face.image_id where image_info.user_id='{user_id}' AND exist_status='active';", params=None)
@@ -1328,6 +1353,7 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         item = {"image_id": res['image_id'], "imgSrc": image_path}
         result_image_list.append(item)
     logger.info(f'[NER query] result: {result_image_list}')
+    mysql_db._close()
     return result_image_list
 
 
@@ -1335,6 +1361,7 @@ def delete_user_infos(user_id: str):
     logger.info(f'[delete user] start query from ner results')
 
     try:
+        mysql_db = MysqlDb()
         with mysql_db.transaction():
             # delete image_face and face_info
             logger.info(f'[delete user] delete image_face and face_info of user {user_id}.')
@@ -1349,6 +1376,8 @@ def delete_user_infos(user_id: str):
             mysql_db.delete(sql=f"DELETE FROM user_info WHERE user_id='{user_id}'", params=None)
     except Exception as e:
         raise Exception(e)
+    finally:
+        mysql_db._close()
 
     # delete local images
     try:
@@ -1399,6 +1428,7 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
 
     image_path = IMAGE_ROOT_PATH+'/user'+str(user_id)
     os.makedirs(image_path, exist_ok=True)
+    mysql_db = MysqlDb()
 
     return_list = []
     image_obj_list = []
@@ -1438,9 +1468,8 @@ async def handle_ai_photos_upload_images(request: Request, background_tasks: Bac
         return_list.append(item)
         obj_item = {"img_obj": img_obj, "exif": exif, "img_path": img_path, "img_id": img_id}
         image_obj_list.append(obj_item)
-
+    mysql_db._close()
     background_tasks.add_task(process_images_in_background, user_id, image_obj_list)
-
     logger.info('<uploadImages> Finish image uploading and saving')
     return return_list
 
@@ -1456,6 +1485,7 @@ def handle_ai_photos_get_all_images(request: Request):
 
     try:
         result_list = []
+        mysql_db = MysqlDb()
         image_list = mysql_db.fetch_all(sql=f'SELECT image_id, image_path FROM image_info WHERE user_id="{user_id}" AND exist_status="active";')
         for image in image_list:
             image_name = image['image_path'].split('/')[-1]
@@ -1463,6 +1493,7 @@ def handle_ai_photos_get_all_images(request: Request):
     except Exception as e:
         return JSONResponse(content=e, status_code=500)
     else:
+        mysql_db._close()
         logger.info(f'<getAllImages> all images of user {user_id}: {result_list}')
         return result_list
 
@@ -1532,10 +1563,13 @@ async def handle_ai_photos_get_image_detail(request: Request):
     logger.info(f'<getImageDetail> Getting image detail of image {image_id} by user {user_id}')
 
     try:
+        mysql_db = MysqlDb()
         image_info = mysql_db.fetch_one(sql=f'SELECT * FROM image_info WHERE image_id={image_id} AND user_id="{user_id}" AND exist_status="active";', params=None)
     except Exception as e:
         logger.error("<getImageDetail> "+str(e))
         return JSONResponse(content=f'Exception {e} occurred when selecting image {image_id} from MySQL.')
+    finally:
+        mysql_db._close()
     
     if image_info:
         image_detail = format_image_info(image_info)
@@ -1591,6 +1625,7 @@ async def handle_ai_photos_update_label(request: Request):
     label_list = params['label_list']
 
     try: 
+        mysql_db = MysqlDb()
         for label_obj in label_list:
             label = label_obj['label']
             label_from = label_obj['from']
@@ -1612,6 +1647,7 @@ async def handle_ai_photos_update_label(request: Request):
     except Exception as e:
         return JSONResponse(content=e, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
     else:
+        mysql_db._close()
         logger.info('<updateLabel> Image Labels updated successfully.')
 
     return "Succeed"
