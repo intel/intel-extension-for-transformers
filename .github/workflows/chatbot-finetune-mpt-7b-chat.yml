@@ -41,8 +41,11 @@ jobs:
               podman exec ${docker_name} bash -c "ls -a ${{ env.REPO_DIR }} && rm -fr ${{ env.REPO_DIR }}/* && rm -fr ${{ env.REPO_DIR }}/.* || true"
             done
           fi
-      - name: Checkout
+      - name: Checkout out Repo
         uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+          fetch-tags: true
 
       - name: Build Docker Image
         run: 

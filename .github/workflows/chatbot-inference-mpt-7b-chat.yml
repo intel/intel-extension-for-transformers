@@ -42,8 +42,11 @@ jobs:
             done
           fi
 
-      - name: Checkout
+      - name: Checkout out Repo
         uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+          fetch-tags: true
 
 
       - name: Build Docker Image
