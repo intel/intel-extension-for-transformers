@@ -59,16 +59,8 @@ month_date_list = [31, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30]
 
 # ================= util functions ===================
 def check_query_time(query, cur_time):
-    # prompt = """Please determine the precise time mentioned in the user's query. Your response should consist only of an accurate time in the format 'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' If the user query does not include any time reference, please reply with 'None'.
-    # \n\n###Current Time:\n{}\n\nUser Query:\n{}\n\nResponse:\n""".format(cur_time, query)
-    prompt = """### Instruction: Please thoughtfully identify the precise time range mentioned in the user's query based on the given current time. The response should follows the following requirements. \n
-    ### Requirements:
-    1. Your response should consist only of an accurate time in the format 'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' 
-    2. Please carefully check the accuracy of the identifiction results. 
-    3. The phrase "in the last month" means "in the thirty or so days up to and including today".\n
-    ### Current Time:\n{}\n
-    ### User Query:\n{}\n
-    ### Response:\n""".format(cur_time, query)
+    prompt = """Please determine the precise time mentioned in the user's query. Your response should consist only of an accurate time in the format 'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' If the user query does not include any time reference, please reply with 'None'.
+    \n\n###Current Time:\n{}\n\nUser Query:\n{}\n\nResponse:\n""".format(cur_time, query)
 
     return prompt
 
@@ -77,6 +69,13 @@ def enforce_stop_tokens(text: str) -> str:
     """Cut off the text as soon as any stop words occur."""
     stopwords = ["</s"]
     return re.split("|".join(stopwords), text)[0]
+
+
+def post_process_last_week() -> list[dict]:
+    to_time = datetime.datetime.today()
+    from_time = to_time - timedelta(days=7)
+    result_period = [{"from": str(from_time)[:10], "to": str(to_time)[:10]}]
+    return result_period
 
 
 # ================= inference =================
@@ -183,11 +182,15 @@ def inference(query):
         from_time = mentioned_time['period'][2*sub]
         to_time = mentioned_time['period'][2*sub+1]
         result_period.append({"from": from_time, "to": to_time})
+    
     if 'last month' in query:
         to_time = datetime.datetime.today()
         now_month = to_time.month
         from_time = to_time - timedelta(days=month_date_list[now_month-1])
         result_period = [{"from": str(from_time)[:10], "to": str(to_time)[:10]}]
+
+    if 'last week' in query:
+        result_period = post_process_last_week()
     result = {"period": result_period, "time": mentioned_time['time'], 'location': location, "name": name, "organization": organization}
 
     print(f'post process time: {time.time() - cur_time}')
