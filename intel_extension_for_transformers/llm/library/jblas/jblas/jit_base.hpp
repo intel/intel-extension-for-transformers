@@ -50,10 +50,10 @@ class JitBase : protected Xbyak::CodeGenerator {
 #endif
   }
 
-  void generate_Nbitsmask(const Xbyak::Opmask& _msk, const Xbyak::Reg64& _pos, const Xbyak::Reg64& _total,
+  void generate_Nbitsmask(const Xbyak::Opmask& _msk, const Xbyak::Reg64& _pos, const Xbyak::Address& _total,
                           const Xbyak::Reg64& _tmp, const Xbyak::Reg64& _tmp1, int N) {
     inLocalLabel();
-    mov(_tmp, _total);
+    lea(_tmp, _total);
     sub(_tmp, _pos);
     cmp(_tmp, N);
     jb(".maskflag");
@@ -78,6 +78,10 @@ class JitBase : protected Xbyak::CodeGenerator {
     L(".maskend");
     outLocalLabel();
   }
+  void generate_Nbitsmask(const Xbyak::Opmask& _msk, const Xbyak::Reg64& _pos, const Xbyak::Reg64& _total,
+                          const Xbyak::Reg64& _tmp, const Xbyak::Reg64& _tmp1, int N) {
+    generate_Nbitsmask(_msk, _pos, ptr[_total], _tmp, _tmp1, N);
+  }
 };
 
 class JitAvx : protected JitBase {
@@ -90,6 +94,11 @@ class JitAvx2 : protected JitAvx {
  protected:
   static int constexpr VBits = 256;
   typedef Xbyak::Ymm vreg_t;
+
+  void loadbf16_f32(const Xbyak::Ymm& dst, const Xbyak::Address& addr) {
+    vpmovzxwd(dst, addr);
+    vpslld(dst, dst, 16);
+  }
 };
 
 class JitAvx512f : protected JitAvx2 {
@@ -186,6 +195,10 @@ class JitAvx512f : protected JitAvx2 {
 class JitAvx512_fp16 : protected JitAvx512f {};
 
 class JitAvx512vnni : protected JitAvx512f {
+ protected:
+};
+
+class JitAvxvnni : protected JitAvx2 {
  protected:
 };
 

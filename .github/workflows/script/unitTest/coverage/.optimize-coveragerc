@@ -11,6 +11,7 @@ omit =
  */intel_extension_for_transformers/llm/library/**
  */intel_extension_for_transformers/llm/operator/**
  */intel_extension_for_transformers/llm/runtime/deprecated/**
+ */intel_extension_for_transformers/llm/runtime/graph/**
  */intel_extension_for_transformers/neural_chat/**
  */intel_extension_for_transformers/transformers/modeling/**
  */intel_extension_for_transformers/transformers/utils/get_throughput.py

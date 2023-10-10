@@ -24,11 +24,12 @@ enum JBLAS_ISA {
   JblasNoSIMD = 10,
   JblasAVX = 11,
   JblasAVX2 = 12,
-  JblasAVX512F = 13,
-  JblasAVX512_VNNI = 14,
-  JblasAMX_BF16 = 15,
-  JblasAMX_INT8 = 16,
-  JblasAVX512_FP16 = 17,
+  JblasAVX_VNNI = 13,
+  JblasAVX512F = 14,
+  JblasAVX512_VNNI = 15,
+  JblasAMX_BF16 = 16,
+  JblasAMX_INT8 = 17,
+  JblasAVX512_FP16 = 18,
 };
 enum JBLAS_DTYPE {
   JblasF64 = 59,

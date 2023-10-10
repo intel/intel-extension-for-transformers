@@ -14,6 +14,7 @@ function init_params {
   batch_size=1
   tuned_checkpoint=saved_results
   lm_eval_tasks="lambada_openai "
+  script="run_generation.py"
   for var in "$@"
   do
     case $var in
@@ -66,10 +67,10 @@ function run_benchmark {
 
     if [[ ${mode} == "accuracy" ]]; then
         mode_cmd=" --accuracy "
-	extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
-	batch_size=112
+        extra_cmd=$extra_cmd" --tasks ${lm_eval_tasks}"
     elif [[ ${mode} == "benchmark" ]]; then
         mode_cmd=" --benchmark "
+        extra_cmd=$extra_cmd" --iters ${iters}"
     else
         echo "Error: No such mode: ${mode}"
         exit 1
@@ -77,81 +78,50 @@ function run_benchmark {
 
 
     if [ "${topology}" = "gpt_j" ]; then
-        if [ "${task}" = "generation" ]; then
-            script="run_generation.py"
-        fi
-        DATASET_NAME="NeelNanda/pile-10k"
         model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
+    elif [ "${topology}" = "gpt_j_woq_rtn" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    elif [ "${topology}" = "gpt_j_woq_bab" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
+    elif [ "${topology}" = "gpt_j_mp" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/gpt-j-6B"
     elif [ "${topology}" = "opt_1.3b" ]; then
-        script="run_generation.py"
         model_name_or_path="facebook/opt-1.3b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
     elif [ "${topology}" = "opt_2.7b" ]; then
-        script="run_generation.py"
         model_name_or_path="facebook/opt-2.7b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
     elif [ "${topology}" = "opt_6.7b" ]; then
-        script="run_generation.py"
         model_name_or_path="facebook/opt-6.7b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
-    elif [ "${topology}" = "llama_7b" ]; then
-        script="run_generation.py"
-        model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
-    elif [ "${topology}" = "llama_13b" ]; then
-        script="run_generation.py"
-        model_name_or_path="decapoda-research/llama-13b-hf"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
     elif [ "${topology}" = "bloom_7b1" ]; then
-        script="run_generation.py"
-        # model_name_or_path="bigscience/bloom-7b1"
         model_name_or_path="/tf_dataset2/models/pytorch/bloom-7b1"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
     elif [ "${topology}" = "bloom_1b7" ]; then
-        script="run_generation.py"
         model_name_or_path="/tf_dataset2/models/pytorch/bloom-1b7"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
     elif [ "${topology}" = "bloomz-3b" ]; then
-        script="run_generation.py"
         model_name_or_path="bigscience/bloomz-3b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
+    elif [ "${topology}" = "llama_7b" ]; then
+        model_name_or_path="/tf_dataset2/models/pytorch/llama_7b"
+    elif [ "${topology}" = "llama_13b" ]; then
+        model_name_or_path="decapoda-research/llama-13b-hf"
     elif [ "${topology}" = "dolly_v2_3b" ]; then
-        script="run_generation.py"
         model_name_or_path="/tf_dataset2/models/pytorch/dolly_v2_3b"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
     elif [ "${topology}" = "mpt_7b_chat" ]; then
-        script="run_generation.py"
         model_name_or_path="mosaicml/mpt-7b-chat"
-        if [ "${backend}" = "ipex" ]; then
-            extra_cmd=$extra_cmd" --ipex"
-        fi
-
     fi
 
     
     if [[ ${int8} == "true" ]]; then
-        extra_cmd=$extra_cmd" --int8"
+        if [ "${topology}" = "gpt_j_woq_rtn" ]; then
+            extra_cmd=$extra_cmd" --woq"
+        elif [ "${topology}" = "gpt_j_woq_bab" ]; then
+            extra_cmd=$extra_cmd" --bitsandbytes"
+        elif [ "${topology}" = "gpt_j_woq_load4bit" ]; then
+            extra_cmd=$extra_cmd" --load_in_4bit True"
+        elif [ "${topology}" = "gpt_j_woq_load8bit" ]; then
+            extra_cmd=$extra_cmd" --load_in_8bit True"
+        elif [ "${topology}" = "gpt_j_mp" ]; then
+            extra_cmd=$extra_cmd" --mixed_precision"
+        else
+            extra_cmd=$extra_cmd" --int8"
+        fi
     fi
 
     echo $extra_cmd

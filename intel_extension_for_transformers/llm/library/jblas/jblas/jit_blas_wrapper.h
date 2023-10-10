@@ -190,6 +190,7 @@ class GemmInterfaceParallelAB {
       }
       if constexpr (_LaunchA || _LaunchB) {
 #pragma omp barrier
+        (void)(0);  // make msvc happy with c++20
       }
       int colidx, rowidx, rowsize, colsize;
       para.getIndex(tidx, &rowidx, &colidx, &rowsize, &colsize);
@@ -209,6 +210,28 @@ class GemmInterfaceParallelAB {
 namespace gemm_default {
 template <class T>
 using DefaultParallel = jblas::utils::parallel::Parallel2DGemm<T>;
+namespace avx2 {
+JBLAS_ISA constexpr DefaultISA = JblasAVX2;
+using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
+        DefaultISA,                                            //
+        jblas::gemm::GemmCore_Row_NN_4x24_AVX2,             //
+        jblas::prologue::gemm::ActivationBase,                 //
+        jblas::prologue::gemm::WeightPack,                     //
+        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+    DefaultParallel>;
+}
+namespace avx_vnni {
+JBLAS_ISA constexpr DefaultISA = JblasAVX_VNNI;
+using GemmKernel48 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
+        DefaultISA,                                            //
+        jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI,         //
+        jblas::prologue::gemm::ActivationBase,                 //
+        jblas::prologue::gemm::WeightPack,                     //
+        jblas::epilogue::gemm::AlphaBetaProcessS32U8>,
+    DefaultParallel>;
+}
 namespace avx512f {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
@@ -237,7 +260,7 @@ using GemmKernelDynamicU8 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParal
         jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI,         //
         jblas::prologue::gemm::ActivationFp32AsymU8Quantize,   //
         jblas::prologue::gemm::WeightPack,                     //
-        jblas::epilogue::gemm::DequantInt32ToFp32>,
+        jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
     DefaultParallel>;
 }  // namespace avx512_vnni
 

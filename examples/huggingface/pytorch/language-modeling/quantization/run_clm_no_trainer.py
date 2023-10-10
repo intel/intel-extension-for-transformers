@@ -192,6 +192,8 @@ def get_user_model():
                 revision=args.revision,
                 )
         tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+        if args.approach == 'weight_only':
+            user_model = user_model.float()
     else:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.model,

@@ -111,10 +111,12 @@ JBLAS_CODE dequant_kblock_s8_f32_fwd(int8_t* srcptr, float* dstptr, int row, int
     auto sptr = scales + kpos * NPad;
     int j = 0;
     for (; j < simd_process_num; j += Vlen) {
-      auto s8_ymm_v = _mm_loadl_epi64(reinterpret_cast<__m128i_u*>( srcptr + i * ld_src + j));
+      auto s8_ymm_v = _mm_loadl_epi64(reinterpret_cast<__m128i*>(srcptr + i * ld_src + j));
       auto s32_ymm_v = _mm256_cvtepi8_epi32(s8_ymm_v);
       if constexpr (WITH_ZP) {
-        s32_ymm_v = _mm256_sub_epi32(s32_ymm_v, _mm256_cvtepi8_epi32(_mm_loadl_epi64(reinterpret_cast<__m128i_u*>( zero_points + kpos * NPad + j))));
+        s32_ymm_v = _mm256_sub_epi32(
+            s32_ymm_v,
+            _mm256_cvtepi8_epi32(_mm_loadl_epi64(reinterpret_cast<__m128i*>(zero_points + kpos * NPad + j))));
       }
       auto f32_ymm_v = _mm256_cvtepi32_ps(s32_ymm_v);
       f32_ymm_v = _mm256_mul_ps(f32_ymm_v, _mm256_loadu_ps(sptr + j));
@@ -402,6 +404,53 @@ static inline JBLAS_CODE bf16_cvt_fp32_2D_write_back(const utils::bf16* src_ptr,
   return JblasSuccess;
 }
 
+static const uint8_t avx2_bf16_convert_maigc_num[32] = {
+    0x02, 0x03, 0x06, 0x07, 0x0a, 0x0b, 0x0e, 0x0f, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+    0x02, 0x03, 0x06, 0x07, 0x0a, 0x0b, 0x0e, 0x0f, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
+
+static inline __m128i cvt_fp32_to_bf16(const __m256 src, __m256i* and_helper, __m256i* add_helper) {
+  auto shuffle_v = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(avx2_bf16_convert_maigc_num));
+  auto round_bias = _mm256_castps_si256(src);
+  round_bias = _mm256_and_si256(*and_helper, _mm256_srli_si256(round_bias, 2));
+  round_bias = _mm256_add_epi32(round_bias, *add_helper);
+  auto round_fp32_v = _mm256_add_epi32(_mm256_castps_si256(src), round_bias);
+  __m256i trunc_elements = _mm256_shuffle_epi8(round_fp32_v, shuffle_v);
+  __m256i ordered = _mm256_permute4x64_epi64(trunc_elements, 0x58);
+  return _mm256_castsi256_si128(ordered);
+}
+
+static inline JBLAS_CODE fp32_cvt_bf16_2D_write_back(const void* raw_srcptr, void* raw_dstptr, int row, int col,
+                                                     int srcstride, int dststride, bool zeropadding) {
+  char* srcptr = (char*)raw_srcptr;
+  char* dstptr = (char*)raw_dstptr;
+  constexpr int simd_proc_elt = 8;
+  auto bf16_and_helper = _mm256_set1_epi32(0X00000001);
+  auto bf16_add_helper = _mm256_set1_epi32(0x00007FFF);
+  auto col_body_loop = col / simd_proc_elt * simd_proc_elt;
+  int npadding = dststride - col * sizeof(utils::bf16);
+  for (int i = 0; i < row; i++) {
+    auto src = srcptr + i * srcstride;
+    auto dst = dstptr + i * dststride;
+    int j = 0;
+    for (; j < col_body_loop; j += simd_proc_elt) {
+      auto pack_bf16_value =
+          cvt_fp32_to_bf16(_mm256_loadu_ps(reinterpret_cast<float*>(src) + j), &bf16_and_helper, &bf16_add_helper);
+      _mm_storeu_si128((__m128i*)(dst + j * sizeof(jblas::utils::bf16)), pack_bf16_value);
+    }
+    for (; j < col; j++) {
+      (reinterpret_cast<jblas::utils::bf16*>(dst) + j)->fromfloat(*(reinterpret_cast<float*>(src) + j));
+    }
+    if (zeropadding && npadding) {
+      std::memset(dst + col * sizeof(utils::bf16), 0, npadding);
+    }
+  }
+  return JblasSuccess;
+}
+
+#ifdef __GNUC__
+#pragma GCC pop_options
+#else
+#endif
 #endif
 }  // namespace avx2
 }  // namespace kernel

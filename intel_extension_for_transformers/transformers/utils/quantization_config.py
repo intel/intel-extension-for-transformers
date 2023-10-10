@@ -30,15 +30,16 @@ class WeightOnlyQuantConfig:
         self,
         llm_int8_skip_modules=None,
         compute_dtype=None,
-        weight_dtype="int4_fullrange", # int8 int4_clip, int4_fullrange fp4_e2m1_bnb fp4_e2m1 nf4
+        weight_dtype=None,
         scale_dtype="fp32", # Now only fp32
         mse_range=False,
         use_double_quant=False,
         double_quant_dtype="int8", # reserve for double quant
         double_quant_scale_dtype="fp32", # reserve for double quant
-        group_size=None,
+        group_size=32,
         scheme="sym",
         algorithm="RTN",
+        use_ggml=False,
         **kwargs,
     ):
         from intel_extension_for_transformers.llm.quantization.utils import convert_dtype_2_str
@@ -51,11 +52,14 @@ class WeightOnlyQuantConfig:
         self.double_quant_scale_dtype = double_quant_scale_dtype
         self.scheme = scheme
         self.algorithm = algorithm
+        self.group_size = group_size
+        self.tokenizer = kwargs.pop("tokenizer", None)
+        self.calib_func = kwargs.pop("calib_func", None)
+        self.calib_dataset = kwargs.pop("calib_dataset", "NeelNanda/pile-10k")
+        self.calib_dataloader = kwargs.pop("calib_dataloader", None)
+        self.calib_iters = kwargs.pop("calib_iters", 100)
+        self.use_ggml = use_ggml
 
-        if group_size is None:
-            self.group_size = 32
-        else:
-            self.group_size = group_size
         if compute_dtype is None:
             self.compute_dtype = "fp32"
         elif isinstance(compute_dtype, str):
@@ -65,7 +69,6 @@ class WeightOnlyQuantConfig:
         else:
             raise ValueError("bit4_compute_dtype must be a string or a torch.dtype")
 
-        self.post_init()
 
     def post_init(self):
         r"""
@@ -78,7 +81,9 @@ class WeightOnlyQuantConfig:
         if self.compute_dtype is not None and self.compute_dtype not in ['fp32', 'bf16', 'int8']:
             raise ValueError("compute_dtype must be 'fp32', 'bf16', 'int8'.")
 
-        if self.weight_dtype not in ['int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1']:
+        if self.weight_dtype is None:
+            self.weight_dtype = 'int4_fullrange'
+        elif self.weight_dtype not in ['int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1']:
             raise ValueError(f"weight_dtype must be a string in "
                              f"'int8', 'int4_fullrange', 'int4_clip', 'nf4', 'fp4_e2m1_bnb', 'fp4_e2m1'")
 
@@ -103,16 +108,39 @@ class WeightOnlyQuantConfig:
         if not isinstance(self.scheme, str):
             raise ValueError("scheme must be a string")
 
+    def post_init_runtime(self):
+        r"""
+        Safety checker that arguments are correct - also replaces some NoneType arguments with their default values.
+        """
+
+        if self.llm_int8_skip_modules is not None and not isinstance(self.llm_int8_skip_modules, list):
+            raise ValueError("llm_int8_skip_modules must be a list of strings")
+
+        if self.compute_dtype is None:
+            self.compute_dtype = "int8"
+        elif self.compute_dtype not in ['int8', 'bf16', 'fp32']:
+            raise ValueError("compute_dtype must be 'int8', 'bf16', 'fp32'.")
+
+        if self.weight_dtype is None:
+            self.weight_dtype = "int4"
+        elif self.weight_dtype not in ['int4', 'int8']:
+            raise ValueError(f"weight_dtype must be 'int4', 'int8'.")
+
+        if self.scale_dtype not in ["fp32", "fp16"]:
+            raise ValueError("scale_dtype must be 'fp32', 'fp16'.")
+
+        if self.group_size not in [32, 128]:
+            raise ValueError("group_size must be an integer in [32, 128]")
+
+        if self.scheme not in ["sym", "asym"]:
+            raise ValueError("scheme must be 'sym', 'asym'.")
+
     def quantization_method(self):
         r"""
         This method returns the quantization method used for the model.
         """
-        if self.weight_dtype == 8:
-            return "s8"
-        elif self.weight_dtype == 4 and self.weight_dtype == "s4fullrange":
-            return "s4fullrange"
-        else:
-            raise ValueError("Only support int8 and int4 quantization now!")
+        # TODO: For training only
+        pass
 
     @classmethod
     def from_dict(cls, config_dict, return_unused_kwargs, **kwargs):
@@ -168,8 +196,6 @@ class WeightOnlyQuantConfig:
         """
 
         output = copy.deepcopy(self.__dict__)
-        output["compute_dtype"] = str(output["compute_dtype"]).split(".")[1]
-
         return output
 
     def __repr__(self):

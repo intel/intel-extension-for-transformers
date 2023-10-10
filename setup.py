@@ -122,6 +122,7 @@ class CMakeBuild(build_ext):
             f"-DDNNL_CPU_RUNTIME=OMP",
             f"-DNE_WITH_AVX2={'ON' if NE_WITH_AVX2 else 'OFF'}",
             f"-DNE_WITH_TESTS=OFF",
+            f"-DNE_PYTHON_API=ON",
         ]
         if sys.platform == "linux":  # relative_rpath
             cmake_args.append('-DCMAKE_BUILD_RPATH=$ORIGIN/')
@@ -240,12 +241,14 @@ def check_submodules():
 
 if __name__ == '__main__':
     ext_modules = [CMakeExtension(
-        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr', True)]
+        "intel_extension_for_transformers.qbits", 'intel_extension_for_transformers/llm/operator/cscr', lib_only=True)]
     if not SKIP_RUNTIME:
         check_submodules()
-        ext_modules.append(CMakeExtension(
-            "intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"))
-        cmdclass = {'build_ext': CMakeBuild}
+        ext_modules.extend([
+            CMakeExtension("intel_extension_for_transformers.neural_engine_py", "intel_extension_for_transformers/llm/runtime/deprecated/"),
+            CMakeExtension("intel_extension_for_transformers.llm.runtime.graph.Model", "intel_extension_for_transformers/llm/runtime/graph/"),
+            ])
+    cmdclass={'build_ext': CMakeBuild}
 
     setup(
         name="intel-extension-for-transformers",

@@ -20,11 +20,15 @@ import subprocess
 from transformers import AutoTokenizer
 
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
+build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="main program llm running")
     parser.add_argument("--model_name", type=str, help="model name", required=True)
     parser.add_argument("-m", "--model", type=Path, help="path ne model", required=True)
+    parser.add_argument(
+        "--build_dir", type=Path, help="path to build directory", default=build_path
+    )
     parser.add_argument(
         "-p",
         "--prompt",
@@ -54,7 +58,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     )
     parser.add_argument(
         "-b",
-        "--batch_size",
+        "--batch_size_truncate",
         type=int,
         help="batch size for prompt processing (default: 512)",
         default=512,
@@ -87,16 +91,30 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--keep",
         type=int,
-        help="number of tokens to keep from the initial prompt (default: 0, -1 = all)  ",
+        help="number of tokens to keep from the initial prompt (default: 0, -1 = all)",
         default=0,
+    )
+    parser.add_argument(
+        "--memory-f32",
+        action="store_true",
+        help="Use fp32 for the data type of kv memory",
+    )
+    parser.add_argument(
+        "--memory-f16",
+        action="store_true",
+        help="Use fp16 for the data type of kv memory",
+    )
+    parser.add_argument(
+        "--memory-auto",
+        action="store_true",
+        help="Try with jblas flash attn managed format for kv memory (Currently GCC13 & AMX required); "
+        "fall back to fp16 if failed (default option for kv-memory)",
     )
 
     args = parser.parse_args(args_in)
     print(args)
     model_name = model_maps.get(args.model_name, args.model_name)
-    path = Path(
-        Path(__file__).parent.absolute(), "../build/bin/run_{}".format(model_name)
-    )
+    path = Path(args.build_dir, "./bin/run_{}".format(model_name))
     if not path.exists():
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
@@ -106,13 +124,20 @@ def main(args_in: Optional[List[str]] = None) -> None:
     cmd.extend(["--prompt",         args.prompt])
     cmd.extend(["--n-predict",      str(args.n_predict)])
     cmd.extend(["--threads",        str(args.threads)])
-    cmd.extend(["--batch-size",     str(args.batch_size)])
+    cmd.extend(["--batch-size-truncate",     str(args.batch_size_truncate)])
     cmd.extend(["--ctx-size",       str(args.ctx_size)])
     cmd.extend(["--seed",           str(args.seed)])
     cmd.extend(["--repeat-penalty", str(args.repeat_penalty)])
     cmd.extend(["--keep",           str(args.keep)])
-    # if args.color:
-    #     cmd.append(" --color")
+    if args.color:
+        cmd.append(" --color")
+    if args.memory_f32:
+        cmd.extend(["--memory-f32"])
+    if args.memory_f16:
+        cmd.extend(["--memory-f16"])
+    if args.memory_auto:
+        cmd.extend(["--memory-auto"])
+
 
     if (args.model_name == "chatglm"):
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
@@ -167,7 +192,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         token_ids_list = map(str, token_ids_list)
         token_ids_str = ', '.join(token_ids_list)
         cmd.extend(["--ids", token_ids_str])
-        
+
     print("cmd:", cmd)
     subprocess.run(cmd)
 

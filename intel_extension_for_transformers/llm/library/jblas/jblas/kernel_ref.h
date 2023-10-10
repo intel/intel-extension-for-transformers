@@ -276,8 +276,8 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, _DST_T* dstptr,
         scale1 = sptr[s1_idx];
       }
       if (zero_points != nullptr) {
-        dst0 = (float(get_s8<S4_T>(tmp.x)) - float((zero_points + kpos * NPad)[j + 0])) * scale0;
-        dst1 = (float(get_s8<S4_T>(tmp.y)) - float((zero_points + kpos * NPad)[j + 1])) * scale1;
+        dst0 = (float(get_s8<S4_T>(tmp.x)) - float((zero_points + kpos * NPad)[s0_idx])) * scale0;
+        dst1 = (float(get_s8<S4_T>(tmp.y)) - float((zero_points + kpos * NPad)[s1_idx])) * scale1;
       } else {
         dst0 = float(get_s8<S4_T>(tmp.x)) * scale0;
         dst1 = float(get_s8<S4_T>(tmp.y)) * scale1;

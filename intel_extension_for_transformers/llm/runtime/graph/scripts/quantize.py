@@ -19,7 +19,17 @@ from typing import List, Optional
 import subprocess
 
 model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
+build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Quantize weights of NE files")
@@ -29,6 +39,9 @@ def main(args_in: Optional[List[str]] = None) -> None:
     )
     parser.add_argument(
         "--out_file", type=Path, help="path to the quantized model", required=True
+    )
+    parser.add_argument(
+        "--build_dir", type=Path, help="path to build directory", default=build_path
     )
     parser.add_argument(
         "--config",
@@ -52,7 +65,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="sym",
     )
     parser.add_argument(
-        "--block_size", type=int, help="block size (default: 32)", default=32
+        "--group_size", type=int, help="group size (default: 32)", default=32
     )
     parser.add_argument(
         "--scale_dtype",
@@ -61,36 +74,36 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="fp32",
     )
     parser.add_argument(
-        "--compute_type",
+        "--compute_dtype",
         type=str,
-        help="Gemm computation data type: int8/fp32/ggml (default: ggml)",
-        default="ggml",
+        help="data type of Gemm computation: int8/bf16/fp32 (default: int8)",
+        default="int8",
+    )
+    parser.add_argument(
+        "--use_ggml",
+        action="store_true",
+        help="enable ggml for quantization and inference",
     )
     args = parser.parse_args(args_in)
 
     model_name = model_maps.get(args.model_name, args.model_name)
-    path = Path(
-        Path(__file__).parent.absolute(),
-        "../build/bin/quant_{}".format(model_name),
-    )
+    path = Path(args.build_dir, "./bin/quant_{}".format(model_name))
     if not path.exists():
         print(path)
         print("Please build graph first or select the correct model name.")
         sys.exit(1)
 
-    quant_bits = 4
-    if args.weight_dtype == "int8":
-        quant_bits = 8
-
     cmd = [path]
     cmd.extend(["--model_file",     args.model_file])
     cmd.extend(["--out_file",       args.out_file])
     cmd.extend(["--nthread",        str(args.nthread)])
-    cmd.extend(["--bits",           str(quant_bits)])
+    cmd.extend(["--weight_dtype",   str(args.weight_dtype)])
     cmd.extend(["--alg",            args.alg])
-    cmd.extend(["--block_size",     str(args.block_size)])
+    cmd.extend(["--group_size",     str(args.group_size)])
     cmd.extend(["--scale_dtype",    args.scale_dtype])
-    cmd.extend(["--compute_type",   args.compute_type])
+    cmd.extend(["--compute_dtype",  args.compute_dtype])
+    if args.use_ggml:
+        cmd.extend(["--use_ggml"])
     
     print(cmd)
     subprocess.run(cmd)
