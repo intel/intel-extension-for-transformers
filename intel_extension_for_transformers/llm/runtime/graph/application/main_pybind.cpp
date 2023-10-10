@@ -99,7 +99,8 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
   params.top_k = top_k;
   params.top_p = top_p;
 
-  printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k, params.top_p);
+  printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k,
+         params.top_p);
 
   n_past = 0;
   token_eos = false;
@@ -150,11 +151,6 @@ std::vector<int> Model::generate(const std::vector<int>& input_ids) {
   curr_input_ids = {next_token_id};
 
   if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() == params.n_predict) {
-    token_eos = true;
-  }
-
-  auto next_token = model_token_to_str(ctx, next_token_id);
-  if (strcmp(next_token, "<|endoftext|>") == 0) {
     token_eos = true;
   }
 
@@ -221,7 +217,7 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
   std::mt19937 rng{rd()};
 
   const auto* plogits = logits;
-  float temp = 0.8; // TODO: update this
+  float temp = 0.8;  // TODO: update this
   int repeat_last_n = 64;
   float repeat_penalty = 1.02;
   if (temp <= 0) {
@@ -320,15 +316,14 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
 }
 
 int Model::post_process(float* logits) {
-  // printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k, params.top_p);
   if (params.beam_size > 1) {
     return post_beam_search(logits);
   }
-  
+
   if (params.do_sample) {
     return post_sample_top_k_top_p_repeat(logits);
   }
-  
+
   return post_greedy_search(logits);
 }
 
@@ -418,8 +413,8 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def(py::init())
       .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"),
            py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
-           py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, 
-           py::arg("num_beams") = 1, py::arg("do_sample") = false, py::arg("top_k") = 5, py::arg("top_p") = 0.8)
+           py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("num_beams") = 1,
+           py::arg("do_sample") = false, py::arg("top_k") = 5, py::arg("top_p") = 0.8)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
