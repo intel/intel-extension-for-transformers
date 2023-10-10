@@ -188,7 +188,7 @@ static bool starcoder_model_eval_internal(model_context& lctx, const model_token
       //                1, 2, 0, 3),
       //            ne_new_tensor_3d(ctx0, NE_TYPE_F32, n_past + N, n_embd/n_head, n_head, NE_SIZE_CALC));
 
-      // struct ne_tensor * KQV = ne_flash_attn(ctx0, Q, K, V, true);
+      // struct ne_tensor * KQV = ne_flash_attn(ctx0, Q, K, V, NE_ATTN_FLAG_IS_CAUSAL);
 
       // K * Q
       // [n_past + N, N, 12]
