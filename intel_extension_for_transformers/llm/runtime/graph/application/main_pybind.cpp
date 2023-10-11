@@ -209,7 +209,7 @@ int Model::post_greedy_search(float* logits) {
 
 int Model::post_beam_search(float* logits) {
   // TODO: to implement
-  fprintf(stderr, "beam search is not supported!\n");
+  fprintf(stderr, "\nERROR: beam search is not supported!\n");
   return -1;
 }
 
@@ -311,15 +311,20 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
 }
 
 int Model::post_process(float* logits) {
-  if (params.beam_size > 1) {
-    return post_beam_search(logits);
+  if (params.beam_size == 1) {
+    if (params.do_sample == false) {
+      return post_greedy_search(logits);
+    } else {
+      return post_sample_top_k_top_p_repeat(logits);
+    }
+  } else {
+    if (params.do_sample == false) {
+      return post_beam_search(logits);
+    }
   }
-
-  if (params.do_sample) {
-    return post_sample_top_k_top_p_repeat(logits);
-  }
-
-  return post_greedy_search(logits);
+  fprintf(stderr, "\nERROR: post process (beam_size=%d, do_sample=%d) is not supported!\n", params.beam_size,
+          params.do_sample);
+  return -1;
 }
 
 int Model::quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
