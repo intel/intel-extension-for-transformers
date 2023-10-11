@@ -414,7 +414,7 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"),
            py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
            py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("num_beams") = 1,
-           py::arg("do_sample") = false, py::arg("top_k") = 5, py::arg("top_p") = 0.8)
+           py::arg("do_sample") = false, py::arg("top_k") = 40, py::arg("top_p") = 0.95)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
