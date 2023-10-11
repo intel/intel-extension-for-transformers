@@ -480,7 +480,7 @@ class FPFFNFusedInterface {
   ActivationType* getActivationPtr() { return &mLauncher.mProA; }
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
+    auto bptr = (jblas::prologue::weight_comp::gemm_kblcok::WeightBase*)(_param.paramW1.packedW);
     if (bptr == nullptr) {
       return JblasInvalidParam;
     }
