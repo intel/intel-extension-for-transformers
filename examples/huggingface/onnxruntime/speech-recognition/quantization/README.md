@@ -49,6 +49,14 @@ numactl -m 0 -C 0-3 bash run_benchmark.sh --config=whisper-large-with-past \
                                           --max_new_tokens=16
 ```
 
+- To run audio sample inference
+
+```
+bash run_audio_inference.sh --config=openai/whisper-large \ # model_name_or_path
+                            --audio_path=/path/to/dataset \ # audio path, support .wav, .mp3 and other ffmpeg supported formats
+                            --input_model=whisper-large-with-past-static/ \ # folder path of onnx model
+```
+
 **Notes**: 
  - If users don't set dataset_location, it will download the dataset or use the cached dataset automatically.
  - numactl command is used to bind specific cores.
