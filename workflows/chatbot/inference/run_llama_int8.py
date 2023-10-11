@@ -255,7 +255,7 @@ if args.benchmark:
             tic = time.time()
             input_ids = torch.randint(1, tokenizer.vocab_size, size = (args.batch_size, args.prompt_size))
             output = user_model.generate(
-                input_ids, max_new_tokens=args.max_new_tokens, **generate_kwargs
+                input_ids, max_new_tokens=args.max_new_tokens, min_new_tokens=args.max_new_tokens, **generate_kwargs
             )
             gen_ids = output[0] if args.token_latency else output
             gen_text = tokenizer.batch_decode(gen_ids, skip_special_tokens=True)
@@ -268,6 +268,7 @@ if args.benchmark:
             ]
             #print(gen_text, total_new_tokens, flush=True)
             print("Iteration: %d, Time: %.6f sec" % (i, toc - tic), flush=True)
+            print("Iteration: %d, Average per token time: %.6f sec" % (i, (toc - tic)/args.max_new_tokens), flush=True)
             if i >= num_warmup:
                 total_time += toc - tic
                 if args.token_latency:
