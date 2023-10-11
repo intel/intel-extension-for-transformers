@@ -50,6 +50,10 @@ static inline __m128i unpack_4bits_sse(void* srcptr) {
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline void convert_s4_s8_16_sse(int8_t* dstptr, int8_t* srcptr) {
   auto dst0 = unpack_4bits_sse<S4_T>(srcptr);
+  if constexpr (S4_T == S4_FULLRANGE) {
+    auto s8 = _mm_set1_epi8(8);
+    dst0 = _mm_sub_epi8(dst0, s8);
+  }
   _mm_storeu_si128((__m128i*)dstptr, dst0);
 }
 
