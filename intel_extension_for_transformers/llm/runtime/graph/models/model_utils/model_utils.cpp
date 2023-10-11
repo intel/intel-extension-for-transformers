@@ -867,6 +867,25 @@ quant_params_internal quant_params_to_internal(const quant_params& params) {
                                parse_compute_type(params.compute_dtype, params.use_ggml)};
 }
 
+
+// size_t jblas_qpack(const int8_t* src_w, const float* src_scales, const int8_t* src_zps,
+//                    void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
+//   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
+//   using namespace ne_jblas;
+//   auto cd = jblas::utils::parallel::CpuDevice::getInstance();
+//   auto dstbptr = (int8_t*)dstpr;
+//   cd->setThreads(nthread);
+
+//   using Kernel = WeiS4ClipFp32<GcCompInt8KBlock, JblasAVX512F>;
+//   static Kernel kernel;
+//   auto packedw = kernel.createStorage(n, k, params.group_size);
+//   packedw.assign(dstbptr);
+//   // packQWeight(N, K, tmpq.data(), ldb, Tscales.data(), Tzps.data(), stor);
+//   kernel.packQWeight(n, k, src_w, k, src_scales, src_zps, &packedw);
+
+//   return 0;
+// }
+
 size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_internal params, int nthread, int n, int k) {
   using CompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
   using namespace ne_jblas;
