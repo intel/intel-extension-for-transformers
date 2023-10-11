@@ -26,6 +26,7 @@ bash run_tuning.sh --config=openai/whisper-large \
                    --approach=static # or dynamic
 ```
 
+## 2. Benchmark
 - To get model accuracy
 
 ```
@@ -49,18 +50,21 @@ numactl -m 0 -C 0-3 bash run_benchmark.sh --config=whisper-large-with-past \
                                           --max_new_tokens=16
 ```
 
+**Notes**: 
+ - If users don't set dataset_location, it will download the dataset or use the cached dataset automatically.
+ - numactl command is used to bind specific cores.
+
+## 3. Audio inference
 - To run audio sample inference
 
 ```
 bash run_audio_inference.sh --config=openai/whisper-large \ # model_name_or_path
-                            --audio_path=/path/to/dataset \ # optional, if users don't supply, it will use sample.wav in intel_extension_for_transformers/neural_chat/assets/audio for test
-                                                            # support .wav, .mp3 and other ffmpeg supported formats
+                            --audio_path=/path/to/dataset \ # optional, support .wav, .mp3 and other ffmpeg supported formats
                             --input_model=whisper-large-with-past-static/ \ # folder path of onnx model
 ```
 
 **Notes**: 
- - If users don't set dataset_location, it will download the dataset or use the cached dataset automatically.
- - numactl command is used to bind specific cores.
+ - If users don't set audio_path, it will use sample.wav in intel_extension_for_transformers/neural_chat/assets/audio folder for test.
 
 # Validated model list
 
