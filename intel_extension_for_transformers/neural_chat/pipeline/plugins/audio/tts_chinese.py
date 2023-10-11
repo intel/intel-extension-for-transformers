@@ -19,15 +19,14 @@ import paddle
 from paddlespeech.cli.tts import TTSExecutor
 
 class ChineseTextToSpeech():
-    def __init__(self,output_audio_path="./response.wav"):
+    def __init__(self):
         self.tts_executor = TTSExecutor()
-        self.output_audio_path = output_audio_path
 
-    def text2speech(self, input):
+    def text2speech(self, input, output_audio_path):
         "Chinese text to speech and dump to the output_audio_path."
         self.tts_executor(
             text=input,
-            output=self.output_audio_path,
+            output=output_audio_path,
             am='fastspeech2_csmsc',
             am_config=None,
             am_ckpt=None,
@@ -42,7 +41,7 @@ class ChineseTextToSpeech():
             voc_stat=None,
             lang='zh',
             device=paddle.get_device())
-        return self.output_audio_path
+        return output_audio_path
 
-    def pre_llm_inference_actions(self, text):
-        return self.text2speech(text)
+    def pre_llm_inference_actions(self, text, output_audio_path):
+        return self.text2speech(text, output_audio_path)
