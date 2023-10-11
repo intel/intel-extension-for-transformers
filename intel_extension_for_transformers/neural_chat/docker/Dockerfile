@@ -54,7 +54,7 @@ RUN pip install -U pip
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
 
 RUN pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu --proxy ${http_proxy} && \
-    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install cmake  && pip list && pip install -v . && \
+    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip list && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     pip  install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
@@ -73,9 +73,10 @@ RUN conda init bash && \
     unset -f conda && \
     export PATH=$CONDA_DIR/bin/:${PATH} && \
     conda config --add channels intel && \
-    #echo "conda activate neuralchat" >> ~/.bashrc && \
-    /bin/bash -c "source ~/.bashrc"
-    conda install jemalloc gperftools -c conda-forge -y && \
+    echo "conda activate base" >> ~/.bashrc && \
+    /bin/bash -c "source ~/.bashrc" && \
+    /bin/bash -c "source activate" && \
+    conda install jemalloc gperftools -c conda-forge -y
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
