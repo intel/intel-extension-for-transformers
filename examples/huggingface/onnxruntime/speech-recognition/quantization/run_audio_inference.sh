@@ -15,8 +15,8 @@ function init_params {
   for var in "$@"
   do
     case $var in
-      --model_name_or_path=*)
-          model_name_or_path=$(echo $var |cut -f2 -d=)
+      --config=*)
+          config=$(echo $var |cut -f2 -d=)
       ;;
       --audio_path=*)
           audio_path=$(echo $var |cut -f2 -d=)
@@ -34,7 +34,7 @@ function init_params {
 function run_audio_inference {
 
     python -u ${script} \
-        --model_name_or_path ${model_name_or_path} \
+        --model_name_or_path ${config} \
         --input_model ${input_model} \
         --audio_path ${audio_path} \
         --benchmark \
