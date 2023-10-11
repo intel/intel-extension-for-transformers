@@ -25,7 +25,7 @@ jobs:
         run: 
           ITREX_VER=${{ github.sha }} || true
           
-          docker build --no-cache ./ --target cpu --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-mpi:latest && yes | docker container prune && yes | docker image prune
+          docker build --no-cache ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotfinetune-mpi:latest && yes | docker container prune && yes | docker image prune
 
       - name: Start Docker Container on socket 0
         id: master_container

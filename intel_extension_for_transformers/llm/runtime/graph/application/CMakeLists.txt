@@ -66,7 +66,7 @@ compile_quant(quant_chatglm   quant_model.cpp chatglm   chatglm)
 compile_quant(quant_chatglm2  quant_model.cpp chatglm2   chatglm2)
 
 # all models running
-if (PYTHON_API)
+if (NE_PYTHON_API)
   include_directories(${CMAKE_CURRENT_SOURCE_DIR})
   add_subdirectory(third_party/pybind11)
 endif()
@@ -93,7 +93,7 @@ function(compile_run TARGET SRC MODEL_NAME MODEL_LIB)
     add_dependencies(${TARGET} BUILD_INFO)
   endif()
 
-  if (PYTHON_API)
+  if (NE_PYTHON_API)
     pybind11_add_module("${MODEL_NAME}_cpp" main_pybind.cpp)
     target_link_libraries("${MODEL_NAME}_cpp" PRIVATE ne_layers ${MODEL_LIB} common)
     target_compile_definitions("${MODEL_NAME}_cpp" PUBLIC -DMODEL_NAME="${MODEL_NAME}" -DMODEL_NAME_ID=${mymap_${MODEL_NAME}})
