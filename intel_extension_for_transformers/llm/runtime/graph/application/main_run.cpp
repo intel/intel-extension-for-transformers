@@ -548,7 +548,7 @@ int main(int argc, char** argv) {
     }
 
     // display text
-    if (params.model_arch == MODEL_CHATGLM || params.model_arch == MODEL_CHATGLM2) {
+    if (params.model_arch == MODEL_CHATGLM || params.model_arch == MODEL_CHATGLM2 || params.model_arch == MODEL_BAICHUAN) {
       static bool is_prompt = true;
       if (input_echo) {
         if (is_prompt == true) {
