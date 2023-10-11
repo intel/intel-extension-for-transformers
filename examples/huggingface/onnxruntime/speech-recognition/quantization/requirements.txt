@@ -9,3 +9,4 @@ evaluate
 neural-compressor
 librosa
 soundfile
+pydub
