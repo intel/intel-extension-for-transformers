@@ -1,3 +1,20 @@
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 Intel Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import time
 import spacy
 from transformers import AutoTokenizer, TextIteratorStreamer
@@ -21,11 +38,11 @@ class NamedEntityRecognitionINT():
         If you want to inference with int4 model, set compute_dtype='int8' and weight_dtype='int4'.
     """
 
-    def __init__(self, model_name_or_path="/home/tme/Llama-2-7b-chat-hf/", spacy_model="en_core_web_lg", compute_dtype="fp32", weight_dtype="int8") -> None:
+    def __init__(self, model_path="/home/tme/Llama-2-7b-chat-hf/", spacy_model="en_core_web_lg", compute_dtype="fp32", weight_dtype="int8") -> None:
         self.nlp = spacy.load(spacy_model)
         config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, trust_remote_code=True)
-        self.model = AutoModelForCausalLM.from_pretrained(model_name_or_path, quantization_config=config, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, quantization_config=config, trust_remote_code=True)
         print("[NER info] Spacy and LLM model initialized.")
 
 
