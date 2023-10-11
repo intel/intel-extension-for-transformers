@@ -32,6 +32,7 @@ from peft import (
     PeftConfig,
     get_peft_model,
     get_peft_model_state_dict,
+    prepare_model_for_kbit_training
 )
 from peft.tuners.adaption_prompt import AdaptionPromptConfig
 from transformers import (
@@ -358,6 +359,12 @@ class Finetuning:
                 load_in_4bit=self.load_in_4bit,
                 load_in_8bit=self.load_in_8bit,
             )
+            if finetune_args.qlora:
+                model = prepare_model_for_kbit_training(
+                    model, use_gradient_checkpointing=training_args.gradient_checkpointing
+                )
+            if training_args.gradient_checkpointing:
+                model.gradient_checkpointing_enable()
             if not (re.search("mpt", model_args.model_name_or_path, re.IGNORECASE) or
                 re.search("neural-chat-7b-v1", model_args.model_name_or_path, re.IGNORECASE)):
                 tokenizer.padding_side = "left"  # allow batched inference, while mpt series don't support
@@ -365,7 +372,6 @@ class Finetuning:
             raise ValueError(
                 "Must provide model_name_or_path to load a pretrained CausalLM model."
             )
-
         # add special tokens
         if data_args.special_tokens:
             additional_special_tokens = {
