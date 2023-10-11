@@ -53,7 +53,8 @@ numactl -m 0 -C 0-3 bash run_benchmark.sh --config=whisper-large-with-past \
 
 ```
 bash run_audio_inference.sh --config=openai/whisper-large \ # model_name_or_path
-                            --audio_path=/path/to/dataset \ # audio path, support .wav, .mp3 and other ffmpeg supported formats
+                            --audio_path=/path/to/dataset \ # optional, if users don't supply, it will use sample.wav in intel_extension_for_transformers/neural_chat/assets/audio for test
+                                                            # support .wav, .mp3 and other ffmpeg supported formats
                             --input_model=whisper-large-with-past-static/ \ # folder path of onnx model
 ```
 
