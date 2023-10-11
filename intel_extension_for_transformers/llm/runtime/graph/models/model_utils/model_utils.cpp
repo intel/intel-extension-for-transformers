@@ -55,7 +55,7 @@
 // kv cache
 //
 
-// non-null param of model for chatglm style kv-cache
+// non-null pointer of model for kv-cache as components of model->layers[il] (e.g. chatglm)
 static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype,
                           const int batch_size, const int beam_size, model_struct* model) {
   const auto n_layer = hparams.n_layer;
@@ -83,7 +83,7 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
   // NE_TYPE_JBLAS can not be allocated memory
   const auto wtype_alloc = wtype == NE_TYPE_JBLAS ? NE_TYPE_I8 : wtype;
 
-  if (model) {  // non-null param of model for chatglm style kv-cache
+  if (model) {  // non-null param of model for kv-cache as components of model->layers[il]
     for (int il = 0; il < hparams.n_layer; ++il) {
       auto& k_cache = model->layers[il].k_cache;
       auto& v_cache = model->layers[il].v_cache;
