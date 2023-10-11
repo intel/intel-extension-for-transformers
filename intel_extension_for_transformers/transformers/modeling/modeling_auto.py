@@ -72,19 +72,24 @@ class _BaseQBitsAutoModelClass:
                 **kwargs,
             )
             return model
+        use_cpu = (
+            True
+            if device_map == torch.device("cpu")
+            or device_map == "cpu"
+            else False
+        )
+        use_xpu = (
+            True
+            if device_map == torch.device("xpu")
+            or device_map == "xpu"
+            else False
+        )
         if load_in_8bit or load_in_4bit:
-            is_itrex = (
-                True
-                if device_map == torch.device("cpu")
-                or device_map == "cpu"
-                or device_map == torch.device("xpu")
-                or device_map == "xpu"
-                else False
-            )
             if (
                 is_accelerate_available()
                 and is_bitsandbytes_available()
-                and not is_itrex
+                and not use_cpu
+                and not use_xpu
             ):
                 model = cls.ORIG_MODEL.from_pretrained(
                     pretrained_model_name_or_path,
@@ -147,15 +152,22 @@ class _BaseQBitsAutoModelClass:
                 )
                 return model
             else:
-                if device_map == torch.device("xpu") or device_map == "xpu":
+                is_pvc = False
+                if use_xpu:
                     import intel_extension_for_pytorch
                     assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
-                quantization_config.post_init()
-                from intel_extension_for_transformers.llm.quantization.utils import (
-                    convert_to_quantized_model,
-                )
-
-                model = convert_to_quantized_model(model, quantization_config, device=device_map)
+                    prop = torch.xpu.get_device_properties()
+                    if prop == "PVC":
+                        is_pvc = True
+                        pass  # TODO: weight only quantization for PVC
+                    elif prop != "ARC":
+                        raise Exception("{} device Unsupport weight only quantization!".format(device_map))
+                if not is_pvc:
+                    quantization_config.post_init()
+                    from intel_extension_for_transformers.llm.quantization.utils import (
+                        convert_to_quantized_model,
+                    )
+                    model = convert_to_quantized_model(model, quantization_config, device=device_map)
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             logger.info("Applying SmoothQuant.")

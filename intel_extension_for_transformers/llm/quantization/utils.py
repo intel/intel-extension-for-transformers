@@ -163,13 +163,10 @@ def _replace_linear(
                             scheme=quantization_config.scheme
                         )
                     elif device == "xpu" or device == torch.device("xpu"):
-                        prop = torch.xpu.get_device_properties()
-                        if prop == "ARC":
-                            pass
-                        elif prop == "PVC":
-                            pass
-                        else:
-                            pass
+                        pass
+                    else:
+                        raise Exception("{} device Unsupport weight only quantization!".format(device))
+
                     is_replaced = True
                     # Store the module class in case we need to transpose the weight later
                     model._modules[name].source_cls = type(module)
