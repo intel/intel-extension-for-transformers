@@ -90,7 +90,7 @@ class Memcpy2D {
 #if CompileAVX2()
     if constexpr (utils::isa_base<ISA_T>::avx2) {
       ret = kernel::jit::JitMemcpy2DAvx2::forward<_SRC_T, _DST_T>(srcptr, dstptr, row, col, srcstep, dststep,
-                                                                   const_elt_v, ops...);
+                                                                  const_elt_v, ops...);
       if (ret == JblasSuccess) {
         return ret;
       }
@@ -100,6 +100,33 @@ class Memcpy2D {
     static_assert(sizeof(_SRC_T) == sizeof(_DST_T));  // no conversion
     return kernel::ref::memcpy2d(srcptr, dstptr, row, col * sizeof(_SRC_T), srcstep * sizeof(_SRC_T),
                                  dststep * sizeof(_DST_T));
+  }
+
+  template <JBLAS_ISA ISA_T, typename _SRC_T, typename _DST_T, JBLAS_ELTWISEOP OP_T>
+  static JBLAS_CODE forward1(const _SRC_T* srcptr, _DST_T* dstptr, int row, int col, int srcstep, int dststep,
+                             void* const_elt_v = nullptr) {
+    auto ret = JblasNotSupport;
+#if CompileAVX512F()
+    if constexpr (utils::isa_base<ISA_T>::avx512f) {
+      ret = kernel::jit::JitMemcpy2DAvx512f::forward1<_SRC_T, _DST_T, OP_T>(srcptr, dstptr, row, col, srcstep, dststep,
+                                                                            const_elt_v);
+      if (ret == JblasSuccess) {
+        return ret;
+      }
+    }
+#endif
+#if CompileAVX2()
+    if constexpr (utils::isa_base<ISA_T>::avx2) {
+      ret = kernel::jit::JitMemcpy2DAvx2::forward1<_SRC_T, _DST_T, OP_T>(srcptr, dstptr, row, col, srcstep, dststep,
+                                                                        const_elt_v);
+      if (ret == JblasSuccess) {
+        return ret;
+      }
+    }
+#endif
+    assert(false);//no ref implementation
+    return JblasNotSupport;
+
   }
 };
 

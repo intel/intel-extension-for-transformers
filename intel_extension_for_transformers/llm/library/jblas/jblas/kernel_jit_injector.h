@@ -453,6 +453,7 @@ class eltwise_injector {
       push_entries_of(exp_polynomial);
     }
     if (need.low_precision_exp() || need.swish()) {
+      push_entries_of(exp_polynomial);
       push_entries_of(exp_consts);
       push_entries_of(low_precision_exp_consts);
     }
@@ -495,7 +496,7 @@ class eltwise_injector {
     h->vxorps(ymm_src, ymm_src, ymm_src);
 
     // set zeroes at those points which were < log(FLT_MIN)
-    h->vblendvps(ymm_aux2, ymm_aux2, ymm_aux2, ymm_mask);
+    h->vblendvps(ymm_aux2, ymm_aux2, ymm_src, ymm_mask);
 
     // compute polynomial
     h->vmovups(ymm_src, table_val(exp_pol, 4));
@@ -557,10 +558,11 @@ class eltwise_injector {
     h->vmulps(zmm_src, zmm_src, table_val(two));
   }
   void low_precision_exp_compute_vector_fwd(const Xbyak::Ymm& ymm_src) {
+    // support abs(x)<23
     auto code = [&](Xbyak::CodeGenerator* h, const Ymm& dst, const Ymm& src, const Xbyak::Operand& log2e,
                     const Xbyak::Operand& ln2, const Xbyak::Operand& coeff0, const Xbyak::Operand& coeff1,
-                    const Xbyak::Operand& coeff2, const std::array<Ymm, 2>& tmp) {
-      h->vmulps(tmp[0], src, log2e);  // x / ln2
+                    const Xbyak::Operand& coeff2, const std::array<Ymm, 4>& tmp) {
+      h->vmulps(tmp[0], src, log2e);      // x / ln2
       h->vroundps(tmp[0], tmp[0], 0x0A);  // round up
       const auto& z = tmp[0];
       h->vmulps(tmp[1], tmp[0], ln2);
@@ -568,21 +570,29 @@ class eltwise_injector {
       h->vmovaps(dst, coeff1);
       h->vfmadd231ps(dst, tmp[1], coeff0);  // dst = f * c0 + c1
       h->vfmadd213ps(dst, tmp[1], coeff2);  // dst = (f * c0 + c1) * f + c2
+
+      const auto& z_sign = tmp[2];
+      const auto& z_abs = tmp[3];
+      h->vcmpps(z_sign, z, table_val(zero), _cmp_lt_os);
       h->vcvtps2dq(z, z);
+      h->vpabsd(z_abs, z);
       h->vmovdqu(tmp[1], table_val(one_epi32));
-      h->vpsllvd(z, tmp[1], z);  // 2^z
-      h->vcvtdq2ps(z, z);
+      h->vpsllvd(z_abs, tmp[1], z_abs);  // 2^z
+      h->vcvtdq2ps(z_abs, z_abs);
+      h->vrcpps(z, z_abs);
+      h->vblendvps(z, z_abs, z, z_sign);
       h->vmulps(dst, dst, z);  // dst = exp(f) * 2^z
     };
     code(h, ymm_src, ymm_src, table_val(exp_log2ef), table_val(ln2f),  //
          table_val(low_precision_exp_const_v0), table_val(low_precision_exp_const_v1),
-         table_val(low_precision_exp_const_v2), {ymm_aux1, ymm_aux2});
+         table_val(low_precision_exp_const_v2), {ymm_aux1, ymm_aux2, ymm_aux3, ymm_aux4});
   }
   void low_precision_exp_compute_vector_fwd(const Xbyak::Zmm& zmm_src) {
     auto code = [&](Xbyak::CodeGenerator* h, const Zmm& dst, const Zmm& src, const Xbyak::Operand& log2e,
                     const Xbyak::Operand& ln2, const Xbyak::Operand& coeff0, const Xbyak::Operand& coeff1,
                     const Xbyak::Operand& coeff2, const std::array<Zmm, 2>& tmp) {
-      h->vmulps(tmp[0] | h->T_ru_sae, src, log2e);  // round up(x / ln2)
+      h->vmovups(tmp[0], log2e);
+      h->vmulps(tmp[0] | h->T_ru_sae, src, tmp[0]);  // round up(x / ln2)
       const auto& z = tmp[0];
       h->vmulps(tmp[1], tmp[0], ln2);
       h->vsubps(tmp[1], src, tmp[1]);  // x mod ln2 (can we use fmsub?)
@@ -598,7 +608,7 @@ class eltwise_injector {
   void swish_compute_vector_fwd(const Xbyak::Ymm& ymm_src, int const_p_offset) {
     h->vbroadcastss(ymm_aux0, h->ptr[reg_rt_const_p + const_p_offset]);
     h->vmulps(ymm_aux0, ymm_aux0, ymm_src);
-    low_precision_exp_compute_vector_fwd(ymm_aux0);
+    exp_compute_vector_fwd(ymm_aux0);
     h->vaddps(ymm_aux0, ymm_aux0, table_val(one));
     h->vrcpps(ymm_aux0, ymm_aux0);
     h->vmulps(ymm_src, ymm_src, ymm_aux0);
