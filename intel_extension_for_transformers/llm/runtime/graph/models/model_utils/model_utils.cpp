@@ -55,16 +55,18 @@
 // kv cache
 //
 
+// non-null pointer of model for kv-cache as components of model->layers[il] (e.g. chatglm)
 static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_cache& cache, const ne_type wtype,
-                          const int batch_size, const int beam_size) {
+                          const int batch_size, const int beam_size, model_struct* model) {
+  const auto n_layer = hparams.n_layer;
   int32_t k_size, v_size;
   get_batch_kv_elements_from_gpt_params(hparams, wtype, &k_size, &v_size);
 
-  const int64_t n_elements_k = hparams.n_layer * batch_size * beam_size * k_size;
-  const int64_t n_elements_v = hparams.n_layer * batch_size * beam_size * v_size;
+  const int64_t layer_ne_k = batch_size * beam_size * k_size;
+  const int64_t layer_ne_v = batch_size * beam_size * v_size;
   const auto wsize = wtype == NE_TYPE_JBLAS ? 1 : ne_type_size(wtype);
 
-  cache.buf.resize((n_elements_k + n_elements_v) * wsize + 2u * MB);
+  cache.buf.resize(n_layer * (layer_ne_k + layer_ne_v) * wsize + 2u * MB);
 
   struct ne_init_params params;
   params.mem_size = cache.buf.size;
@@ -80,16 +82,42 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
 
   // NE_TYPE_JBLAS can not be allocated memory
   const auto wtype_alloc = wtype == NE_TYPE_JBLAS ? NE_TYPE_I8 : wtype;
-  cache.k = ne_new_tensor_1d(cache.ctx, wtype_alloc, n_elements_k + NE_ALIGNMENT, NE_SIZE_CALC);
-  cache.k = ne_view_1d(cache.ctx, cache.k, n_elements_k,
-                       NE_ALIGNMENT - (reinterpret_cast<uintptr_t>(cache.k->data) % NE_ALIGNMENT));
-  cache.k->type = wtype;
-  cache.v = ne_new_tensor_1d(cache.ctx, wtype_alloc, n_elements_v + NE_ALIGNMENT, NE_SIZE_CALC);
-  cache.v = ne_view_1d(cache.ctx, cache.v, n_elements_v,
-                       NE_ALIGNMENT - (reinterpret_cast<uintptr_t>(cache.v->data) % NE_ALIGNMENT));
-  cache.v->type = wtype;
-  ne_set_name(cache.k, "cache_k");
-  ne_set_name(cache.v, "cache_v");
+
+  if (model) {  // non-null param of model for kv-cache as components of model->layers[il]
+    for (int il = 0; il < hparams.n_layer; ++il) {
+      auto& k_cache = model->layers[il].k_cache;
+      auto& v_cache = model->layers[il].v_cache;
+      if (wtype == NE_TYPE_F16) {  // chatglm does not support fp32 kv-cache in original impl of chatglm_util.cpp
+        const auto head_size = hparams.n_embd / hparams.n_head;
+        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, hparams.n_ctx, hparams.multi_query_group_num);
+        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, hparams.n_ctx, head_size, hparams.multi_query_group_num);
+      } else if (wtype == NE_TYPE_JBLAS) {
+        k_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
+        const auto k_align_off = reinterpret_cast<uintptr_t>(k_cache->data) % NE_ALIGNMENT;
+        k_cache = ne_view_1d(model->ctx, k_cache, layer_ne_k, NE_ALIGNMENT - k_align_off);
+        k_cache->type = wtype;
+        v_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_v + NE_ALIGNMENT, NE_SIZE_CALC);
+        const auto v_align_off = reinterpret_cast<uintptr_t>(v_cache->data) % NE_ALIGNMENT;
+        v_cache = ne_view_1d(model->ctx, v_cache, layer_ne_v, NE_ALIGNMENT - v_align_off);
+        v_cache->type = wtype;
+      } else {
+        NE_ASSERT(("Unexpected ne dtype for kv-cache", false));
+      }
+      ne_set_name(k_cache, "cache_k");
+      ne_set_name(v_cache, "cache_v");
+    }
+  } else {
+    cache.k = ne_new_tensor_1d(cache.ctx, wtype_alloc, n_layer * layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
+    const auto k_align_off = reinterpret_cast<uintptr_t>(cache.k->data) % NE_ALIGNMENT;
+    cache.k = ne_view_1d(cache.ctx, cache.k, n_layer * layer_ne_k, NE_ALIGNMENT - k_align_off);
+    cache.k->type = wtype;
+    cache.v = ne_new_tensor_1d(cache.ctx, wtype_alloc, n_layer * layer_ne_v + NE_ALIGNMENT, NE_SIZE_CALC);
+    const auto v_align_off = reinterpret_cast<uintptr_t>(cache.v->data) % NE_ALIGNMENT;
+    cache.v = ne_view_1d(cache.ctx, cache.v, n_layer * layer_ne_v, NE_ALIGNMENT - v_align_off);
+    cache.v->type = wtype;
+    ne_set_name(cache.k, "cache_k");
+    ne_set_name(cache.v, "cache_v");
+  }
 
   return true;
 }
@@ -141,6 +169,7 @@ static bool model_load(const std::string& fname, model_archs arch, model_context
                        bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                        void* progress_callback_user_data) {
   try {
+    lctx.model.arch = arch;
     model_load_internal(fname, arch, lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only, progress_callback,
                         progress_callback_user_data);
     return true;
@@ -1080,7 +1109,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->rng = std::mt19937(params.seed);
   ctx->logits_all = params.logits_all;
   ctx->batch_size = params.batch_size;
-  model_archs arch = params.arch;
+  const model_archs arch = params.arch;
 
   // the type so that kv-cache allocated according to this type must be large enough
   if (!model_load(path_model, arch, *ctx, params.n_ctx, params.n_gpu_layers, params.use_mmap, params.use_mlock,
@@ -1116,17 +1145,28 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
                                     : NE_TYPE_COUNT;
     NE_ASSERT(memory_type != NE_TYPE_COUNT);
 
-    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size)) {
+    if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size,
+                       (arch == MODEL_CHATGLM2 ? &ctx->model : nullptr))) {
       fprintf(stderr, "%s: kv_cache_init() failed for self-attention cache\n", __func__);
       model_free(ctx);
       return nullptr;
     }
 
-    {
+    if (ctx->model.kv_self.k != nullptr) {
       const size_t memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                      ? ne_nelements(ctx->model.kv_self.k) + ne_nelements(ctx->model.kv_self.v)
                                      : ne_nbytes(ctx->model.kv_self.k) + ne_nbytes(ctx->model.kv_self.v);
       fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
+    } else if (ctx->model.layers[0].k_cache != nullptr) {
+      const auto k_cache = ctx->model.layers[0].k_cache;
+      const auto v_cache = ctx->model.layers[0].v_cache;
+      const size_t layer_memory_size = params.kv_type == KV_MEM_TYPE_AUTO
+                                           ? ne_nelements(k_cache) + ne_nelements(v_cache)
+                                           : ne_nbytes(k_cache) + ne_nbytes(v_cache);
+      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__,
+              layer_memory_size / 1024.0 / 1024.0 * hparams.n_layer);
+    } else {
+      NE_ASSERT(("KV-cache not allocated!", false));
     }
 
     // resized during inference
@@ -1444,15 +1484,19 @@ struct model_context* model_init_from_gpt_params(const gpt_params& params) {
   model_context* lctx = model_init_from_file(params.model.c_str(), lparams);
 
   const auto& model_hparams = lctx->model.hparams;
+  NE_ASSERT(("Can not set n_head_kv and multi_query_group_num at the same time",
+             model_hparams.n_head_kv == 0 || model_hparams.multi_query_group_num == 0));
   attn_shape_t attn_shape = {
       /* .batch_size = */ lparams.batch_size * lparams.beam_size,
       /* .head_num = */ static_cast<int>(model_hparams.n_head),
-      /* .heads_kv = */ static_cast<int>(model_hparams.n_head_kv),
+      /* .heads_kv = */ static_cast<int>(model_hparams.n_head_kv + model_hparams.multi_query_group_num),
       /* .head_size = */ static_cast<int>(model_hparams.n_embd / model_hparams.n_head),
       /* .sl_q = */ 1,  // Note: make sure that jblas reordered attn supports next token inferencing
       /* .sl_kv = */ static_cast<int>(model_hparams.n_ctx),
   };
-  NE_ASSERT(lctx->model.kv_self.k->type != NE_TYPE_JBLAS || jblas_reordered_attn_fp32_support(&attn_shape));
+  const auto k_cache_example = lctx->model.kv_self.k != nullptr ? lctx->model.kv_self.k           // llama.cpp style
+                                                                : lctx->model.layers[0].k_cache;  // chatglm style
+  NE_ASSERT(k_cache_example->type != NE_TYPE_JBLAS || jblas_reordered_attn_fp32_support(&attn_shape));
 
   if (lctx == NULL) {
     fprintf(stderr, "%s: error: failed to load model '%s'\n", __func__, params.model.c_str());
