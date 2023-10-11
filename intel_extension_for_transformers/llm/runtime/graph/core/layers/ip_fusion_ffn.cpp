@@ -35,18 +35,16 @@ bool jblas_fusion_FFN_SiLu_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr,
     prologue::gemm::WeightBase* tmps[3] = {w1tmp, w2tmp, w3tmp};
     auto sameKernel = samePackedWeight(tmps, 3);
     if (sameKernel) {
-      if (sameKernel) {
-        if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
-            w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-          constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
-          support = contains(w1tmp->mCoreType, GcCompInt8KBlockSet, EleNum);
-          support &= hasISA(GcCompInt8KBlockSet, EleNum);
-        } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                   w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-          constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
-          support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
-          support &= hasISA(GcCompInt8Set, EleNum);
-        }
+      if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
+          w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
+        constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
+        support = contains(w1tmp->mCoreType, GcCompInt8KBlockSet, EleNum);
+        support &= hasISA(GcCompInt8KBlockSet, EleNum);
+      } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
+                 w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+        constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
+        support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
+        support &= hasISA(GcCompInt8Set, EleNum);
       }
     }
   }
@@ -307,21 +305,14 @@ bool jblas_fusion_FFN_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int
     prologue::PackedWeight* tmps[2] = {w1tmp, w2tmp};
     auto sameKernel = samePackedWeight(tmps, 2);
     if (sameKernel) {
-      if (sameKernel) {
-        if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32) ||
-            w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
-          constexpr jblas::gemm::GemmCoreType cores[] = {
-              jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-              jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
-          constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
-          support = contains(w1tmp->mCoreType, cores, EleNum);
-          support &= hasISA(cores, EleNum);
-        } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                   w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-          constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
-          support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
-          support &= hasISA(GcCompInt8Set, EleNum);
-        }
+      if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32) ||
+          w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
+        constexpr jblas::gemm::GemmCoreType cores[] = {
+            jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+            jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
+        constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
+        support = contains(w1tmp->mCoreType, cores, EleNum);
+        support &= hasISA(cores, EleNum);
       }
     }
   }
@@ -438,21 +429,19 @@ bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq,
     prologue::gemm::WeightBase* tmps[2] = {w1tmp, w2tmp};
     auto sameKernel = samePackedWeight(tmps, 2);
     if (sameKernel) {
-      if (sameKernel) {
-        if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
-            w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-          constexpr jblas::gemm::GemmCoreType cores[] = {
-              jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-              jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
-          constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
-          support = contains(w1tmp->mCoreType, cores, EleNum);
-          support &= hasISA(cores, EleNum);
-        } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                   w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-          constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
-          support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
-          support &= hasISA(GcCompInt8Set, EleNum);
-        }
+      if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
+          w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
+        constexpr jblas::gemm::GemmCoreType cores[] = {
+            jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+            jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
+        constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
+        support = contains(w1tmp->mCoreType, cores, EleNum);
+        support &= hasISA(cores, EleNum);
+      } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
+                 w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+        constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
+        support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
+        support &= hasISA(GcCompInt8Set, EleNum);
       }
     }
   }
