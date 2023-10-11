@@ -903,17 +903,14 @@ def delete_single_image(user_id, image_id):
         raise Exception(info)
     image_path = image_path['image_path']
     
-    import shutil
-    image_path_dst = IMAGE_ROOT_PATH+'/deleted/user'+str(user_id)
-    os.makedirs(image_path_dst, exist_ok=True)
-    logger.info(f'[Delete] destination folder created: {image_path_dst}')
-    shutil.move(src=image_path, dst=image_path_dst)
-    logger.info(f'[Delete] Image {image_path} moved to {image_path_dst}')
-    image_name = image_path.split('/')[-1]
-    new_image_path = image_path_dst+'/'+image_name
+    # delete local image
+    os.remove(image_path)
+    logger.info(f'[Delete] Image {image_path} successfully deleted.')
+
+    # update db info, set image status as 'deleted'
     try:
         with mysql_db.transaction():
-            mysql_db.update(sql=f"UPDATE image_info SET exist_status='deleted', image_path='{new_image_path}' WHERE image_id={image_id} ;", params=None)
+            mysql_db.update(sql=f"UPDATE image_info SET exist_status='deleted' WHERE image_id={image_id} ;", params=None)
     except Exception as e:
         logger.error(e)
         raise Exception(e)
