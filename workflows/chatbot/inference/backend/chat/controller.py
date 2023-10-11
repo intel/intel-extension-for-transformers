@@ -1181,17 +1181,21 @@ def get_type_obj_from_attr(attr, user_id):
         return select_result
     
     # check whether address simplification is needed
-    simplify_flag = False
+    simplify_flag = True
     cur_country = None
     address_list = list(select_result.keys())
     for address in address_list:
         country = address.split(', ')[0]
-        if cur_country and country != cur_country:
-            simplify_flag = True
-            break
+        if not cur_country:
+            cur_country = country
+        else: 
+            if country != cur_country:
+                simplify_flag = False
+                break
     
     # simplify address name dynamically
     if simplify_flag:
+        logger.info(f'address need to be simplified')
         new_result = {}
         for key, value in select_result.items():
             new_key = ', '.join(key.split(', ')[1:])
@@ -1211,8 +1215,8 @@ def get_address_list(user_id) -> list[str]:
     result_list = []
     for item in select_list:
         address = item['address']
-        if address == None or item == 'None' or item == 'null':
-                continue
+        if address == None or address == 'None' or address == 'null':
+            continue
         add_list = address.split(', ')
         for add in add_list:
             if add not in result_list:
