@@ -886,11 +886,7 @@ def format_image_info(image_info: dict) -> dict:
     if image_info['captured_time']:
         tag_list['time'] = datetime.datetime.date(image_info['captured_time'])
     if image_info['address'] != 'None':
-        if ', ' in image_info['address']:
-            address_list = image_info['address'].split(', ')
-            tag_list['location'] = ', '.join(address_list[1:])
-        else:
-            tag_list['location'] = image_info['address']
+        tag_list['location'] = image_info['address']
     other_tags = eval(image_info['other_tags'])
     tag_list.update(other_tags)
     image_item['tag_list'] = tag_list
@@ -1545,7 +1541,7 @@ def handle_ai_photos_get_type_list(request: Request):
     logger.info(f'<getTypeList> user id is: {user_id}')
     check_user_ip(user_id)
 
-    type_result_dict = {"type_list": {}}
+    type_result_dict = {"type_list": {}, "prompt_list": {}}
 
     # address
     address_result = get_type_obj_from_attr('address', user_id)
@@ -1559,12 +1555,6 @@ def handle_ai_photos_get_type_list(request: Request):
     person_result = get_face_list_by_user_id(user_id)
     type_result_dict['type_list']['person'] = person_result
 
-    # prompt list
-    address_list = get_address_list(user_id)
-    type_result_dict['prompt_list']['address'] = address_list
-    type_result_dict['prompt_list']['time'] = list(time_result.keys())
-    type_result_dict['prompt_list']['person'] = list(person_result.keys())
-
     # other
     other_time_result = get_images_by_type(user_id, type="time", subtype="None")
     other_add_result = get_images_by_type(user_id, type="address", subtype="default")
@@ -1575,9 +1565,15 @@ def handle_ai_photos_get_type_list(request: Request):
             continue
         other_add_result.append(time_res)
     logger.info(f'<getTypeList> final other result: {other_add_result}')
-    # TODO: add other result into return list
     type_result_dict['type_list']['other'] = other_add_result
 
+    # prompt list
+    address_list = get_address_list(user_id)
+    type_result_dict['prompt_list']['address'] = address_list
+    type_result_dict['prompt_list']['time'] = list(time_result.keys())
+    type_result_dict['prompt_list']['person'] = list(person_result.keys())
+
+    # process status
     type_result_dict["process_status"] = get_process_status(user_id)
     return type_result_dict
 
