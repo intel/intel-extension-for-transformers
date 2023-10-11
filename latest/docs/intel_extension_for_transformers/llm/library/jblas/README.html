@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jblas &mdash; Intel® Extension for Transformers 0.1.dev1+ge9ba03f documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Jblas</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/docs/intel_extension_for_transformers/llm/library/jblas/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="jblas">
+<h1>Jblas<a class="headerlink" href="#jblas" title="Link to this heading"></a></h1>
+<p>Jblas is a lightweight, header-only acceleration library for high-performance GEMM and related computations on Intel platform. Inspired by Cutlass, it provides high-level template class abstractions for various elements required for computation, and allows flexible kernel construction through template combinations to meet specific needs, maximizing the reuse of existing template classes. Users can also develop custom template classes to expand Jblas’s computational capabilities. Jblas includes several different types of template classes, specifically:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Interface</span></code>: Exposes gemm computation interface to users, while allowing users to specify their own Launcher template classes and Parallel template classes.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Launcher</span></code>: Schedules computation-related template classes, allowing users to specify their own computation-related template classes, including GemmCore, Prologue, and Epilogue.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Parallel</span></code>: Specifies data splitting strategy for task distribution among different cores. Jblas’s default Parallel template class adopts an L2-cache-fusion concept, i.e., each core tries to temporarily store the data it processes in its L2-cache during each round of gemm-tile computation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GemmCore</span></code>: A computation-related template class that provides a micro-kernel for performing a tile gemm computation with a specific ISA. It is the most important template class in Jblas. Currently, GemmCore supports the following ISAs:</p>
+<ul>
+<li><p>AVX2</p></li>
+<li><p>AVX_VNNI</p></li>
+<li><p>AVX512F</p></li>
+<li><p>AVX512_VNNI</p></li>
+<li><p>AMX_BF16</p></li>
+<li><p>AMX_INT8</p></li>
+<li><p>AVX512_FP16</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Prologue</span></code>: A computation-related template class that preprocesses (such as data type conversion/padding) input data to meet GemmCore’s input data requirements.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Epilogue</span></code>: A computation-related template class that post-processes (such as eltwiseop-fusion) the results of gemm-core computations to expand Jblas’s application scenarios.</p></li>
+</ul>
+<p>The interaction logic between different template classes and the calculation process of gemm are shown in the following figure.
+<img alt="bit4_emulation" src="../../../../../_images/workflow.png" /></p>
+</section>
+<section id="highlights">
+<h1>Highlights<a class="headerlink" href="#highlights" title="Link to this heading"></a></h1>
+<section id="weight-only">
+<h2>Weight-only<a class="headerlink" href="#weight-only" title="Link to this heading"></a></h2>
+<p>Jblas provides weight-only linear computational capabilities for LLM inference. We provide a series of Prologues for quantize/compress/serialize/deserialize fp32 weights in different ways. Specifically, we support compressed weights of the following data types:</p>
+<ul class="simple">
+<li><p>S8</p></li>
+<li><p>S4_CLIP</p></li>
+<li><p>S4_FULLRANGE</p></li>
+<li><p>FP4</p></li>
+<li><p>NF4</p></li>
+</ul>
+</section>
+<section id="postop-fusion">
+<h2>Postop-fusion<a class="headerlink" href="#postop-fusion" title="Link to this heading"></a></h2>
+<p>Jblas provides assembly-level postop-fusion through epilogue to minimize the overhead caused by data movement. Specifically, we support the following postop-fusions:</p>
+<ul class="simple">
+<li><p>GELU</p></li>
+<li><p>SWISH</p></li>
+<li><p>RELU</p></li>
+<li><p>EXP</p></li>
+<li><p>TANH</p></li>
+</ul>
+</section>
+<section id="compilation-requirements-and-usage">
+<h2>Compilation Requirements and Usage<a class="headerlink" href="#compilation-requirements-and-usage" title="Link to this heading"></a></h2>
+<p>Compile:</p>
+<ul class="simple">
+<li><p>GCC version &gt;=8.5.0</p></li>
+<li><p>CMake version &gt;=3.5</p></li>
+</ul>
+<p>Usage:</p>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">add_subdirectory</span><span class="p">(</span><span class="s">jblas</span><span class="p">)</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="s2">&quot;${YOUR_PROJECT}&quot;</span><span class="w"> </span><span class="s">jblas::jblas</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f59bd01eb00> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

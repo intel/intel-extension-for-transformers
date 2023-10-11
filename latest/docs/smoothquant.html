@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smooth Quant &mdash; Intel® Extension for Transformers 0.1.dev1+ge9ba03f documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Smooth Quant</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/smoothquant.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="smooth-quant">
+<h1>Smooth Quant<a class="headerlink" href="#smooth-quant" title="Link to this heading"></a></h1>
+<ol class="simple">
+<li><p><a class="reference external" href="#Introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#Example">Example</a></p></li>
+<li><p><a class="reference external" href="#Validated-Models">Validated Models</a></p></li>
+<li><p><a class="reference external" href="#Supported-Framework-Matrix">Supported Framework Matrix</a></p></li>
+</ol>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/docs/quantization.html">Quantization</a> is a common compression operation to reduce memory and accelerate inference by converting the floating point matrix to an integer matrix. For large language models (LLMs) with gigantic parameters, the systematic outliers make quantification of activations difficult.  <a class="reference external" href="https://arxiv.org/abs/2211.10438">SmoothQuant</a>, a training free post-training quantization (PTQ) solution, offline migrates this difficulty from activations to weights with a mathematically equivalent transformation.</p>
+<p>Smoothquant introduces a hyperparameter $\alpha$ as a smooth factor to calculate the conversion per-channel scale and balance the quantization difficulty of activation and weight. A larger $\alpha$ value could be used on models with more significant activation outliers to migrate more quantization difficulty to weights.</p>
+<div align="center">
+    <img src="./imgs/smoothquant.png" height="250"/>
+</div><p>SmoothQuant method aims to split the quantization difficulty of weight and activation by using a fixed-value $\alpha$ for an entire model. However, as the distributions of activation outliers vary not only across different models but also across different layers within a model, <a class="reference external" href="https://github.com/intel/neural-compressor">Intel® Compressor</a> propose a method to obtain <a class="reference external" href="https://github.com/intel/neural-compressor/blob/master/docs/source/smooth_quant.html#our-enhancement">layer-wise optimal</a> $\alpha$ values with the ability to tune automatically.</p>
+</section>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>We have extended the <code class="docutils literal notranslate"><span class="pre">from_pretrained</span></code> function so that <code class="docutils literal notranslate"><span class="pre">quantization_config</span></code> can accept <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/utils/quantization_config.py#L251"><code class="docutils literal notranslate"><span class="pre">SmoothQuantConfig</span></code></a>, We provide built-in calibration function with calibration dataset <code class="docutils literal notranslate"><span class="pre">NeelNanda/pile-10k</span></code> and calib_iters <code class="docutils literal notranslate"><span class="pre">100</span></code>, if you would like to use built-in calibration function, tokenizer is necessary, if you would like to use customer calibration function, please provide calibration function to parameter <code class="docutils literal notranslate"><span class="pre">calib_func</span></code> directly.</p>
+<p>Let us set the sq_config with <code class="docutils literal notranslate"><span class="pre">SmoothQuantConfig</span></code> first, SmoothQuantConfig provides many parameters, please see definition.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>SmoothQuantConfig,<span class="w"> </span>AutoTokenizer
+<span class="nv">model_name_or_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Intel/neural-chat-7b-v1-1&quot;</span>
+<span class="nv">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;saved_results&quot;</span>
+<span class="c1"># use built-in calibration function</span>
+<span class="nv">tokenizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoTokenizer.from_pretrained<span class="o">(</span>model_name_or_path<span class="o">)</span>
+<span class="nv">sq_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>SmoothQuantConfig<span class="o">(</span><span class="nv">tokenizer</span><span class="o">=</span>tokenizer,<span class="w"> </span><span class="nv">alpha</span><span class="o">=</span><span class="m">0</span>.5<span class="o">)</span>
+<span class="c1"># customer calibration function format</span>
+def<span class="w"> </span>calib_func<span class="o">(</span>model<span class="o">)</span>:
+<span class="w">    </span><span class="k">for</span><span class="w"> </span>index,<span class="w"> </span>input<span class="w"> </span><span class="k">in</span><span class="w"> </span>enumerate<span class="o">(</span>calib_dataloader<span class="o">)</span>:
+<span class="w">        </span><span class="k">if</span><span class="w"> </span>index<span class="w"> </span>&gt;<span class="w"> </span><span class="m">100</span>:
+<span class="w">            </span><span class="k">break</span>
+<span class="w">        </span>model<span class="o">(</span>**input<span class="o">)</span><span class="w">  </span><span class="c1"># if the input is dictionary</span>
+<span class="nv">sq_config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>SmoothQuantConfig<span class="o">(</span><span class="nv">calib_func</span><span class="o">=</span>calib_func,<span class="w"> </span><span class="nv">alpha</span><span class="o">=</span><span class="m">0</span>.5<span class="o">)</span>
+</pre></div>
+</div>
+<p>After setting the sq_config, we can do quantization, save, load and inference it.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>from<span class="w"> </span>intel_extension_for_transformers.transformers<span class="w"> </span>import<span class="w"> </span>AutoConfig,<span class="w"> </span>AutoModelForCausalLM
+<span class="nv">sq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoModelForCausalLM.from_pretrained<span class="o">(</span>
+<span class="w">                                                </span>model_name_or_path,
+<span class="w">                                                </span><span class="nv">quantization_config</span><span class="o">=</span>sq_config,
+<span class="w">                                                </span><span class="nv">use_llm_runtime</span><span class="o">=</span>False
+<span class="w">                                                </span><span class="o">)</span>
+<span class="c1"># save</span>
+<span class="nv">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>AutoConfig.from_pretrained<span class="o">(</span>model_name_or_path<span class="o">)</span>
+config.save_pretrained<span class="o">(</span>output_dir<span class="o">)</span>
+sq_model.save<span class="o">(</span>output_dir<span class="o">)</span>
+<span class="c1"># load</span>
+<span class="nv">sq_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>TSModelForCausalLM.from_pretrained<span class="o">(</span>output_dir,<span class="w"> </span><span class="nv">file_name</span><span class="o">=</span><span class="s2">&quot;best_model.pt&quot;</span><span class="o">)</span>
+<span class="c1"># int8 model generation</span>
+<span class="nv">generate_kwargs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>dict<span class="o">(</span><span class="nv">do_sample</span><span class="o">=</span>False,<span class="w"> </span><span class="nv">temperature</span><span class="o">=</span><span class="m">0</span>.9,<span class="w"> </span><span class="nv">num_beams</span><span class="o">=</span><span class="m">4</span><span class="o">)</span>
+<span class="nv">prompt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;Once upon a time, a little girl&quot;</span>
+<span class="nv">input_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>tokenizer<span class="o">(</span>prompt,<span class="w"> </span><span class="nv">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="o">)</span>.input_ids
+<span class="nv">gen_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>sq_model.generate<span class="o">(</span>input_ids,<span class="w"> </span><span class="nv">max_new_tokens</span><span class="o">=</span><span class="m">32</span>,<span class="w"> </span>**generate_kwargs<span class="o">)</span>
+<span class="nv">gen_text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>tokenizer.batch_decode<span class="o">(</span>gen_ids,<span class="w"> </span><span class="nv">skip_special_tokens</span><span class="o">=</span>True<span class="o">)</span>
+print<span class="o">(</span>gen_text<span class="o">)</span>
+</pre></div>
+</div>
+</section>
+<section id="validated-models">
+<h2>Validated Models<a class="headerlink" href="#validated-models" title="Link to this heading"></a></h2>
+<p>Intel extension for transformers: 1.2</p>
+<p>Neural Compressor: 2.1</p>
+<p>IPEX (Intel Extension for PyTorch): 2.0/2.1</p>
+<p>Dataset: lambada_openai</p>
+<p>Task: text-generation</p>
+<p>alpha [0.4, 0.6] is sweet spot region in SmoothQuant paper.</p>
+<p>A list of models that achieved a &lt;1% accuracy drop is shown below.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: center;">Model/Last token accuracy</th>
+<th style="text-align: center;">FP32 Accuracy</th>
+<th style="text-align: center;">INT8 (w/ SmoothQuant)</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">bigscience/bloom-560m</td>
+<td style="text-align: center;">0.354</td>
+<td style="text-align: center;">0.3542</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">bigscience/bloom-1b7</td>
+<td style="text-align: center;">0.4634</td>
+<td style="text-align: center;">0.4936</td>
+<td>alpha=0.5, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">bigscience/bloom-3b</td>
+<td style="text-align: center;">0.518</td>
+<td style="text-align: center;">0.5185</td>
+<td>alpha=0.8, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">bigscience/bloom-7b1</td>
+<td style="text-align: center;">0.5764</td>
+<td style="text-align: center;">0.5977</td>
+<td>alpha=0.5, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">bigscience/bloomz-560m</td>
+<td style="text-align: center;">0.3947</td>
+<td style="text-align: center;">0.3930</td>
+<td>alpha=0.8, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">bigscience/bloomz-1b7</td>
+<td style="text-align: center;">0.4828</td>
+<td style="text-align: center;">0.4906</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">bigscience/bloomz-3b</td>
+<td style="text-align: center;">0.5018</td>
+<td style="text-align: center;">0.4980</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">bigscience/bloomz-7b1</td>
+<td style="text-align: center;">0.5593</td>
+<td style="text-align: center;">0.5552</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">facebook/opt-125m</td>
+<td style="text-align: center;">0.379</td>
+<td style="text-align: center;">0.3757</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">facebook/opt-350m</td>
+<td style="text-align: center;">0.4516</td>
+<td style="text-align: center;">0.4533</td>
+<td>alpha=0.8, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">facebook/opt-1.3b</td>
+<td style="text-align: center;">0.5789</td>
+<td style="text-align: center;">0.5742</td>
+<td>alpha=0.8, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">facebook/opt-2.7b</td>
+<td style="text-align: center;">0.6365</td>
+<td style="text-align: center;">0.6404</td>
+<td>alpha=0.5, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">facebook/opt-6.7b</td>
+<td style="text-align: center;">0.6769</td>
+<td style="text-align: center;">0.6804</td>
+<td>alpha=0.5, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">facebook/opt-13b</td>
+<td style="text-align: center;">0.6872</td>
+<td style="text-align: center;">0.6814</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">facebook/opt-30b</td>
+<td style="text-align: center;">0.7149</td>
+<td style="text-align: center;">0.7128</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">facebook/opt-66b</td>
+<td style="text-align: center;">0.7398</td>
+<td style="text-align: center;">0.7326</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">LLaMa-7b</td>
+<td style="text-align: center;">0.7361</td>
+<td style="text-align: center;">0.7357</td>
+<td>alpha=0.8, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">LLaMa-13b</td>
+<td style="text-align: center;">0.7627</td>
+<td style="text-align: center;">0.7590</td>
+<td>alpha=0.7, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">LLaMa-30b</td>
+<td style="text-align: center;">0.7759</td>
+<td style="text-align: center;">0.7840</td>
+<td>alpha=0.7, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">LLaMa-65b</td>
+<td style="text-align: center;">0.7908</td>
+<td style="text-align: center;">0.7957</td>
+<td>alpha=0.9, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">LLaMa-2-7b</td>
+<td style="text-align: center;">0.7369/0.7262</td>
+<td style="text-align: center;">0.7330</td>
+<td>alpha=Auto, Ipex 2.1/Pytorch</td>
+</tr>
+<tr>
+<td style="text-align: center;">EleutherAI/gpt-j-6B</td>
+<td style="text-align: center;">0.6831</td>
+<td style="text-align: center;">0.6821</td>
+<td>alpha=1.0, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">MBZUAI/LaMini-GPT-124m</td>
+<td style="text-align: center;">0.3804</td>
+<td style="text-align: center;">0.3887</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">MBZUAI/LaMini-GPT-774m</td>
+<td style="text-align: center;">0.5048</td>
+<td style="text-align: center;">0.5057</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">MBZUAI/LaMini-GPT-1.5b</td>
+<td style="text-align: center;">0.5443</td>
+<td style="text-align: center;">0.5436</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">mosaicml/mpt-7b-chat</td>
+<td style="text-align: center;">0.655</td>
+<td style="text-align: center;">0.6499</td>
+<td>alpha=0.7, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">stabilityai/stablelm-base-alpha-3b</td>
+<td style="text-align: center;">0.4172</td>
+<td style="text-align: center;">0.4149</td>
+<td>alpha=0.6, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">togethercomputer/RedPajama-INCITE-Base-3B-v1</td>
+<td style="text-align: center;">0.6542</td>
+<td style="text-align: center;">0.6735</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">togethercomputer/RedPajama-INCITE-Chat-3B-v1</td>
+<td style="text-align: center;">0.6718</td>
+<td style="text-align: center;">0.6740</td>
+<td>alpha=0.5, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">togethercomputer/RedPajama-INCITE-Instruct-3B-v1</td>
+<td style="text-align: center;">0.6569</td>
+<td style="text-align: center;">0.6621</td>
+<td>alpha=0.5, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">togethercomputer/RedPajama-INCITE-Base-7B-v0.1</td>
+<td style="text-align: center;">0.7143</td>
+<td style="text-align: center;">0.7221</td>
+<td>alpha=0.5, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">togethercomputer/RedPajama-INCITE-Instruct-7B-v0.1</td>
+<td style="text-align: center;">0.6895</td>
+<td style="text-align: center;">0.6953</td>
+<td>alpha=0.5, Ipex 2.0</td>
+</tr>
+<tr>
+<td style="text-align: center;">databricks/dolly-v1-6b</td>
+<td style="text-align: center;">0.6866</td>
+<td style="text-align: center;">0.6895</td>
+<td>alpha=0.8, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">databricks/dolly-v2-3b</td>
+<td style="text-align: center;">0.6297</td>
+<td style="text-align: center;">0.6247</td>
+<td>alpha=0.5, Ipex 2.1</td>
+</tr>
+<tr>
+<td style="text-align: center;">tiiuae/falcon-7b-instruct</td>
+<td style="text-align: center;">0.6437</td>
+<td style="text-align: center;">0.6392</td>
+<td>alpha=0.7, Pytorch</td>
+</tr>
+</tbody>
+</table></section>
+<section id="supported-framework-matrix">
+<h2>Supported Framework Matrix<a class="headerlink" href="#supported-framework-matrix" title="Link to this heading"></a></h2>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th style="text-align: center;">Framework</th>
+<th>Alpha</th>
+<th>Folding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">PyTorch</td>
+<td>[0-1] / 'auto'</td>
+<td>False</td>
+</tr>
+<tr>
+<td style="text-align: center;">IPEX</td>
+<td>[0-1] / 'auto'</td>
+<td>True / False(Version&gt;2.1)</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f59bd3a1c30> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
