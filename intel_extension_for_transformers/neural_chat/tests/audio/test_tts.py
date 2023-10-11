@@ -68,6 +68,14 @@ class TestTTS(unittest.TestCase):
         for result_path in self.tts.stream_text2speech(gen, output_audio_path, voice="default"):
             self.assertTrue(os.path.exists(result_path))
 
+    def test_tts_long_text(self):
+        text = "Intel Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on " + \
+        "Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids " + \
+        "(codenamed Sapphire Rapids)"
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/2.wav")
+        output_audio_path = self.tts.text2speech(text, output_audio_path, voice="default", do_batch_tts=True, batch_length=120)
+        self.assertTrue(os.path.exists(output_audio_path))
+
     def test_create_speaker_embedding(self):
         driven_audio_path = \
            "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/sample.wav"

@@ -51,7 +51,7 @@ class TextToSpeech():
                 source=self.spk_model_name,
                 run_opts={"device": "cpu"},
                 savedir=os.path.join("/tmp", self.spk_model_name))
-        except Exception as e:
+        except Exception as e: # pragma: no cover
             print(f"[TTS Warning] speaker model fail to load, so speaker embedding creating is disabled.")
             self.speaker_model = None
         self.vocoder = SpeechT5HifiGan.from_pretrained("microsoft/speecht5_hifigan").to(self.device)
@@ -61,11 +61,11 @@ class TextToSpeech():
                           + '/assets/speaker_embeddings/spk_embed_default.pt'):
             default_speaker_embedding_path = os.path.split(os.path.split(os.path.split(script_dir)[0])[0])[0] \
                               + '/assets/speaker_embeddings/spk_embed_default.pt'
-        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')):
+        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')): # pragma: no cover
             default_speaker_embedding_path = os.path.join(asset_path, 'speaker_embeddings/spk_embed_default.pt')
-        elif os.path.exists('spk_embed_default.pt'):
+        elif os.path.exists('spk_embed_default.pt'): # pragma: no cover
             default_speaker_embedding_path = 'spk_embed_default.pt'
-        else:
+        else: # pragma: no cover
             print("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
             default_speaker_embedding_path = None
         # load the default speaker embedding
@@ -74,14 +74,14 @@ class TextToSpeech():
 
         # preload the demo model in case of time-consuming runtime loading
         self.demo_model = None
-        if os.path.exists("demo_model.pt"):
+        if os.path.exists("demo_model.pt"):  # pragma: no cover
             self.demo_model = torch.load("demo_model.pt", map_location=device)
 
         self.male_speaker_embeddings = None
         pat_speaker_embedding_path = os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_male.pt')
         if os.path.exists(pat_speaker_embedding_path):
             self.male_speaker_embeddings = torch.load(pat_speaker_embedding_path)
-        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt')):
+        elif os.path.exists(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt')):  # pragma: no cover
             self.male_speaker_embeddings = torch.load(os.path.join(asset_path, 'speaker_embeddings/spk_embed_male.pt'))
 
         self.backup_speaker_embedding = torch.ones((1, 512))
@@ -147,6 +147,7 @@ class TextToSpeech():
             idx += 1
         # deal with the last sequence
         res.append(text[cur_start:idx])
+        res = [i + "." for i in res]    # avoid unexpected end of sequence
         return res
 
 
@@ -163,7 +164,7 @@ class TextToSpeech():
         text = self.normalizer.correct_abbreviation(text)
         text = self.normalizer.correct_number(text)
         # Do the batching of long texts
-        if len(text) > batch_length or do_batch_tts:
+        if len(text) > batch_length or do_batch_tts:  # pragma: no cover
             texts = self._batch_long_text(text, batch_length)
         else:
             texts = [text]
@@ -171,7 +172,7 @@ class TextToSpeech():
         model = self.original_model
         speaker_embeddings = self.default_speaker_embedding if self.default_speaker_embedding is not None else \
             self.backup_speaker_embedding
-        if voice == "male":
+        if voice == "male":  # pragma: no cover
             if self.demo_model == None:
                 print("Finetuned model is not found! Use the default one")
             else:
