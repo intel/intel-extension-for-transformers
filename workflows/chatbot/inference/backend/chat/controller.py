@@ -1175,15 +1175,54 @@ def get_type_obj_from_attr(attr, user_id):
         
         image_name = example_image_path.split('/')[-1]
         image_path = format_image_path(user_id, image_name)
-        # simplify address name
-        if attr == 'address' and ', ' in item:
-            item_list = item.split(', ')[1:]
-            item = ', '.join(item_list)
         select_result[item] = image_path
 
     mysql_db._close()
-    logger.info(f'type list: {select_result}')
-    return select_result
+
+    # return time result directly
+    if attr == 'time':
+        logger.info(f'type list: {select_result}')
+        return select_result
+    
+    # check whether address simplification is needed
+    simplify_flag = False
+    cur_country = None
+    address_list = list(select_result.keys())
+    for address in address_list:
+        country = address.split(', ')[0]
+        if cur_country and country != cur_country:
+            simplify_flag = True
+            break
+    
+    # simplify address name dynamically
+    if simplify_flag:
+        new_result = {}
+        for key, value in select_result.items():
+            new_key = ', '.join(key.split(', ')[1:])
+            new_result[new_key] = value
+        logger.info(f'type list: {new_result}')
+        return new_result
+    else:
+        logger.info(f'type list: {select_result}')
+        return select_result
+
+
+def get_address_list(user_id) -> list[str]:
+    logger.info(f'Getting address list of user {user_id}')
+    mysql_db = MysqlDb()
+    select_sql = f'SELECT address FROM image_info WHERE user_id="{user_id}" AND exist_status="active" GROUP BY address;'
+    select_list = mysql_db.fetch_all(sql=select_sql)
+    result_list = []
+    for item in select_list:
+        address = item['address']
+        if address == None or item == 'None' or item == 'null':
+                continue
+        add_list = address.split(', ')
+        for add in add_list:
+            if add not in result_list:
+                result_list.append(add)
+    logger.info(f'address list of user {user_id} is {result_list}')
+    return result_list
 
 
 def get_process_status(user_id):
@@ -1283,27 +1322,21 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         logger.info(f'[NER query] no person name in ner query')
 
     # get location query
-    location_list = mysql_db.fetch_all(sql=f"select address from image_info where user_id='{user_id}' AND exist_status='active';", params=None)
+    location_list = get_address_list(user_id)
     logger.info(f"[NER query] location list is: {location_list}")
-    if ner_result['location'] or location_list:
+    if location_list:
         if not query_flag:
             query_sql += " WHERE "
         query_flag = True
-        locations = ner_result['location']
         sql_conditions = []
-        for loc in locations:
-            sql_conditions.append(f' image_info.address LIKE "%{loc}%" ')
-        for db_location in location_list:
-            if db_location['address'] == 'None':
-                continue
-            db_loc = db_location['address'].split(', ')[1:]
-            db_loc = ', '.join(db_loc)
+        for db_loc in location_list:
             if db_loc in query:
                 sql_conditions.append(f' image_info.address LIKE "%{db_loc}%" ')
-        sql = 'OR'.join(sql_conditions)
-        if query_sql[-1] == ')':
-            query_sql += ' AND '
-        query_sql += '('+sql+')'
+        if sql_conditions != []:
+            sql = 'OR'.join(sql_conditions)
+            if query_sql[-1] == ')':
+                query_sql += ' AND '
+            query_sql += '('+sql+')'
     else:
         logger.info(f'[NER query] no location in query')
         
@@ -1316,10 +1349,11 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         sql_conditions = []
         for loc in time_points:
             sql_conditions.append(f' image_info.captured_time LIKE "%{loc}%" ')
-        sql = 'OR'.join(sql_conditions)
-        if query_sql[-1] == ')':
-            query_sql += ' AND '
-        query_sql += '('+sql+')'
+        if sql_conditions != []:
+            sql = 'OR'.join(sql_conditions)
+            if query_sql[-1] == ')':
+                query_sql += ' AND '
+            query_sql += '('+sql+')'
     else:
         logger.info(f'[NER query] no time in query')
 
@@ -1335,10 +1369,11 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
             from_time = period['from']
             to_time = period['to']
             sql_conditions.append(f' image_info.captured_time BETWEEN "{from_time}" AND "{to_time}" ')
-        sql = 'OR'.join(sql_conditions)
-        if query_sql[-1] == ')':
-            query_sql += ' AND '
-        query_sql += '('+sql+')'
+        if sql_conditions != []:
+            sql = 'OR'.join(sql_conditions)
+            if query_sql[-1] == ')':
+                query_sql += ' AND '
+            query_sql += '('+sql+')'
     else:
         logger.info(f'[NER query] no time period in query')
     
@@ -1523,6 +1558,12 @@ def handle_ai_photos_get_type_list(request: Request):
     # person
     person_result = get_face_list_by_user_id(user_id)
     type_result_dict['type_list']['person'] = person_result
+
+    # prompt list
+    address_list = get_address_list(user_id)
+    type_result_dict['prompt_list']['address'] = address_list
+    type_result_dict['prompt_list']['time'] = list(time_result.keys())
+    type_result_dict['prompt_list']['person'] = list(person_result.keys())
 
     # other
     other_time_result = get_images_by_type(user_id, type="time", subtype="None")
