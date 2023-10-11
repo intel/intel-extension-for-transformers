@@ -79,11 +79,11 @@ static bool hasISA(const jblas::gemm::GemmCoreType* set, size_t len) {
   return support;
 }
 
-static inline bool samePackedWeight(jblas::prologue::PackedWeight* ptr0, jblas::prologue::PackedWeight* ptr1) {
-  return ptr0->mCoreType == ptr1->mCoreType && ptr0->mType == ptr1->mType;
+static inline bool samePackedWeight(jblas::prologue::gemm::WeightBase* ptr0, jblas::prologue::gemm::WeightBase* ptr1) {
+  return ptr0->mCoreType == ptr1->mCoreType && ptr0->mPrologueID == ptr1->mPrologueID;
 }
 
-static inline bool samePackedWeight(jblas::prologue::PackedWeight** ptrs, size_t len) {
+static inline bool samePackedWeight(jblas::prologue::gemm::WeightBase** ptrs, size_t len) {
   assert(len >= 2);
   bool sameKernel = samePackedWeight(ptrs[0], ptrs[1]);
   if (sameKernel) {
@@ -106,7 +106,7 @@ using WeiS8Fp32PerN = jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp
 template <class T, JBLAS_ISA ISA>
 using WeiS4ClipFp32PerN = jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32PerN<T, ISA>;
 
-using WeightCompType = jblas::prologue::weight_comp::gemm_kblcok::WeightCompType;
+using WeightCompType = jblas::prologue::weight_comp::gemm_kblcok::PrologueBIDs;
 
 using SS4Fp32 = jblas::prologue::weight_comp::gemm_kblcok::StorageWeightS4ScaleFp32;
 using SS8Fp32 = jblas::prologue::weight_comp::gemm_kblcok::StorageWeightS8ScaleFp32;
@@ -390,10 +390,7 @@ class FFNFusedInterface {
   ActivationType* getActivationPtr() { return &mLauncher.mProA; }
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
-    if (bptr == nullptr) {
-      return JblasInvalidParam;
-    }
+    auto bptr = (jblas::prologue::weight_comp::gemm_kblcok::WeightBase*)(_param.paramW1.packedW);
     // dynamic quantization: Seq*Fin
     auto cb = jblas::utils::CpuBase();
     auto paraA = mLauncher.mProA.createParallel(_param.Seq, _param.Fin, bptr->mBlockSize);
@@ -482,10 +479,7 @@ class FFNFusedInterfacePerN {
   ActivationType* getActivationPtr() { return &mLauncher.mProA; }
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
-    if (bptr == nullptr) {
-      return JblasInvalidParam;
-    }
+    auto bptr = (jblas::prologue::weight_comp::gemm_kblcok::WeightBase*)(_param.paramW1.packedW);
     // dynamic quantization: Seq*Fin
     auto cb = jblas::utils::CpuBase();
     auto paraA = mLauncher.mProA.createParallel(_param.Seq, _param.Fin);
@@ -572,10 +566,7 @@ class GeluFusedInterface {
 
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
-    if (bptr == nullptr) {
-      return JblasInvalidParam;
-    }
+    auto bptr = (jblas::prologue::weight_comp::gemm_kblcok::WeightBase*)(_param.paramW1.packedW);
     // dynamic quantization: Seq*Fin
     auto paraA = mActLauncher.mProA.createParallel(_param.Seq, _param.Fin, bptr->mBlockSize);
     auto paraA2 = mLauncher.mProA.createParallel(_param.Seq, _param.FMid, bptr->mBlockSize);
@@ -647,10 +638,7 @@ class GeluFusedInterfacePerN {
 
   // forward=packB+compute
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
-    if (bptr == nullptr) {
-      return JblasInvalidParam;
-    }
+    auto bptr = (jblas::prologue::weight_comp::gemm_kblcok::WeightBase*)(_param.paramW1.packedW);
     // dynamic quantization: Seq*Fin
     auto paraA = mActLauncher.mProA.createParallel(_param.Seq, _param.Fin);
     auto paraA2 = mLauncher.mProA.createParallel(_param.Seq, _param.FMid);
@@ -718,10 +706,7 @@ class FpGeluFusedInterface {
   using Parallel = jblas::utils::parallel::Parallel2DGemmKBlockFixed<GemmCore>;
 
   JBLAS_CODE compute(const Arguments& _param) {
-    auto bptr = dynamic_cast<const jblas::prologue::weight_comp::PackedWeightKBlock*>(_param.paramW1.packedW);
-    if (bptr == nullptr) {
-      return JblasInvalidParam;
-    }
+    auto bptr = (jblas::prologue::weight_comp::gemm_kblcok::WeightBase*)(_param.paramW1.packedW);
     auto cb = jblas::utils::CpuBase();
     Parallel _paral = Parallel();   // w1 from Seq* Fin=>FMid
     Parallel _paral2 = Parallel();  // w2 from Seq* FMid=>Fout

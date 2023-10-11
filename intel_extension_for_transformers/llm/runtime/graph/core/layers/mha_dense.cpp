@@ -233,21 +233,40 @@ using ScaleWriteBackS32S8 = ScaleWriteBack<ISA_T, int32_t, int8_t>;
  * @tparam T element type of the weight
  */
 template <typename T>
-class PackedWeightBatch : public jblas::prologue::gemm::StorageWeight {
+class PackedWeightBatch : public jblas::prologue::gemm::WeightBase, public jblas::prologue::ISerialBuffer {
  public:
-  explicit PackedWeightBatch(jblas::gemm::GemmCoreType _type)
-      : jblas::prologue::gemm::StorageWeight(_type), mBatch(0) {}
+  explicit PackedWeightBatch(jblas::gemm::GemmCoreType _type) : jblas::prologue::gemm::WeightBase(_type), mBatch(0) {}
 
-  void resize(int NPad, int KPad) = delete;
-  void resize(int NPad, int KPad, int num_batch) {
+  size_t resize(int NPad, int KPad, int num_batch) {
     mNPad = NPad;
     mKPad = KPad;
     mBatch = num_batch;
+    auto size = (size_t)mBatch * NPad * KPad * jblas::gemm::getWeightSize(mCoreType);
+    jblas::prologue::ISerialBuffer::resize(size);
+    mSize = getSerializedSize();
+    return mSize;
+  }
 
-    mBuffer.resize((size_t)mBatch * NPad * KPad * jblas::gemm::getWeightSize(mCoreType));
-    mRawPtr = mBuffer.data();
-    mWPtr = getPtr<T>();
-    mWSize = getSize<T>();
+  virtual void assign(int8_t* buf) override {
+    jblas::prologue::gemm::WeightBase::deserializeBuffer(buf, true);
+    deserializeBuffer(buf, true);
+    jblas::prologue::ISerialBuffer::deserializeBuffer(buf, true);
+    mWPtr = get<T>();
+    mWSize = size<T>();
+  }
+
+  virtual void serialize(int8_t* wptr) {
+    jblas::prologue::gemm::WeightBase::serializeToBuffer(wptr);
+    serializeToBuffer(wptr);
+    jblas::prologue::ISerialBuffer::serializeToBuffer(wptr);
+  }
+
+  virtual void deserialize(int8_t* rptr) override {
+    jblas::prologue::gemm::WeightBase::deserializeBuffer(rptr, false);
+    deserializeBuffer(rptr, false);
+    jblas::prologue::ISerialBuffer::deserializeBuffer(rptr, false);
+    mWPtr = get<T>();
+    mWSize = size<T>();
   }
 
   int mBatch;
@@ -255,8 +274,25 @@ class PackedWeightBatch : public jblas::prologue::gemm::StorageWeight {
   size_t mWSize;
 
  protected:
-  virtual size_t getDataSerializedSize() override {
-    return jblas::prologue::gemm::StorageWeight::getSerializedSize() + sizeof(mBatch);
+  virtual size_t getSerializedSize() {
+    return getMiscSize() + jblas::prologue::gemm::WeightBase::getSerializedSize() +
+           jblas::prologue::ISerialBuffer::getSerializedSize();
+  }
+
+  virtual void serializeToBuffer(int8_t*& wptr) { jblas::utils::serialize(wptr, mBatch); }
+
+  virtual void deserializeBuffer(int8_t*& rptr, bool map_buf) {
+    if (!map_buf) {
+      mBatch = jblas::utils::deserialize<int>(rptr);
+    } else {
+      jblas::utils::serialize<int>(rptr, mBatch);
+    }
+  }
+
+  inline constexpr size_t getMiscSize() {
+    size_t totalsize = 0;
+    totalsize += sizeof(mBatch);
+    return totalsize;
   }
 };
 
@@ -273,7 +309,7 @@ class WeightPackBatchBf16Base {
   using Parallel = parallel::Parallel2DRowMajor;
 
   struct Param {
-    const jblas::prologue::PackedWeight* packedW;
+    const jblas::prologue::gemm::WeightBase* packedW;
   };
 
   // additional parameter to pack weight at runtime
@@ -288,7 +324,7 @@ class WeightPackBatchBf16Base {
   JBLAS_CODE getWeight(...) = delete;
 
   JBLAS_CODE getWeight(WType** dstptr, int* dststep, int /* b_size */, int /* k_size */, int /* n_size */, int b_offset,
-                       int k_offset, int n_offset, const jblas::prologue::PackedWeight* ptr) {
+                       int k_offset, int n_offset, const jblas::prologue::gemm::WeightBase* ptr) {
     const auto wptr = dynamic_cast<const PW_T*>(ptr);
     if (!wptr) return JblasInvalidParam;
     assert(k_offset % GemmCore_T::KTILE == 0);
@@ -301,22 +337,11 @@ class WeightPackBatchBf16Base {
   }
 
   JBLAS_CODE getWeight(WType** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                       const jblas::prologue::PackedWeight* ptr) {
+                       const jblas::prologue::gemm::WeightBase* ptr) {
     return getWeight(dstptr, dststep, 1, k_size, n_size, 0, k_offset, n_offset, ptr);
   }
 
   JBLAS_CODE packWeight(...) = delete;
-
-  // from KxN int8 symmetric weight to packed N//NtilexKPadxNTile int4 weight
-  jblas::prologue::PackedWeight* packWeight(const int N, const int K, const WType* src, const int ld) {
-    static_assert(std::is_same<WType, ne_bf16_t>::value, "Only support BF16 weight pack.");
-    const auto KPad = padto(K, GemmCore_T::KTILE);
-    const auto NPad = padto(N, GemmCore_T::NTILE);
-    const auto pw = new PackedWeightBatch<WType>(GemmCore_T::TYPE);
-    pw->resize(NPad, KPad);
-    assert(false);  // TODO(Yi): call reorderT
-    return pw;
-  }
 
   /**
    * @brief Create a Parallel object (batch major)
@@ -684,8 +709,12 @@ class MHAInterface {
     // TODO(Yi): init packed weight with p.tmp
     PackedWeightBatch<typename GemmQK::BType> K_pack(jblas::gemm::GemmCoreType::AMX_BF16_16x64);  // packed K
     K_pack.resize(padto(p.sl_kv, GemmQK::NTILE), padto(p.head_size, GemmQK::KTILE), num_heads);
+    jblas::utils::avector<int8_t> bufferK(K_pack.mSize);
+    K_pack.assign(bufferK.data());
     PackedWeightBatch<typename GemmPV::BType> V_pack(jblas::gemm::GemmCoreType::AMX_BF16_16x64);  // packed V
     V_pack.resize(padto(p.head_size, GemmPV::NTILE), padto(p.sl_kv, GemmPV::KTILE), num_heads);
+    jblas::utils::avector<int8_t> bufferV(V_pack.mSize);
+    V_pack.assign(bufferV.data());
     const auto K_pack_batch_off = K_pack.mKPad * K_pack.mNPad;
     const auto V_pack_batch_off = V_pack.mKPad * V_pack.mNPad;
 
