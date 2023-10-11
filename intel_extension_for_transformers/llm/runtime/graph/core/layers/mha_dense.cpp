@@ -15,12 +15,15 @@
 
 #include <immintrin.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <random>
+#include <vector>
 
 #ifdef NE_TESTS
 #include <memory>
+#include <tuple>
 
 #include "layers/ne_test_layers_utils.hpp"
 #endif
@@ -57,8 +60,8 @@ struct attn_fwd_args_t {
   float Q_sc, K_sc, V_sc, dst_sc;
   char* tmp;
   float QK_scale;
-  bool is_causal;
-  int batch_size, head_num, head_size, sl_q, sl_kv;
+  ne_attn_flags_t attn_flags;
+  int batch_size, head_num, heads_kv, head_size, sl_q, sl_kv;
   ATTN_FWD_LAYOUT Q_layout, K_layout, V_layout, dst_layout;
   int step_q_bs, step_q_head_num, step_q_sl;
   int step_k_bs, step_k_head_num, step_k_sl, step_k_head_size;
@@ -137,10 +140,12 @@ class ScaleExpAccSumFp32 {
     int ld_dst;  // #elements
     float scale;
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+    float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
 
   JBLAS_CODE forward(const float* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
+    assert(("alibi not supported!", p.alibi_slope == 0.f));
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_sum = p.dst_sum + M_offset;
 #if MHA_2ND_EXP && CompileBF16()
@@ -228,21 +233,40 @@ using ScaleWriteBackS32S8 = ScaleWriteBack<ISA_T, int32_t, int8_t>;
  * @tparam T element type of the weight
  */
 template <typename T>
-class PackedWeightBatch : public jblas::prologue::gemm::StorageWeight {
+class PackedWeightBatch : public jblas::prologue::gemm::WeightBase, public jblas::prologue::ISerialBuffer {
  public:
-  explicit PackedWeightBatch(jblas::gemm::GemmCoreType _type)
-      : jblas::prologue::gemm::StorageWeight(_type), mBatch(0) {}
+  explicit PackedWeightBatch(jblas::gemm::GemmCoreType _type) : jblas::prologue::gemm::WeightBase(_type), mBatch(0) {}
 
-  void resize(int NPad, int KPad) = delete;
-  void resize(int NPad, int KPad, int num_batch) {
+  size_t resize(int NPad, int KPad, int num_batch) {
     mNPad = NPad;
     mKPad = KPad;
     mBatch = num_batch;
+    auto size = (size_t)mBatch * NPad * KPad * jblas::gemm::getWeightSize(mCoreType);
+    jblas::prologue::ISerialBuffer::resize(size);
+    mSize = getSerializedSize();
+    return mSize;
+  }
 
-    mBuffer.resize((size_t)mBatch * NPad * KPad * jblas::gemm::getWeightSize(mCoreType));
-    mRawPtr = mBuffer.data();
-    mWPtr = getPtr<T>();
-    mWSize = getSize<T>();
+  virtual void assign(int8_t* buf) override {
+    jblas::prologue::gemm::WeightBase::deserializeBuffer(buf, true);
+    deserializeBuffer(buf, true);
+    jblas::prologue::ISerialBuffer::deserializeBuffer(buf, true);
+    mWPtr = get<T>();
+    mWSize = size<T>();
+  }
+
+  virtual void serialize(int8_t* wptr) {
+    jblas::prologue::gemm::WeightBase::serializeToBuffer(wptr);
+    serializeToBuffer(wptr);
+    jblas::prologue::ISerialBuffer::serializeToBuffer(wptr);
+  }
+
+  virtual void deserialize(int8_t* rptr) override {
+    jblas::prologue::gemm::WeightBase::deserializeBuffer(rptr, false);
+    deserializeBuffer(rptr, false);
+    jblas::prologue::ISerialBuffer::deserializeBuffer(rptr, false);
+    mWPtr = get<T>();
+    mWSize = size<T>();
   }
 
   int mBatch;
@@ -250,8 +274,25 @@ class PackedWeightBatch : public jblas::prologue::gemm::StorageWeight {
   size_t mWSize;
 
  protected:
-  virtual size_t getDataSerializedSize() override {
-    return jblas::prologue::gemm::StorageWeight::getSerializedSize() + sizeof(mBatch);
+  virtual size_t getSerializedSize() {
+    return getMiscSize() + jblas::prologue::gemm::WeightBase::getSerializedSize() +
+           jblas::prologue::ISerialBuffer::getSerializedSize();
+  }
+
+  virtual void serializeToBuffer(int8_t*& wptr) { jblas::utils::serialize(wptr, mBatch); }
+
+  virtual void deserializeBuffer(int8_t*& rptr, bool map_buf) {
+    if (!map_buf) {
+      mBatch = jblas::utils::deserialize<int>(rptr);
+    } else {
+      jblas::utils::serialize<int>(rptr, mBatch);
+    }
+  }
+
+  inline constexpr size_t getMiscSize() {
+    size_t totalsize = 0;
+    totalsize += sizeof(mBatch);
+    return totalsize;
   }
 };
 
@@ -268,7 +309,7 @@ class WeightPackBatchBf16Base {
   using Parallel = parallel::Parallel2DRowMajor;
 
   struct Param {
-    const jblas::prologue::PackedWeight* packedW;
+    const jblas::prologue::gemm::WeightBase* packedW;
   };
 
   // additional parameter to pack weight at runtime
@@ -283,7 +324,7 @@ class WeightPackBatchBf16Base {
   JBLAS_CODE getWeight(...) = delete;
 
   JBLAS_CODE getWeight(WType** dstptr, int* dststep, int /* b_size */, int /* k_size */, int /* n_size */, int b_offset,
-                       int k_offset, int n_offset, const jblas::prologue::PackedWeight* ptr) {
+                       int k_offset, int n_offset, const jblas::prologue::gemm::WeightBase* ptr) {
     const auto wptr = dynamic_cast<const PW_T*>(ptr);
     if (!wptr) return JblasInvalidParam;
     assert(k_offset % GemmCore_T::KTILE == 0);
@@ -296,22 +337,11 @@ class WeightPackBatchBf16Base {
   }
 
   JBLAS_CODE getWeight(WType** dstptr, int* dststep, int k_size, int n_size, int k_offset, int n_offset,
-                       const jblas::prologue::PackedWeight* ptr) {
+                       const jblas::prologue::gemm::WeightBase* ptr) {
     return getWeight(dstptr, dststep, 1, k_size, n_size, 0, k_offset, n_offset, ptr);
   }
 
   JBLAS_CODE packWeight(...) = delete;
-
-  // from KxN int8 symmetric weight to packed N//NtilexKPadxNTile int4 weight
-  jblas::prologue::PackedWeight* packWeight(const int N, const int K, const WType* src, const int ld) {
-    static_assert(std::is_same<WType, ne_bf16_t>::value, "Only support BF16 weight pack.");
-    const auto KPad = padto(K, GemmCore_T::KTILE);
-    const auto NPad = padto(N, GemmCore_T::NTILE);
-    const auto pw = new PackedWeightBatch<WType>(GemmCore_T::TYPE);
-    pw->resize(NPad, KPad);
-    assert(false);  // TODO(Yi): call reorderT
-    return pw;
-  }
 
   /**
    * @brief Create a Parallel object (batch major)
@@ -378,7 +408,7 @@ class WeightPackBatchBf16Trans : public WeightPackBatchBf16Base<GemmCore_T, ISA_
           pp.ld, KPad);                                                                 // step
       assert(forward_stat == JblasSuccess);
     }
-  };
+  }
 };
 
 template <class GemmCore_T, JBLAS_ISA ISA_T, typename T_SRC = typename GemmCore_T::BType>
@@ -424,7 +454,7 @@ class WeightPackBatchBf16NonTr : public WeightPackBatchBf16Base<GemmCore_T, ISA_
           pp.ld, KPad);                                                                 // stride
       assert(forward_stat == JblasSuccess);
     }
-  };
+  }
 };
 
 template <class _GemmCore_T, JBLAS_ISA ISA_T>
@@ -668,15 +698,23 @@ class MHAInterface {
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     const auto cb = CpuBase();
     omp_set_num_threads(cb.mNumThreads);
-    assert(!p.is_causal || p.sl_q <= p.sl_kv);
+    const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
+    const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+    assert(!is_causal || p.sl_q <= p.sl_kv);
+    assert(("alibi not supported!", !is_alibi));
+    assert(("GQA not supported!", p.head_num == p.heads_kv));
     const auto sl_diff = p.sl_kv - p.sl_q;
 
     // prepare memory for packed weight
     // TODO(Yi): init packed weight with p.tmp
     PackedWeightBatch<typename GemmQK::BType> K_pack(jblas::gemm::GemmCoreType::AMX_BF16_16x64);  // packed K
     K_pack.resize(padto(p.sl_kv, GemmQK::NTILE), padto(p.head_size, GemmQK::KTILE), num_heads);
+    jblas::utils::avector<int8_t> bufferK(K_pack.mSize);
+    K_pack.assign(bufferK.data());
     PackedWeightBatch<typename GemmPV::BType> V_pack(jblas::gemm::GemmCoreType::AMX_BF16_16x64);  // packed V
     V_pack.resize(padto(p.head_size, GemmPV::NTILE), padto(p.sl_kv, GemmPV::KTILE), num_heads);
+    jblas::utils::avector<int8_t> bufferV(V_pack.mSize);
+    V_pack.assign(bufferV.data());
     const auto K_pack_batch_off = K_pack.mKPad * K_pack.mNPad;
     const auto V_pack_batch_off = V_pack.mKPad * V_pack.mNPad;
 
@@ -686,10 +724,10 @@ class MHAInterface {
                             : l_expsum.mProB.createParallel(num_heads, p.head_size, 1, GemmQK::KTILE);
     const auto paralV = l_scale.mProB.createParallel(num_heads, p.sl_kv, 1, GemmPV::KTILE);
 
-    const auto step_batch_k = [step_bs = p.step_k_bs, step_hn = p.step_k_head_num, hn = p.head_num](int ibat) {
+    const auto step_batch_k = [step_bs = p.step_k_bs, step_hn = p.step_k_head_num, hn = p.heads_kv](int ibat) {
       return (ibat / hn) * step_bs + (ibat % hn) * step_hn;
     };
-    const auto step_batch_v = [step_bs = p.step_v_bs, step_hn = p.step_v_head_num, hn = p.head_num](int ibat) {
+    const auto step_batch_v = [step_bs = p.step_v_bs, step_hn = p.step_v_head_num, hn = p.heads_kv](int ibat) {
       return (ibat / hn) * step_bs + (ibat % hn) * step_hn;
     };
 
@@ -743,13 +781,15 @@ class MHAInterface {
           const int i_m = task_id % m_tiles * M_TILE;
           const int ibs = ibat / p.head_num;
           const int ihn = ibat % p.head_num;
+          // TODO(Yi): heads_kv
+
           float exp_sum[M_TILE]{};
           memset(exp_sum, 0, sizeof(exp_sum));
 
           // ptr to Q / dst matrix of the current head
           const auto head_q = p.Q + ibs * p.step_q_bs + ihn * p.step_q_head_num;
           const auto head_dst = p.dst + ibs * p.step_dst_bs + ihn * p.step_dst_head_num;
-          const auto unmasked_size = p.is_causal ? std::min(p.sl_kv, p.sl_kv - p.sl_q + i_m + M_TILE - 1 + 1) : p.sl_kv;
+          const auto unmasked_size = is_causal ? std::min(p.sl_kv, p.sl_kv - p.sl_q + i_m + M_TILE - 1 + 1) : p.sl_kv;
 
           const auto unmasked_size_pad_qk = std::min(p.sl_kv, padto(unmasked_size, GemmQK::NTILE));
           const auto unmasked_size_pad_pv = std::min(p.sl_kv, padto(unmasked_size, GemmPV::KTILE));
@@ -778,7 +818,8 @@ class MHAInterface {
                       /* .dst_sum = */ exp_sum - i_m,              // pretend that there is a whole exp sum
                       /* .ld_dst = */ ld_tmp_exp,
                       /* .scale = */ p.QK_scale,
-                      /* .causal_offset = */ p.is_causal ? sl_diff : -1,
+                      /* .causal_offset = */ is_causal ? sl_diff : -1,
+                      /* .alibi_slope = */ 0.f,
                   },
                   /* .workspace = */ nullptr,
               });
@@ -848,10 +889,12 @@ class ScaleTrackMax<ISA_T, fp16, float> {
     int ld_dst;  // #elements
     float scale;
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+    float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
 
   JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
+    assert(("alibi not supported!", p.alibi_slope == 0.f));
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_max = p.dst_max + M_offset;
 #if CompileFP16()
@@ -916,13 +959,14 @@ class ScaleTrackMax<ISA_T, float, float> {
     int ld_dst;  // #elements
     float scale;
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+    float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
 
   JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_max = p.dst_max + M_offset;
-#if CompileFP16()
+#if CompileAVX512F()
 #if MHA_2ND_EXP
     const auto v_scale = _mm512_set1_ps(p.scale);
 
@@ -983,10 +1027,12 @@ class ScaleTrackMax<ISA_T, int32_t, float> {
     int ld_dst;  // #elements
     float scale;
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
+    float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
 
   JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
+    assert(("alibi not supported!", p.alibi_slope == 0.f));
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_max = p.dst_max + M_offset;
 #if CompileAVX512F()
@@ -1316,7 +1362,12 @@ class MHAStableInterface {
     assert((p.V_layout != ATTN_FWD_LAYOUT_PLAIN || p.step_k_sl == 1));
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     omp_set_num_threads(cb.mNumThreads);
-    assert(!p.is_causal || p.sl_q <= p.sl_kv);
+    const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
+    const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+    assert(!is_causal || p.sl_q <= p.sl_kv);
+    assert(("alibi not supported!", !is_alibi));
+    assert(("head_num must be a multiple of heads_kv!", p.head_num % p.heads_kv == 0));
+    const auto group_heads = p.head_num / p.heads_kv;
     const auto sl_diff = p.sl_kv - p.sl_q;
 
     Parallel2DRowMajor parl;  // main parallel scheme
@@ -1347,16 +1398,18 @@ class MHAStableInterface {
           const int i_m = task_id % m_tiles * M_TILE;
           const int ibs = ibat / p.head_num;
           const int ihn = ibat % p.head_num;
+          const int ihkv = ihn / group_heads;
           const int m_size = std::min(M_TILE, p.sl_q - i_m);
+
           float s_max[M_TILE]{};  // maximum for each row of the S matrix
           std::fill_n(s_max, M_TILE, -INFINITY);
 
           // ptr to Q / dst matrix of the current head
           const auto head_q = p.Q + ibs * p.step_q_bs + ihn * p.step_q_head_num;
-          const auto head_k = p.K + ibs * p.step_k_bs + ihn * p.step_k_head_num;
-          const auto head_v = p.V + ibs * p.step_v_bs + ihn * p.step_v_head_num;
+          const auto head_k = p.K + ibs * p.step_k_bs + ihkv * p.step_k_head_num;
+          const auto head_v = p.V + ibs * p.step_v_bs + ihkv * p.step_v_head_num;
           const auto head_dst = p.dst + ibs * p.step_dst_bs + ihn * p.step_dst_head_num;
-          const auto unmasked_size = p.is_causal ? std::min(p.sl_kv, sl_diff + i_m + M_TILE - 1 + 1) : p.sl_kv;
+          const auto unmasked_size = is_causal ? std::min(p.sl_kv, sl_diff + i_m + M_TILE - 1 + 1) : p.sl_kv;
 
           const auto unmasked_size_pad_qk = std::min(p.sl_kv, padto(unmasked_size, GemmQK::NTILE));
           const auto unmasked_size_pad_pv = std::min(p.sl_kv, padto(unmasked_size, GemmPV::KTILE));
@@ -1392,25 +1445,26 @@ class MHAStableInterface {
                       /* .B = */ head_k,
                       /* .ldb = */ qk_prok_ldb,
                       /* .is_padded = */ true,
-                  },  // V should be pre-transposed
+                  },  // K should be pre-transposed
                   /* .paramC = */
                   QKEpiArgs{
                       /* .dst = */ tmp_s - i_m * ld_tmp_s,  // pretend that there is a whole S mat
                       /* .dst_sum = */ s_max - i_m,         // pretend that there is a whole S mat
                       /* .ld_dst = */ ld_tmp_s,
                       /* .scale = */ p.QK_scale * p.Q_sc * p.K_sc,
-                      /* .causal_offset = */ p.is_causal ? sl_diff : -1,
+                      /* .causal_offset = */ is_causal ? sl_diff : -1,
+                      /* .alibi_slope = */ 0.f,
                   },
                   /* .workspace = */ nullptr,
               });
 
           // softmax (with pre-computed row_max)
-          const auto unmasked_size_start = p.is_causal ? std::min(sl_diff + i_m + 1, p.sl_kv) : p.sl_kv;
+          const auto unmasked_size_start = is_causal ? std::min(sl_diff + i_m + 1, p.sl_kv) : p.sl_kv;
           float expsum[M_TILE]{};  // maximum for each row of the S matrix
           const auto softmax_npad_size = padto(unmasked_size_pad_pv, GemmPV::KTILE);
-          InplacePrecomputeMaxSoftmax<float, PType>::forward(                 //
-              m_size, unmasked_size_start, softmax_npad_size,                 // m / n
-              p.is_causal, tmp_s, tmp_p, s_max, expsum, ld_tmp_s, ld_tmp_p);  //
+          InplacePrecomputeMaxSoftmax<float, PType>::forward(               //
+              m_size, unmasked_size_start, softmax_npad_size,               // m / n
+              is_causal, tmp_s, tmp_p, s_max, expsum, ld_tmp_s, ld_tmp_p);  //
 
           const auto pv_scale = expsum;
           for (int i = 0; i < M_TILE; ++i) pv_scale[i] = p.V_sc / UINT8_MAX / expsum[i] / p.dst_sc;
@@ -1638,15 +1692,23 @@ void jblas_fusion_attn_forward<float, bf16, bf16, float>(const attn_fwd_args_t<f
 
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
 void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
-  assert(!p.is_causal || p.sl_q <= p.sl_kv);
+  const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
+  const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+  assert(!is_causal || p.sl_q <= p.sl_kv);
+  assert(("alibi not supported!", !is_alibi));
+  assert(("head_num must be a multiple of heads_kv!", p.head_num % p.heads_kv == 0));
+  const auto group_heads = p.head_num / p.heads_kv;
   attn_shape_t attn_shape{
-      p.batch_size, p.head_num, p.head_size, p.sl_q, p.sl_kv,
+      p.batch_size, p.head_num, p.heads_kv, p.head_size, p.sl_q, p.sl_kv,
   };
   const auto workspace_size = jblas_fusion_attn_workspace_size(&attn_shape);
   static std::mt19937 rng;
   static std::uniform_int_distribution<> dist;
+#ifdef NE_TESTS
   init_vector(p.tmp, workspace_size, INT8_MIN - 1, INT8_MAX + 1, dist(rng));
+#else
   std::fill_n(p.tmp, workspace_size, 'f');
+#endif
   const bool IS_BF16_GEMM = std::is_same<Q_T, float>::value && std::is_same<K_T, fp16>::value &&
                             std::is_same<V_T, fp16>::value && std::is_same<DST_T, float>::value &&
                             (!MHA_PREFER_AVX512FP16 || (p.step_k_head_size == 1));
@@ -1670,14 +1732,15 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
   for (int ibs = 0; ibs < p.batch_size; ++ibs)
     for (int ihn = 0; ihn < p.head_num; ++ihn)
       for (int i = 0; i < p.sl_q; ++i) {
+        const auto ihkv = ihn / group_heads;
         const auto q_curr = p.Q + ibs * p.step_q_bs + ihn * p.step_q_head_num + i * p.step_q_sl;
         const auto dst_curr = p.dst + ibs * p.step_dst_bs + ihn * p.step_dst_head_num + i * p.step_dst_sl;
 
-        const auto k_curr = p.K + ibs * p.step_k_bs + ihn * p.step_k_head_num;
-        const auto v_curr = p.V + ibs * p.step_v_bs + ihn * p.step_v_head_num;
+        const auto k_curr = p.K + ibs * p.step_k_bs + ihkv * p.step_k_head_num;
+        const auto v_curr = p.V + ibs * p.step_v_bs + ihkv * p.step_v_head_num;
 
         const auto sl_diff = p.sl_kv - p.sl_q;
-        const auto unmasked = p.is_causal ? sl_diff + i + 1 : p.sl_kv;
+        const auto unmasked = is_causal ? sl_diff + i + 1 : p.sl_kv;
         const auto curr_row = std::unique_ptr<float[]>(new float[unmasked]);
 
         // Q x K
@@ -1799,12 +1862,12 @@ void jblas_reordered_attn_fp32_batch_kv_info(const kv_shape_t* params, kv_cache_
   out->stride_k_head_size = sizeof(bf16) * 48;
   out->stride_k_sl = sizeof(bf16) * padto(static_cast<int>(p.head_size), 32);
   out->stride_k_head_num = out->stride_k_sl * padto(static_cast<int>(p.sl_kv_max), 48);
-  out->k_bytes = out->stride_k_head_num * p.head_num;
+  out->k_bytes = out->stride_k_head_num * p.heads_kv;
 
   out->stride_v_sl = sizeof(bf16) * 48;
   out->stride_v_head_size = sizeof(bf16) * padto(static_cast<int>(p.sl_kv_max), 32);
   out->stride_v_head_num = out->stride_v_head_size * padto(static_cast<int>(p.head_size), 48);
-  out->v_bytes = out->stride_v_head_num * p.head_num;
+  out->v_bytes = out->stride_v_head_num * p.heads_kv;
 }
 
 void jblas_reordered_attn_fp32_forward(const jblas_reordered_attn_fp32_fp32_fwd_args_t* params) {
@@ -1822,9 +1885,10 @@ void jblas_reordered_attn_fp32_forward(const jblas_reordered_attn_fp32_fp32_fwd_
       /* .dst_sc = */ params->dst_sc,
       /* .tmp = */ params->tmp,
       /* .QK_scale = */ params->QK_scale,
-      /* .is_causal = */ params->is_causal,
+      /* .attn_flags = */ params->attn_flags,
       /* .batch_size = */ params->batch_size,
       /* .head_num = */ params->head_num,
+      /* .heads_kv = */ params->heads_kv,
       /* .head_size = */ params->head_size,
       /* .sl_q = */ params->sl_q,
       /* .sl_kv = */ params->sl_kv,
@@ -1856,13 +1920,13 @@ void jblas_reordered_attn_fp32_update_k(const jblas_fusion_attn_fp32_update_kv_a
   const auto pad_headsize = padto(p.head_size, 32);
   const auto pad_seq_max = padto(p.seq_max, 48);
   const auto cache_step_head_num = pad_headsize * pad_seq_max;
-  const auto cache_step_bs = p.head_num * cache_step_head_num;
+  const auto cache_step_bs = p.heads_kv * cache_step_head_num;
   GetCPUDevice();
   const bool use_jit = _cd->AVX512_BF16() && (p.seq_off == 0);
 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < p.batch_size; ++ibs) {
-    for (int ihn = 0; ihn < p.head_num; ++ihn) {
+    for (int ihn = 0; ihn < p.heads_kv; ++ihn) {
       const auto dst = reinterpret_cast<bf16*>(p.cache) + ibs * cache_step_bs + ihn * cache_step_head_num;
       const auto src = p.src + ibs * p.step_bs + ihn * p.step_head_num;
 
@@ -1891,13 +1955,13 @@ void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_a
   const auto pad_headsize = padto(p.head_size, 48);
   const auto pad_seq_max = padto(p.seq_max, 32);
   const auto step_cache_head_num = pad_headsize * pad_seq_max;
-  const auto step_cache_bs = p.head_num * step_cache_head_num;
+  const auto step_cache_bs = p.heads_kv * step_cache_head_num;
   GetCPUDevice();
   const bool use_jit = _cd->AVX512_BF16() && (p.seq_off == 0);
 
 #pragma omp parallel for collapse(2)
   for (int ibs = 0; ibs < p.batch_size; ++ibs) {
-    for (int ihn = 0; ihn < p.head_num; ++ihn) {
+    for (int ihn = 0; ihn < p.heads_kv; ++ihn) {
       const auto dst = reinterpret_cast<bf16*>(p.cache) + ibs * step_cache_bs + ihn * step_cache_head_num;
       const auto src = p.src + ibs * p.step_bs + ihn * p.step_head_num;
       if (use_jit) {
@@ -1934,49 +1998,51 @@ class TestMhaDese {
     printf("Test suit: %s\n", __FUNCTION__);
     CheckISA(AMX_BF16);
     jblas::utils::request_perm_xtile_data();
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 32, 128, 64}, false);
-    return_success &= test_case<float, fp16, fp16, float>({2, 5, 32, 64, 128}, false);
-    return_success &= test_case<float, fp16, fp16, float>({2, 5, 80, 128, 77}, false);
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 256, 63, 63}, false);
-    return_success &= test_case<float, fp16, fp16, float>({3, 4, 256, 1, 384}, false);
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 64, 64, 64}, true);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, false);
+    return_success &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, false);
+    return_success &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, false);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 256, 63, 63}, false);
+    return_success &= test_case<float, fp16, fp16, float>({3, 4, 4, 256, 1, 384}, false);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, true);
 
-    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 32, 128, 64}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({2, 5, 32, 64, 128}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({2, 5, 80, 128, 77}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 256, 63, 63}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({3, 4, 256, 1, 384}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 64, 64, 64}, true, true);
+    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 32, 128, 64}, false, true);
+    return_success &= test_case<fp16, fp16, fp16, fp16>({2, 5, 5, 32, 64, 128}, false, true);
+    return_success &= test_case<fp16, fp16, fp16, fp16>({2, 5, 5, 80, 128, 77}, false, true);
+    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 256, 63, 63}, false, true);
+    return_success &= test_case<fp16, fp16, fp16, fp16>({3, 4, 4, 256, 1, 384}, false, true);
+    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 64, 64, 64}, true, true);
 
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 32, 128, 64}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({2, 5, 32, 64, 128}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({2, 5, 80, 128, 77}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 256, 63, 63}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({3, 4, 256, 1, 384}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 64, 64, 64}, true, true);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 256, 63, 63}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({3, 4, 4, 256, 1, 384}, false, true);
+    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, true, true);
 
     const auto s8layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK4;
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 32, 128, 64}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 32, 64, 128}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 80, 128, 77}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 256, 63, 63}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 256, 1, 384}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 64, 64, 64}, true, false, s8layout);
+    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 32, 128, 64}, false, false, s8layout);
+    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 32, 64, 128}, false, false, s8layout);
+    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 80, 128, 77}, false, false, s8layout);
+    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 256, 63, 63}, false, false, s8layout);
+    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 4, 256, 1, 384}, false, false, s8layout);
+    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 64, 64, 64}, true, false, s8layout);
 
     const auto bf16layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK2;
-    return_success &= test_case<float, bf16, bf16, float>({1, 1, 32, 128, 64}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({2, 5, 32, 64, 128}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({2, 5, 80, 128, 77}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({1, 1, 256, 63, 63}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({3, 4, 256, 1, 384}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({1, 1, 64, 64, 64}, true, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({1, 1, 1, 32, 128, 64}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({2, 5, 5, 32, 64, 128}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({2, 5, 5, 80, 128, 77}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({1, 1, 1, 256, 63, 63}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({3, 4, 4, 256, 1, 384}, false, false, bf16layout);
+    return_success &= test_case<float, bf16, bf16, float>({1, 1, 1, 64, 64, 64}, true, false, bf16layout);
 
-    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 32, 128, 64}, 64, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 32, 64, 128}, 256, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 80, 128, 77}, 256, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 256, 63, 63}, 256, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({3, 4, 256, 1, 384}, 384, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 64, 64, 64}, 128, true);
+    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 32, 128, 64}, 64, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 32, 64, 128}, 256, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 80, 128, 77}, 256, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 1, 80, 128, 77}, 256, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 256, 63, 63}, 256, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({3, 4, 4, 256, 1, 384}, 384, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({3, 4, 2, 256, 1, 384}, 384, false);
+    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 64, 64, 64}, 128, true);
     printf("Test suit done: %s\n", __FUNCTION__);
   }
 
@@ -2002,12 +2068,14 @@ class TestMhaDese {
     using namespace jblas::utils;
     const auto batch_size = s.batch_size;
     const auto head_num = s.head_num;
+    const auto heads_kv = s.heads_kv;
     const auto head_size = s.head_size;
     const auto sl_q = s.sl_q;
     const auto sl_kv = s.sl_kv;
+    assert(("GQA not supported!", s.head_num == s.heads_kv));
 
     printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
-    printf("bs_%d hn_%d hs_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, head_size, sl_q, sl_kv,
+    printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
            is_causal ? "maksed" : "unmask");
 
     const auto NTILE = kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 48
@@ -2023,8 +2091,8 @@ class TestMhaDese {
     const auto v_cols_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(head_size, NTILE) : head_size;
 
     std::vector<Q_T> src_q(batch_size * head_num * sl_q * head_size);
-    std::vector<K_T> src_k(batch_size * head_num * k_rows_pad * k_cols_pad);
-    std::vector<V_T> src_v(batch_size * head_num * v_rows_pad * v_cols_pad);
+    std::vector<K_T> src_k(batch_size * heads_kv * k_rows_pad * k_cols_pad);
+    std::vector<V_T> src_v(batch_size * heads_kv * v_rows_pad * v_cols_pad);
     std::vector<DST_T> dst(batch_size * head_num * sl_q * head_size);
     std::vector<DST_T> ref(batch_size * head_num * sl_q * head_size);  // reference result
     std::vector<char> tmp(jblas_fusion_attn_workspace_size(&s));
@@ -2040,9 +2108,9 @@ class TestMhaDese {
     if (kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4 || kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2) {
 #pragma omp parallel for collapse(2)
       for (int ibs = 0; ibs < batch_size; ++ibs) {
-        for (int ihn = 0; ihn < head_num; ++ihn) {
+        for (int ihn = 0; ihn < heads_kv; ++ihn) {
           // K
-          const auto k_off = (ibs * head_num + ihn) * k_rows_pad * k_cols_pad;
+          const auto k_off = (ibs * heads_kv + ihn) * k_rows_pad * k_cols_pad;
           for (int i = 0; i < k_rows_pad; ++i) {
             for (int j = 0; j < k_cols_pad; ++j) {
               if (i < head_size && j < sl_kv) continue;
@@ -2055,7 +2123,7 @@ class TestMhaDese {
             }
           }
           // V
-          const auto v_off = (ibs * head_num + ihn) * v_rows_pad * v_cols_pad;
+          const auto v_off = (ibs * heads_kv + ihn) * v_rows_pad * v_cols_pad;
           for (int i = 0; i < v_rows_pad; ++i) {
             for (int j = 0; j < v_cols_pad; ++j) {
               if (i < sl_kv && j < head_size) continue;
@@ -2085,6 +2153,7 @@ class TestMhaDese {
         /* .is_causal = */ is_causal,
         /* .batch_size = */ batch_size,
         /* .head_num = */ head_num,
+        /* .heads_kv = */ heads_kv,
         /* .head_size = */ head_size,
         /* .sl_q = */ sl_q,
         /* .sl_kv = */ sl_kv,
@@ -2095,24 +2164,24 @@ class TestMhaDese {
         /* .step_q_bs = */ sl_q * head_num * head_size,
         /* .step_q_head_num = */ head_size,
         /* .step_q_sl = */ head_num * head_size,
-        /* .step_k_bs = */ sl_kv * head_num * head_size,
+        /* .step_k_bs = */ sl_kv * heads_kv * head_size,
         /* .step_k_head_num = */ k_trans ? head_size * sl_kv : head_size,
-        /* .step_k_sl = */ k_trans ? 1 : head_num * head_size,
+        /* .step_k_sl = */ k_trans ? 1 : heads_kv * head_size,
         /* .step_k_head_size = */ k_trans ? sl_kv : 1,
-        /* .step_v_bs = */ sl_kv * head_num * head_size,
+        /* .step_v_bs = */ sl_kv * heads_kv * head_size,
         /* .step_v_head_num = */ head_size,
-        /* .step_v_sl = */ head_num * head_size,
+        /* .step_v_sl = */ heads_kv * head_size,
         /* .step_v_head_size = */ 1,
         /* .step_dst_bs = */ sl_q * head_num * head_size,
         /* .step_dst_head_num = */ head_size,
         /* .step_dst_sl = */ head_num * head_size,
     };
     if (kv_layout != ATTN_FWD_LAYOUT_PLAIN) {
-      args.step_k_bs = head_num * k_rows_pad * k_cols_pad;
+      args.step_k_bs = heads_kv * k_rows_pad * k_cols_pad;
       args.step_k_head_num = k_rows_pad * k_cols_pad;
       args.step_k_sl = k_rows_pad;
       args.step_k_head_size = NTILE;
-      args.step_v_bs = head_num * v_rows_pad * v_cols_pad;
+      args.step_v_bs = heads_kv * v_rows_pad * v_cols_pad;
       args.step_v_head_num = v_rows_pad * v_cols_pad;
       args.step_v_sl = NTILE;
       args.step_v_head_size = v_rows_pad;
@@ -2132,18 +2201,20 @@ class TestMhaDese {
     using namespace jblas::utils;
     const auto batch_size = s.batch_size;
     const auto head_num = s.head_num;
+    const auto heads_kv = s.heads_kv;
     const auto head_size = s.head_size;
     const auto sl_q = s.sl_q;
     const auto sl_kv = s.sl_kv;
+    assert(("head_num must be a multiple of heads_kv!", head_num % heads_kv == 0));
 
     printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
-    printf("bs_%d hn_%d hs_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, head_size, sl_q, sl_kv,
+    printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
            is_causal ? "maksed" : "unmask");
 
     assert(sl_kv_max >= sl_kv);
 
     kv_shape_t kv_shape = {
-        /* .head_num */ static_cast<uint32_t>(head_num),
+        /* .heads_kv */ static_cast<uint32_t>(heads_kv),
         /* .head_size */ static_cast<uint32_t>(head_size),
         /* .sl_kv_max */ static_cast<uint32_t>(sl_kv_max),
     };
@@ -2164,8 +2235,8 @@ class TestMhaDese {
     const auto v_cols_pad = kv_layout != ATTN_FWD_LAYOUT_PLAIN ? padto(head_size, NTILE) : head_size;
 
     std::vector<Q_T> src_q(batch_size * head_num * sl_q * head_size);
-    std::vector<K_T> src_k(batch_size * head_num * sl_kv * head_size);
-    std::vector<V_T> src_v(batch_size * head_num * sl_kv * head_size);
+    std::vector<K_T> src_k(batch_size * heads_kv * sl_kv * head_size);
+    std::vector<V_T> src_v(batch_size * heads_kv * sl_kv * head_size);
     std::vector<char> k_cache(batch_size * kv_cache_info.k_bytes);
     std::vector<char> v_cache(batch_size * kv_cache_info.v_bytes);
     std::vector<DST_T> dst(batch_size * head_num * sl_q * head_size);
@@ -2183,13 +2254,13 @@ class TestMhaDese {
     init_vector(&k_cache, INT8_MIN, INT8_MAX, dist(rng));
     init_vector(&v_cache, INT8_MIN, INT8_MAX, dist(rng));
 
-    int step_src_k_bs = sl_kv * head_num * head_size;
+    int step_src_k_bs = sl_kv * heads_kv * head_size;
     int step_src_k_head_num = head_size;
-    int step_src_k_sl = head_num * head_size;
+    int step_src_k_sl = heads_kv * head_size;
     int step_src_k_head_size = 1;
-    int step_src_v_bs = sl_kv * head_num * head_size;
+    int step_src_v_bs = sl_kv * heads_kv * head_size;
     int step_src_v_head_num = head_size;
-    int step_src_v_sl = head_num * head_size;
+    int step_src_v_sl = heads_kv * head_size;
     int step_src_v_head_size = 1;
     attn_fwd_args_t<Q_T, K_T, V_T, DST_T> ref_args{
         /* .Q = */ src_q.data(),
@@ -2205,6 +2276,7 @@ class TestMhaDese {
         /* .is_causal = */ is_causal,
         /* .batch_size = */ batch_size,
         /* .head_num = */ head_num,
+        /* .heads_kv = */ heads_kv,
         /* .head_size = */ head_size,
         /* .sl_q = */ sl_q,
         /* .sl_kv = */ sl_kv,
@@ -2240,7 +2312,7 @@ class TestMhaDese {
           /* .src = */ src_k.data(),
           /* .cache = */ k_cache.data(),
           /* .batch_size = */ batch_size,
-          /* .head_num = */ head_num,
+          /* .heads_kv = */ heads_kv,
           /* .head_size = */ head_size,
           /* .seq_off = */ 0,
           /* .seq_size = */ seq_size_first,
@@ -2256,7 +2328,7 @@ class TestMhaDese {
           /* .src = */ src_v.data(),
           /* .cache = */ v_cache.data(),
           /* .batch_size = */ batch_size,
-          /* .head_num = */ head_num,
+          /* .heads_kv = */ heads_kv,
           /* .head_size = */ head_size,
           /* .seq_off = */ 0,
           /* .seq_size = */ seq_size_first,
@@ -2292,6 +2364,7 @@ class TestMhaDese {
           /* .is_causal = */ is_causal,
           /* .batch_size = */ batch_size,
           /* .head_num = */ head_num,
+          /* .heads_kv = */ heads_kv,
           /* .head_size = */ head_size,
           /* .sl_q = */ sl_q,
           /* .sl_kv = */ sl_kv,

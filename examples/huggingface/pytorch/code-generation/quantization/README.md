@@ -26,7 +26,7 @@ Required libraries.
 pip install -r requirements.txt
 ```
 
-We use the gpt_bigcode defination script [modeling_gpt_bigcode.py](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/modeling/gpt_bigcode/modeling_gpt_bigcode.py) in `run_generation.py`. Here is a little change to success trace.
+We use the gpt_bigcode definition script [modeling_gpt_bigcode.py](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/modeling/gpt_bigcode/modeling_gpt_bigcode.py) in `run_generation.py`. Here is a little change to success trace.
 ```diff
 # Line 227 in modeling_gpt_bigcode.py on transformers 4.28.1
 -      query, key_value = self.c_attn(hidden_states).split((self.embed_dim, 2 * self.kv_dim), dim=2)
@@ -133,7 +133,7 @@ python3 run_generation.py \
     --temperature 0.2
 
 ```
->Note: "mbpp" is Python programming datasets, please change the calibration dataset to get better results if you want to evaluate on other programing tasks (eg, multiple-lua).
+>Note: "mbpp" is Python programming datasets, please change the calibration dataset to get better results if you want to evaluate on other programming tasks (eg, multiple-lua).
 
 To run the container (here from image `evaluation-harness-multiple`) to quantize and evaluate on `CURDIR`, or another file mount it with -v, specify n_samples and allow code execution with --allow_code_execution (and add the number of problems --limit if it was used during generation):
 ```bash

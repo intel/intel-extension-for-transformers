@@ -122,7 +122,7 @@ class CMakeBuild(build_ext):
             f"-DDNNL_CPU_RUNTIME=OMP",
             f"-DNE_WITH_AVX2={'ON' if NE_WITH_AVX2 else 'OFF'}",
             f"-DNE_WITH_TESTS=OFF",
-            f"-DPYTHON_API=ON",
+            f"-DNE_PYTHON_API=ON",
         ]
         if sys.platform == "linux":  # relative_rpath
             cmake_args.append('-DCMAKE_BUILD_RPATH=$ORIGIN/')
