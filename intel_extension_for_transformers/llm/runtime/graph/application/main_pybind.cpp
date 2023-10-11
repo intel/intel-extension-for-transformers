@@ -56,7 +56,7 @@ class Model {
     if (ctx) model_free(ctx);
   }
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
-                  float repeat_penalty, int num_beams, bool do_sample, int top_k, float top_p);
+                  float repeat_penalty, int num_beams, bool do_sample, int top_k, float top_p, float temperature);
   void reinit();
   std::vector<int> generate(const std::vector<int>& input_ids);
   std::vector<int> generate_tokens(const std::vector<int>& input_ids);
@@ -82,7 +82,8 @@ class Model {
 };
 
 void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
-                       int threads, float repeat_penalty, int num_beams, bool do_sample, int top_k, float top_p) {
+                       int threads, float repeat_penalty, int num_beams, bool do_sample, int top_k, float top_p,
+                       float temperature) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
@@ -98,6 +99,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
   params.do_sample = do_sample;
   params.top_k = top_k;
   params.top_p = top_p;
+  params.temp = temperature;
 
   printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k,
          params.top_p);
@@ -217,10 +219,9 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
   std::mt19937 rng{rd()};
 
   const auto* plogits = logits;
-  float temp = 0.8;  // TODO: update this
   int repeat_last_n = 64;
   float repeat_penalty = 1.02;
-  if (temp <= 0) {
+  if (params.temp <= 0) {
     // select the token with the highest logit directly
     float max_logit = plogits[0];
     gpt_vocab::id max_id = 0;
@@ -238,7 +239,7 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
   logits_id.reserve(n_logits);
 
   {
-    const float scale = 1.0f / temp;
+    const float scale = 1.0f / params.temp;
     for (int i = 0; i < n_logits; ++i) {
       // repetition penalty from ctrl paper (https://arxiv.org/abs/1909.05858)
       // credit https://github.com/facebookresearch/llama/compare/main...shawwn:llama:main
@@ -302,12 +303,6 @@ int Model::post_sample_top_k_top_p_repeat(float* logits) {
       probs[i] *= cumsum;
     }
   }
-
-  //    printf("\n");
-  //    for (int i = 0; i < (int) probs.size(); i++) {
-  //    for (int i = 0; i < 10; i++) {
-  //        printf("%d: '%s' %f\n", i, vocab.id_to_token.at(logits_id[i].second).c_str(), probs[i]);
-  //    }
 
   std::discrete_distribution<> dist(probs.begin(), probs.end());
   int idx = dist(rng);
@@ -414,7 +409,7 @@ PYBIND11_MODULE(chatglm_cpp, m)
       .def("init_model", &Model::init_model, "initial model with model path and parameters", py::arg("model_path"),
            py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
            py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("num_beams") = 1,
-           py::arg("do_sample") = false, py::arg("top_k") = 40, py::arg("top_p") = 0.95)
+           py::arg("do_sample") = false, py::arg("top_k") = 40, py::arg("top_p") = 0.95, py::arg("temperature") = 0.8)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),
