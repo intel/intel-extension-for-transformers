@@ -52,3 +52,27 @@ def get_augmenter_from_type(aug_type: str):
     """
     assert aug_type in AUGMENTER_MAPPING, "Unspported the augmenter type:{}".format(aug_type)
     return AUGMENTER_MAPPING[aug_type]
+
+def get_gpu_family():
+    ''' Get gpu device family info.
+
+    Return 'flex'|'max'|'arc' or assert
+
+    Note, this function need to import intel_extension_for_pytorch
+
+    Addtional info (common gpu name):
+      'Intel(R) Data Center GPU Flex 170'
+      'Intel(R) Data Center GPU Max 1100'
+      'Intel(R) Arc(TM) A770 Graphics'
+    '''
+
+    import intel_extension_for_pytorch as ipex
+
+    name = torch.xpu.get_device_name()
+    if 'GPU Flex' in name:
+        return 'flex'
+    if 'GPU Max' in name:
+        return 'max'
+    if 'Arc(TM)' in name:
+        return 'arc'
+    assert False, "Unsupport GPU device: {}".format(name)
