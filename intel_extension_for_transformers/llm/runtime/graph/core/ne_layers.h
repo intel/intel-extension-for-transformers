@@ -344,9 +344,6 @@ NE_API struct ne_tensor* ne_reshape_4d(struct ne_context* ctx, struct ne_tensor*
 // offset in bytes
 NE_API struct ne_tensor* ne_view_1d(struct ne_context* ctx, struct ne_tensor* a, int64_t ne0, size_t offset);
 
-NE_API struct ne_tensor* ne_view_1d_bak(struct ne_context* ctx, struct ne_tensor* a, int64_t ne0, size_t offset);
-
-
 NE_API struct ne_tensor* ne_view_2d(struct ne_context* ctx, struct ne_tensor* a, int64_t ne0, int64_t ne1,
                                     size_t nb1,  // row stride in bytes
                                     size_t offset);

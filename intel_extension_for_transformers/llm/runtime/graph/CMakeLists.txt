@@ -39,10 +39,6 @@ option(NE_GPU                    "neural_engine: enable GPU inference"          
 option(NE_ALL_WARNINGS           "neural_engine: enable all compiler warnings"                   ON)
 option(NE_ALL_WARNINGS_3RD_PARTY "neural_engine: enable all compiler warnings in 3rd party libs" OFF)
 option(NE_GPROF                  "neural_engine: enable gprof"                                   OFF)
-option(NE_KERNEL_DEBUG           "neural_engine: enable gprof"                                   OFF)
-if (NE_KERNEL_DEBUG)
-    add_compile_definitions(KERNEL_DEBUG)
-endif()
 
 # tensor parallism
 option(NE_TP                     "neural_engine: enable tensor parallism"                        OFF)

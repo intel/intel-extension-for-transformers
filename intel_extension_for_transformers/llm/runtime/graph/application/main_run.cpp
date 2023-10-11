@@ -76,9 +76,6 @@ int main(int argc, char** argv) {
   if (gpt_params_parse(argc, argv, params) == false) {
     return 1;
   }
-#ifdef KERNEL_DEBUG
-  params.n_threads = 1;
-#endif
 
   model_archs mt = model_name_to_arch::init().find(params.model_name);
   if (mt == MODEL_UNKNOWN) {
