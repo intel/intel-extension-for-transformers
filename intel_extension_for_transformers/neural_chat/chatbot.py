@@ -100,6 +100,12 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "safety_checker":
                     from .pipeline.plugins.security.safety_checker import SafetyChecker
                     plugins[plugin_name]['class'] = SafetyChecker
+                elif plugin_name == "ner":
+                    from .pipeline.plugins.ner.ner import NamedEntityRecognition
+                    plugins[plugin_name]['class'] = NamedEntityRecognition
+                elif plugin_name == "ner_int":
+                    from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
+                    plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                 else:
                     raise ValueError("NeuralChat Error: Unsupported plugin")
                 print(f"create {plugin_name} plugin instance...")

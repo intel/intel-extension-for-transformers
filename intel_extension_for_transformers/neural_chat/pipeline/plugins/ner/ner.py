@@ -25,7 +25,7 @@ class NamedEntityRecognition():
         Set bf16=True if you want to inference with bf16 model.
     """
 
-    def __init__(self, model_name_or_path="/home/tme/Llama-2-7b-chat-hf/", spacy_model="en_core_web_lg", bf16: bool=False) -> None:
+    def __init__(self, model_name_or_path="./Llama-2-7b-chat-hf/", spacy_model="en_core_web_lg", bf16: bool=False) -> None:
         # set up cpu running environment
         if bf16:
             set_cpu_running_env()
