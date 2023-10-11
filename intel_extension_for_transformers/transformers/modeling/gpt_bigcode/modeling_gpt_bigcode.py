@@ -404,8 +404,9 @@ class GPTBigCodePreTrainedModel(PreTrainedModel):
         """Initialize the weights."""
         if isinstance(module, (GPTBigCodeMLP, GPTBigCodeAttention)):
             # Reinitialize selected weights subject to the OpenAI GPT-2 Paper Scheme:
-            #   > A modified initialization which accounts for the accumulation on the residual path with model depth. Scale
-            #   > the weights of residual layers at initialization by a factor of 1/√N where N is the # of residual layers.
+            #   > A modified initialization which accounts for the accumulation on the residual path with model depth.
+            #   > Scale the weights of residual layers at initialization by a factor of 1/√N where N is the # of
+            #   > residual layers.
             #   >   -- GPT-2 :: https://openai.com/blog/better-language-models/
             #
             # Reference (Megatron-LM): https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/model/gpt_model.py
@@ -427,7 +428,8 @@ class GPTBigCodePreTrainedModel(PreTrainedModel):
             module.bias.data.zero_()
             module.weight.data.fill_(1.0)
 
-    # Copied from transformers.models.gpt2.modeling_gpt2.GPT2PreTrainedModel._set_gradient_checkpointing with GPT2->GPTBigCode
+    # Copied from transformers.models.gpt2.modeling_gpt2.GPT2PreTrainedModel._set_gradient_checkpointing
+    # with GPT2->GPTBigCode
     def _set_gradient_checkpointing(self, module, value=False):
         if isinstance(module, GPTBigCodeModel):
             module.gradient_checkpointing = value
