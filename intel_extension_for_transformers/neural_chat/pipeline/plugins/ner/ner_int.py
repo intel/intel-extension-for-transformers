@@ -22,13 +22,13 @@ from intel_extension_for_transformers.transformers import (
     AutoModelForCausalLM, 
     WeightOnlyQuantConfig
 )
-from utils.utils import (
+from .utils.utils import (
     enforce_stop_tokens, 
     construct_default_prompt,
     construct_refined_prompt, 
     get_current_time
 )
-from utils.process_text import process_time, process_entities
+from .utils.process_text import process_time, process_entities
 
 
 class NamedEntityRecognitionINT():
@@ -38,11 +38,17 @@ class NamedEntityRecognitionINT():
         If you want to inference with int4 model, set compute_dtype='int8' and weight_dtype='int4'.
     """
 
-    def __init__(self, model_path="/home/tme/Llama-2-7b-chat-hf/", spacy_model="en_core_web_lg", compute_dtype="fp32", weight_dtype="int8") -> None:
+    def __init__(self, 
+                 model_path="/home/tme/Llama-2-7b-chat-hf/", 
+                 spacy_model="en_core_web_lg", 
+                 compute_dtype="fp32", 
+                 weight_dtype="int8") -> None:
         self.nlp = spacy.load(spacy_model)
         config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
-        self.model = AutoModelForCausalLM.from_pretrained(model_path, quantization_config=config, trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained(model_path, 
+                                                          quantization_config=config, 
+                                                          trust_remote_code=True)
         print("[NER info] Spacy and LLM model initialized.")
 
 

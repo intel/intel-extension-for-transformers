@@ -27,13 +27,13 @@ from transformers import (
     AutoConfig,
 )
 import intel_extension_for_pytorch as intel_ipex
-from utils.utils import (
+from .utils.utils import (
     set_cpu_running_env, 
     enforce_stop_tokens,
     construct_default_prompt,
     get_current_time
 )
-from utils.process_text import process_time, process_entities
+from .utils.process_text import process_time, process_entities
 
 
 class NamedEntityRecognition():
@@ -76,7 +76,13 @@ class NamedEntityRecognition():
         print("[NER info] Spacy and LLM model initialized.")
 
 
-    def inference(self, query: str, prompt: str=None, max_new_tokens: int=32, temperature: float=0.01, top_k: int=3, repetition_penalty: float=1.1):
+    def inference(self, 
+                  query: str, 
+                  prompt: str=None, 
+                  max_new_tokens: int=32, 
+                  temperature: float=0.01, 
+                  top_k: int=3, 
+                  repetition_penalty: float=1.1):
         start_time = time.time()
         cur_time = get_current_time()
         print("[NER info] Current time is:{}".format(cur_time))

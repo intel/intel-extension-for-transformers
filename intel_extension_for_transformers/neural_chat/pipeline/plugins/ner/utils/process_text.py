@@ -93,6 +93,12 @@ def process_entities(query, doc, mentioned_time: dict) -> dict:
     if 'last week' in query:
         result_period = post_process_last_week()
 
-    result = {"period": result_period, "time": mentioned_time['time'], 'location': location, "name": name, "organization": organization}
+    result = {
+        "period": result_period, 
+        "time": mentioned_time['time'], 
+        'location': location, 
+        "name": name, 
+        "organization": organization
+    }
     
     return result
