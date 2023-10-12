@@ -561,7 +561,7 @@ class Finetuning:
                         )
                         self.logger.info(results)
 
-        if finetune_args.do_lm_eval and finetune_args.task != "summarization":
+        elif finetune_args.do_lm_eval and finetune_args.task != "summarization":
             unwrapped_model.eval()
             from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
             with training_args.main_process_first(desc="lm_eval"):
