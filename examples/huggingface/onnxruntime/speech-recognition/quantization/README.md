@@ -26,6 +26,16 @@ bash run_tuning.sh --config=openai/whisper-large \
                    --approach=static # or dynamic
 ```
 
+- To get int4 model
+
+```
+bash run_tuning.sh --config=openai/whisper-large \
+                   --dataset_location=/path/to/dataset \ # optional
+                   --input_model=whisper-large-with-past/ \
+                   --output_model=whisper-large-onnx-int4/ \
+                   --approach=RTN # or GPTQ
+```
+
 ## 2. Benchmark
 - To get model accuracy
 
@@ -33,7 +43,7 @@ bash run_tuning.sh --config=openai/whisper-large \
 bash run_benchmark.sh --config=whisper-large-with-past \
                       --dataset_location=/path/to/dataset \ # optional
                       --input_model=whisper-large-with-past-static/ \
-                      --int8 \
+                      --int8 \ # or int4
                       --mode=accuracy
 ```
 
@@ -46,7 +56,7 @@ numactl -m 0 -C 0-3 bash run_benchmark.sh --config=whisper-large-with-past \
                                           --mode=benchmark \
                                           --iters=100 \
                                           --cores_per_instance=4 \
-                                          --int8 \
+                                          --int8 \ # or int4
                                           --max_new_tokens=16
 ```
 
@@ -86,8 +96,11 @@ Available INT4 models on huggingface:
 
 # Validated model list
 
-|Topology|Pretrained model|PostTrainingDynamic|PostTrainingStatic
-|---|------------------------------------|---|---
-|whisper_large|openai/whisper-large| ✅| ✅|
-
-
+|Topology|Pretrained model|PostTrainingDynamic|PostTrainingStatic|WeightOnly4Bit|
+|---|------------------------------------|---|---|---
+|whisper_tiny|openai/whisper-tiny| | | ✅|
+|whisper_base|openai/whisper-base| | | ✅|
+|whisper_small|openai/whisper-small| | | ✅|
+|whisper_medium|openai/whisper-medium| | | ✅|
+|whisper_large|openai/whisper-large| | | ✅|
+|whisper_large_v2|openai/whisper-large-v2| ✅| ✅| ✅|
