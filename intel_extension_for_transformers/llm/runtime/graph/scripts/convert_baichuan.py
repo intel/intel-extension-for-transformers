@@ -235,7 +235,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     config = AutoConfig.from_pretrained(dir_model, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(dir_model, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(dir_model, trust_remote_code=True)
-    import pdb;pdb.set_trace()
 
     baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams)
 
