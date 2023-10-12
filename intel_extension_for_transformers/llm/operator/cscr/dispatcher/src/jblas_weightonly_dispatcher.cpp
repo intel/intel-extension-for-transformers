@@ -11,15 +11,18 @@
 //  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
-#include "../include/jblas_weightonly_dispatcher.hpp"
-#include "../include/jblas_customop.hpp"
-#include "../include/dispatcher_utils.hpp"
 #include <ATen/core/TensorBody.h>
 #include <c10/util/Exception.h>
+
 #include <cassert>
 #include <cstdint>
 #include <string>
 #include <type_traits>
+#include <vector>
+
+#include "../include/dispatcher_utils.hpp"
+#include "../include/jblas_customop.hpp"
+#include "../include/jblas_weightonly_dispatcher.hpp"
 #include "jblas/jit_blas.h"
 #include "jblas/jit_blas_epilogue.h"
 #include "jblas/jit_blas_gemm.h"
@@ -64,11 +67,11 @@ concept normal_PrologueA = requires {
 
 template <typename T>
 concept perchannel_Gemmcore = std::is_same_v<T, jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI> ||
-    std::is_same_v<T, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8>;
+                              std::is_same_v<T, jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8>;
 
 template <typename T>
 concept int8_cmptype_kblock_Gemmcore = std::is_same_v<T, jblas::gemm::kblock::GemmCore_Row_NN_16x48_AMX_INT8_KBLOCK> ||
-    std::is_same_v<T, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK>;
+                                       std::is_same_v<T, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK>;
 
 static void* jblas_workspace = nullptr;
 static int64_t workspace_size = 0;
@@ -86,21 +89,22 @@ void qbits_quantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   set_nk(ctx, ctx->weight);
 
   auto do_quant = [&](typename PrologueB::StorageWeight* ptr) {
+    std::vector<int8_t> buffer(ptr->mSize);
+    ptr->assign(buffer.data());
     if (ctx->transpose)
       compress_kernel.packTransposeWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->k, ptr);
     else
       compress_kernel.packWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->n, ptr);
-    auto size = ptr->getSerializedSize();
-    *(ctx->output) = torch::zeros(size, torch::kInt8);
-    ptr->serializeToBuffer(ctx->output->data_ptr<int8_t>());
+    *(ctx->output) = torch::zeros(ptr->mSize, torch::kInt8);
+    ptr->serialize(ctx->output->data_ptr<int8_t>());
   };
 
   if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>) {
-    auto ptr = (typename PrologueB::StorageWeight*)compress_kernel.createStorage(ctx->n, ctx->k, ctx->blocksize);
-    do_quant(ptr);
+    auto storage = compress_kernel.createStorage(ctx->n, ctx->k, ctx->blocksize);
+    do_quant(&storage);
   } else {
-    auto ptr = (typename PrologueB::StorageWeight*)compress_kernel.createStorage(ctx->n, ctx->k);
-    do_quant(ptr);
+    auto storage = compress_kernel.createStorage(ctx->n, ctx->k, false);
+    do_quant(&storage);
   }
 }
 
@@ -109,12 +113,12 @@ void qbits_dequantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   using PrologueB = typename KERNEL::WeightType;
   static PrologueB decompress_kernel;
   set_nk(ctx, ctx->output);
-  auto parse_wei = dynamic_cast<typename PrologueB::StorageWeight*>(ctx->deseries_wei);
-  TORCH_CHECK(parse_wei != nullptr, "Qbits: unresolved compressed weight.");
   if (ctx->transpose)
-    decompress_kernel.unpackTransposeWeight(int(ctx->n), int(ctx->k), parse_wei, ctx->output->data_ptr<float>(), int(ctx->k));
+    decompress_kernel.unpackTransposeWeight(int(ctx->n), int(ctx->k), ctx->deseries_wei, ctx->output->data_ptr<float>(),
+                                            int(ctx->k));
   else
-    decompress_kernel.unpackWeight(int(ctx->n), int(ctx->k), parse_wei, ctx->output->data_ptr<float>(), int(ctx->n));
+    decompress_kernel.unpackWeight(int(ctx->n), int(ctx->k), ctx->deseries_wei, ctx->output->data_ptr<float>(),
+                                   int(ctx->n));
 }
 
 template <class KERNEL, class ParamA, class ParamC>
@@ -124,7 +128,8 @@ void do_compute(qbits_config_param* p, qbits_runtime_ctx* ctx, const ParamA para
   if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>)
     gemm_kernel.compute({int(ctx->m), int(ctx->n), int(ctx->k), param_a, ctx->deseries_wei, param_c});
   else
-    gemm_kernel.template compute<true, false>({int(ctx->m), int(ctx->n), int(ctx->k), param_a, ctx->deseries_wei, param_c});
+    gemm_kernel.template compute<true, false>(
+        {int(ctx->m), int(ctx->n), int(ctx->k), param_a, ctx->deseries_wei, param_c});
   if (initer.verbose) {
     timer.stop();
     auto cost_time = timer.get_elapsed_time();
@@ -147,7 +152,7 @@ void parse_paramC(qbits_config_param* p, qbits_runtime_ctx* ctx, ParamA param_a)
       ParamC param_c = {ctx->output->data_ptr(),
                         ctx->ldo,
                         param_a.Q->mSPtr,
-                        param_a.Q->lds,
+                        param_a.Q->mCStep,
                         dynamic_cast<typename KERNEL::WeightType::StorageWeight*>(ctx->deseries_wei)->mSPtr,
                         ctx->bias->data_ptr(),
                         0,
@@ -160,7 +165,7 @@ void parse_paramC(qbits_config_param* p, qbits_runtime_ctx* ctx, ParamA param_a)
                         ctx->ldo,
                         param_a.Q->mZPtr,
                         param_a.Q->mSPtr,
-                        param_a.Q->lds,
+                        param_a.Q->mCStep,
                         dynamic_cast<typename KERNEL::WeightType::StorageWeight*>(ctx->deseries_wei)->mRPtr,
                         dynamic_cast<typename KERNEL::WeightType::StorageWeight*>(ctx->deseries_wei)->mSPtr,
                         ctx->bias->data_ptr(),
@@ -184,23 +189,32 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   if constexpr (quant_PrologueA<typename KERNEL::ActivationType::AType>) {
     static KERNEL gemm_kernel;
     void* workspace = jblas_workspace == nullptr ? NULL : jblas_workspace;
-    if (workspace != NULL) {
-      auto need_size = PrologueA::QParam::getSize(ctx->m, ctx->k, ctx->blocksize);
-      TORCH_CHECK(workspace_size >= need_size,
-                  "Qbits: workspace size should large than " + std::to_string(need_size) + " bytes");
-    }
+    size_t need_size;
+    void* tmpbuf = NULL;
+    auto get_workspace = [&] {
+      if (workspace != NULL) {
+        TORCH_CHECK(workspace_size >= need_size,
+                    "Qbits: workspace size should large than " + std::to_string(need_size) + " bytes");
+        return workspace;
+      } else {
+        tmpbuf = aligned_alloc(64, need_size);
+        return tmpbuf;
+      }
+    };
     if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>) {
-      auto quantA = gemm_kernel.getActivationPtr()->createStorage(ctx->m, ctx->k, ctx->blocksize,
-                                                                  reinterpret_cast<int8_t*>(workspace));
-      ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, quantA};
+      auto quantA = gemm_kernel.getActivationPtr()->createStorage(ctx->m, ctx->k, ctx->blocksize);
+      auto need_size = quantA.mSize;
+      quantA.assign(reinterpret_cast<int8_t*>(get_workspace()));
+      ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, &quantA};
       parse_paramC<KERNEL, ParamA>(p, ctx, param_a);
-      delete quantA;
     } else {
-      auto quantA = gemm_kernel.getActivationPtr()->createStorage(ctx->m, ctx->k, reinterpret_cast<int8_t*>(workspace));
-      ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, quantA};
+      auto quantA = gemm_kernel.getActivationPtr()->createStorage(ctx->m, ctx->k);
+      auto need_size = quantA.mSize;
+      quantA.assign(reinterpret_cast<int8_t*>(get_workspace()));
+      ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, &quantA};
       parse_paramC<KERNEL, ParamA>(p, ctx, param_a);
-      delete quantA;
     }
+    if (tmpbuf != NULL) free(tmpbuf);
   }
 }
 
@@ -351,7 +365,9 @@ template <QBITS_TASK TASK>
 void parse_gemm_core_online(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   bool per_channel_quant = ctx->blocksize == -1 ? true : false;
   if (per_channel_quant) {
-    TORCH_CHECK(p->compute_type == "int8", "Qbits: compute type must be int8 when enable per_channel quantization.");
+    TORCH_CHECK(p->compute_type == "int8",
+                "Qbits: compute type must be int8 when enable per_channel "
+                "quantization.");
     if (check_amx())
       return parse_weight<TASK, jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB,
                           jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight,
@@ -415,11 +431,10 @@ void parse_gemm_core_online(qbits_config_param* p, qbits_runtime_ctx* ctx) {
 }
 template <QBITS_TASK TASK>
 void parse_gemm_core_offline(qbits_config_param* p, qbits_runtime_ctx* ctx) {
-  ctx->deseries_wei = jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(
-      ctx->weight->data_ptr<int8_t>(), false);
+  ctx->deseries_wei =
+      jblas::prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(ctx->weight->data_ptr<int8_t>());
   auto gemm_core_type = ctx->deseries_wei->mCoreType;
-  auto wbtmp = dynamic_cast<jblas::prologue::weight_comp::PackedWeightKBlock*>(ctx->deseries_wei);
-  auto blocksize = wbtmp->mBlockSize;
+  auto blocksize = ctx->deseries_wei->mBlockSize;
   ctx->blocksize = blocksize;
   switch (gemm_core_type) {
     case jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK:
@@ -476,7 +491,9 @@ void parse_gemm_core_offline(qbits_config_param* p, qbits_runtime_ctx* ctx) {
                             jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight,
                             jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI, jblas::utils::parallel::Parallel2DGemm,
                             JblasAVX512_VNNI>(p, ctx);
-      TORCH_CHECK(false, "Qbits: device ISA must lagger than AVX512_VNNI when GemmCore==Row_NN_8x48_AVX512_VNNI");
+      TORCH_CHECK(false,
+                  "Qbits: device ISA must lagger than AVX512_VNNI when "
+                  "GemmCore==Row_NN_8x48_AVX512_VNNI");
       break;
     case jblas::gemm::GemmCoreType::AMX_INT8_16x48:
       if (check_amx())
@@ -484,7 +501,9 @@ void parse_gemm_core_offline(qbits_config_param* p, qbits_runtime_ctx* ctx) {
                             jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight,
                             jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8, jblas::utils::parallel::Parallel2DGemm,
                             JblasAMX_INT8>(p, ctx);
-      TORCH_CHECK(false, "Qbits: device ISA must lagger than AMX_INT8 when GemmCore==Row_NN_16x48_AMX_S8S8");
+      TORCH_CHECK(false,
+                  "Qbits: device ISA must lagger than AMX_INT8 when "
+                  "GemmCore==Row_NN_16x48_AMX_S8S8");
     default:
       break;
   }
