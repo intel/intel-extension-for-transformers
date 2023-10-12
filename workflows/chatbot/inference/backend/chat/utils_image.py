@@ -26,7 +26,6 @@ def find_GPS_image(pic_path):
     with open(pic_path, 'rb') as f:
         tags = exifread.process_file(f)
         print(f'====== image metadata ======')
-        print(tags)
         for tag, value in tags.items():
             if re.match('GPS GPSLatitudeRef', tag):
                 GPS['GPSLatitudeRef'] = str(value)
@@ -61,12 +60,7 @@ def get_address_from_gps(latitude, longitude, api_key):
         'latlng': f"{latitude},{longitude}",
         'key': api_key
     }
-    # proxies = {
-    #     'http': 'child-prc.intel.com:913',
-    #     'https': 'child-prc.intel.com:913',
-    # }
     start_time = time.time()
-    # response = requests.get(base_url, params=params, proxies=proxies)
     response = requests.get(base_url, params=params)
     data = response.json()
     if data['status'] == 'OK':
@@ -121,7 +115,7 @@ def byte64_to_image(img_b64):
     img = Image.open(bytes_stream)
     return img
 
-# UPDATEEEEEEEEEEEEEEEE
+
 def generate_random_name():
     nowTime=datetime.datetime.now().strftime("%Y%m%dT%H%M%S%f")
     randomNum=random.randint(0,100)
