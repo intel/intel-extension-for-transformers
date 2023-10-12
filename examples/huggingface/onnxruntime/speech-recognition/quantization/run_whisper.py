@@ -183,7 +183,7 @@ if __name__ == "__main__":
                 q_model.save(os.path.join(args.output_model, model))
         else:
             conf = PostTrainingQuantConfig(approach="weight_only",
-                    op_type_dict={'.*': {'weight': {'algorithm': ['RTN'], 'scheme': ['asym']}}},）
+                    op_type_dict={'.*': {'weight': {'algorithm': ['RTN'], 'scheme': ['asym']}}},)
             for model in model_list:
                 q_model = quantization.fit(os.path.join(args.input_model, model),
                                            conf=conf)
