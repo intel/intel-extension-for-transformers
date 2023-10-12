@@ -65,6 +65,7 @@ bash run_audio_inference.sh --config=openai/whisper-large \ # model_name_or_path
 
 **Notes**: 
  - If users don't set audio_path, it will use sample.wav in intel_extension_for_transformers/neural_chat/assets/audio folder for test.
+ - Audio inference code is universal. If users want to run INT4 model, please upgrade onnxruntime to 1.16.0.
 
 # Validated model list
 
