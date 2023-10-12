@@ -201,7 +201,7 @@ def add_text(state, text, request: gr.Request):
     logger.info(f"add_text. ip: {request.client.host}. len: {len(text)}")
 
     if state is None:
-        state = get_conv_template("neural-chat-7b-v2").copy()
+        state = get_conv_template("neural-chat-7b-v2")
 
     if len(text) <= 0:
         state.skip_next = True
@@ -250,7 +250,7 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         # First round of conversation
         if "Llama-2-7b-chat-hf" in model_name:
             model_name = "llama-2"
-        new_state = get_conv_template(model_name.split('/')[-1]).copy()
+        new_state = get_conv_template(model_name.split('/')[-1])
         #new_state.conv_id = uuid.uuid4().hex
         #new_state.model_name = state.model_name or model_selector
         new_state.append_message(new_state.roles[0], state.messages[-2][1])

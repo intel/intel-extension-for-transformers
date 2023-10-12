@@ -99,7 +99,7 @@ class TextChatAPIRouter(APIRouter):
             logger.error(f"An error occurred: {e}")
         else:
             logger.info(f"Chat completion finished.")
-            return ChatCompletionResponse(response={"result": response})
+            return ChatCompletionResponse(response=response)
 
 
 router = TextChatAPIRouter()
