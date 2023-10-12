@@ -27,22 +27,22 @@ unsigned long long jblas_fusion_FFN_f32f32_get_workspace_size(int seq, int fin, 
 }
 
 bool jblas_fusion_FFN_SiLu_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr, int seq, int fin, int fmid, int fout) {
-  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr, 0);
-  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr, 0);
-  auto w3tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w3ptr, 0);
+  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
+  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
+  auto w3tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w3ptr);
   bool support = false;
   if (w1tmp != nullptr && w2tmp != nullptr && w3tmp != nullptr) {
-    prologue::PackedWeight* tmps[3] = {w1tmp, w2tmp, w3tmp};
+    prologue::gemm::WeightBase* tmps[3] = {w1tmp, w2tmp, w3tmp};
     auto sameKernel = samePackedWeight(tmps, 3);
     if (sameKernel) {
       if (sameKernel) {
-        if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32) ||
-            w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
+        if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
+            w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
           constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
           support = contains(w1tmp->mCoreType, GcCompInt8KBlockSet, EleNum);
           support &= hasISA(GcCompInt8KBlockSet, EleNum);
-        } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                   w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+        } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
+                   w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
           constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
           support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
           support &= hasISA(GcCompInt8Set, EleNum);
@@ -72,14 +72,13 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(float* activation, SS4Fp3
       int ldtmp1 = fmid;
       int ldtmp2 = fmid;
       int ldo = fout;
-
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1ptr->mBlockSize);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, quanA1, tmp1, ldtmp1, quanA2, w1ptr,
-                            w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,   tmp2, ldtmp2, NULL});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1ptr,
+                            w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,    tmp2, ldtmp2, NULL});
 
     } else if (_cd->AVX512_VNNI() && w1ptr->mBlockSize % 8 == 0) {
       if (seq <= 32) {
@@ -92,15 +91,13 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(float* activation, SS4Fp3
         int ldtmp1 = fmid;
         int ldtmp2 = fmid;
         int ldo = fout;
-
-        auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize, (int8_t*)workspace);
-        auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1ptr->mBlockSize);
-        auto quanA2 =
-            finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize, (int8_t*)workspace + offset);
-        ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, quanA1, tmp1, ldtmp1, quanA2, w1ptr,
-                              w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,   tmp2, ldtmp2, NULL});
-        delete quanA1;
-        delete quanA2;
+        auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize);
+        quanA1.assign((int8_t*)workspace);
+        auto offset = workspace == NULL ? 0 : quanA1.mSize;
+        auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize);
+        quanA2.assign((int8_t*)workspace + offset);
+        ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1ptr,
+                              w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,    tmp2, ldtmp2, NULL});
       } else {
         using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmSKernelDynamicS4KBlock;
         using SiluGemmKernel = custom::wrapper::kblock::avx512_vnni::SiluGemmSKernelDynamicS4KBlock;
@@ -111,15 +108,13 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(float* activation, SS4Fp3
         int ldtmp1 = fmid;
         int ldtmp2 = fmid;
         int ldo = fout;
-
-        auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize, (int8_t*)workspace);
-        auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1ptr->mBlockSize);
-        auto quanA2 =
-            finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize, (int8_t*)workspace + offset);
-        ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, quanA1, tmp1, ldtmp1, quanA2, w1ptr,
-                              w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,   tmp2, ldtmp2, NULL});
-        delete quanA1;
-        delete quanA2;
+        auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize);
+        quanA1.assign((int8_t*)workspace);
+        auto offset = workspace == NULL ? 0 : quanA1.mSize;
+        auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize);
+        quanA2.assign((int8_t*)workspace + offset);
+        ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1ptr,
+                              w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,    tmp2, ldtmp2, NULL});
       }
     }
   }
@@ -142,15 +137,13 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32_f32f32_forward(float* activation, SS8Fp3
       int ldtmp1 = fmid;
       int ldtmp2 = fmid;
       int ldo = fout;
-
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1ptr->mBlockSize);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, quanA1, tmp1, ldtmp1, quanA2, w1ptr,
-                            w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,   tmp2, ldtmp2, NULL});
-      delete quanA1;
-      delete quanA2;
-
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1ptr,
+                            w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,    tmp2, ldtmp2, NULL});
     } else if (_cd->AVX512_VNNI() && w1ptr->mBlockSize % 4 == 0) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmSKernelDynamicS8KBlock;
       using SiluGemmKernel = custom::wrapper::kblock::avx512_vnni::SiluGemmSKernelDynamicS8KBlock;
@@ -161,14 +154,13 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32_f32f32_forward(float* activation, SS8Fp3
       int ldtmp1 = fmid;
       int ldtmp2 = fmid;
       int ldo = fout;
-
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1ptr->mBlockSize);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, quanA1, tmp1, ldtmp1, quanA2, w1ptr,
-                            w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,   tmp2, ldtmp2, NULL});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1ptr->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2ptr->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1ptr,
+                            w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,    tmp2, ldtmp2, NULL});
     }
   }
   return ret;
@@ -189,16 +181,16 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32pern_f32f32_forward(float* activation, SS
       int ldtmp1 = fmid;
       int ldtmp2 = fmid;
       int ldo = fout;
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,    fin,           fmid,          fout,          activation,   lda,
-                            quanA1, tmp1,          ldtmp1,        quanA2,        w1ptr,        w2ptr,
-                            w3ptr,  tmp1,          ldtmp1,        quanA1->mSPtr, quanA1->lds,  w1ptr->mSPtr,
-                            output, ldo,           quanA2->mSPtr, quanA2->lds,   w2ptr->mSPtr, tmp2,
-                            ldtmp2, quanA1->mSPtr, quanA1->lds,   w3ptr->mSPtr});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,     fin,          fmid,          fout,          activation,    lda,
+                            &quanA1, tmp1,         ldtmp1,        &quanA2,       w1ptr,         w2ptr,
+                            w3ptr,   tmp1,         ldtmp1,        quanA1.mSPtr,  quanA1.mCStep, w1ptr->mSPtr,
+                            output,  ldo,          quanA2.mSPtr,  quanA2.mCStep, w2ptr->mSPtr,  tmp2,
+                            ldtmp2,  quanA1.mSPtr, quanA1.mCStep, w3ptr->mSPtr});
 
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmDynamicS8PerN;
@@ -209,17 +201,16 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32pern_f32f32_forward(float* activation, SS
       int ldtmp1 = fmid;
       int ldtmp2 = fmid;
       int ldo = fout;
-
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,    fin,           fmid,          fout,        activation,   lda,          quanA1,
-                            tmp1,   ldtmp1,        quanA2,        w1ptr,       w2ptr,        w3ptr,        tmp1,
-                            ldtmp1, quanA1->mZPtr, quanA1->mSPtr, quanA1->lds, w1ptr->mRPtr, w1ptr->mSPtr, output,
-                            ldo,    quanA2->mZPtr, quanA2->mSPtr, quanA2->lds, w2ptr->mRPtr, w2ptr->mSPtr, tmp2,
-                            ldtmp2, quanA1->mZPtr, quanA1->mSPtr, quanA1->lds, w3ptr->mRPtr, w3ptr->mSPtr});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,    fin,          fmid,         fout,          activation,   lda,          &quanA1,
+                            tmp1,   ldtmp1,       &quanA2,      w1ptr,         w2ptr,        w3ptr,        tmp1,
+                            ldtmp1, quanA1.mZPtr, quanA1.mSPtr, quanA1.mCStep, w1ptr->mRPtr, w1ptr->mSPtr, output,
+                            ldo,    quanA2.mZPtr, quanA2.mSPtr, quanA2.mCStep, w2ptr->mRPtr, w2ptr->mSPtr, tmp2,
+                            ldtmp2, quanA1.mZPtr, quanA1.mSPtr, quanA1.mCStep, w3ptr->mRPtr, w3ptr->mSPtr});
     }
   }
   return ret;
@@ -241,16 +232,16 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4clipfp32pern_f32f32_forward(float* activation
       int ldtmp1 = fmid;
       int ldtmp2 = fmid;
       int ldo = fout;
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,    fin,           fmid,          fout,          activation,   lda,
-                            quanA1, tmp1,          ldtmp1,        quanA2,        w1ptr,        w2ptr,
-                            w3ptr,  tmp1,          ldtmp1,        quanA1->mSPtr, quanA1->lds,  w1ptr->mSPtr,
-                            output, ldo,           quanA2->mSPtr, quanA2->lds,   w2ptr->mSPtr, tmp2,
-                            ldtmp2, quanA1->mSPtr, quanA1->lds,   w3ptr->mSPtr});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,     fin,          fmid,          fout,          activation,    lda,
+                            &quanA1, tmp1,         ldtmp1,        &quanA2,       w1ptr,         w2ptr,
+                            w3ptr,   tmp1,         ldtmp1,        quanA1.mSPtr,  quanA1.mCStep, w1ptr->mSPtr,
+                            output,  ldo,          quanA2.mSPtr,  quanA2.mCStep, w2ptr->mSPtr,  tmp2,
+                            ldtmp2,  quanA1.mSPtr, quanA1.mCStep, w3ptr->mSPtr});
 
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmDynamicS4ClipPerN;
@@ -261,17 +252,16 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4clipfp32pern_f32f32_forward(float* activation
       int ldtmp1 = fmid;
       int ldtmp2 = fmid;
       int ldo = fout;
-
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,    fin,           fmid,          fout,        activation,   lda,          quanA1,
-                            tmp1,   ldtmp1,        quanA2,        w1ptr,       w2ptr,        w3ptr,        tmp1,
-                            ldtmp1, quanA1->mZPtr, quanA1->mSPtr, quanA1->lds, w1ptr->mRPtr, w1ptr->mSPtr, output,
-                            ldo,    quanA2->mZPtr, quanA2->mSPtr, quanA2->lds, w2ptr->mRPtr, w2ptr->mSPtr, tmp2,
-                            ldtmp2, quanA1->mZPtr, quanA1->mSPtr, quanA1->lds, w3ptr->mRPtr, w3ptr->mSPtr});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,    fin,          fmid,         fout,          activation,   lda,          &quanA1,
+                            tmp1,   ldtmp1,       &quanA2,      w1ptr,         w2ptr,        w3ptr,        tmp1,
+                            ldtmp1, quanA1.mZPtr, quanA1.mSPtr, quanA1.mCStep, w1ptr->mRPtr, w1ptr->mSPtr, output,
+                            ldo,    quanA2.mZPtr, quanA2.mSPtr, quanA2.mCStep, w2ptr->mRPtr, w2ptr->mSPtr, tmp2,
+                            ldtmp2, quanA1.mZPtr, quanA1.mSPtr, quanA1.mCStep, w3ptr->mRPtr, w3ptr->mSPtr});
     }
   }
   return ret;
@@ -280,25 +270,25 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4clipfp32pern_f32f32_forward(float* activation
 void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, void* w3ptr, float* tmp1,
                                           float* tmp2, float* output, int seq, int fin, int fmid, int fout,
                                           void* workspace) {
-  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr, 0);
-  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr, 0);
-  auto w3tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w3ptr, 0);
+  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
+  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
+  auto w3tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w3ptr);
   auto ret = JblasRuntimeError;
 
   // must check support before forward, there is no need to check support twice.
-  if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32)) {
+  if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32)) {
     ret = jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(activation, dynamic_cast<SS4Fp32*>(w1tmp),
                                                       dynamic_cast<SS4Fp32*>(w2tmp), dynamic_cast<SS4Fp32*>(w3tmp),
                                                       tmp1, tmp2, output, seq, fin, fmid, fout, workspace);
-  } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
+  } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
     ret = jblas_fusion_FFN_SiLu_s8fp32_f32f32_forward(activation, dynamic_cast<SS8Fp32*>(w1tmp),
                                                       dynamic_cast<SS8Fp32*>(w2tmp), dynamic_cast<SS8Fp32*>(w3tmp),
                                                       tmp1, tmp2, output, seq, fin, fmid, fout, workspace);
-  } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
+  } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
     ret = jblas_fusion_FFN_SiLu_s8fp32pern_f32f32_forward(
         activation, dynamic_cast<SS8Fp32PerN*>(w1tmp), dynamic_cast<SS8Fp32PerN*>(w2tmp),
         dynamic_cast<SS8Fp32PerN*>(w3tmp), tmp1, tmp2, output, seq, fin, fmid, fout, workspace);
-  } else if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+  } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
     ret = jblas_fusion_FFN_SiLu_s4clipfp32pern_f32f32_forward(
         activation, dynamic_cast<SS4Fp32PerN*>(w1tmp), dynamic_cast<SS4Fp32PerN*>(w2tmp),
         dynamic_cast<SS4Fp32PerN*>(w3tmp), tmp1, tmp2, output, seq, fin, fmid, fout, workspace);
@@ -315,8 +305,8 @@ bool jblas_fusion_FFN_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int
 
 void jblas_fusion_FFN_GeLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1, float* output,
                                           int seq, int fin, int fmid, int fout, void* workspace) {
-  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr, 0);
-  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr, 0);
+  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
+  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
   if (w1tmp->mCoreType == GcCompInt8KBlock::TYPE) {
     using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmSKernelDynamicS4KBlock;
     using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::GeluGemmSKernelDynamicS4KBlock;
@@ -334,24 +324,24 @@ void jblas_fusion_FFN_GeLu_f32f32_forward(float* activation, void* w1ptr, void* 
 }
 
 bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
-  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr, 0);
-  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr, 0);
+  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
+  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
   bool support = false;
   if (w1tmp != nullptr && w2tmp != nullptr) {
-    prologue::PackedWeight* tmps[2] = {w1tmp, w2tmp};
+    prologue::gemm::WeightBase* tmps[2] = {w1tmp, w2tmp};
     auto sameKernel = samePackedWeight(tmps, 2);
     if (sameKernel) {
       if (sameKernel) {
-        if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32) ||
-            w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
+        if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
+            w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
           constexpr jblas::gemm::GemmCoreType cores[] = {
               jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
               jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
           constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
           support = contains(w1tmp->mCoreType, cores, EleNum);
           support &= hasISA(cores, EleNum);
-        } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                   w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+        } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
+                   w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
           constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
           support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
           support &= hasISA(GcCompInt8Set, EleNum);
@@ -383,16 +373,16 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1tmp->mBlockSize);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,        fin,    fmid,   fout,
-                            activation, lda,    quanA1, tmp1,
-                            ldtmp1,     quanA2, w1tmp,  w2tmp,
-                            tmp1,       b1ptr,  ldtmp1, broadcast_bias ? 0 : ldtmp1,
-                            output,     b2ptr,  ldo,    broadcast_bias ? 0 : ldo});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,        fin,     fmid,    fout,
+                            activation, lda,     &quanA1, tmp1,
+                            ldtmp1,     &quanA2, w1tmp,   w2tmp,
+                            tmp1,       b1ptr,   ldtmp1,  broadcast_bias ? 0 : ldtmp1,
+                            output,     b2ptr,   ldo,     broadcast_bias ? 0 : ldo});
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::AddGemmSKernelDynamicS4KBlock;
       using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::AddGeluGemmSKernelDynamicS4KBlock;
@@ -405,16 +395,16 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1tmp->mBlockSize);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,        fin,    fmid,   fout,
-                            activation, lda,    quanA1, tmp1,
-                            ldtmp1,     quanA2, w1tmp,  w2tmp,
-                            tmp1,       b1ptr,  ldtmp1, broadcast_bias ? 0 : ldtmp1,
-                            output,     b2ptr,  ldo,    broadcast_bias ? 0 : ldo});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,        fin,     fmid,    fout,
+                            activation, lda,     &quanA1, tmp1,
+                            ldtmp1,     &quanA2, w1tmp,   w2tmp,
+                            tmp1,       b1ptr,   ldtmp1,  broadcast_bias ? 0 : ldtmp1,
+                            output,     b2ptr,   ldo,     broadcast_bias ? 0 : ldo});
     }
   } else if (w1tmp->mCoreType == GcCompFp32::TYPE) {
     if (_cd->AVX512F()) {
@@ -471,16 +461,16 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32_f32f32_forward(float* activation, SS
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1tmp->mBlockSize);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,        fin,    fmid,   fout,
-                            activation, lda,    quanA1, tmp1,
-                            ldtmp1,     quanA2, w1tmp,  w2tmp,
-                            tmp1,       b1ptr,  ldtmp1, broadcast_bias ? 0 : ldtmp1,
-                            output,     b2ptr,  ldo,    broadcast_bias ? 0 : ldo});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,        fin,     fmid,    fout,
+                            activation, lda,     &quanA1, tmp1,
+                            ldtmp1,     &quanA2, w1tmp,   w2tmp,
+                            tmp1,       b1ptr,   ldtmp1,  broadcast_bias ? 0 : ldtmp1,
+                            output,     b2ptr,   ldo,     broadcast_bias ? 0 : ldo});
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::AddGemmSKernelDynamicS8KBlock;
       using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::AddGeluGemmSKernelDynamicS8KBlock;
@@ -493,16 +483,16 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32_f32f32_forward(float* activation, SS
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin, w1tmp->mBlockSize);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,        fin,    fmid,   fout,
-                            activation, lda,    quanA1, tmp1,
-                            ldtmp1,     quanA2, w1tmp,  w2tmp,
-                            tmp1,       b1ptr,  ldtmp1, broadcast_bias ? 0 : ldtmp1,
-                            output,     b2ptr,  ldo,    broadcast_bias ? 0 : ldo});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,        fin,     fmid,    fout,
+                            activation, lda,     &quanA1, tmp1,
+                            ldtmp1,     &quanA2, w1tmp,   w2tmp,
+                            tmp1,       b1ptr,   ldtmp1,  broadcast_bias ? 0 : ldtmp1,
+                            output,     b2ptr,   ldo,     broadcast_bias ? 0 : ldo});
     }
   } else if (w1tmp->mCoreType == GcCompFp32::TYPE) {
     if (_cd->AVX512F()) {
@@ -543,37 +533,37 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32pern_f32f32_forward(float* activation
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, (int8_t*)workspace + offset);
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
       ret = finter.compute({seq,
                             fin,
                             fmid,
                             fout,
                             activation,
                             lda,
-                            quanA1,
+                            &quanA1,
                             tmp1,
                             ldtmp1,
-                            quanA2,
+                            &quanA2,
                             w1tmp,
                             w2tmp,
                             tmp1,
                             ldtmp1,
-                            quanA1->mSPtr,
-                            quanA1->lds,
+                            quanA1.mSPtr,
+                            quanA1.mCStep,
                             w1tmp->mSPtr,
                             b1ptr,
                             broadcast_bias ? 0 : ldtmp1,
                             output,
                             ldo,
-                            quanA2->mSPtr,
-                            quanA2->lds,
+                            quanA2.mSPtr,
+                            quanA2.mCStep,
                             w2tmp->mSPtr,
                             b2ptr,
                             broadcast_bias ? 0 : ldo});
-      delete quanA1;
-      delete quanA2;
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::AddGemmDynamicS8PerN;
       using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::AddGeluGemmDynamicS8PerN;
@@ -586,21 +576,21 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32pern_f32f32_forward(float* activation
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,           fin,         fmid,
-                            fout,          activation,  lda,
-                            quanA1,        tmp1,        ldtmp1,
-                            quanA2,        w1tmp,       w2tmp,
-                            tmp1,          ldtmp1,      quanA1->mZPtr,
-                            quanA1->mSPtr, quanA1->lds, w1tmp->mRPtr,
-                            w1tmp->mSPtr,  b1ptr,       broadcast_bias ? 0 : ldtmp1,
-                            output,        ldo,         quanA2->mZPtr,
-                            quanA2->mSPtr, quanA2->lds, w2tmp->mRPtr,
-                            w2tmp->mSPtr,  b2ptr,       broadcast_bias ? 0 : ldo});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,          fin,           fmid,
+                            fout,         activation,    lda,
+                            &quanA1,      tmp1,          ldtmp1,
+                            &quanA2,      w1tmp,         w2tmp,
+                            tmp1,         ldtmp1,        quanA1.mZPtr,
+                            quanA1.mSPtr, quanA1.mCStep, w1tmp->mRPtr,
+                            w1tmp->mSPtr, b1ptr,         broadcast_bias ? 0 : ldtmp1,
+                            output,       ldo,           quanA2.mZPtr,
+                            quanA2.mSPtr, quanA2.mCStep, w2tmp->mRPtr,
+                            w2tmp->mSPtr, b2ptr,         broadcast_bias ? 0 : ldo});
     }
   }
   return ret;
@@ -626,37 +616,37 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4clipfp32pern_f32f32_forward(float* activa
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, (int8_t*)workspace + offset);
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
       ret = finter.compute({seq,
                             fin,
                             fmid,
                             fout,
                             activation,
                             lda,
-                            quanA1,
+                            &quanA1,
                             tmp1,
                             ldtmp1,
-                            quanA2,
+                            &quanA2,
                             w1tmp,
                             w2tmp,
                             tmp1,
                             ldtmp1,
-                            quanA1->mSPtr,
-                            quanA1->lds,
+                            quanA1.mSPtr,
+                            quanA1.mCStep,
                             w1tmp->mSPtr,
                             b1ptr,
                             broadcast_bias ? 0 : ldtmp1,
                             output,
                             ldo,
-                            quanA2->mSPtr,
-                            quanA2->lds,
+                            quanA2.mSPtr,
+                            quanA2.mCStep,
                             w2tmp->mSPtr,
                             b2ptr,
                             broadcast_bias ? 0 : ldo});
-      delete quanA1;
-      delete quanA2;
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::AddGemmDynamicS4ClipPerN;
       using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::AddGeluGemmDynamicS4ClipPerN;
@@ -669,21 +659,21 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4clipfp32pern_f32f32_forward(float* activa
       // FusedInter::Arguments::paramW1 paramW1={w1tmp};
       // FusedInter::Arguments::paramW2 paramW2={w2tmp};
       // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
-      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, (int8_t*)workspace);
-      auto offset = workspace == NULL ? 0 : finter.getActivationPtr()->getWorkSpaceSize(seq, fin);
-      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, (int8_t*)workspace + offset);
-      ret = finter.compute({seq,           fin,         fmid,
-                            fout,          activation,  lda,
-                            quanA1,        tmp1,        ldtmp1,
-                            quanA2,        w1tmp,       w2tmp,
-                            tmp1,          ldtmp1,      quanA1->mZPtr,
-                            quanA1->mSPtr, quanA1->lds, w1tmp->mRPtr,
-                            w1tmp->mSPtr,  b1ptr,       broadcast_bias ? 0 : ldtmp1,
-                            output,        ldo,         quanA2->mZPtr,
-                            quanA2->mSPtr, quanA2->lds, w2tmp->mRPtr,
-                            w2tmp->mSPtr,  b2ptr,       broadcast_bias ? 0 : ldo});
-      delete quanA1;
-      delete quanA2;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,          fin,           fmid,
+                            fout,         activation,    lda,
+                            &quanA1,      tmp1,          ldtmp1,
+                            &quanA2,      w1tmp,         w2tmp,
+                            tmp1,         ldtmp1,        quanA1.mZPtr,
+                            quanA1.mSPtr, quanA1.mCStep, w1tmp->mRPtr,
+                            w1tmp->mSPtr, b1ptr,         broadcast_bias ? 0 : ldtmp1,
+                            output,       ldo,           quanA2.mZPtr,
+                            quanA2.mSPtr, quanA2.mCStep, w2tmp->mRPtr,
+                            w2tmp->mSPtr, b2ptr,         broadcast_bias ? 0 : ldo});
     }
   }
   return ret;
@@ -694,21 +684,21 @@ void jblas_fusion_FFN_Add_GeLu_f32f32_forward(float* activation, void* w1ptr, vo
                                               bool broadcast_bias, void* workspace) {
   GetCPUDevice();
   auto ret = JblasRuntimeError;
-  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr, 0);
-  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr, 0);
-  if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32)) {
+  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
+  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
+  if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32)) {
     ret =
         jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(activation, (SS4Fp32*)w1tmp, (SS4Fp32*)w2tmp, b1ptr, b2ptr,
                                                         tmp1, output, seq, fin, fmid, fout, broadcast_bias, workspace);
-  } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32)) {
+  } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
     ret =
         jblas_fusion_FFN_Add_GeLu_s8fp32_f32f32_forward(activation, (SS8Fp32*)w1tmp, (SS8Fp32*)w2tmp, b1ptr, b2ptr,
                                                         tmp1, output, seq, fin, fmid, fout, broadcast_bias, workspace);
-  } else if (w1tmp->mType == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
+  } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN)) {
     ret = jblas_fusion_FFN_Add_GeLu_s8fp32pern_f32f32_forward(activation, (SS8Fp32PerN*)w1tmp, (SS8Fp32PerN*)w2tmp,
                                                               b1ptr, b2ptr, tmp1, output, seq, fin, fmid, fout,
                                                               broadcast_bias, workspace);
-  } else if (w1tmp->mType == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+  } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
     ret = jblas_fusion_FFN_Add_GeLu_s4clipfp32pern_f32f32_forward(activation, (SS4Fp32PerN*)w1tmp, (SS4Fp32PerN*)w2tmp,
                                                                   b1ptr, b2ptr, tmp1, output, seq, fin, fmid, fout,
                                                                   broadcast_bias, workspace);

@@ -126,8 +126,9 @@ struct fp16 {
     const uint32_t m = b & 0x007FFFFF;
     // sign : normalized : denormalized : saturate
 
-    this->x = (b & 0x80000000) >> 16 | (e > 112) * ((((e - 112) << 10) & 0x7C00) | m >> 13) |
-              ((e < 113) & (e > 101)) * ((((0x007FF000 + m) >> (125 - e)) + 1) >> 1) | (e > 143) * 0x7FFF;
+    this->x = static_cast<uint16_t>((b & 0x80000000) >> 16 | (e > 112) * ((((e - 112) << 10) & 0x7C00) | m >> 13) |
+                                    ((e < 113) & (e > 101)) * ((((0x007FF000 + m) >> (125 - e)) + 1) >> 1) |
+                                    (e > 143) * 0x7FFF);
 #endif
     return *this;
   }
@@ -167,7 +168,7 @@ struct fp16 {
     // followed by the mantissa.
     else {
       int sign = x & 0x8000;
-      return bf16::from_bin(sign | (exponent + 128 - 16) << 7 | mantissa >> 3);
+      return bf16::from_bin(static_cast<uint16_t>(sign | (exponent + 128 - 16) << 7 | mantissa >> 3));
     }
 #endif
   }
@@ -189,7 +190,7 @@ struct int4x2 : bit4x2 {
     dst = dst / 16;
     dst = dst > 7 ? 7 : dst;
     dst = dst < -8 ? -8 : dst;
-    return dst;
+    return static_cast<int8_t>(dst);
   }
 };
 
@@ -331,9 +332,13 @@ class aligned_vector {
   void resize(size_t size) {
     mRawsize = size;
     mAlignedsize = (mRawsize + _Alignment - 1) / _Alignment * _Alignment + _Alignment;
-    mVec.resize(mAlignedsize);
-    auto uptr = reinterpret_cast<uint64_t>(mVec.data());
-    mPtr = reinterpret_cast<_T*>((uptr + _Alignment - 1) / _Alignment * _Alignment);
+    if (size) {
+      mVec.resize(mAlignedsize);
+      auto uptr = reinterpret_cast<uint64_t>(mVec.data());
+      mPtr = reinterpret_cast<_T*>((uptr + _Alignment - 1) / _Alignment * _Alignment);
+    } else {
+      mPtr = NULL;
+    }
   }
   _T* data() const { return mPtr; }
   _T& operator[](size_t _n) noexcept { return mPtr[_n]; }
@@ -538,7 +543,7 @@ class CpuDevice {
   }
 
 struct Parallel2D {
-  virtual void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize) const {
+  virtual void getIndex(int threadIdx, int* row, int* col, int* rowsize, int* colsize, bool padding = true) const {
     if (threadIdx >= mValidThreads) {
       *rowsize = 0;
       *colsize = 0;
@@ -548,8 +553,12 @@ struct Parallel2D {
     int ty = threadIdx / mColThreads;
     *col = tx * mThdCol;
     *row = ty * mThdRow;
-    *colsize = padto(remainsize(*col, mCols, mThdCol), mPadCol);
-    *rowsize = padto(remainsize(*row, mRows, mThdRow), mPadRow);
+    *colsize = remainsize(*col, mCols, mThdCol);
+    *rowsize = remainsize(*row, mRows, mThdRow);
+    if (padding) {
+      *colsize = padto(*colsize, mPadCol);
+      *rowsize = padto(*rowsize, mPadRow);
+    }
   }
 
   void calc_valid_threads() { mValidThreads = mColThreads * int(std::ceil(float(mRows) / mThdRow)); }
@@ -640,7 +649,7 @@ struct Parallel2DGemm : Parallel2D {
     if (BA_ratio >= 10) {
       // B matrix is too big, need split K to reduce latency
       int const NStage = 10;
-      int const K_Split = padto(updiv(K, 10), _GemmCore_T::KTILE);
+      int const K_Split = padto(updiv(K, NStage), _GemmCore_T::KTILE);
       if (mKStep > K_Split) {
         mKStep = K_Split;
       }
@@ -690,7 +699,7 @@ struct Parallel2DGemm : Parallel2D {
   // B Access = M/mMStep
   // A Access = N/mNStep
   void update_cache_blocking() {
-    int constexpr MRef = 256, KRef = 256;
+    int constexpr KRef = 256;
     size_t csize_total = mL2Size - _GemmCore_T::PREFERED_N * KRef * BSize;
     int maxM = static_cast<int>(csize_total / _GemmCore_T::PREFERED_N / CSize);
     maxM = downdiv(maxM, _GemmCore_T::MTILE);
@@ -898,7 +907,6 @@ struct Parallel2DGemmKBlock : Parallel2D {
   }
 
   void update_cache_blocking(int kblock) {
-    int constexpr MRef = 256;
     int kRef = kblock > 256 ? 256 : kblock;
     size_t csize_total = mL2Size - _GemmCore_T::PREFERED_N * kRef * BSize;
     int maxM = static_cast<int>(csize_total / _GemmCore_T::PREFERED_N / CSize);
@@ -1026,7 +1034,6 @@ struct Parallel2DGemmKBlockFixed : Parallel2D {
   }
 
   void update_cache_blocking(int kblock) {
-    int constexpr MRef = 256;
     int kRef = 256;
     if (kblock > 256) {
       kRef = kblock / 2;
