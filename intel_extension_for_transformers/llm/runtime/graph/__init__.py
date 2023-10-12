@@ -18,7 +18,7 @@ import os
 from transformers import AutoConfig
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 import torch
-model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
+model_maps = {"gpt_neox": "gptneox"}
 
 class Model:
     def __init__(self):
