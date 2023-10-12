@@ -1013,7 +1013,11 @@ def process_single_image(img_id, img_path, user_id):
 
     # process faces for image
     db_path = IMAGE_ROOT_PATH+"/user"+user_id
-    process_face_for_single_image(image_id=img_id, image_path=img_path, db_path=db_path, user_id=user_id)
+    try:
+        process_face_for_single_image(image_id=img_id, image_path=img_path, db_path=db_path, user_id=user_id)
+    except Exception as e:
+        logger.error(f'[background - single] Error occurred while processing face.')
+        raise Exception('[background - single]', str(e))
     logger.info(f'[background - single] Face process done for image {img_id}')
 
     # update image status
@@ -1033,7 +1037,7 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
 
     # 1. check whether image contains faces
     try:
-        face_objs = DeepFace.represent(img_path=image_path, model_name='Facenet')
+        face_objs = DeepFace.represent(img_path=image_path, model_name='Facenet512')
     except:
         # no face in this image, finish process
         logger.info(f"[background - face] Image {image_id} does not contains faces")
@@ -1050,29 +1054,33 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
 
     # 2. check same faces in db
     import os
-    pkl_path = db_path+'/representations_facenet.pkl'
+    pkl_path = db_path+'/representations_facenet512.pkl'
     if os.path.exists(pkl_path):
         logger.info(f'[background - face] pkl file already exists, delete it.')
         os.remove(pkl_path)
-    dfs = DeepFace.find(img_path=image_path, db_path=db_path, model_name='Facenet', enforce_detection=False)
+    dfs = DeepFace.find(img_path=image_path, db_path=db_path, model_name='Facenet512', enforce_detection=False)
     logger.info(f'[background - face] Finding match faces in image database.')
     assert face_cnt == len(dfs)
     logger.info(f'[background - face] dfs: {dfs}')
     mysql_db = MysqlDb()
     for df in dfs:
+        logger.info(f'[background - face] current df: {df}')
         # no face matched for current face of image, add new faces later
         if len(df) <= 1:
-            logger.info(f'[background - face] length of {df} less than 1, continue')
+            logger.info(f'[background - face] length of current df less than 1, continue')
             continue
-        # found ref image
-        ref_image_path = df.iloc[0]['identity']
+        # findd ref image
+        ref_image_path = None
         ref_image_list = df['identity']
         for ref_image_name in ref_image_list:
             logger.info(f'[background - face] current ref_image_name: {ref_image_name}')
             if ref_image_name!=image_path:
                 ref_image_path = ref_image_name
                 break
-        
+        # no ref image found
+        if not ref_image_path:
+            logger.info(f'[background - face] no other reference image found, continue')
+            continue
         # find faces in img2: one or many
         find_face_sql = f"SELECT face_id, face_tag, xywh FROM image_face WHERE image_path='{ref_image_path}' AND user_id='{user_id}';"
         try:
@@ -1081,17 +1089,21 @@ def process_face_for_single_image(image_id, image_path, db_path, user_id):
             logger.error("[background - face] "+str(e))
             raise Exception(f"Exception ocurred while selecting info from image_face: {e}")
         logger.info(f"[background - face] reference image and faces: {img_face_list}")
+        # wrong ref image found
+        if img_face_list == ():
+            logger.error(f"img_face_list is {img_face_list}, wrong ref image found")
+            continue
         # verify face xywh of ref image
-        obj = DeepFace.verify(img1_path=image_path, img2_path=ref_image_path, model_name="Facenet")
+        obj = DeepFace.verify(img1_path=image_path, img2_path=ref_image_path, model_name="Facenet512")
         ref_xywh = transfer_xywh(obj['facial_areas']['img2'])
         image_xywh = transfer_xywh(obj['facial_areas']['img1'])
         face_id = -1
         face_tag = None
         # find corresponding face_id and face_tag
         for img_face in img_face_list:
-            if img_face[2] == ref_xywh:
-                face_id = img_face[0]
-                face_tag = img_face[1]
+            if img_face['xywh'] == ref_xywh:
+                face_id = img_face['face_id']
+                face_tag = img_face['face_tag']
         if face_id == -1 and face_tag == None:
             raise Exception(f'Error occurred when verifing faces for reference image: Inconsistent face infomation.')
         # insert into image_face
@@ -1286,7 +1298,10 @@ def get_face_list_by_user_id(user_id: str) -> List[Dict]:
     for item in query_list:
         logger.info(f'current item: {item}')
         image_name = item['image_path'].split('/')[-1]
-        response_person[item['face_tag']] = format_image_path(user_id, image_name)
+        face_tag = item['face_tag']
+        if ',' in face_tag:
+            face_tag = face_tag.split(',')[0]
+        response_person[face_tag] = format_image_path(user_id, image_name)
     logger.info(f'person list: {response_person}')
     return response_person
 
