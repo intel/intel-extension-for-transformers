@@ -73,6 +73,12 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, co
 
 static bool gptneox_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                         const int n_past, const int n_threads) {
+  // // enforce that the first token is BOS
+  // if (n_past == 0 && tokens[0] != model_token_bos()) {
+  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
+  //   return false;
+  // }
+  static int ccc = 1;
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -320,12 +326,12 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
       }
     } else {
       // return result for just the last token
-      logits_out.resize(n_vocab);
+      logits_out.resize(n_vocab * batch_size);
       for (int i = 0; i < batch_size; ++i) {
         memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)),
                sizeof(float) * n_vocab);
       }
-#if 1
+#if 0
       printf("\n logits: \n");
       for (int k = 0; k < batch_size; ++k) {
         printf("batch %d:  ", k);
