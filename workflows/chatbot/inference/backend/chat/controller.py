@@ -1337,14 +1337,14 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
     location_list = get_address_list(user_id)
     logger.info(f"[NER query] location list is: {location_list}")
     if location_list:
-        if not query_flag:
-            query_sql += " WHERE "
-        query_flag = True
         sql_conditions = []
         for db_loc in location_list:
             if db_loc in query:
                 sql_conditions.append(f' image_info.address LIKE "%{db_loc}%" ')
         if sql_conditions != []:
+            if not query_flag:
+                query_sql += " WHERE "
+            query_flag = True
             sql = 'OR'.join(sql_conditions)
             if query_sql[-1] == ')':
                 query_sql += ' AND '
@@ -1354,14 +1354,14 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
         
     # get time query
     if ner_result['time']:
-        if not query_flag:
-            query_sql += " WHERE "
-        query_flag = True
         time_points = ner_result['time']
         sql_conditions = []
         for loc in time_points:
             sql_conditions.append(f' image_info.captured_time LIKE "%{loc}%" ')
         if sql_conditions != []:
+            if not query_flag:
+                query_sql += " WHERE "
+            query_flag = True
             sql = 'OR'.join(sql_conditions)
             if query_sql[-1] == ')':
                 query_sql += ' AND '
@@ -1371,17 +1371,20 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
 
     # get time period query
     if ner_result['period']:
-        if not query_flag:
-            query_sql += " WHERE "
-        query_flag = True
         periods = ner_result['period']
         logger.info(f'[NER query] periods: {periods}')
         sql_conditions = []
         for period in periods:
             from_time = period['from']
             to_time = period['to']
-            sql_conditions.append(f' image_info.captured_time BETWEEN "{from_time}" AND "{to_time}" ')
+            format = "%Y-%m-%d"
+            to_time = datetime.datetime.strptime(to_time, format)
+            new_to_time = to_time + datetime.timedelta(days=1)
+            sql_conditions.append(f' image_info.captured_time BETWEEN "{from_time}" AND "{new_to_time.strftime(format)}" ')
         if sql_conditions != []:
+            if not query_flag:
+                query_sql += " WHERE "
+            query_flag = True
             sql = 'OR'.join(sql_conditions)
             if query_sql[-1] == ')':
                 query_sql += ' AND '
