@@ -33,7 +33,7 @@ bash run_tuning.sh --config=openai/whisper-large \
                    --dataset_location=/path/to/dataset \ # optional
                    --input_model=whisper-large-with-past/ \
                    --output_model=whisper-large-onnx-int4/ \
-                   --approach=RTN # or GPTQ
+                   --approach=weight_only
 ```
 
 ## 2. Benchmark
