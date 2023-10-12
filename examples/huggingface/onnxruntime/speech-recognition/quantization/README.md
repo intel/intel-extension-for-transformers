@@ -55,7 +55,7 @@ numactl -m 0 -C 0-3 bash run_benchmark.sh --config=whisper-large-with-past \
  - numactl command is used to bind specific cores.
 
 ## 3. Audio inference
-- To run audio sample inference
+- To run audio sample inference with FP32/INT8 (both static and dynamic) models
 
 ```
 bash run_audio_inference.sh --config=openai/whisper-large \ # model_name_or_path
@@ -63,9 +63,26 @@ bash run_audio_inference.sh --config=openai/whisper-large \ # model_name_or_path
                             --input_model=whisper-large-with-past-static/ \ # folder path of onnx model
 ```
 
+- To run audio sample inference with INT4 models
+
+Upgrade onnxruntime to 1.16.0 first and then:
+
+```
+bash run_audio_inference.sh --config=openai/whisper-tiny \ # model_name_or_path
+                            --audio_path=/path/to/dataset \ # optional, support .wav, .mp3 and other ffmpeg supported formats
+                            --input_model=whisper-tiny-onnx-int4/ \ # folder path of onnx model
+```
+
+Available INT4 models on huggingface:
+[whisper-tiny](https://huggingface.co/Intel/whisper-tiny-onnx-int4), 
+[whisper-base](https://huggingface.co/Intel/whisper-base-onnx-int4), 
+[whisper-small](https://huggingface.co/Intel/whisper-small-onnx-int4), 
+[whisper-medium](https://huggingface.co/Intel/whisper-medium-onnx-int4), 
+[whisper-large](https://huggingface.co/Intel/whisper-large-onnx-int4), 
+[whisper-large-v2](https://huggingface.co/Intel/whisper-large-v2-onnx-int4).
+
 **Notes**: 
  - If users don't set audio_path, it will use sample.wav in intel_extension_for_transformers/neural_chat/assets/audio folder for test.
- - Audio inference code is universal. If users want to run INT4 model, please upgrade onnxruntime to 1.16.0.
 
 # Validated model list
 
