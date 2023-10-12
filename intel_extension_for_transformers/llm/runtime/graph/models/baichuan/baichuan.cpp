@@ -101,7 +101,7 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   int head_size = hidden_size / num_attention_heads;
   for (int il = 0; il < n_layer; ++il) {
     struct ne_tensor* cur;
-    
+
     lctx.use_buf(ctx0, 0);
 
     struct ne_tensor* residual = inpL;
@@ -134,13 +134,11 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
             ne_view_3d(ctx0, model.layers[il].k_cache, head_size, qlen, num_attention_heads,
                        model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
                        n_past * head_size * ne_element_size(model.layers[il].k_cache));  // [kv_heads, qlen, head_size]
-        
 
         struct ne_tensor* v_cache_view =
             ne_view_3d(ctx0, model.layers[il].v_cache, qlen, head_size, num_attention_heads,
                        model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
                        n_past * ne_element_size(model.layers[il].v_cache));  // [kv_heads, head_size, qlen]
-
 
         ne_build_forward_expand(&gf, ne_cpy(ctx0, key_layer, k_cache_view));
         ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
@@ -200,9 +198,9 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
 
   lctx.use_buf(ctx0, -1);
   if (embd->ne[0] > 1) {
-  inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
+    inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
   }
-  
+
   // lm_head
   inpL = ne_mul_mat(ctx0, model.others[2], inpL);
 
