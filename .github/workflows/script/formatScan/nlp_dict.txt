@@ -2351,3 +2351,6 @@ dequantized
 dq
 frac
 zp
+LoRA
+NormalFloat
+backpropagates

@@ -739,8 +739,8 @@ class Finetuning:
                     revision=model_args.model_revision,
                     use_auth_token=True if model_args.use_auth_token else None,
                     torch_dtype=model_dtype,
-                    load_in_4bit=finetune_args.bits==4,
-                    load_in_8bit=finetune_args.bits==8,
+                    load_in_4bit=self.load_in_4bit,
+                    load_in_8bit=self.load_in_8bit,
                 )
                 model.resize_token_embeddings(len(tokenizer))
             else:
