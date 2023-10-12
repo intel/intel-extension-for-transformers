@@ -30,7 +30,7 @@ parser.add_argument('--cache_dir', default=None, type=str,
 parser.add_argument('--input_model', default=None, type=str,
                     help='the folder path to fp32 models')
 parser.add_argument('--approach', default='dynamic', type=str,
-                    help='the quantization approach to use')
+                    help='the quantization approach to use, support static, dynamic and weight_only')
 parser.add_argument('--model_name_or_path', default=None, type=str)
 parser.add_argument('--cores_per_instance', default=4, type=int,
                     help='cores per instance during benchmark')
@@ -174,9 +174,16 @@ if __name__ == "__main__":
                                            calib_dataloader=dataloader
                                            )
                 q_model.save(os.path.join(args.output_model, model))
-        else:
+        elif args.approach == 'dynamic':
             conf = PostTrainingQuantConfig(approach="dynamic",
                     op_type_dict={'^((?!(MatMul|Gather|Conv)).)*$': {'weight': {'dtype': ['fp32']}, 'activation': {'dtype': ['fp32']}}},)
+            for model in model_list:
+                q_model = quantization.fit(os.path.join(args.input_model, model),
+                                           conf=conf)
+                q_model.save(os.path.join(args.output_model, model))
+        else:
+            conf = PostTrainingQuantConfig(approach="weight_only",
+                    op_type_dict={'.*': {'weight': {'algorithm': ['RTN'], 'scheme': ['asym']}}},)
             for model in model_list:
                 q_model = quantization.fit(os.path.join(args.input_model, model),
                                            conf=conf)
@@ -198,7 +205,7 @@ if __name__ == "__main__":
                 session_options=sess_options)
         model = ORTModelForSpeechSeq2Seq(sessions[0], sessions[1], config, args.input_model, sessions[2])
         processor = WhisperProcessor.from_pretrained(args.model_name_or_path)
-      
+
         if args.audio_test:
             from pydub import AudioSegment
 
