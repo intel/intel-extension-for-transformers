@@ -255,6 +255,7 @@ class Finetuning:
         self.load_in_8bit = False
         if finetune_args.qlora:
             # finetune_args.lora_all_linear = True
+            training_args.gradient_checkpointing = True
             finetune_args.peft = "lora"
             compute_dtype = (
                 torch.float16 if training_args.fp16 else
