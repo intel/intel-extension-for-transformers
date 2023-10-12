@@ -60,7 +60,7 @@ jobs:
       - name: BF16 Benchmark
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/models
-          bash cpp_graph_inference.sh cpp-graph-test ${{ matrix.modelName }} 12.2.0
+          bash cpp_graph_inference.sh cpp-graph-test ${{ matrix.modelName }} 13.1.0
   
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
