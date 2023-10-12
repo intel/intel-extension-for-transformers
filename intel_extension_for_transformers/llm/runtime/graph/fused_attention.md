@@ -1,7 +1,7 @@
 Fused Attention
 =======
 
-Attention (including MHA, GQA, MHA) is one of the key parts of transformers and also the performance critical in many scenarios. To implement various optimizations, a fused attention layer and corresponding utilities for the customized KV-cache it uses are introduced. As an example, fused attention can reduce the cost of MHA from 8521.276 ms (17.044 ms) to 248.586 ms (7.944 ms) of a 1975-token llama-7b first-token inference[[1]](#1).
+Attention (including MHA, GQA, MQA) is one of the key parts of transformers and also the performance critical in many scenarios. To implement various optimizations, a fused attention layer and corresponding utilities for the customized KV-cache it uses are introduced. As an example, fused attention can reduce the cost of MHA from 8521.276 ms (17.044 ms) to 248.586 ms (7.944 ms) of a 1975-token llama-7b first-token inference[[1]](#1).
 
 Note that this doc assumes you have the basic knowledge of this cpp graph implementation including `ne_tensor::ne`, `ne_tensor::nb` etc. Model builder can enable fused attention with operators `ne_flash_attn*` defined in [`core/ne_layers.h`](core/ne_layers.h) while the implementation of fused attentions is mostly located in [`core/layers/mha_dense.cpp`](core/layers/mha_dense.cpp).
 
@@ -44,8 +44,18 @@ Thanks to the mathematical nature of attention, one can simply parallel the whol
 
 ## References
 <details>
-<summary><a id="1">[1]</a> The data was tested on a single socket of Intel(R) Xeon(R) Platinum 8480L on commit 01a809d.  Logs listed below.</summary>
+<summary><a id="1">[1]</a> The data was tested on a single socket of Intel(R) Xeon(R) Platinum 8480L on commit 01a809d.  Details below.</summary>
 
+|                  | 1st-token fused attn disabled | 1st-token fused attn enabled | 4th-token fused attn disabled | 4th-token fused attn enabled |
+|:-----------------|------------------------------:|-----------------------------:|------------------------------:|-----------------------------:|
+| total latency    |                     9748.26ms |                    1475.57ms |                       50.37ms |                      41.27ms |
+| fused-attn lat   |                             / |         179.883ms + 68.703ms |                             / |            6.271ms + 1.673ms |
+| est non-attn lat |                    1226.984ms |                   1226.984ms |                      33.326ms |                     33.326ms |
+| MHA cost compare |                    8521.276ms |                    248.586ms |                      17.044ms |                      7.944ms |
+
+(4th token is taking as an example of next-token performance)
+
+Row logs:
 ```
 # fused attn enabled
 rm -rf bin && cmake .. -GNinja -DNE_BUILD_TESTS=ON -DNE_PROFILING=ON -DCMAKE_BUILD_TYPE=Release && ninja run_llama && env ENGINE_PROFILING=1 numactl -m 1 -C 56-111 bin/run_llama -m llama-7b-hf-pr447-q4j-sym-int8-fp32-g128.bin --seed 1234 -t 56 -b 2048 -c 2048 -n 4 --memory-auto -p "$(echo "$LUOYU_PROMPT" | cut -d' ' -f 1-1500)"
@@ -220,13 +230,4 @@ prediction   1, time: 50.56ms
 prediction   2, time: 50.00ms
 prediction   3, time: 50.37ms
 ```
-
-Where:
-|                  | pred 0 fused attn disabled | pred 0 fused attn enabled | pred 3 fused attn disabled | pred 3 fused attn enabled |
-|:-----------------|---------------------------:|--------------------------:|---------------------------:|--------------------------:|
-| total latency    |                  9748.26ms |                 1475.57ms |                    50.37ms |                   41.27ms |
-| fused-attn lat   |                          / |      179.883ms + 68.703ms |                          / |         6.271ms + 1.673ms |
-| est non-attn lat |                 1226.984ms |                1226.984ms |                   33.326ms |                  33.326ms |
-| MHA cost compare |                 8521.276ms |                 248.586ms |                   17.044ms |                   7.944ms |
-
 </details>
