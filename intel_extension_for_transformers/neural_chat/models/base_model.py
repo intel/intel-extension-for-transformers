@@ -171,7 +171,9 @@ class BaseModel(ABC):
             if is_plugin_enabled(plugin_name):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
-                    if hasattr(plugin_instance, 'post_llm_inference_actions') and not is_generator(response):
+                    if hasattr(plugin_instance, 'post_llm_inference_actions'):
+                        if plugin_name == "safety_checker" and is_generator(response):
+                            continue
                         response = plugin_instance.post_llm_inference_actions(response)
 
         # clear plugins config
