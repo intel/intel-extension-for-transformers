@@ -28,4 +28,3 @@ streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
-

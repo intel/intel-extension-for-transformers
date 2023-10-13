@@ -5,8 +5,8 @@ sacremoses
 neural-compressor
 onnx>=1.10
 onnxruntime
---find-links https://download.pytorch.org/whl/torch_stable.html
-torch>=1.10.0
+--find-links https://download.pytorch.org/cpu/whl/torch_stable.html
+torch==2.0.1+cpu
 transformers
 intel-tensorflow==2.12.0
 torchprofile

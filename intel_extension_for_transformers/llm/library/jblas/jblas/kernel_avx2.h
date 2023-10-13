@@ -34,7 +34,7 @@ static uint8_t shuffle_map[] = {0x00, 0x01, 0x02, 0x03, 0xff, 0xff, 0xff, 0xff,
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline __m128i unpack_4bits_sse(void* srcptr) {
   auto shuffle_v = _mm_loadu_si128((__m128i*)shuffle_map);
-  auto raw_data = _mm_loadu_si128((__m128i*)srcptr);
+  auto raw_data = _mm_loadl_epi64((__m128i*)srcptr);
   auto xmm0 = _mm_shuffle_epi8(raw_data, shuffle_v);
   auto xmm1 = _mm_srli_epi32(xmm0, 0x04);
   auto and_helper = _mm_set1_epi8(0x0f);
@@ -58,7 +58,7 @@ static inline void dequant_s8_N_avx2(float* dstptr, int8_t* srcptr, __m256* vsca
   static_assert(N % 8 == 0);
   int constexpr VLoop = N / 8;
   for (int iv = 0; iv < VLoop; iv += 1) {
-    auto src_s8 = _mm_loadu_si128((__m128i*)(srcptr + iv * 8));
+    auto src_s8 = _mm_loadl_epi64((__m128i*)(srcptr + iv * 8));
     auto zmm = _mm256_cvtepi8_epi32(src_s8);
     auto fzmm = _mm256_cvtepi32_ps(zmm);
     fzmm = _mm256_mul_ps(fzmm, vscales[iv]);
@@ -181,7 +181,7 @@ static inline void dequant_f4_N(_DST_T* dstptr, int8_t* srcptr, __m256* vscales)
   int constexpr VLoop = N / 8;
 #pragma unroll(VLoop)
   for (int iv = 0; iv < VLoop; iv++) {
-    auto idx = _mm_loadu_si128((__m128i*)(srcptr + iv * 8));
+    auto idx = _mm_loadl_epi64((__m128i*)(srcptr + iv * 8));
     auto pad_idx = _mm256_cvtepu8_epi32(idx);
     auto fp32_dq_v = _mm256_i32gather_ps(LUT, pad_idx, 4);
     fp32_dq_v = _mm256_mul_ps(fp32_dq_v, vscales[iv]);
@@ -306,7 +306,6 @@ static inline JBLAS_CODE quantize_fp_u8_colblock(int row, int col, const SRC_T* 
   int constexpr VLen = 8;
   auto vff = _mm256_set1_epi32(255);
   auto v0 = _mm256_set1_epi32(0);
-  int i = 0;
   int vblocksize = utils::padto_le(blocksize, VLen);
   int colblk = utils::padto_le(col, blocksize);
   for (int i = 0; i < row; i++) {
