@@ -4,8 +4,9 @@ transformers
 jiwer
 optimum
 onnx
-onnxruntime
+onnxruntime==1.16.0
 evaluate
 neural-compressor
 librosa
 soundfile
+pydub

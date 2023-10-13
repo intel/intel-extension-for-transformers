@@ -12,6 +12,7 @@ cd intel-extension-for-transformers
 pip install -r requirements.txt
 python setup.py install
 ```
+
 Here is how to install intel-extension-for-pytorch from source.
 ```shell
 #  gcc version >= 11
@@ -26,7 +27,7 @@ Required libraries.
 pip install -r requirements.txt
 ```
 
-We use the gpt_bigcode defination script [modeling_gpt_bigcode.py](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/modeling/gpt_bigcode/modeling_gpt_bigcode.py) in `run_generation.py`. Here is a little change to success trace.
+We use the gpt_bigcode definition script [modeling_gpt_bigcode.py](https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/transformers/modeling/gpt_bigcode/modeling_gpt_bigcode.py) in `run_generation.py`. Here is a little change to success trace.
 ```diff
 # Line 227 in modeling_gpt_bigcode.py on transformers 4.28.1
 -      query, key_value = self.c_attn(hidden_states).split((self.embed_dim, 2 * self.kv_dim), dim=2)
@@ -65,9 +66,15 @@ python run_generation.py \
 ```
 
 ## 2. Performance
+
 ```bash
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
+export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 # --int8 is used for int8 model
-python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --int8 \
@@ -133,7 +140,7 @@ python3 run_generation.py \
     --temperature 0.2
 
 ```
->Note: "mbpp" is Python programming datasets, please change the calibration dataset to get better results if you want to evaluate on other programing tasks (eg, multiple-lua).
+>Note: "mbpp" is Python programming datasets, please change the calibration dataset to get better results if you want to evaluate on other programming tasks (eg, multiple-lua).
 
 To run the container (here from image `evaluation-harness-multiple`) to quantize and evaluate on `CURDIR`, or another file mount it with -v, specify n_samples and allow code execution with --allow_code_execution (and add the number of problems --limit if it was used during generation):
 ```bash

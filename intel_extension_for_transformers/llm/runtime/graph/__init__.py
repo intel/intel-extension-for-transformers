@@ -18,7 +18,7 @@ import os
 from transformers import AutoConfig
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 import torch
-model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
+model_maps = {"gpt_neox": "gptneox"}
 
 class Model:
     def __init__(self):
@@ -105,17 +105,18 @@ class Model:
 
         # TODO support multi batch
         assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
-        self.generate_round += 1
-
         if streamer:
+            if self.generate_round == 0:
+                streamer.put(input_ids)
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
                 streamer.put(torch.tensor([out]))
                 ret[0].extend(out)
-            return ret
         else:
             ret[0].extend(self.model.generate_tokens(input_ids = input_ids.tolist()[0]))
-            return ret
+        
+        self.generate_round += 1
+        return ret
 
     def is_token_end(self):
         return self.model.is_token_end()
