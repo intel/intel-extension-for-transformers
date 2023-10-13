@@ -1,0 +1,49 @@
+:py:mod:`conversation`
+======================
+
+.. py:module:: conversation
+
+.. autoapi-nested-parse::
+
+   Conversation prompt template.
+
+   Now we support
+   - Vicuna
+   - Koala
+   - OpenAssistant/oasst-sft-1-pythia-12b
+   - StabilityAI/stablelm-tuned-alpha-7b
+   - databricks/dolly-v2-12b
+   - THUDM/chatglm-6b
+   - project-baize/baize-lora-7B
+   - Alpaca/LLaMa
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   conversation.SeparatorStyle
+   conversation.Conversation
+
+
+
+
+.. py:class:: SeparatorStyle
+
+
+
+
+   Different separator style.
+
+
+.. py:class:: Conversation
+
+
+   A class that keeps all conversation history.
+
+
