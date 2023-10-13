@@ -22,7 +22,7 @@ from intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr_chi
 import unittest
 import shutil
 
-class TestASR(unittest.TestCase):
+class TestChineseASR(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.executor = ChineseAudioSpeechRecognition()
