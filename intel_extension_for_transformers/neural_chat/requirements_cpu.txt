@@ -12,7 +12,7 @@ evaluate
 pydub
 python-multipart
 PyPDF2
-langchain==0.0.308
+langchain
 python-docx
 scikit-learn
 farm-haystack

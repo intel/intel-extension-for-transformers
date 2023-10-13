@@ -12,6 +12,7 @@ cd intel-extension-for-transformers
 pip install -r requirements.txt
 python setup.py install
 ```
+
 Here is how to install intel-extension-for-pytorch from source.
 ```shell
 #  gcc version >= 11
@@ -65,9 +66,15 @@ python run_generation.py \
 ```
 
 ## 2. Performance
+
 ```bash
+export KMP_BLOCKTIME=1
+export KMP_SETTINGS=1
+export KMP_AFFINITY=granularity=fine,compact,1,0
+export LD_PRELOAD=${CONDA_PREFIX}/lib/libiomp5.so
+export LD_PRELOAD=${LD_PRELOAD}:${CONDA_PREFIX}/lib/libtcmalloc.so
 # --int8 is used for int8 model
-python run_generation.py \
+OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_generation.py \
     --model bigcode/starcoderbase \
     --output_dir "./saved_results" \
     --int8 \
