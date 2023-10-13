@@ -43,5 +43,5 @@ class ChineseTextToSpeech():
             device=paddle.get_device())
         return output_audio_path
 
-    def pre_llm_inference_actions(self, text, output_audio_path):
+    def post_llm_inference_actions(self, text, output_audio_path):
         return self.text2speech(text, output_audio_path)
