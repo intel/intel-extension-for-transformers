@@ -97,6 +97,7 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
   const int head_dim = n_embd / hparams.n_head;
   const int kv_heads = hparams.n_head;  // 1 if MQA else hparams.n_head
   const int kv_dim = kv_heads * head_dim;
+  const int max_len = 4096;
 
   // create the ne context
   lctx.model.buf.resize(ctx_size);
@@ -145,8 +146,8 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
     layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.down_proj.weight",
                                   {uint32_t(model.hparams.inner_hidden_size), n_embd}, backend);
 
-    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 5120 / 40, 4096, 40);  // [n_head, maxlen, head_size]
-    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096, 5120 / 40, 40);  // [n_head, head_size, maxlen]
+    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, n_embd / hparams.n_head, max_len, hparams.n_head);  // [n_head, maxlen, head_size]
+    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, max_len, n_embd / hparams.n_head, hparams.n_head);  // [n_head, head_size, maxlen]
   }
 
   // print memory requirements
