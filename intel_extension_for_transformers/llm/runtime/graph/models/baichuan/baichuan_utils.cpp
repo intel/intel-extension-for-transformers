@@ -31,7 +31,7 @@
 #include "core/data_types.h"
 #include "core/ne.h"
 #include "core/ne_layers.h"
-#include "models/mpt/mpt.h"
+#include "models/baichuan/baichuan.h"
 #include "models/model_utils/model_config.h"
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
@@ -44,23 +44,22 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
                          void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
-  std::unique_ptr<IModel> ms(new MPT());
+  std::unique_ptr<IModel> ms(new BAICHUAN());
   ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
-  lctx.support_jblas_kv = true;
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void MPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
-               bool use_mlock_, bool vocab_only_) {
+void BAICHUAN::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
+                    bool use_mlock_, bool vocab_only_) {
   n_ctx = n_ctx_;
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
   vocab_only = vocab_only_;
   auto& model = lctx.model;
-  ml.reset(new model_model_loader(path_model, use_mmap, vocab_only));
+  ml.reset(new model_model_loader(path_model, false, vocab_only));
   lctx.vocab = std::move(ml->file_loaders.at(0)->vocab);
   model.hparams = ml->file_loaders.at(0)->hparams;
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
@@ -79,19 +78,26 @@ void MPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gp
   n_embd = hparams.n_embd;
   n_vocab = hparams.n_vocab;
   n_layer = hparams.n_layer;
-  scratch = mpt_mem_req(n_layer);
+  scratch = baichuan_mem_req(n_layer);
   model.scratchs = scratch;
 }
 
 #define MODEL_BACKEND_OFFLOAD NE_BACKEND_CPU
-void MPT::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
+void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) {
   auto& model = lctx.model;
   auto& ctx = model.ctx;
 
   size_t ctx_size;
   size_t mmapped_size;
   ml->calc_sizes(&ctx_size, &mmapped_size);
+  ctx_size = ctx_size * 2;
   fprintf(stderr, "%s: ne ctx size = %7.2f MB\n", __func__, ctx_size / 1024.0 / 1024.0);
+
+  const auto& hparams = model.hparams;
+  const int head_dim = n_embd / hparams.n_head;
+  const int kv_heads = hparams.n_head;  // 1 if MQA else hparams.n_head
+  const int kv_dim = kv_heads * head_dim;
+  const int max_len = 4096;
 
   // create the ne context
   lctx.model.buf.resize(ctx_size);
@@ -113,8 +119,9 @@ void MPT::load(model_context& lctx, model_progress_callback progress_callback, v
 
   ml->ne_ctx = ctx;
 
-  model.others[0] = ml->get_tensor("transformer.wte.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
-  model.others[1] = ml->get_tensor("transformer.norm_f.weight", {n_embd}, NE_BACKEND_CPU);
+  model.others[0] = ml->get_tensor("model.embed_tokens.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
+  model.others[1] = ml->get_tensor("model.norm.weight", {n_embd}, NE_BACKEND_CPU);
+  model.others[2] = ml->get_tensor("lm_head.weight", {n_embd, n_vocab}, NE_BACKEND_CPU);
   const int i_gpu_start = n_layer - n_gpu_layer;
 
   model.layers.resize(n_layer);
@@ -122,24 +129,27 @@ void MPT::load(model_context& lctx, model_progress_callback progress_callback, v
   for (uint32_t i = 0; i < n_layer; ++i) {
     const ne_backend backend = int(i) < i_gpu_start ? NE_BACKEND_CPU : MODEL_BACKEND_OFFLOAD;
     auto& layer = model.layers[i];
-    std::string layers_i = "transformer.blocks." + std::to_string(i);
-
-    // norm: cur = ln_1_g*cur + ln_1_b
-    layer.norm[0] = ml->get_tensor(layers_i + ".norm_1.weight", {n_embd}, backend);
-    layer.norm[1] = ml->get_tensor(layers_i + ".norm_2.weight", {n_embd}, backend);
+    std::string layers_i = "model.layers." + std::to_string(i);
+    layer.norm[0] = ml->get_tensor(layers_i + ".input_layernorm.weight", {n_embd}, backend);
 
     // qkv GEMM
-    layer.attn[0] = ml->get_tensor(layers_i + ".attn.Wqkv.weight", {n_embd, 3 * n_embd}, backend);
-    layer.attn[1] = ml->get_tensor(layers_i + ".attn.out_proj.weight", {n_embd, n_embd}, backend);
+    layer.attn[0] = ml->get_tensor(layers_i + ".self_attn.W_pack.weight", {n_embd, 3 * n_embd}, backend);
+    layer.attn[1] = ml->get_tensor(layers_i + ".self_attn.o_proj.weight", {n_embd, n_embd}, backend);
+
+    layer.norm[1] = ml->get_tensor(layers_i + ".post_attention_layernorm.weight", {n_embd}, backend);
 
     // ffn GEMM
-    layer.ffn[0] = ml->get_tensor(layers_i + ".ffn.up_proj.weight", {n_embd, n_ff}, backend);
-    layer.ffn[1] = ml->get_tensor(layers_i + ".ffn.down_proj.weight", {n_ff, n_embd}, backend);
+    layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.gate_proj.weight",
+                                  {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
+    layer.ffn[1] =
+        ml->get_tensor(layers_i + ".mlp.up_proj.weight", {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
+    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.down_proj.weight",
+                                  {uint32_t(model.hparams.inner_hidden_size), n_embd}, backend);
 
-    if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) + ne_nbytes(layer.attn[0]) +
-                    ne_nbytes(layer.attn[1]) + ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]);
-    }
+    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, n_embd / hparams.n_head, max_len,
+                                       hparams.n_head);  // [n_head, maxlen, head_size]
+    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, max_len, n_embd / hparams.n_head,
+                                       hparams.n_head);  // [n_head, head_size, maxlen]
   }
 
   // print memory requirements
@@ -160,18 +170,17 @@ void MPT::load(model_context& lctx, model_progress_callback progress_callback, v
   if (progress_callback) {
     progress_callback(1.0f, progress_callback_user_data);
   }
-
   model.mapping = std::move(ml->mapping);
 }
 
 #undef MODEL_BACKEND_OFFLOAD
 
-class mpt_quant_layer : public quant_layer_base {
+class baichuan_quant_layer : public quant_layer_base {
  public:
   virtual quant_params_internal get_layer_config(std::string layername, std::vector<int64_t> ne,
                                                  ne_type type) override {
-    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'?
-    if (layername == "transformer.wte.weight") {
+    bool quantize = layername.rfind("weight") == layername.size() - 6;  // ends with 'weight'
+    if (layername == "model.embed_tokens.weight") {
       // special layer process, can be loaded by config file
       return quant_params_internal();  // return q4_0 to cover the usage of getrow
     }
@@ -183,4 +192,4 @@ class mpt_quant_layer : public quant_layer_base {
     }
   }
 };
-REGISTER_QUANT_LAYER_CLASS(mpt);
+REGISTER_QUANT_LAYER_CLASS(baichuan);

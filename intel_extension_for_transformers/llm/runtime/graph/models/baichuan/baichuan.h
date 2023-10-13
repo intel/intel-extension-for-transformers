@@ -12,36 +12,29 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 
-#ifndef STARCODER_H
-#define STARCODER_H
+#ifndef BAICHUAN_H
+#define BAICHUAN_H
 
 #include "models/model_utils/model_files.h"
 #include "models/model_utils/model_types.h"
 
-enum starcoder_model {
-  STARCODER_UNKNOWN,
-  STARCODER_7B,
-  STARCODER_13B,
-  STARCODER_30B,
-  STARCODER_65B,
+enum baichuan_model {
+  BAICHUAN_UNKNOWN,
+  BAICHUAN_13B,
 };
 
-static const model_scratch starcoder_mem_req(int n_layers) {
+static const model_scratch baichuan_mem_req(int n_layers) {
   switch (n_layers) {
-    case 24:
-      return {8192ull * MB, 8192ull * MB, 8192ull * MB};
-    case 36:
-      return {8192ull * MB, 8192ull * MB, 8192ull * MB};
     case 40:
-      return {32768ull * MB, 32768ull * MB, 32768ull * MB};
+      return {8192ull * MB, 8192ull * MB, 8192ull * MB};
     default:
       MODEL_ASSERT(false);
   }
 }
 
-class STARCODER : public IModel {
+class BAICHUAN : public IModel {
  private:
-  model_archs arch = MODEL_STARCODER;
+  model_archs name = MODEL_BAICHUAN;
   std::unique_ptr<model_model_loader> ml;
   uint32_t n_layer, n_embd, n_ff, n_vocab;
   int n_ctx, n_gpu_layer;
@@ -54,4 +47,4 @@ class STARCODER : public IModel {
   void load(model_context& lctx, model_progress_callback progress_callback, void* progress_callback_user_data) override;
 };
 
-#endif  // STARCODER_H
+#endif  // BAICHUAN_H
