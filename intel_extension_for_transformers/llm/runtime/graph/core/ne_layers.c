@@ -7542,6 +7542,7 @@ static void ne_compute_forward_alibi_f16(const struct ne_compute_params* params,
   const float m0 = powf(2.0f, -(max_bias) / n_heads_log2_floor);
   const float m1 = powf(2.0f, -(max_bias / 2.0f) / n_heads_log2_floor);
 
+  NE_ASSERT(("OP_ALIBI may not be able handle multi-batch cases", src0->ne[3] == 1));
   for (int i = 0; i < ne0; i++) {
     for (int j = 0; j < ne1; j++) {
       for (int k = 0; k < ne2_ne3; k++) {

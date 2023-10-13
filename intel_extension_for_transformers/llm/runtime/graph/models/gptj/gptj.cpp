@@ -343,7 +343,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     struct ne_tensor* KQV_merged_contiguous;
 
     const float attn_scale = 1.0f / sqrtf(static_cast<float>(n_embd) / n_head);
-    ne_attn_flags_t attn_flags = 0;
+    ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
     if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
     if (run_mha_reordered) {  // reordered kv-cache bf16 mha must be used if run_mha_reordered
       struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
