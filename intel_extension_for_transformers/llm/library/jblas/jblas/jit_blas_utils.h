@@ -279,7 +279,7 @@ static inline _DSTT cast(_SRCT _src) {
 
 template <>
 int8_t cast(float _src) {
-  _src = _src >= 0.f ? _src + 0.5f : _src - 0.5f;
+  _src = roundf(_src);
   _src = std::min(_src, 127.f);
   _src = std::max(_src, -128.f);
   return static_cast<int8_t>(_src);

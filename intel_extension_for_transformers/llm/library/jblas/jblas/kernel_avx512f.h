@@ -619,7 +619,7 @@ static inline JBLAS_CODE quantize_fp_u8_colblock(int row, int col, const SRC_T* 
         for (; ij < blocksize; ij++) {
           auto srcval = (float)srcptr[(j + ij) + i * ld_src];
           srcval = srcval * rscale;
-          auto srcint = int(srcval + 0.5f) + zp;
+          auto srcint = int(roundf(srcval)) + zp;
           srcint = std::min(srcint, 0xff);
           srcint = std::max(srcint, 0);
           dstptr[(j + ij) + i * ld_dst] = static_cast<uint8_t>(srcint);
@@ -706,7 +706,7 @@ static inline JBLAS_CODE quantize_fp_s8_colblock(int row, int col, const SRC_T* 
         for (; ij < blocksize; ij++) {
           auto srcval = (float)srcptr[(j + ij) + i * ld_src];
           srcval = srcval * rscale;
-          auto srcint = int(srcval + 0.5f);
+          auto srcint = int(roundf(srcval));
           srcint = std::min(srcint, 127);
           srcint = std::max(srcint, -127);
           dstptr[(j + ij) + i * ld_dst] = static_cast<uint8_t>(srcint);
@@ -901,7 +901,7 @@ static inline JBLAS_CODE remove_act_zeropoint_bias(float* accptr, int ldacc, int
       _mm512_storeu_ps(&accptr[i * ldacc + j], vacc);
     }
     if (j < col) {
-      for (; j < col16; j++) {
+      for (; j < col; j++) {
         accptr[i * ldacc + j] -= zpf * reduce[j];
       }
     }
@@ -917,7 +917,7 @@ static inline JBLAS_CODE remove_wei_zeropoint_bias(float* accptr, int ldacc, int
     auto vreduce = _mm512_set1_ps(-reduce[i * lds]);
     int j = 0;
     for (; j < col16; j += VLen) {
-      auto vzp_s32 = _mm512_cvtepi8_epi32(_mm_loadu_epi8(zps + j));
+      auto vzp_s32 = _mm512_cvtepi8_epi32(_mm_loadu_si128((__m128i*)(zps + j)));
       auto vzp_f32 = _mm512_cvtepi32_ps(vzp_s32);
       auto vzp = _mm512_mul_ps(vzp_f32, _mm512_loadu_ps(scales + j));
       auto vacc = _mm512_loadu_ps(&accptr[i * ldacc + j]);
@@ -945,7 +945,7 @@ static inline JBLAS_CODE remove_zeropoint_bias(float* accptr, int ldacc, int row
     auto vzpa = _mm512_set1_ps(-zpaf);
     int j = 0;
     for (; j < col16; j += VLen) {
-      auto vzp_s32 = _mm512_cvtepi8_epi32(_mm_loadu_epi8(zpb + j));
+      auto vzp_s32 = _mm512_cvtepi8_epi32(_mm_loadu_si128((__m128i*)(zpb + j)));
       auto vzp_f32 = _mm512_cvtepi32_ps(vzp_s32);
       auto vzpb = _mm512_mul_ps(vzp_f32, _mm512_loadu_ps(scaleb + j));
       auto vreduceb = _mm512_loadu_ps(reduceb + j);

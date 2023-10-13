@@ -57,7 +57,7 @@ static inline void convert_s4_s8_16_sse(int8_t* dstptr, int8_t* srcptr) {
   _mm_storeu_si128((__m128i*)dstptr, dst0);
 }
 
-static inline void fp4_4bitpad(int8_t* dstptr, int8_t* srcptr) {
+static inline void fp4_pad_4bit(int8_t* dstptr, int8_t* srcptr) {
   auto dst0 = unpack_4bits_sse<S4_FULLRANGE>(srcptr);
   _mm_storeu_si128((__m128i*)dstptr, dst0);
 }
@@ -149,8 +149,6 @@ static inline JBLAS_CODE dequant_kblock_s8_f32(int8_t* srcptr, float* dstptr, in
     return dequant_kblock_s8_f32_fwd<true>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset,
                                            kblock, NPad);
 }
-
-constexpr void (*pad_fp4)(int8_t* dstptr, int8_t* srcptr) = &fp4_4bitpad;
 
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src,
@@ -280,11 +278,11 @@ static inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* ds
   if constexpr (_PACK_ROW == 1) {
     return decompress_kblock_bit4_packrow1<_ST, _DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr,
                                                         k_offset, kblock, NPad, &dequant_f4_N<48, _DST_T, _F4_T>,
-                                                        pad_fp4);
+                                                        fp4_pad_4bit);
   } else if constexpr (_PACK_ROW == 2) {
     return decompress_kblock_bit4_packrow2<_ST, _DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr,
                                                         k_offset, kblock, NPad, &dequant_f4_N<64, _DST_T, _F4_T>,
-                                                        pad_fp4);
+                                                        fp4_pad_4bit);
   }
   return JblasNotSupport;
 }
@@ -366,7 +364,7 @@ static inline JBLAS_CODE quantize_fp_u8_colblock(int row, int col, const SRC_T* 
         for (; ij < blocksize; ij++) {
           auto srcval = (float)srcptr[(j + ij) + i * ld_src];
           srcval = srcval * rscale;
-          auto srcint = int(srcval + 0.5f) + zp;
+          auto srcint = int(roundf(srcval)) + zp;
           srcint = std::min(srcint, 0xff);
           srcint = std::max(srcint, 0);
           dstptr[(j + ij) + i * ld_dst] = static_cast<uint8_t>(srcint);
