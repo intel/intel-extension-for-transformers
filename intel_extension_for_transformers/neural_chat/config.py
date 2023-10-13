@@ -323,7 +323,7 @@ class FinetuningArguments:
     task: Optional[str] = field(
         default="completion",
         metadata={"help": "task name, different task means different data format.",
-            "choices": ["completion", "chat", "summarization"]
+            "choices": ["completion", "chat", "summarization", "code-generation"]
             },
     )
     do_lm_eval: bool = field(
