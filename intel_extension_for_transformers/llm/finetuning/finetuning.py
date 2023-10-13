@@ -396,7 +396,6 @@ class Finetuning:
                 preprocess_function,
                 batched=True,
                 remove_columns=column_names,
-                num_proc=data_args.preprocessing_num_workers,
                 load_from_cache_file=not data_args.overwrite_cache,
             )
 
