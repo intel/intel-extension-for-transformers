@@ -168,6 +168,7 @@ class WeightS8ScaleFp32 {
     float* B_NT=(float*)aligned_alloc(64,N * K*sizeof(float));
     unpackWeight(N, K, stor, B_NT, N);
     prologue::gemm::transposeWeight<float, ISA_T>(K, N, B_NT, N, B, ldb);
+    free(B_NT);
   }
 
   // from KxN f32 weight to packed N//NtilexKPadxNTile int8 weight
