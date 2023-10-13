@@ -255,7 +255,7 @@ class Finetuning:
         self.load_in_8bit = False
         if finetune_args.qlora:
             # finetune_args.lora_all_linear = True
-            training_args.gradient_checkpointing = True
+            object.__setattr__(training_args, "gradient_checkpointing", True)
             finetune_args.peft = "lora"
             compute_dtype = (
                 torch.float16 if training_args.fp16 else
@@ -341,8 +341,10 @@ class Finetuning:
                 torch.float16 if training_args.fp16 else
                     (torch.bfloat16 if training_args.bf16 else torch.float32)
             )
+            kwargs = {}
             if finetune_args.qlora and training_args.device.type == "cpu":
                 from intel_extension_for_transformers.transformers.modeling import AutoModelForCausalLM
+                kwargs['use_llm_runtime'] = False
             else:
                 from transformers import AutoModelForCausalLM
             model = AutoModelForCausalLM.from_pretrained(
@@ -359,6 +361,7 @@ class Finetuning:
                 low_cpu_mem_usage=True,
                 load_in_4bit=self.load_in_4bit,
                 load_in_8bit=self.load_in_8bit,
+                **kwargs
             )
             if finetune_args.qlora:
                 model = prepare_model_for_kbit_training(
@@ -726,8 +729,10 @@ class Finetuning:
                     torch.float16 if training_args.fp16 else
                         (torch.bfloat16 if training_args.bf16 else torch.float32)
                 )
+                kwargs = {}
                 if finetune_args.qlora and training_args.device.type == "cpu":
                     from intel_extension_for_transformers.transformers.modeling import AutoModelForSeq2SeqLM
+                    kwargs['use_llm_runtime'] = False
                 else:
                     from transformers import AutoModelForSeq2SeqLM
                 model = AutoModelForSeq2SeqLM.from_pretrained(
@@ -742,6 +747,7 @@ class Finetuning:
                     torch_dtype=model_dtype,
                     load_in_4bit=self.load_in_4bit,
                     load_in_8bit=self.load_in_8bit,
+                    **kwargs
                 )
                 model.resize_token_embeddings(len(tokenizer))
             else:
