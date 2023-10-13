@@ -1,4 +1,4 @@
-<h1 align="center" id="title"><img align="center" src="https://imgur.com/ybD9SrK.png" alt="project-image" style="width:60px; height:60px">Talking Photo</h1>
+<h1 align="center" id="title"><img align="center" src="https://imgur.com/ybD9SrK.png" alt="project-image" style="width:60px; height:60px">AI Talking Photo</h1>
 
 <h2>📸 Project Screenshots:</h2>
 

@@ -41,12 +41,12 @@ Talking bot is NeuralChat's voice chat bot. Support user voice and robot communi
 
 For detailed information, please refer to the [README](./talkingbot/README.md).
 
-## 🤖 Talking Photo
+## 🤖 AI Talking Photo
 
-Talking Photo is a full-featured chatbot system. This chat system integrates all the functionalities mentioned above, including text chat, voice chat, image uploads, image enhancement, and more, enabling users to engage in various types of communication and interaction on both web and mobile platforms.
+AI Talking Photo is a comprehensive chatbot system that seamlessly combines various features, such as text and voice chat, image uploads, and image enhancement. This innovative system empowers users to engage in diverse forms of communication and interaction, with a unique focus on conversing with uploaded photos. Whether you're on a web or mobile platform, AI Talking Photo enables dynamic interactions with your images, adding an exciting dimension to your conversations.
 
 ### 📸 Project Screenshots
-![project-screenshot](https://imgur.com/w6A4cgy.png)
+![project-screenshot](https://imgur.com/w6A4cgy.png)sss
 
 For detailed information, please refer to the [README](./talking_photo/README.md).
 
