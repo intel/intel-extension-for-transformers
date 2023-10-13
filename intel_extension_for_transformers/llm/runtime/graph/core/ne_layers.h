@@ -81,8 +81,9 @@ extern "C" {
 
 // Attention flags
 typedef enum NE_ATTN_FLAG {
+  NE_ATTN_FLAG_NONE = 0,
   NE_ATTN_FLAG_IS_CAUSAL = 1 << 1,
-  NE_ATTN_FLAG_IS_ALIBI = 1 << 2,
+  NE_ATTN_FLAG_IS_ALIBI8 = 1 << 2,
 } NE_ATTN_FLAG;
 typedef uint32_t ne_attn_flags_t;
 
