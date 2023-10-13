@@ -28,8 +28,11 @@ class TestChineseASR(unittest.TestCase):
         self.executor = ChineseAudioSpeechRecognition()
 
     def test_audio2text(self):
-        audio_path = r"../../assets/audio/welcome.wav"
-        text = self.executor.pre_llm_inference_actions(audio_path)
+        audio_path = "/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets/audio/welcome.wav"
+        if os.path.exists(audio_path):
+            text = self.executor.pre_llm_inference_actions(audio_path)
+        else:
+            text = self.executor.pre_llm_inference_actions("../../assets/audio/welcome.wav")
         self.assertEqual(len(text), 5)
 
 if __name__ == "__main__":
