@@ -124,6 +124,7 @@ jobs:
           echo "------ Generating final report.html ------"
           cd ${{ env.OUT_SCRIPT_PATH }}
           /usr/bin/bash generate_report.sh --workflow=deploy
+          sed -n '/<body>/,/<\/body>/p' generated/report.html | sed -r '/^$/d' | sed -r 's/^ +//g' >> $GITHUB_STEP_SUMMARY
         env:
           RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
