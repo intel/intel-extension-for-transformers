@@ -447,9 +447,10 @@ static const char* NE_OP_LABEL[NE_OP_COUNT] = {
     "ALL_REDUCE",
     "TP_CONCAT",
     "DUMP_TENSOR",
+    "DEBUG",
 };
 
-static_assert(NE_OP_COUNT == 61, "NE_OP_COUNT != 61");
+static_assert(NE_OP_COUNT == 62, "NE_OP_COUNT != 62");
 
 static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
     "none",
@@ -513,6 +514,7 @@ static const char* NE_OP_SYMBOL[NE_OP_COUNT] = {
 
     "f(x)",
     "f(x,y)",
+    "debug(x)",
 };
 
 static_assert(sizeof(struct ne_object) % NE_MEM_ALIGN == 0, "ne_object size must be a multiple of NE_MEM_ALIGN");
@@ -1340,6 +1342,15 @@ struct ne_tensor* ne_dup_impl(struct ne_context* ctx, struct ne_tensor* a, bool 
   result->src0 = a;
   result->src1 = NULL;
 
+  return result;
+}
+
+struct ne_tensor* ne_debug_op(struct ne_context* ctx, struct ne_tensor* a, ne_debug_callback_t cb) {
+  struct ne_tensor* result = ne_view_tensor(ctx, a);
+  result->op = NE_OP_DEBUG;
+  result->src0 = a;
+  static_assert(sizeof(void*) <= sizeof(result->padding), "No enough space for function ptr!");
+  *((void**)(result->padding)) = cb;
   return result;
 }
 
@@ -3122,19 +3133,20 @@ struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, str
 // ne_flash_attn
 
 struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k, struct ne_tensor* v,
-                                float scale, bool masked) {
+                                float scale, ne_attn_flags_t flags) {
   NE_ASSERT(ne_can_mul_mat(k, q));
   int batch = q->ne[3];
   int headnum = q->ne[2];
+  int heads_kv = k->ne[2];
   int seq_cur = q->ne[1];
   int headsize = q->ne[0];
   int seq_all = k->ne[1];
   // int seq_past = seq_all - seq_cur;
+  NE_ASSERT(("headnum must be a multiple of heads_kv", headnum % heads_kv == 0));
   NE_ASSERT(headsize == k->ne[0]);
   NE_ASSERT(headsize == v->ne[1]);
   NE_ASSERT(seq_all == v->ne[0]);
-  NE_ASSERT(headnum == k->ne[2]);
-  NE_ASSERT(headnum == v->ne[2]);
+  NE_ASSERT(("n_heads must be the same for K/V!", k->ne[2] == v->ne[2]));
   NE_ASSERT(batch == k->ne[3]);
   NE_ASSERT(batch == v->ne[3]);
   bool is_node = true;
@@ -3149,7 +3161,7 @@ struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, str
   result->opt[0] = v;
   result->opt[1] = tmp_t;
   *(float*)result->padding = scale;
-  *(bool*)&result->padding[sizeof(scale)] = masked;
+  *(ne_attn_flags_t*)&result->padding[sizeof(scale)] = flags;
   return result;
 }
 
@@ -3928,6 +3940,13 @@ static void ne_compute_forward_dup_f32(const struct ne_compute_params* params, c
   } else {
     NE_ASSERT(false);  // TODO: implement
   }
+}
+
+static void ne_compute_forward_debug(const struct ne_compute_params* params, const struct ne_tensor* src0,
+                                     struct ne_tensor* dst) {
+  if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) return;
+  const ne_debug_callback_t cb = *((void**)(dst->padding));
+  cb(src0);
 }
 
 static void ne_compute_forward_dup(const struct ne_compute_params* params, const struct ne_tensor* src0,
@@ -7523,6 +7542,7 @@ static void ne_compute_forward_alibi_f16(const struct ne_compute_params* params,
   const float m0 = powf(2.0f, -(max_bias) / n_heads_log2_floor);
   const float m1 = powf(2.0f, -(max_bias / 2.0f) / n_heads_log2_floor);
 
+  NE_ASSERT(("OP_ALIBI may not be able handle multi-batch cases", src0->ne[3] == 1));
   for (int i = 0; i < ne0; i++) {
     for (int j = 0; j < ne1; j++) {
       for (int k = 0; k < ne2_ne3; k++) {
@@ -8821,12 +8841,12 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
 
   const int64_t nek0 = k->ne[0];
   const int64_t nek1 = k->ne[1];
-  // const int64_t nek2 = k->ne[2];
+  const int64_t nek2 = k->ne[2];
   // const int64_t nek3 = k->ne[3];
 
   // const int64_t nev0 = v->ne[0];
   const int64_t nev1 = v->ne[1];
-  // const int64_t nev2 = v->ne[2];
+  const int64_t nev2 = v->ne[2];
   // const int64_t nev3 = v->ne[3];
 
   const int64_t ne0 = dst->ne[0];
@@ -8856,19 +8876,15 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
 
   const int64_t headsize = neq0;
   const int64_t headnum = neq2;
+  const int64_t heads_kv = nek2;
   const int64_t embedsize = headnum * headsize;
   const int64_t seq_cur = neq1;
   const int64_t seq_all = nek1;
   const int64_t seq_past = seq_all - seq_cur;
   const int64_t batch = neq3;
 
-  if (params->type == NE_TASK_INIT) {
-    return;
-  }
+  if (params->type == NE_TASK_INIT || params->type == NE_TASK_FINALIZE) return;
 
-  if (params->type == NE_TASK_FINALIZE) {
-    return;
-  }
   const int keles = ne_element_size(k);
   const int veles = ne_element_size(v);
   int step_k_sl = k->nb[1] / keles;
@@ -8880,7 +8896,7 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
   int step_v_head_num = v->nb[2] / veles;
   int step_v_bs = k->nb[3] / veles;
   float scale = *(float*)dst->padding;
-  bool mask = *(bool*)&dst->padding[sizeof(scale)];
+  ne_attn_flags_t flags = *(bool*)&dst->padding[sizeof(scale)];
   attn_fp32_fp16_fp16_fp32_fwd_args_t args = {
       .Q = (float*)q->data,
       .K = (ne_fp16_t*)k->data,
@@ -8892,9 +8908,10 @@ static void ne_compute_forward_flash_attn_f32_f16_f16(const struct ne_compute_pa
       .dst_sc = 1.f,
       .tmp = tmp->data,
       .QK_scale = scale,
-      .is_causal = mask,
+      .attn_flags = flags,
       .batch_size = batch,
       .head_num = headnum,
+      .heads_kv = heads_kv,
       .head_size = headsize,
       .sl_q = seq_cur,
       .sl_kv = seq_all,
@@ -8924,16 +8941,19 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
                                                     const struct ne_tensor* k, const struct ne_tensor* v,
                                                     const struct ne_tensor* tmp, struct ne_tensor* dst) {
   if (params->type != NE_TASK_COMPUTE) return;
+
   const int64_t headsize = q->ne[0];
   const int64_t seq_cur = q->ne[1];
   const int64_t headnum = q->ne[2];
+  const int64_t heads_kv = k->ne[2];
   const int64_t batch = q->ne[3];
-  const int64_t embedsize = headnum * headsize;
   const int64_t seq_all = k->ne[1];
+  const int64_t q_ele_size = ne_element_size(q);
+  const int64_t dst_ele_size = ne_element_size(dst);
   // const int64_t seq_past = seq_all - seq_cur;
 
   float scale = *(float*)dst->padding;
-  bool mask = *(bool*)&dst->padding[sizeof(scale)];
+  ne_attn_flags_t flags = *(ne_attn_flags_t*)&dst->padding[sizeof(scale)];
 
   NE_ASSERT(k->type == NE_TYPE_JBLAS && v->type == NE_TYPE_JBLAS);
   ATTN_FWD_LAYOUT K_layout = *(ATTN_FWD_LAYOUT*)(&k->nb[0]);
@@ -8950,9 +8970,10 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
       .dst_sc = 1.f,
       .tmp = tmp->data,
       .QK_scale = scale,
-      .is_causal = mask,
+      .attn_flags = flags,
       .batch_size = batch,
       .head_num = headnum,
+      .heads_kv = heads_kv,
       .head_size = headsize,
       .sl_q = seq_cur,
       .sl_kv = seq_all,
@@ -8960,9 +8981,9 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
       .K_layout = K_layout,
       .V_layout = V_layout,
       .dst_layout = ATTN_FWD_LAYOUT_PLAIN,
-      .step_q_bs = seq_cur * embedsize,
-      .step_q_head_num = headsize,
-      .step_q_sl = embedsize,
+      .step_q_bs = q->nb[3] / q_ele_size,
+      .step_q_head_num = q->nb[2] / q_ele_size,
+      .step_q_sl = q->nb[1] / q_ele_size,
 
       .stride_k_bs = k->nb[3],
       .stride_k_head_num = k->nb[2],
@@ -8974,9 +8995,10 @@ static void ne_compute_forward_flash_attn_reordered(const struct ne_compute_para
       .stride_v_sl = 0,
       .stride_v_head_size = v->nb[1],
 
-      .step_dst_bs = seq_cur * embedsize,
-      .step_dst_head_num = headsize,
-      .step_dst_sl = embedsize,
+      // dst in (head_size, n_head, seq, bs)
+      .step_dst_bs = dst->nb[3] / dst_ele_size,
+      .step_dst_head_num = dst->nb[1] / dst_ele_size,
+      .step_dst_sl = dst->nb[2] / dst_ele_size,
   };
   jblas_reordered_attn_fp32_forward(&args);
 }
@@ -9237,7 +9259,7 @@ static void ne_compute_forward_flash_attn_kv_update(const struct ne_compute_para
       .src = cur->data,
       .cache = cache->data,
       .batch_size = cur->ne[3],
-      .head_num = cur->ne[1],
+      .heads_kv = cur->ne[1],
       .head_size = cur->ne[0],
       .seq_off = n_past,
       .seq_size = cur->ne[2],
@@ -9695,6 +9717,9 @@ static void ne_compute_forward(struct ne_compute_params* params, struct ne_tenso
     } break;
     case NE_OP_NONE: {
       // nop
+    } break;
+    case NE_OP_DEBUG: {
+      ne_compute_forward_debug(params, tensor->src0, tensor);
     } break;
     case NE_OP_COUNT: {
       NE_ASSERT(false);
@@ -10199,6 +10224,7 @@ static void ne_compute_backward(struct ne_context* ctx, struct ne_tensor* tensor
     case NE_OP_MAP_BINARY: {
       NE_ASSERT(false);  // not supported
     } break;
+    case NE_OP_DEBUG:
     case NE_OP_NONE: {
       // nop
     } break;
@@ -10739,6 +10765,7 @@ void ne_graph_compute(struct ne_context* ctx, struct ne_cgraph* cgraph) {
         case NE_OP_SPLIT:
         case NE_OP_ALL_REDUCE:
         case NE_OP_TP_CONCAT:
+        case NE_OP_DEBUG:
         case NE_OP_DUMP_TENSOR: {
           node->n_tasks = 1;
         } break;

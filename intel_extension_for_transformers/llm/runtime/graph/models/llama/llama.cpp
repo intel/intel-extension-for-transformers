@@ -100,6 +100,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     attn_shape_t attn_shape = {
         /* .batch_size = */ 1,
         /* .head_num = */ n_head,
+        /* .heads_kv = */ n_head_kv,
         /* .head_size = */ n_embd / n_head,
         /* .sl_q = */ N,  // Note: make sure that jblas reordered attn supports next token inferencing
         /* .sl_kv = */ n_past + N,
@@ -108,7 +109,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
                jblas_reordered_attn_fp32_support(&attn_shape)));
     kv_shape_t kv_shape{
-        /* .head_num = */ static_cast<uint32_t>(n_head),
+        /* .heads_kv = */ static_cast<uint32_t>(n_head_kv),
         /* .head_size = */ static_cast<uint32_t>(n_embd / n_head),
         /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
     };
@@ -168,7 +169,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     ne_set_name(Kcur, "Kcur");
     ne_set_name(Vcur, "Vcur");
     // self-attention
-    if (!run_mha_reordered || n_head != n_head_kv) {
+    const float attn_scale = 1.0f / sqrtf(static_cast<float>(n_embd) / n_head);
+    if (!run_mha_reordered) {
       // store key and value to memory
       {
         struct ne_tensor* k = ne_view_1d(ctx0, kv_self.k, N * n_embd_gqa,
@@ -198,7 +200,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       ne_set_name(KQ, "KQ");
 
       // KQ_scaled = KQ / sqrt(n_embd/n_head)
-      struct ne_tensor* KQ_scale = ne_new_f32(ctx0, 1.0f / sqrtf(float(n_embd) / n_head));
+      struct ne_tensor* KQ_scale = ne_new_f32(ctx0, attn_scale);
       ne_set_name(KQ_scale, "1/sqrt(n_embd/n_head)");
 
       // KQ_scaled shape [n_past + N, N, n_head, 1]
@@ -273,8 +275,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;           // us nb0 for layout
       ne_set_name(V, "V");
 
-      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, 1.0f / sqrtf(float(n_embd) / n_head),
-                                                n_past == 0);  // no causal mask on next-token cases
+      ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
+      if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
+      struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
       struct ne_tensor* KQV_merged_contiguous =
           ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
       ne_set_name(KQV_merged_contiguous, "KQV_merged_contiguous");

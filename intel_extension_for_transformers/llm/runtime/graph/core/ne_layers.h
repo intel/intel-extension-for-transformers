@@ -79,6 +79,14 @@
 extern "C" {
 #endif
 
+// Attention flags
+typedef enum NE_ATTN_FLAG {
+  NE_ATTN_FLAG_NONE = 0,
+  NE_ATTN_FLAG_IS_CAUSAL = 1 << 1,
+  NE_ATTN_FLAG_IS_ALIBI8 = 1 << 2,
+} NE_ATTN_FLAG;
+typedef uint32_t ne_attn_flags_t;
+
 // convert FP16 <-> FP32
 NE_API float ne_fp16_to_fp32(ne_fp16_t x);
 NE_API ne_fp16_t ne_fp32_to_fp16(float x);
@@ -168,6 +176,13 @@ NE_API void ne_set_name(struct ne_tensor* tensor, const char* name);
 // operations on tensors with backpropagation
 //
 
+typedef void (*ne_debug_callback_t)(const struct ne_tensor* t);
+
+// Run a callback function during graph forwarding.
+// Usage (in C++): `cur = ne_debug_op(ctx0, cur, [](const ne_tensor* cur) { std::cout << cur->data[0]; });`
+// Note that the lambda expression must not have any captures.
+NE_API struct ne_tensor* ne_debug_op(struct ne_context* ctx, struct ne_tensor* a, ne_debug_callback_t cb);
+
 NE_API struct ne_tensor* ne_dup(struct ne_context* ctx, struct ne_tensor* a);
 
 NE_API struct ne_tensor* ne_add(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
@@ -246,6 +261,7 @@ NE_API struct ne_tensor* ne_norm(struct ne_context* ctx, struct ne_tensor* a);
 
 NE_API struct ne_tensor* ne_rms_norm(struct ne_context* ctx, struct ne_tensor* a);
 
+NE_API struct ne_tensor* ne_rms_norm_inplace(struct ne_context* ctx, struct ne_tensor* a);
 // a - x
 // b - dy
 NE_API struct ne_tensor* ne_rms_norm_back(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
@@ -407,7 +423,7 @@ NE_API struct ne_tensor* ne_conv_1d_1s(struct ne_context* ctx, struct ne_tensor*
 NE_API struct ne_tensor* ne_conv_1d_2s(struct ne_context* ctx, struct ne_tensor* a, struct ne_tensor* b);
 
 NE_API struct ne_tensor* ne_flash_attn(struct ne_context* ctx, struct ne_tensor* q, struct ne_tensor* k,
-                                       struct ne_tensor* v, float scale, bool masked);
+                                       struct ne_tensor* v, float scale, ne_attn_flags_t flags);
 NE_API struct ne_tensor* ne_flash_attn_update_k(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,
                                                 int n_past);
 NE_API struct ne_tensor* ne_flash_attn_update_v(struct ne_context* ctx, struct ne_tensor* cache, struct ne_tensor* cur,

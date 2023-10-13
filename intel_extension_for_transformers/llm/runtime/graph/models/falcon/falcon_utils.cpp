@@ -48,6 +48,7 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
+  lctx.support_jblas_kv = true;
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
@@ -71,6 +72,7 @@ void FALCON::init(const char* path_model, model_context& lctx, int n_ctx_, int n
   fprintf(stderr, "%s: n_embd     = %u\n", __func__, hparams.n_embd);
   fprintf(stderr, "%s: n_mult     = %u\n", __func__, hparams.n_mult);
   fprintf(stderr, "%s: n_head     = %u\n", __func__, hparams.n_head);
+  fprintf(stderr, "%s: n_head_kv  = %u\n", __func__, hparams.n_head_kv);
   fprintf(stderr, "%s: n_layer    = %u\n", __func__, hparams.n_layer);
   fprintf(stderr, "%s: n_rot      = %u\n", __func__, hparams.n_rot);
   fprintf(stderr, "%s: n_ff       = %u\n", __func__, n_ff);

@@ -18,7 +18,7 @@ import os
 from transformers import AutoConfig
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 import torch
-model_maps = {"gpt_neox": "gptneox", "RefinedWebModel": "falcon"}
+model_maps = {"gpt_neox": "gptneox"}
 
 class Model:
     def __init__(self):
@@ -26,6 +26,7 @@ class Model:
         self.model = None
         self.model_type = None
         self.bin_file = None
+        self.generate_round = 0
 
     def __import_package(self, model_name):
         if self.module:
@@ -52,6 +53,8 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.chatglm_cpp as cpp_model
         elif model_name == "chatglm2":
             import intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp as cpp_model
+        elif model_name == "baichuan":
+            import intel_extension_for_transformers.llm.runtime.graph.baichuan_cpp as cpp_model
         else:
             raise TypeError("Unspported model type {}!".format(model_name))
         self.module = cpp_model
@@ -66,12 +69,12 @@ class Model:
         # 1. convert model
         fp32_bin = "ne_{}_f32.bin".format(model_type)
         convert_model(model_name, fp32_bin, "f32")
-        assert(os.path.exists(fp32_bin), "Fail to convert pytorch model")
+        assert os.path.exists(fp32_bin), "Fail to convert pytorch model"
 
         # 2. quant model
         quant_bin = "ne_{}_q.bin".format(model_type)
         self.module.Model.quant_model(model_path = fp32_bin, out_path = quant_bin, **kwargs)
-        assert(os.path.exists(quant_bin), "Fail to quantize model")
+        assert os.path.exists(quant_bin), "Fail to quantize model"
         
         self.model_type = model_type
         self.bin_file = quant_bin
@@ -90,22 +93,32 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, input_ids, streamer = None, **kwargs):
+    def generate(self, input_ids, streamer=None, interactive=False, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
-        # TODO support multi batch
-        assert(input_ids.shape[0] == 1, "Unsupport multi-batch input ids.")
-        if streamer:
+            self.generate_round = 0
+        elif not interactive:
+            self.model.reinit()
+            self.generate_round = 0
+
+        ret = [[]]
+        if self.generate_round == 0:
             ret = input_ids.tolist()
+
+        # TODO support multi batch
+        assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
+        if streamer:
+            if self.generate_round == 0:
+                streamer.put(input_ids)
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
                 streamer.put(torch.tensor([out]))
                 ret[0].extend(out)
-            return ret
         else:
-            ret = input_ids.tolist()
             ret[0].extend(self.model.generate_tokens(input_ids = input_ids.tolist()[0]))
-            return ret
+        
+        self.generate_round += 1
+        return ret
 
     def is_token_end(self):
         return self.model.is_token_end()
