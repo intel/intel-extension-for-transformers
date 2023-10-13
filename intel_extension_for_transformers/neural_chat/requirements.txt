@@ -39,3 +39,5 @@ tiktoken==0.4.0
 lm_eval
 accelerate
 cchardet
+spacy
+neural-compressor
