@@ -406,6 +406,10 @@ PYBIND11_MODULE(chatglm2_cpp, m)
 
 PYBIND11_MODULE(chatglm_cpp, m)
 
+#elif MODEL_NAME_ID == 12
+
+PYBIND11_MODULE(baichuan_cpp, m)
+
 #endif
 {
   m.doc() = "cpp model python binding";

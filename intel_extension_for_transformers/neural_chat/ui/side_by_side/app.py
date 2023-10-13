@@ -31,7 +31,8 @@ import requests
 import sys
 sys.path.insert(0, './')
 from conversation import (
-    get_conv_template,
+    Conversation,
+    SeparatorStyle,
     compute_skip_echo_len
 )
 from fastchat.constants import LOGDIR
@@ -118,6 +119,8 @@ moderation_msg = (
     "YOUR INPUT VIOLATES OUR CONTENT MODERATION GUIDELINES. PLEASE TRY AGAIN."
 )
 
+
+
 logger = build_logger("gradio_web_server", "gradio_web_server.log")
 
 headers = {"User-Agent": "NeuralChat Client"}
@@ -126,29 +129,30 @@ no_change_btn = gr.Button.update()
 enable_btn = gr.Button.update(interactive=True)
 disable_btn = gr.Button.update(interactive=False)
 
-controller_url = None
+baseline_url = None
+optimized_url = None
 enable_moderation = False
 
-# conv_template_bf16 = Conversation(
-#     system="A chat between a curious human and an artificial intelligence assistant. "
-#            "The assistant gives helpful, detailed, and polite answers to the human's questions.",
-#     roles=("Human", "Assistant"),
-#     messages=(),
-#     offset=0,
-#     sep_style=SeparatorStyle.SINGLE,
-#     sep="\n",
-#     sep2="<|endoftext|>",
-# )
+conv_template_bf16 = Conversation(
+    system="A chat between a curious human and an artificial intelligence assistant. "
+           "The assistant gives helpful, detailed, and polite answers to the human's questions.",
+    roles=("Human", "Assistant"),
+    messages=(),
+    offset=0,
+    sep_style=SeparatorStyle.SINGLE,
+    sep="\n",
+    sep2="<|endoftext|>",
+)
 
-# conv_template_bf16 = Conversation(
-#     system="",
-#     roles=("### Human", "### Assistant"),
-#     messages=(),
-#     offset=0,
-#     sep_style=SeparatorStyle.SINGLE,
-#     sep="\n",
-#     sep2="</s>",
-# )
+conv_template_bf16 = Conversation(
+    system="",
+    roles=("### Human", "### Assistant"),
+    messages=(),
+    offset=0,
+    sep_style=SeparatorStyle.SINGLE,
+    sep="\n",
+    sep2="</s>",
+)
 # conv_template_bf16 = Conversation(
 #     system="",
 #     roles=("", ""),
@@ -159,25 +163,26 @@ enable_moderation = False
 #     sep2="<|endoftext|>",
 # )
 
-# start_message = """<|im_start|>system
-# - You are a helpful assistant chatbot trained by Intel.
-# - You answer questions.
-# - You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
-# - You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>"""
+start_message = """<|im_start|>system
+- You are a helpful assistant chatbot trained by MosaicML.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.<|im_end|>"""
 
-# conv_template_bf16 = Conversation(
-#     system=start_message,
-#     roles=("<|im_start|>user", "<|im_start|>assistant"),
-#     messages=(),
-#     offset=0,
-#     sep_style=SeparatorStyle.TWO,
-#     sep="\n",
-#     sep2="<|im_end|>",
-# )
+conv_template_bf16 = Conversation(
+    system=start_message,
+    roles=("<|im_start|>user", "<|im_start|>assistant"),
+    messages=(),
+    offset=0,
+    sep_style=SeparatorStyle.TWO,
+    sep="\n",
+    sep2="<|im_end|>",
+)
 
-def set_global_vars(controller_url_, enable_moderation_):
-    global controller_url, enable_moderation
-    controller_url = controller_url_
+def set_global_vars(baseline_url_, optimized_url_, enable_moderation_ ):
+    global baseline_url, optimized_url, enable_moderation
+    baseline_url = baseline_url_
+    optimized_url = optimized_url_
     enable_moderation = enable_moderation_
 
 
@@ -188,7 +193,9 @@ def get_conv_log_filename():
 
 
 def get_model_list(controller_url):
-    ret = requests.post(controller_url + "/v1/models")
+    ret = requests.post(controller_url + "/refresh_all_workers")
+    assert ret.status_code == 200
+    ret = requests.post(controller_url + "/list_models")
     models = ret.json()["models"]
     logger.info(f"Models: {models}")
     return models
@@ -211,10 +218,13 @@ def load_demo_single(models, url_params):
         if model in models:
             dropdown_update = gr.Dropdown.update(value=model, visible=True)
 
-    state = None
+    state1 = None
+    state2 = None
     return (
-        state,
+        state1,
+        state2,
         dropdown_update,
+        gr.Chatbot.update(visible=True),
         gr.Chatbot.update(visible=True),
         gr.Textbox.update(visible=True),
         gr.Button.update(visible=True),
@@ -228,58 +238,28 @@ def load_demo(url_params, request: gr.Request):
     return load_demo_single(models, url_params)
 
 
-def vote_last_response(state, vote_type, model_selector, request: gr.Request):
-    with open(get_conv_log_filename(), "a") as fout:
-        data = {
-            "tstamp": round(time.time(), 4),
-            "type": vote_type,
-            "model": model_selector,
-            "state": state.dict(),
-            "ip": request.client.host,
-        }
-        fout.write(json.dumps(data) + "\n")
-
-
-def upvote_last_response(state, model_selector, request: gr.Request):
-    logger.info(f"upvote. ip: {request.client.host}")
-    vote_last_response(state, "upvote", model_selector, request)
-    return ("",) + (disable_btn,) * 3
-
-
-def downvote_last_response(state, model_selector, request: gr.Request):
-    logger.info(f"downvote. ip: {request.client.host}")
-    vote_last_response(state, "downvote", model_selector, request)
-    return ("",) + (disable_btn,) * 3
-
-
-def flag_last_response(state, model_selector, request: gr.Request):
-    logger.info(f"flag. ip: {request.client.host}")
-    vote_last_response(state, "flag", model_selector, request)
-    return ("",) + (disable_btn,) * 3
-
-
 def regenerate(state, request: gr.Request):
     logger.info(f"regenerate. ip: {request.client.host}")
     state.messages[-1][-1] = None
     state.skip_next = False
-    return (state, state.to_gradio_chatbot(), "") + (disable_btn,) * 5
+    return (state, state.to_gradio_chatbot(), "") + (disable_btn,) * 2
 
 
 def clear_history(request: gr.Request):
     logger.info(f"clear_history. ip: {request.client.host}")
     state = None
-    return (state, [], "") + (disable_btn,) * 5
+    return (state, [], "") + (disable_btn,) * 2
 
 
 def add_text(state, text, request: gr.Request):
     logger.info(f"add_text. ip: {request.client.host}. len: {len(text)}")
 
     if state is None:
-        state = get_conv_template("neural-chat-7b-v2")
+        state = conv_template_bf16.copy()
 
     if len(text) <= 0:
         state.skip_next = True
-        return (state, state.to_gradio_chatbot(), "") + (no_change_btn,) * 5
+        return (state, state.to_gradio_chatbot(), "") + (no_change_btn,) * 2
     if enable_moderation:
         flagged = violates_moderation(text)
         if flagged:
@@ -287,13 +267,14 @@ def add_text(state, text, request: gr.Request):
             state.skip_next = True
             return (state, state.to_gradio_chatbot(), moderation_msg) + (
                 no_change_btn,
-            ) * 5
+            ) * 2
 
-    text = text[:2560]  # Hard cut-off
+    print('text', text, text[:1536])
+    text = text[:1536]  # Hard cut-off
     state.append_message(state.roles[0], text)
     state.append_message(state.roles[1], None)
     state.skip_next = False
-    return (state, state.to_gradio_chatbot(), "") + (disable_btn,) * 5
+    return (state, state.to_gradio_chatbot(), "") + (disable_btn,) * 2
 
 
 def post_process_code(code):
@@ -307,7 +288,7 @@ def post_process_code(code):
     return code
 
 
-def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: gr.Request):
+def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: gr.Request, choice_chatbot_url):
     logger.info(f"http_bot. ip: {request.client.host}")
     start_tstamp = time.time()
     model_name = model_selector
@@ -317,70 +298,79 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
 
     if state.skip_next:
         # This generate call is skipped due to invalid inputs
-        yield (state, state.to_gradio_chatbot()) + (no_change_btn,) * 5
+        yield (state, state.to_gradio_chatbot()) + (no_change_btn,) * 2
         return
 
     if len(state.messages) == state.offset + 2:
         # First round of conversation
-        if "Llama-2-7b-chat-hf" in model_name:
-            model_name = "llama-2"
-        new_state = get_conv_template(model_name.split('/')[-1])
-        #new_state.conv_id = uuid.uuid4().hex
-        #new_state.model_name = state.model_name or model_selector
+        new_state = conv_template_bf16.copy()
+        new_state.conv_id = uuid.uuid4().hex
+        new_state.model_name = state.model_name or model_selector
         new_state.append_message(new_state.roles[0], state.messages[-2][1])
         new_state.append_message(new_state.roles[1], None)
         state = new_state
 
+    # Query worker address
+    ret = requests.post(
+        choice_chatbot_url + "/get_worker_address", json={"model": model_name}
+    )
+
+    worker_addr = ret.json()["address"]
+    logger.info(f"model_name: {model_name}, worker_addr: {worker_addr}")
+
+    # No available worker
+    if worker_addr == "":
+        state.messages[-1][-1] = server_error_msg
+        yield (
+            state,
+            state.to_gradio_chatbot(),
+            enable_btn,
+            enable_btn,
+        )
+        return
+
     # Construct prompt
     prompt = state.get_prompt()
-    # print("prompt==============", prompt)
-    skip_echo_len = compute_skip_echo_len(model_name, state, prompt) - 1
+    skip_echo_len = compute_skip_echo_len(model_name, state, prompt)
 
     # Make requests
     pload = {
+        "model": model_name,
         "prompt": prompt,
-        "device": "cpu",
         "temperature": temperature,
-        "top_p": 0.95,
-        "top_k": topk,
-        "repetition_penalty": 1.0,
         "max_new_tokens": max_new_tokens,
-        "stream": True,
+        "topk": topk,
+        "stop": "<|endoftext|>"
     }
-
     logger.info(f"==== request ====\n{pload}")
 
     start_time = time.time()
 
     state.messages[-1][-1] = "▌"
-    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
+    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 2
 
     try:
         # Stream output
         response = requests.post(
-            controller_url + "/v1/chat/completions",
+            controller_url + "/worker_generate_stream",
             headers=headers,
             json=pload,
             stream=True,
             timeout=20,
         )
-        output = ""
         for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
             if chunk:
                 data = json.loads(chunk.decode())
-                # print("data======", data, skip_echo_len)
+                print("data======", data, skip_echo_len)
                 if data["error_code"] == 0:
-                    output += data["text"].strip() + " "
+                    output = data["text"][skip_echo_len:].strip()
                     output = post_process_code(output)
                     state.messages[-1][-1] = output + "▌"
-                    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 5
+                    yield (state, state.to_gradio_chatbot()) + (disable_btn,) * 2
                 else:
                     output = data["text"] + f" (error_code: {data['error_code']})"
                     state.messages[-1][-1] = output
                     yield (state, state.to_gradio_chatbot()) + (
-                        disable_btn,
-                        disable_btn,
-                        disable_btn,
                         enable_btn,
                         enable_btn,
                     )
@@ -389,9 +379,6 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
     except requests.exceptions.RequestException as e:
         state.messages[-1][-1] = server_error_msg + f" (error_code: 4)"
         yield (state, state.to_gradio_chatbot()) + (
-            disable_btn,
-            disable_btn,
-            disable_btn,
             enable_btn,
             enable_btn,
         )
@@ -403,9 +390,8 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
     # elapsed_time =  "\n{}s".format(round(finish_tstamp, 4))
     # elapsed_time =  "<p class='time-style'>{}s </p>".format(round(finish_tstamp, 4))
 
-    # state.messages[-1][-1] = state.messages[-1][-1][:-1] + elapsed_time
-    state.messages[-1][-1] = state.messages[-1][-1][:-1]
-    yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 5
+    state.messages[-1][-1] = state.messages[-1][-1][:-1] + elapsed_time
+    yield (state, state.to_gradio_chatbot()) + (enable_btn,) * 2
 
     logger.info(f"{output}")
 
@@ -440,7 +426,6 @@ pre {
 #notice_markdown th {
     display: none;
 }
-
 #notice_markdown {
     text-align: center;
     background: #2e78c4;
@@ -449,100 +434,95 @@ pre {
     color: #fff !important;
     margin-top: 0;
 }
-
 #notice_markdown p{
     color: #fff !important;
 }
-
-
 #notice_markdown h1, #notice_markdown h4 {
     color: #fff;
     margin-top: 0;
 }
-
 gradio-app {
     background: linear-gradient(to bottom, #86ccf5, #3273bf) !important;
     padding: 3%;
 }
-
 .gradio-container {
     margin: 0 auto !important;
-    width: 70% !important;
+    width: 80% !important;
     padding: 0 !important;
     background: #fff !important;
     border-radius: 5px !important;
 }
-
-#chatbot {
+#chatbot1 {
     border-style: solid;
     overflow: visible;
-    margin: 1% 4%;
+    margin-left: 2%;
     width: 90%;
     box-shadow: 0 15px 15px -5px rgba(0, 0, 0, 0.2);
     border: 1px solid #ddd;
 }
-
-#chatbot::before {
+#chatbot2 {
+    border-style: solid;
+    overflow: visible;
+    margin-right: 2%;
+    width: 90%;
+    box-shadow: 0 15px 15px -5px rgba(0, 0, 0, 0.2);
+    border: 1px solid #ddd;
+}
+#notice_markdown::before {
     content: "";
     position: absolute;
     top: 0;
     right: 0;
-    width: 60px;
-    height: 60px;
+    width: 4.3rem;
+    height: 4.3rem;
     background-image: url(https://i.postimg.cc/gJzQTQPd/Microsoft-Teams-image-73.png);
     background-repeat: no-repeat;
     background-position: center center;
     background-size: contain;
 }
 
-#chatbot::after {
+#notice_markdown::after {
     content: "";
     position: absolute;
     top: 0;
-    right: 60px;
-    width: 60px;
-    height: 60px;
+    right: 4.3rem;
+    width: 4.3rem;
+    height: 4.3rem;
     background-image: url(https://i.postimg.cc/QCBQ45b4/Microsoft-Teams-image-44.png);
     background-repeat: no-repeat;
     background-position: center center;
     background-size: contain;
 }
 
-#chatbot .wrap {
+#chatbot1 .wrap {
     margin-top: 30px !important;
 }
-
-
+#chatbot2 .wrap {
+    margin-top: 30px !important;
+}
 #text-box-style, #btn-style {
     width: 90%;
     margin: 1% 4%;
 }
-
-
 .user, .bot {
     width: 80% !important;
-
+    
 }
-
 .bot {
-    white-space: pre-wrap !important;
+    white-space: pre-wrap !important;  
     line-height: 1.3 !important;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-
 }
-
 #btn-send-style {
     background: rgb(0, 180, 50);
     color: #fff;
     }
-
 #btn-list-style {
     background: #eee0;
     border: 1px solid #0053f4;
-}
-
+}        
 .title {
     font-size: 1.5rem;
     font-weight: 700;
@@ -550,17 +530,14 @@ gradio-app {
     display: flex;
     justify-content: center;
 }
-
 footer {
     display: none !important;
 }
-
 .footer {
     margin-top: 2rem !important;
     text-align: center;
     border-bottom: 1px solid #e5e5e5;
 }
-
 .footer>p {
     font-size: .8rem;
     display: inline-block;
@@ -568,29 +545,24 @@ footer {
     transform: translateY(10px);
     background: white;
 }
-
 .img-logo {
     width: 3.3rem;
     display: inline-block;
     margin-right: 1rem;
 }
-
 .img-logo-style {
     width: 3.5rem;
     float: left;
 }
-
 .img-logo-right-style {
     width: 3.5rem;
     display: inline-block !important;
 }
-
 .neural-studio-img-style {
      width: 50%;
     height: 20%;
     margin: 0 auto;
 }
-
 .acknowledgments {
     margin-bottom: 1rem !important;
     height: 1rem;
@@ -600,7 +572,6 @@ footer {
 
 
 def build_single_model_ui(models):
-
     notice_markdown = """
 <div class="title">
 <div style="
@@ -608,26 +579,18 @@ def build_single_model_ui(models):
 ">Large Language Model <p style="
     font-size: 0.8rem;
 ">Future Gen Intel® Xeon® (codenamed Granite Rapids) with Intel® AMX</p></div>
-
 </div>
 """
-    # <div class="footer">
-    #                 <p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a>
-    #                 <img src='https://i.postimg.cc/Pfv4vV6R/Microsoft-Teams-image-23.png' class='img-logo-right-style'/></p>
-    #         </div>
-    #         <div class="acknowledgments">
-    #         <p></p></div>
+    learn_more_markdown =  """
+<div class="footer"><p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a></p>
+</div>
+<div class="acknowledgments">
+<p></p></div>
+"""
 
-    learn_more_markdown =  """<div class="footer">
-                    <p>Powered by <a href="https://github.com/intel/intel-extension-for-transformers" style="text-decoration: underline;" target="_blank">Intel Extension for Transformers</a> and <a href="https://github.com/intel/intel-extension-for-pytorch" style="text-decoration: underline;" target="_blank">Intel Extension for PyTorch</a>
-                    </p>
-            </div>
-            <div class="acknowledgments">
-            <p></p></div>
+    state1 = gr.State()
+    state2 = gr.State()
 
-        """
-
-    state = gr.State()
     notice = gr.Markdown(notice_markdown, elem_id="notice_markdown")
 
     with gr.Row(elem_id="model_selector_row", visible=False):
@@ -637,8 +600,10 @@ def build_single_model_ui(models):
             interactive=True,
             show_label=False,
         ).style(container=False)
+    with gr.Row():
+        chatbot1 = grChatbot(elem_id="chatbot1", visible=False).style(height=500)
+        chatbot2 = grChatbot(elem_id="chatbot2", visible=False).style(height=500)
 
-    chatbot = gr.Chatbot(elem_id="chatbot", visible=False).style(height=550)
     with gr.Row(elem_id="text-box-style"):
         with gr.Column(scale=20):
             textbox = gr.Textbox(
@@ -678,58 +643,64 @@ def build_single_model_ui(models):
 
 
     with gr.Row(visible=False, elem_id="btn-style") as button_row:
-        upvote_btn = gr.Button(value="👍  Upvote", interactive=False, visible=False, elem_id="btn-list-style")
-        downvote_btn = gr.Button(value="👎  Downvote", interactive=False, visible=False, elem_id="btn-list-style")
-        flag_btn = gr.Button(value="⚠️  Flag", interactive=False, visible=False, elem_id="btn-list-style")
-        # stop_btn = gr.Button(value="⏹️  Stop Generation", interactive=False)
         regenerate_btn = gr.Button(value="🔄  Regenerate", interactive=False, elem_id="btn-list-style")
         clear_btn = gr.Button(value="🗑️  Clear history", interactive=False, elem_id="btn-list-style")
+        choice_chatbot1 = gr.Textbox(label='hidden', value=baseline_url, visible=False)
+        choice_chatbot2 = gr.Textbox(label='hidden', value=optimized_url, visible=False)
+
 
 
     gr.Markdown(learn_more_markdown)
 
     # Register listeners
-    btn_list = [upvote_btn, downvote_btn, flag_btn, regenerate_btn, clear_btn]
-    upvote_btn.click(
-        upvote_last_response,
-        [state, model_selector],
-        [textbox, upvote_btn, downvote_btn, flag_btn],
-    )
-    downvote_btn.click(
-        downvote_last_response,
-        [state, model_selector],
-        [textbox, upvote_btn, downvote_btn, flag_btn],
-    )
-    flag_btn.click(
-        flag_last_response,
-        [state, model_selector],
-        [textbox, upvote_btn, downvote_btn, flag_btn],
-    )
-    regenerate_btn.click(regenerate, state, [state, chatbot, textbox] + btn_list).then(
+    btn_list = [regenerate_btn, clear_btn]
+  
+    regenerate_btn.click(regenerate, state1, [state1, chatbot1, textbox] + btn_list).then(
         http_bot,
-        [state, model_selector, temperature, max_output_tokens, topk],
-        [state, chatbot] + btn_list,
+        [state1, model_selector, temperature, max_output_tokens, topk, choice_chatbot1],
+        [state1, chatbot1] + btn_list,
     )
-    clear_btn.click(clear_history, None, [state, chatbot, textbox] + btn_list)
+    regenerate_btn.click(regenerate, state2, [state2, chatbot2, textbox] + btn_list).then(
+        http_bot,
+        [state2, model_selector, temperature, max_output_tokens, topk, choice_chatbot2],
+        [state2, chatbot2] + btn_list,
+    )
+    clear_btn.click(clear_history, None, [state1, chatbot1, textbox] + btn_list)
+    clear_btn.click(clear_history, None, [state2, chatbot2, textbox] + btn_list)
 
-    model_selector.change(clear_history, None, [state, chatbot, textbox] + btn_list)
+    model_selector.change(clear_history, None, [state1, chatbot1, textbox] + btn_list)
+    model_selector.change(clear_history, None, [state2, chatbot2, textbox] + btn_list)
 
     textbox.submit(
-        add_text, [state, textbox], [state, chatbot, textbox] + btn_list
+        add_text, [state1, textbox], [state1, chatbot1, textbox] + btn_list
     ).then(
         http_bot,
-        [state, model_selector, temperature, max_output_tokens, topk],
-        [state, chatbot] + btn_list,
+        [state1, model_selector, temperature, max_output_tokens, topk, choice_chatbot1],
+        [state1, chatbot1] + btn_list,
+    )
+    textbox.submit(
+        add_text, [state2, textbox], [state2, chatbot2, textbox] + btn_list
+    ).then(
+        http_bot,
+        [state2, model_selector, temperature, max_output_tokens, topk, choice_chatbot2],
+        [state2, chatbot2] + btn_list,
     )
     send_btn.click(
-        add_text, [state, textbox], [state, chatbot, textbox] + btn_list
+        add_text, [state1, textbox], [state1, chatbot1, textbox] + btn_list
     ).then(
         http_bot,
-        [state, model_selector, temperature, max_output_tokens, topk],
-        [state, chatbot] + btn_list,
+        [state1, model_selector, temperature, max_output_tokens, topk, choice_chatbot1],
+        [state1, chatbot1] + btn_list,
+    )
+    send_btn.click(
+        add_text, [state2, textbox], [state2, chatbot2, textbox] + btn_list
+    ).then(
+        http_bot,
+        [state2, model_selector, temperature, max_output_tokens, topk, choice_chatbot2],
+        [state2, chatbot2] + btn_list,
     )
 
-    return state, model_selector, chatbot, textbox, send_btn, button_row, parameter_row
+    return state1, state2, model_selector, chatbot1, chatbot2, textbox, send_btn, button_row, parameter_row
 
 
 def build_demo(models):
@@ -741,9 +712,11 @@ def build_demo(models):
         url_params = gr.JSON(visible=False)
 
         (
-            state,
+            state1,
+            state2,
             model_selector,
-            chatbot,
+            chatbot1,
+            chatbot2,
             textbox,
             send_btn,
             button_row,
@@ -755,9 +728,11 @@ def build_demo(models):
                 load_demo,
                 [url_params],
                 [
-                    state,
+                    state1,
+                    state2,
                     model_selector,
-                    chatbot,
+                    chatbot1,
+                    chatbot2,
                     textbox,
                     send_btn,
                     button_row,
@@ -773,7 +748,8 @@ def build_demo(models):
 
 if __name__ == "__main__":
 
-    controller_url = "http://127.0.0.1:8000"
+    baseline_url = "http://XX"
+    optimized_url = "http://XX"
     host = "0.0.0.0"
 
     concurrency_count = 10
@@ -781,9 +757,8 @@ if __name__ == "__main__":
     share = False
     moderate = False
 
-    set_global_vars(controller_url, moderate)
-    models = get_model_list(controller_url)
-
+    set_global_vars(baseline_url, optimized_url, moderate)
+    models = get_model_list(baseline_url)
     demo = build_demo(models)
     demo.queue(
         concurrency_count=concurrency_count, status_update_rate=10, api_open=False

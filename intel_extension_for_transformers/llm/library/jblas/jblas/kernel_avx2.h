@@ -50,6 +50,15 @@ static inline __m128i unpack_4bits_sse(void* srcptr) {
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline void convert_s4_s8_16_sse(int8_t* dstptr, int8_t* srcptr) {
   auto dst0 = unpack_4bits_sse<S4_T>(srcptr);
+  if constexpr (S4_T == S4_FULLRANGE) {
+    auto s8 = _mm_set1_epi8(8);
+    dst0 = _mm_sub_epi8(dst0, s8);
+  }
+  _mm_storeu_si128((__m128i*)dstptr, dst0);
+}
+
+static inline void fp4_pad_4bit(int8_t* dstptr, int8_t* srcptr) {
+  auto dst0 = unpack_4bits_sse<S4_FULLRANGE>(srcptr);
   _mm_storeu_si128((__m128i*)dstptr, dst0);
 }
 
@@ -140,8 +149,6 @@ static inline JBLAS_CODE dequant_kblock_s8_f32(int8_t* srcptr, float* dstptr, in
     return dequant_kblock_s8_f32_fwd<true>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, zero_points, k_offset,
                                            kblock, NPad);
 }
-
-constexpr void (*pad_fp4)(int8_t* dstptr, int8_t* srcptr) = &convert_s4_s8_16_sse<S4_FULLRANGE>;
 
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src,
@@ -269,10 +276,10 @@ static inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* ds
                                                  int ld_dst, _ST* scales, int k_offset, int kblock, int NPad) {
   if constexpr (std::is_same<_DST_T, float>::value) {
     return decompress_kblock_bit4_fp32<_ST>(srcptr, (float*)dstptr, row, col, ld_src, ld_dst, scales, nullptr, k_offset,
-                                            kblock, NPad, &dequant_f4_N<48, float, F4_T>, pad_fp4);
+                                            kblock, NPad, &dequant_f4_N<48, float, F4_T>, fp4_pad_4bit);
   } else if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
     return decompress_kblock_bit4_bf16<_ST>(srcptr, (utils::bf16*)dstptr, row, col, ld_src, ld_dst, scales, nullptr,
-                                            k_offset, kblock, NPad, &dequant_f4_N<64, utils::bf16, F4_T>, pad_fp4);
+                                            k_offset, kblock, NPad, &dequant_f4_N<64, utils::bf16, F4_T>, fp4_pad_4bit);
   }
   return JblasNotSupport;
 }

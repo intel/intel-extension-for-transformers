@@ -53,6 +53,8 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.chatglm_cpp as cpp_model
         elif model_name == "chatglm2":
             import intel_extension_for_transformers.llm.runtime.graph.chatglm2_cpp as cpp_model
+        elif model_name == "baichuan":
+            import intel_extension_for_transformers.llm.runtime.graph.baichuan_cpp as cpp_model
         else:
             raise TypeError("Unspported model type {}!".format(model_name))
         self.module = cpp_model
