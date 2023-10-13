@@ -53,13 +53,15 @@ class NamedEntityRecognition():
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_path,
             use_fast=False if (re.search("llama", model_path, re.IGNORECASE)
-                or re.search("neural-chat-7b-v2", model_path, re.IGNORECASE)) else True
+                or re.search("neural-chat-7b-v2", model_path, re.IGNORECASE)) else True,
+            trust_remote_code=True
         )
         self.model = AutoModelForCausalLM.from_pretrained(
             model_path,
             torch_dtype=torch.bfloat16,
             config=config,
             device_map="auto",
+            trust_remote_code=True
         )
         self.bf16 = bf16
         # optimize model with ipex if bf16
