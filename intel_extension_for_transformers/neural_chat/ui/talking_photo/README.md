@@ -2,11 +2,11 @@
 
 <h2>📸 Project Screenshots:</h2>
 
-<img src="https://imgur.com/w6A4cgy.png" alt="project-screenshot" width="800" height="400/">
+<img src="https://imgur.com/w6A4cgy.png" alt="project-screenshot" width="400" height="400/">
 
-<img src="https://imgur.com/nriEzQV.png" alt="project-screenshot" width="800" height="400/">
+<img src="https://imgur.com/nriEzQV.png" alt="project-screenshot" width="400" height="400/">
 
-<img src="https://imgur.com/lwVVC5y.png" alt="project-screenshot" width="800" height="400/">
+<img src="https://imgur.com/lwVVC5y.png" alt="project-screenshot" width="400" height="400/">
 
 
 <h2>🧐 Features</h2>
