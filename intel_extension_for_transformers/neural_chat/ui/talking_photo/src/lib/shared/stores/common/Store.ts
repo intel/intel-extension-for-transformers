@@ -10,13 +10,6 @@ export interface ImgInfo {
   tag_list: [string, string][];
 };
 
-
-// export interface ImgList {
-//   [index: string]: {
-//     [index: string]: ImgItem[]
-//   }
-// }
-
 export interface ImgListPiece {
   image_id: string;
   image_path: string;
