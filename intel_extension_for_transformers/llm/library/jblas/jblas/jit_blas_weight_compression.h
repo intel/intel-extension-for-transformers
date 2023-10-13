@@ -579,7 +579,7 @@ class WeightS4ScaleFp32 : public WeightS8ScaleFp32<_GemmCore_T, ISA_T> {
     auto KPad = wptr->mKPad;
     auto bptr = wptr->WPtr() + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
     for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-      kernel::wrapper::DecompressKBlockS4S8::forward<ISA_T, S4_T>(
+      kernel::wrapper::DecompressKBlockS4S8::template forward<ISA_T, S4_T>(
           (utils::int4x2*)(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
           _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
           _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW);
@@ -595,19 +595,11 @@ class WeightS4ScaleFp32 : public WeightS8ScaleFp32<_GemmCore_T, ISA_T> {
     auto KPad = wptr->mKPad;
     auto bptr = wptr->WPtr() + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
     for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-      if constexpr (_GemmCore_T::PACK_ROW == 1) {
-        kernel::wrapper::DecompressKBlockS4FP<float>::forward<ISA_T, float, S4_T>(
-            (utils::int4x2*)(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
-            _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-            _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i,
-            wptr->mZPtr != nullptr ? wptr->mZPtr + n_offset + i : nullptr, k_offset, wptr->mBlockSize, NPad);
-      } else {
-        kernel::wrapper::DecompressKBlockS4FPPackRow<float>::forward<ISA_T, float, S4_T>(
-            (utils::int4x2*)(bptr + i * KPad / 2), *dstptr + i * k_size, k_size, _GemmCore_T::NTILE, _GemmCore_T::NTILE,
-            _GemmCore_T::NTILE, wptr->mSPtr + n_offset + i,
-            wptr->mZPtr != nullptr ? wptr->mZPtr + n_offset + i : nullptr, k_offset, wptr->mBlockSize, NPad,
-            _GemmCore_T::PACK_ROW);
-      }
+      kernel::wrapper::DecompressKBlockS4FP<float, _GemmCore_T::PACK_ROW>::template forward<ISA_T, float, S4_T>(
+          (utils::int4x2*)(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
+          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
+          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i,
+          wptr->mZPtr != nullptr ? wptr->mZPtr + n_offset + i : nullptr, k_offset, wptr->mBlockSize, NPad);
     }
     *dststep = k_size;
     return JblasSuccess;
@@ -620,7 +612,7 @@ class WeightS4ScaleFp32 : public WeightS8ScaleFp32<_GemmCore_T, ISA_T> {
     auto KPad = wptr->mKPad;
     auto bptr = wptr->WPtr() + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
     for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-      kernel::wrapper::DecompressKBlockS4FP<utils::bf16>::forward<ISA_T, float, S4_T>(
+      kernel::wrapper::DecompressKBlockS4FP<utils::bf16, _GemmCore_T::PACK_ROW>::template forward<ISA_T, float, S4_T>(
           (utils::int4x2*)(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
           _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
           _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i,
@@ -959,16 +951,10 @@ class WeightF4ScaleFp32 : public WeightS4ScaleFp32<_GemmCore_T, ISA_T, S4_CLIP> 
     auto KPad = wptr->mKPad;
     auto bptr = wptr->WPtr() + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
     for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-      if constexpr (_GemmCore_T::PACK_ROW == 1) {
-        kernel::wrapper::DecompressKBlockF4Fp<float>::forward<ISA_T, float, F4_T>(
-            reinterpret_cast<utils::f4x2*>(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
-            _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
-            _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
-      } else {
-        kernel::wrapper::DecompressKBlockF4FPPackRow<float>::forward<ISA_T, float, F4_T>(
-            (utils::f4x2*)(bptr + i * KPad / 2), *dstptr + i * k_size, k_size, _GemmCore_T::NTILE, _GemmCore_T::NTILE,
-            _GemmCore_T::NTILE, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad, _GemmCore_T::PACK_ROW);
-      }
+      kernel::wrapper::DecompressKBlockF4Fp<float, _GemmCore_T::PACK_ROW>::template forward<ISA_T, float, F4_T>(
+          reinterpret_cast<utils::f4x2*>(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
+          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
+          _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset, wptr->mBlockSize, NPad);
     }
     *dststep = k_size;
     return JblasSuccess;
@@ -981,7 +967,7 @@ class WeightF4ScaleFp32 : public WeightS4ScaleFp32<_GemmCore_T, ISA_T, S4_CLIP> 
     auto KPad = wptr->mKPad;
     auto bptr = wptr->WPtr() + n_offset * KPad / 2 + k_offset * _GemmCore_T::NTILE / 2;
     for (int i = 0; i < n_size; i += _GemmCore_T::NTILE) {
-      kernel::wrapper::DecompressKBlockF4Fp<utils::bf16>::forward<ISA_T, float, F4_T>(
+      kernel::wrapper::DecompressKBlockF4Fp<utils::bf16, _GemmCore_T::PACK_ROW>::template forward<ISA_T, float, F4_T>(
           reinterpret_cast<utils::f4x2*>(bptr + i * KPad / 2), *dstptr + i * k_size, k_size / _GemmCore_T::PACK_ROW,
           _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW,
           _GemmCore_T::NTILE * _GemmCore_T::PACK_ROW, wptr->mSPtr + n_offset + i, k_offset / _GemmCore_T::PACK_ROW,

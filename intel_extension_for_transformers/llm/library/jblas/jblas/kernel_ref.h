@@ -249,7 +249,7 @@ inline JBLAS_CODE decompress_kblock_s8_f32_packrow(int8_t* srcptr, float* dstptr
   return JblasSuccess;
 }
 
-template <JBLAS_SIGN_INT_TYPE S4_T, typename _DST_T, typename _S_T>
+template <JBLAS_SIGN_INT_TYPE S4_T, typename _DST_T, int _PACK_ROW, typename _S_T>
 inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src,
                                           int ld_dst, _S_T* scales, int8_t* zero_points, int k_offset, int kblock,
                                           int NPad) {
@@ -260,20 +260,10 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, _DST_T* dstptr,
       auto tmp = srcptr[i * ld_src / 2 + j / 2];
       float scale0, scale1, dst0, dst1;
       int s0_idx, s1_idx;
-      if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
-        s0_idx = j / 2;
-        s1_idx = j / 2;
-      } else {
-        s0_idx = j;
-        s1_idx = j + 1;
-      }
-      if constexpr (std::is_same<_S_T, utils::bf16>::value) {
-        scale0 = sptr[s0_idx].tofloat();
-        scale1 = sptr[s1_idx].tofloat();
-      } else {
-        scale0 = sptr[s0_idx];
-        scale1 = sptr[s1_idx];
-      }
+      s0_idx = j / _PACK_ROW;
+      s1_idx = (j + 1) / _PACK_ROW;
+      scale0 = float(sptr[s0_idx]);
+      scale1 = float(sptr[s1_idx]);
       if (zero_points != nullptr) {
         dst0 = (float(get_s8<S4_T>(tmp.x)) - float((zero_points + kpos * NPad)[s0_idx])) * scale0;
         dst1 = (float(get_s8<S4_T>(tmp.y)) - float((zero_points + kpos * NPad)[s1_idx])) * scale1;
@@ -281,16 +271,8 @@ inline JBLAS_CODE decompress_kblock_s4_fp(utils::int4x2* srcptr, _DST_T* dstptr,
         dst0 = float(get_s8<S4_T>(tmp.x)) * scale0;
         dst1 = float(get_s8<S4_T>(tmp.y)) * scale1;
       }
-      if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
-        utils::bf16 bf16_ret0, bf16_ret1;
-        bf16_ret0.fromfloat(dst0);
-        bf16_ret1.fromfloat(dst1);
-        dstptr[i * ld_dst + j + 0] = bf16_ret0;
-        dstptr[i * ld_dst + j + 1] = bf16_ret1;
-      } else {
-        dstptr[i * ld_dst + j + 0] = dst0;
-        dstptr[i * ld_dst + j + 1] = dst1;
-      }
+      dstptr[i * ld_dst + j + 0] = static_cast<_DST_T>(dst0);
+      dstptr[i * ld_dst + j + 1] = static_cast<_DST_T>(dst1);
     }
   }
   return JblasSuccess;
@@ -654,7 +636,7 @@ inline int8_t f4_quantize(float x) {
   return int8_t(0);
 }
 
-template <JBLAS_F4_TYPE F4_T, typename _DST_T, typename _S_T>
+template <JBLAS_F4_TYPE F4_T, typename _DST_T, int _PACK_ROW, typename _S_T>
 inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst,
                                           _S_T* scales, int k_offset, int kblock, int NPad) {
   for (int i = 0; i < row; i++) {
@@ -664,32 +646,14 @@ inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* dstptr, i
       auto tmp = srcptr[i * ld_src / 2 + j / 2];
       float scale0, scale1, dst0, dst1;
       int s0_idx, s1_idx;
-      if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
-        s0_idx = j / 2;
-        s1_idx = j / 2;
-      } else {
-        s0_idx = j;
-        s1_idx = j + 1;
-      }
-      if constexpr (std::is_same<_S_T, utils::bf16>::value) {
-        scale0 = sptr[s0_idx].tofloat();
-        scale1 = sptr[s1_idx].tofloat();
-      } else {
-        scale0 = sptr[s0_idx];
-        scale1 = sptr[s1_idx];
-      }
+      s0_idx = j / _PACK_ROW;
+      s1_idx = (j + 1) / _PACK_ROW;
+      scale0 = float(sptr[s0_idx]);
+      scale1 = float(sptr[s1_idx]);
       dst0 = f4_dequantize<F4_T>(tmp.x, scale0);
       dst1 = f4_dequantize<F4_T>(tmp.y, scale1);
-      if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
-        utils::bf16 bf16_ret0, bf16_ret1;
-        bf16_ret0.fromfloat(dst0);
-        bf16_ret1.fromfloat(dst1);
-        dstptr[i * ld_dst + j + 0] = bf16_ret0;
-        dstptr[i * ld_dst + j + 1] = bf16_ret1;
-      } else {
-        dstptr[i * ld_dst + j + 0] = dst0;
-        dstptr[i * ld_dst + j + 1] = dst1;
-      }
+      dstptr[i * ld_dst + j + 0] = static_cast<_DST_T>(dst0);
+      dstptr[i * ld_dst + j + 1] = static_cast<_DST_T>(dst1);
     }
   }
   return JblasSuccess;
@@ -1090,12 +1054,39 @@ static inline JBLAS_CODE row_reduce_sum(const _RT* srcptr, int ldsrc, int row, i
   return JblasSuccess;
 }
 
-static inline JBLAS_CODE remove_zeropoint_bias(float* accptr, int ldacc, int row, int col, uint8_t* zps, float* scales,
-                                               int lds, const float* reduce) {
+static inline JBLAS_CODE remove_act_zeropoint_bias(float* accptr, int ldacc, int row, int col, uint8_t* zps,
+                                                   float* scales, int lds, const float* reduce) {
   for (int i = 0; i < row; i++) {
     auto zpf = float(zps[i * lds]) * scales[i * lds];
     for (int j = 0; j < col; j++) {
       accptr[i * ldacc + j] -= zpf * reduce[j];
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE remove_wei_zeropoint_bias(float* accptr, int ldacc, int row, int col, int8_t* zps,
+                                                   float* scales, int lds, const float* reduce) {
+  for (int i = 0; i < row; i++) {
+    auto reducef = reduce[i * lds];
+    for (int j = 0; j < col; j++) {
+      accptr[i * ldacc + j] -= float(zps[j]) * scales[j] * reducef;
+    }
+  }
+  return JblasSuccess;
+}
+
+static inline JBLAS_CODE remove_zeropoint_bias(float* accptr, int ldacc, int row, int col, uint8_t* zpa, int8_t* zpb,
+                                               float* scalea, float* scaleb, int lds, int k, const float* reducea,
+                                               const float* reduceb) {
+  for (int i = 0; i < row; i++) {
+    auto reduceaf = reducea[i * lds];
+    auto zpaf = float(zpa[i * lds]) * scalea[i * lds];
+    for (int j = 0; j < col; j++) {
+      auto zpbf = float(zpb[j]) * scaleb[j];
+      accptr[i * ldacc + j] -= zpbf * reduceaf;
+      accptr[i * ldacc + j] -= zpaf * reduceb[j];
+      accptr[i * ldacc + j] -= zpaf * zpbf * k;
     }
   }
   return JblasSuccess;
