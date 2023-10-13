@@ -30,10 +30,10 @@ import intel_extension_for_pytorch as intel_ipex
 from .utils.utils import (
     set_cpu_running_env, 
     enforce_stop_tokens,
-    construct_default_prompt,
     get_current_time
 )
 from .utils.process_text import process_time, process_entities
+from intel_extension_for_transformers.neural_chat.prompts import PromptTemplate
 
 
 class NamedEntityRecognition():
@@ -89,7 +89,10 @@ class NamedEntityRecognition():
         cur_time = get_current_time()
         print("[NER info] Current time is:{}".format(cur_time))
         if not prompt:
-            prompt = construct_default_prompt(query, cur_time)
+            pt = PromptTemplate("ner")
+            pt.append_message(pt.conv.roles[0], cur_time)
+            pt.append_message(pt.conv.roles[1], query)
+            prompt = pt.get_prompt()
         print("[NER info] Prompt is: ", prompt)
         inputs= self.tokenizer(prompt, return_token_type_ids=False, return_tensors="pt")
         streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=False)
