@@ -44,7 +44,7 @@ function main() {
         infer_cmd="./build/bin/run_gptj"
         model_name="EleutherAI/gpt-j-6b"
         input_model="/tf_dataset2/models/pytorch/gpt-j-6B"
-        precision_list=("q4_j_b128", "q4_j_b128_asym")
+        precision_list=("q4_j_b128" "q4_j_b128_asym")
     elif [[ "${model}" == "starcoder-3b" ]]; then
         convert_script="${working_dir}/scripts/convert_starcoder.py"
         quant_script="./build/bin/quant_starcoder"
