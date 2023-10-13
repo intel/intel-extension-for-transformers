@@ -284,6 +284,9 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   ms->load(lctx, progress_callback, progress_callback_user_data);
   if (lctx.beam_search) {
     lctx.bs_kv_reorder = std::make_shared<gptneox_beam_search_kv_cache_reorder>(&lctx);
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("get GPTNEOX beam search kv cache update function. \n");
+#endif
   }
 
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;

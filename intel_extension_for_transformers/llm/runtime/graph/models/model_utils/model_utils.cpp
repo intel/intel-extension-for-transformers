@@ -1120,6 +1120,11 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
   ctx->rng = std::mt19937(params.seed);
   ctx->logits_all = params.logits_all;
   ctx->batch_size = params.batch_size;
+  if (params.beam_search) {
+    ctx->beam_search = true;
+    ctx->beam_size = params.beam_size;
+    ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
+  }
   const model_archs arch = params.arch;
 
   // the type so that kv-cache allocated according to this type must be large enough
@@ -1132,12 +1137,6 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
 
   // reserve memory for context buffers
   if (!params.vocab_only) {
-    if (params.beam_search) {
-      ctx->beam_search = true;
-      ctx->beam_size = params.beam_size;
-      ctx->kv_n_ctx_block = ctx->batch_size * ctx->beam_size;
-    }
-
     const auto& hparams = ctx->model.hparams;
 
     const attn_shape_t attn_shape = {
@@ -2470,6 +2469,9 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   kv_reorder = ctx->bs_kv_reorder;
   if (kv_reorder == nullptr) {
     kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
+#ifdef NE_BEAM_SEARCH_VERBOSE_ON
+    printf("WARNING: using default kv cache update function. \n");
+#endif
   }
   beam_hypos.push_back(beam_hypotheses(ctx));  // TODO ctx->request_running_bs;
   requests_done.push_back(false);
