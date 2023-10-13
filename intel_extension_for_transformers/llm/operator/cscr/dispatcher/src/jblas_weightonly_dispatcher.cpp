@@ -539,7 +539,7 @@ void parse_gemm_core_offline(qbits_config_param* p, qbits_runtime_ctx* ctx) {
                             jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight,
                             jblas::gemm::GemmCore_Row_NN_16x48_AMX_S8S8, jblas::utils::parallel::Parallel2DGemm,
                             JblasAMX_INT8>(p, ctx);
-      TORCH_CHECK(false, "Qbits: device ISA must lagger than AMX_INT8 when GemmCore==Row_NN_16x48_AMX_S8S8");
+      TORCH_CHECK(false, "Qbits: device ISA must support AMX_INT8 when GemmCore==Row_NN_16x48_AMX_S8S8");
     default:
       break;
   }
