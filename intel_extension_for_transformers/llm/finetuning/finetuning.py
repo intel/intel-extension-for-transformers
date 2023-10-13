@@ -226,6 +226,7 @@ class Finetuning:
             "use_fast": model_args.use_fast_tokenizer,
             "revision": model_args.model_revision,
             "use_auth_token": True if model_args.use_auth_token else None,
+            "trust_remote_code": model_args.trust_remote_code,
         }
         if model_args.tokenizer_name:
             tokenizer = AutoTokenizer.from_pretrained(
@@ -273,7 +274,8 @@ class Finetuning:
             self.bitsandbytes_quant_config = None
 
         config = self.load_model_config(self.model_args)
-        if config.architectures[0].endswith("ForCausalLM"):
+        if config.architectures[0].endswith("ForCausalLM") \
+            or config.architectures[0].endswith("QWenLMHeadModel"):
             self.finetune_clm(model_args, data_args, training_args, finetune_args, config)
         elif config.architectures[0].endswith("ForConditionalGeneration"):
             self.finetune_seq2seq(model_args, data_args, training_args, finetune_args, config)
