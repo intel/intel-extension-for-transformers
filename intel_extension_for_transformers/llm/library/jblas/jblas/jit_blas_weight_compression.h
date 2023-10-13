@@ -14,6 +14,7 @@
 #pragma once
 #include "jit_blas_wrapper.h"
 #include "kernel_wrapper.h"
+#include <stdlib.h>
 
 namespace jblas {
 namespace prologue {
@@ -161,9 +162,12 @@ class WeightS8ScaleFp32 {
 
   // from packed N//NtilexKPadxNTile int8 weight to KxN f32 weight
   virtual void unpackTransposeWeight(const int N, const int K, void* stor, float* B, const int ldb) {
-    utils::aligned_vector<float> B_NT(N * K);
-    unpackWeight(N, K, stor, B_NT.data(), N);
-    prologue::gemm::transposeWeight<float, ISA_T>(K, N, B_NT.data(), N, B, ldb);
+    // utils::aligned_vector<float> B_NT(N * K);
+    // unpackWeight(N, K, stor, B_NT.data(), N);
+    // prologue::gemm::transposeWeight<float, ISA_T>(K, N, B_NT.data(), N, B, ldb);
+    float* B_NT=(float*)aligned_alloc(64,N * K*sizeof(float));
+    unpackWeight(N, K, stor, B_NT, N);
+    prologue::gemm::transposeWeight<float, ISA_T>(K, N, B_NT, N, B, ldb);
   }
 
   // from KxN f32 weight to packed N//NtilexKPadxNTile int8 weight
