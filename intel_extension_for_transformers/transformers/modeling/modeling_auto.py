@@ -54,14 +54,29 @@ torch = LazyImport("torch")
 
 class _BaseQBitsAutoModelClass:
     ORIG_MODEL = None
+    # Only used for IPEX smoothquant.
+    from .gptj.modeling_gptj import GPTJForCausalLM
+    from .llama.modeling_llama import LlamaForCausalLM
+    from .bloom.modeling_bloom import BloomForCausalLM
+    from .gpt_neox.modeling_gpt_neox import GPTNeoXForCausalLM
+    from .opt.modeling_opt import OPTForCausalLM
+    from .gpt_bigcode.modeling_gpt_bigcode import GPTBigCodeForCausalLM    
+    MODEL_CLASSES = {
+        "gptj": GPTJForCausalLM,
+        "llama": LlamaForCausalLM,
+        "bloom": BloomForCausalLM,
+        "gpt_neox": GPTNeoXForCausalLM,
+        "opt": OPTForCausalLM,
+        "auto": transformers.AutoModelForCausalLM,
+    }
+    # improve IPEX MHA Fusion.
+    transformers.models.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForCausalLM = GPTBigCodeForCausalLM
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
-        if isinstance(quantization_config, SmoothQuantConfig):
-            import intel_extension_for_transformers.transformers.modeling.modeling_map
         use_llm_runtime = kwargs.pop("use_llm_runtime", True)
         device_map = kwargs.get("device_map", None)
         if isinstance(quantization_config, BitsAndBytesConfig):
@@ -71,6 +86,7 @@ class _BaseQBitsAutoModelClass:
                 *model_args,
                 **kwargs,
             )
+            return model
         if load_in_8bit or load_in_4bit:
             use_cpu = (
                 True
@@ -121,41 +137,7 @@ class _BaseQBitsAutoModelClass:
                         quantization_config.weight_dtype == "int8"
                         and quantization_config.compute_dtype == torch_dtype
                     ), f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
-
-        if isinstance(quantization_config, MixedPrecisionConfig):
-            kwargs["torch_dtype"] = torch.bfloat16
-            logger.info("Mixed Precision done.")
-        model = cls.ORIG_MODEL.from_pretrained(
-            pretrained_model_name_or_path, *model_args, **kwargs
-        )
-        model.eval()
-        if isinstance(quantization_config, WeightOnlyQuantConfig):
-            logger.info("Applying Weight Only Quantization.")
-            if use_llm_runtime:
-                logger.info("Using LLM runtime.")
-                quantization_config.post_init_runtime()
-                from intel_extension_for_transformers.llm.runtime.graph import Model
-
-                model = Model()
-                model.init(
-                    pretrained_model_name_or_path,
-                    weight_dtype=quantization_config.weight_dtype,
-                    alg=quantization_config.scheme,
-                    group_size=quantization_config.group_size,
-                    scale_dtype=quantization_config.scale_dtype,
-                    compute_dtype=quantization_config.compute_dtype,
-                    use_ggml=quantization_config.use_ggml,
-                )
-                return model
-            else:
-                quantization_config.post_init()
-                from intel_extension_for_transformers.llm.quantization.utils import (
-                    convert_to_quantized_model,
-                )
-
-                model = convert_to_quantized_model(model, quantization_config)
-            logger.info("WeightOnlyQuant done.")
-        elif isinstance(quantization_config, SmoothQuantConfig):
+        if isinstance(quantization_config, SmoothQuantConfig):
             logger.info("Applying SmoothQuant.")
             try:
                 import intel_extension_for_pytorch as ipex
@@ -163,6 +145,19 @@ class _BaseQBitsAutoModelClass:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
+            # Get fp32 model, it is limitation for IPEX version lower than 2.1 version.
+            model_type = next(
+                (
+                    x
+                    for x in cls.MODEL_CLASSES.keys()
+                    if x in pretrained_model_name_or_path.lower()
+                ),
+                "auto",
+            )
+            ORIG_MODEL = cls.MODEL_CLASSES[model_type]
+            model = ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
             calib_func = quantization_config.calib_func
             if calib_func is None:
                 if quantization_config.tokenizer is None:
@@ -261,6 +256,40 @@ class _BaseQBitsAutoModelClass:
             model.config.torchscript = True
             model = quantization.fit(model, conf, calib_func=calib_func)
             logger.info("SmoothQuant done.")
+            return model
+        if isinstance(quantization_config, MixedPrecisionConfig):
+            kwargs["torch_dtype"] = torch.bfloat16
+            logger.info("Mixed Precision done.")
+        model = cls.ORIG_MODEL.from_pretrained(
+            pretrained_model_name_or_path, *model_args, **kwargs
+        )
+        model.eval()
+        if isinstance(quantization_config, WeightOnlyQuantConfig):
+            logger.info("Applying Weight Only Quantization.")
+            if use_llm_runtime:
+                logger.info("Using LLM runtime.")
+                quantization_config.post_init_runtime()
+                from intel_extension_for_transformers.llm.runtime.graph import Model
+
+                model = Model()
+                model.init(
+                    pretrained_model_name_or_path,
+                    weight_dtype=quantization_config.weight_dtype,
+                    alg=quantization_config.scheme,
+                    group_size=quantization_config.group_size,
+                    scale_dtype=quantization_config.scale_dtype,
+                    compute_dtype=quantization_config.compute_dtype,
+                    use_ggml=quantization_config.use_ggml,
+                )
+                return model
+            else:
+                quantization_config.post_init()
+                from intel_extension_for_transformers.llm.quantization.utils import (
+                    convert_to_quantized_model,
+                )
+
+                model = convert_to_quantized_model(model, quantization_config)
+            logger.info("WeightOnlyQuant done.")
         return model
 
 
