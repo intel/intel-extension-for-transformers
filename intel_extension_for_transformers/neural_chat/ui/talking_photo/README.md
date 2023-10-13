@@ -1,8 +1,6 @@
-<h1 align="center" id="title"><img align="center" src="https://imgur.com/ybD9SrK.png" alt="project-image" style="width:60px; height:60px"> Client Chat</h1>
+<h1 align="center" id="title"><img align="center" src="https://imgur.com/ybD9SrK.png" alt="project-image" style="width:60px; height:60px">Talking Photo</h1>
 
 <h2>📸 Project Screenshots:</h2>
-
-<img src="https://imgur.com/S9E4CLI.png" alt="project-screenshot" width="800" height="400/">
 
 <img src="https://imgur.com/w6A4cgy.png" alt="project-screenshot" width="800" height="400/">
 

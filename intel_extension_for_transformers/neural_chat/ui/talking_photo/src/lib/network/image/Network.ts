@@ -6,7 +6,7 @@ export async function uploadImages(image_list) {
 	const url = `${BASE_URL}/uploadImages`;
 	const init: RequestInit = {
 		method: "POST",
-		mode: 'cors',
+		
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ image_list }),
 	};
@@ -26,7 +26,7 @@ export async function fetchUploadProgress(images) {
 	const url = `${BASE_URL}/progress`;
 	const init: RequestInit = {
 		method: "GET",
-		mode: 'cors',
+		
 	};
 
 	try {
@@ -40,60 +40,10 @@ export async function fetchUploadProgress(images) {
 }
 
 export async function fetchImageList() {
-	// return [
-	// 	{
-	// 		image_id: 27,
-
-	// 		image_path:
-	// 			"http://54.147.152.170/ai_photos/user192.55.54.51/20230911T04172357736633.jpg",
-	// 	},
-
-	// 	{
-	// 		image_id: 28,
-
-	// 		image_path:
-	// 			"http://54.147.152.170/ai_photos/user192.55.54.51/20230911T04183253788089.jpg",
-	// 	},
-
-	// 	{
-	// 		image_id: 34,
-
-	// 		image_path:
-	// 			"http://54.147.152.170/ai_photos/user192.55.54.51/20230911T06131561872402.jpg",
-	// 	},
-
-	// 	{
-	// 		image_id: 46,
-
-	// 		image_path:
-	// 			"http://54.147.152.170/ai_photos/user192.55.54.51/20230912T02424874392762.jpg",
-	// 	},
-	// 	{
-	// 		image_id: 28,
-
-	// 		image_path:
-	// 			"http://54.147.152.170/ai_photos/user192.55.54.51/20230911T04183253788089.jpg",
-	// 	},
-
-	// 	{
-	// 		image_id: 34,
-
-	// 		image_path:
-	// 			"http://54.147.152.170/ai_photos/user192.55.54.51/20230911T06131561872402.jpg",
-	// 	},
-
-	// 	{
-	// 		image_id: 46,
-
-	// 		image_path:
-	// 			"http://54.147.152.170/ai_photos/user192.55.54.51/20230912T02424874392762.jpg",
-	// 	},
-	// ];
 	const url = `${env.BASE_URL}/getAllImages`
 	const init: RequestInit = {
 		method: "POST",
-		mode: 'cors',
-
+		
 	}
 	try {
 		let response = await fetch(url, init);
@@ -121,58 +71,6 @@ export async function fetchImageDetail(image_id: string) {
 }
 
 export async function fetchImagesByType(type, subtype) {
-	// return [
-
-	// 	{
-	
-	// 		"image_id": 27,
-	
-	// 		"image_path": "http://54.147.152.170/ai_photos/user192.55.54.51/20230911T04172357736633.jpg"
-	
-	// 	},
-	
-	// 	{
-	
-	// 		"image_id": 28,
-	
-	// 		"image_path": "http://54.147.152.170/ai_photos/user192.55.54.51/20230911T04183253788089.jpg"
-	
-	// 	},
-	
-	// 	{
-	
-	// 		"image_id": 34,
-	
-	// 		"image_path": "http://54.147.152.170/ai_photos/user192.55.54.51/20230911T06131561872402.jpg"
-	
-	// 	},
-
-
-	// 	{
-	
-	// 		"image_id": 27,
-	
-	// 		"image_path": "http://54.147.152.170/ai_photos/user192.55.54.51/20230911T04172357736633.jpg"
-	
-	// 	},
-	
-	// 	{
-	
-	// 		"image_id": 28,
-	
-	// 		"image_path": "http://54.147.152.170/ai_photos/user192.55.54.51/20230911T04183253788089.jpg"
-	
-	// 	},
-	
-	// 	{
-	
-	// 		"image_id": 34,
-	
-	// 		"image_path": "http://54.147.152.170/ai_photos/user192.55.54.51/20230911T06131561872402.jpg"
-	
-	// 	}
-	
-	// ]
 	const url = `${BASE_URL}/getImageByType`;
 	return sendPostRequest(url, { type, subtype });
 }
@@ -203,7 +101,7 @@ export async function updateImageInfo(image_id, payload, urlSuffix) {
 
 	const init: RequestInit = {
 		method: "POST",
-		mode: 'cors',
+		
 		body: JSON.stringify(extractedObject),
 	};
 
@@ -219,11 +117,10 @@ export async function updateImageInfo(image_id, payload, urlSuffix) {
 	}
 }
 
-async function sendPostRequest(url: string, payload: Object = {}) {	  
+async function sendPostRequest(url: string, payload: Object = {}) {
 	try {
 		const response = await fetch(url, {
 			method: "POST",
-			mode: 'cors',
 			body: JSON.stringify(payload),
 		});
 

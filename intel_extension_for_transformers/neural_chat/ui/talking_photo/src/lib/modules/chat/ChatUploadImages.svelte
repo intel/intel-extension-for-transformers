@@ -9,7 +9,7 @@
 		newUploadNum,
 	} from "$lib/shared/stores/common/Store";
 	import HintBubble from "$lib/shared/components/hint/HintBubble.svelte";
-	import { createEventDispatcher } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 	import { getNotificationsContext } from "svelte-notifications";
 
 	const { addNotification } = getNotificationsContext();
@@ -34,6 +34,7 @@
 		newUploadNum.set(1);
 		dispatch("uploadBegin");
 	}
+
 </script>
 
 <!-- {#if $hintUploadImg}
@@ -53,9 +54,8 @@
     </svg>
 </div>
 {/if} -->
-
+<!-- {window.deviceType === 'pc' ? 'image-btn' : ''} -->
 <div class="relative">
-    
 	<div
 		class="relative top-0 flex h-full w-full flex-col items-center justify-center bg-gray-300 p-4 opacity-95 sm:p-6"
 	>
@@ -65,6 +65,4 @@
 		<Add extraClass="h-7 w-7" />
 		<p class="text-xs font-bold text-gray-500">Upload</p>
 	</div>
-
 </div>
-

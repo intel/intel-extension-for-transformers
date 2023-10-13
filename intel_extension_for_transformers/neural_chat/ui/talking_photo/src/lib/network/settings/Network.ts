@@ -11,6 +11,7 @@ export async function onCountdownEnd() {
 	const url = `${BASE_URL}/deleteUser`
     const init: RequestInit = {
         method: "POST",
+		
     };
 	
 	try {

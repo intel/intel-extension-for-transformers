@@ -12,6 +12,7 @@ export async function fetchAudioText(file) {
 	formData.append('file', file)
     const init: RequestInit = {
         method: "POST",
+		
         body: formData,
     };
 	
@@ -37,7 +38,7 @@ export async function fetchUploadProgress(images) {
 	const url = `${BASE_URL}/progress`;
 	const init: RequestInit = {
 		method: "GET",
-		// mode: 'no-cors',
+		
 	};
 
 	try {

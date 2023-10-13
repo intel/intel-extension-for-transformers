@@ -16,5 +16,5 @@ export async function getTypeList() {
 
 export async function checkProcessingImage() {
     let res = await fetchTypeList()
-    return [res.process_status.processing_image === 0, res.type_list]
+    return [res.process_status.processing_image === 0, res.type_list, res.prompt_list]
 }

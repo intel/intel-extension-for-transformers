@@ -38,6 +38,7 @@
 		}
 		countdown = initialCountdownValue;
 		localStorage.removeItem(LOCAL_STORAGE_KEY.STORAGE_TIME_KEY);
+		localStorage.removeItem(LOCAL_STORAGE_KEY.STORAGE_CHAT_KEY);
 		await onCountdownEnd();
 		goto("/");
 	}

@@ -41,14 +41,14 @@ Talking bot is NeuralChat's voice chat bot. Support user voice and robot communi
 
 For detailed information, please refer to the [README](./talkingbot/README.md).
 
-## 🤖 Comprehensive Chat
+## 🤖 Talking Photo
 
-Comprehensive Chat is a full-featured chatbot system. This chat system integrates all the functionalities mentioned above, including text chat, voice chat, image uploads, image enhancement, and more, enabling users to engage in various types of communication and interaction on both web and mobile platforms.
+Talking Photo is a full-featured chatbot system. This chat system integrates all the functionalities mentioned above, including text chat, voice chat, image uploads, image enhancement, and more, enabling users to engage in various types of communication and interaction on both web and mobile platforms.
 
 ### 📸 Project Screenshots
 ![project-screenshot](https://imgur.com/w6A4cgy.png)
 
-For detailed information, please refer to the [README](./comprehensive_chat/README.md).
+For detailed information, please refer to the [README](./talking_photo/README.md).
 
 Remember that the provided UI examples are starting points, and you have the creative freedom to build a UI that best suits your project's unique requirements. Whether you choose a simple or advanced approach, focusing on user experience and ease of interaction will contribute to the success of your chatbot system.
 

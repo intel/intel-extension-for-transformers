@@ -14,7 +14,7 @@
 		imageList,
 		isLoading,
 	} from "$lib/shared/stores/common/Store";
-	import { Badge, Progressbar } from "flowbite-svelte";
+	import { Badge, Checkbox, Progressbar } from "flowbite-svelte";
 	import { onMount } from "svelte";
 	import { fetchImageList } from "$lib/network/image/Network";
 	import Scrollbar from "$lib/shared/components/scrollbar/Scrollbar.svelte";
@@ -53,9 +53,14 @@
 	let uploadProgress = 0;
 	let uploadHandle: number;
 	let typeList: { [index: string]: { [index: string]: string } } = {};
+	let promptList: { [key: string]: any[] } = {};
 	let showBottomImages = false;
 	let showBottomPrompt = false;
 	let chatMessages: Message[] = data.chatMsg ? data.chatMsg : [];
+	let prompts = {
+		"Image Style": ["simple drawing", "van gogh", "stone sculpture"],
+	};
+	let group: string[] = [];
 
 	$: placeholder =
 		chatMessages.length &&
@@ -65,58 +70,60 @@
 			: "Upload images/Ask me about...";
 	$: currentDragImageList = new Array($imageList.length).fill(false);
 
-	let prompts = {
-		"Image Style": ["simple drawing", "van gogh", "stone sculpture"],
-		// Time: ['2022', 'March 6th', 'April 28, 2023'],
-		// Location: ['Shanghai', 'China', 'United States'],
-		// Person: ['Name'],
-	};
+	$: {
+		if (group.length > 0) {
+			query = generateQuery(group);
+		} else {
+			query = "";
+		}
+	}
+
+	function generateQuery(selectedItems: string[]) {
+		return `Give me photos taken in ${selectedItems.join(", ")}`;
+	}
 	const fullPromptMap = (word: string) =>
 		({
 			"Image Style": `Covert to ${word} style`,
 			Time: `Give me photos taken on ${word}`,
-			Address: `Give me photos taken in ${word}`,
 			Person: `Give me ${word}'s photos`,
 		} as { [index: string]: string });
 
 	onMount(async () => {
-		[done, typeList] = await checkProcessingImage();
-		console.log('typeList', typeList);
-		
+		[done, typeList, promptList] = await checkProcessingImage();
+		console.log("typeList", typeList);
+
 		if (!done) {
 			setTimeout(async () => {
 				await checkProcessingImage(), 500;
 			});
 		}
-		for (const [currentKey, value] of Object.entries(typeList)) {	
-			let key = currentKey.charAt(0).toUpperCase() + currentKey.slice(1);	
-			if (!Array.isArray(value) && Object.keys(value).length !== 0) {
-				const currentObj = {
-					[key]: [],
-				};
-				for (const classifyKey of Object.keys(value)) {
-					currentObj[key].push(classifyKey);
-				}
-				prompts = { ...prompts, ...currentObj };
-				console.log(prompts);
-			}
-		}
+
+		const capitalizedKeys = Object.entries(promptList)
+			.filter(([_, value]) => value.length > 0)
+			.map(([key, value]) => ({
+				[key.charAt(0).toUpperCase() + key.slice(1)]: value,
+			}))
+			.reduce((acc, item) => ({ ...acc, ...item }), {});
+
+		prompts = { ...prompts, ...capitalizedKeys };
 		const res = await fetchImageList();
 		if (res) imageList.set(res);
 		scrollToDiv = document
 			.querySelector(".chat-scrollbar")
 			?.querySelector(".svlr-viewport")!;
-			
 
 		const driverObj = driver({
 			showProgress: true,
-			allowClose: false,
-			popoverClass: 'driverjs-theme',
+			allowClose: true,
+			overlayOpacity: 0,
+			popoverClass: "driverjs-theme",
+			nextBtnText: ">",
+			prevBtnText: "<",
+			doneBtnText: "X",
 			steps: [
 				{
 					element: ".image-btn",
 					popover: { title: "Image", description: "Upload your images" },
-					
 				},
 				{
 					element: ".nav-btn",
@@ -139,9 +146,9 @@
 			],
 		});
 		console.log($countDown);
-		
+
 		// Only triggers the first time
-		if ($countDown >= 1790) {
+		if ($countDown >= 1790 && window.deviceType === "mobile") {
 			window.name = "loaded";
 			driverObj.drive();
 		}
@@ -188,7 +195,8 @@
 
 	const handleTextSubmit = async () => {
 		loading = true;
-
+		showBottomPrompt = false;
+		showBottomImages = false;
 		const newMessage = {
 			role: MessageRole.User,
 			type: MessageType.Text,
@@ -447,21 +455,36 @@
 					<Scrollbar className="max-h-44 pb-2 w-full mt-2" classLayout="">
 						{#each Object.entries(prompts) as [k, v]}
 							<p class="text-sm font-semibold text-[#15325f]">{k}</p>
-							{#each v as badge}
-								<button
-									class="mr-2"
-									on:click={() => {
-										(query = fullPromptMap(badge)[k])
-									}}
-								>
-									<Badge
-										color="blue"
-										class="mb-2 mt-1 inline-block w-full whitespace-nowrap border-[#000] py-1 outline-[#000]"
+							{#if k === "Address"}
+								<div class="flex flex-wrap max-h-20 overflow-auto pl-2">
+									{#each v as badge}
+										<Checkbox class="mr-2" bind:group value={badge}>
+											<Badge
+												color="blue"
+												class="mb-2 mt-1 inline-block w-full whitespace-nowrap border-[#000] py-1 outline-[#000]"
+											>
+												{badge}
+											</Badge>
+										</Checkbox>
+									{/each}
+								</div>
+							{:else}
+								{#each v as badge}
+									<button
+										class="mr-2"
+										on:click={() => {
+											query = fullPromptMap(badge)[k];
+										}}
 									>
-										{badge}
-									</Badge>
-								</button>
-							{/each}
+										<Badge
+											color="blue"
+											class="mb-2 mt-1 inline-block w-full whitespace-nowrap border-[#000] py-1 outline-[#000]"
+										>
+											{badge}
+										</Badge>
+									</button>
+								{/each}
+							{/if}
 						{/each}
 					</Scrollbar>
 				{/if}
@@ -481,5 +504,4 @@
 </DropZone>
 
 <style>
-
 </style>

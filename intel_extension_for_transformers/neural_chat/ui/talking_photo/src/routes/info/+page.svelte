@@ -81,7 +81,7 @@
 	function intervalFunction() {
 		let intervalHandle = setInterval(async () => {
 			[done, typeList] = await checkProcessingImage();
-			let res = await fetchImageList()
+			let res = await fetchImageList();
 			if (res) imageList.set(res);
 
 			if (done) {
@@ -96,7 +96,7 @@
 			setTimeout(intervalFunction, 500);
 		}
 
-		let res = await fetchImageList()
+		let res = await fetchImageList();
 		if (res) imageList.set(res);
 	});
 
@@ -129,6 +129,15 @@
 		}
 	}
 
+	function refreshImages(idx: number, imgSrc: string) {
+		$imageList[idx].image_path =
+			"https://img.zcool.cn/community/0131565aeff3c5a801219b7f6906a7.gif";
+
+		setTimeout(function () {
+			$imageList[idx].image_path = imgSrc;
+		}, 2000);
+	}
+
 	async function selectImage(image_id: string) {
 		imgInfo = await getImageDetail(image_id);
 		modelEl.showModal();
@@ -148,7 +157,6 @@
 			removeAfter: 1000,
 		});
 		typeList = await getTypeList();
-		
 	}
 
 	function handleDeleteTag(idx: number) {
@@ -228,7 +236,7 @@
 				<div
 					class=" grid grid-cols-6 gap-5 p-6 pb-4 pr-24 pt-6 max-sm:grid-cols-3 max-sm:gap-4 max-sm:pr-4"
 				>
-					{#each $imageList as image}
+					{#each $imageList as image, idx}
 						<figure class="relative h-full w-full">
 							<!-- svelte-ignore a11y-click-events-have-key-events -->
 							<!-- svelte-ignore a11y-img-redundant-alt -->
@@ -240,9 +248,7 @@
 									selectImage(image.image_id);
 								}}
 								on:error={() => {
-									image.image_path =
-										"https://img.zcool.cn/community/0131565aeff3c5a801219b7f6906a7.gif";
-									image.image_id = "";
+									refreshImages(idx, image.image_path);
 								}}
 							/>
 							<!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -265,7 +271,7 @@
 				<div
 					class=" grid grid-cols-6 gap-5 p-6 pb-4 pr-24 pt-6 max-sm:grid-cols-3 max-sm:gap-4 max-sm:pr-4"
 				>
-					{#each otherImageList as image}
+					{#each otherImageList as image, idx}
 						<figure class="relative h-full w-full">
 							<!-- svelte-ignore a11y-click-events-have-key-events -->
 							<!-- svelte-ignore a11y-img-redundant-alt -->
@@ -277,9 +283,7 @@
 									selectImage(image.image_id);
 								}}
 								on:error={() => {
-									image.image_path =
-										"https://img.zcool.cn/community/0131565aeff3c5a801219b7f6906a7.gif";
-									image.image_id = "";
+									refreshImages(idx, image.image_path);
 								}}
 							/>
 							<!-- svelte-ignore a11y-click-events-have-key-events -->

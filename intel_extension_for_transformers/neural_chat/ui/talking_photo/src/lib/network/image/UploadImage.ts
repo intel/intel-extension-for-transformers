@@ -23,7 +23,7 @@ export async function handleImageUpload(e: CustomEvent<any>, resolve:Function = 
 }
 
 async function uploadImageList(image_list: { imgSrc: string }[]) {
-    let uploadRes = await uploadImages(image_list)
+    const uploadRes = await uploadImages(image_list)
     
     const combinedArray: ImgListPiece[] = uploadRes.map((info) => ({        
         image_id: info.img_id,
