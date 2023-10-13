@@ -29,7 +29,7 @@ class TestChineseTextToSpeech(unittest.TestCase):
     def test_pre_llm_inference_actions(self):
         text = "欢迎来到英特尔"
         output_audio_path = os.path.join(os.getcwd(), "tmp_audio/1.wav")
-        output_audio_path = ChineseTextToSpeech().pre_llm_inference_actions(text, output_audio_path)
+        output_audio_path = ChineseTextToSpeech().post_llm_inference_actions(text, output_audio_path)
         self.assertTrue(os.path.exists(output_audio_path))
 
 if __name__ == "__main__":
