@@ -37,7 +37,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
         default="",
     )
     parser.add_argument(
-        "--glm_tokenizer",
+        "--tokenizer",
         type=str,
         help="the path of the chatglm tokenizer",
         default="THUDM/chatglm-6b",
@@ -140,11 +140,57 @@ def main(args_in: Optional[List[str]] = None) -> None:
 
 
     if (args.model_name == "chatglm"):
-        tokenizer = AutoTokenizer.from_pretrained(args.glm_tokenizer, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
         token_ids_list = tokenizer.encode(args.prompt)
         token_ids_list = map(str, token_ids_list)
         token_ids_str = ', '.join(token_ids_list)
-        print(token_ids_str)
+        cmd.extend(["--ids", token_ids_str])
+    elif (args.model_name == "baichuan"):
+        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer, trust_remote_code=True)
+        def truncate(ids, max_length):
+            """Truncates a list of integers to a given length.
+
+            Args:
+                ids: A list of integers.
+                max_length: The maximum length of the truncated list.
+            """
+            if len(ids) > max_length:
+                ids = ids[:max_length]
+
+        def encode_history(history, max_length=4096):
+            """Encodes a history of text into a list of integers.
+
+            Args:
+                history: A list of strings, representing the history of text.
+                max_length: The maximum length of the encoded history.
+
+            Returns:
+                A list of integers, representing the encoded history.
+            """
+
+            assert len(history) % 2 == 1, "invalid history size {}".format(len(history))
+
+            USER_TOKEN_ID = 195
+            ASSISTANT_TOKEN_ID = 196
+
+            ids = []
+            for i in range(len(history)):
+                if i % 2 == 0:
+                    ids.append(USER_TOKEN_ID)
+                else:
+                    ids.append(ASSISTANT_TOKEN_ID)
+
+                content_ids = tokenizer.encode(args.prompt)
+                ids.extend(content_ids)
+
+            ids.append(ASSISTANT_TOKEN_ID)
+            truncate(ids, max_length)
+            return ids
+
+        history = [args.prompt]
+        token_ids_list = encode_history(history)
+        token_ids_list = map(str, token_ids_list)
+        token_ids_str = ', '.join(token_ids_list)
         cmd.extend(["--ids", token_ids_str])
 
     print("cmd:", cmd)
