@@ -14,7 +14,7 @@
 
 	const { addNotification } = getNotificationsContext();
 	const dispatch = createEventDispatcher();
-	// let progress = 0.0;
+
 	function handleUploadClick(e) {
 		hintUploadImg.set(false);
 		isLoading.set(true);
@@ -37,24 +37,6 @@
 
 </script>
 
-<!-- {#if $hintUploadImg}
-<div
-    class="absolute flex h-10 w-10 animate-bounce items-center justify-center rounded-full bg-white p-2 shadow-lg ring-1 ring-slate-900/5"
->
-    <svg
-        class="h-6 w-6 text-violet-500"
-        fill="none"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-    >
-        <path d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-    </svg>
-</div>
-{/if} -->
-<!-- {window.deviceType === 'pc' ? 'image-btn' : ''} -->
 <div class="relative">
 	<div
 		class="relative top-0 flex h-full w-full flex-col items-center justify-center bg-gray-300 p-4 opacity-95 sm:p-6"

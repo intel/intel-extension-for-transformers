@@ -10,15 +10,6 @@
 		if (!files) return;
 
 		dispatch("upload", {blobs: files});
-		// for (let i = 0; i < files.length; ++i) {
-		// 	const reader = new FileReader();
-		// 	reader.onloadend = () => {
-		// 		if (!reader.result) return;
-		// 		const src = reader.result.toString();
-		// 		dispatch("upload", { src: src, fileName: files[i].name });
-		// 	};
-		// 	reader.readAsDataURL(files[i]);
-		// }
 	}
 </script>
 

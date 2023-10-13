@@ -25,11 +25,6 @@ export const data: MenuItem[] = [
     icon: Info,
     link: '/info'
   },
-  // {
-  //   title: 'Voice',
-  //   icon: Info,
-  //   link: '/voice'
-  // },
   {
     title: 'Settings',
     icon: Setting,
