@@ -27,7 +27,6 @@ static const model_scratch bloom_mem_req(int n_layers) {
   switch (n_layers) {
     case 30:
       return {4 * 2048ull * MB, 4 * 2048ull * MB, 4 * 4096ull * MB};
-    // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
   }

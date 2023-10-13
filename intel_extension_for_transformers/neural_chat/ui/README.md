@@ -6,9 +6,19 @@ The TextBot is a frontend component for the simple chatbot demo. It provides a s
 
 ### 📸 Project Screenshots
 
-![project-screenshot](https://i.imgur.com/Kjsw5Pb.png)
+![project-screenshot](https://i.imgur.com/e6QZjJO.png)
 
 For detailed information, please refer to the [README](./textbot/README.md).
+
+## 🚀 SideBySide
+
+The Side by Side is a frontend component designed for comparing the performance of chatbots at different precision levels. It offers a chat interface for interacting with chatbot systems. The primary purpose of this component is to enable users to perform performance comparisons while engaging in conversations.
+
+### 📸 Project Screenshots
+
+![project-screenshot](https://i.imgur.com/FDKSnIo.png)
+
+For detailed information, please refer to the [README](./side_by_side/README.md).
 
 ## 🚀 Advanced Frontend
 
