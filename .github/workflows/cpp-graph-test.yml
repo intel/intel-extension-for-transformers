@@ -71,13 +71,18 @@ jobs:
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/models
           bash cpp_graph_inference.sh cpp-graph-test ${{ matrix.modelName }} ${{ env.INPUT_COMPILER_VERSION }}
+      
+      - name: Rename summary
+        run: |
+          cd ${{ github.workspace }}
+          cp cpp_graph_summary.log cpp_graph_summary_${{matrix.modelName}}.log
 
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
           name: cpp_graph
-          path: ${{ github.workspace }}/cpp_graph_summary.log
+          path: ${{ github.workspace }}/cpp_graph_summary_${{matrix.modelName}}.log
           if-no-files-found: ignore # 'warn' or 'ignore' are also available, defaults to `warn`
           retention-days: 60 # 1 <= retention-days <= 90
 
@@ -100,6 +105,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: ${{ env.OUT_SCRIPT_PATH }}/generated/log
+      
+      - name: Merge CPP Graph Summary Log
+        run: |
+          cd ${{ env.OUT_SCRIPT_PATH }}/generated/log/cpp_graph
+          for summary in $(find . -name "cpp_graph_summary_*.log"); do cat $summary >> cpp_graph_summary.log; done
 
       - name: Download Reference Artifact
         id: download-artifact
