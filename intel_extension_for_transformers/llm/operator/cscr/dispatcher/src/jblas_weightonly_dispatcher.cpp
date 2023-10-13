@@ -201,7 +201,7 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
                     "Qbits: workspace size should large than " + std::to_string(need_size) + " bytes");
         return workspace;
       } else {
-        tmpbuf = aligned_alloc(64, need_size);
+        tmpbuf = malloc(need_size);
         return tmpbuf;
       }
     };
