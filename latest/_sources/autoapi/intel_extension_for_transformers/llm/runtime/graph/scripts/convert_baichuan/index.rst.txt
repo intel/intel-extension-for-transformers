@@ -1,0 +1,32 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.runtime.graph.scripts.convert_baichuan`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.graph.scripts.convert_baichuan
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.graph.scripts.convert_baichuan.bytes_to_unicode
+
+
+
+.. py:function:: bytes_to_unicode()
+
+   Returns list of utf-8 byte and a corresponding list of unicode strings.
+   The reversible bpe codes work on unicode strings.
+   This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
+   When you're at something like a 10B token dataset you end up needing around 5K for decent coverage.
+   This is a signficant percentage of your normal, say, 32K bpe vocab.
+   To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
+   And avoids mapping to whitespace/control characters the bpe code barfs on.
+
+
