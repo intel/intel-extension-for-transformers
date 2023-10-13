@@ -107,7 +107,15 @@ class Model:
 
         # TODO support multi batch
         assert input_ids.shape[0] == 1, "Unsupport multi-batch input ids."
+        beam_search = False
+        if ("num_beams" in kwargs and kwargs["num_beams"] > 1) and not \
+            kwargs.get("do_sample", False):
+            beam_search = True
         if streamer:
+            if beam_search:
+                print("ERROR, can not use streamer when use beam search for generation!")
+                import sys
+                sys.exit(1)
             if self.generate_round == 0:
                 streamer.put(input_ids)
             while not self.is_token_end():
