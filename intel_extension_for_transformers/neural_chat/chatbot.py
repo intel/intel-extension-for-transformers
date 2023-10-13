@@ -64,6 +64,9 @@ def build_chatbot(config: PipelineConfig=None):
     elif "chatglm" in config.model_name_or_path:
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
+    elif "Qwen" in config.model_name_or_path:
+        from .models.qwen_model import QwenModel
+        adapter = QwenModel()
     elif "opt" in config.model_name_or_path or \
          "gpt" in config.model_name_or_path or \
          "flan-t5" in config.model_name_or_path or \
@@ -72,7 +75,7 @@ def build_chatbot(config: PipelineConfig=None):
         adapter = BaseModel()
     else:
         raise ValueError("NeuralChat Error: Unsupported model name or path, \
-                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/NEURAL-CHAT now.")
+                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
 
     # register plugin instance in model adaptor
     if config.plugins:
