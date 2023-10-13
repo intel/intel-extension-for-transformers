@@ -48,6 +48,7 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     get_example_inputs_for_trace,
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
+from ...utils.utils import get_gpu_family
 
 torch = LazyImport("torch")
 
@@ -152,17 +153,17 @@ class _BaseQBitsAutoModelClass:
                 )
                 return model
             else:
-                is_pvc = False
+                is_max = False
                 if use_xpu:
                     import intel_extension_for_pytorch
                     assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
-                    prop = torch.xpu.get_device_properties()
-                    if prop == "PVC":
-                        is_pvc = True
+                    name = get_gpu_family()
+                    if name == "max":
+                        is_max = True
                         pass  # TODO: weight only quantization for PVC
-                    elif prop != "ARC":
+                    elif name != "arc":
                         raise Exception("{} device Unsupport weight only quantization!".format(device_map))
-                if not is_pvc:
+                if not is_max:
                     quantization_config.post_init()
                     from intel_extension_for_transformers.llm.quantization.utils import (
                         convert_to_quantized_model,
