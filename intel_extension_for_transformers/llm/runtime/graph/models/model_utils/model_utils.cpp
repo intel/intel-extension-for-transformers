@@ -1928,10 +1928,6 @@ const char* model_token_to_str(const struct model_context* ctx, model_token toke
   return ctx->vocab.id_to_token[token].tok.c_str();
 }
 
-model_token model_token_bos() { return 1; }
-
-model_token model_token_eos() { return 2; }
-
 model_token model_token_nl() { return 13; }
 
 void model_print_timings(struct model_context* ctx) {
