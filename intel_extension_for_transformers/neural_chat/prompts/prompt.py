@@ -115,6 +115,22 @@ register_conv_template(
     )
 )
 
+
+# Rag with threshold
+register_conv_template(
+    Conversation(
+        name="rag_with_threshold",
+        system_message="You are served as an AI agent to help the user complete a task." + \
+            " You are required to comprehend the usr query and then use the given context to" + \
+            " generate a suitable response. If there is a link, you should direct point out the link " + \
+            "address instead of a pronoun.\n\n",
+        roles=("### User Query: ", "### Context: ", "### Chat History: ", "### Response: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+
 # Intent template
 register_conv_template(
     Conversation(
@@ -127,6 +143,7 @@ register_conv_template(
         sep="\n",
     )
 )
+
 
 class PromptTemplate:
     def __init__(self, name="one_shot"):
