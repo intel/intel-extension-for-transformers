@@ -27,8 +27,8 @@ class Agent_QA():
                  embedding_model="hkunlp/instructor-large", max_length=2048, retrieval_type="dense",
                  document_store=None, top_k=1, search_type="mmr", search_kwargs={"k": 1, "fetch_k": 5},
                  append=True, index_name="elastic_index_1",
-                 response_template = "Please reformat your query to regenerate the answer."
-                 asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
+                 response_template = "Please reformat your query to regenerate the answer.",
+                 asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets",):
         self.model = None
         self.tokenizer = None
         self.retrieval_type = retrieval_type
