@@ -99,7 +99,7 @@ class Agent_QA():
                     for sub in context:
                         docs.append(sub.content)
                         links.append(sub.meta)
-                context = = " ".join(docs)
+                context = " ".join(docs)
 
                 if self.search_type == "similarity_score_threshold":
                     prompt = generate_qa_enterprise(query, context)
