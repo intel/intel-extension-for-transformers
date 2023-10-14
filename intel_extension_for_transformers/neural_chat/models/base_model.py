@@ -144,7 +144,9 @@ class BaseModel(ABC):
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
-                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            if response == "Response with template.":
+                                return plugin_instance.response_template
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
@@ -204,7 +206,9 @@ class BaseModel(ABC):
                         if plugin_name == "asr" and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
-                            response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            response, link = plugin_instance.pre_llm_inference_actions(self.model_name, query)
+                            if response == "Response with template.":
+                                return plugin_instance.response_template
                         else:
                             response = plugin_instance.pre_llm_inference_actions(query)
                         if plugin_name == "safety_checker" and response:
