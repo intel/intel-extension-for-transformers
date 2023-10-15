@@ -67,10 +67,9 @@ class _BaseQBitsAutoModelClass:
         "bloom": BloomForCausalLM,
         "gpt_neox": GPTNeoXForCausalLM,
         "opt": OPTForCausalLM,
+        "gpt_bigcode": GPTBigCodeForCausalLM, # improve IPEX MHA Fusion.
         "auto": transformers.AutoModelForCausalLM,
     }
-    # improve IPEX MHA Fusion.
-    transformers.models.gpt_bigcode.modeling_gpt_bigcode.GPTBigCodeForCausalLM = GPTBigCodeForCausalLM
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
