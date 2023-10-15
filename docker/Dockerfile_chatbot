@@ -98,11 +98,7 @@ RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -
 RUN mkdir /var/run/sshd
 RUN passwd -d root
 RUN sed -i'' -e's/^#PermitRootLogin prohibit-password$/PermitRootLogin yes/' /etc/ssh/sshd_config \
-        && sed -i'' -e's/^#PasswordAuthentication yes$/PasswordAuthentication yes/' /etc/ssh/sshd_config \
         && sed -i'' -e's/^#PermitEmptyPasswords no$/PermitEmptyPasswords yes/' /etc/ssh/sshd_config \
-        && sed -i'' -e's/^UsePAM yes/UsePAM no/' /etc/ssh/sshd_config \
-        && echo "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
-EXPOSE 22
 
 WORKDIR /intel-extension-for-transformers/
 
