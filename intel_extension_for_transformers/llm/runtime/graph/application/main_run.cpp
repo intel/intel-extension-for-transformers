@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
   // uncomment the "used_mem" line in graph to see the results
   if (params.mem_test) {
     {
-      const std::vector<model_token> tmp(params.n_batch, model_token_bos());
+      const std::vector<model_token> tmp(params.n_batch, ctx->vocab.bos_token_id);
       model_eval(ctx, tmp.data(), tmp.size(), 0, params.n_threads);
     }
 
@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
     std::string prompt = build_prompt_glm2(prompts);
     embd_inp = ::model_tokenize(ctx, prompt, false);
     embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
-  } else if (params.model_arch == MODEL_CHATGLM) {
+  } else if (params.model_arch == MODEL_CHATGLM or params.model_arch == MODEL_BAICHUAN) {
     for (auto& i : params.ids) {
       embd_inp.emplace_back(i);
     }
@@ -517,7 +517,7 @@ int main(int argc, char** argv) {
       }
 
       // replace end of text token with newline token when in interactive mode
-      if (id == model_token_eos() && params.interactive && !params.instruct) {
+      if (id == ctx->vocab.eos_token_id && params.interactive && !params.instruct) {
         id = model_token_newline.front();
         if (params.antiprompt.size() != 0) {
           // tokenize and inject first reverse prompt
@@ -548,7 +548,8 @@ int main(int argc, char** argv) {
     }
 
     // display text
-    if (params.model_arch == MODEL_CHATGLM || params.model_arch == MODEL_CHATGLM2) {
+    if (params.model_arch == MODEL_CHATGLM || params.model_arch == MODEL_CHATGLM2 ||
+        params.model_arch == MODEL_BAICHUAN) {
       static bool is_prompt = true;
       if (input_echo) {
         if (is_prompt == true) {
@@ -664,16 +665,7 @@ int main(int argc, char** argv) {
     }
 
     // end of text token
-    if (params.model_arch == MODEL_CHATGLM) {
-      if (!embd.empty() && embd.back() == ctx->vocab.eos_token_id) {
-        if (params.instruct) {
-          is_interacting = true;
-        } else {
-          fprintf(stderr, " [end of text]\n");
-          break;
-        }
-      }
-    } else if (!embd.empty() && embd.back() == model_token_eos()) {
+    if (!embd.empty() && embd.back() == ctx->vocab.eos_token_id) {
       if (params.instruct) {
         is_interacting = true;
       } else {

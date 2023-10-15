@@ -74,9 +74,7 @@ typedef DWORD thread_ret_t;
 static int pthread_create(pthread_t* out, void* unused, thread_ret_t (*func)(void*), void* arg) {
   (void)unused;
   HANDLE handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)func, arg, 0, NULL);
-  if (handle == NULL) {
-    return EAGAIN;
-  }
+  if (handle == NULL) return EAGAIN;
 
   *out = handle;
   return 0;
@@ -1331,9 +1329,7 @@ struct ne_tensor* ne_dump_tensor(struct ne_context* ctx, struct ne_tensor* a) {
 struct ne_tensor* ne_dup_impl(struct ne_context* ctx, struct ne_tensor* a, bool inplace) {
   bool is_node = false;
 
-  if (!inplace && (a->grad)) {
-    is_node = true;
-  }
+  if (!inplace && (a->grad)) is_node = true;
 
   struct ne_tensor* result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
 
