@@ -1,3 +1,38 @@
+Validated Model Performance
+============
+1. [LLM Quantization](#llm-quantization)
+
+2. [LLM Runtime Inference based on Pytorch](#llm-runtime-inference-based-on-pytorch)
+
+    2.1 [LLMs](#llms)
+
+    2.2 [Stable Diffusion](#stable-diffusion)
+
+    2.3 [Electra](#electra)
+
+3. [LLM Runtime Inference based on ITREX.cpp](#llm-runtime-inference-based-on-itrexcpp)
+
+    3.1 [LLama-7B-hf](#llama-7b-hf)
+
+    3.2 [LLama2-7B-chat](#llama2-7b-chat)
+
+    3.3 [MPT-7B](#mpt-7b)
+
+    3.4 [GPT-j-6B](#gpt-j-6b)
+
+    3.5 [Falcon-7B](#falcon-7b)
+
+    3.6 [GPT-NEOX-20B](#gpt-neox-20b)
+
+    3.7 [Dolly-V2-3B](#dolly-v2-3b)
+
+    3.8 [OPT-1.3B](#opt-13b)
+
+    3.9 [StarCoder-3B](#starcoder-3b)
+
+4. [LLM Finetuning](#llm-finetuning)
+
+
 System summary: Test by Intel on 09/19/2023. 1-node, 1x Intel(R) Xeon(R) Platinum 8480+ @3.8GHz, 56 cores/socket, HT On, Turbo On, Total Memory 256GB (16x16GB DDR5 4800 MT/s [4800 MT/s]), BIOS 3A14.TEL2P1, microcode 0x2b0001b0,
 CentOS Stream 8, gcc (GCC) 8.5.0 20210514 (Red Hat 8.5.0-10), DL Models, Frameworks/Backends: PyTorch/ONNXRT/[LLM Runtime](../intel_extension_for_transformers/llm/runtime/)/GGML, Datatype: FP32/INT8/BF16/FP8.
 Using 1 socket, 56 cores/instance, 1 instance and batch size 1
@@ -38,6 +73,8 @@ Environment:
 
 Pytorch: 2.0.1+cpu
 
+### LLMs
+
 
 | Framework | Model                 | Input    | Output | Steps    | INT8      | FP32      | BF16      | FP8       | INT8/FP32 | BF16/FP32 | FP8/FP32 |
 | --------- | --------------------- | -------- | ------ | -------- | --------- | --------- | --------- | --------- | --------- | --------- | -------- |
@@ -52,33 +89,32 @@ Pytorch: 2.0.1+cpu
 | pytorch   | gpt-j-6b              | 32       | 32     |          | 1658 (ms) | 4561 (ms) | 2429 (ms) | 1793 (ms) | 2.75x     | 1.88x     | 2.54x    |
 
 
-|                       |       | INT8
+### Stable Diffusion
 
-(step 1-50 = int8) | INT8 + BF16
 
-(step 1-5 and step 46-50 = bf16,  step 6-45 = int8) | BF16
+|                       |       | INT8(step 1-50 = int8) | INT8 + BF16(step 1-5 and step 46-50 = bf16,  step 6-45 = int8) | BF16(step 1-50 = bf16) |
+| --------------------- | ----- | ---------------------- | -------------------------------------------------------------- | ---------------------- |
+| Model                 | steps | latency                | FID                                                            | latency                | FID | latency | FID |
+| stable_diffusion_v1_5 | 50    | 5.2 (s)                | 35.46                                                          | 5.5 (s)                | 31.07 | 6.3 (s) | 30.58 |
 
-(step 1-50 = bf16) |
-| --------------------- | ----- | ------------------------ | ---------------------------------------------------------------- | ------------------------ |
-| Model                 | steps | latency                  | FID                                                              | latency                  | FID | latency | FID |
-| stable_diffusion_v1_5 | 50    | 5.2 (s)                  | 35.46                                                            | 5.5 (s)                  | 31.07 | 6.3 (s) | 30.58 |
+### Electra
 
 
 |                                    |            |            | FP32         | BF16         | BF16/FP32 |
 | ---------------------------------- | ---------- | ---------- | ------------ | ------------ | --------- |
 | Model                              | Batch Size | Seq Length | Latency (ms) | Latency (ms) | Latency   |
 | electra_base_chinese_discriminator | 1          | 16         | 11.50        | 4.30         | 2.67x     |
-| 4                                  | 16         | 5.50       | 1.80         | 3.06x        |
-| 8                                  | 16         | 6.20       | 1.70         | 3.65x        |
-| 16                                 | 16         | 5.60       | 1.30         | 4.31x        |
-| 32                                 | 16         | 5.70       | 1.20         | 4.75x        |
-| 64                                 | 16         | 5.20       | 1.10         | 4.73x        |
+| |4                                  | 16         | 5.50       | 1.80         | 3.06x        |
+| |8                                  | 16         | 6.20       | 1.70         | 3.65x        |
+| |16                                 | 16         | 5.60       | 1.30         | 4.31x        |
+| |32                                 | 16         | 5.70       | 1.20         | 4.75x        |
+| |64                                 | 16         | 5.20       | 1.10         | 4.73x        |
 | electra_base_chinese_generator     | 1          | 128        | 13.72        | 3.89         | 3.53x     |
-| 4                                  | 128        | 11.60      | 2.83         | 4.10x        |
-| 8                                  | 128        | 11.44      | 2.85         | 4.01x        |
-| 16                                 | 128        | 12.04      | 2.70         | 4.46x        |
-| 32                                 | 128        | 11.29      | 2.52         | 4.48x        |
-| 64                                 | 128        | 11.75      | 2.54         | 4.63x        |
+| |4                                  | 128        | 11.60      | 2.83         | 4.10x        |
+| |8                                  | 128        | 11.44      | 2.85         | 4.01x        |
+| |16                                 | 128        | 12.04      | 2.70         | 4.46x        |
+| |32                                 | 128        | 11.29      | 2.52         | 4.48x        |
+| |64                                 | 128        | 11.75      | 2.54         | 4.63x        |
 
 
 
@@ -318,10 +354,8 @@ Environments:
 PyTorch: 2.0.1+cpu
 
 
-| Framework   | Hidden Size | Dataset
-
-(Alpaca) | Concatenation | Nodes | PPN | Precision | LoRA | LoRA rank/alpha | Epoches | Time/Epoch | Total Time | TruthfulQA (mc1/mc2) | Global Batch Size | Learning Rate |
-| ----------- | ----------- | ----------------- | ------------- | ----- | --- | --------- | ---- | --------------- | ------- | ---------- | ---------- | -------------------- | ----------------- | ------------- |
-| PyTorch     | 4096        | 13K               | Yes           | 1     | 1   | BF16      | Yes  | 8/16            | 3       | 3.2 Hour   | 9.6 Hours  | 0.30/0.45            | 128               | 1.00E-04      |
-| PyTorch<br> | 4096        | 13K               | Yes           | 2     | 2   | BF16      | Yes  | 8/16            | 3       | 1.2 Hour   | 3.6 Hours  | 0.30/0.45            | 128               | 1.00E-04      |
-| PyTorch<br> | 4096        | 13K               | Yes           | 4     | 2   | BF16      | Yes  | 8/16            | 3       | 0.67 Hour  | 2 Hours    | 0.30/0.45            | 128               | 1.00E-04      |
+| Framework | Hidden Size | Dataset (Alpaca) | Concatenation | Nodes | PPN | Precision | LoRA | LoRA rank/alpha | Epoches | Time/Epoch | Total Time | TruthfulQA (mc1/mc2) | Global Batch Size | Learning Rate |
+| --------- | ----------- | ----------------- | ------------- | ----- | --- | --------- | ---- | --------------- | ------- | ---------- | ---------- | -------------------- | ----------------- | ------------- |
+| PyTorch  | 4096        | 13K               | Yes           | 1     | 1   | BF16      | Yes  | 8/16            | 3       | 3.2 Hour   | 9.6 Hours  | 0.30/0.45            | 128               | 1.00E-04      |
+| PyTorch  | 4096        | 13K               | Yes           | 2     | 2   | BF16      | Yes  | 8/16            | 3       | 1.2 Hour   | 3.6 Hours  | 0.30/0.45            | 128               | 1.00E-04      |
+| PyTorch  | 4096        | 13K               | Yes           | 4     | 2   | BF16      | Yes  | 8/16            | 3       | 0.67 Hour  | 2 Hours    | 0.30/0.45            | 128               | 1.00E-04      |
