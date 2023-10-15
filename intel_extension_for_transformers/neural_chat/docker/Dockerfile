@@ -41,8 +41,8 @@ SHELL ["/bin/bash", "--login", "-c"]
 RUN apt-get update \
     && apt-get install -y build-essential \
     && apt-get install -y wget numactl git \
-    && apt-get install -y openssh-server \
     && apt-get install -y libgl1-mesa-glx \
+    && apt-get install -y openssh-server ffmpeg lsof \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
