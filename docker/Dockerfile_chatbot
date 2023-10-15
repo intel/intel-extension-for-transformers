@@ -30,7 +30,7 @@ ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
 ARG ITREX_VER=main
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 # See http://bugs.python.org/issue19846
@@ -74,12 +74,10 @@ RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -
     cd /intel-extension-for-transformers/examples/huggingface/pytorch/code-generation/quantization && pip install -r requirements.txt --no-cache-dir && \
     conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
-    pip install datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops peft
-
-# Install Torch and Intel_extension_for_pytorch 2.1 from local
-RUN ${PYTHON} -m pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-RUN ${PYTHON} -m pip install -r examples/huggingface/pytorch/code-generation/quantization/requirements.txt --no-cache-dir
-RUN ${PYTHON} -m pip install  intel-extension-for-transformers/intel_extension_for_pytorch-2.1.0-cp310-cp310-manylinux2014_x86_64.whl
+    pip install datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.2 tokenizers einops peft && \
+    pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
+    pip install /intel-extension-for-transformers/intel_extension_for_pytorch-2.1.0-cp310-cp310-manylinux2014_x86_64.whl && \
+    pip install torchaudio torchvision
 
 # Enable passwordless ssh for mpirun
 RUN mkdir /var/run/sshd
