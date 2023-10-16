@@ -161,7 +161,7 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
   model_token next_token_id = post_process(logits);
   curr_input_ids = {next_token_id};
 
-  if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() == params.n_predict) {
+  if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() >= params.n_predict) {
     token_eos = true;
   }
 
@@ -206,7 +206,7 @@ std::vector<model_token> Model::generate_tokens(const std::vector<model_token>& 
     model_token next_token_id = post_process(logits);
     curr_input_ids = {next_token_id};
     output_ids.push_back(next_token_id);
-    if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() == params.n_predict) {
+    if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() >= params.n_predict) {
       token_eos = true;
       break;
     }
