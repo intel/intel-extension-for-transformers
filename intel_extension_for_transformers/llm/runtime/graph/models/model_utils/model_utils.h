@@ -152,8 +152,6 @@ MODEL_API float* model_get_embeddings(struct model_context* ctx);
 MODEL_API const char* model_token_to_str(const struct model_context* ctx, model_token token);
 
 // Special tokens
-MODEL_API model_token model_token_bos();
-MODEL_API model_token model_token_eos();
 MODEL_API model_token model_token_nl();
 
 // Sampling functions
