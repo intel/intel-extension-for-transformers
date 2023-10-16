@@ -190,14 +190,14 @@ class gptneox_beam_search_kv_cache_reorder : public beam_search_kv_cache_reorder
   virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
                       const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
                       const std::vector<beam>& next_beams = {}) override {
+    // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
+    NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
     // first step
     if (n_past == n_prompt_tokens) {
       // cpy batch 1 to all batches
-#pragma omp parallel for
-      for (int i = 0; i < ctx->model.layers.size(); ++i) {
+#pragma omp parallel for collapse(3)
+      for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
         for (int j = 1; j < kv_n_ctx_block; ++j) {
-          // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
-          NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
           // [head_dim, N, n_head]
           for (int nh = 0; nh < n_head; ++nh) {
             memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
@@ -209,6 +209,11 @@ class gptneox_beam_search_kv_cache_reorder : public beam_search_kv_cache_reorder
                        ne_element_size(ctx->model.kv_self.k) * nh * head_dim * n_ctx,
                    ne_element_size(ctx->model.kv_self.k) * head_dim * n_prompt_tokens);
           }
+        }
+      }
+#pragma omp parallel for collapse(3)
+      for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
+        for (int j = 1; j < kv_n_ctx_block; ++j) {
           // [N, head_dim, n_head] or [N, n_embd]
           for (int k = 0; k < n_embd; ++k) {
             memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
@@ -239,8 +244,8 @@ class gptneox_beam_search_kv_cache_reorder : public beam_search_kv_cache_reorder
             input_token_offset_v = 0;
             len = n_ctx;
           }
-#pragma omp parallel for
-          for (int i = 0; i < ctx->model.layers.size(); ++i) {
+#pragma omp parallel for collapse(2)
+          for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
             // [head_dim, N, n_head]
             for (int nh = 0; nh < n_head; ++nh) {
               memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
@@ -253,6 +258,9 @@ class gptneox_beam_search_kv_cache_reorder : public beam_search_kv_cache_reorder
                          ne_element_size(ctx->model.kv_self.k) * nh * head_dim * n_ctx + input_token_offset_k,
                      ne_element_size(ctx->model.kv_self.k) * head_dim * len);
             }
+          }
+#pragma omp parallel for collapse(2)
+          for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
             // [N, head_dim, n_head] or [N, n_embd]
             for (int k = 0; k < n_embd; ++k) {
               memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +

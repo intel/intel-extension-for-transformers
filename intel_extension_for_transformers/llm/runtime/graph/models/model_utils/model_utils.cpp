@@ -2084,14 +2084,14 @@ void logits_processor::process(const uint32_t& cur_len, const model_vocab::id& e
 void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
                                           const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
+  // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
+  NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
   // first step
   if (n_past == n_prompt_tokens) {
     // cpy batch 1 to all batches
-#pragma omp parallel for
-    for (int i = 0; i < ctx->model.layers.size(); ++i) {
+#pragma omp parallel for collapse(2)
+    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
       for (int j = 1; j < kv_n_ctx_block; ++j) {
-        // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
-        NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
         // [n_embd, N]
         memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
                    (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
@@ -2099,6 +2099,11 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
                static_cast<char*>(ctx->model.kv_self.k->data) +
                    i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
                ne_element_size(ctx->model.kv_self.k) * n_embd * n_prompt_tokens);
+      }
+    }
+#pragma omp parallel for collapse(3)
+    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
+      for (int j = 1; j < kv_n_ctx_block; ++j) {
         // [N, n_embd]
         for (int k = 0; k < n_embd; ++k) {
           memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
@@ -2130,7 +2135,7 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
           len = n_ctx;
         }
 #pragma omp parallel for
-        for (int i = 0; i < ctx->model.layers.size(); ++i) {
+        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
           // [n_embd, N]
           memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
                      (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
@@ -2140,6 +2145,9 @@ void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t
                      i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
                      cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
                  ne_element_size(ctx->model.kv_self.k) * n_embd * len);
+        }
+#pragma omp parallel for collapse(2)
+        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
           // [N, n_embd]
           for (int k = 0; k < n_embd; ++k) {
             memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
