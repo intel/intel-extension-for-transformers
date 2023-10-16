@@ -42,9 +42,9 @@ parser.add_argument('--nl', '--next-latency', type=float, metavar='NTL',
 parser.add_argument('-n', '--token-size', default=32, type=int, metavar='N',
                     dest='token_size',
                     help='output token number in one inference (default: 32)')
-parser.add_argument('--ct', '--cpu-tdp', type=int, required=True,
-                    dest='cpu_tdp',
-                    metavar='CT', help='CPU TDP in Watts')
+parser.add_argument('--tdp', type=int, required=True, metavar='TDP',
+                    help='device TDP in Watts, it could be '
+                    'CPU/GPU/Accelerators')
 parser.add_argument('-m', '--mem', type=float, metavar='M', required=True,
                     help='memory consumption in MB')
 
@@ -62,12 +62,12 @@ else:
     exit(1)
 
 m = args.mem
-ct = args.cpu_tdp
+tdp = args.tdp
 c = args.carbon_intensity
-carbon = (ct + m * 0.001 * POWER_PER_GB_MEM) * t * 0.001 * JOUL_TO_KWH * c 
+carbon = (tdp + m * 0.001 * POWER_PER_GB_MEM) * t * 0.001 * JOUL_TO_KWH * c 
 
-print('CPU TDP (W): ', ct)
-print('Memory Consumption (MB)', m)
+print('TDP (W): ', tdp)
+print('Memory Consumption (MB): ', m)
 print('Output token number: ', args.token_size)
-print('Total time of one infernce (ms)', t)
-print('Carbon emission in one inference (kgCO2e)', carbon)
+print('Total time of one infernce (ms): ', t)
+print('Carbon emission in one inference (kgCO2e): ', carbon)
