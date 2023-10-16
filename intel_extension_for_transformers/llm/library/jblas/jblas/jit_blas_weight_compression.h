@@ -147,7 +147,8 @@ class WeightS8ScaleFp32 {
     assert(0);
     return Parallel();  // no runtime parallel forward
   }
-  // only for compilation, weight compression prologue doesn't get any benefit from runtime compression
+  // only for compilation, weight compression prologue doesn't get any benefit
+  // from runtime compression
   void launch(const Param& _param, int tidx, Parallel& _para) {
     // no runtime parallel forward
     assert(0);
@@ -162,13 +163,19 @@ class WeightS8ScaleFp32 {
 
   // from packed N//NtilexKPadxNTile int8 weight to KxN f32 weight
   virtual void unpackTransposeWeight(const int N, const int K, void* stor, float* B, const int ldb) {
-    // utils::aligned_vector<float> B_NT(N * K);
-    // unpackWeight(N, K, stor, B_NT.data(), N);
-    // prologue::gemm::transposeWeight<float, ISA_T>(K, N, B_NT.data(), N, B, ldb);
-    float* B_NT=(float*)aligned_alloc(64,N * K*sizeof(float));
+    float* B_NT;
+#ifdef _WIN32
+    B_NT = (float*)_aligned_malloc(N * K * sizeof(float), 64);
+#else
+    B_NT = (float*)aligned_alloc(64, N * K * sizeof(float));
+#endif
     unpackWeight(N, K, stor, B_NT, N);
     prologue::gemm::transposeWeight<float, ISA_T>(K, N, B_NT, N, B, ldb);
+#ifdef _WIN32
+    B_NT = _aligned_free(B_NT);
+#else
     free(B_NT);
+#endif
   }
 
   // from KxN f32 weight to packed N//NtilexKPadxNTile int8 weight
@@ -1392,23 +1399,30 @@ JBLAS_ISA constexpr DefaultISA = JblasAMX_BF16;
 using GemmKernelS4FullRangeFp32KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
-        jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
+        jblas::prologue::gemm::ActivationConverterFp32,  // activation
+                                                         // fp32->bf16
         jblas::prologue::weight_comp::gemm_kblcok::WeightS4FullRangeScaleFp32,
-        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,  // output fp32->fp32
+        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,  // output
+                                                           // fp32->fp32
     DefaultParallel>;
 using GemmKernelS4ClipFp32KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
         DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,
-        jblas::prologue::gemm::ActivationConverterFp32,  // activation fp32->bf16
+        jblas::prologue::gemm::ActivationConverterFp32,  // activation
+                                                         // fp32->bf16
         jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32,
-        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,  // output fp32->fp32
+        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,  // output
+                                                           // fp32->fp32
     DefaultParallel>;
 using GemmKernelFp4KBlock = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,  // MXNXK = 16x64x32
-        jblas::prologue::gemm::ActivationConverterFp32,           // activation fp32->bf16
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_16x64_AMX_BF16,  // MXNXK =
+                                                                  // 16x64x32
+        jblas::prologue::gemm::ActivationConverterFp32,           // activation
+                                                                  // fp32->bf16
         jblas::prologue::weight_comp::gemm_kblcok::WeightFp4BnbScaleFp32,
-        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,  // output fp32->fp32
+        jblas::epilogue::gemm::AccumulatorWriteBackFp32>,  // output
+                                                           // fp32->fp32
     DefaultParallel>;
 }  // namespace amx_bf16
 namespace amx_int8 {

@@ -201,7 +201,11 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
                     "Qbits: workspace size should large than " + std::to_string(need_size) + " bytes");
         return workspace;
       } else {
-        tmpbuf = malloc(need_size);
+#ifdef _WIN32
+        tmpbuf = _aligned_malloc(need_size, 64);
+#else
+        tmpbuf = aligned_alloc(64, need_size);
+#endif
         return tmpbuf;
       }
     };
@@ -218,7 +222,13 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
       ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, &quantA};
       parse_paramC<KERNEL, ParamA>(p, ctx, param_a);
     }
-    if (tmpbuf != NULL) free(tmpbuf);
+    if (tmpbuf != NULL) {
+#ifdef _WIN32
+      _aligned_free(tmpbuf);
+#else
+      free(tmpbuf);
+#endif
+    }
   }
 }
 
