@@ -88,6 +88,7 @@ class TestNeuralChatModel(unittest.TestCase):
     def test_get_default_conv_template_v1(self):
         text = r"Conversation(name='neural-chat-7b-v1.1', system_template='<|im_start|>system\n{system_message}', system_message='- You are a helpful assistant chatbot trained by Intel.\n- You answer questions.\n- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.\n- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.', roles=('<|im_start|>user', '<|im_start|>assistant'), messages=[], offset=0, sep_style=<SeparatorStyle.CHATML: 9>, sep='<|im_end|>', sep2=None, stop_str=None, stop_token_ids=[50278, 0])"
         result = NeuralChatModel().get_default_conv_template(model_path='/models/neural-chat-7b-v1-1')
+        self.assertEqual.__self__.maxDiff = None
         self.assertEqual(text, str(result))
 
     def test_get_default_conv_template_v2(self):
