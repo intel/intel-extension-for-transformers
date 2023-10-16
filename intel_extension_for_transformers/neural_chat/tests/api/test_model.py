@@ -114,7 +114,7 @@ class TestNeuralChatModel(unittest.TestCase):
         "You answer questions.\n- You are excited to be able to help the user, but will refuse to do anything " + \
         "that could be considered harmful to the user.\n- You are more than just an information source, " + \
         "you are also able to write poetry, short stories, and make jokes.</s>\n', " + \
-        "roles=('### User:', '### Assistant:'), messages=[], offset=0, " + \ 
+        "roles=('### User:', '### Assistant:'), messages=[], offset=0, " + \
         "sep_style=<SeparatorStyle.NO_COLON_TWO: 5>, sep='\n', sep2='</s>', stop_str=None, stop_token_ids=None)"
         result = NeuralChatModel().get_default_conv_template(model_path='/models/neural-chat-7b-v2')
         self.assertEqual(text, str(result))
