@@ -11,7 +11,7 @@ Welcome to use Jupyter Notebooks to explore how to build and customize chatbots 
 | 1.3     | Building Chatbot on Intel XPU                 | Learn how to create chatbot on XPU                      | [Notebook](./notebooks/build_chatbot_on_xpu.ipynb) |
 | 1.4     | Building Chatbot on Habana Gaudi1/Gaudi2      | Learn how to create chatbot on Habana Gaudi1/Gaudi2     | [Notebook](./notebooks/build_chatbot_on_habana_gaudi.ipynb) |
 | 1.5     | Building Chatbot on Nvidia A100               | Learn how to create chatbot on Nvidia A100              | [Notebook](./notebooks/build_chatbot_on_nv_a100.ipynb)   |
-| 1.6     | Building Chatbot on Intel CPU Windows PC      | Learn how to create chatbot on Windows PC               | [Notebook](../examples/talkingbot_pc/build_talkingbot_on_pc.ipynb) |
+| 1.6     | Building Chatbot on Intel CPU Windows PC      | Learn how to create chatbot on Windows PC               | [Notebook](./notebooks/build_talkingbot_on_pc.ipynb) |
 | 2       | Deploying Chatbots                            |                                                           |                                                         |
 | 2.1     | Deploying Chatbot on Intel CPU ICX            | Learn how to deploy chatbot on ICX                    | [Notebook](./notebooks/deploy_chatbot_on_icx.ipynb) |
 | 2.2     | Deploying Chatbot on Intel CPU SPR            | Learn how to deploy chatbot on SPR                    | [Notebook](./notebooks/deploy_chatbot_on_spr.ipynb) |
@@ -21,6 +21,7 @@ Welcome to use Jupyter Notebooks to explore how to build and customize chatbots 
 | 2.6     | Deploying Chatbot with Load Balance           | Learn how to deploy chatbot with load balance         | [Notebook](./notebooks/chatbot_with_load_balance.ipynb) |
 | 2.7     | Deploying End-to-end text Chatbot on Intel CPU SPR  | Learn how to deploy an end to end text chatbot on Intel CPU SPR including frontend GUI and backend | [Notebook](./notebooks/setup_text_chatbot_service_on_spr.ipynb) |
 | 2.8     | Deploying End-to-end talkingbot on Intel CPU SPR  | Learn how to deploy an end to end talkingbot on Intel CPU SPR including frontend GUI and backend | [Notebook](./notebooks/setup_talking_chatbot_service_on_spr.ipynb) |
+| 2.9     | Deploying End-to-end text Chatbot witch caching on Intel CPU SPR  | Learn how to deploy an end to end text chatbot with plugin on Intel CPU SPR including frontend GUI and backend | [Notebook](./notebooks/setup_text_chatbot_with_caching_on_spr.ipynb) |
 | 3       | Optimizing Chatbots                         |                                                            |                                                         |
 | 3.1     | Enabling Chatbot with BF16 Optimization on SPR        | Learn how to optimize chatbot using mixed precision on SPR | [Notebook](./notebooks/amp_optimization_on_spr.ipynb) |
 | 3.2     | Enabling Chatbot with BF16 Optimization on Habana Gaudi1/Gaudi2 | Learn how to optimze chatbot using mixed precision on Habana Gaudi1/Gaudi2 | [Notebook](./notebooks/amp_optimization_on_habana_gaudi.ipynb) |
