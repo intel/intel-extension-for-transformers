@@ -93,6 +93,7 @@ class BaseModel(ABC):
             "device": "cuda",
             "use_hpu_graphs": True,
             "cpu_jit": False,
+            "ipex_int8": False,
             "use_cache": True,
             "peft_path": "/path/to/peft",
             "use_deepspeed": False
@@ -109,6 +110,7 @@ class BaseModel(ABC):
                    device=kwargs["device"],
                    use_hpu_graphs=kwargs["use_hpu_graphs"],
                    cpu_jit=kwargs["cpu_jit"],
+                   ipex_int8=kwargs["ipex_int8"],
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
                    use_deepspeed=kwargs["use_deepspeed"],

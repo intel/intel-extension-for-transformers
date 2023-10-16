@@ -437,8 +437,7 @@ def load_model(
 
         if device == "cpu":
             if (
-                (re.search("mpt", model_name, re.IGNORECASE)
-                or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE))
+                (re.search("starcoder", model_name, re.IGNORECASE)
                 and ipex_int8
             ):
                 with smart_context_manager(use_deepspeed=use_deepspeed):
