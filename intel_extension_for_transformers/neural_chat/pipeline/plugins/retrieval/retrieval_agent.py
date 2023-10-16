@@ -20,7 +20,7 @@ from .retrieval_base import Retriever
 from .detector.intent_detection import IntentDetector
 from .indexing.indexing import DocumentIndexing
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template \
-    import generate_qa_prompt, generate_prompt
+    import generate_qa_prompt, generate_prompt, generate_qa_enterprise
 
 class Agent_QA():
     def __init__(self, persist_dir="./output", process=True, input_path=None,
@@ -107,5 +107,4 @@ class Agent_QA():
                     prompt = generate_qa_prompt(query, context)
             else:
                 prompt = generate_prompt(query)
-        return prompt, link
-
+        return prompt, links
