@@ -37,6 +37,7 @@ class TestChatGlmModel(unittest.TestCase):
         " roles=('问', '答'), messages=[], offset=0, sep_style=<SeparatorStyle.CHATGLM: 8>, sep='\n', " + \
         "sep2=None, stop_str=None, stop_token_ids=None)"
         result = ChatGlmModel().get_default_conv_template(model_path='/models/chatglm-6b')
+        self.assertEqual.__self__.maxDiff =None
         self.assertEqual(text, str(result))
 
     def test_get_default_conv_template_2(self):
@@ -44,6 +45,7 @@ class TestChatGlmModel(unittest.TestCase):
         "roles=('问', '答'), messages=[], offset=0, sep_style=<SeparatorStyle.CHATGLM: 8>, sep='\n\n', " + \
         "sep2=None, stop_str=None, stop_token_ids=None)"
         result = ChatGlmModel().get_default_conv_template(model_path='/models/chatglm2-6b-int4')
+        self.assertEqual.__self__.maxDiff =None
         self.assertEqual(text, str(result))
 
 class TestLlamaModel(unittest.TestCase):
@@ -62,6 +64,7 @@ class TestLlamaModel(unittest.TestCase):
         "system_message='', roles=('[INST]', '[/INST]'), messages=[], offset=0, " + \
         "sep_style=<SeparatorStyle.LLAMA2: 7>, sep=' ', sep2=' </s><s>', stop_str=None, stop_token_ids=None)"
         result = LlamaModel().get_default_conv_template(model_path='/models/Llama-2-7b-chat-hf')
+        self.assertEqual.__self__.maxDiff =None
         self.assertEqual(text, str(result))
 
 class TestMptModel(unittest.TestCase):
@@ -84,6 +87,7 @@ class TestMptModel(unittest.TestCase):
         "roles=('<|im_start|>user', '<|im_start|>assistant'), messages=[], offset=0, " + \
         "sep_style=<SeparatorStyle.CHATML: 9>, sep='<|im_end|>', sep2=None, stop_str=None, stop_token_ids=[50278, 0])"
         result = MptModel().get_default_conv_template(model_path='/models/mpt-7b-chat')
+        self.assertEqual.__self__.maxDiff =None
         self.assertEqual(text, str(result))
 
 class TestNeuralChatModel(unittest.TestCase):
@@ -106,6 +110,7 @@ class TestNeuralChatModel(unittest.TestCase):
         "roles=('<|im_start|>user', '<|im_start|>assistant'), messages=[], offset=0, " + \
         "sep_style=<SeparatorStyle.CHATML: 9>, sep='<|im_end|>', sep2=None, stop_str=None, stop_token_ids=[50278, 0])"
         result = NeuralChatModel().get_default_conv_template(model_path='/models/neural-chat-7b-v1-1')
+        self.assertEqual.__self__.maxDiff =None
         self.assertEqual(text, str(result))
 
     def test_get_default_conv_template_v2(self):
@@ -117,6 +122,7 @@ class TestNeuralChatModel(unittest.TestCase):
         "roles=('### User:', '### Assistant:'), messages=[], offset=0, " + \
         "sep_style=<SeparatorStyle.NO_COLON_TWO: 5>, sep='\n', sep2='</s>', stop_str=None, stop_token_ids=None)"
         result = NeuralChatModel().get_default_conv_template(model_path='/models/neural-chat-7b-v2')
+        self.assertEqual.__self__.maxDiff =None
         self.assertEqual(text, str(result))
 
 if __name__ == "__main__":
