@@ -42,14 +42,14 @@
 //
 //   - lctx:      model context
 //   - tokens:    new batch of tokens to process
-//   - n_past:    the context size so far
+//   - n_past:    the offset to which the kv is cached to
+//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
 //   - n_threads: number of threads to use
 //
-
 static int flag = 0;
 static int first_tokens_size = 0;
 static bool baichuan_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                         const int n_past, const int n_threads) {
+                                         const int n_past, const int n_total, const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -64,7 +64,14 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
-  const int n_ctx = hparams.n_ctx;
+  const int n_ctx = lctx.n_ctx;  // max number fo tokens to keep in the kv-cache
+  const int n_keep = lctx.n_keep;
+
+  // The streaming-llm way of kv-caching. Ref: https://arxiv.org/abs/2309.17453
+  NE_ASSERT(("First token should not be greater then n_ctx!", N < n_ctx));
+  NE_ASSERT(("Unmatched n_past / n_total pair.", n_past == n_keep + (n_total - n_keep) % (n_ctx - n_keep)));
+  // total number of tokens cached after this round of model_eval
+  const int n_cached = std::min(n_ctx, n_total + N);
 
   if (flag == 0) {
     first_tokens_size = n_tokens;
@@ -144,19 +151,19 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
         ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
       }
       // concat key & value with past kv
-      key_layer = ne_view_3d(ctx0, model.layers[il].k_cache, head_size, n_past + qlen, num_attention_heads,
+      key_layer = ne_view_3d(ctx0, model.layers[il].k_cache, head_size, n_cached, num_attention_heads,
                              model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
                              0);  // [kv_heads, klen, head_size]
-      value_layer = ne_view_3d(ctx0, model.layers[il].v_cache, n_past + qlen, head_size, num_attention_heads,
+      value_layer = ne_view_3d(ctx0, model.layers[il].v_cache, n_cached, head_size, num_attention_heads,
                                model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
                                0);  // [kv_heads, head_size, klen]
 
       // attention
       struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [heads, qlen, klen]
       attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, 1.f / std::sqrt(head_size)));
-      attn_scores = ne_alibi(ctx0, attn_scores, n_past, num_attention_heads, 8);
-      if (n_past == 0) {
-        attn_scores = ne_diag_mask_inf_inplace(ctx0, attn_scores, n_past);
+      attn_scores = ne_alibi(ctx0, attn_scores, n_total, num_attention_heads, 8);
+      if (n_total == 0) {
+        attn_scores = ne_diag_mask_inf_inplace(ctx0, attn_scores, n_total);
       }
       ne_tensor* attn_probs = ne_soft_max_inplace(ctx0, attn_scores);  // [heads, qlen, klen]
 
@@ -215,7 +222,7 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
 #endif
 
   // update kv token count
-  lctx.model.kv_self.n = n_past + N;
+  lctx.model.kv_self.n = n_cached;
 
   // extract logits
   {
@@ -259,8 +266,9 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!baichuan_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+               int n_threads) {
+  if (!baichuan_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

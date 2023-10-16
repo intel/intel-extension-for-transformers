@@ -41,12 +41,13 @@
 //
 //   - lctx:      model context
 //   - tokens:    new batch of tokens to process
-//   - n_past:    the context size so far
+//   - n_past:    the offset to which the kv is cached to
+//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
 //   - n_threads: number of threads to use
 //
 
 static bool falcon_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                       const int n_past, const int n_threads) {
+                                       const int n_past, const int n_total, const int n_threads) {
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -62,12 +63,19 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
 
   const int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
-  const int n_ctx = hparams.n_ctx;
+  const int n_ctx = lctx.n_ctx;
+  const int n_keep = lctx.n_keep;
   const int n_head = hparams.n_head;
   const int n_head_kv = hparams.n_head_kv;
   const int n_vocab = hparams.n_vocab;
   const int n_rot = hparams.n_rot;
   const int head_dim = hparams.n_embd / hparams.n_head;
+
+  // The streaming-llm way of kv-caching. Ref: https://arxiv.org/abs/2309.17453
+  NE_ASSERT(("First token should not be greater then n_ctx!", N < n_ctx));
+  NE_ASSERT(("Unmatched n_past / n_total pair.", n_past == n_keep + (n_total - n_keep) % (n_ctx - n_keep)));
+  // total number of tokens cached after this round of model_eval
+  const int n_cached = std::min(n_ctx, n_total + N);
 
   auto& mem_per_token = lctx.mem_per_token;
   auto& buf_compute = lctx.buf_compute;
@@ -95,7 +103,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
         /* .heads_kv = */ n_head_kv,
         /* .head_size = */ head_dim,
         /* .sl_q = */ N,  // Note: make sure that jblas reordered attn supports next token inference
-        /* .sl_kv = */ n_past + N,
+        /* .sl_kv = */ n_cached,
     };
 
     NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
@@ -152,8 +160,8 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
                                           fused_qkv_row_nb, (n_embd + n_head_kv * head_dim) * ne_element_size(cur));
 
       // using mode = 2 for neox mode
-      Qcur = ne_rope_inplace(ctx0, Qcur, n_past, head_dim, 2, 0);
-      Kcur = ne_rope_inplace(ctx0, Kcur, n_past, head_dim, 2, 0);
+      Qcur = ne_rope_inplace(ctx0, Qcur, n_total, head_dim, 2, 0);
+      Kcur = ne_rope_inplace(ctx0, Kcur, n_total, head_dim, 2, 0);
 
       // self-attention
       const float attn_scale = 1.0f / sqrtf(static_cast<float>(head_dim));
@@ -183,7 +191,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
         struct ne_tensor* Q = ne_permute(ctx0, Qcur, 0, 2, 1, 3);
 
         struct ne_tensor* K =
-            ne_view_3d(ctx0, kv_self.k, head_dim, N + n_past, n_head_kv, ne_element_size(kv_self.k) * head_dim,
+            ne_view_3d(ctx0, kv_self.k, head_dim, n_cached, n_head_kv, ne_element_size(kv_self.k) * head_dim,
                        ne_element_size(kv_self.k) * head_dim * n_ctx,
                        il * n_ctx * ne_element_size(kv_self.k) * head_dim * n_head_kv);
 
@@ -199,9 +207,9 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
         // KQ = soft_max(KQ_masked)
         struct ne_tensor* KQ_soft_max = ne_soft_max_inplace(ctx0, KQ_masked);
 
-        // V_trans = Vmem.view(n_embd/n_head, n_head, n_past + N).permute(1, 2, 0, 3).contiguous()
+        // V_trans = Vmem.view(n_embd/n_head, n_head, n_cached).permute(1, 2, 0, 3).contiguous()
         struct ne_tensor* V =
-            ne_view_3d(ctx0, kv_self.v, N + n_past, head_dim, n_head_kv, ne_element_size(kv_self.v) * n_ctx,
+            ne_view_3d(ctx0, kv_self.v, n_cached, head_dim, n_head_kv, ne_element_size(kv_self.v) * n_ctx,
                        ne_element_size(kv_self.v) * n_ctx * head_dim,
                        il * n_ctx * ne_element_size(kv_self.v) * head_dim * n_head_kv);
 
@@ -214,7 +222,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
         // cur = KQV_merged.contiguous().view(n_embd, N)
         cur = ne_cpy(ctx0, KQV_merged, ne_new_tensor_2d(ctx0, NE_TYPE_F32, n_embd, N, NE_SIZE_CALC));
       } else {  // Using MHA (GQA/MQA) managed kv-cache
-        const auto seq_kv = n_past + N;
+        const auto seq_kv = n_cached;
         const auto k_size = kv_cache_info.k_bytes;
         const auto v_size = kv_cache_info.v_bytes;
 
@@ -251,7 +259,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
         ne_set_name(V, "V");
 
         ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
-        if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
+        if (n_total == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
         struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
         cur = ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
       }
@@ -320,7 +328,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
 #endif
 
   // update kv token count
-  lctx.model.kv_self.n = n_past + N;
+  lctx.model.kv_self.n = n_cached;
 
   // extract logits
   {
@@ -364,8 +372,9 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!falcon_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+               int n_threads) {
+  if (!falcon_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }

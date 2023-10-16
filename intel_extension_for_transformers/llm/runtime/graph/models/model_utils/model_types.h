@@ -111,7 +111,6 @@ enum model_file_version {
 // default hparams (LLaMA 7B)
 struct model_hparams {
   uint32_t n_vocab = 32000;
-  uint32_t n_ctx = 512;  // this is provided as user input?
   uint32_t n_embd = 4096;
   uint32_t n_mult = 256;
   uint32_t n_head = 32;
@@ -251,6 +250,11 @@ struct model_context {
   int32_t n_eval = 0;    // number of eval calls
   int32_t n_p_eval = 0;  // number of tokens in eval calls for the prompt (with batch size > 1)
 
+  int32_t n_ctx = 512;  // number of tokens to keep as context
+  // start size to keep; n_ctx = n_keep + n_recent; refer the streaming-llm paper for details:
+  // https://arxiv.org/abs/2309.17453
+  int32_t n_keep = 0;
+
   model_struct model;
   model_vocab vocab;
   int batch_size = 1;
@@ -336,8 +340,11 @@ typedef struct model_token_data_array {
 typedef void (*model_progress_callback)(float progress, void* ctx);
 
 struct model_context_params {
-  model_archs arch;     // arch of models (GPT-J, LLAMA)
-  int n_ctx;            // text context
+  model_archs arch;  // arch of models (GPT-J, LLAMA)
+  int n_ctx;         // text context
+  // start size to keep; n_ctx = n_keep + n_recent; refer the streaming-llm paper for details:
+  // https://arxiv.org/abs/2309.17453
+  int n_keep;
   int n_gpu_layers;     // number of layers to store in VRAM
   int seed;             // RNG seed, -1 for random
   KV_MEM_TYPE kv_type;  // KV cache type specification

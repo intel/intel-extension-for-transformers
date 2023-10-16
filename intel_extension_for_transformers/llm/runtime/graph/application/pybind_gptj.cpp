@@ -40,7 +40,7 @@ bool gptj_model_eval_ids(model_context* ctx, model_token* tokens, size_t n_eval,
     return 1;
   }
 
-  if (model_eval(ctx, tokens, n_eval, n_past, n_threads)) {
+  if (model_eval(ctx, tokens, n_eval, n_past, n_past, n_threads)) {
     fprintf(stderr, "%s : failed to eval\n", __func__);
     return 1;
   }
@@ -93,7 +93,7 @@ int32_t* eval_gptj_ids(void* ctx, int32_t* embd_inp_ptr, int ind_size, int n_pre
 
   auto hparams = lctx->model.hparams;
 
-  n_predict = std::min(n_predict, (int)hparams.n_ctx - (int)ind_size);
+  n_predict = std::min(n_predict, (int)lctx->n_ctx - (int)ind_size);
   std::vector<model_token> res;
   bool do_beam_search = lctx->beam_search;
 
@@ -151,7 +151,7 @@ char* eval_gptj_char(void* ctx, const char* prom, int n_predict, int top_k, floa
 
   auto hparams = lctx->model.hparams;
   std::vector<model_token> embd_inp = ::model_tokenize(lctx, std::string(prom), false);
-  n_predict = std::min(n_predict, (int)hparams.n_ctx - (int)embd_inp.size());
+  n_predict = std::min(n_predict, (int)lctx->n_ctx - (int)embd_inp.size());
   std::string res;
   std::vector<model_token> embd;
 

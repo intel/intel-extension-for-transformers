@@ -38,21 +38,20 @@
 #include "models/model_utils/model_utils.h"
 #include "models/model_utils/util.h"
 #include "models/models.h"
-void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_ctx, int n_gpu_layers,
+void model_load_internal(const std::string& fname, model_archs arch, model_context& lctx, int n_gpu_layers,
                          bool use_mmap, bool use_mlock, bool vocab_only, model_progress_callback progress_callback,
                          void* progress_callback_user_data) {
   lctx.t_start_us = ne_time_us();
 
   std::unique_ptr<IModel> ms(new OPT());
-  ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
+  ms->init(fname.c_str(), lctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
-void OPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gpu_layer_, bool use_mmap_,
-               bool use_mlock_, bool vocab_only_) {
-  n_ctx = n_ctx_;
+void OPT::init(const char* path_model, model_context& lctx, int n_gpu_layer_, bool use_mmap_, bool use_mlock_,
+               bool vocab_only_) {
   n_gpu_layer = n_gpu_layer_;
   use_mmap = use_mmap_;
   use_mlock = use_mlock_;
@@ -64,9 +63,7 @@ void OPT::init(const char* path_model, model_context& lctx, int n_ctx_, int n_gp
   model_file_version file_version = ml->file_loaders.at(0)->file_version;
   auto& hparams = model.hparams;
   n_ff = 4 * hparams.n_embd;
-  hparams.n_ctx = n_ctx;
   fprintf(stderr, "%s: n_vocab                  = %u\n", __func__, hparams.n_vocab);
-  fprintf(stderr, "%s: n_ctx                    = %u\n", __func__, hparams.n_ctx);
   fprintf(stderr, "%s: n_embd                   = %u\n", __func__, hparams.n_embd);
   fprintf(stderr, "%s: n_head                   = %u\n", __func__, hparams.n_head);
   fprintf(stderr, "%s: n_layer                  = %u\n", __func__, hparams.n_layer);

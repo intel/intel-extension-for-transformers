@@ -154,7 +154,7 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
     curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
                           last_n_tokens.end() - curr_input_ids.size());
   }
-  model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+  model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_total, params.n_threads);
   n_past += curr_input_ids.size();
 
   float* logits = model_get_logits(ctx);
@@ -196,7 +196,7 @@ std::vector<model_token> Model::generate_tokens(const std::vector<model_token>& 
       output_ids = post_beam_search(ctx, n_remain, curr_input_ids.data(), curr_input_ids.size(), params.n_threads);
       break;
     }
-    model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+    model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_total, params.n_threads);
     n_past += curr_input_ids.size();
 
     float* logits = model_get_logits(ctx);
