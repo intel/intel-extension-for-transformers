@@ -191,7 +191,7 @@ def laod_structured_data(input, process, max_length):
         content = load_json(input, process, max_length)
     elif "faq" in input and input.endswith("xlsx"):
         content = load_faq_xlsx(input)
-    elif "doc" in input and input.endswith("xlsx"):
+    elif "enterprise_docs" in input and input.endswith("xlsx"):
         content = load_general_xlsx(input)
     else:
         content = load_xlsx(input)
