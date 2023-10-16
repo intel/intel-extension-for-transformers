@@ -295,7 +295,7 @@ bool gpt_params_parse(int argc, char** argv, gpt_params& params) {
     } else if (arg == "--perplexity") {
       params.perplexity = true;
     } else if (arg == "--ignore-eos") {
-      params.logit_bias[model_token_eos()] = -INFINITY;
+      // params.logit_bias[ctx->vocab.eos_token_id] = -INFINITY;
     } else if (arg == "--no-penalize-nl") {
       params.penalize_nl = false;
     } else if (arg == "-l" || arg == "--logit-bias") {

@@ -74,9 +74,7 @@ typedef DWORD thread_ret_t;
 static int pthread_create(pthread_t* out, void* unused, thread_ret_t (*func)(void*), void* arg) {
   (void)unused;
   HANDLE handle = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)func, arg, 0, NULL);
-  if (handle == NULL) {
-    return EAGAIN;
-  }
+  if (handle == NULL) return EAGAIN;
 
   *out = handle;
   return 0;
@@ -1331,9 +1329,7 @@ struct ne_tensor* ne_dump_tensor(struct ne_context* ctx, struct ne_tensor* a) {
 struct ne_tensor* ne_dup_impl(struct ne_context* ctx, struct ne_tensor* a, bool inplace) {
   bool is_node = false;
 
-  if (!inplace && (a->grad)) {
-    is_node = true;
-  }
+  if (!inplace && (a->grad)) is_node = true;
 
   struct ne_tensor* result = inplace ? ne_view_tensor(ctx, a) : ne_dup_tensor(ctx, a);
 
@@ -7542,6 +7538,7 @@ static void ne_compute_forward_alibi_f16(const struct ne_compute_params* params,
   const float m0 = powf(2.0f, -(max_bias) / n_heads_log2_floor);
   const float m1 = powf(2.0f, -(max_bias / 2.0f) / n_heads_log2_floor);
 
+  NE_ASSERT(("OP_ALIBI may not be able handle multi-batch cases", src0->ne[3] == 1));
   for (int i = 0; i < ne0; i++) {
     for (int j = 0; j < ne1; j++) {
       for (int k = 0; k < ne2_ne3; k++) {
