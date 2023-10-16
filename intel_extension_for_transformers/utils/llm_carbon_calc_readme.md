@@ -27,22 +27,18 @@ options:<br>
 
 When the total time of one inference procedure is measured, you can specific -t or --time like following command line
 
-        ```shell
         $python llm_carbon_calc.py -m 27412.98 --ct 350 -c 0.56 -t 6510.3
         CPU TDP (W):  350
         Memory Consumption (MB) 27412.98
         Output token number:  32
         Total time of one infernce (ms) 6510.3
         Carbon emission in one inference (kgCO2e) 0.0003575115963544682
-        ```
 
 When the total time of one inference procedure is not measured but first token latency and next token latency are measured, you can refer to following example
 
-        ```shell
         $ python llm_carbon_calc.py -m 27412.98 --ct 350 -c 0.56 --fl 2284.75 --nl 136.31 -n 32
         CPU TDP (W):  350
         Memory Consumption (MB) 27412.98
         Output token number:  32
         Total time of one infernce (ms) 6510.36
         Carbon emission in one inference (kgCO2e) 0.00035751489124038457
-        ```
