@@ -76,6 +76,7 @@ class Model {
   gpt_params params;
   std::vector<model_token> curr_input_ids;
   int n_past = 0;
+  int n_total = 0;
   int n_vocab = 0;
   int n_ctx = 0;
   std::vector<model_token> last_n_tokens;
@@ -120,6 +121,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
          params.top_p);
 
   n_past = 0;
+  n_total = 0;
   token_eos = false;
   curr_input_ids.clear();
   ctx = model_init_from_gpt_params(params);
@@ -133,6 +135,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
 
 void Model::reinit() {
   n_past = 0;
+  n_total = 0;
   last_n_tokens.clear();
   last_n_tokens.resize(n_ctx, 0);
   token_eos = false;
@@ -165,8 +168,9 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
     curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
                           last_n_tokens.end() - curr_input_ids.size());
   }
-  model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+  model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, n_total, params.n_threads);
   n_past += curr_input_ids.size();
+  n_total += curr_input_ids.size();
 
   float* logits = model_get_logits(ctx);
   model_token next_token_id = post_process(logits);
@@ -215,8 +219,9 @@ std::vector<model_token> Model::generate_tokens(const std::vector<model_token>& 
       output_ids = post_beam_search(ctx, n_remain, curr_input_ids.data(), curr_input_ids.size(), params.n_threads);
       break;
     }
-    model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
+    model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, n_total, params.n_threads);
     n_past += curr_input_ids.size();
+    n_total += curr_input_ids.size();
 
     float* logits = model_get_logits(ctx);
     model_token next_token_id = post_process(logits);
@@ -296,6 +301,9 @@ model_token Model::post_process(float* logits) {
     } else {
       return post_sample_top_k_top_p_repeat(logits);
     }
+  } else {
+    fprintf(stderr, "error, beam search not supported!\n");
+    exit(0);
   }
 }
 

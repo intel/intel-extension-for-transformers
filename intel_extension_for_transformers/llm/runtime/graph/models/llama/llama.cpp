@@ -46,13 +46,14 @@
 //
 //   - lctx:      model context
 //   - tokens:    new batch of tokens to process
-//   - n_past:    the context size so far
+//   - n_past:    the offset to which the kv is cached to
+//   - n_total:   the number of tokens evaluated so far (including evicted tokens if there is any)
 //   - n_threads: number of threads to use
 //
 static bool llama_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
-                                      const int n_past, const int n_threads) {
+                                      const int n_past, const int n_total, const int n_threads) {
   // enforce that the first token is BOS
-  if (n_past == 0 && tokens[0] != lctx.vocab.bos_token_id) {
+  if (n_total == 0 && tokens[0] != lctx.vocab.bos_token_id) {
     fprintf(stderr, "%s: first token must be BOS\n", __func__);
     return false;
   }
@@ -70,7 +71,8 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
 
   int n_embd = hparams.n_embd;
   const int n_layer = hparams.n_layer;
-  const int n_ctx = hparams.n_ctx;
+  const int n_ctx = lctx.n_ctx;  // max number fo tokens to keep in the kv-cache
+  const int n_keep = lctx.n_keep;
   int n_head = hparams.n_head;
   int head_size = n_embd / n_head;
   int n_head_kv = hparams.n_head_kv;
@@ -429,8 +431,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   return true;
 }
 
-int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
-  if (!llama_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_threads)) {
+int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_total,
+               int n_threads) {
+  if (!llama_model_eval_internal(*ctx, tokens, n_tokens, n_past, n_total, n_threads)) {
     fprintf(stderr, "%s: failed to eval\n", __func__);
     return 1;
   }
