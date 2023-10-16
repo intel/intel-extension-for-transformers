@@ -211,7 +211,7 @@ def main():
         loading_config=LoadingModelConfig(
             use_hpu_graphs=args.use_hpu_graphs,
             cpu_jit=args.jit,
-            ipex_int8=args.ipex_int8
+            ipex_int8=args.ipex_int8,
             use_cache=args.use_kv_cache,
             peft_path=args.peft_model_path,
             use_deepspeed=True if use_deepspeed and args.habana else False,
