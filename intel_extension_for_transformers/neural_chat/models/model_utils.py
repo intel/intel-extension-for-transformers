@@ -264,6 +264,7 @@ def load_model(
     device="cpu",
     use_hpu_graphs=False,
     cpu_jit=False,
+    ipex_int8=False,
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
@@ -340,7 +341,7 @@ def load_model(
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
             model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
-    elif re.search("flan-t5", model_name, re.IGNORECASE):
+    elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name,
@@ -358,7 +359,8 @@ def load_model(
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
-    ):
+        or re.search("starcoder", model_name, re.IGNORECASE)
+    ) and not ipex_int8:
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
@@ -434,6 +436,18 @@ def load_model(
             model = model.to(dtype=torch_dtype)
 
         if device == "cpu":
+            if (
+                (re.search("mpt", model_name, re.IGNORECASE)
+                or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE))
+                and ipex_int8
+            ):
+                with smart_context_manager(use_deepspeed=use_deepspeed):
+                import intel_extension_for_pytorch
+                from optimum.intel.generation.modeling import TSModelForCausalLM
+                model = TSModelForCausalLM.from_pretrained(
+                    model_name,
+                    file_name="best_model.pt",
+                 )   
             if torch_dtype == torch.bfloat16:
                 import intel_extension_for_pytorch as intel_ipex
 
@@ -471,6 +485,14 @@ def load_model(
     if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
+
+    # warmup for int8 model
+    if ipex_int8:
+        input_ids = tokenizer("A chat between a curious human and an artificial intelligence assistant.\n"
+                              " Human: Tell me about Intel.\n Assistant:", return_tensors="pt").input_ids.to('cpu')
+        with torch.inference_mode(), torch.no_grad():
+            for i in range(2):
+                model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9, num_beams=4)
 
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
@@ -550,6 +572,7 @@ def predict_stream(**params):
         `use_hpu_graphs` (bool): 
                     Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -579,6 +602,7 @@ def predict_stream(**params):
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
     prompt = params["prompt"]
+    ipex_int8 = params["ipex_int8"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
     errors_queue = Queue()
@@ -624,17 +648,21 @@ def predict_stream(**params):
                         context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
                     elif device == "xpu":
                         context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-                    with context:
+                    if ipex_int8:
                         global output_token_len
-                        output_token=model.generate(
-                            **input_tokens,
-                            **generate_kwargs,
-                            streamer=streamer,
-                            generation_config=generation_config,
-                            return_dict_in_generate=True,
-                        )
-                        output_token_len=output_token.sequences[0].shape[-1]
-                        return output_token
+                        output_token= model.generate(**input_tokens, **generation_kwargs)
+                    else:
+                        with context:
+                            global output_token_len
+                            output_token=model.generate(
+                                **input_tokens,
+                                **generate_kwargs,
+                                streamer=streamer,
+                                generation_config=generation_config,
+                                return_dict_in_generate=True,
+                            )
+                    output_token_len=output_token.sequences[0].shape[-1]
+                    return output_token
             except Exception as e:
                 errors_queue.put(e)
 
@@ -759,6 +787,7 @@ def predict(**params):
         `use_hpu_graphs` (bool): 
                  Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -824,14 +853,16 @@ def predict(**params):
                 context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
             elif device == "xpu":
                 context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            
-            with context:
-                generation_output = model.generate(
-                    **input_tokens,
-                    **generate_kwargs,
-                    generation_config=generation_config,
-                    return_dict_in_generate=True
-                )
+            if ipex_int8:
+                generation_output = model.generate(**input_tokens, **generation_kwargs)
+            else:
+                with context:
+                    generation_output = model.generate(
+                        **input_tokens,
+                        **generate_kwargs,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True
+                    )
     elif device == "hpu":
         # Move inputs to target device(s)
         input_tokens = prepare_inputs(input_tokens, model.device)
