@@ -102,7 +102,7 @@ The next token latency is based on 32 input tokens and greedy search on Intel's 
 | [tiiuae/falcon-7b](https://huggingface.co/tiiuae/falcon-7b) | 36.1ms|
 | [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 22.02ms|
 
-Find other models like Baichuan, ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) and accuracy data in [Release data](./docs/release.md)
+Find other models like Baichuan, ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) and accuracy data in [Release data](./docs/release.md). 
 
 ## 📖Documentation
 <table>
