@@ -19,7 +19,7 @@ from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
 model_name = "Intel/neural-chat-7b-v1-1"  # or local path to model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4", use_ggml=True)
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, a little girl"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)

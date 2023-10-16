@@ -100,6 +100,9 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
   params.beam_size = num_beams;
   params.do_sample = do_sample;
   params.beam_search = (num_beams > 1 && !do_sample) ? true : false;
+  if (params.beam_search) {
+    params.memory_type = KV_MEM_TYPE_F16;  // TODO NO MHA IN BEAM SEARCH
+  }
   params.top_k = top_k;
   params.top_p = top_p;
   params.temp = temperature;
