@@ -58,6 +58,7 @@ class _BaseQBitsAutoModelClass:
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
         import intel_extension_for_transformers.transformers.modeling.modeling_map
+        print("replace modeling.py")
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
