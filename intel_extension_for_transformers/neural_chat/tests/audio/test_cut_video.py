@@ -35,6 +35,7 @@ class TestCutVideo(unittest.TestCase):
             parser.add_argument("--min", type=str, default='1')
             parser.add_argument("--sr", type=str, default='16000')
             parser.add_argument("--out_path", type=str, default="../raw")
+            parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
             args = parser.parse_args()
 
             # Validate and normalize input and output paths
