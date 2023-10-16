@@ -234,100 +234,38 @@ std::vector<model_token> Model::post_beam_search(model_context* lctx, const int&
 }
 
 model_token Model::post_sample_top_k_top_p_repeat(float* logits) {
-  int n_logits = n_vocab;
-  std::random_device rd;
-  std::mt19937 rng{rd()};
-
-  const auto* plogits = logits;
+  int alpha_frequency = 0;
+  int alpha_presence = 0;
   int repeat_last_n = 64;
-  float repeat_penalty = 1.02;
-  if (params.temp <= 0) {
-    // select the token with the highest logit directly
-    float max_logit = plogits[0];
-    gpt_vocab::id max_id = 0;
-
-    for (int i = 1; i < n_logits; ++i) {
-      if (plogits[i] > max_logit) {
-        max_logit = plogits[i];
-        max_id = i;
-      }
-    }
-    return max_id;
+  int top_k = params.top_k;
+  float tfs_z = 1.00f;
+  float typical_p = 1.00f;
+  float top_p = params.top_p;
+  float temp = params.temp;
+  std::vector<model_token_data> candidates;
+  candidates.reserve(n_vocab);
+  for (model_token token_id = 0; token_id < n_vocab; token_id++) {
+    candidates.emplace_back(model_token_data{token_id, logits[token_id], 0.0f});
   }
+  model_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
 
-  std::vector<std::pair<double, gpt_vocab::id>> logits_id;
-  logits_id.reserve(n_logits);
-
-  {
-    const float scale = 1.0f / params.temp;
-    for (int i = 0; i < n_logits; ++i) {
-      // repetition penalty from ctrl paper (https://arxiv.org/abs/1909.05858)
-      // credit https://github.com/facebookresearch/llama/compare/main...shawwn:llama:main
-      if (repeat_last_n > 0 &&
-          std::find(last_n_tokens.end() - repeat_last_n, last_n_tokens.end(), i) != last_n_tokens.end()) {
-        // if score < 0 then repetition penalty has to multiplied to reduce the previous token probability
-        if (plogits[i] < 0.0f) {
-          logits_id.push_back(std::make_pair(plogits[i] * scale * repeat_penalty, i));
-        } else {
-          logits_id.push_back(std::make_pair(plogits[i] * scale / repeat_penalty, i));
-        }
-      } else {
-        logits_id.push_back(std::make_pair(plogits[i] * scale, i));
-      }
-    }
-  }
-
-  // find the top K tokens
-  std::partial_sort(logits_id.begin(), logits_id.begin() + params.top_k, logits_id.end(),
-                    [](const std::pair<double, gpt_vocab::id>& a, const std::pair<double, gpt_vocab::id>& b) {
-                      return a.first > b.first;
-                    });
-
-  logits_id.resize(params.top_k);
-
-  double maxl = -INFINITY;
-  for (const auto& kv : logits_id) {
-    maxl = std::max(maxl, kv.first);
-  }
-
-  // compute probs for the top K tokens
-  std::vector<double> probs;
-  probs.reserve(logits_id.size());
-
-  double sum = 0.0;
-  for (const auto& kv : logits_id) {
-    double p = exp(kv.first - maxl);
-    probs.push_back(p);
-    sum += p;
-  }
-
-  // normalize the probs
-  for (auto& p : probs) {
-    p /= sum;
-  }
-
-  if (params.top_p < 1.0f) {
-    double cumsum = 0.0f;
-    for (int i = 0; i < params.top_k; i++) {
-      cumsum += probs[i];
-      if (cumsum >= params.top_p) {
-        params.top_k = i + 1;
-        probs.resize(params.top_k);
-        logits_id.resize(params.top_k);
-        break;
-      }
-    }
-
-    cumsum = 1.0 / cumsum;
-    for (int i = 0; i < (int)probs.size(); i++) {
-      probs[i] *= cumsum;
-    }
-  }
-
-  std::discrete_distribution<> dist(probs.begin(), probs.end());
-  int idx = dist(rng);
-
-  return logits_id[idx].second;
+  // Apply penalties
+  float nl_logit = logits[model_token_nl()];
+  auto last_n_repeat = std::min(std::min((int)last_n_tokens.size(), repeat_last_n), n_ctx);
+  model_sample_repetition_penalty(ctx, &candidates_p, last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
+                                  last_n_repeat, params.repeat_penalty);
+  model_sample_frequency_and_presence_penalties(ctx, &candidates_p,
+                                                last_n_tokens.data() + last_n_tokens.size() - last_n_repeat,
+                                                last_n_repeat, alpha_frequency, alpha_presence);
+  // int id = model_sample_token_greedy(ctx, &candidates_p);
+  // Temperature sampling
+  model_sample_top_k(ctx, &candidates_p, top_k, 1);
+  model_sample_tail_free(ctx, &candidates_p, tfs_z, 1);
+  model_sample_typical(ctx, &candidates_p, typical_p, 1);
+  model_sample_top_p(ctx, &candidates_p, top_p, 1);
+  model_sample_temperature(ctx, &candidates_p, temp);
+  int id = model_sample_token(ctx, &candidates_p);
+  return id;
 }
 
 model_token Model::post_process(float* logits) {
