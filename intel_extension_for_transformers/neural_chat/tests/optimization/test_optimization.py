@@ -21,7 +21,7 @@ from transformers import BitsAndBytesConfig
 from transformers.utils.bitsandbytes import is_bitsandbytes_available
 from intel_extension_for_transformers.neural_chat import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import PipelineConfig, WeightOnlyQuantConfig
-from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
+from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig, MixedPrecisionConfig
 
 
 class TestChatbotBuilder(unittest.TestCase):
@@ -32,7 +32,8 @@ class TestChatbotBuilder(unittest.TestCase):
         return super().tearDown()
 
     def test_build_chatbot_with_AMP(self):
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m")
+        config = PipelineConfig(model_name_or_path="/models/opt-125m",
+                                optimization_config = MixedPrecisionConfig())
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
         response = chatbot.predict(query="Tell me about Intel Xeon Scalable Processors.")
@@ -44,7 +45,7 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_weight_only_quant(self):
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+        config = PipelineConfig(model_name_or_path="/models/opt-125m",
             optimization_config=WeightOnlyQuantConfig()
         )
         chatbot = build_chatbot(config)
@@ -55,7 +56,7 @@ class TestChatbotBuilder(unittest.TestCase):
 
     def test_build_chatbot_with_llm_runtime(self):
         loading_config = LoadingModelConfig(use_llm_runtime=True)
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
+        config = PipelineConfig(model_name_or_path="/models/opt-125m",
             optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4"),
             loading_config=loading_config
         )
@@ -68,7 +69,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_bitsandbytes_quant(self):
         if is_bitsandbytes_available() and torch.cuda.is_available():
             config = PipelineConfig(
-                model_name_or_path="facebook/opt-125m",
+                model_name_or_path="/models/opt-125m",
                 device='cuda',
                 optimization_config=BitsAndBytesConfig(
                         load_in_4bit=True,

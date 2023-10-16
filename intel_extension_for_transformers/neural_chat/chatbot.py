@@ -143,7 +143,7 @@ def finetune_model(config: BaseFinetuningConfig):
     finetuning = Finetuning(config)
     finetuning.finetune()
 
-def optimize_model(model, config, use_llm_runtime):
+def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
 
     Args:
