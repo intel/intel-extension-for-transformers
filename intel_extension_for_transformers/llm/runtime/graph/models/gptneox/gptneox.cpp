@@ -73,12 +73,7 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, co
 
 static bool gptneox_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                         const int n_past, const int n_threads) {
-  // // enforce that the first token is BOS
-  // if (n_past == 0 && tokens[0] != model_token_bos()) {
-  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
-  //   return false;
-  // }
-  static int ccc = 1;
+
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -119,15 +114,8 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N * batch_size);
   ne_set_name(embd, "embd");
-  if (ccc == 0) {
-    for (int i = 0; i < batch_size; ++i) {
-      memcpy(static_cast<model_token*>(embd->data) + i * N, tokens + 0 * N, N * ne_element_size(embd));
-    }
-    ccc++;
-  } else {
-    for (int i = 0; i < batch_size; ++i) {
-      memcpy(static_cast<model_token*>(embd->data) + i * N, tokens + i * N, N * ne_element_size(embd));
-    }
+  for (int i = 0; i < batch_size; ++i) {
+    memcpy(static_cast<model_token*>(embd->data) + i * N, tokens + i * N, N * ne_element_size(embd));
   }
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);

@@ -85,6 +85,7 @@ set(mymap_bloom 9)
 set(mymap_chatglm2 10)
 set(mymap_chatglm 11)
 set(mymap_baichuan 12)
+set(mymap_polyglot 13)
 
 function(compile_run TARGET SRC MODEL_NAME MODEL_LIB)
  add_executable_w_warning(${TARGET} ${SRC})
