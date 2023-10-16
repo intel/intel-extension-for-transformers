@@ -91,6 +91,7 @@ void qbits_quantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   static PrologueB compress_kernel;
   set_nk(ctx, ctx->weight);
 
+  if (initer.verbose) timer.start();
   auto do_quant = [&](typename PrologueB::StorageWeight* ptr) {
     std::vector<int8_t> buffer(ptr->mSize);
     ptr->assign(buffer.data());
@@ -101,13 +102,19 @@ void qbits_quantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
     *(ctx->output) = torch::zeros(ptr->mSize, torch::kInt8);
     ptr->serialize(ctx->output->data_ptr<int8_t>());
   };
-
   if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>) {
     auto storage = compress_kernel.createStorage(ctx->n, ctx->k, ctx->blocksize);
     do_quant(&storage);
   } else {
     auto storage = compress_kernel.createStorage(ctx->n, ctx->k, false);
     do_quant(&storage);
+  }
+  if (initer.verbose) {
+    timer.stop();
+    auto cost_time = timer.get_elapsed_time();
+    std::cout << "QBits quantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
+              << " blocksize:" << ctx->blocksize << " src_type:" << dispatcher_utils::get_torch_dt_name(ctx->activation)
+              << " execute time:" << cost_time << "ms" << std::endl;
   }
 }
 
@@ -116,12 +123,20 @@ void qbits_dequantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   using PrologueB = typename KERNEL::WeightType;
   static PrologueB decompress_kernel;
   set_nk(ctx, ctx->output);
+  if (initer.verbose) timer.start();
   if (ctx->transpose)
     decompress_kernel.unpackTransposeWeight(int(ctx->n), int(ctx->k), ctx->deseries_wei, ctx->output->data_ptr<float>(),
                                             int(ctx->k));
   else
     decompress_kernel.unpackWeight(int(ctx->n), int(ctx->k), ctx->deseries_wei, ctx->output->data_ptr<float>(),
                                    int(ctx->n));
+  if (initer.verbose) {
+    timer.stop();
+    auto cost_time = timer.get_elapsed_time();
+    std::cout << "QBits dequantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
+              << " blocksize:" << ctx->blocksize << " dst_type:" << dispatcher_utils::get_torch_dt_name(ctx->output)
+              << " execute time:" << cost_time << "ms" << std::endl;
+  }
 }
 
 template <class KERNEL, class ParamA, class ParamC>
@@ -136,7 +151,7 @@ void do_compute(qbits_config_param* p, qbits_runtime_ctx* ctx, const ParamA para
   if (initer.verbose) {
     timer.stop();
     auto cost_time = timer.get_elapsed_time();
-    std::cout << "QBits verbose\nm:" << ctx->m << " n:" << ctx->n << " k:" << ctx->k
+    std::cout << "QBits linear verbose\nm:" << ctx->m << " n:" << ctx->n << " k:" << ctx->k
               << " weight_type:" << p->weight_type << " compute_type:" << p->compute_type
               << " blocksize:" << ctx->blocksize << " src_type:" << dispatcher_utils::get_torch_dt_name(ctx->activation)
               << " dst_type:" << dispatcher_utils::get_torch_dt_name(ctx->output) << " execute time:" << cost_time
