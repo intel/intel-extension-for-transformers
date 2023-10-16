@@ -438,14 +438,14 @@ def load_model(
         if device == "cpu":
             if (
                 (re.search("starcoder", model_name, re.IGNORECASE)
-                and ipex_int8
+                ) and ipex_int8
             ):
                 with smart_context_manager(use_deepspeed=use_deepspeed):
-                import intel_extension_for_pytorch
-                from optimum.intel.generation.modeling import TSModelForCausalLM
-                model = TSModelForCausalLM.from_pretrained(
-                    model_name,
-                    file_name="best_model.pt",
+                    import intel_extension_for_pytorch
+                    from optimum.intel.generation.modeling import TSModelForCausalLM
+                    model = TSModelForCausalLM.from_pretrained(
+                        model_name,
+                        file_name="best_model.pt",
                  )   
             if torch_dtype == torch.bfloat16:
                 import intel_extension_for_pytorch as intel_ipex
