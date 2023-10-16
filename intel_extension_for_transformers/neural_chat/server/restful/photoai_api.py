@@ -125,7 +125,9 @@ def handle_ai_photos_get_all_images(request: Request):
     try:
         result_list = []
         mysql_db = MysqlDb()
-        image_list = mysql_db.fetch_all(sql=f'SELECT image_id, image_path FROM image_info WHERE user_id="{user_id}" AND exist_status="active";')
+        image_list = mysql_db.fetch_all(
+            sql=f'''SELECT image_id, image_path FROM image_info 
+            WHERE user_id="{user_id}" AND exist_status="active";''')
         for image in image_list:
             image_name = image['image_path'].split('/')[-1]
             result_list.append({"image_id": image['image_id'], "image_path": format_image_path(user_id, image_name)})
@@ -209,7 +211,10 @@ async def handle_ai_photos_get_image_detail(request: Request):
 
     try:
         mysql_db = MysqlDb()
-        image_info = mysql_db.fetch_one(sql=f'SELECT * FROM image_info WHERE image_id={image_id} AND user_id="{user_id}" AND exist_status="active";', params=None)
+        image_info = mysql_db.fetch_one(
+            sql=f'''SELECT * FROM image_info WHERE 
+            image_id={image_id} AND user_id="{user_id}" AND exist_status="active";''', 
+            params=None)
     except Exception as e:
         logger.error("<getImageDetail> "+str(e))
         return JSONResponse(content=f'Exception {e} occurred when selecting image {image_id} from MySQL.')
@@ -221,7 +226,10 @@ async def handle_ai_photos_get_image_detail(request: Request):
         logger.info(f'<getImageDetail> Image detail of image {image_id} is: {image_detail}')
         return image_detail
     else:
-        return JSONResponse(content=f"No image id: {image_id} for user {user_id}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return JSONResponse(
+            content=f"No image id: {image_id} for user {user_id}", 
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @router.post("/v1/aiphotos/deleteImage")
@@ -277,15 +285,26 @@ async def handle_ai_photos_update_label(request: Request):
             label_to = label_obj['to']
             if label == 'person':
                 with mysql_db.transaction():
-                    mysql_db.update(sql=f'UPDATE face_info SET face_tag="{label_to}" WHERE face_tag="{label_from}"', params=None)
-                    mysql_db.update(sql=f"UPDATE image_face SET face_tag='{label_to}' WHERE user_id='{user_id}' and face_tag='{label_from}';", params=None)
+                    mysql_db.update(
+                        sql=f'''UPDATE face_info SET face_tag="{label_to}" 
+                        WHERE face_tag="{label_from}"''', 
+                        params=None)
+                    mysql_db.update(
+                        sql=f"""UPDATE image_face SET face_tag='{label_to}' 
+                        WHERE user_id='{user_id}' and face_tag='{label_from}';""", 
+                        params=None)
                 continue
             if label == 'address':
-                update_sql = f"UPDATE image_info SET address='{label_to}' WHERE user_id='{user_id}' and address='{label_from}';"
+                update_sql = f"""UPDATE image_info SET address='{label_to}' 
+                WHERE user_id='{user_id}' and address='{label_from}';"""
             elif label == 'time':
-                update_sql = f"UPDATE image_info SET captured_time='{label_to}' WHERE user_id='{user_id}' and captured_time='{label_from}';"
+                update_sql = f"""UPDATE image_info SET captured_time='{label_to}' 
+                WHERE user_id='{user_id}' and captured_time='{label_from}';"""
             else:
-                return JSONResponse(content=f"Illegal label name: {label}", status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return JSONResponse(
+                    content=f"Illegal label name: {label}", 
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
             with mysql_db.transaction():
                 mysql_db.update(sql=update_sql, params=None)
             logger.info(f'<updateLabel> Label {label} updated from {label_from} to {label_to}.')
@@ -435,10 +454,14 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
 @router.post("/v1/aiphotos/talkingbot/create_embed")
 async def handle_talkingbot_create_embedding(file: UploadFile = File(...)):
     result = talkingbot_embd(file=file)
-    return {"voice_id": result['spk_id']}
+    res = await asyncio.gather(result)
+    final_result = res['spk_id']
+    return {"voice_id": final_result}
 
 
 @router.post("/v1/aiphotos/talkingbot/llm_tts")
 async def handle_talkingbot_llm_tts(request: Request):
-    return talkingbot_tts(request=request)
+    res = talkingbot_tts(request=request)
+    res = await asyncio.gather(res)
+    return res
 
