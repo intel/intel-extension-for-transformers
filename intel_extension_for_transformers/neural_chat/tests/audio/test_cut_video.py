@@ -23,11 +23,11 @@ import unittest
 
 class TestCutVideo(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('../raw', ignore_errors=True)
-        os.mkdir('../raw')
+        shutil.rmtree('/intel_extension_for_transformers/neural_chat/assets/raw', ignore_errors=True)
+        os.mkdir('/intel_extension_for_transformers/neural_chat/assets/raw')
 
     def tearDown(self) -> None:
-        shutil.rmtree('../raw', ignore_errors=True)
+        shutil.rmtree('/intel_extension_for_transformers/neural_chat/assets/raw', ignore_errors=True)
     
     def test_cut_video(self):
             parser = argparse.ArgumentParser(__doc__)
@@ -43,8 +43,6 @@ class TestCutVideo(unittest.TestCase):
                 raise FileNotFoundError(f"Input path '{args.path}' does not exist.")
 
             outdir = os.path.join(shlex.quote(args.path), shlex.quote(args.out_path))
-            if not os.path.exists(outdir):
-                os.mkdir(outdir)
 
             cut_video(args, outdir)
 
