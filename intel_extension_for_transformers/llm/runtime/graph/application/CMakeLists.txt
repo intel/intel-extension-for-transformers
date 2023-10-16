@@ -37,7 +37,7 @@ set_target_properties(${TARGET} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 set(TARGET pybind_gptj)
 add_executable_w_warning(${TARGET} pybind_gptj.cpp)
-target_link_libraries(${TARGET} PUBLIC ne_layers common gptneox ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(${TARGET} PUBLIC ne_layers common gptj ${CMAKE_THREAD_LIBS_INIT})
 target_compile_features(${TARGET} PRIVATE cxx_std_11)
 
 # all models quant
