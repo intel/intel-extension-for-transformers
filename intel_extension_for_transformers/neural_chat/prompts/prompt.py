@@ -37,7 +37,7 @@ short stories, and make jokes.</s>\n""",
 # neuralchat-v1.1 prompt template
 register_conv_template(
     Conversation(
-        name="neural-chat-7b-v1.1",
+        name="neural-chat-7b-v1-1",
         system_template="""<|im_start|>system
 {system_message}""",
         system_message="""- You are a helpful assistant chatbot trained by Intel.

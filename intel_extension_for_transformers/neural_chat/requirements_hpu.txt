@@ -25,7 +25,7 @@ starlette
 yacs
 uvicorn
 optimum
-sentence_transformers
+git+https://github.com/UKPLab/sentence-transformers.git
 unstructured
 markdown
 rouge_score
