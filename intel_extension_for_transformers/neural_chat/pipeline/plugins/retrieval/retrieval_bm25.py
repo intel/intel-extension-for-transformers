@@ -30,5 +30,5 @@ class SparseBM25Retriever():
         links = []
         for doc in documents:
             context = context + doc.content + " "
-            links.append(sub.meta)
+            links.append(doc.meta)
         return context.strip(), links

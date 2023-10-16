@@ -32,5 +32,5 @@ class ChromaRetriever():
         links = []
         for doc in documents: 
             context = context + doc.page_content + " "
-            links.append(sub.metadata)
+            links.append(doc.metadata)
         return context.strip(), links
