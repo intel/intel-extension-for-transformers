@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import time
+import asyncio
 from fastapi.routing import APIRouter
 from fastapi import APIRouter
 from ...cli.log import logger
@@ -415,10 +416,12 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
         "beijing": "Beijing"
     }
     # get asr result from neural chat
-    asr_result = talkingbot_asr(file=file)['asr_result']
+    asr_result = talkingbot_asr(file=file)
+    res = await asyncio.gather(asr_result)
+    res = res[0]['asr_result']
     # substitude keywords manually
     result_list = []
-    words = asr_result.json().split(" ")
+    words = res.split(" ")
     for word in words:
         if word in keyword_list.keys():
             word = keyword_list[word]
