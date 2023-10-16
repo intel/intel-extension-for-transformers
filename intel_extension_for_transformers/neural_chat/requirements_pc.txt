@@ -11,7 +11,7 @@ evaluate
 pydub
 python-multipart
 PyPDF2
-langchain==0.0.308
+langchain
 python-docx
 scikit-learn
 farm-haystack
@@ -26,7 +26,7 @@ yacs
 uvicorn
 optimum
 optimum-intel
-sentence_transformers
+git+https://github.com/UKPLab/sentence-transformers.git
 unstructured
 markdown
 rouge_score

@@ -34,7 +34,7 @@ static uint8_t shuffle_map[] = {0x00, 0x01, 0x02, 0x03, 0xff, 0xff, 0xff, 0xff,
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline __m128i unpack_4bits_sse(void* srcptr) {
   auto shuffle_v = _mm_loadu_si128((__m128i*)shuffle_map);
-  auto raw_data = _mm_loadu_si128((__m128i*)srcptr);
+  auto raw_data = _mm_loadl_epi64((__m128i*)srcptr);
   auto xmm0 = _mm_shuffle_epi8(raw_data, shuffle_v);
   auto xmm1 = _mm_srli_epi32(xmm0, 0x04);
   auto and_helper = _mm_set1_epi8(0x0f);
@@ -50,6 +50,15 @@ static inline __m128i unpack_4bits_sse(void* srcptr) {
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline void convert_s4_s8_16_sse(int8_t* dstptr, int8_t* srcptr) {
   auto dst0 = unpack_4bits_sse<S4_T>(srcptr);
+  if constexpr (S4_T == S4_FULLRANGE) {
+    auto s8 = _mm_set1_epi8(8);
+    dst0 = _mm_sub_epi8(dst0, s8);
+  }
+  _mm_storeu_si128((__m128i*)dstptr, dst0);
+}
+
+static inline void fp4_pad_4bit(int8_t* dstptr, int8_t* srcptr) {
+  auto dst0 = unpack_4bits_sse<S4_FULLRANGE>(srcptr);
   _mm_storeu_si128((__m128i*)dstptr, dst0);
 }
 
@@ -58,7 +67,7 @@ static inline void dequant_s8_N_avx2(float* dstptr, int8_t* srcptr, __m256* vsca
   static_assert(N % 8 == 0);
   int constexpr VLoop = N / 8;
   for (int iv = 0; iv < VLoop; iv += 1) {
-    auto src_s8 = _mm_loadu_si128((__m128i*)(srcptr + iv * 8));
+    auto src_s8 = _mm_loadl_epi64((__m128i*)(srcptr + iv * 8));
     auto zmm = _mm256_cvtepi8_epi32(src_s8);
     auto fzmm = _mm256_cvtepi32_ps(zmm);
     fzmm = _mm256_mul_ps(fzmm, vscales[iv]);
@@ -141,8 +150,6 @@ static inline JBLAS_CODE dequant_kblock_s8_f32(int8_t* srcptr, float* dstptr, in
                                            kblock, NPad);
 }
 
-constexpr void (*pad_fp4)(int8_t* dstptr, int8_t* srcptr) = &convert_s4_s8_16_sse<S4_FULLRANGE>;
-
 template <JBLAS_SIGN_INT_TYPE S4_T>
 static inline JBLAS_CODE decompress_s4_s8(utils::int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src,
                                           int ld_dst) {
@@ -181,7 +188,7 @@ static inline void dequant_f4_N(_DST_T* dstptr, int8_t* srcptr, __m256* vscales)
   int constexpr VLoop = N / 8;
 #pragma unroll(VLoop)
   for (int iv = 0; iv < VLoop; iv++) {
-    auto idx = _mm_loadu_si128((__m128i*)(srcptr + iv * 8));
+    auto idx = _mm_loadl_epi64((__m128i*)(srcptr + iv * 8));
     auto pad_idx = _mm256_cvtepu8_epi32(idx);
     auto fp32_dq_v = _mm256_i32gather_ps(LUT, pad_idx, 4);
     fp32_dq_v = _mm256_mul_ps(fp32_dq_v, vscales[iv]);
@@ -269,10 +276,10 @@ static inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* ds
                                                  int ld_dst, _ST* scales, int k_offset, int kblock, int NPad) {
   if constexpr (std::is_same<_DST_T, float>::value) {
     return decompress_kblock_bit4_fp32<_ST>(srcptr, (float*)dstptr, row, col, ld_src, ld_dst, scales, nullptr, k_offset,
-                                            kblock, NPad, &dequant_f4_N<48, float, F4_T>, pad_fp4);
+                                            kblock, NPad, &dequant_f4_N<48, float, F4_T>, fp4_pad_4bit);
   } else if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
     return decompress_kblock_bit4_bf16<_ST>(srcptr, (utils::bf16*)dstptr, row, col, ld_src, ld_dst, scales, nullptr,
-                                            k_offset, kblock, NPad, &dequant_f4_N<64, utils::bf16, F4_T>, pad_fp4);
+                                            k_offset, kblock, NPad, &dequant_f4_N<64, utils::bf16, F4_T>, fp4_pad_4bit);
   }
   return JblasNotSupport;
 }
@@ -306,7 +313,6 @@ static inline JBLAS_CODE quantize_fp_u8_colblock(int row, int col, const SRC_T* 
   int constexpr VLen = 8;
   auto vff = _mm256_set1_epi32(255);
   auto v0 = _mm256_set1_epi32(0);
-  int i = 0;
   int vblocksize = utils::padto_le(blocksize, VLen);
   int colblk = utils::padto_le(col, blocksize);
   for (int i = 0; i < row; i++) {

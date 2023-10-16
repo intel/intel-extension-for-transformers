@@ -47,12 +47,6 @@
 
 static bool falcon_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                        const int n_past, const int n_threads) {
-  // // enforce that the first token is BOS
-  // if (n_past == 0 && tokens[0] != model_token_bos()) {
-  //   fprintf(stderr, "%s: first token must be BOS\n", __func__);
-  //   return false;
-  // }
-
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -256,7 +250,7 @@ static bool falcon_model_eval_internal(model_context& lctx, const model_token* t
         *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;           // us nb0 for layout
         ne_set_name(V, "V");
 
-        ne_attn_flags_t attn_flags = 0;
+        ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
         if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
         struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
         cur = ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);

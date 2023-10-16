@@ -31,7 +31,7 @@ response = chatbot.predict("Tell me about Intel Xeon Scalable Processors.")
 ```bash
 pip install intel-extension-for-transformers
 ```
-> For more installation methods, please refer to [Installation Page](docs/installation.md)
+> For more installation methods, please refer to [Installation Page](./docs/installation.md)
 
 ## 🌟Introduction
 Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the below key features and examples:
@@ -116,57 +116,66 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 </thead>
 <tbody>
   <tr>
-    <td colspan="2" align="center"><a href="docs">Model Compression</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs">Neural Engine</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/README.md">Kernel Libraries</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat">NeuralChat</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph">LLM Runtime</a></td>
   </tr>
   <tr>
-    <th colspan="8" align="center">MODEL COMPRESSION</th>
+    <th colspan="8" align="center">NEURALCHAT</th>
   </tr>
+  <tr>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/notebooks/deploy_chatbot_on_spr.ipynb">Chatbot on Intel CPU</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/notebooks/deploy_chatbot_on_xpu.ipynb">Chatbot on Intel GPU</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb">Chatbot on Gaudi</a></td>
+  </tr>
+  <tr>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/examples/talkingbot_pc/build_talkingbot_on_pc.ipynb">Chatbot on Client</a></td>
+    <td colspan="4" align="center"><a href="intel_extension_for_transformers/neural_chat/docs/full_notebooks.md">More Notebooks</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">LLM RUNTIME</th>
+  </tr>
+ <tr>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/README.md">LLM Runtime</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/core/README.md">Low Precision Kernels</a></td>
+    <td colspan="3" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph/tensor_parallelism.md">Tensor Parallelism</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">LLM COMPRESSION</th>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><a href="docs/smoothquant.md">SmoothQuant (INT8)</a></td>
+    <td colspan="3" align="center"><a href="docs/weightonlyquant.md">Weight-only Quantization (INT4/FP4/NF4/INT8)</a></td>
+    <td colspan="3" align="center"><a href="docs/qloracpu.md">QLoRA on CPU</a></td>
+  </tr>
+  <tr>
+    <th colspan="8" align="center">GENERAL COMPRESSION</th>
+  <tr>
   <tr>
     <td colspan="2" align="center"><a href="docs/quantization.md">Quantization</a></td>
     <td colspan="2" align="center"><a href="docs/pruning.md">Pruning</a></td>
-    <td colspan="2" align="center" colspan="2"><a href="docs/distillation.md">Distillation</a></td>
+    <td colspan="2" align="center"><a href="docs/distillation.md">Distillation</a></td>
     <td align="center" colspan="2"><a href="examples/huggingface/pytorch/text-classification/orchestrate_optimizations/README.md">Orchestration</a></td>
   </tr>
   <tr>
     <td align="center" colspan="2"><a href="examples/huggingface/pytorch/language-modeling/nas/README.md">Neural Architecture Search</a></td>
     <td align="center" colspan="2"><a href="docs/export.md">Export</a></td>
-    <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a>/<a href="docs/objectives.md">Objectives</a></td>
+    <td align="center" colspan="2"><a href="docs/metrics.md">Metrics</a></td>
+    <td align="center" colspan="2"><a href="docs/objectives.md">Objectives</a></td>
+  </tr>
+  <tr>
     <td align="center" colspan="2"><a href="docs/pipeline.md">Pipeline</a></td>
+    <td align="center" colspan="2"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
+    <td align="center" colspan="2"><a href="docs/examples.md#early-exit">Early Exit</a></td>
+    <td align="center" colspan="2"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
   </tr>
   <tr>
-    <th colspan="8" align="center">NEURAL ENGINE</th>
-  </tr>
-  <tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/onnx_compile.md">Model Compilation</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/add_customized_pattern.md">Custom Pattern</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/deploy_and_integration.md">Deployment</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/engine_profiling.md">Profiling</a></td>
-  </tr>
-  <tr>
-    <th colspan="8" align="center">KERNEL LIBRARIES</th>
-  </tr>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc">Sparse GEMM Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc">Custom INT8 Kernels</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/profiling.md">Profiling</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/test/kernels/benchmark/benchmark.md">Benchmark</a></td>
-  <tr>
-    <th colspan="8" align="center">ALGORITHMS</th>
-  </tr>
-  <tr>
-    <td align="center" colspan="4"><a href="examples/huggingface/pytorch/question-answering/dynamic/README.md">Length Adaptive</a></td>
-    <td align="center" colspan="4"><a href="docs/data_augmentation.md">Data Augmentation</a></td>    
-  </tr>
-  <tr>
-    <th colspan="8" align="center">TUTORIALS AND RESULTS</a></th>
+    <th colspan="8" align="center">TUTORIALS & RESULTS</a></th>
   </tr>
   <tr>
     <td colspan="2" align="center"><a href="docs/tutorials/pytorch">Tutorials</a></td>
-    <td colspan="2" align="center"><a href="docs/examples.md">Supported Models</a></td>
+    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/graph#supported-models">LLM List</a></td>
+    <td colspan="2" align="center"><a href="docs/examples.md">General Model List</a></td>
     <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/docs/validated_model.md">Model Performance</a></td>
-    <td colspan="2" align="center"><a href="intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/validated_data.md">Kernel Performance</a></td>
   </tr>
 </tbody>
 </table>
@@ -197,6 +206,7 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 ## Acknowledgements
 * Excellent open-source projects: [bitsandbytes](https://github.com/TimDettmers/bitsandbytes), [FastChat](https://github.com/lm-sys/FastChat), [fastRAG](https://github.com/IntelLabs/fastRAG), [ggml](https://github.com/ggerganov/ggml), [gptq](https://github.com/IST-DASLab/gptq), [llama.cpp](https://github.com/ggerganov/llama.cpp), [lm-evauation-harness](https://github.com/EleutherAI/lm-evaluation-harness), [peft](https://github.com/huggingface/peft), [trl](https://github.com/huggingface/trl), and many others.
 
+* Thanks to all the contributors including [Ikko Eltociear Ashimine](https://github.com/eltociear), [Hardik Kamboj](https://github.com/hardikkamboj), [Sangjune Park](https://github.com/JJukE), [Kevin Ta](https://github.com/kta-intel), [Huiyan Cao](https://github.com/huiyan2021), [Xigui Wang](https://github.com/xiguiw), [Jiafu Zhang](https://github.com/jiafuzha), [Tyler Titsworth](https://github.com/tylertitsworth), [Yi Wang](https://github.com/sywangyi), [Samanway Sadhu](https://github.com/SamanwaySadhu), [Jiqing Feng](https://github.com/jiqing-feng), [Jonathan Mamou](https://github.com/jmamou) and [Niroop Ammbashankar](https://github.com/nammbash).
 
 ## 💁Collaborations
 
