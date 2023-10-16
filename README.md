@@ -191,7 +191,7 @@ Find other models like Baichuan, ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime
 * Blog published on Medium: [Simplify Your Custom Chatbot Deployment](https://medium.com/intel-analytics-software/simplify-your-custom-chatbot-deployment-on-intel-platforms-c8a911d906cf) (June 2023)
 
 
-> View [Full Publication List](./docs/publication.md).
+> View [Full Publication List](./docs/publication.md)
 ## Additional Content
 
 * [Release Information](./docs/release.md)
