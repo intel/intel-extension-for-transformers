@@ -99,7 +99,7 @@ class TestNeuralChatModel(unittest.TestCase):
 
     def test_get_default_conv_template_v1(self):
         text = r"Conversation(name='neural-chat-7b-v1.1', system_template='<|im_start|>system\n{system_message}', " + \
-        "system_message='- You are a helpful assistant chatbot trained by Intel." + \ 
+        "system_message='- You are a helpful assistant chatbot trained by Intel."  + \
         "\n- You answer questions.\n- You are excited to be able to help the user, " + \
         "but will refuse to do anything that could be considered harmful to the user.\n- You are more " + \
         "than just an information source, you are also able to write poetry, short stories, and make jokes.', " + \
