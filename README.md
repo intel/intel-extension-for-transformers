@@ -93,7 +93,7 @@ Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag,
 The next token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
 
 | Model | INT4 Next Token Latency  |
-|---------------------|:----------------------------:|:------------:| 
+|---------------------|:------------:| 
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 21.98ms| 
 | [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 24.55ms|
 | [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 24.84ms|
