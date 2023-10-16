@@ -27,7 +27,7 @@ function pytest() {
     export GLOG_minloglevel=2
 
     itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
-    find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
+    find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/' >run.sh
     echo -e '
 # Kill the neuralchat server processes
 ports="7000 8000 9000"
