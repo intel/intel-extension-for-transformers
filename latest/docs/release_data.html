@@ -1,0 +1,3446 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Validated Model Performance &mdash; Intel® Extension for Transformers 0.1.dev1+g2b3aa15 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Validated Model Performance</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/release_data.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="validated-model-performance">
+<h1>Validated Model Performance<a class="headerlink" href="#validated-model-performance" title="Link to this heading"></a></h1>
+<ol>
+<li><p><a class="reference external" href="#llm-quantization">LLM Quantization</a></p></li>
+<li><p><a class="reference external" href="#llm-runtime-inference-based-on-pytorch-mode">LLM Runtime Inference based on Pytorch Mode</a></p>
+<p>2.1 <a class="reference external" href="#llms">LLMs</a></p>
+<p>2.2 <a class="reference external" href="#stable-diffusion">Stable Diffusion</a></p>
+<p>2.3 <a class="reference external" href="#electra">Electra</a></p>
+</li>
+<li><p><a class="reference external" href="#llm-runtime-GGML-compatible">LLM Runtime (GGML-Compatible)</a></p>
+<p>3.1 <a class="reference external" href="#llama-7b-hf">LLama-7B-hf</a></p>
+<p>3.2 <a class="reference external" href="#llama2-7b-chat">LLama2-7B-chat</a></p>
+<p>3.3 <a class="reference external" href="#mpt-7b">MPT-7B</a></p>
+<p>3.4 <a class="reference external" href="#gpt-j-6b">GPT-j-6B</a></p>
+<p>3.5 <a class="reference external" href="#falcon-7b">Falcon-7B</a></p>
+<p>3.6 <a class="reference external" href="#gpt-neox-20b">GPT-NEOX-20B</a></p>
+<p>3.7 <a class="reference external" href="#dolly-v2-3b">Dolly-V2-3B</a></p>
+<p>3.8 <a class="reference external" href="#opt-13b">OPT-1.3B</a></p>
+<p>3.9 <a class="reference external" href="#starcoder-3b">StarCoder-3B</a></p>
+</li>
+<li><p><a class="reference external" href="#llm-finetuning">LLM Finetuning</a></p></li>
+</ol>
+<p>System summary: Test by Intel on 09/19/2023. 1-node, 1x Intel(R) Xeon(R) Platinum 8480+ &#64;3.8GHz, 56 cores/socket, HT On, Turbo On, Total Memory 256GB (16x16GB DDR5 4800 MT/s [4800 MT/s]), BIOS 3A14.TEL2P1, microcode 0x2b0001b0,
+CentOS Stream 8, gcc (GCC) 8.5.0 20210514 (Red Hat 8.5.0-10), DL Models, Frameworks/Backends: PyTorch/ONNXRT/<a class="reference external" href="../intel_extension_for_transformers/llm/runtime/">LLM Runtime</a>/GGML, Datatype: FP32/INT8/BF16/FP8.
+Using 1 socket, 56 cores/instance, 1 instance and batch size 1</p>
+<p>Performance varies by use, configuration and other factors.
+For more complete information about performance and benchmark results, visit <a class="reference external" href="https://edc.intel.com/content/www/us/en/products/performance/benchmarks/overview/">www.intel.com/benchmarks</a></p>
+<section id="llm-quantization">
+<h2>LLM Quantization<a class="headerlink" href="#llm-quantization" title="Link to this heading"></a></h2>
+<p>Environment:</p>
+<p>Pytorch: 2.0.1+cpu</p>
+<p>Intel Extension for Pytorch: 2.0.100+cpu</p>
+<p>Intel Neural Compressor: 2.3</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th>INT8</th>
+<th></th>
+<th>FP32</th>
+<th></th>
+<th>INT8/FP32</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Framework</td>
+<td>Model</td>
+<td>Datasets</td>
+<td>Throughput (samples/sec)</td>
+<td>Accuracy</td>
+<td>Throughput (samples/sec)</td>
+<td>Accuracy</td>
+<td>Throughput Gain</td>
+<td>Relative Accuracy (INT8- FP32)/FP32</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>opt_1.3b</td>
+<td>NeelNanda/pile-10k</td>
+<td>34.07</td>
+<td>57.05%</td>
+<td>19.92</td>
+<td>57.89%</td>
+<td>1.71</td>
+<td>-1.44%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>bloom_1b7</td>
+<td>NeelNanda/pile-10k</td>
+<td>29.74</td>
+<td>49.95%</td>
+<td>13.3</td>
+<td>46.34%</td>
+<td>2.24</td>
+<td>7.79%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>bloom_7b1</td>
+<td>NeelNanda/pile-10k</td>
+<td>12.36</td>
+<td>60.14%</td>
+<td>3.22</td>
+<td>57.64%</td>
+<td>3.83</td>
+<td>4.34%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>opt_2.7b</td>
+<td>NeelNanda/pile-10k</td>
+<td>23.19</td>
+<td>63.67%</td>
+<td>12.24</td>
+<td>63.65%</td>
+<td>1.89</td>
+<td>0.03%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>opt_6.7b</td>
+<td>NeelNanda/pile-10k</td>
+<td>13.5</td>
+<td>67.01%</td>
+<td>4.1</td>
+<td>67.69%</td>
+<td>3.29</td>
+<td>-1.00%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>llama_13b</td>
+<td>NeelNanda/pile-10k</td>
+<td>8.9</td>
+<td>56.88%</td>
+<td>2.24</td>
+<td>76.27%</td>
+<td>3.97</td>
+<td>-25.42%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>llama_7b</td>
+<td>NeelNanda/pile-10k</td>
+<td>13.56</td>
+<td>58.55%</td>
+<td>4.4</td>
+<td>73.61%</td>
+<td>3.09</td>
+<td>-20.46%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>gpt_j_6b</td>
+<td>NeelNanda/pile-10k</td>
+<td>10.76</td>
+<td>67.59%</td>
+<td>4.38</td>
+<td>68.31%</td>
+<td>2.46</td>
+<td>-1.05%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>flan_t5_large</td>
+<td>samsum</td>
+<td>69.75</td>
+<td>46.25 (rougeLsum)</td>
+<td>33.16</td>
+<td>47.67 (rougeLsum)</td>
+<td>2.1</td>
+<td>-2.99%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>gpt_neox_clm</td>
+<td>wikitext</td>
+<td>1.47</td>
+<td>4.04 (eval_loss)</td>
+<td>0.65</td>
+<td>3.52 (eval_loss)</td>
+<td>2.27</td>
+<td>-14.78%</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>gpt_j_6b_clm</td>
+<td>wikitext</td>
+<td>0.86</td>
+<td>3 (eval_loss)</td>
+<td>0.28</td>
+<td>2.34 (eval_loss)</td>
+<td>3.1</td>
+<td>-28.67%</td>
+</tr>
+<tr>
+<td>onnx</td>
+<td>whisper_large</td>
+<td>lambda-openai</td>
+<td>2.11</td>
+<td>97.07%</td>
+<td>1.13</td>
+<td>96.96%</td>
+<td>1.87</td>
+<td>0.12%</td>
+</tr>
+</tbody>
+</table></section>
+<section id="llm-runtime-inference-based-on-pytorch-mode">
+<h2>LLM Runtime Inference based on Pytorch Mode<a class="headerlink" href="#llm-runtime-inference-based-on-pytorch-mode" title="Link to this heading"></a></h2>
+<p>Environment:</p>
+<p>Pytorch: 2.0.1+cpu</p>
+<section id="llms">
+<h3>LLMs<a class="headerlink" href="#llms" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Framework</th>
+<th>Model</th>
+<th>Input</th>
+<th>Output</th>
+<th>INT8</th>
+<th>FP32</th>
+<th>BF16</th>
+<th>FP8</th>
+<th>INT8/FP32</th>
+<th>BF16/FP32</th>
+<th>FP8/FP32</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pytorch</td>
+<td>gpt-neox-20b</td>
+<td>32</td>
+<td>32</td>
+<td>9283 (ms)</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>dolly-v2-3b</td>
+<td>32</td>
+<td>32</td>
+<td>3191 (ms)</td>
+<td>3798 (ms)</td>
+<td>2689 (ms)</td>
+<td>1.19x</td>
+<td>1.41x</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>llama-7b-hf</td>
+<td>32</td>
+<td>32</td>
+<td>1872 (ms)</td>
+<td>5402 (ms)</td>
+<td>2689 (ms)</td>
+<td>1935 (ms)</td>
+<td>2.89x</td>
+<td>2.01x</td>
+<td>2.79x</td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>gpt-j-6b-pruned</td>
+<td>32</td>
+<td>32</td>
+<td>4523 (ms)</td>
+<td>2421 (ms)</td>
+<td>1758 (ms)</td>
+<td>1.87x</td>
+<td>2.57x</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>pytorch</td>
+<td>gpt-j-6b</td>
+<td>32</td>
+<td>32</td>
+<td>1658 (ms)</td>
+<td>4561 (ms)</td>
+<td>2429 (ms)</td>
+<td>1793 (ms)</td>
+<td>2.75x</td>
+<td>1.88x</td>
+<td>2.54x</td>
+</tr>
+</tbody>
+</table></section>
+<section id="stable-diffusion">
+<h3>Stable Diffusion<a class="headerlink" href="#stable-diffusion" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Model</th>
+<th>Steps</th>
+<th>Output</th>
+<th>INT8</th>
+<th>FP32</th>
+<th>BF16</th>
+<th>INT8+BF16*</th>
+<th>INT8/FP32</th>
+<th>BF16/FP32</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stable_diffusion_v2_1</td>
+<td>20</td>
+<td>512*512</td>
+<td></td>
+<td>16.98 (s)</td>
+<td>2.83 (s)</td>
+<td></td>
+<td></td>
+<td>6.00x</td>
+</tr>
+<tr>
+<td>stable_diffusion_v1_5</td>
+<td>20</td>
+<td>512*512</td>
+<td>2.18 (s)</td>
+<td>10.94 (s)</td>
+<td>2.74 (s)</td>
+<td></td>
+<td>5.01x</td>
+<td>3.99x</td>
+</tr>
+<tr>
+<td>stable_diffusion_v1_5</td>
+<td>50</td>
+<td>512*512</td>
+<td>5.2 (s) / FID=35.46</td>
+<td></td>
+<td>6.3 (s) / FID = 31.07</td>
+<td>5.5 (s) / FID = 30.58</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>stable_diffusion_v1_4</td>
+<td>20</td>
+<td>512*512</td>
+<td></td>
+<td>11.39 (s)</td>
+<td>2.83 (s)</td>
+<td></td>
+<td></td>
+<td>4.02x</td>
+</tr>
+</tbody>
+</table><blockquote>
+<div><p><strong>Note</strong>: *Only works when steps = 50, using BF16 for inference from steps 1 to 5 and from steps 46 to 50, and INT8 for inference from steps 6 to 45. In this inference mode, accuracy and speed can achieve a good balance.</p>
+</div></blockquote>
+</section>
+<section id="electra">
+<h3>Electra<a class="headerlink" href="#electra" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th>FP32</th>
+<th>BF16</th>
+<th>BF16/FP32</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td>Batch Size</td>
+<td>Seq Length</td>
+<td>Latency (ms)</td>
+<td>Latency (ms)</td>
+<td>Latency</td>
+</tr>
+<tr>
+<td>electra_base_chinese_discriminator</td>
+<td>1</td>
+<td>16</td>
+<td>11.50</td>
+<td>4.30</td>
+<td>2.67x</td>
+</tr>
+<tr>
+<td></td>
+<td>4</td>
+<td>16</td>
+<td>5.50</td>
+<td>1.80</td>
+<td>3.06x</td>
+</tr>
+<tr>
+<td></td>
+<td>8</td>
+<td>16</td>
+<td>6.20</td>
+<td>1.70</td>
+<td>3.65x</td>
+</tr>
+<tr>
+<td></td>
+<td>16</td>
+<td>16</td>
+<td>5.60</td>
+<td>1.30</td>
+<td>4.31x</td>
+</tr>
+<tr>
+<td></td>
+<td>32</td>
+<td>16</td>
+<td>5.70</td>
+<td>1.20</td>
+<td>4.75x</td>
+</tr>
+<tr>
+<td></td>
+<td>64</td>
+<td>16</td>
+<td>5.20</td>
+<td>1.10</td>
+<td>4.73x</td>
+</tr>
+<tr>
+<td>electra_base_chinese_generator</td>
+<td>1</td>
+<td>128</td>
+<td>13.72</td>
+<td>3.89</td>
+<td>3.53x</td>
+</tr>
+<tr>
+<td></td>
+<td>4</td>
+<td>128</td>
+<td>11.60</td>
+<td>2.83</td>
+<td>4.10x</td>
+</tr>
+<tr>
+<td></td>
+<td>8</td>
+<td>128</td>
+<td>11.44</td>
+<td>2.85</td>
+<td>4.01x</td>
+</tr>
+<tr>
+<td></td>
+<td>16</td>
+<td>128</td>
+<td>12.04</td>
+<td>2.70</td>
+<td>4.46x</td>
+</tr>
+<tr>
+<td></td>
+<td>32</td>
+<td>128</td>
+<td>11.29</td>
+<td>2.52</td>
+<td>4.48x</td>
+</tr>
+<tr>
+<td></td>
+<td>64</td>
+<td>128</td>
+<td>11.75</td>
+<td>2.54</td>
+<td>4.63x</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+<section id="llm-runtime-ggml-compatible">
+<h2>LLM Runtime (GGML-Compatible)<a class="headerlink" href="#llm-runtime-ggml-compatible" title="Link to this heading"></a></h2>
+<p>Environment:
+GCC / G++:  12.1.0</p>
+<section id="llama-7b-hf">
+<h3>LLama-7B-hf<a class="headerlink" href="#llama-7b-hf" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>27.2</td>
+<td> 4212</td>
+<td>72.69</td>
+<td>915</td>
+<td>27.37</td>
+<td>58.73</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>30.39</td>
+<td>4495</td>
+<td>3091</td>
+<td>4033</td>
+<td>30.75</td>
+<td>2142</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>24.41</td>
+<td>4786</td>
+<td>71.1</td>
+<td>827</td>
+<td>24.63</td>
+<td>56.85</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>27.46</td>
+<td>4751</td>
+<td>2904</td>
+<td>3755</td>
+<td>27.56</td>
+<td>2012</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>24.84</td>
+<td>4810</td>
+<td>72.1</td>
+<td>842.05</td>
+<td>25.01</td>
+<td>57.72</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>27.97</td>
+<td>4790</td>
+<td>2749</td>
+<td>3616</td>
+<td>28.09</td>
+<td>1906</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>28.95</td>
+<td>4154</td>
+<td>125.24</td>
+<td>1022</td>
+<td>29.04</td>
+<td>95.51</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>32.49</td>
+<td>4966</td>
+<td>4645</td>
+<td>5652</td>
+<td>32.55</td>
+<td>3215</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.1</td>
+<td>4780</td>
+<td>113.01</td>
+<td>953</td>
+<td>27.28</td>
+<td>86.56</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>30.51</td>
+<td>4853</td>
+<td>5077</td>
+<td>6022</td>
+<td>30.64</td>
+<td>3513</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.99</td>
+<td>4808</td>
+<td>121.65</td>
+<td>989</td>
+<td>28.15</td>
+<td>92.8</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>31.22</td>
+<td>4855</td>
+<td>4805</td>
+<td>5773</td>
+<td>31.36</td>
+<td>3326</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>29.78</td>
+<td>4035</td>
+<td>426.64</td>
+<td>1349</td>
+<td>30.07</td>
+<td>303</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>34.07</td>
+<td>4789</td>
+<td>14561</td>
+<td>15617</td>
+<td>34.57</td>
+<td>10058</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.37</td>
+<td>4776</td>
+<td>309.31</td>
+<td>1157</td>
+<td>27.52</td>
+<td>222</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>30.6</td>
+<td>4811</td>
+<td>10653</td>
+<td>11601</td>
+<td>30.85</td>
+<td>7360</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.2</td>
+<td>4803</td>
+<td>282.86</td>
+<td>1126</td>
+<td>27.42</td>
+<td>203</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>30.06</td>
+<td>4827</td>
+<td>9677</td>
+<td>10609</td>
+<td>30.24</td>
+<td>6688</td>
+</tr>
+</tbody>
+</table></section>
+<section id="llama2-7b-chat">
+<h3>LLama2-7B-chat<a class="headerlink" href="#llama2-7b-chat" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>26.2</td>
+<td> 4320</td>
+<td>103.62</td>
+<td>915</td>
+<td>26.38</td>
+<td>79.73</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>30.74</td>
+<td>4516</td>
+<td>4102</td>
+<td>5055</td>
+<td>31.19</td>
+<td>2842</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>24.34</td>
+<td>4772</td>
+<td>91.57</td>
+<td>846</td>
+<td>24.64</td>
+<td>70.99</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>27.52</td>
+<td>4743</td>
+<td>4575</td>
+<td>5428</td>
+<td>27.58</td>
+<td>3166</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>24.55</td>
+<td>4784</td>
+<td>95.24</td>
+<td>856</td>
+<td>24.75</td>
+<td>73.58</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>27.7</td>
+<td>4762</td>
+<td>4185</td>
+<td>5043</td>
+<td>27.82</td>
+<td>2896</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>29.37</td>
+<td>4163</td>
+<td>130</td>
+<td>1040</td>
+<td>29.55</td>
+<td>98.94</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>32.89</td>
+<td>4952</td>
+<td>4812</td>
+<td>5831</td>
+<td>33.06</td>
+<td>3330</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.66</td>
+<td>4771</td>
+<td>113</td>
+<td>970</td>
+<td>28.54</td>
+<td>86.89</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>31.24</td>
+<td>4857</td>
+<td>9884</td>
+<td>10852</td>
+<td>31.33</td>
+<td>6829</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.87</td>
+<td>4782</td>
+<td>120.6</td>
+<td>984</td>
+<td>28.1</td>
+<td>92.17</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>31.13</td>
+<td>4819</td>
+<td>4507</td>
+<td>5472</td>
+<td>31.24</td>
+<td>3119</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>32.2</td>
+<td>3970</td>
+<td>426.65</td>
+<td>1424</td>
+<td>32.49</td>
+<td>304.4</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>33.99</td>
+<td>4774</td>
+<td>14457</td>
+<td>15511</td>
+<td>34.2</td>
+<td>9986</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>28.14</td>
+<td>4768</td>
+<td>309.57</td>
+<td>1181</td>
+<td>28.38</td>
+<td>222.4</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>31.49</td>
+<td>4786</td>
+<td>16512</td>
+<td>17488</td>
+<td>31.65</td>
+<td>11404</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.71</td>
+<td>4779</td>
+<td>283.91</td>
+<td>1142</td>
+<td>27.89</td>
+<td>204.6</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>31.53</td>
+<td>4780</td>
+<td>15819</td>
+<td>16797</td>
+<td>31.59</td>
+<td>10926</td>
+</tr>
+</tbody>
+</table></section>
+<section id="mpt-7b">
+<h3>MPT-7B<a class="headerlink" href="#mpt-7b" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>36.95</td>
+<td>3522</td>
+<td>108.74</td>
+<td>958.5</td>
+<td>37.24</td>
+<td>92.32</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>46.69</td>
+<td>4913</td>
+<td>15834</td>
+<td>17281</td>
+<td>46.83</td>
+<td>10940</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>34.76</td>
+<td>5206</td>
+<td>100.94</td>
+<td>900</td>
+<td>34.9</td>
+<td>85.92</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>44.98</td>
+<td>5147</td>
+<td>15506</td>
+<td>16901</td>
+<td>45.38</td>
+<td>10713</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>35.84</td>
+<td>5230</td>
+<td>98.71</td>
+<td>922</td>
+<td>36.07</td>
+<td>84.33</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>45.54</td>
+<td>5197</td>
+<td>15180</td>
+<td>16591</td>
+<td>45.73</td>
+<td>10488</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>38.33</td>
+<td>4101</td>
+<td>157.31</td>
+<td>1345</td>
+<td>38.59</td>
+<td>120.53</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>48.19</td>
+<td>5346</td>
+<td>17178</td>
+<td>18672</td>
+<td>48.35</td>
+<td>11868</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>37.75</td>
+<td>5199</td>
+<td>140.79</td>
+<td>1310</td>
+<td>37.94</td>
+<td>108.99</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>47.21</td>
+<td>5282</td>
+<td>17245</td>
+<td>18708</td>
+<td>47.36</td>
+<td>11914</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>38.04</td>
+<td>5227</td>
+<td>137.21</td>
+<td>1316</td>
+<td>38.19</td>
+<td>106.53</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>47.88</td>
+<td>5274</td>
+<td>17454</td>
+<td>18939</td>
+<td>48.15</td>
+<td>12058</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>37.92</td>
+<td>4047</td>
+<td>447.6</td>
+<td>1622</td>
+<td>38.26</td>
+<td>320.8</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>47.74</td>
+<td>5207</td>
+<td>26552</td>
+<td>28032</td>
+<td>48.03</td>
+<td>18336</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>34.78</td>
+<td>5192</td>
+<td>330.06</td>
+<td>1408</td>
+<td>35.02</td>
+<td>238.66</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>44.64</td>
+<td>5231</td>
+<td>22389</td>
+<td>23772</td>
+<td>44.81</td>
+<td>15462</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>34.53</td>
+<td>5225</td>
+<td>313.45</td>
+<td>1383</td>
+<td>34.79</td>
+<td>227.08</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>44.64</td>
+<td>5242</td>
+<td>21568</td>
+<td>22951</td>
+<td>44.86</td>
+<td>14896</td>
+</tr>
+</tbody>
+</table></section>
+<section id="gpt-j-6b">
+<h3>GPT-j-6B<a class="headerlink" href="#gpt-j-6b" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>23.59</td>
+<td> 4018</td>
+<td>62.48</td>
+<td>793.86</td>
+<td>23.82</td>
+<td>50.55</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>26.2</td>
+<td>4036</td>
+<td>2055</td>
+<td>2867</td>
+<td>26.43</td>
+<td>1426</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>29.21</td>
+<td>4553</td>
+<td>6114</td>
+<td>7019</td>
+<td>29.33</td>
+<td>4228</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>21.56</td>
+<td>5230</td>
+<td>60.56</td>
+<td>729</td>
+<td>21.75</td>
+<td>48.68</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>23.92</td>
+<td>5212</td>
+<td>1763</td>
+<td>2504</td>
+<td>24.17</td>
+<td>1224</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>26.62</td>
+<td>5119</td>
+<td>5230</td>
+<td>6055</td>
+<td>26.81</td>
+<td>3617</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>21.98</td>
+<td>5244</td>
+<td>60.85</td>
+<td>742.08</td>
+<td>22.28</td>
+<td>49.05</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>24.54</td>
+<td>5234</td>
+<td>2007</td>
+<td>2768</td>
+<td>24.7</td>
+<td>1393</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.16</td>
+<td>5184</td>
+<td>5151</td>
+<td>5993</td>
+<td>27.4</td>
+<td>3563</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>25.35</td>
+<td>3739</td>
+<td>107.52</td>
+<td>893.52</td>
+<td>25.42</td>
+<td>82.17</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>28.04</td>
+<td>4435</td>
+<td>3405</td>
+<td>4275.2</td>
+<td>28.07</td>
+<td>2359</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>30.36</td>
+<td>4914</td>
+<td>8916</td>
+<td>9857</td>
+<td>30.42</td>
+<td>6161</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>24.09</td>
+<td>5228</td>
+<td>95.24</td>
+<td>842.1</td>
+<td>24.13</td>
+<td>74.4</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>26.65</td>
+<td>5190</td>
+<td>3307</td>
+<td>4133</td>
+<td>26.89</td>
+<td>2290</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>29.09</td>
+<td>5164</td>
+<td>8021</td>
+<td>8923</td>
+<td>29.18</td>
+<td>5544</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>24.66</td>
+<td>5243</td>
+<td>98.16</td>
+<td>862.7</td>
+<td>24.93</td>
+<td>75.54</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.07</td>
+<td>5222</td>
+<td>3060</td>
+<td>3899</td>
+<td>27.38</td>
+<td>2120</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>29.56</td>
+<td>5210</td>
+<td>7599</td>
+<td>8515</td>
+<td>29.85</td>
+<td>5253</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>33.69</td>
+<td>3585</td>
+<td>393.24</td>
+<td>1437</td>
+<td>33.9</td>
+<td>281.6</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>36.24</td>
+<td>4389</td>
+<td>12702</td>
+<td>13825</td>
+<td>36.39</td>
+<td>8775</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>2012</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>39.19</td>
+<td>5232</td>
+<td>27264</td>
+<td>28479</td>
+<td>39.44</td>
+<td>18824</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>30.34</td>
+<td>5223</td>
+<td>291.84</td>
+<td>1232</td>
+<td>30.57</td>
+<td>210</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>33.09</td>
+<td>5137</td>
+<td>9206</td>
+<td>10231</td>
+<td>33.21</td>
+<td>6362</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>2012</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>37.34</td>
+<td>5245</td>
+<td>21341</td>
+<td>22499</td>
+<td>37.66</td>
+<td>14737</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>31.62</td>
+<td>5241</td>
+<td>262.3</td>
+<td>1242</td>
+<td>32</td>
+<td>192.2</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>34.03</td>
+<td>5193</td>
+<td>8363</td>
+<td>9418</td>
+<td>34.3</td>
+<td>5781</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>2012</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>36.94</td>
+<td>5257</td>
+<td>18868</td>
+<td>20013</td>
+<td>37.66</td>
+<td>13031</td>
+</tr>
+</tbody>
+</table></section>
+<section id="falcon-7b">
+<h3>Falcon-7B<a class="headerlink" href="#falcon-7b" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>37.36</td>
+<td>3797</td>
+<td>92.94</td>
+<td>1251</td>
+<td>37.69</td>
+<td>75.88</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>40.33</td>
+<td>4707</td>
+<td>5507</td>
+<td>6757</td>
+<td>40.63</td>
+<td>3813</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>35.84</td>
+<td>4990</td>
+<td>88.29</td>
+<td>1199</td>
+<td>36.32</td>
+<td>72.68</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>37.95</td>
+<td>4951</td>
+<td>5025</td>
+<td>6201</td>
+<td>38.14</td>
+<td>3479</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>36.1</td>
+<td>5019</td>
+<td>83.89</td>
+<td>1202</td>
+<td>36.36</td>
+<td>69.19</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>38.88</td>
+<td>4993</td>
+<td>5432</td>
+<td>6637</td>
+<td>39.41</td>
+<td>3761</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>39.15</td>
+<td>4395</td>
+<td>146.7</td>
+<td>1359</td>
+<td>39.43</td>
+<td>113.16</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>41.61</td>
+<td>5213</td>
+<td>6947</td>
+<td>8237</td>
+<td>42.54</td>
+<td>4807</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>38.08</td>
+<td>4980</td>
+<td>134.9</td>
+<td>1315</td>
+<td>38.23</td>
+<td>105.1</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>40.58</td>
+<td>5085</td>
+<td>6847</td>
+<td>8105</td>
+<td>40.82</td>
+<td>4737</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>38.33</td>
+<td>5011</td>
+<td>142.4</td>
+<td>1330</td>
+<td>38.55</td>
+<td>110.8</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>40.87</td>
+<td>5084</td>
+<td>6860</td>
+<td>8127</td>
+<td>41.18</td>
+<td>4746</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>38.44</td>
+<td>4269</td>
+<td>458.3</td>
+<td>1650</td>
+<td>38.55</td>
+<td>328.4</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>41.64</td>
+<td>4997</td>
+<td>17585</td>
+<td>18876</td>
+<td>41.94</td>
+<td>12147</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>35.87</td>
+<td>4971</td>
+<td>338.3</td>
+<td>1450</td>
+<td>36</td>
+<td>244.7</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>38.68</td>
+<td>5024</td>
+<td>13064</td>
+<td>14263</td>
+<td>39.06</td>
+<td>9026</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>36.22</td>
+<td>5005</td>
+<td>318.9</td>
+<td>1441</td>
+<td>36.43</td>
+<td>231.2</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>38.65</td>
+<td>5045</td>
+<td>11943</td>
+<td>13142</td>
+<td>38.83</td>
+<td>8253</td>
+</tr>
+</tbody>
+</table></section>
+<section id="gpt-neox-20b">
+<h3>GPT-NEOX-20B<a class="headerlink" href="#gpt-neox-20b" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>68.77</td>
+<td>10621</td>
+<td>234.18</td>
+<td>2365</td>
+<td>69.11</td>
+<td>183.16</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>76.55</td>
+<td>12537</td>
+<td>9817</td>
+<td>12190</td>
+<td>77.06</td>
+<td>6798</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>60.35</td>
+<td>13639</td>
+<td>214.2</td>
+<td>2085</td>
+<td>60.59</td>
+<td>167.34</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>68.19</td>
+<td>13524</td>
+<td>9213</td>
+<td>11327</td>
+<td>68.48</td>
+<td>6378</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>80.16</td>
+<td>13650</td>
+<td>221.5</td>
+<td>2706</td>
+<td>107.23</td>
+<td>186.9</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>88.48</td>
+<td>13586</td>
+<td>10045</td>
+<td>12788</td>
+<td>111.93</td>
+<td>6968</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>73.78</td>
+<td>11970</td>
+<td>390.1</td>
+<td>2308</td>
+<td>74.13</td>
+<td>308.2</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>80.75</td>
+<td>13871</td>
+<td>14993</td>
+<td>17496</td>
+<td>81.07</td>
+<td>10370</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>68.17</td>
+<td>13616</td>
+<td>348.6</td>
+<td>2121</td>
+<td>68.54</td>
+<td>275.9</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>74.84</td>
+<td>13717</td>
+<td>15278</td>
+<td>17598</td>
+<td>75.24</td>
+<td>10566</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>79.57</td>
+<td>13638</td>
+<td>398.2</td>
+<td>2467</td>
+<td>103.79</td>
+<td>324.2</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>86.06</td>
+<td>13703</td>
+<td>18119</td>
+<td>20787</td>
+<td>118.86</td>
+<td>12541</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>98.23</td>
+<td>11660</td>
+<td>1403</td>
+<td>4448</td>
+<td>99.04</td>
+<td>998.9</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>105.33</td>
+<td>13686</td>
+<td>45434</td>
+<td>48699</td>
+<td>105.79</td>
+<td>31382</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>86.19</td>
+<td>13582</td>
+<td>980</td>
+<td>3651</td>
+<td>86.74</td>
+<td>703.1</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>93.79</td>
+<td>13674</td>
+<td>32966</td>
+<td>35873</td>
+<td>94.4</td>
+<td>22776</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>92.36</td>
+<td>13621</td>
+<td>1136</td>
+<td>3999</td>
+<td>119.08</td>
+<td>823.6</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>95.49</td>
+<td>13675</td>
+<td>39914</td>
+<td>42874</td>
+<td>115.03</td>
+<td>27579</td>
+</tr>
+</tbody>
+</table></section>
+<section id="dolly-v2-3b">
+<h3>Dolly-V2-3B<a class="headerlink" href="#dolly-v2-3b" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>21.84</td>
+<td>2653</td>
+<td>78.37</td>
+<td>755.43</td>
+<td>22.29</td>
+<td>61.18</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>24.46</td>
+<td>2653</td>
+<td>3725</td>
+<td>4483</td>
+<td>24.69</td>
+<td>2578</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>22.76</td>
+<td>2665</td>
+<td>81.26</td>
+<td>786.95</td>
+<td>23.06</td>
+<td>63.31</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>25.54</td>
+<td>2677</td>
+<td>3399</td>
+<td>4191</td>
+<td>25.73</td>
+<td>2354</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>22.02</td>
+<td>2693</td>
+<td>78.17</td>
+<td>760.6</td>
+<td>22.14</td>
+<td>61</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>33.41</td>
+<td>2693</td>
+<td>3799</td>
+<td>4834</td>
+<td>66.96</td>
+<td>2643</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>22.5</td>
+<td>2653</td>
+<td>95.91</td>
+<td>793.2</td>
+<td>22.78</td>
+<td>73.27</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>25.77</td>
+<td>2653</td>
+<td>4374</td>
+<td>5173</td>
+<td>25.88</td>
+<td>3026</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>23.77</td>
+<td>2665</td>
+<td>97.84</td>
+<td>834.5</td>
+<td>23.84</td>
+<td>75.06</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>26.29</td>
+<td>2728</td>
+<td>4361</td>
+<td>5176</td>
+<td>26.56</td>
+<td>3018</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>23.79</td>
+<td>2693</td>
+<td>88.55</td>
+<td>826.7</td>
+<td>23.91</td>
+<td>68.58</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>29.4</td>
+<td>2725</td>
+<td>4822</td>
+<td>5733</td>
+<td>31.21</td>
+<td>3348</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>21.53</td>
+<td>2653</td>
+<td>219.81</td>
+<td>887.6</td>
+<td>21.68</td>
+<td>158.3</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>24.43</td>
+<td>2653</td>
+<td>8011</td>
+<td>8768</td>
+<td>24.6</td>
+<td>5535</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>22.04</td>
+<td>2665</td>
+<td>178.7</td>
+<td>861.6</td>
+<td>22.12</td>
+<td>129.6</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>23.85</td>
+<td>2693</td>
+<td>6342</td>
+<td>7081</td>
+<td>24.05</td>
+<td>4384</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>22.18</td>
+<td>2693</td>
+<td>166.6</td>
+<td>853.7</td>
+<td>22.26</td>
+<td>121.6</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>28.84</td>
+<td>2703</td>
+<td>8715</td>
+<td>9609</td>
+<td>56.39</td>
+<td>6034</td>
+</tr>
+</tbody>
+</table></section>
+<section id="opt-1-3b">
+<h3>OPT-1.3B<a class="headerlink" href="#opt-1-3b" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>9.85</td>
+<td> 1680</td>
+<td>104.88</td>
+<td>410.2</td>
+<td>9.95</td>
+<td>75.58</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>11.38</td>
+<td>1702</td>
+<td>3080</td>
+<td>3433</td>
+<td>11.83</td>
+<td>2129</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>13.15</td>
+<td>2513</td>
+<td>7516</td>
+<td>7924</td>
+<td>13.41</td>
+<td>5190</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>9.25</td>
+<td>2709</td>
+<td>110.7</td>
+<td>397.3</td>
+<td>9.3</td>
+<td>79.38</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>11.1</td>
+<td>2698</td>
+<td>3064</td>
+<td>3408</td>
+<td>11.15</td>
+<td>2118</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>12.77</td>
+<td>2701</td>
+<td>8045</td>
+<td>8441</td>
+<td>13.02</td>
+<td>5555</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>9.78</td>
+<td>2742</td>
+<td>112.7</td>
+<td>415.89</td>
+<td>9.84</td>
+<td>80.95</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>16.96</td>
+<td>2737</td>
+<td>3125</td>
+<td>3650</td>
+<td>54.16</td>
+<td>2174</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>16.69</td>
+<td>2729</td>
+<td>7929</td>
+<td>8447</td>
+<td>24.51</td>
+<td>5488</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>10.01</td>
+<td> 1703</td>
+<td>109.6</td>
+<td>419.9</td>
+<td>10.1</td>
+<td>78.87</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>11.71</td>
+<td>1760</td>
+<td>3389</td>
+<td>3752</td>
+<td>11.8</td>
+<td>2342</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>13.58</td>
+<td>2720</td>
+<td>8061</td>
+<td>8482</td>
+<td>13.63</td>
+<td>5566</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>9.69</td>
+<td>2709</td>
+<td>116.5</td>
+<td>416.9</td>
+<td>9.81</td>
+<td>83.67</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>11.51</td>
+<td>2686</td>
+<td>3290</td>
+<td>3647</td>
+<td>11.55</td>
+<td>2274</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>13.09</td>
+<td>2753</td>
+<td>8101</td>
+<td>8507</td>
+<td>13.14</td>
+<td>5594</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>10.4</td>
+<td>2742</td>
+<td>117.3</td>
+<td>439.8</td>
+<td>10.48</td>
+<td>84.37</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>15.65</td>
+<td>2730</td>
+<td>3494</td>
+<td>3979</td>
+<td>37.89</td>
+<td>2427</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>2012</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>20.52</td>
+<td>2758</td>
+<td>8395</td>
+<td>9031</td>
+<td>55.67</td>
+<td>5811</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>8.47</td>
+<td> 1699</td>
+<td>170</td>
+<td>432.6</td>
+<td>8.88</td>
+<td>120.12</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>10.07</td>
+<td>1702</td>
+<td>4940</td>
+<td>5252</td>
+<td>10.13</td>
+<td>3412</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>2012</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>11.71</td>
+<td>2709</td>
+<td>11741</td>
+<td>12104</td>
+<td>11.75</td>
+<td>8105</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>8.9</td>
+<td>2709</td>
+<td>154.83</td>
+<td>430.6</td>
+<td>9.05</td>
+<td>109.7</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>10.12</td>
+<td>2669</td>
+<td>4409</td>
+<td>4723</td>
+<td>10.2</td>
+<td>3046</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>2012</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>12.16</td>
+<td>2742</td>
+<td>11009</td>
+<td>11386</td>
+<td>12.19</td>
+<td>7600</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>9.48</td>
+<td>2742</td>
+<td>152.31</td>
+<td>446.04</td>
+<td>9.56</td>
+<td>108.14</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>1024</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>14.39</td>
+<td>2721</td>
+<td>5843</td>
+<td>6289</td>
+<td>27.99</td>
+<td>4049</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>2012</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>17.01</td>
+<td>2751</td>
+<td>13001</td>
+<td>13529</td>
+<td>51.84</td>
+<td>8989</td>
+</tr>
+</tbody>
+</table></section>
+<section id="starcoder-3b">
+<h3>StarCoder-3B<a class="headerlink" href="#starcoder-3b" title="Link to this heading"></a></h3>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Backend</th>
+<th>Input</th>
+<th>Output</th>
+<th>Cores/Instance</th>
+<th>Precision</th>
+<th>Compute Type</th>
+<th>Group Size</th>
+<th>Next Token(ms)</th>
+<th>Memory mean used (Top 50%) MB</th>
+<th>First Token(ms)</th>
+<th>Total Latency(ms)</th>
+<th>P90 Latency(ms)</th>
+<th>P99 Latency(ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>26.85</td>
+<td>2868</td>
+<td>175.2</td>
+<td>1007</td>
+<td>27.12</td>
+<td>129.3</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>26.78</td>
+<td>2868</td>
+<td>172.1</td>
+<td>1002</td>
+<td>26.95</td>
+<td>127.2</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>128</td>
+<td>28.31</td>
+<td>2763</td>
+<td>173.05</td>
+<td>1050</td>
+<td>28.53</td>
+<td>128.7</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.8</td>
+<td>2868</td>
+<td>200.74</td>
+<td>1062</td>
+<td>28.2</td>
+<td>147.4</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.97</td>
+<td>2896</td>
+<td>193.84</td>
+<td>1060</td>
+<td>28.12</td>
+<td>142.9</td>
+</tr>
+<tr>
+<td>LLM Runtime</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>29.16</td>
+<td>2876</td>
+<td>195.67</td>
+<td>1099</td>
+<td>29.31</td>
+<td>144.7</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>32</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>26.57</td>
+<td>2868</td>
+<td>368.5</td>
+<td>1192</td>
+<td>26.74</td>
+<td>262.1</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>48</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>26.5</td>
+<td>2842</td>
+<td>310.5</td>
+<td>1132</td>
+<td>26.67</td>
+<td>222.3</td>
+</tr>
+<tr>
+<td>GGML</td>
+<td>32</td>
+<td>32</td>
+<td>56</td>
+<td>INT4</td>
+<td>INT8</td>
+<td>32</td>
+<td>27.17</td>
+<td>2825</td>
+<td>293.92</td>
+<td>1136</td>
+<td>27.28</td>
+<td>211.2</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+<section id="llm-finetuning">
+<h2>LLM Finetuning<a class="headerlink" href="#llm-finetuning" title="Link to this heading"></a></h2>
+<p>Environments:</p>
+<p>PyTorch: 2.0.1+cpu</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Framework</th>
+<th>Hidden Size</th>
+<th>Dataset (Alpaca)</th>
+<th>Concatenation</th>
+<th>Nodes</th>
+<th>PPN</th>
+<th>Precision</th>
+<th>LoRA</th>
+<th>LoRA rank/alpha</th>
+<th>Epoches</th>
+<th>Time/Epoch</th>
+<th>Total Time</th>
+<th>TruthfulQA (mc1/mc2)</th>
+<th>Global Batch Size</th>
+<th>Learning Rate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PyTorch</td>
+<td>4096</td>
+<td>13K</td>
+<td>Yes</td>
+<td>1</td>
+<td>1</td>
+<td>BF16</td>
+<td>Yes</td>
+<td>8/16</td>
+<td>3</td>
+<td>3.2 Hour</td>
+<td>9.6 Hours</td>
+<td>0.30/0.45</td>
+<td>128</td>
+<td>1.00E-04</td>
+</tr>
+<tr>
+<td>PyTorch</td>
+<td>4096</td>
+<td>13K</td>
+<td>Yes</td>
+<td>2</td>
+<td>2</td>
+<td>BF16</td>
+<td>Yes</td>
+<td>8/16</td>
+<td>3</td>
+<td>1.2 Hour</td>
+<td>3.6 Hours</td>
+<td>0.30/0.45</td>
+<td>128</td>
+<td>1.00E-04</td>
+</tr>
+<tr>
+<td>PyTorch</td>
+<td>4096</td>
+<td>13K</td>
+<td>Yes</td>
+<td>4</td>
+<td>2</td>
+<td>BF16</td>
+<td>Yes</td>
+<td>8/16</td>
+<td>3</td>
+<td>0.67 Hour</td>
+<td>2 Hours</td>
+<td>0.30/0.45</td>
+<td>128</td>
+<td>1.00E-04</td>
+</tr>
+</tbody>
+</table></section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7fdffc6e85e0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
