@@ -57,7 +57,7 @@ class Model {
   }
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
                   float repeat_penalty, int num_beams, bool do_sample, int top_k, float top_p, float temperature,
-                  int min_new_tokens, float length_penalty, bool do_early_stopping);
+                  int min_new_tokens, float length_penalty, bool early_stopping);
   void reinit();
   std::vector<model_token> generate(const std::vector<model_token>& input_ids);
   std::vector<model_token> generate_tokens(const std::vector<model_token>& input_ids);
@@ -79,13 +79,13 @@ class Model {
   model_token post_process(float* logits);
   model_token post_greedy_search(float* logits);
   std::vector<model_token> post_beam_search(model_context* lctx, const int& n_predict, const model_token* tokens_inp,
-                       const int& n_tokens, const int& n_threads);
+                                            const int& n_tokens, const int& n_threads);
   model_token post_sample_top_k_top_p_repeat(float* logits);
 };
 
 void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
                        int threads, float repeat_penalty, int num_beams, bool do_sample, int top_k, float top_p,
-                       float temperature, int min_new_tokens, float length_penalty, bool do_early_stopping) {
+                       float temperature, int min_new_tokens, float length_penalty, bool early_stopping) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
@@ -116,7 +116,7 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
   last_n_tokens.resize(n_ctx, 0);
   ctx->generation_conf.min_new_tokens = min_new_tokens;
   ctx->generation_conf.length_penalty = length_penalty;
-  ctx->generation_conf.do_early_stopping = do_early_stopping;
+  ctx->generation_conf.do_early_stopping = early_stopping;
 }
 
 void Model::reinit() {
@@ -217,8 +217,9 @@ model_token Model::post_greedy_search(float* logits) {
   return id;
 }
 
-std::vector<model_token> Model::post_beam_search(model_context* lctx, const int& n_predict, const model_token* tokens_inp,
-                            const int& n_tokens, const int& n_threads) {
+std::vector<model_token> Model::post_beam_search(model_context* lctx, const int& n_predict,
+                                                 const model_token* tokens_inp, const int& n_tokens,
+                                                 const int& n_threads) {
   // TODO: to implement
   static std::set<model_archs> supported_archs = {MODEL_GPTJ, MODEL_GPTNEOX};
   if (supported_archs.count(params.model_arch) != 0) {
@@ -432,7 +433,7 @@ PYBIND11_MODULE(polyglot_cpp, m)
            py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
            py::arg("threads") = 8, py::arg("repeat_penalty") = 1.1f, py::arg("num_beams") = 1,
            py::arg("do_sample") = false, py::arg("top_k") = 40, py::arg("top_p") = 0.95, py::arg("temperature") = 0.8,
-           py::arg("min_new_tokens") = 0, py::arg("length_penalty") = 1.0, py::arg("do_early_stopping") = false)
+           py::arg("min_new_tokens") = 0, py::arg("length_penalty") = 1.0, py::arg("early_stopping") = false)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),

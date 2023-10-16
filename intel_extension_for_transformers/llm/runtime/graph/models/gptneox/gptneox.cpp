@@ -73,7 +73,6 @@ struct ne_tensor* gpt_neox_ff(const model_layer& layer, const int batch_size, co
 
 static bool gptneox_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                         const int n_past, const int n_threads) {
-
   const int64_t t_start_us = ne_time_us();
 
   const int N = n_tokens;
@@ -153,7 +152,6 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
 
       // store key and value to memory
       {
-        // Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, Vcur, n_embd, N * batch_size));
         std::vector<ne_tensor*> Kcur_bs(batch_size);
         std::vector<ne_tensor*> Vcur_bs(batch_size);
         std::vector<ne_tensor*> k_bs(batch_size);
@@ -186,15 +184,6 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
           ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur_bs[i], k_bs[i]));
           ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur_bs[i], v_bs[i]));
         }
-
-        // struct ne_tensor* k =
-        //     ne_view_1d(ctx0, kv_self.k, N * n_embd, (ne_element_size(kv_self.k) * n_embd) * (il * n_ctx + n_past));
-        // struct ne_tensor* v =
-        //     ne_view_2d(ctx0, kv_self.v, N, n_embd, (n_ctx)*ne_element_size(kv_self.v),
-        //                (il * n_ctx) * ne_element_size(kv_self.v) * n_embd + n_past * ne_element_size(kv_self.v));
-
-        // ne_build_forward_expand(&gf, ne_cpy(ctx0, Kcur, k));
-        // ne_build_forward_expand(&gf, ne_cpy(ctx0, Vcur, v));
       }
       // Q = Qcur.contiguous().view(n_embd/n_head, n_head, N).permute(0, 2, 1, 3)
       struct ne_tensor* Q = ne_permute(ctx0, ne_reshape_4d(ctx0, Qcur, head_dim, n_head, N, batch_size), 0, 2, 1, 3);
@@ -319,14 +308,6 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
         memcpy(logits_out.data() + (i * n_vocab), (float*)ne_get_data(inpL) + (i * bs_stride) + (n_vocab * (N - 1)),
                sizeof(float) * n_vocab);
       }
-#if 0
-      printf("\n logits: \n");
-      for (int k = 0; k < batch_size; ++k) {
-        printf("batch %d:  ", k);
-        for (int i = 0; i < 32; ++i) printf("%12.6f, ", logits_out[i + k * n_vocab]);
-        printf("\n");
-      }
-#endif
     }
   }
 
