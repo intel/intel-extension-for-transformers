@@ -16,13 +16,16 @@
 # limitations under the License.
 
 import time
+import base64
 import asyncio
+from typing import Optional
 from fastapi.routing import APIRouter
 from fastapi import APIRouter
 from ...cli.log import logger
+from ...config import GenerationConfig
 from ...utils.database.mysqldb import MysqlDb
 from fastapi import Request, BackgroundTasks, status, UploadFile, File
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from .photoai_services import *
 from .photoai_utils import (
     byte64_to_image,
@@ -31,7 +34,6 @@ from .photoai_utils import (
 )
 from .voicechat_api import (
     handle_talkingbot_asr as talkingbot_asr,
-    talkingbot as talkingbot_tts,
     create_speaker_embedding as talkingbot_embd
 )
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner import NamedEntityRecognition
@@ -51,6 +53,22 @@ class PhotoAIAPIRouter(APIRouter):
             logger.error("Chatbot instance is not found.")
             raise RuntimeError("Chatbot instance has not been set.")
         return self.chatbot
+    
+    async def handle_voice_chat_request(self, prompt: str, audio_output_path: Optional[str]=None) -> str:
+        chatbot = self.get_chatbot()
+        try:
+            config = GenerationConfig(audio_output_path=audio_output_path)
+            result = chatbot.chat_stream(query=prompt, config=config)
+            def audio_file_generate(result):
+                for path in result:
+                    with open(path,mode="rb") as file:
+                        bytes = file.read()
+                        data = base64.b64encode(bytes)
+                    yield f"data: {data}\n\n"
+                yield f"data: [DONE]\n\n"
+            return StreamingResponse(audio_file_generate(result), media_type="text/event-stream")
+        except Exception as e:
+            raise Exception(e)
 
 
 router = PhotoAIAPIRouter()
@@ -461,7 +479,13 @@ async def handle_talkingbot_create_embedding(file: UploadFile = File(...)):
 
 @router.post("/v1/aiphotos/talkingbot/llm_tts")
 async def handle_talkingbot_llm_tts(request: Request):
-    res = talkingbot_tts(request=request)
-    res = await asyncio.gather(res)
-    return res
+    data = await request.json()
+    text = data["text"]
+    voice = data["voice"]
+    knowledge_id = data["knowledge_id"]
+    audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio"
+
+    logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
+
+    return await router.handle_voice_chat_request(text, audio_output_path)
 
