@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
     std::string prompt = build_prompt_glm2(prompts);
     embd_inp = ::model_tokenize(ctx, prompt, false);
     embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
-  } else if (params.model_arch == MODEL_CHATGLM or params.model_arch == MODEL_BAICHUAN) {
+  } else if (params.model_arch == MODEL_CHATGLM || params.model_arch == MODEL_BAICHUAN) {
     for (auto& i : params.ids) {
       embd_inp.emplace_back(i);
     }
