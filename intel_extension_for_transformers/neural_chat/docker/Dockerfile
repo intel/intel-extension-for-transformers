@@ -126,11 +126,12 @@ WORKDIR /intel-extension-for-transformers
 COPY . /intel-extension-for-transformers
 
 # Build ITREX
-RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
     pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
-    pip install -r requirements_hpu.txt && \
-    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v .
+    pip install -r requirements_hpu.txt
+    
 
 # Build ITREX
 #RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
