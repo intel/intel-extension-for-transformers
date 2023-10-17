@@ -19,10 +19,10 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <type_traits>
-#include <vector>
 #include "jblas/jit_blas.h"
 #include "jblas/jit_blas_epilogue.h"
 #include "jblas/jit_blas_gemm.h"
@@ -93,14 +93,15 @@ void qbits_quantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
 
   if (initer.verbose) timer.start();
   auto do_quant = [&](typename PrologueB::StorageWeight* ptr) {
-    std::vector<int8_t> buffer(ptr->mSize);
-    ptr->assign(buffer.data());
+    int8_t* buffer = jblas::utils::amalloc<int8_t>(ptr->mSize);
+    ptr->assign(buffer);
     if (ctx->transpose)
       compress_kernel.packTransposeWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->k, ptr);
     else
       compress_kernel.packWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->n, ptr);
     *(ctx->output) = torch::zeros(ptr->mSize, torch::kInt8);
     ptr->serialize(ctx->output->data_ptr<int8_t>());
+    jblas::utils::afree(buffer);
   };
   if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>) {
     auto storage = compress_kernel.createStorage(ctx->n, ctx->k, ctx->blocksize);
@@ -216,11 +217,7 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
                     "Qbits: workspace size should large than " + std::to_string(need_size) + " bytes");
         return workspace;
       } else {
-#ifdef _WIN32
-        tmpbuf = _aligned_malloc(need_size, 64);
-#else
-        tmpbuf = aligned_alloc(64, need_size);
-#endif
+        tmpbuf = jblas::utils::amalloc<int8_t>(need_size);
         return tmpbuf;
       }
     };
@@ -237,13 +234,7 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
       ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, &quantA};
       parse_paramC<KERNEL, ParamA>(p, ctx, param_a);
     }
-    if (tmpbuf != NULL) {
-#ifdef _WIN32
-      _aligned_free(tmpbuf);
-#else
-      free(tmpbuf);
-#endif
-    }
+    if (tmpbuf != NULL) jblas::utils::afree(tmpbuf);
   }
 }
 
