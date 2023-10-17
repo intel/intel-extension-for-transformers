@@ -92,7 +92,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   gf.n_threads = N >= 32 && ne_cpu_has_blas() ? 1 : n_threads;
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
-  ne_set_name(embd, "embd");
   memcpy(embd->data, tokens, N * ne_element_size(embd));
 
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
@@ -109,7 +108,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
     cur = ne_norm(ctx0, inpL);
 
-    ne_set_name(cur, "cur");
     cur = ne_mul(ctx0, cur, model.layers[il].norm[0]);
     cur = ne_add(ctx0, cur, model.layers[il].norm[1]);
 
@@ -123,76 +121,74 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       ne_tensor* query_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, 3 * head_size * ne_element_size(cur),
                                           cur->nb[1], 0);  // [qlen, 3 * hidden]
 
-      ne_set_name(query_layer, "query_layer");
       query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 4, first_tokens_size);
-      query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);  // [heads, qlen, head_size]
 
       ne_tensor* key_layer =
           ne_view_3d(ctx0, cur, head_size, num_attention_heads, qlen, 3 * head_size * ne_element_size(cur), cur->nb[1],
                      head_size * ne_element_size(cur));
       key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 4, first_tokens_size);  // [qlen, heads, head_size]
-      key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3);                                   // [heads, qlen, head_size]
+
 
       ne_tensor* value_layer =
           ne_view_3d(ctx0, cur, head_size, num_attention_heads, qlen, 3 * head_size * ne_element_size(cur), cur->nb[1],
                      2 * head_size * ne_element_size(cur));     // [qlen, heads, head_size]
-      value_layer = ne_permute(ctx0, value_layer, 1, 2, 0, 3);  // [heads, head_size, qlen]
 
-      // store key and value to memory
-      {
-        struct ne_tensor* k_cache_view =
-            ne_view_3d(ctx0, model.layers[il].k_cache, head_size, qlen, num_attention_heads,
-                       model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
-                       n_past * head_size * ne_element_size(model.layers[il].k_cache));  // [kv_heads, qlen, head_size]
-        ne_set_name(k_cache_view, "k_cache_view");
+      bool run_mha_reordered = false;
+      if (!run_mha_reordered) {
+        query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);  // [heads, qlen, head_size]
+        key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3);      // [heads, qlen, head_size]
+        value_layer = ne_permute(ctx0, value_layer, 1, 2, 0, 3);  // [heads, head_size, qlen]
+        // store key and value to memory
+        {
+          struct ne_tensor* k_cache_view =
+              ne_view_3d(ctx0, model.layers[il].k_cache, head_size, qlen, num_attention_heads,
+                        model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
+                        n_past * head_size * ne_element_size(model.layers[il].k_cache));  // [kv_heads, qlen, head_size]
 
-        struct ne_tensor* v_cache_view =
-            ne_view_3d(ctx0, model.layers[il].v_cache, qlen, head_size, num_attention_heads,
-                       model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
-                       n_past * ne_element_size(model.layers[il].v_cache));  // [kv_heads, head_size, qlen]
-        ne_set_name(v_cache_view, "v_cache_view");
+          struct ne_tensor* v_cache_view =
+              ne_view_3d(ctx0, model.layers[il].v_cache, qlen, head_size, num_attention_heads,
+                        model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
+                        n_past * ne_element_size(model.layers[il].v_cache));  // [kv_heads, head_size, qlen]
 
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, key_layer, k_cache_view));
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
+          ne_build_forward_expand(&gf, ne_cpy(ctx0, key_layer, k_cache_view));
+          ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
+        }
+        // concat key & value with past kv
+        key_layer = ne_view_3d(ctx0, model.layers[il].k_cache, head_size, n_past + qlen, num_attention_heads,
+                              model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
+                              0);  // [kv_heads, klen, head_size]
+        value_layer = ne_view_3d(ctx0, model.layers[il].v_cache, n_past + qlen, head_size, num_attention_heads,
+                                model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
+                                0);  // [kv_heads, head_size, klen]
+
+        // attention
+        struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [kv_heads, mqa_scale * qlen, klen]
+
+        if (n_past == 0) {
+          // build attention mask for context input
+          ne_tensor* inf = ne_new_tensor_3d(ctx0, attn_scores->type, 1, qlen - 1, num_attention_heads, NE_SIZE_CALC);
+          ne_set_f32(inf, -INFINITY);
+
+          ne_tensor* masked_attn_scores =
+              ne_view_3d(ctx0, attn_scores, 1, qlen - 1, num_attention_heads, qlen * ne_element_size(attn_scores),
+                        qlen * qlen * ne_element_size(attn_scores), (qlen - 1) * ne_element_size(attn_scores));
+
+          ne_build_forward_expand(&gf, ne_cpy(ctx0, inf, masked_attn_scores));
+        }
+
+        attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, 1.f / std::sqrt(head_size)));
+
+        ne_tensor* attn_probs = ne_soft_max_inplace(ctx0, attn_scores);  // [heads, qlen, klen]
+
+        ne_tensor* context_layer = ne_mul_mat(ctx0, value_layer, attn_probs);  // [heads, qlen, head_size]
+
+        context_layer = ne_cont(ctx0, ne_permute(ctx0, context_layer, 0, 2, 1, 3));
+
+        context_layer = ne_reshape_2d(ctx0, context_layer, hidden_size, qlen);
+
+        cur = ne_mul_mat(ctx0, model.layers[il].attn[2], context_layer);
+        cur = ne_add(ctx0, cur, model.layers[il].attn[3]);
       }
-      // concat key & value with past kv
-      key_layer = ne_view_3d(ctx0, model.layers[il].k_cache, head_size, n_past + qlen, num_attention_heads,
-                             model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
-                             0);  // [kv_heads, klen, head_size]
-      value_layer = ne_view_3d(ctx0, model.layers[il].v_cache, n_past + qlen, head_size, num_attention_heads,
-                               model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
-                               0);  // [kv_heads, head_size, klen]
-
-      // attention
-      struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [kv_heads, mqa_scale * qlen, klen]
-      ne_set_name(attn_scores, "attn_scores");
-
-      if (n_past == 0) {
-        // build attention mask for context input
-        ne_tensor* inf = ne_new_tensor_3d(ctx0, attn_scores->type, 1, qlen - 1, num_attention_heads, NE_SIZE_CALC);
-        ne_set_f32(inf, -INFINITY);
-
-        ne_tensor* masked_attn_scores =
-            ne_view_3d(ctx0, attn_scores, 1, qlen - 1, num_attention_heads, qlen * ne_element_size(attn_scores),
-                       qlen * qlen * ne_element_size(attn_scores), (qlen - 1) * ne_element_size(attn_scores));
-
-        ne_set_name(masked_attn_scores, "masked_attn_scores");
-        ne_build_forward_expand(&gf, ne_cpy(ctx0, inf, masked_attn_scores));
-      }
-
-      attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, 1.f / std::sqrt(head_size)));
-      ne_set_name(attn_scores, "attn_scores");
-
-      ne_tensor* attn_probs = ne_soft_max_inplace(ctx0, attn_scores);  // [heads, qlen, klen]
-
-      ne_tensor* context_layer = ne_mul_mat(ctx0, value_layer, attn_probs);  // [heads, qlen, head_size]
-
-      context_layer = ne_cont(ctx0, ne_permute(ctx0, context_layer, 0, 2, 1, 3));
-
-      context_layer = ne_reshape_2d(ctx0, context_layer, hidden_size, qlen);
-
-      cur = ne_mul_mat(ctx0, model.layers[il].attn[2], context_layer);
-      cur = ne_add(ctx0, cur, model.layers[il].attn[3]);
     }
 
     lctx.use_buf(ctx0, 1);
@@ -203,7 +199,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
     struct ne_tensor* mlp_input = ne_norm(ctx0, inpL);
 
-    ne_set_name(mlp_input, "mlp_input");
     mlp_input = ne_mul(ctx0, mlp_input, model.layers[il].norm[2]);
     mlp_input = ne_add(ctx0, mlp_input, model.layers[il].norm[3]);
 
@@ -235,7 +230,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   {
     inpL = ne_norm(ctx0, inpL);
 
-    ne_set_name(inpL, "inpL");
     inpL = ne_mul(ctx0, inpL, model.others[1]);
     inpL = ne_add(ctx0, inpL, model.others[2]);
   }

@@ -113,7 +113,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   }
 
   struct ne_tensor* embd = d_ne_new_tensor_1d(ctx0, NE_TYPE_I32, N);
-  ne_set_name(embd, "embd");
   memcpy(embd->data, tokens, N * ne_element_size(embd));
   struct ne_tensor* inpL = ne_get_rows(ctx0, model.others[0], embd);
 
@@ -134,19 +133,19 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
       struct ne_tensor* query_layer =
           ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
                      0);  // [N, heads, head_size]
-      ne_set_name(query_layer, "query_layer");
+
       query_layer = ne_rope_inplace(ctx0, query_layer, n_past, rope_dim, 0, 0);
 
       struct ne_tensor* key_layer =
           ne_view_3d(ctx0, cur, head_size, num_kv_heads, N, head_size * ne_element_size(cur), cur->nb[1],
                      hidden_size * ne_element_size(cur));  // [N, kv_heads, head_size]
-      ne_set_name(key_layer, "key_layer");
+
       key_layer = ne_rope_inplace(ctx0, key_layer, n_past, rope_dim, 0, 0);
 
       struct ne_tensor* value_layer =
           ne_view_3d(ctx0, cur, head_size, num_kv_heads, N, head_size * ne_element_size(cur), cur->nb[1],
                      (hidden_size + head_size * num_kv_heads) * ne_element_size(cur));  // [N, kv_heads, head_size]
-      ne_set_name(value_layer, "value_layer");
+
 
       const float attn_scale = 1.f / std::sqrt(head_size);
       if (!run_mha_reordered) {
@@ -161,12 +160,11 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
               ne_view_3d(ctx0, model.layers[il].k_cache, head_size, N, num_kv_heads, model.layers[il].k_cache->nb[1],
                          model.layers[il].k_cache->nb[2],
                          n_past * head_size * ne_element_size(model.layers[il].k_cache));  // [kv_heads, N, head_size]
-          ne_set_name(k_cache_view, "k_cache_view");
+
           struct ne_tensor* v_cache_view =
               ne_view_3d(ctx0, model.layers[il].v_cache, N, head_size, num_kv_heads, model.layers[il].v_cache->nb[1],
                          model.layers[il].v_cache->nb[2],
                          n_past * ne_element_size(model.layers[il].v_cache));  // [kv_heads, head_size, N]
-          ne_set_name(v_cache_view, "v_cache_view");
 
           ne_build_forward_expand(&gf, ne_cpy(ctx0, key_layer, k_cache_view));
           ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
@@ -182,7 +180,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
         // attention
         struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [kv_heads, mqa_scale * N, klen]
-        ne_set_name(attn_scores, "attn_scores");
         attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, attn_scale));
 
         if (n_past == 0) {
@@ -248,7 +245,7 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
 
     // mlp.forward
     struct ne_tensor* mlp_output = ne_rms_norm(ctx0, hidden_states);
-    ne_set_name(mlp_output, "mlp_output");
+
     // mlp_output = ne_mul(ctx0, mlp_output, model.layers[il].norm[1]);
     mlp_output = ne_mul(ctx0, ne_repeat(ctx0, model.layers[il].norm[1], mlp_output), mlp_output);
 
@@ -257,8 +254,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
     x0 = ne_silu(ctx0, x0);
     struct ne_tensor* x1 = ne_view_2d(ctx0, mlp_output, mlp_output->ne[0] / 2, mlp_output->ne[1], mlp_output->nb[1],
                                       mlp_output->ne[0] / 2 * ne_element_size(mlp_output));
-    ne_set_name(x0, "x0");
-    ne_set_name(x1, "x1");
     mlp_output = ne_mul(ctx0, x0, x1);
     mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
 
@@ -271,7 +266,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   // norm
   {
     inpL = ne_rms_norm(ctx0, inpL);
-    ne_set_name(inpL, "inpL");
     // inpL = ne_mul(ctx0, inpL, model.others[1]);
     inpL = ne_mul(ctx0, ne_repeat(ctx0, model.others[1], inpL), inpL);
   }
