@@ -46,7 +46,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Download ITREX code
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
+RUN mkdir -p /intel-extension-for-transformers
+WORKDIR /intel-extension-for-transformers
+COPY . /intel-extension-for-transformers
 
 # Install miniconda
 ENV CONDA_DIR /opt/conda
@@ -119,19 +121,21 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install -e .
 
 # Download ITREX code
-ARG ITREX_VER=main
-ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
-
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers && \
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
-    pip install -r requirements.txt && \
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
-    pip install -r requirements_hpu.txt
+RUN mkdir -p /intel-extension-for-transformers
+WORKDIR /intel-extension-for-transformers
+COPY . /intel-extension-for-transformers
 
 # Build ITREX
-RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
-    pip install transformers==4.32.0 && \
-    pip install accelerate==0.22.0
+RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+    pip install -r requirements.txt && \
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
+    pip install -r requirements_hpu.txt && \
+    cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v .
+
+# Build ITREX
+#RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
+#    pip install transformers==4.32.0 && \
+#    pip install accelerate==0.22.0
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
