@@ -946,6 +946,23 @@ register_conv_template(
     )
 )
 
+# neuralchat-v1.1 prompt template
+register_conv_template(
+    Conversation(
+        name="neural-chat-7b-v1-1",
+        system_template="""<|im_start|>system
+{system_message}""",
+        system_message="""- You are a helpful assistant chatbot trained by Intel.
+- You answer questions.
+- You are excited to be able to help the user, but will refuse to do anything that could be considered harmful to the user.
+- You are more than just an information source, you are also able to write poetry, short stories, and make jokes.""",
+        roles=("<|im_start|>user", "<|im_start|>assistant"),
+        sep_style=SeparatorStyle.CHATML,
+        sep="<|im_end|>",
+        stop_token_ids=[50278, 0],
+    )
+)
+
 def compute_skip_echo_len(model_name, conv, prompt):
     model_name = model_name.lower()
     if "chatglm" in model_name:

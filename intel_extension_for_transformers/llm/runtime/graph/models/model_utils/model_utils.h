@@ -152,8 +152,6 @@ MODEL_API float* model_get_embeddings(struct model_context* ctx);
 MODEL_API const char* model_token_to_str(const struct model_context* ctx, model_token token);
 
 // Special tokens
-MODEL_API model_token model_token_bos();
-MODEL_API model_token model_token_eos();
 MODEL_API model_token model_token_nl();
 
 // Sampling functions
@@ -373,6 +371,8 @@ class beam_search_kv_cache_reorder {
       : ctx(lctx),
         n_ctx(lctx->model.hparams.n_ctx),
         n_embd(lctx->model.hparams.n_embd),
+        head_dim(lctx->model.hparams.n_embd / lctx->model.hparams.n_head),
+        n_head(lctx->model.hparams.n_head),
         kv_n_ctx_block(lctx->kv_n_ctx_block) {}
   ~beam_search_kv_cache_reorder() {}
 
@@ -380,12 +380,13 @@ class beam_search_kv_cache_reorder {
                       const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
                       const std::vector<beam>& next_beams = {});
 
- private:
+ protected:
   model_context* ctx = nullptr;
   const uint32_t n_ctx;
   const uint32_t n_embd;
   // const uint32_t n_head_kv;
-  // const uint32_t head_dim;
+  const uint32_t head_dim;
+  const uint32_t n_head;
   const uint32_t kv_n_ctx_block;
 };
 

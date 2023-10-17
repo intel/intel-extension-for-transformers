@@ -9,6 +9,22 @@ on:
        - 'intel_extension_for_transformers/llm/runtime/graph/**'
        - '!intel_extension_for_transformers/llm/runtime/graph/README.md'
   workflow_dispatch:
+    inputs:
+      compiler_version:
+        description: 'compiler_version'
+        required: false
+        type: string
+        default: '13.1.0'
+      models:
+        description: 'models (in json)'
+        required: false
+        type: string
+        default: '["llama-7b-hf", "gptj-6b"]'
+      runner:
+        description: 'runner'
+        required: false
+        type: string
+        default: 'spr'
 
 # If there is a new commit, the previous jobs will be canceled
 concurrency:
@@ -20,22 +36,14 @@ env:
   SCRIPT_PATH: ${{ github.workspace }}/.github/workflows/script
   WORKING_DIR: ${{ github.workspace }}
   CONTAINER_NAME: "codeScan"
-
+  INPUT_COMPILER_VERSION: ${{ inputs.compiler_version || '13.1.0' }}
 
 jobs:
   CPP-Graph-Workflow:
-    runs-on: spr
+    runs-on: ${{inputs.runner || 'spr'}}
     strategy:
       matrix:
-        include:
-          - modelName: "llama-7b-hf"
-            framework: "engine"
-            mode: "latency"
-            precision: "bf16,int8"
-          - modelName: "gptj-6b"
-            framework: "engine"
-            mode: "latency"
-            precision: "bf16,int8"
+        modelName: ${{fromJson(inputs.models || '["llama-7b-hf", "gptj-6b"]')}}
     steps:
       - name: Checkout out Repo
         uses: actions/checkout@v3
@@ -48,9 +56,11 @@ jobs:
           bash ${{ github.workspace }}/.github/workflows/script/prepare_env_with_conda.sh "cpp-graph-test" "3.8"
 
       - name: Binary build
+        # cpp model does not requires itrex package
+        if: 0 == 1
         run: |
           cd ${{ github.workspace }}
-          conda activate cpp-graph-test || source activate cpp-graph-test 
+          conda activate cpp-graph-test || source activate cpp-graph-test
           pip install build --upgrade
           pip install -r requirements.txt
           python setup.py sdist bdist_wheel
@@ -60,14 +70,19 @@ jobs:
       - name: BF16 Benchmark
         run: |
           cd ${{ github.workspace }}/.github/workflows/script/models
-          bash cpp_graph_inference.sh cpp-graph-test ${{ matrix.modelName }} 13.1.0
-  
+          bash cpp_graph_inference.sh cpp-graph-test ${{ matrix.modelName }} ${{ env.INPUT_COMPILER_VERSION }}
+      
+      - name: Rename summary
+        run: |
+          cd ${{ github.workspace }}
+          cp cpp_graph_summary.log cpp_graph_summary_${{matrix.modelName}}.log
+
       - name: Publish pipeline artifact
         uses: actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
           name: cpp_graph
-          path: ${{ github.workspace }}/cpp_graph_summary.log
+          path: ${{ github.workspace }}/cpp_graph_summary_${{matrix.modelName}}.log
           if-no-files-found: ignore # 'warn' or 'ignore' are also available, defaults to `warn`
           retention-days: 60 # 1 <= retention-days <= 90
 
@@ -90,6 +105,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           path: ${{ env.OUT_SCRIPT_PATH }}/generated/log
+      
+      - name: Merge CPP Graph Summary Log
+        run: |
+          cd ${{ env.OUT_SCRIPT_PATH }}/generated/log/cpp_graph
+          for summary in $(find . -name "cpp_graph_summary_*.log"); do cat $summary >> cpp_graph_summary.log; done
 
       - name: Download Reference Artifact
         id: download-artifact
@@ -114,6 +134,7 @@ jobs:
           echo "------ Generating final report.html ------"
           cd ${{ env.OUT_SCRIPT_PATH }}
           /usr/bin/bash generate_report.sh --workflow=deploy
+          sed -n '/<body>/,/<\/body>/p' generated/report.html | sed -r '/^$/d' | sed -r 's/^ +//g' >> $GITHUB_STEP_SUMMARY
         env:
           RUN_DISPLAY_URL: https://github.com/VincyZhang/intel-extension-for-transformers/actions/runs/${{ github.run_id }}
           BUILD_NUMBER: ${{ github.run_id }}
@@ -134,4 +155,3 @@ jobs:
             echo "[Performance Regression] Some model performance regression occurred, please check artifacts and reports."
             exit 1
           fi
-  
