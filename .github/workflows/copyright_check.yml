@@ -24,7 +24,6 @@ jobs:
     strategy:
       matrix:
         job_name: ["copyright"]
-      fail-fast: false
     steps:
       - name: Docker Clean Up
         run: |

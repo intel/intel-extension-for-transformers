@@ -11,7 +11,9 @@ on:
       - '.github/workflows/optimize-test.yml'
       - '.github/workflows/script/models/run_optimize.sh'
 
-
+  workflow_run:
+    workflows: ["Format Scan"]
+    types: [in_progress]    
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
@@ -34,6 +36,7 @@ env:
 jobs:
   Optimize-Workflow:
     runs-on: itrex-node
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     strategy:
       matrix:
         include:
@@ -43,7 +46,6 @@ jobs:
           - modelName: "bert_base_mrpc_static"
             framework: "tensorflow"
             mode: "accuracy,performance"
-      fail-fast: true
     steps:
       - name: Docker Clean Up
         run: |
