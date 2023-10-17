@@ -109,13 +109,9 @@ RUN mkdir -p /intel-extension-for-transformers
 WORKDIR /intel-extension-for-transformers
 COPY . /intel-extension-for-transformers
 # Build ITREX
-RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v .
-
-# Install dependency
-RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
-    pip install -r requirements.txt && \
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
-    pip install -r requirements_hpu.txt
+RUN cd /intel-extension-for-transformers && \
+    pip install ninja cmake>=3.16 py-cpuinfo setuptools>=61 setuptools_scm[toml]>=6.2 accelerate && \
+    pip install -v .
 
 COPY intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
 
@@ -135,6 +131,12 @@ RUN pip install intel-extension-for-deepspeed && \
     git checkout -b v1.11 origin/1.11.0 && \
     git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
     pip install -e .
+
+# Install dependency
+RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+    pip install -r requirements.txt && \
+    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
+    pip install -r requirements_hpu.txt
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
