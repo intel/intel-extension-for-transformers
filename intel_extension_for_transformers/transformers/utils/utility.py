@@ -104,8 +104,7 @@ def generate_dummy_past_key_values(input_bs, model):
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     else:
-        #new_shape = [input_bs, num_attention_heads, 1, d_k]
-        new_shape = [input_bs, 8, 1, 128]
+        new_shape = [input_bs, num_attention_heads, 1, d_k]
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
