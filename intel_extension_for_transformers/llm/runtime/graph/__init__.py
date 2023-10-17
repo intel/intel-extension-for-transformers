@@ -95,7 +95,7 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
-    def generate(self, input_ids, streamer=None, interactive=False, ingore_prompt=False, **kwargs):
+    def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **kwargs):
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
             self.generate_round = 0
@@ -104,7 +104,7 @@ class Model:
             self.generate_round = 0
 
         ret = [[]]
-        if self.generate_round == 0 and not ingore_prompt:
+        if self.generate_round == 0 and not ignore_prompt:
             ret = input_ids.tolist()
 
         # TODO support multi batch
@@ -118,7 +118,7 @@ class Model:
                 print("ERROR, can not use streamer when use beam search for generation!")
                 import sys
                 sys.exit(1)
-            if self.generate_round == 0 and not ingore_prompt:
+            if self.generate_round == 0 and not ignore_prompt:
                 streamer.put(input_ids)
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
