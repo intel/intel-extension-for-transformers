@@ -60,6 +60,7 @@ Functions
           "device": "cuda",
           "use_hpu_graphs": True,
           "cpu_jit": False,
+          "ipex_int8": False,
           "use_cache": True,
           "peft_path": "/path/to/peft",
           "use_deepspeed": False

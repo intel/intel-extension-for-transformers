@@ -52,7 +52,7 @@ Functions
    new input token_idx.
 
 
-.. py:function:: load_model(model_name, tokenizer_name, device='cpu', use_hpu_graphs=False, cpu_jit=False, use_cache=True, peft_path=None, use_deepspeed=False, optimization_config=None, hf_access_token=None)
+.. py:function:: load_model(model_name, tokenizer_name, device='cpu', use_hpu_graphs=False, cpu_jit=False, ipex_int8=False, use_cache=True, peft_path=None, use_deepspeed=False, optimization_config=None, hf_access_token=None)
 
    Load the model and initialize the tokenizer.
 
@@ -111,6 +111,8 @@ Functions
    :type `use_hpu_graphs`: bool
    :param `use_cache`: Determines whether to utilize kv cache for accelerated generation.
    :type `use_cache`: bool
+   :param `ipex_int8`: Whether to use IPEX int8 model to inference.
+   :type `ipex_int8`: bool
 
    :returns: A generator that yields the generated streaming text.
    :rtype: generator
@@ -159,6 +161,8 @@ Functions
    :type `use_hpu_graphs`: bool
    :param `use_cache`: Determines whether to utilize kv cache for accelerated generation.
    :type `use_cache`: bool
+   :param `ipex_int8`: Whether to use IPEX int8 model to inference.
+   :type `ipex_int8`: bool
 
    :returns: A generator that yields the generated streaming text.
    :rtype: generator
