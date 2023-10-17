@@ -148,10 +148,9 @@ class TextToSpeech():
             texts = self._batch_long_text(text, batch_length)
         else:
             texts = [text]
-        print(texts)
+        print(f"[TTS] batched texts: {texts}")
         model = self.original_model
-        speaker_embeddings = self.default_speaker_embedding if self.default_speaker_embedding is not None else \
-            self.backup_speaker_embedding
+        speaker_embeddings = self.default_speaker_embedding
         if voice == "male":
             if self.demo_model == None:
                 print("Finetuned model is not found! Use the default one")
