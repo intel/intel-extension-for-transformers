@@ -599,7 +599,7 @@ def predict_stream(**params):
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
     prompt = params["prompt"]
-    ipex_int8 = params["ipex_int8"]
+    ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
     errors_queue = Queue()
@@ -818,7 +818,7 @@ def predict(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else False
-    ipex_int8 = params["ipex_int8"]
+    ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]

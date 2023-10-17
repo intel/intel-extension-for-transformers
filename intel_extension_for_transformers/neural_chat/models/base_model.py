@@ -42,6 +42,7 @@ def construct_parameters(query, model_name, device, config):
     params["force_words_ids"] = config.force_words_ids
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
+    params["ipex_int8"] = config.ipex_int8
     params["device"] = device
     return params
 
