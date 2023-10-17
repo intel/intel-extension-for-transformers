@@ -1,7 +1,7 @@
 ninja
 cmake>=3.16
 py-cpuinfo
-setuptools>=61
+setuptools>=65
 setuptools_scm[toml]>=6.2
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.0.1+cpu
