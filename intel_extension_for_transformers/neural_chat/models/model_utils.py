@@ -369,6 +369,17 @@ def load_model(
                 low_cpu_mem_usage=True,
                 quantization_config=bitsandbytes_quant_config,
             )
+    elif (
+            (re.search("starcoder", model_name, re.IGNORECASE)
+            ) and ipex_int8
+        ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                import intel_extension_for_pytorch
+                from optimum.intel.generation.modeling import TSModelForCausalLM
+                model = TSModelForCausalLM.from_pretrained(
+                        model_name,
+                        file_name="best_model.pt",
+                 )
     else:
         raise ValueError(
             f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now."
@@ -436,18 +447,7 @@ def load_model(
             model = model.to(dtype=torch_dtype)
 
         if device == "cpu":
-            if (
-                (re.search("starcoder", model_name, re.IGNORECASE)
-                ) and ipex_int8
-            ):
-                with smart_context_manager(use_deepspeed=use_deepspeed):
-                    import intel_extension_for_pytorch
-                    from optimum.intel.generation.modeling import TSModelForCausalLM
-                    model = TSModelForCausalLM.from_pretrained(
-                        model_name,
-                        file_name="best_model.pt",
-                 )   
-            if torch_dtype == torch.bfloat16:
+            if torch_dtype == torch.bfloat16 and not ipex_int8:
                 import intel_extension_for_pytorch as intel_ipex
 
                 model = intel_ipex.optimize(
@@ -484,15 +484,13 @@ def load_model(
     if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
-
     # warmup for int8 model
     if ipex_int8:
         input_ids = tokenizer("A chat between a curious human and an artificial intelligence assistant.\n"
                               " Human: Tell me about Intel.\n Assistant:", return_tensors="pt").input_ids.to('cpu')
         with torch.inference_mode(), torch.no_grad():
             for i in range(2):
-                model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9, num_beams=4)
-
+                model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9)
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
     print("Model loaded.")
@@ -649,7 +647,14 @@ def predict_stream(**params):
                         context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
                     if ipex_int8:
                         global output_token_len
-                        output_token= model.generate(**input_tokens, **generation_kwargs)
+                        output_token=model.generate(
+                                **input_tokens,
+                                **generate_kwargs,
+                                streamer=streamer,
+                                generation_config=generation_config,
+                                return_dict_in_generate=True,
+                            )
+
                     else:
                         with context:
                             global output_token_len
@@ -813,6 +818,7 @@ def predict(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else False
+    ipex_int8 = params["ipex_int8"]
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
@@ -853,7 +859,12 @@ def predict(**params):
             elif device == "xpu":
                 context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
             if ipex_int8:
-                generation_output = model.generate(**input_tokens, **generation_kwargs)
+                generation_output = model.generate(
+                        **input_tokens,
+                        **generate_kwargs,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True
+                        )
             else:
                 with context:
                     generation_output = model.generate(
