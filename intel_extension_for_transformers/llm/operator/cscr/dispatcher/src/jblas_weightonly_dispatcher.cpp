@@ -114,7 +114,7 @@ void qbits_quantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
     timer.stop();
     auto cost_time = timer.get_elapsed_time();
     std::cout << "QBits quantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
-              << " blocksize:" << ctx->blocksize << " src_type:" << dispatcher_utils::get_torch_dt_name(ctx->activation)
+              << " blocksize:" << ctx->blocksize << " src_type:" << dispatcher_utils::get_torch_dt_name(ctx->weight)
               << " execute time:" << cost_time << "ms" << std::endl;
   }
 }
