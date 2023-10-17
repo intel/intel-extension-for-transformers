@@ -110,15 +110,14 @@ WORKDIR /intel-extension-for-transformers
 COPY . /intel-extension-for-transformers
 # Build ITREX
 RUN cd /intel-extension-for-transformers && \
-    pip install ninja cmake>=3.16 py-cpuinfo setuptools>=61 setuptools_scm[toml]>=6.2 accelerate && \
+    sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
+    sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
+    pip install -r requirements.txt && \
     pip install -v .
 
 COPY intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
 
-RUN pip install intel-extension-for-deepspeed && \
-    pip install intel_extension_for_pytorch && \
-    pip install oneccl_bind_pt==2.0.100 -f https://developer.intel.com/ipex-whl-stable-xpu && \
-    git clone https://github.com/huggingface/optimum-habana.git && \
+RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
@@ -134,6 +133,8 @@ RUN pip install intel-extension-for-deepspeed && \
 
 # Install dependency
 RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+    sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
+    sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
     pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
     pip install -r requirements_hpu.txt
