@@ -7,3 +7,9 @@ evaluate
 nltk
 rouge_score
 einops
+uvicorn
+yacs
+fastapi
+shortuuid
+pydub
+python-multipart
