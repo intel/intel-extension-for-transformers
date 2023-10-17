@@ -35,18 +35,16 @@ bool jblas_fusion_FFN_SiLu_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr,
     prologue::gemm::WeightBase* tmps[3] = {w1tmp, w2tmp, w3tmp};
     auto sameKernel = samePackedWeight(tmps, 3);
     if (sameKernel) {
-      if (sameKernel) {
-        if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
-            w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-          constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
-          support = contains(w1tmp->mCoreType, GcCompInt8KBlockSet, EleNum);
-          support &= hasISA(GcCompInt8KBlockSet, EleNum);
-        } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                   w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-          constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
-          support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
-          support &= hasISA(GcCompInt8Set, EleNum);
-        }
+      if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
+          w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
+        constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
+        support = contains(w1tmp->mCoreType, GcCompInt8KBlockSet, EleNum);
+        support &= hasISA(GcCompInt8KBlockSet, EleNum);
+      } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
+                 w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+        constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
+        support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
+        support &= hasISA(GcCompInt8Set, EleNum);
       }
     }
   }
@@ -300,25 +298,130 @@ void jblas_fusion_FFN_SiLu_f32f32_forward(float* activation, void* w1ptr, void* 
 }
 
 bool jblas_fusion_FFN_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq, int fin, int fmid, int fout) {
-  return false;
+  auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
+  auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
+  bool support = false;
+  if (w1tmp != nullptr && w2tmp != nullptr) {
+    prologue::gemm::WeightBase* tmps[2] = {w1tmp, w2tmp};
+    auto sameKernel = samePackedWeight(tmps, 2);
+    if (sameKernel) {
+      if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
+          w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
+        constexpr jblas::gemm::GemmCoreType cores[] = {
+            jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+            jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
+        constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
+        support = contains(w1tmp->mCoreType, cores, EleNum);
+        support &= hasISA(cores, EleNum);
+      }
+    }
+  }
+  safe_delete(w1tmp);
+  safe_delete(w2tmp);
+  return support;
+}
+
+JBLAS_CODE jblas_fusion_FFN_GeLu_s4fp32_f32f32_forward(float* activation, SS4Fp32* w1tmp, SS4Fp32* w2tmp, float* tmp1,
+                                                       float* output, int seq, int fin, int fmid, int fout,
+                                                       void* workspace) {
+  GetCPUDevice();
+  auto ret = JblasRuntimeError;
+  if (w1tmp->mCoreType == GcCompInt8KBlock::TYPE) {
+    if (_cd->AMX_INT8() && w1tmp->mBlockSize % 128 == 0) {
+      using GemmKernel = custom::wrapper::kblock::amx_int8::GemmSKernelDynamicS4KBlock;
+      using GeluGemmKernel = custom::wrapper::kblock::amx_int8::GeluGemmSKernelDynamicS4KBlock;
+      using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      GeluGemmKernel::AParam paramA = {activation, lda, &quanA1};
+      GemmKernel::AParam paramA2 = {tmp1, ldtmp1, &quanA2};
+      GeluGemmKernel::BParam paramW1 = {w1tmp};
+      GemmKernel::BParam paramW2 = {w2tmp};
+      GeluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramA2, paramW1, paramW2, param1, param2});
+    } else if (_cd->AVX512_VNNI()) {
+      using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmSKernelDynamicS4KBlock;
+      using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::GeluGemmSKernelDynamicS4KBlock;
+      using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1tmp, w2tmp, tmp1,
+                            ldtmp1, output, ldo});
+    }
+  }
+  return ret;
+}
+
+JBLAS_CODE jblas_fusion_FFN_GeLu_s8fp32_f32f32_forward(float* activation, SS8Fp32* w1tmp, SS8Fp32* w2tmp, float* tmp1,
+                                                       float* output, int seq, int fin, int fmid, int fout,
+                                                       void* workspace) {
+  GetCPUDevice();
+  auto ret = JblasRuntimeError;
+  if (w1tmp->mCoreType == GcCompInt8KBlock::TYPE) {
+    if (_cd->AMX_INT8() && w1tmp->mBlockSize % 128 == 0) {
+      using GemmKernel = custom::wrapper::kblock::amx_int8::GemmSKernelDynamicS8KBlock;
+      using GeluGemmKernel = custom::wrapper::kblock::amx_int8::GeluGemmSKernelDynamicS8KBlock;
+      using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1tmp, w2tmp, tmp1,
+                            ldtmp1, output, ldo});
+    } else if (_cd->AVX512_VNNI()) {
+      using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmSKernelDynamicS8KBlock;
+      using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::GeluGemmSKernelDynamicS8KBlock;
+      using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w2tmp->mBlockSize);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1tmp, w2tmp, tmp1,
+                            ldtmp1, output, ldo});
+    }
+  }
+  return ret;
 }
 
 void jblas_fusion_FFN_GeLu_f32f32_forward(float* activation, void* w1ptr, void* w2ptr, float* tmp1, float* output,
                                           int seq, int fin, int fmid, int fout, void* workspace) {
+  GetCPUDevice();
+  auto ret = JblasRuntimeError;
   auto w1tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w1ptr);
   auto w2tmp = prologue::weight_comp::gemm_kblcok::PackedWeightParser::deserialBuffer(w2ptr);
-  if (w1tmp->mCoreType == GcCompInt8KBlock::TYPE) {
-    using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmSKernelDynamicS4KBlock;
-    using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::GeluGemmSKernelDynamicS4KBlock;
-    using FusedInter = custom::wrapper::transformer::GeluFusedInterface<GeluGemmKernel, GemmKernel>;
-    static FusedInter finter;
-    int lda = fin;
-    int ldtmp1 = fmid;
-    int ldo = fout;
-    /*auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin, w1tmp->mBlockSize, NULL);
-    auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid, w1tmp->mBlockSize, NULL);
-    finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, ldtmp1, output, ldo});*/
+  if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32)) {
+    ret = jblas_fusion_FFN_GeLu_s4fp32_f32f32_forward(activation, (SS4Fp32*)w1tmp, (SS4Fp32*)w2tmp, tmp1, output, seq,
+                                                      fin, fmid, fout, workspace);
+  } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
+    ret = jblas_fusion_FFN_GeLu_s8fp32_f32f32_forward(activation, (SS8Fp32*)w1tmp, (SS8Fp32*)w2tmp, tmp1, output, seq,
+                                                      fin, fmid, fout, workspace);
   }
+  assert(ret == JblasSuccess);
   safe_delete(w1tmp);
   safe_delete(w2tmp);
 }
@@ -331,21 +434,19 @@ bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq,
     prologue::gemm::WeightBase* tmps[2] = {w1tmp, w2tmp};
     auto sameKernel = samePackedWeight(tmps, 2);
     if (sameKernel) {
-      if (sameKernel) {
-        if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
-            w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-          constexpr jblas::gemm::GemmCoreType cores[] = {
-              jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-              jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
-          constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
-          support = contains(w1tmp->mCoreType, cores, EleNum);
-          support &= hasISA(cores, EleNum);
-        } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
-                   w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
-          constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
-          support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
-          support &= hasISA(GcCompInt8Set, EleNum);
-        }
+      if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
+          w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
+        constexpr jblas::gemm::GemmCoreType cores[] = {
+            jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+            jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
+        constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
+        support = contains(w1tmp->mCoreType, cores, EleNum);
+        support &= hasISA(cores, EleNum);
+      } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
+                 w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
+        constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
+        support = contains(w1tmp->mCoreType, GcCompInt8Set, EleNum);
+        support &= hasISA(GcCompInt8Set, EleNum);
       }
     }
   }
