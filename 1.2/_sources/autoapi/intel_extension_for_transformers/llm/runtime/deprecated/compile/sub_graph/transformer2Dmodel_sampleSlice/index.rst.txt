@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_sampleSlice`
+==================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_sampleSlice
+
+.. autoapi-nested-parse::
+
+   The Transformer2Dmodel_SampleSlice pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_sampleSlice.Transformer2Dmodel_SampleSlice
+
+
+
+
+.. py:class:: Transformer2Dmodel_SampleSlice
+
+
+
+
+   The Transformer2Dmodel_SampleSlice pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'Transformer2Dmodel_SampleSlice' graph.
+   The search strategy is based on the following pattern mapping configs for the stable textEncoderV1-5.
+
+

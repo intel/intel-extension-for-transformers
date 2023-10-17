@@ -1,0 +1,71 @@
+:py:mod:`intel_extension_for_transformers.transformers.mixture.auto_distillation`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.mixture.auto_distillation
+
+.. autoapi-nested-parse::
+
+   AutoDistillation: handling the whole pipeline of AutoDistillation for both pytorch and tensorflow framework.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.mixture.auto_distillation.AutoDistillation
+
+
+
+
+.. py:class:: AutoDistillation(model_builder, conf_fname_or_obj, framework='pytorch')
+
+
+
+
+   The framework class is designed for handling the whole pipeline of AutoDistillation.
+
+   AutoDistillation is composed of three major stages, i.e. Model Exploration, Flash Distillation,
+   and Evaluation.
+   In Model Exploration, a search engine will search for a better compressed model from the architecture
+   design space in each iteration.
+   Flash Distillation is the stage for training the searched model to discover its potential.
+   In Evaluation stage, the trained model will be evaluated to measure its performances (e.g.
+   the prediction accuracy, the hardware performance etc.) in order to select the best model architecture.
+
+   .. py:method:: search(res_save_path=None, model_cls=None)
+
+      Auto distillation search process.
+
+      :returns: Best model architecture found in search process.
+
+
+   .. py:method:: estimate(model)
+
+      Train and evaluate the model.
+
+      :returns: Evaluated metrics of the model.
+
+
+   .. py:method:: load_search_results(path)
+
+      Load previous search results.
+
+      :param path: The file path which stores the previous results.
+
+
+   .. py:method:: init_by_cfg(conf_fname_or_obj)
+
+      Use auto distillation config to init the instance of autodistillation.
+
+
+   .. py:method:: create_distillers()
+
+      Create flash and regular distillers.
+
+
+

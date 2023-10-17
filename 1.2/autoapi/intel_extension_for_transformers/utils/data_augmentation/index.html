@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.utils.data_augmentation &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.utils.data_augmentation</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/autoapi/intel_extension_for_transformers/utils/data_augmentation/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.utils.data_augmentation">
+<span id="intel-extension-for-transformers-utils-data-augmentation"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.utils.data_augmentation" title="intel_extension_for_transformers.utils.data_augmentation"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.utils.data_augmentation</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.utils.data_augmentation" title="Link to this heading"></a></h1>
+<p>Data augmentation API.</p>
+<p>Please refer to <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/docs/data_augmentation.md">https://github.com/intel/intel-extension-for-transformers/blob/main/docs/data_augmentation.md</a>.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.utils.data_augmentation.DataAugmentation" title="intel_extension_for_transformers.utils.data_augmentation.DataAugmentation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DataAugmentation</span></code></a></p></td>
+<td><p>DataAugmentation provides many ways to enhance existing datasets.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.utils.data_augmentation.DataAugmentation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.utils.data_augmentation.</span></span><span class="sig-name descname"><span class="pre">DataAugmentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">augmenter_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/utils/data_augmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.utils.data_augmentation.DataAugmentation" title="Link to this definition"></a></dt>
+<dd><p>DataAugmentation provides many ways to enhance existing datasets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>augmenter_type</strong> (<em>string</em>) – augmenter type like: “TextGenerationAug”, “KeyboardAug”, …</p>
+</dd>
+</dl>
+<p>Example:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">aug</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DataAugmentation</span><span class="p">(</span><span class="n">augmenter_type</span><span class="o">=</span><span class="s">&quot;TextGenerationAug&quot;</span><span class="p">)</span>
+<span class="n">aug</span><span class="p">.</span><span class="n">input_dataset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">origin_data</span>
+<span class="n">aug</span><span class="p">.</span><span class="n">output_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">os</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">result_path</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;test1.cvs&quot;</span><span class="p">)</span>
+<span class="n">aug</span><span class="p">.</span><span class="n">augmenter_arguments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="err">&#39;</span><span class="n">model_name_or_path</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="err">&#39;</span><span class="n">gpt2</span><span class="o">-</span><span class="n">medium</span><span class="err">&#39;</span><span class="p">}</span>
+<span class="n">aug</span><span class="p">.</span><span class="n">data_augment</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.utils.data_augmentation.DataAugmentation.data_augment">
+<span class="sig-name descname"><span class="pre">data_augment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/utils/data_augmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.utils.data_augmentation.DataAugmentation.data_augment" title="Link to this definition"></a></dt>
+<dd><p>Execute the process of data augmentation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.utils.data_augmentation.DataAugmentation.text_generation_augmentation">
+<span class="sig-name descname"><span class="pre">text_generation_augmentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">extension</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_datasets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/utils/data_augmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.utils.data_augmentation.DataAugmentation.text_generation_augmentation" title="Link to this definition"></a></dt>
+<dd><p>Execute the process of text generation augmentation.</p>
+<blockquote>
+<div><dl>
+<dt>Args:</dt><dd><p>extension: No used
+raw_datasets: The original datasets, the datasets can be from huggingface datasets(like: glue/sst2) or
+the customer datasets, each sample should be:</p>
+<blockquote>
+<div><p>‘label’ + ‘     ‘ + ‘sentence’ + EOS + ‘</p>
+</div></blockquote>
+</dd>
+</dl>
+</div></blockquote>
+<p>‘</p>
+<blockquote>
+<div><p>augmenter_arguments for text generation augmentation:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="err">&#39;</span><span class="n">model_name_or_path</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="err">&#39;</span><span class="n">gpt2</span><span class="err">&#39;</span><span class="p">,</span><span class="s">&quot;              &#39;k&#39;: 0, // top_k, default: 0</span>
+<span class="w"> </span><span class="sc">&#39;p&#39;</span><span class="o">:</span><span class="w"> </span><span class="mf">0.9</span><span class="p">,</span><span class="w"> </span><span class="c1">// top_p, default: 0.9</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">temperature</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="c1">// temperature of 1.0 has no effect,</span>
+<span class="w">                     </span><span class="c1">// lower tend toward greedy sampling, default: 1.0</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">repetition_penalty</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="mf">1.0</span><span class="p">,</span><span class="w"> </span><span class="c1">// primarily useful for CTRL model, default: 1.0</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">num_return_sentences</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="mi">-1</span><span class="w"> </span><span class="c1">// number of sentences to generate. default is -1 means the entire dataset</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">num_samples</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="c1">// number of samples generated by each conditional text</span>
+<span class="w">                   </span><span class="c1">// generation run. default: 1</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">stop_token</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="n">EOS</span><span class="w"> </span><span class="c1">// end of sentence token, at which text generation is stopped.</span>
+<span class="w">                  </span><span class="c1">// default: EOS</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.utils.data_augmentation.DataAugmentation.mit_data_augmentation">
+<span class="sig-name descname"><span class="pre">mit_data_augmentation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">extension</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_datasets</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/utils/data_augmentation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.utils.data_augmentation.DataAugmentation.mit_data_augmentation" title="Link to this definition"></a></dt>
+<dd><p>Execute the process of nlpaug data augmentation.</p>
+<p>nlpaug is the library helps you with augmenting nlp for your machine learning projects.
+It provide many augmenter, please refer to: <a class="reference external" href="https://github.com/makcedward/nlpaug#augmenter">https://github.com/makcedward/nlpaug#augmenter</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>extension</strong> (<em>str</em>) – Suffix name of the original dataset file, now only support “csv” and “json”.</p></li>
+<li><p><strong>raw_datasets</strong> (<em>dict</em>) – <p>original datasets, like:label + ‘      ‘ + sentence.
+user should set column_names if the sample contains multiple sentences:</p>
+<blockquote>
+<div><p>aug.column_names = [‘sentence1’, ‘sentence2’].</p>
+</div></blockquote>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f587725f370> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

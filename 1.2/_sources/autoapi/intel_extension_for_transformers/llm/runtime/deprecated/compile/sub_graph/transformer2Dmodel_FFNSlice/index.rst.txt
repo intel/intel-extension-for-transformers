@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_FFNSlice`
+===============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_FFNSlice
+
+.. autoapi-nested-parse::
+
+   The Transformer2Dmodel_FFNInputSlice pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.transformer2Dmodel_FFNSlice.Transformer2Dmodel_FFNInputSlice
+
+
+
+
+.. py:class:: Transformer2Dmodel_FFNInputSlice
+
+
+
+
+   The Transformer2Dmodel_FFNInputSlice pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'Transformer2Dmodel_FFNInputSlice' graph.
+   The search strategy is based on the following pattern mapping configs for the stable textEncoderV1-5.
+
+

@@ -1,0 +1,36 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.matmul_with_transpose_scale_add`
+===================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.matmul_with_transpose_scale_add
+
+.. autoapi-nested-parse::
+
+   The MatMulWithTransposeScaleAdd pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.matmul_with_transpose_scale_add.MatMulWithTranspose
+
+
+
+
+.. py:class:: MatMulWithTranspose
+
+
+
+
+   The MatMulWithTransposeScaleAdd pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'MatMulWithTransposeScaleAdd' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+   Call the 'MatMulWithTranspose' pattern first.
+
+

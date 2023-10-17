@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.token_type_embeddings_v1`
+============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.token_type_embeddings_v1
+
+.. autoapi-nested-parse::
+
+   The TokenTypeEmbeddingsV1 pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.token_type_embeddings_v1.TokenTypeEmbeddingsV1
+
+
+
+
+.. py:class:: TokenTypeEmbeddingsV1
+
+
+
+
+   The TokenTypeEmbeddingsV1 pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'TokenTypeEmbeddingsV1' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

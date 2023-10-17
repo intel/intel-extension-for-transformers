@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncdoer_word_embedding`
+==============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncdoer_word_embedding
+
+.. autoapi-nested-parse::
+
+   The TextEncoder_WordEmbedding pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncdoer_word_embedding.TextEncoder_WordEmbedding
+
+
+
+
+.. py:class:: TextEncoder_WordEmbedding
+
+
+
+
+   The TextEncoder_WordEmbedding pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'TextEncoder_WordEmbedding' graph.
+   The search strategy is based on the following pattern mapping configs for the stable textEncoderV1-5.
+
+

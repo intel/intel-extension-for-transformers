@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.einsumwitharange`
+====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.einsumwitharange
+
+.. autoapi-nested-parse::
+
+   The EinsumwithArange Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.einsumwitharange.EinsumwithArange
+
+
+
+
+.. py:class:: EinsumwithArange
+
+
+
+
+   The InnerproductReshapeFusion pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'EinsumwithArange' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

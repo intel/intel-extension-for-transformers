@@ -1,0 +1,608 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops`
+=======================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops
+
+.. autoapi-nested-parse::
+
+   The neural engine empty op file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.AddV2
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MultiHeadAttenion
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Add
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.BinaryAdd
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.ConstantOfShape
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.DequantizeLinear
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Dequantize
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Erf
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Expand
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Fill
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.FlatMapDataset
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Identity
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.InnerProduct
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Input
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MakeIterator
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MatMulWithBiasAdd
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MatMulWithBiasGelu
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MatMulWithBiasTanh
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MatMulWithBias
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Output
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.QLinearMatMul
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.QLinearAdd
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.QLinearMul
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.RealDiv
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Rsqrt
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Sqrt
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Square
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.SquaredDifference
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.StopGradient
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Tanh
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.TensorSliceDataset
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.TransposeBatchMatMul
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Range
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Relu
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MatMulWithBiasRelu
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Matmul
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.CumSum
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Onehot
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.TokenTypeIds
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.PositionIds
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Loop
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Sigmoid
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MatMulWithBiasSigmoid
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.EmbeddingBag
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Flatten
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MergedEmbeddingbag
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Convolution
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.ExpandIndices
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Tile
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.OpAny
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.SequenceLength
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Arange
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Reciprocal
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Einsum
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Repeat
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Stack
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Constant
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.ListConstruct
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.LatRange
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Masked_fill
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Floor_divide
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Max
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.ListUnpack
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Silu
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Zeros
+
+
+
+
+.. py:class:: AddV2
+
+
+
+
+   Register the AddV2 operator.
+
+
+.. py:class:: MultiHeadAttenion
+
+
+
+
+   The class of neural engine operator.
+
+
+.. py:class:: Add
+
+
+
+
+   Register the Add operator.
+
+
+.. py:class:: BinaryAdd
+
+
+
+
+   Register the BinaryAdd operator.
+
+
+.. py:class:: ConstantOfShape
+
+
+
+
+   Register the ConstantOfShape operator.
+
+
+.. py:class:: DequantizeLinear
+
+
+
+
+   Register the DequantizeLinear operator.
+
+
+.. py:class:: Dequantize
+
+
+
+
+   Register the DequantizeLinear operator.
+
+
+.. py:class:: Erf
+
+
+
+
+   Register the Erf operator.
+
+
+.. py:class:: Expand
+
+
+
+
+   Register the Expand operator.
+
+
+.. py:class:: Fill
+
+
+
+
+   Register the Fill operator.
+
+
+.. py:class:: FlatMapDataset
+
+
+
+
+   Register the FlatMapDataset operator.
+
+
+.. py:class:: Identity
+
+
+
+
+   Register the Identity operator.
+
+
+.. py:class:: InnerProduct
+
+
+
+
+   Register the InnerProduct operator.
+
+
+.. py:class:: Input
+
+
+
+
+   Register the Input operator.
+
+
+.. py:class:: MakeIterator
+
+
+
+
+   Register the MakeIterator operator.
+
+
+.. py:class:: MatMulWithBiasAdd
+
+
+
+
+   Register the MatMulWithBiasAdd operator.
+
+
+.. py:class:: MatMulWithBiasGelu
+
+
+
+
+   Register the MatMulWithBiasGelu operator.
+
+
+.. py:class:: MatMulWithBiasTanh
+
+
+
+
+   Register the MatMulWithBiasTanh operator.
+
+
+.. py:class:: MatMulWithBias
+
+
+
+
+   Register the MatMulWithBias operator.
+
+
+.. py:class:: Output
+
+
+
+
+   Register the Output operator.
+
+
+.. py:class:: QLinearMatMul
+
+
+
+
+   Register the QLinearMatMul operator.
+
+
+.. py:class:: QLinearAdd
+
+
+
+
+   Register the QLinearAdd operator.
+
+
+.. py:class:: QLinearMul
+
+
+
+
+   Register the QLinearMul operator.
+
+
+.. py:class:: RealDiv
+
+
+
+
+   Register the RealDiv operator.
+
+
+.. py:class:: Rsqrt
+
+
+
+
+   Register the Rsqrt operator.
+
+
+.. py:class:: Sqrt
+
+
+
+
+   Register the Sqrt operator.
+
+
+.. py:class:: Square
+
+
+
+
+   Register the Square operator.
+
+
+.. py:class:: SquaredDifference
+
+
+
+
+   Register the SquaredDifference operator.
+
+
+.. py:class:: StopGradient
+
+
+
+
+   Register the StopGradient operator.
+
+
+.. py:class:: Tanh
+
+
+
+
+   Register the Tanh operator.
+
+
+.. py:class:: TensorSliceDataset
+
+
+
+
+   Register the TensorSliceDataset operator.
+
+
+.. py:class:: TransposeBatchMatMul
+
+
+
+
+   Register the TransposeBatchMatMul operator.
+
+
+.. py:class:: Range
+
+
+
+
+   Register the Range operator.
+
+
+.. py:class:: Relu
+
+
+
+
+   Register the Relu operator.
+
+
+.. py:class:: MatMulWithBiasRelu
+
+
+
+
+   Register the MatMulWithBiasRelu operator.
+
+
+.. py:class:: Matmul
+
+
+
+
+   Register the Matmul operator.
+
+
+.. py:class:: CumSum
+
+
+
+
+   Register the CumSum operator.
+
+
+.. py:class:: Onehot
+
+
+
+
+   Register the Onehot operator.
+
+
+.. py:class:: TokenTypeIds
+
+
+
+
+   Register the TokenTypeIds operator.
+
+
+.. py:class:: PositionIds
+
+
+
+
+   Register the PositionIds operator.
+
+
+.. py:class:: Loop
+
+
+
+
+   Register the Loop operator.
+
+
+.. py:class:: Sigmoid
+
+
+
+
+   Register the Sigmoid operator.
+
+
+.. py:class:: MatMulWithBiasSigmoid
+
+
+
+
+   Register the MatMulWithBiasSigmoid operator.
+
+
+.. py:class:: EmbeddingBag
+
+
+
+
+   Register the EmbeddingBag operator.
+
+
+.. py:class:: Flatten
+
+
+
+
+   Register the Flatten operator.
+
+
+.. py:class:: MergedEmbeddingbag
+
+
+
+
+   Register the MergedEmbeddingbag operator.
+
+
+.. py:class:: Convolution
+
+
+
+
+   Register the Convolution operator.
+
+
+.. py:class:: ExpandIndices
+
+
+
+
+   Register the ExpandIndices operator.
+
+
+.. py:class:: Tile
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: OpAny
+
+
+
+
+   Register the OpAny operator.
+
+
+.. py:class:: SequenceLength
+
+
+
+
+   Register the SequenceLength operator.
+
+
+.. py:class:: Arange
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Reciprocal
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Einsum
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Repeat
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Stack
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Constant
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: ListConstruct
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: LatRange
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Masked_fill
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Floor_divide
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Max
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: ListUnpack
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Silu
+
+
+
+
+   Register the Tile operator.
+
+
+.. py:class:: Zeros
+
+
+
+
+   Register the Tile operator.
+
+

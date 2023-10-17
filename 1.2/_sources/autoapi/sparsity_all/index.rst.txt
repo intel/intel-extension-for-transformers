@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`sparsity_all`
+======================
+
+.. py:module:: sparsity_all
+
+

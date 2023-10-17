@@ -1,0 +1,48 @@
+:orphan:
+
+:py:mod:`fastchat.utils`
+========================
+
+.. py:module:: fastchat.utils
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.utils.StreamToLogger
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.utils.disable_torch_init
+   fastchat.utils.violates_moderation
+
+
+
+.. py:class:: StreamToLogger(logger, log_level=logging.INFO)
+
+
+
+
+   Fake file-like stream object that redirects writes to a logger instance.
+
+
+.. py:function:: disable_torch_init()
+
+   Disable the redundant torch default initialization to accelerate model creation.
+
+
+.. py:function:: violates_moderation(text)
+
+   Check whether the text violates OpenAI moderation API.
+
+

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuralChat Server Command Line &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">NeuralChat Server Command Line</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../_sources/docs/intel_extension_for_transformers/neural_chat/server/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="neuralchat-server-command-line">
+<h1>NeuralChat Server Command Line<a class="headerlink" href="#neuralchat-server-command-line" title="Link to this heading"></a></h1>
+<p>The simplest approach to use NeuralChat Server including server and client.</p>
+<section id="neuralchat-server">
+<h2>NeuralChat Server<a class="headerlink" href="#neuralchat-server" title="Link to this heading"></a></h2>
+<section id="help">
+<h3>Help<a class="headerlink" href="#help" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_server<span class="w"> </span><span class="nb">help</span>
+</pre></div>
+</div>
+</section>
+<section id="start-the-server">
+<h3>Start the server<a class="headerlink" href="#start-the-server" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Command Line (Recommended)</p></li>
+</ul>
+<p>NeuralChat provides a default chatbot configuration in <code class="docutils literal notranslate"><span class="pre">./conf/neuralchat.yaml</span></code>. User could customize the behavior of this chatbot by modifying the value of these fields in the configuration file to specify which LLM model and plugins to be used.</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Fields</th>
+<th>Sub Fields</th>
+<th>Default Values</th>
+<th>Possible Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>host</td>
+<td></td>
+<td>0.0.0.0</td>
+<td>Any valid IP address</td>
+</tr>
+<tr>
+<td>port</td>
+<td></td>
+<td>8000</td>
+<td>Any valid port number</td>
+</tr>
+<tr>
+<td>model_name_or_path</td>
+<td></td>
+<td>"meta-llama/Llama-2-7b-chat-hf"</td>
+<td>A valid model name or path</td>
+</tr>
+<tr>
+<td>device</td>
+<td></td>
+<td>"auto"</td>
+<td>"cpu", "hpu", "xpu", "cuda"</td>
+</tr>
+<tr>
+<td>asr</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.device</td>
+<td>"cpu"</td>
+<td>"cpu", "hpu", "xpu", "cuda"</td>
+</tr>
+<tr>
+<td></td>
+<td>args.model_name_or_path</td>
+<td>"openai/whisper-small"</td>
+<td>A valid ASR model name or path</td>
+</tr>
+<tr>
+<td></td>
+<td>args.bf16</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td>tts</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.device</td>
+<td>"cpu"</td>
+<td>"cpu", "hpu", "xpu", "cuda"</td>
+</tr>
+<tr>
+<td></td>
+<td>args.voice</td>
+<td>"default"</td>
+<td>A valid TTS voice</td>
+</tr>
+<tr>
+<td></td>
+<td>args.stream_mode</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.output_audio_path</td>
+<td>"./output_audio.wav"</td>
+<td>A valid file path</td>
+</tr>
+<tr>
+<td>asr_chinese</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td>tts_chinese</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.device</td>
+<td>"cpu"</td>
+<td>"cpu", "hpu", "xpu", "cuda"</td>
+</tr>
+<tr>
+<td></td>
+<td>args.spk_id</td>
+<td>0</td>
+<td>A valid speaker ID</td>
+</tr>
+<tr>
+<td></td>
+<td>args.stream_mode</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.output_audio_path</td>
+<td>"./output_audio.wav"</td>
+<td>A valid file path</td>
+</tr>
+<tr>
+<td>retrieval</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.retrieval_type</td>
+<td>"dense"</td>
+<td>"dense", other retrieval types</td>
+</tr>
+<tr>
+<td></td>
+<td>args.input_path</td>
+<td>"../../assets/docs/"</td>
+<td>A valid input path</td>
+</tr>
+<tr>
+<td></td>
+<td>args.embedding_model</td>
+<td>"hkunlp/instructor-large"</td>
+<td>A valid embedding model</td>
+</tr>
+<tr>
+<td></td>
+<td>args.persist_dir</td>
+<td>"./output"</td>
+<td>A valid directory path</td>
+</tr>
+<tr>
+<td></td>
+<td>args.max_length</td>
+<td>512</td>
+<td>Any valid integer</td>
+</tr>
+<tr>
+<td></td>
+<td>args.process</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td>cache</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td></td>
+<td>args.config_dir</td>
+<td>"../../pipeline/plugins/caching/cache_config.yaml"</td>
+<td>A valid directory path</td>
+</tr>
+<tr>
+<td></td>
+<td>args.embedding_model_dir</td>
+<td>"hkunlp/instructor-large"</td>
+<td>A valid directory path</td>
+</tr>
+<tr>
+<td>safety_checker</td>
+<td>enable</td>
+<td>false</td>
+<td>true, false</td>
+</tr>
+<tr>
+<td>tasks_list</td>
+<td></td>
+<td>['textchat', 'retrieval']</td>
+<td>List of task names, including 'textchat', 'voicechat', 'retrieval', 'text2image', 'finetune'</td>
+</tr>
+</tbody>
+</table><p>First set the service-related configuration parameters, similar to <code class="docutils literal notranslate"><span class="pre">./conf/neuralchat.yaml</span></code>. Set <code class="docutils literal notranslate"><span class="pre">tasks_list</span></code>, which represents the supported tasks included in the service to be started.
+<strong>Note:</strong> If the service can be started normally in the container, but the client access IP is unreachable, you can try to replace the <code class="docutils literal notranslate"><span class="pre">host</span></code> address in the configuration file with the local IP address.</p>
+<p>Then start the service:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_server<span class="w"> </span>start<span class="w"> </span>--config_file<span class="w"> </span>./server/conf/neuralchat.yaml
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Python API</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralchat.server.neuralchat_server</span> <span class="kn">import</span> <span class="n">NeuralChatServerExecutor</span>
+
+<span class="n">server_executor</span> <span class="o">=</span> <span class="n">NeuralChatServerExecutor</span><span class="p">()</span>
+<span class="n">server_executor</span><span class="p">(</span>
+    <span class="n">config_file</span><span class="o">=</span><span class="s2">&quot;./conf/neuralchat.yaml&quot;</span><span class="p">,</span> 
+    <span class="n">log_file</span><span class="o">=</span><span class="s2">&quot;./log/neuralchat.log&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="neuralchat-client">
+<h2>NeuralChat Client<a class="headerlink" href="#neuralchat-client" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>Help<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_client<span class="w"> </span><span class="nb">help</span>
+</pre></div>
+</div>
+</section>
+<section id="access-text-chat-service">
+<h3>Access text chat service<a class="headerlink" href="#access-text-chat-service" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Command Line</p></li>
+</ul>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_client<span class="w"> </span>textchat<span class="w"> </span>--server_ip<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--prompt<span class="w"> </span><span class="s2">&quot;Tell me about Intel Xeon processors.&quot;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Python API</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">neuralchat.server.neuralchat_client</span> <span class="kn">import</span> <span class="n">TextChatClientExecutor</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="n">executor</span> <span class="o">=</span> <span class="n">TextChatClientExecutor</span><span class="p">()</span>
+<span class="n">executor</span><span class="p">(</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Tell me about Intel Xeon processors.&quot;</span><span class="p">,</span>
+    <span class="n">server_ip</span><span class="o">=</span><span class="s2">&quot;127.0.0.1&quot;</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="access-voice-chat-service">
+<h3>Access voice chat service<a class="headerlink" href="#access-voice-chat-service" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_client<span class="w"> </span>voicechat<span class="w"> </span>--server_ip<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--input<span class="w"> </span>say_hello.wav<span class="w"> </span>--output<span class="w"> </span>response.wav
+</pre></div>
+</div>
+</section>
+<section id="access-retrieval-service">
+<h3>Access retrieval service<a class="headerlink" href="#access-retrieval-service" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>neuralchat_client<span class="w"> </span>retrieval<span class="w"> </span>--server_ip<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--input<span class="w"> </span>./docs/
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5868430280> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

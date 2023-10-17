@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector`
+==========================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   intent_detection/index.rst
+
+

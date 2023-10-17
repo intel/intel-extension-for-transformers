@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/autoapi/intel_extension_for_transformers/llm/runtime/deprecated/compile/tf_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils">
+<span id="intel-extension-for-transformers-llm-runtime-deprecated-compile-tf-utils"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils" title="Link to this heading"></a></h1>
+<p>The neural engine tensorflow utils.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.create_tf_node" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.create_tf_node"><code class="xref py py-obj docutils literal notranslate"><span class="pre">create_tf_node</span></code></a>(op, name, inputs)</p></td>
+<td><p>Create a nodedef object.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.graph_node_names_details" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.graph_node_names_details"><code class="xref py py-obj docutils literal notranslate"><span class="pre">graph_node_names_details</span></code></a>(nodes)</p></td>
+<td><p>Parse the graph nodes ans get the graph_nodes_dict.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.get_tensor_dest_op" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.get_tensor_dest_op"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_tensor_dest_op</span></code></a>(node_name, tensor_name, nodes_dict)</p></td>
+<td><p>Get the tensor dest op name.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.tf_extract_operator" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.tf_extract_operator"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tf_extract_operator</span></code></a>(node, framework_model, nodes_dict)</p></td>
+<td><p>Decorate the operator in tensorflow.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.TF_DTYPE_ID" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.TF_DTYPE_ID"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TF_DTYPE_ID</span></code></a></p></td>
+<td><p>Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.create_tf_node">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">create_tf_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">op</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.create_tf_node" title="Link to this definition"></a></dt>
+<dd><p>Create a nodedef object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>op</strong> (<em>string</em>) – op type</p></li>
+<li><p><strong>name</strong> (<em>string</em>) – op name</p></li>
+<li><p><strong>inputs</strong> (<em>string list</em>) – op’s inputs name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the created nodedef object</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>nodedef</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.graph_node_names_details">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">graph_node_names_details</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.graph_node_names_details" title="Link to this definition"></a></dt>
+<dd><p>Parse the graph nodes ans get the graph_nodes_dict.</p>
+<p>Be used for Grpah class when converting a tensorflow computation graph to an engine graph.
+The node_name is the key, node in value is for getting the Const
+tensor value and the input_tensor source op; outputs in value is for
+output_tensor dest op.
+:param nodes: NodeDef list
+:type nodes: tendorflow graph_def.node</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>the graph node info dict</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>node_names_details</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.get_tensor_dest_op">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">get_tensor_dest_op</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_dict</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.get_tensor_dest_op" title="Link to this definition"></a></dt>
+<dd><p>Get the tensor dest op name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_name</strong> – string, the source node name of tensor</p></li>
+<li><p><strong>tensor_name</strong> – string, with ‘:0’ or something like it</p></li>
+<li><p><strong>nodes_dict</strong> – dict returned by the graph_node_names_details function</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list, store the tensor’s dest op names</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dest_op_names</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.tf_extract_operator">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">tf_extract_operator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">framework_model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_graph</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.tf_extract_operator" title="Link to this definition"></a></dt>
+<dd><p>Decorate the operator in tensorflow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node</strong> – NodeDef</p></li>
+<li><p><strong>framework_model</strong> – TensorflowModel</p></li>
+<li><p><strong>nodes_dict</strong> – dict, return value from graph_node_names_details</p></li>
+<li><p><strong>tf_dtypes</strong> – dict, for get the dtype string</p></li>
+<li><p><strong>engine_graph</strong> – Engine Graph class</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>node op type
+input_tensors: Tensor list, contains the node input tensors info
+output_tensors: Tensor list, contains the node output tensor info</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>op_type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.TF_DTYPE_ID">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.</span></span><span class="sig-name descname"><span class="pre">TF_DTYPE_ID</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/tf_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.TF_DTYPE_ID" title="Link to this definition"></a></dt>
+<dd><p>Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5862837940> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

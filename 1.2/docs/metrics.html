@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Metrics &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Objective" href="objectives.html" />
+    <link rel="prev" title="Export to ONNX" href="export.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../feature.html">Features</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="quantization.html">Quantization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="distillation.html">Distillation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pruning.html">Pruning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autodistillation.html">AutoDistillation Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="data_augmentation.html">Data Augmentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="benchmark.html">Benchmark</a></li>
+<li class="toctree-l3"><a class="reference internal" href="export.html">Export to ONNX</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Metrics</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#supported-metric">Supported Metric</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#metric-class-summary">Metric Class Summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-start-with-metrics">Get Start with Metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="objectives.html">Objective</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipeline.html">Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../feature.html">Features</a></li>
+      <li class="breadcrumb-item active">Metrics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/metrics.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="metrics">
+<h1>Metrics<a class="headerlink" href="#metrics" title="Link to this heading"></a></h1>
+<ol class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#supported-metric">Supported Metric</a></p></li>
+<li><p><a class="reference external" href="#metric-class-summary">Metric Class Summary</a></p></li>
+<li><p><a class="reference external" href="#get-start-with-metrics">Get Start with Metrics</a></p></li>
+</ol>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>In terms of evaluating the performance of a specific model, we should have general metrics to measure the performance of different models. The Metric defines which metric will be used to measure the performance of tuned models and how to use the metric, just like: greater is better, performance tolerance … and so on. The Metric only provides the metric name, all metrics class is from <a class="reference external" href="https://github.com/huggingface/datasets/tree/main/metrics">datasets</a>.</p>
+</section>
+<section id="supported-metric">
+<h2>Supported Metric<a class="headerlink" href="#supported-metric" title="Link to this heading"></a></h2>
+<p>All metrics be provide by <a class="reference external" href="https://github.com/huggingface/datasets/tree/main/metrics">Huggingface datasets</a>.</p>
+</section>
+<section id="metric-class-summary">
+<h2>Metric Class Summary<a class="headerlink" href="#metric-class-summary" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>arguments:
+|Argument   |Type       |Description                                        |Default value    |
+|:———-|:———-|:———————————————–|:—————-|
+|name       |string     |Metric name which evaluates function returns, like:”eval_f1”, “eval_accuracy”…|        |
+|greater_is_better|bool |Used to describe the usage of the metric, like: greater is better for f1, this parameter is only used for quantization.|True|
+|is_relative|bool       |Used in conjunction with “criterion”. If “criterion” is 0.01, and “is_relative” is True, it means that we want to get an optimized model which metric drop &lt;1% relative, if “is_relative” is False, means metric drop &lt;1% absolute, this parameter is only used for quantization.|True    |
+|criterion  |float    |Used in conjunction with “is_relative”. If “criterion” is 0.01, and “is_relative” is True, it means that we want to get an optimized model which metric drop &lt;1% relative, if “criterion” is 0.02, means metric drop &lt;2% relative, this parameter is only used for quantization.|0.01              |
+|weight_ratio|float   |Used when there are multiple metrics, for example: you want to focus on both f1 and accuracy, then you will create f1 instance and accuracy instance, and indicate their weight proportion. If weight_ratio of f1 is 0.3, and weight ratio of accuracy is 0.7, then the final metric to tune is f1<em>0.3 + accuracy</em>0.7, this parameter is only used for quantization.|None |</p></li>
+</ul>
+</section>
+<section id="get-start-with-metrics">
+<h2>Get Start with Metrics<a class="headerlink" href="#get-start-with-metrics" title="Link to this heading"></a></h2>
+<ul>
+<li><p>example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">metric</span>
+<span class="n">metric</span><span class="o">.</span><span class="n">Metric</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;eval_f1&quot;</span><span class="p">,</span> <span class="n">greater_is_better</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">is_relative</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">criterion</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">weight_ratio</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="export.html" class="btn btn-neutral float-left" title="Export to ONNX" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="objectives.html" class="btn btn-neutral float-right" title="Objective" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5864813430> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

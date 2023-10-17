@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_KVReshape`
+=========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_KVReshape
+
+.. autoapi-nested-parse::
+
+   The TextEncoder_KVReshape Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_KVReshape.TextEncoder_KVReshape
+
+
+
+
+.. py:class:: TextEncoder_KVReshape
+
+
+
+
+   The TextEncoder_KVReshape pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'TextEncoder_KVReshape' graph.
+
+

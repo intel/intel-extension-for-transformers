@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torch_ip_insert_bias`
+========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torch_ip_insert_bias
+
+.. autoapi-nested-parse::
+
+   The TorchInnerProductInsertBias Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torch_ip_insert_bias.TorchInnerProductInsertBias
+
+
+
+
+.. py:class:: TorchInnerProductInsertBias
+
+
+
+
+   The TorchInnerProductInsertBias pattern.
+
+
+
+

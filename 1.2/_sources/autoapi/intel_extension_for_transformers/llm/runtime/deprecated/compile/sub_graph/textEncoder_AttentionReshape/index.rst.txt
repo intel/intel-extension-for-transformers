@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_AttentionReshape`
+================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_AttentionReshape
+
+.. autoapi-nested-parse::
+
+   The TextEncoder_AttentionReshape Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.textEncoder_AttentionReshape.TextEncoder_AttentionReshape
+
+
+
+
+.. py:class:: TextEncoder_AttentionReshape
+
+
+
+
+   The TextEncoder_AttentionReshape pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'TextEncoder_AttentionReshape' graph.
+   The search strategy is based on the following pattern mapping configs for the stable diffusionV1-5.
+
+

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Inference &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../search.html" />
+    <link rel="next" title="Binary Injectors" href="binaryop_injector.html" />
+    <link rel="prev" title="Implementation Details" href="../../../../../../../../kernel_desc.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../../../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../../../kernel.html">Kernels</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../../README.html">Transformers-Accelerated Libraries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../../../kernel_perf.html">Performance</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="../../../../../../../../kernel_desc.html">Implementation Details</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">3D Inference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="binaryop_injector.html">Binary Injectors</a></li>
+<li class="toctree-l4"><a class="reference internal" href="eltwise_injector.html">Element-wise Injector</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_vnni.html">Sparse GEMM VNNI</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_amx.html">Sparse GEMM AMX</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_avx512f.html">Sparse GEMM AVX512F</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_layernormalized_spmm.html">Sparse GEMM with Layer-Normalize</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_transpose_matmul.html">Transposed MatMul</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_transpose_mha.html">Transposed MHA</a></li>
+<li class="toctree-l4"><a class="reference internal" href="kernel_dynamic_quant_matmul.html">Dynamic Quant Matmul</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../kernel.html">Kernels</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../../../kernel_desc.html">Implementation Details</a></li>
+      <li class="breadcrumb-item active">3D Inference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/kernels/docs/kernel_desc/3D_inference.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="d-inference">
+<h1>3D Inference<a class="headerlink" href="#d-inference" title="Link to this heading"></a></h1>
+<section id="memory-layout-in-spmm-vnni">
+<h2>Memory Layout in SPMM_VNNI<a class="headerlink" href="#memory-layout-in-spmm-vnni" title="Link to this heading"></a></h2>
+<p>In DeepLearning, GEMM is usually represented an as activation matrix multiplied by a weight matrix.
+$$A\times W= D$$
+However in <code class="docutils literal notranslate"><span class="pre">spmm_vnni</span></code> <code class="docutils literal notranslate"><span class="pre">4x1</span></code>sparse pattern, in order to more easily implement micro_kernel and better storing performance, we adopted the transposed compressed sparse weight matrix multiplied by the transposed activation matrix.
+$$W^{T}\times A^{T}= D^{T}$$</p>
+</section>
+<section id="cache-issues">
+<h2>Cache Issues<a class="headerlink" href="#cache-issues" title="Link to this heading"></a></h2>
+<p>In modern computer architecture, in order to make better use of the spatial locality of the program, the CPU will fetch the data blocks near the fetched data into the cache-line. In the Intel Xeon CPU, the size of a cache-line is 64Byte. A cache organization form is called <code class="docutils literal notranslate"><span class="pre">N-way</span> <span class="pre">set</span> <span class="pre">associative</span> <span class="pre">cache</span></code>. The entire cache is divided into several cache-sets, and each cache-set has cache-lines with the number of the <code class="docutils literal notranslate"><span class="pre">way</span></code>.</p>
+<p>Consider that we want to access several 64Byte-aligned memory blocks <code class="docutils literal notranslate"><span class="pre">B1</span></code>, <code class="docutils literal notranslate"><span class="pre">B2</span></code>…, each memory block size is 64Byte (AVX512 SIMD register bit-width, and also the cache-line size), if these memory blocks are accessed continuously at this time , they can be evenly mapped to different cache-sets. But if the access behavior is discontinuous, the cache set cannot be fully utilized. In the worst case of access stride(<code class="docutils literal notranslate"><span class="pre">cache-line</span></code> size * <code class="docutils literal notranslate"><span class="pre">cache-set</span></code> num), even every memory access will be mapped to the same cache-set. Therefore cache utilization is very low and cache misses will occur very frequently.</p>
+<p><img alt="cache_mapping" src="../../../../../../../../_images/cache_mapping1.png" /></p>
+<p>In <code class="docutils literal notranslate"><span class="pre">spmm_vnni</span></code>algorithm, when we load the activation matrix in column-major, it must introduce the accessing memory behavior with stride and the stride is equal to the last dim of the activation matrix. A specific CPU core will build a specific tile in the destination matrix and the L1/L2 cache is private to the core. When the size of the activation matrix is too large, perhaps the L2 cache can’t fully cache the activation matrix that the core needs to compute the tile. Therefore, we should reduce the size of the tile calculated by each core to reduce the size of the activation matrix in the cache and make the access stride  configurable to avoid frequent L2 cache miss due to the large size of the cached data.</p>
+</section>
+<section id="spmm-vnni-3d-inference">
+<h2>SPMM_VNNI 3D Inference<a class="headerlink" href="#spmm-vnni-3d-inference" title="Link to this heading"></a></h2>
+<p>We propose a <code class="docutils literal notranslate"><span class="pre">3D</span> <span class="pre">inference</span></code> feature in the <code class="docutils literal notranslate"><span class="pre">spmm_vnni</span></code> kernel for reducing the size of the activation matrix accessed by each core when building tiles meanwhile make the access stride configurable.<br />Considering the shape of the activation matrix is <code class="docutils literal notranslate"><span class="pre">MxK</span></code>, we can split the <code class="docutils literal notranslate"><span class="pre">M-dim</span></code> and give the activation matrix 3D view which means <code class="docutils literal notranslate"><span class="pre">BxM'xK</span></code> where $B\times M^{’}=M$. Please see the below picture.</p>
+<p><img alt="2D_to_3D" src="../../../../../../../../_images/2D_to_3D1.png" /></p>
+<p>After enabling <code class="docutils literal notranslate"><span class="pre">3D</span> <span class="pre">inference</span></code> feature, the shape of transposed activation matrix processed by each core changes to <code class="docutils literal notranslate"><span class="pre">BxKxM'</span></code> and each core will build B <code class="docutils literal notranslate"><span class="pre">NxM'</span></code> tiles. Compared with 2D inference, the cache space required for the activation matrix that each core is responsible for caching when build <code class="docutils literal notranslate"><span class="pre">NxM'</span></code> block is reduced to $\frac{1}{B}$, meanwhile, the access stride is change to M’ which is configurable.</p>
+<p><img alt="3D_spmm" src="../../../../../../../../_images/3D_spmm1.png" /></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../../../../../../../../kernel_desc.html" class="btn btn-neutral float-left" title="Implementation Details" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="binaryop_injector.html" class="btn btn-neutral float-right" title="Binary Injectors" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5864f02df0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

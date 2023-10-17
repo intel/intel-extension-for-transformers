@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sparse GEMM with Layer-Normalize &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Sparse GEMM with Layer-Normalize</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/llm/library/kernels/docs/kernel_desc/kernel_layernormalized_spmm.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="sparse-gemm-with-layer-normalize">
+<h1>Sparse GEMM with Layer-Normalize<a class="headerlink" href="#sparse-gemm-with-layer-normalize" title="Link to this heading"></a></h1>
+<section id="problem-description">
+<h2>Problem Description<a class="headerlink" href="#problem-description" title="Link to this heading"></a></h2>
+<p>In the transformer architecture of the sparse Bert model, we need to apply a layernorm operation on the output matrix after executing sparse-matmul (spmm). Since the output of spmm is the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/kernel_vnni.html">transposed memory layout</a>, when performing layernorm, we should apply a reorder on the output matrix first, and then execute layernorm calculations, finally a transpose again, obviously, which makes layernorm layers real bottleneck of the whole model.</p>
+<p>An naive solution is to implement a kernel that can execute layernorm under the transposed-memory-layout. Specifically, this kernel is col-major when calculating the mean, variance, and normalization. However, the kernel’s performance high probability have a large gap with the normal layernrom performance. The main reasons are as follows:</p>
+<ol class="simple">
+<li><p>When calculating the mean, variance in col-major, the data blocks processed by each core are not continuous, so the utilization rate of the cache is not high. This problem is similar to the cache issue in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/backends/neural_engine/kernels/docs/kernel_desc/3D_inference.html">3D inference</a>. When the problem size is large, the kernel’s performance will drop significantly.</p></li>
+<li><p>The parallel capability is poor. Since the bit width of each ZMM register is 512 bits, when the input data type is FP32, each core is responsible for processing at least 16 columns. If we have fewer columns but more cores (e.g. 32 columns with 4 cores), then many cores will be wasted.</p></li>
+<li><p>There is a potential cache inconsistency problem. This kind of problem mainly occurs in the scene of layernorm+quantize fusion. Since the bit width of INT8 is a quarter of FP32, when the quantization operation is performed and writing the result back,  two cores may write to the same cache-line. The figure below depicts this situation. At this time, the time to execute the cache coherence protocol between different cores will offset the bandwidth gain brought by low-bit-width data write-back.<img alt="../../../../../../../_images/cache_inconsistency.png" src="../../../../../../../_images/cache_inconsistency.png" /></p></li>
+</ol>
+</section>
+<section id="layernormalized-sparse-matmul">
+<h2>layernormalized sparse matmul<a class="headerlink" href="#layernormalized-sparse-matmul" title="Link to this heading"></a></h2>
+<p>In order to solve the above problem, we provide the layernormalized_spmm kernel. Based on the original sparse-matmul, this kernel supports:</p>
+<ol class="simple">
+<li><p>output spmm’s result after col-majotr layternormalized.</p></li>
+<li><p>stores the quantized INT8 results and FP32 results at the same time.</p></li>
+</ol>
+<p>The kernel actually encapsulates two kernels - pre-compute spmm and direct layernorm_ba.</p>
+<section id="pre-compute-spmm">
+<h3>Pre-compute SPMM<a class="headerlink" href="#pre-compute-spmm" title="Link to this heading"></a></h3>
+<p>pre-compute spmm can mainly support col-major to calculate the mean and variance of the matrix. This feature is based on <a class="reference external" href="https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">parallel welford’s online algorithm</a> which can dynamically update the mean and M of the discrete random distribution with O(1) overhead (the variance can be derived from M). Since the spmm building block process is col-major, it is naturally can calculate the mean and M of each block based on Welford’s online algorithm friendly. When multiple cores are building blocks in parallel, each core will write the calculated mean and M into its own private buffer. After spmm is executed, there is a reduce kernel to calculate the real mean and variance of the entire matrix. Finally, spmm will output the col-major mean and variance of the output matrix for the next operator to calculate.</p>
+</section>
+<section id="direct-layernorm-ba">
+<h3>Direct Layernorm_ba<a class="headerlink" href="#direct-layernorm-ba" title="Link to this heading"></a></h3>
+<p>The kernel can use the input mean, variance, and alpha and beta to directly apply normalization without calculating the mean and variance inside the kernel. In addition, if the “split_output” feature is enabled, the kernel will output the FP32 result before quantization (for the append_sum of the next spmm) and the INT8 result after quantization at the same time. When writing the result of FP32 back, we recommend using the in-place mode, that is, the input of FP32 and the output address of FP32 are the same, which is more friendly to the cache and the overall performance of the kernel will be better.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5862da7cd0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

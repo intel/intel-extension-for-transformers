@@ -1,0 +1,489 @@
+:py:mod:`intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic`
+=========================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic
+
+.. autoapi-nested-parse::
+
+   PyTorch RoBERTa model.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaEmbeddings
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaSelfAttention
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaSelfOutput
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaAttention
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaIntermediate
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaOutput
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaLayer
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaEncoder
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaPooler
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaPreTrainedModel
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaModel
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaForCausalLM
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaForMaskedLM
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaLMHead
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaForSequenceClassification
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaForMultipleChoice
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaForTokenClassification
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaClassificationHead
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.RobertaForQuestionAnswering
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.create_position_ids_from_input_ids
+   intel_extension_for_transformers.transformers.modeling.modeling_roberta_dynamic.expand_gather
+
+
+
+.. py:class:: RobertaEmbeddings(config)
+
+
+
+
+   Same as BertEmbeddings with a tiny tweak for positional embeddings indexing.
+
+   .. py:method:: forward(input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None, past_key_values_length=0)
+
+      The main entry point for the class.
+
+
+   .. py:method:: create_position_ids_from_inputs_embeds(inputs_embeds)
+
+      We are provided embeddings directly.
+
+      We cannot infer which are padded so just generate sequential position ids.
+
+      :param inputs_embeds: torch.Tensor
+
+      Returns: torch.Tensor
+
+
+
+.. py:class:: RobertaSelfAttention(config, position_embedding_type=None)
+
+
+
+
+   Roberta self attention.
+
+   .. py:method:: transpose_for_scores(x: torch.Tensor) -> torch.Tensor
+
+      Transpose for scores.
+
+
+   .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, output_attentions: Optional[bool] = False) -> Tuple[torch.Tensor]
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaSelfOutput(config)
+
+
+
+
+   Roberta self output.
+
+   .. py:method:: forward(hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaAttention(config, position_embedding_type=None)
+
+
+
+
+   Roberta attenion.
+
+   .. py:method:: prune_heads(heads)
+
+      Prune heads.
+
+
+   .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, output_attentions: Optional[bool] = False) -> Tuple[torch.Tensor]
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaIntermediate(config)
+
+
+
+
+   Roberta intermidiate.
+
+   .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaOutput(config)
+
+
+
+
+   Roberta output.
+
+   .. py:method:: forward(hidden_states: torch.Tensor, input_tensor: torch.Tensor) -> torch.Tensor
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaLayer(config)
+
+
+
+
+   Basic layer of roberta.
+
+   .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_value: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, output_attentions: Optional[bool] = False, output_length=None, always_keep_cls_token: Optional[bool] = True) -> Tuple[torch.Tensor]
+
+      The main entry point for the class.
+
+
+   .. py:method:: feed_forward_chunk(attention_output)
+
+      Feed forward attention output.
+
+
+
+.. py:class:: RobertaEncoder(config)
+
+
+
+
+   The encoder for Roberata.
+
+   .. py:method:: forward(hidden_states: torch.Tensor, attention_mask: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = False, output_hidden_states: Optional[bool] = False, return_dict: Optional[bool] = True, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.BaseModelOutputWithPastAndCrossAttentions]
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaPooler(config)
+
+
+
+
+   Roberta pooler.
+
+   .. py:method:: forward(hidden_states: torch.Tensor) -> torch.Tensor
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaPreTrainedModel
+
+
+
+
+   Roberta pretrained model.
+
+   An abstract class to handle weights initialization and a simple interface for
+   downloading and loading pretrained models.
+
+   .. py:method:: update_keys_to_ignore(config, del_keys_to_ignore)
+
+      Remove some keys from ignore list.
+
+
+
+.. py:class:: RobertaModel(config, add_pooling_layer=True)
+
+
+
+
+   Basic roberta model.
+
+   The model can behave as an encoder (with only self-attention) as well as a decoder, in which case a layer of
+   cross-attention is added between the self-attention layers, following the architecture described in *Attention is
+   all you need*_ by Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Lukasz
+   Kaiser and Illia Polosukhin.
+
+   To behave as an decoder the model needs to be initialized with the `is_decoder` argument of the configuration set
+   to `True`. To be used in a Seq2Seq model, the model needs to initialized with both `is_decoder` argument and
+   `add_cross_attention` set to `True`; an `encoder_hidden_states` is then expected as an input to the forward pass.
+
+   .. _*Attention is all you need*: https://arxiv.org/abs/1706.03762
+
+
+   .. py:method:: get_input_embeddings()
+
+      Getter of input embeddings.
+
+
+   .. py:method:: set_input_embeddings(value)
+
+      Setter of input embeddings.
+
+
+   .. py:method:: set_length_config(length_config)
+
+      Setter of length config.
+
+
+   .. py:method:: set_output_attentions(value)
+
+      Setter of output attentions.
+
+
+   .. py:method:: forward(input_ids: Optional[torch.Tensor] = None, attention_mask: Optional[torch.Tensor] = None, token_type_ids: Optional[torch.Tensor] = None, position_ids: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, inputs_embeds: Optional[torch.Tensor] = None, encoder_hidden_states: Optional[torch.Tensor] = None, encoder_attention_mask: Optional[torch.Tensor] = None, past_key_values: Optional[List[torch.FloatTensor]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.BaseModelOutputWithPoolingAndCrossAttentions]
+
+      The main entry point for the class.
+
+      encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
+          Sequence of hidden-states at the output of the last layer of the encoder. Used in the cross-attention if
+          the model is configured as a decoder.
+      encoder_attention_mask (`torch.FloatTensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Mask to avoid performing attention on the padding token indices of the encoder input. This mask is used in
+          the cross-attention if the model is configured as a decoder. Mask values selected in `[0, 1]`:
+
+          - 1 for tokens that are **not masked**,
+          - 0 for tokens that are **masked**.
+      past_key_values (`tuple(tuple(torch.FloatTensor))` of length `config.n_layers` with each tuple having 4 tensors
+       of shape `(batch_size, num_heads, sequence_length - 1, embed_size_per_head)`):
+          Contains precomputed key and value hidden states of the attention blocks. Can be used to speed up decoding.
+
+          If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those that
+          don't have their past key value states given to this model) of shape `(batch_size, 1)` instead of all
+          `decoder_input_ids` of shape `(batch_size, sequence_length)`.
+      use_cache (`bool`, *optional*):
+          If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding (see
+          `past_key_values`).
+
+
+
+.. py:class:: RobertaForCausalLM(config)
+
+
+
+
+   Roberta for causal language model task.
+
+   .. py:method:: get_output_embeddings()
+
+      Getter of output embeddings.
+
+
+   .. py:method:: set_output_embeddings(new_embeddings)
+
+      Setter of output embeddings.
+
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, past_key_values: Tuple[Tuple[torch.FloatTensor]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.CausalLMOutputWithCrossAttentions]
+
+      The main entry point for the class.
+
+      encoder_hidden_states (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
+          Sequence of hidden-states at the output of the last layer of the encoder. Used in the cross-attention if
+          the model is configured as a decoder.
+      encoder_attention_mask (`torch.FloatTensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Mask to avoid performing attention on the padding token indices of the encoder input. This mask is used in
+          the cross-attention if the model is configured as a decoder. Mask values selected in `[0, 1]`:
+
+          - 1 for tokens that are **not masked**,
+          - 0 for tokens that are **masked**.
+      labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Labels for computing the left-to-right language modeling loss (next word prediction). Indices should be in
+          `[-100, 0, ..., config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are
+          ignored (masked), the loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
+      past_key_values (`tuple(tuple(torch.FloatTensor))` of length `config.n_layers` with each tuple having 4
+          tensors of shape `(batch_size, num_heads, sequence_length - 1, embed_size_per_head)`):
+          Contains precomputed key and value hidden states of the attention blocks. Can be used to speed up decoding.
+          If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those that
+          don't have their past key value states given to this model) of shape `(batch_size, 1)` instead of all
+          `decoder_input_ids` of shape `(batch_size, sequence_length)`.
+      use_cache (`bool`, *optional*):
+          If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding (see
+          `past_key_values`).
+
+      .. rubric:: Example
+
+      ```python
+      >>> from transformers import RobertaTokenizer, RobertaForCausalLM, RobertaConfig
+      >>> import torch
+
+      >>> tokenizer = RobertaTokenizer.from_pretrained("roberta-base")
+      >>> config = RobertaConfig.from_pretrained("roberta-base")
+      >>> config.is_decoder = True
+      >>> model = RobertaForCausalLM.from_pretrained("roberta-base", config=config)
+
+      >>> inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
+      >>> outputs = model(**inputs)
+
+      >>> prediction_logits = outputs.logits
+      ```
+
+      :returns: CausalLMOutputWithCrossAttentions.
+
+
+   .. py:method:: prepare_inputs_for_generation(input_ids, past=None, attention_mask=None, **model_kwargs)
+
+      Prepare inputs for generation.
+
+
+
+.. py:class:: RobertaForMaskedLM(config)
+
+
+
+
+   Roberta for masked language model task.
+
+   .. py:method:: get_output_embeddings()
+
+      Getter of output embeddings.
+
+
+   .. py:method:: set_output_embeddings(new_embeddings)
+
+      Setter of output embeddings.
+
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, encoder_hidden_states: Optional[torch.FloatTensor] = None, encoder_attention_mask: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.MaskedLMOutput]
+
+      The main entry point for the class.
+
+      labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Labels for computing the masked language modeling loss. Indices should be in `[-100, 0, ...,
+          config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are ignored (masked), the
+          loss is only computed for the tokens with labels in `[0, ..., config.vocab_size]`
+      kwargs (`Dict[str, any]`, optional, defaults to *{}*):
+          Used to hide legacy arguments that have been deprecated.
+
+
+
+.. py:class:: RobertaLMHead(config)
+
+
+
+
+   Roberta Head for masked language modeling.
+
+   .. py:method:: forward(features, **kwargs)
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaForSequenceClassification(config)
+
+
+
+
+   Roberta for sequence classification task.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=True) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.SequenceClassifierOutput]
+
+      The main entry point for the class.
+
+      labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+          Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+          config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+          `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+
+
+
+.. py:class:: RobertaForMultipleChoice(config)
+
+
+
+
+   Roberta for multiple choice task.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.MultipleChoiceModelOutput]
+
+      The main entry point for the class.
+
+      labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+          Labels for computing the multiple choice classification loss. Indices should be in `[0, ...,
+          num_choices-1]` where `num_choices` is the size of the second dimension of the input tensors. (See
+          `input_ids` above)
+
+
+
+.. py:class:: RobertaForTokenClassification(config)
+
+
+
+
+   Roberta for token classification task.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.TokenClassifierOutput]
+
+      The main entry point for the class.
+
+      labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Labels for computing the token classification loss. Indices should be in `[0, ..., config.num_labels - 1]`.
+
+
+
+.. py:class:: RobertaClassificationHead(config)
+
+
+
+
+   Head for sentence-level classification tasks.
+
+   .. py:method:: forward(features, **kwargs)
+
+      The main entry point for the class.
+
+
+
+.. py:class:: RobertaForQuestionAnswering(config)
+
+
+
+
+   Roberta model for quanstion answering task.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, token_type_ids: Optional[torch.LongTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, start_positions: Optional[torch.LongTensor] = None, end_positions: Optional[torch.LongTensor] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None, layer_config=None, length_config=None, always_keep_cls_token=False) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.QuestionAnsweringModelOutput]
+
+      The main entry point for the class.
+
+      start_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+          Labels for position (index) of the start of the labelled span for computing the token classification loss.
+          Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
+          are not taken into account for computing the loss.
+      end_positions (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+          Labels for position (index) of the end of the labelled span for computing the token classification loss.
+          Positions are clamped to the length of the sequence (`sequence_length`). Position outside of the sequence
+          are not taken into account for computing the loss.
+
+
+
+.. py:function:: create_position_ids_from_input_ids(input_ids, padding_idx, past_key_values_length=0)
+
+   Replace non-padding symbols with their position numbers.
+
+   Position numbers begin at padding_idx+1. Padding symbols are ignored.
+   This is modified from fairseq's `utils.make_positions`.
+
+
+
+.. py:function:: expand_gather(input, dim, index)
+
+   Expand gather.
+
+

@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.generate_sequence`
+=====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.generate_sequence
+
+.. autoapi-nested-parse::
+
+   The GenerateSequence Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.generate_sequence.GenerateSequence
+
+
+
+
+.. py:class:: GenerateSequence
+
+
+
+
+   The GenerateSequence pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'GenerateSequence' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

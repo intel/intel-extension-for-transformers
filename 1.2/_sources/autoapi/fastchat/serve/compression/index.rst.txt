@@ -1,0 +1,55 @@
+:orphan:
+
+:py:mod:`fastchat.serve.compression`
+====================================
+
+.. py:module:: fastchat.serve.compression
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.serve.compression.CompressionConfig
+   fastchat.serve.compression.CLinear
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.serve.compression.compress
+   fastchat.serve.compression.decompress
+
+
+
+.. py:class:: CompressionConfig
+
+
+   Group-wise quantization.
+
+
+.. py:class:: CLinear(weight=None, bias=None, device=None)
+
+
+
+
+   Compressed Linear Layer.
+
+
+.. py:function:: compress(tensor, config)
+
+   Simulate group-wise quantization.
+
+
+.. py:function:: decompress(packed_data, config)
+
+   Simulate group-wise dequantization.
+
+

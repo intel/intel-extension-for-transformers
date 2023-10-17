@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.quantized_fused_matmul_and_dequantize`
+===================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.quantized_fused_matmul_and_dequantize
+
+.. autoapi-nested-parse::
+
+   The neural engine operator mapping file.
+
+
+

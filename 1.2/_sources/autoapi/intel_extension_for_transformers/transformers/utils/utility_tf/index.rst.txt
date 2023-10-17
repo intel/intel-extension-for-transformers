@@ -1,0 +1,68 @@
+:py:mod:`intel_extension_for_transformers.transformers.utils.utility_tf`
+========================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.utils.utility_tf
+
+.. autoapi-nested-parse::
+
+   Utils for tensorflow framework.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.utils.utility_tf.TFDataloader
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.utils.utility_tf.distributed_init
+   intel_extension_for_transformers.transformers.utils.utility_tf.get_filepath
+   intel_extension_for_transformers.transformers.utils.utility_tf.keras2SavedModel
+
+
+
+.. py:class:: TFDataloader(dataset, batch_size=None)
+
+
+
+
+   Tensorflow dataloader.
+
+   :param dataset: Dataset
+   :type dataset: string
+
+
+.. py:function:: distributed_init(worker_addresses, type='worker', index=0)
+
+   Init distribute environment.
+
+   :param worker_addresses: Addresses of all nodes.
+   :param type: The type of node, such as worker.
+   :param index: When index is 0, the node treat as a chief.
+
+
+.. py:function:: get_filepath(base_dirpath, task_type, task_id)
+
+   Get model folder path for the distributed environment.
+
+   :param base_dirpath: The basic folder path.
+   :param task_type: Task_type is set as worker.
+   :param task_id: Task id. When task_id=0, the node treat as a chief.
+
+
+.. py:function:: keras2SavedModel(model)
+
+   Transfer keras model into save_model.
+
+

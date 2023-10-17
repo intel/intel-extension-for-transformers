@@ -1,0 +1,52 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.tts.TextToSpeech
+
+
+
+
+.. py:class:: TextToSpeech(output_audio_path='./response.wav', voice='default', stream_mode=False, device='cpu', asset_path='/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets')
+
+
+   Convert text to speech with a driven speaker embedding
+
+   1) Default voice (Original model + Proved good default speaker embedding from trained dataset)
+   2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
+   3) Customized voice (Original model + User's customized input voice embedding)
+
+   .. py:method:: create_speaker_embedding(driven_audio_path)
+
+      Create the speaker's embedding.
+
+      driven_audio_path: the driven audio of that speaker
+
+
+   .. py:method:: text2speech(text, output_audio_path, voice='default', do_batch_tts=False, batch_length=400)
+
+      Text to speech.
+
+      text: the input text
+      voice: default/male/female/...
+      batch_length: the batch length for spliting long texts into batches to do text to speech
+
+
+   .. py:method:: stream_text2speech(generator, output_audio_path, voice='default')
+
+      Stream the generation of audios with an LLM text generator.
+
+
+

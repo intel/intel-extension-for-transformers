@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">NeuralChat</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/docs/intel_extension_for_transformers/neural_chat/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div align="center"><section id="neuralchat">
+<h1>NeuralChat<a class="headerlink" href="#neuralchat" title="Link to this heading"></a></h1>
+<p><h3> A customizable chatbot framework to create your own chatbot within minutes</h3></p>
+<hr class="docutils" />
+<div align="left"><section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>NeuralChat is a customizable chat framework designed to easily create user own chatbot that can be efficiently deployed across multiple architectures (e.g., Intel® Xeon® Scalable processors, Habana® Gaudi® AI processors). NeuralChat is built on top of large language models (LLMs) and provides a set of strong capabilities including LLM fine-tuning, optimization, and inference, together with a rich set of plugins such as knowledge retrieval, query caching, etc. With NeuralChat, you can easily create a text-based or audio-based chatbot within minutes and deploy on user favorite platform rapidly.</p>
+<a target="_blank" href="./assets/pictures/neuralchat.png">
+<p align="center">
+  <img src="./assets/pictures/neuralchat.png" alt="NeuralChat" width=600 height=250>
+</p>
+</a><blockquote>
+<div><p>NeuralChat is under active development with some experimental features (APIs are subject to change).</p>
+</div></blockquote>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>NeuralChat is seamlessly integrated into the Intel Extension for Transformers. Please refer to <a class="reference external" href="../../docs/installation.html">Installation</a> page for step by step instructions.</p>
+</section>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
+<p>NeuralChat could be deployed locally or accessed through service.</p>
+<section id="deploy-chatbot-locally">
+<h3>Deploy Chatbot Locally<a class="headerlink" href="#deploy-chatbot-locally" title="Link to this heading"></a></h3>
+<p>NeuralChat can be deployed locally and users can run it through command line or python code.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Command line</span>
+neuralchat<span class="w"> </span>predict<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span>
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Python code</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span>
+<span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">()</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">chatbot</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;Tell me about Intel Xeon Scalable Processors.&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="deploy-chatbot-service">
+<h3>Deploy Chatbot Service<a class="headerlink" href="#deploy-chatbot-service" title="Link to this heading"></a></h3>
+<p>NeuralChat can be deployed as a service and users can access it through curl with Restful API.</p>
+<section id="launch-service">
+<h4>Launch Service<a class="headerlink" href="#launch-service" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>neuralchat_server<span class="w"> </span>start<span class="w"> </span>--config_file<span class="w"> </span>./server/config/neuralchat.yaml
+</pre></div>
+</div>
+</section>
+<section id="access-service">
+<h4>Access Service<a class="headerlink" href="#access-service" title="Link to this heading"></a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;prompt&quot;: &quot;Tell me about Intel Xeon Scalable Processors.&quot;}&#39;</span><span class="w"> </span>http://127.0.0.1:80/v1/chat/completions
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="advanced-topics">
+<h2>Advanced Topics<a class="headerlink" href="#advanced-topics" title="Link to this heading"></a></h2>
+<section id="plugins">
+<h3>Plugins<a class="headerlink" href="#plugins" title="Link to this heading"></a></h3>
+<p>NeuralChat introduces the <code class="docutils literal notranslate"><span class="pre">plugins</span></code> which offer a rich set of useful LLM utils and features to augment the chatbot’s capability. Such plugins are applied in the chatbot pipeline for inference.</p>
+<p>Below shows the supported plugins:</p>
+<ul>
+<li><p><a class="reference external" href="./pipeline/plugins/retrieval/">Knowledge Retrieval</a></p>
+<p>Knowledge retrieval consists of document indexing for efficient retrieval of relevant information, including Dense Indexing based on LangChain and Sparse Indexing based on fastRAG, document rankers to prioritize the most relevant responses.</p>
+</li>
+<li><p><a class="reference external" href="./pipeline/plugins/caching/">Query Caching</a></p>
+<p>Query caching enables the fast path to get the response without LLM inference and therefore improves the chat response time</p>
+</li>
+<li><p><a class="reference external" href="./pipeline/plugins/prompt/">Prompt Optimization</a></p>
+<p>Prompt optimization supports auto prompt engineering to improve user prompts.</p>
+</li>
+<li><p><a class="reference external" href="./pipeline/plugins/memory/">Memory Controller</a></p>
+<p>Memory controller enables the efficient memory utilization.</p>
+</li>
+<li><p><a class="reference external" href="./pipeline/plugins/security/">Safety Checker</a></p>
+<p>Safety checker enables the sensitive content check on inputs and outputs of the chatbot.</p>
+</li>
+</ul>
+<p>User could enable, disable, and even change the default behavior of all supported plugins like below</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span><span class="p">,</span> <span class="n">PipelineConfig</span><span class="p">,</span> <span class="n">plugins</span>
+
+<span class="n">plugins</span><span class="o">.</span><span class="n">retrieval</span><span class="o">.</span><span class="n">enable</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">plugins</span><span class="o">.</span><span class="n">retrieval</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;input_path&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;./assets/docs/&quot;</span>
+<span class="n">conf</span> <span class="o">=</span> <span class="n">PipelineConf</span><span class="p">(</span><span class="n">plugins</span><span class="o">=</span><span class="n">plugins</span><span class="p">)</span>
+<span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">conf</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="fine-tuning">
+<h3>Fine-tuning<a class="headerlink" href="#fine-tuning" title="Link to this heading"></a></h3>
+<p>NeuralChat supports fine-tuning the pretrained large language model (LLM) for text-generation, summarization, code generation tasks, and even TTS model, for user to create the customized chatbot.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Command line</span>
+neuralchat<span class="w"> </span>finetune<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/finetuning/config/finetuning.yaml
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Python code</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">finetune_model</span><span class="p">,</span> <span class="n">TextGenerationFinetuningConfig</span>
+<span class="n">finetune_cfg</span> <span class="o">=</span> <span class="n">TextGenerationFinetuningConfig</span><span class="p">()</span> <span class="c1"># support other finetuning config</span>
+<span class="n">finetuned_model</span> <span class="o">=</span> <span class="n">finetune_model</span><span class="p">(</span><span class="n">finetune_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="optimization">
+<h3>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h3>
+<p>NeuralChat provides typical model optimization technologies, like <code class="docutils literal notranslate"><span class="pre">Automatic</span> <span class="pre">Mixed</span> <span class="pre">Precision</span> <span class="pre">(AMP)</span></code> and <code class="docutils literal notranslate"><span class="pre">Weight</span> <span class="pre">Only</span> <span class="pre">Quantization</span></code>, to allow user to define a customized chatbot.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="c1"># Command line</span>
+neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<span class="w"> </span><span class="s2">&quot;meta-llama/Llama-2-7b-chat-hf&quot;</span><span class="w"> </span>--config<span class="w"> </span>pipeline/optimization/config/optimization.yaml
+</pre></div>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Python code</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span><span class="p">,</span> <span class="n">AMPConfig</span>
+<span class="n">pipeline_cfg</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span><span class="n">optimization_config</span><span class="o">=</span><span class="n">AMPConfig</span><span class="p">())</span>
+<span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">pipeline_cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="validated-model-list">
+<h2>Validated Model List<a class="headerlink" href="#validated-model-list" title="Link to this heading"></a></h2>
+<p>The table below displays the validated model list in NeuralChat for both inference and fine-tuning.
+|Pretrained model| Text Generation (Instruction) | Text Generation (ChatBot) | Summarization | Code Generation |
+|————————————|—|—|— | — |
+|Intel/neural-chat-7b-v1-1| ✅| ✅| ✅| ✅
+|LLaMA series| ✅| ✅|✅| ✅
+|LLaMA2 series| ✅| ✅|✅| ✅
+|MPT series| ✅| ✅|✅| ✅
+|FLAN-T5 series| ✅ | <strong>WIP</strong>| <strong>WIP</strong> | <strong>WIP</strong>|</p>
+</section>
+<section id="selected-notebooks">
+<h2>Selected Notebooks<a class="headerlink" href="#selected-notebooks" title="Link to this heading"></a></h2>
+<p>Welcome to use Jupyter notebooks to explore how to create, deploy, and customize chatbots on multiple architectures, including Intel Xeon Scalable Processors, Intel Gaudi2, Intel Xeon CPU Max Series, Intel Data Center GPU Max Series, Intel Arc Series, and Intel Core Processors, and others. The selected notebooks are shown below:</p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Notebook</th>
+<th>Title</th>
+<th>Description</th>
+<th>Link</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>#1</td>
+<td>Getting Started on Intel CPU SPR</td>
+<td>Learn how to create chatbot on SPR</td>
+<td><a href="./docs/notebooks/build_chatbot_on_spr.ipynb">Notebook</a></td>
+</tr>
+<tr>
+<td>#2</td>
+<td>Getting Started on Habana Gaudi1/Gaudi2</td>
+<td>Learn how to create chatbot on Habana Gaudi1/Gaudi2</td>
+<td><a href="./docs/notebooks/build_chatbot_on_habana_gaudi.ipynb">Notebook</a></td>
+</tr>
+<tr>
+<td>#3</td>
+<td>Deploying Chatbot on Intel CPU SPR</td>
+<td>Learn how to deploy chatbot on SPR</td>
+<td><a href="./docs/notebooks/deploy_chatbot_on_spr.ipynb">Notebook</a></td>
+</tr>
+<tr>
+<td>#4</td>
+<td>Deploying Chatbot on Habana Gaudi1/Gaudi2</td>
+<td>Learn how to deploy chatbot on Habana Gaudi1/Gaudi2</td>
+<td><a href="./docs/notebooks/deploy_chatbot_on_habana_gaudi.ipynb">Notebook</a></td>
+</tr>
+<tr>
+<td>#5</td>
+<td>Deploying Chatbot with Load Balance</td>
+<td>Learn how to deploy chatbot with load balance on SPR</td>
+<td><a href="./docs/notebooks/chatbot_with_load_balance.ipynb">Notebook</a></td>
+</tr>
+</tbody>
+</table><p>🌟Please refer to <a class="reference external" href="docs/full_notebooks.html">HERE</a> for the full notebooks.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5865059430> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/autoapi/intel_extension_for_transformers/transformers/modeling/bloom/modeling_bloom/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom">
+<span id="intel-extension-for-transformers-transformers-modeling-bloom-modeling-bloom"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom" title="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom" title="Link to this heading"></a></h1>
+<p>PyTorch BLOOM model.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.BloomGelu" title="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.BloomGelu"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BloomGelu</span></code></a></p></td>
+<td><p>BloomBiasGelu wrapper function that make use of the simple function on inference mode to make the model</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.build_alibi_tensor" title="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.build_alibi_tensor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">build_alibi_tensor</span></code></a>(→ torch.Tensor)</p></td>
+<td><p>Link to paper: <a class="reference external" href="https://arxiv.org/abs/2108.12409">https://arxiv.org/abs/2108.12409</a> Alibi tensor is not causal as the original paper mentions, it</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.dropout_add" title="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.dropout_add"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dropout_add</span></code></a>(→ torch.Tensor)</p></td>
+<td><p>Dropout add function</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_forward" title="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_forward"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bloom_gelu_forward</span></code></a>(→ torch.Tensor)</p></td>
+<td><p>Custom bias GELU function. Adapted from Megatron-DeepSpeed code.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_back" title="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_back"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bloom_gelu_back</span></code></a>(→ torch.Tensor)</p></td>
+<td><p>gradient of tanh approximation of gelu gradient of actual gelu is: 0.5 * (1. + torch.erf(x * 0.70710678)) +</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.build_alibi_tensor">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.</span></span><span class="sig-name descname"><span class="pre">build_alibi_tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">attention_mask</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_heads</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.dtype</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/transformers/modeling/bloom/modeling_bloom.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.build_alibi_tensor" title="Link to this definition"></a></dt>
+<dd><p>Link to paper: <a class="reference external" href="https://arxiv.org/abs/2108.12409">https://arxiv.org/abs/2108.12409</a> Alibi tensor is not causal as the original paper mentions, it
+relies on a translation invariance of softmax for quick implementation: with l being a tensor, and a fixed value
+<cite>softmax(l+a) = softmax(l)</cite>. Based on
+<a class="reference external" href="https://github.com/ofirpress/attention_with_linear_biases/blob/">https://github.com/ofirpress/attention_with_linear_biases/blob/</a>
+a35aaca144e0eb6b789dfcb46784c4b8e31b7983/fairseq/models/transformer.py#L742
+TODO &#64;thomasw21 this doesn’t work as nicely due to the masking strategy, and so masking varies slightly.</p>
+<p>Args:
+Returns tensor shaped (batch_size * num_heads, 1, max_seq_len)</p>
+<blockquote>
+<div><dl class="simple">
+<dt>attention_mask (<cite>torch.Tensor</cite>):</dt><dd><p>Token-wise attention mask, this should be of shape (batch_size, max_seq_len).</p>
+</dd>
+<dt>num_heads (<cite>int</cite>, <em>required</em>):</dt><dd><p>number of heads</p>
+</dd>
+<dt>dtype (<cite>torch.dtype</cite>, <em>optional</em>, default=`torch.bfloat16`):</dt><dd><p>dtype of the output tensor</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.dropout_add">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.</span></span><span class="sig-name descname"><span class="pre">dropout_add</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">residual</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prob</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/transformers/modeling/bloom/modeling_bloom.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.dropout_add" title="Link to this definition"></a></dt>
+<dd><p>Dropout add function</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<cite>torch.tensor</cite>, <em>required</em>) – input tensor</p></li>
+<li><p><strong>residual</strong> (<cite>torch.tensor</cite>, <em>required</em>) – esidual tensor</p></li>
+<li><p><strong>prob</strong> (<cite>float</cite>, <em>required</em>) – dropout probability</p></li>
+<li><p><strong>training</strong> (<cite>bool</cite>, <em>required</em>) – training mode</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_forward">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.</span></span><span class="sig-name descname"><span class="pre">bloom_gelu_forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/transformers/modeling/bloom/modeling_bloom.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_forward" title="Link to this definition"></a></dt>
+<dd><p>Custom bias GELU function. Adapted from Megatron-DeepSpeed code.
+Here we use a simple implementation (inference) to make the model jitable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> (<cite>torch.tensor</cite>, <em>required</em>) – input hidden states</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_back">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.</span></span><span class="sig-name descname"><span class="pre">bloom_gelu_back</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/transformers/modeling/bloom/modeling_bloom.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.bloom_gelu_back" title="Link to this definition"></a></dt>
+<dd><p>gradient of tanh approximation of gelu gradient of actual gelu is: 0.5 * (1. + torch.erf(x * 0.70710678)) +
+0.3989423 * x * torch.exp(-0.5 * x * x)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>g</strong> (<cite>torch.tensor</cite>, <em>required</em>) – gradient output tensor</p></li>
+<li><p><strong>x</strong> (<cite>torch.tensor</cite>, <em>required</em>) – input tensor</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.BloomGelu">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.</span></span><span class="sig-name descname"><span class="pre">BloomGelu</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/transformers/modeling/bloom/modeling_bloom.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.transformers.modeling.bloom.modeling_bloom.BloomGelu" title="Link to this definition"></a></dt>
+<dd><p>BloomBiasGelu wrapper function that make use of the simple function on inference mode to make the model
+torchscriptable and use the autograd function in training mode to get the accurate results of the gradients Partly
+copied from Megatron-DeepSpeed code and adapted for our needs</p>
+<p>See here why autograd functions are not torchscriptable: <a class="reference external" href="https://github.com/pytorch/pytorch/issues/22329">https://github.com/pytorch/pytorch/issues/22329</a></p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f586296c790> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

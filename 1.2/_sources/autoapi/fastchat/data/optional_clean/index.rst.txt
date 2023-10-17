@@ -1,0 +1,18 @@
+:py:mod:`fastchat.data.optional_clean`
+======================================
+
+.. py:module:: fastchat.data.optional_clean
+
+.. autoapi-nested-parse::
+
+   Do optional cleaning (e.g., remove some languages).
+
+   Usage:
+   python3 -m fastchat.data.optional_clean --in input.json --out output.json --keep-lang en
+   python3 -m fastchat.data.optional_clean --in input.json --out output.json --skip-lang en
+
+   Requirement:
+   pip3 install polyglot icu pyicu pycld2 morfessor
+
+
+

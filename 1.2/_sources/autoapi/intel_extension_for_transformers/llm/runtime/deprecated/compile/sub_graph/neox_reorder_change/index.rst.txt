@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.neox_reorder_change`
+=======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.neox_reorder_change
+
+.. autoapi-nested-parse::
+
+   The NeoxReorderChange pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.neox_reorder_change.NeoxReorderChange
+
+
+
+
+.. py:class:: NeoxReorderChange
+
+
+
+
+   The NeoxReorderChange pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'NeoxReorderChange' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

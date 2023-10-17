@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Graph Fusion &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="Pattern Recognize" href="pattern_recognize.html" />
+    <link rel="prev" title="Engine Tuning" href="engine_tuning.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="deploy_and_integration.html">Deploy and Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_quantize.html">Quantize a ONNX model to engine low precision/int8 IR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_profiling.html">Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_tuning.html">Engine Tuning</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Graph Fusion</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#pattern-mapping-dict">Pattern Mapping Dict</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#obtain-the-necessary-information-for-new-pattern-construction">Obtain the Necessary Information for New Pattern Construction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#create-nodes-and-establish-connections">Create Nodes and Establish Connections</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#remove-the-old-pattern-and-insert-the-new-pattern">Remove the Old Pattern and Insert the New Pattern</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="pattern_recognize.html">Pattern Recognize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="operator_register.html">Customized Operators Register</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_customized_pattern.html">Add Customized Pattern</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../neural_engine.html">Neural Engine</a></li>
+      <li class="breadcrumb-item active">Graph Fusion</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs/graph_fusion.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="graph-fusion">
+<h1>Graph Fusion<a class="headerlink" href="#graph-fusion" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#pattern-mapping-dict">Pattern Mapping Dict</a></p></li>
+<li><p><a class="reference external" href="#obtain-the-necessary-information-for-new-pattern-construction">Obtain the Necessary Information for New Pattern Construction</a></p></li>
+<li><p><a class="reference external" href="#create-nodes-and-establish-connections">Create Nodes and Establish Connections</a></p></li>
+<li><p><a class="reference external" href="#remove-the-old-pattern-and-insert-the-new-pattern">Remove the Old Pattern and Insert the New Pattern</a></p></li>
+</ul>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>The main purpose of graph fusion and optimization is to simplify the network and speed up inference. We take this process as a way of pattern mapping. Users could call the <code class="docutils literal notranslate"><span class="pre">pattern_mapping</span></code> API in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><code class="docutils literal notranslate"><span class="pre">compile.graph_utils</span></code></a> to realize it. The process contains three steps: <strong>1. obtain the necessary information for new pattern construction; 2. create nodes and establish connections; 3. remove the old pattern and insert the new pattern.</strong> Before implementing graph fusion and optimization, users should supply a config (dict) to instruct pattern mapping.</p>
+</section>
+<section id="pattern-mapping-dict">
+<h2>Pattern Mapping Dict<a class="headerlink" href="#pattern-mapping-dict" title="Link to this heading"></a></h2>
+<p>Here is an example of a pattern mapping dict (a LayerNorm pattern in doc <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/add_customized_pattern.html">add_customized_pattern</a>):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>    <span class="s1">&#39;patterns&#39;</span><span class="p">:</span> <span class="p">{</span>
+                 <span class="s1">&#39;in&#39;</span><span class="p">:</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;ReduceMean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;Sub&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s1">&#39;Pow&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s1">&#39;ReduceMean&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s1">&#39;Sqrt&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="s1">&#39;Div&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="s1">&#39;Mul&#39;</span><span class="p">),</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="s1">&#39;Add&#39;</span><span class="p">)]],</span>
+                 <span class="s1">&#39;out&#39;</span><span class="p">:</span> <span class="p">[[(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;LayerNorm&#39;</span><span class="p">)]]</span>
+                 <span class="p">},</span>
+     <span class="s1">&#39;search_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;op_type&#39;</span><span class="p">,</span>
+     <span class="s1">&#39;node_names&#39;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="mi">0</span><span class="p">:</span> <span class="mi">8</span>
+                   <span class="p">},</span>
+     <span class="s1">&#39;input_tensors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="p">[[{</span>
+                            <span class="mi">0</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="p">},</span> <span class="p">{</span>
+                            <span class="mi">7</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="p">},</span> <span class="p">{</span>
+                            <span class="mi">8</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="p">}],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="mi">3</span><span class="p">]]</span>
+                       <span class="p">},</span>
+     <span class="s1">&#39;output_tensors&#39;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="mi">0</span><span class="p">:</span> <span class="p">[[{</span>
+                            <span class="mi">8</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                        <span class="p">}],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">]]</span>
+                    <span class="p">},</span>
+     <span class="s1">&#39;returns&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+     <span class="p">}</span>
+</pre></div>
+</div>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">patterns</span></code> : gives the patterns representations before (<code class="docutils literal notranslate"><span class="pre">in</span></code>) and after (<code class="docutils literal notranslate"><span class="pre">out</span></code>) mapping. It is a dict with two keys (<code class="docutils literal notranslate"><span class="pre">in</span></code> and <code class="docutils literal notranslate"><span class="pre">out</span></code>), and the values are the corresponding pattern representations. About the representation, refer to <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/pattern_recognize.html">pattern_recognition</a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">search_mode</span></code>: a string must be <code class="docutils literal notranslate"><span class="pre">op_type</span></code> or <code class="docutils literal notranslate"><span class="pre">node_name</span></code>. If set as <code class="docutils literal notranslate"><span class="pre">op_type</span></code>, the algorithm will search the old pattern (<code class="docutils literal notranslate"><span class="pre">in</span></code>) in the graph. If set as <code class="docutils literal notranslate"><span class="pre">node_name</span></code>, just means the old pattern (<code class="docutils literal notranslate"><span class="pre">in</span></code>) is representing the search result. In most conditions, it should be <code class="docutils literal notranslate"><span class="pre">op_type</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">node_names</span></code>: a dict for setting node names for each node in the new pattern. The key is the node index of the new pattern (<code class="docutils literal notranslate"><span class="pre">out</span></code>). The value must be a string or integer. If string, just uses it as the node’s name. If an integer, use the name of index-th (<code class="docutils literal notranslate"><span class="pre">integer</span></code>) node in the old pattern(<code class="docutils literal notranslate"><span class="pre">in</span></code>). Usually, the old pattern has many match_results in the graph, the algorithm would add “_n” after the name when the value is a string. For example, the new node <code class="docutils literal notranslate"><span class="pre">0</span></code> (<code class="docutils literal notranslate"><span class="pre">0:</span> <span class="pre">embeddings_reshape</span> </code>) name should be <code class="docutils literal notranslate"><span class="pre">embeddings/reshape_0</span></code> of the first match_result.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">input_tensors</span></code>: a dict for telling where to get the input tensors of the new pattern (<code class="docutils literal notranslate"><span class="pre">out</span></code>). These input tensors of patterns before or after fusion should be the same. The input tensors we said here are aimed at pattern. For example, the pattern can be thought of as a big node and it receives and emits tensors which should be equal before or after fusion. So the <code class="docutils literal notranslate"><span class="pre">input_tensors</span></code> supplies information of the input tensor outside rather than the tensors inside the pattern. The key is the node index of the new pattern (<code class="docutils literal notranslate"><span class="pre">out</span></code>). The first list in the value list means where are the outside input tensors from (which input tensors index of which node in the old pattern). And the second list means which locations these tensors would be put (which input tensor index of the node in the new pattern and number of them) . For example, the above <code class="docutils literal notranslate"><span class="pre">0</span> <span class="pre">:[</span> <span class="pre">[{0:</span> <span class="pre">[0]},</span> <span class="pre">{7:</span> <span class="pre">[1]},</span> <span class="pre">{8:[1]}],</span> <span class="pre">[[0,</span> <span class="pre">1,</span> <span class="pre">2],</span> <span class="pre">3]</span> <span class="pre">]</span></code> shows that the 0-th node in the new pattern needs three outside input tensors. The first one is 0-th input tensor of 0-th node in the old pattern, the second one is 1-st input tensor of 7-th node in the old pattern, and the third one is 1-st input tensor of 8-th node in the old pattern. <code class="docutils literal notranslate"><span class="pre">[[0,</span> <span class="pre">1,</span> <span class="pre">2],</span> <span class="pre">3]</span></code> means these three tensors are as 0-th, 1-st, 2-nd input tensor respectively of 0-th node in the new pattern (just copy tensors) and this node has three input tensors total. Sometimes the tensor number is greater than the length of first list for the reason that this node would receive a tensor from its last node in the new pattern, like <code class="docutils literal notranslate"><span class="pre">[[0,</span> <span class="pre">1],</span> <span class="pre">3]</span></code>. This 2-nd tensor will be generated and sent automatically inside the new sequence pattern.</p>
+<blockquote>
+<div><p><strong>Note</strong></p>
+<ol class="simple">
+<li><p>In some models, the tensor index in <code class="docutils literal notranslate"><span class="pre">input_tensors</span></code> could be different in a pattern. For example, pattern <code class="docutils literal notranslate"><span class="pre">[[(0,</span> <span class="pre">'MatMul'),</span> <span class="pre">(1,</span> <span class="pre">'BiasAdd'),</span> <span class="pre">(2,</span> <span class="pre">'Add')]]</span></code> , the <code class="docutils literal notranslate"><span class="pre">(2,</span> <span class="pre">'Add')</span></code> node has 2 input tensors, the one is from <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">'BiasAdd')</span></code>, another one is from other node, which is needed to be written into <code class="docutils literal notranslate"><span class="pre">input_tensors</span></code>. However, this tensor index might be 0 in part of matched results while 1 in other results. You can use <code class="docutils literal notranslate"><span class="pre">{2:</span> <span class="pre">[0,</span> <span class="pre">1]}</span></code> to point out this phenomenon and the algorithm would check the tensor name and get the correct one.</p></li>
+<li><p>If some input_tensors only can get from other nodes outside the pattern, you can just specify it by giving the node name in the graph, like <code class="docutils literal notranslate"><span class="pre">0:</span> <span class="pre">[[{'reshape_0':</span> <span class="pre">[0]}],</span> <span class="pre">[[0],</span> <span class="pre">1]]</span></code>.</p></li>
+</ol>
+</div></blockquote>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_tensors</span></code>: a dict for telling where to get the output tensors of the new pattern (<code class="docutils literal notranslate"><span class="pre">out</span></code>). Its representations are similar to <code class="docutils literal notranslate"><span class="pre">input_tensors</span></code>. In most situations, the last nod of the new pattern should has the same output tensors as the last node of old pattern (sequence pattern for now and all nodes have one output tensor). So, usually, users just need to set the last node’s output tensors and leave the rest nodes’ output tensors empty while keeping the number of tensors (the algorithm would generate internally). For example, a new pattern is <code class="docutils literal notranslate"><span class="pre">[[(0,</span> <span class="pre">'op_type'),</span> <span class="pre">(1,</span> <span class="pre">'op_type'),</span> <span class="pre">(2,</span> <span class="pre">'op_type')]]</span></code>, then its <code class="docutils literal notranslate"><span class="pre">output_tensors</span></code> could be like <code class="docutils literal notranslate"><span class="pre">{0:</span> <span class="pre">[[],</span> <span class="pre">[[],</span> <span class="pre">1]],</span> <span class="pre">1:</span> <span class="pre">[[],</span> <span class="pre">[[],</span> <span class="pre">1]],</span> <span class="pre">2:</span> <span class="pre">[[{old_node_index:</span> <span class="pre">[0]}],</span> <span class="pre">[[0],</span> <span class="pre">1]]}</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">returns</span></code>: a list contains some nodes indexes of old pattern (<code class="docutils literal notranslate"><span class="pre">in</span></code>). It would return these old nodes when pattern mapping finishes. Sometimes user requires specific nodes for setting node attributes in new pattern. You can set the value as <code class="docutils literal notranslate"><span class="pre">[]</span></code> if no need.</p></li>
+</ul>
+</section>
+<section id="obtain-the-necessary-information-for-new-pattern-construction">
+<h2>Obtain the Necessary Information for New Pattern Construction<a class="headerlink" href="#obtain-the-necessary-information-for-new-pattern-construction" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">pattern_mapping</span></code> API first search the <code class="docutils literal notranslate"><span class="pre">in</span></code> pattern and get the matched result. Then prepare node names, input tensors, output tensors these necessary information for <code class="docutils literal notranslate"><span class="pre">out</span></code> pattern by following the above pattern mapping dict. It also store some specific nodes in old pattern if needed. These related variables have the same length as a matched result of <code class="docutils literal notranslate"><span class="pre">in</span></code> pattern. For more details, please see the <code class="docutils literal notranslate"><span class="pre">_get_pattern_info</span></code> function in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><code class="docutils literal notranslate"><span class="pre">compile.graph_utils</span></code></a>.</p>
+</section>
+<section id="create-nodes-and-establish-connections">
+<h2>Create Nodes and Establish Connections<a class="headerlink" href="#create-nodes-and-establish-connections" title="Link to this heading"></a></h2>
+<p>In this step, <code class="docutils literal notranslate"><span class="pre">pattern_mapping</span></code> API receives the above node names, input tensors and output tensors information to create new nodes in <code class="docutils literal notranslate"><span class="pre">out</span></code> pattern. The main part is to establish nodes connections by filling and constructing tensors. The connections outside are maintained with keeping the tensors in or out patterns same. As for the connections inside new pattern, output tensor of pre-node would be generated automatically and become one input tensor of next node due to sequential flow. For more details, please see the <code class="docutils literal notranslate"><span class="pre">_create_out_pattern</span></code> function in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><code class="docutils literal notranslate"><span class="pre">compile.graph_utils</span></code></a>.</p>
+</section>
+<section id="remove-the-old-pattern-and-insert-the-new-pattern">
+<h2>Remove the Old Pattern and Insert the New Pattern<a class="headerlink" href="#remove-the-old-pattern-and-insert-the-new-pattern" title="Link to this heading"></a></h2>
+<p>After creating new pattern, the final step is to replace the old pattern with new pattern. For more details, please see the <code class="docutils literal notranslate"><span class="pre">_replace_pattern</span></code> function in <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><code class="docutils literal notranslate"><span class="pre">compile.graph_utils</span></code></a>.</p>
+<p>Do not forget to set specific attributes of your new pattern if it has. These attributes could influence the inference of <code class="docutils literal notranslate"><span class="pre">Neural</span> <span class="pre">Engine</span></code>. And the <code class="docutils literal notranslate"><span class="pre">returns</span></code> supply the way to obtain them from the nodes in old pattern. Please see the <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/blob/main/intel_extension_for_transformers/llm/runtime/deprecated/docs/add_customized_pattern.html">add_customized_pattern</a> doc for adding your own example.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="engine_tuning.html" class="btn btn-neutral float-left" title="Engine Tuning" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="pattern_recognize.html" class="btn btn-neutral float-right" title="Pattern Recognize" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f58647932b0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

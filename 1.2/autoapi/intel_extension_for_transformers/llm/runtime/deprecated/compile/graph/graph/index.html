@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../_sources/autoapi/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph">
+<span id="intel-extension-for-transformers-llm-runtime-deprecated-compile-graph-graph"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph" title="Link to this heading"></a></h1>
+<p>The neural engine graph file.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Graph</span></code></a></p></td>
+<td><p>The defintion of the neural engine graph.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.</span></span><span class="sig-name descname"><span class="pre">Graph</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph" title="Link to this definition"></a></dt>
+<dd><p>The defintion of the neural engine graph.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.add_config_item">
+<span class="sig-name descname"><span class="pre">add_config_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.add_config_item" title="Link to this definition"></a></dt>
+<dd><p>Add a pair into framework_modeling_config</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.inquire_config_item">
+<span class="sig-name descname"><span class="pre">inquire_config_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.inquire_config_item" title="Link to this definition"></a></dt>
+<dd><p>Get a pair from framework_modeling_config</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.insert_nodes">
+<span class="sig-name descname"><span class="pre">insert_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.insert_nodes" title="Link to this definition"></a></dt>
+<dd><p>Insert nodes to neural engine IR.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.remove_nodes">
+<span class="sig-name descname"><span class="pre">remove_nodes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_names</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.remove_nodes" title="Link to this definition"></a></dt>
+<dd><p>Remove nodes from neural engine IR.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_node_id">
+<span class="sig-name descname"><span class="pre">get_node_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_node_id" title="Link to this definition"></a></dt>
+<dd><p>Get the node id according to the node name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_node_by_name">
+<span class="sig-name descname"><span class="pre">get_node_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_node_by_name" title="Link to this definition"></a></dt>
+<dd><p>Get the node according to the node name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.rename_node">
+<span class="sig-name descname"><span class="pre">rename_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">old_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.rename_node" title="Link to this definition"></a></dt>
+<dd><p>Modify the node name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.change_node_input_tensors">
+<span class="sig-name descname"><span class="pre">change_node_input_tensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'modify'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.change_node_input_tensors" title="Link to this definition"></a></dt>
+<dd><p>Modify the input tensors of the node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.change_node_output_tensors">
+<span class="sig-name descname"><span class="pre">change_node_output_tensors</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'modify'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.change_node_output_tensors" title="Link to this definition"></a></dt>
+<dd><p>Modify the output tensors of the node.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_pre_node_names">
+<span class="sig-name descname"><span class="pre">get_pre_node_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_pre_node_names" title="Link to this definition"></a></dt>
+<dd><p>Get the previous node name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_next_node_names">
+<span class="sig-name descname"><span class="pre">get_next_node_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_next_node_names" title="Link to this definition"></a></dt>
+<dd><p>Get the next node name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_tensor_idx">
+<span class="sig-name descname"><span class="pre">get_tensor_idx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">from_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_tensor_idx" title="Link to this definition"></a></dt>
+<dd><p>Get the index of tensor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.modify_node_connections">
+<span class="sig-name descname"><span class="pre">modify_node_connections</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'insert'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.modify_node_connections" title="Link to this definition"></a></dt>
+<dd><p>Modify the order of nodes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.dump_tensor">
+<span class="sig-name descname"><span class="pre">dump_tensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tensor_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.dump_tensor" title="Link to this definition"></a></dt>
+<dd><p>Dump tensors to the bin and yaml file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.engine_init">
+<span class="sig-name descname"><span class="pre">engine_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">net_info</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">b''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refresh_model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.engine_init" title="Link to this definition"></a></dt>
+<dd><p>Pybind engine executor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.inference">
+<span class="sig-name descname"><span class="pre">inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_data</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.inference" title="Link to this definition"></a></dt>
+<dd><p>The inference API of the neural engine.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.graph_init">
+<span class="sig-name descname"><span class="pre">graph_init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.graph_init" title="Link to this definition"></a></dt>
+<dd><p>The initialization of the neural engine graph.</p>
+<p>Example:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">from</span><span class="w"> </span><span class="n">intel_extension_for_transformers</span><span class="p">.</span><span class="n">llm</span><span class="p">.</span><span class="n">runtime</span><span class="p">.</span><span class="n">deprecated</span><span class="p">.</span><span class="n">compile</span><span class="p">.</span><span class="n">graph</span><span class="w"> </span><span class="k">import</span><span class="w"> </span><span class="n">Graph</span>
+<span class="n">newgraph</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Graph</span><span class="p">()</span>
+<span class="n">newgraph</span><span class="p">.</span><span class="n">graph_init</span><span class="p">(</span><span class="err">&#39;</span><span class="p">.</span><span class="o">/</span><span class="n">ir</span><span class="o">/</span><span class="n">conf</span><span class="p">.</span><span class="n">yaml</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="p">.</span><span class="o">/</span><span class="n">ir</span><span class="o">/</span><span class="n">model</span><span class="p">.</span><span class="n">bin</span><span class="err">&#39;</span><span class="p">)</span>
+<span class="n">out</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newgraph</span><span class="p">.</span><span class="n">inference</span><span class="p">([</span><span class="n">input_0</span><span class="p">,</span><span class="w"> </span><span class="n">input_1</span><span class="p">,</span><span class="w"> </span><span class="n">input_2</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.save" title="Link to this definition"></a></dt>
+<dd><p>Save the model IR to the bin and ymal file.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.graph_dispatch">
+<span class="sig-name descname"><span class="pre">graph_dispatch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tune</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.graph_dispatch" title="Link to this definition"></a></dt>
+<dd><p>The graph dispatch for difference nodes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_sparse_nodes_name">
+<span class="sig-name descname"><span class="pre">get_sparse_nodes_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.7</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.get_sparse_nodes_name" title="Link to this definition"></a></dt>
+<dd><p>According to the sparsity threshold to list all sparse nodes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.transpose_mode_int8">
+<span class="sig-name descname"><span class="pre">transpose_mode_int8</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph/graph.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph.transpose_mode_int8" title="Link to this definition"></a></dt>
+<dd><p>Transpose innerproduct nodes to the sparse mode by inserting reorder nodes.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5862be3cd0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

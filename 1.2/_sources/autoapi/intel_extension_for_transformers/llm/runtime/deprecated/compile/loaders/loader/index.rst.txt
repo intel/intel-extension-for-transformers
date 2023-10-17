@@ -1,0 +1,32 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.loaders.loader`
+========================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.loaders.loader
+
+.. autoapi-nested-parse::
+
+   The loader file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.loaders.loader.Loader
+
+
+
+
+.. py:class:: Loader
+
+
+
+
+   Load the model into the frontend of different inference frameworks.
+
+

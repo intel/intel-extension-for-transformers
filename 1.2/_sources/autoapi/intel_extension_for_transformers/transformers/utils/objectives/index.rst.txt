@@ -1,0 +1,44 @@
+:py:mod:`intel_extension_for_transformers.transformers.utils.objectives`
+========================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.utils.objectives
+
+.. autoapi-nested-parse::
+
+   The class of objective for optimization.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.utils.objectives.Objective
+
+
+
+
+.. py:class:: Objective(name: str, greater_is_better: bool = True, weight_ratio: float = None)
+
+
+
+
+   Objective class.
+
+   .. py:method:: performance()
+      :staticmethod:
+
+      Get a performance objective.
+
+
+   .. py:method:: modelsize()
+      :staticmethod:
+
+      Get a modelsize objective.
+
+
+

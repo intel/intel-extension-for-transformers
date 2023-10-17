@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.removeslice`
+===============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.removeslice
+
+.. autoapi-nested-parse::
+
+   The RemoveSlice Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.removeslice.RemoveSlice
+
+
+
+
+.. py:class:: RemoveSlice
+
+
+
+
+   The RemoveSlice pattern.
+
+   RemoveSlice
+
+

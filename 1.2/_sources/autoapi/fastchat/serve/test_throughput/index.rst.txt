@@ -1,0 +1,11 @@
+:py:mod:`fastchat.serve.test_throughput`
+========================================
+
+.. py:module:: fastchat.serve.test_throughput
+
+.. autoapi-nested-parse::
+
+   Benchmarking script to test the throughput of serving workers.
+
+
+

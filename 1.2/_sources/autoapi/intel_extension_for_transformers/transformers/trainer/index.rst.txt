@@ -1,0 +1,420 @@
+:py:mod:`intel_extension_for_transformers.transformers.trainer`
+===============================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.trainer
+
+.. autoapi-nested-parse::
+
+   The trainer class for pytorch framework, to easily train or finetune a model.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.trainer.BaseTrainer
+   intel_extension_for_transformers.transformers.trainer.NLPTrainer
+   intel_extension_for_transformers.transformers.trainer.NLPSeq2SeqTrainer
+
+
+
+
+.. py:class:: BaseTrainer(*args, **kwargs)
+
+
+   The base class of trainer.
+
+   .. py:method:: builtin_eval_func(model)
+
+      Custom Evaluate function to inference the model for specified metric on validation dataset.
+
+      :param model: The model to evaluate.
+
+      :returns: evaluation result, the larger is better.
+      :rtype: [float]
+
+
+   .. py:method:: builtin_train_func(model)
+
+      Custom training function to train the model on training dataset.
+
+      :param model: The model to train.
+
+      :returns: evaluation result, the larger is better.
+      :rtype: [float]
+
+
+   .. py:method:: init_quantizer(quant_config, provider: str = Provider.INC.value)
+
+      Initialize the quantizer.
+
+      :param quant_config: The path to the YAML configuration file or QuantizationConfig class containing
+                           accuracy goal, quantization objective and related dataloaders etc.
+      :param provider: The provider used to quantize.
+
+      :returns: An objective of neural_compressor Quantization class, which can automativally searches for
+                optimal quantization recipes for low precision model inference and achieving best tuning
+                objectives.
+
+
+   .. py:method:: quantize(quant_config: intel_extension_for_transformers.transformers.QuantizationConfig = None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, calib_dataloader=None)
+
+      The main entry point of automatic quantization tuning.
+
+      :param quant_config: The path to the YAML configuration file or QuantizationConfig class containing
+                           accuracy goal, quantization objective and related dataloaders etc.
+      :param provider: The provider used to quantize.
+      :param eval_func: The function used to evaluate the model.
+      :type eval_func: :obj:`Callable`, optional
+      :param train_func: The function used to train the model.
+      :type train_func: :obj:`Callable`, optional
+      :param calib_dataloader: The dataloader for calibration dataset.
+
+      :returns: An objective of neural_compressor Quantization class, which can automativally searches for
+                optimal quantization recipes for low precision model inference and achieving best tuning
+                objectives.
+
+
+   .. py:method:: init_pruner(pruning_config=None, provider: str = Provider.INC.value)
+
+      Initialize the pruner.
+
+      :param pruning_config: The path to the YAML configuration file or PruningConf class containing
+      :param accuracy goal:
+      :param pruning objective and related dataloaders etc.:
+      :param provider: The provider used to quantize.
+
+      :returns: An objective of neural_compressor Pruning class.
+
+
+   .. py:method:: prune(pruning_config=None, provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      The main entry point of automatic quantization tuning.
+
+      :param pruning_config: The path to the YAML configuration file or PruningConf class containing
+      :param accuracy goal:
+      :param pruning objective and related dataloaders etc.:
+      :param provider: The provider used to quantize.
+      :type provider: str
+      :param eval_func: The function used to evaluate the model.
+      :type eval_func: :obj:`Callable`, optional
+      :param train_func: The function used to train the model.
+      :type train_func: :obj:`Callable`, optional
+
+      :returns: An objective of neural_compressor Pruning class.
+
+
+   .. py:method:: init_distiller(distillation_config, teacher_model: Union[transformers.PreTrainedModel, torch], provider: str = Provider.INC.value)
+
+      The main entry point of automatic distillation tuning.
+
+      :param quant_config: The path to the YAML configuration file or DistillationConfig class containing.
+      :param accuracy goal:
+      :param distillation objective and related dataloaders etc.:
+      :param teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
+      :param provider: The provider used to quantize.
+      :type provider: str
+
+      :returns: An objective of neural_compressor Distillation class.
+
+
+   .. py:method:: distill(distillation_config, teacher_model: Union[transformers.PreTrainedModel, torch], provider: str = Provider.INC.value, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      The main entry point of automatic distillation tuning.
+
+      :param quant_config: The path to the YAML configuration file or DistillationConfig class containing
+      :param accuracy goal:
+      :param distillation objective and related dataloaders etc.:
+      :param teacher_model: The model(torch.nn.Module) transfers knowledge to a smaller model.
+      :param provider: The provider used to quantize.
+      :type provider: str
+      :param eval_func (:obj:`Callable`: The function to evaluate the model.
+      :param optional: The function to evaluate the model.
+      :param train_func (:obj:`Callable`: The function to train the model.
+      :param optional: The function to train the model.
+
+      :returns: An objective of neural_compressor Distillation class.
+
+
+   .. py:method:: orchestrate_optimizations(config_list, teacher_model: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      Main entry point for orchestrate optimiztions.
+
+      :param config_list: The list of configs.
+      :param teacher_model: The model(torch.nn.Module) transfers knowledge
+                            to a smaller model.
+      :type teacher_model: :obj:`Callable`, optional
+      :param eval_func: Evaluation function to evaluate the tuning objective.
+      :type eval_func: :obj:`Callable`, optional
+      :param train_func: Training function which will be combined with pruning.
+      :type train_func: :obj:`Callable`, optional
+
+
+   .. py:method:: create_optimizer_builtin(config_list, teacher_model=None)
+
+      The function to create optimizer.
+
+      :param config_list: The list of configs.
+      :param teacher_model: The model(torch.nn.Module) transfers knowledge
+                            to a smaller model.
+      :type teacher_model: :obj:`Callable`, optional
+
+
+   .. py:method:: train(component: Optional[neural_compressor.experimental.Component] = None, resume_from_checkpoint: Optional[Union[str, bool]] = None, trial: Union[optuna, Dict[str, Any]] = None, ignore_keys_for_eval: Optional[List[str]] = None, **kwargs)
+
+      The main entry point tor train model.
+
+      :param component: Component object handling the training process.
+      :type component: :obj:`Component`, `optional`
+      :param resume_from_checkpoint: If a :obj:`str`, local path
+                                     to a saved checkpoint as saved by a previous instance of :class:`~transformers.Trainer`.
+                                     If a :obj:`bool` and equals `True`, load the last checkpoint in `args.output_dir` as saved
+                                     by a previous instance of :class:`~transformers.Trainer`. If present, training will resume
+                                     from the model/optimizer/scheduler states loaded here.
+      :type resume_from_checkpoint: :obj:`str` or :obj:`bool`, `optional`
+      :param trial: The trial run or the
+                    hyperparameter dictionary for hyperparameter search.
+      :type trial: :obj:`optuna.Trial` or :obj:`Dict[str, Any]`, `optional`
+      :param ignore_keys_for_eval: A list of keys in the output of your model
+                                   (if it is a dictionary) that should be ignored when gathering predictions for evaluation
+                                   during the training.
+      :type ignore_keys_for_eval: :obj:`List[str]`, `optional`
+      :param kwargs: Additional keyword arguments used to hide deprecated arguments
+
+
+   .. py:method:: training_step(model: torch, inputs: Dict[str, Union[torch, Any]]) -> torch
+
+      Perform a training step on a batch of inputs.
+
+      Subclass and override to inject custom behavior.
+
+      :param model: The model to train.
+      :type model: :obj:`nn.Module`
+      :param inputs: The inputs and targets of the model.
+                     The dictionary will be unpacked before being fed to the model. Most models expect
+                     the targets under the argument :obj:`labels`. Check your model's documentation for
+                     all accepted arguments.
+      :type inputs: :obj:`Dict[str, Union[torch.Tensor, Any]]`
+
+      :returns: The tensor with training loss on this batch.
+      :rtype: :obj:`torch.Tensor`
+
+
+   .. py:method:: training_step_length_adaptive(model: torch, inputs: Dict[str, Union[torch, Any]]) -> torch
+
+      Perform a training step on a batch of inputs.
+
+      Subclass and override to inject custom behavior.
+
+      :param model: The model to train.
+      :type model: :obj:`nn.Module`
+      :param inputs: The inputs and targets of the model.
+                     The dictionary will be unpacked before being fed to the model. Most models expect the targets under the
+                     argument :obj:`labels`. Check your model's documentation for all accepted arguments.
+      :type inputs: :obj:`Dict[str, Union[torch.Tensor, Any]]`
+
+      :returns: The tensor with training loss on this batch.
+      :rtype: :obj:`torch.Tensor`
+
+
+   .. py:method:: compute_loss(model, inputs, return_outputs=False)
+
+      How the loss is computed by Trainer.
+
+      By default, all models return the loss in the first element.
+
+      Subclass and override for custom behavior.
+
+      :param model: The target model to compute the loss.
+      :type model: :obj:`nn.Module`
+      :param inputs: The inputs and targets of the model.
+      :type inputs: :obj:`Dict[str, Union[torch.Tensor, Any]]`
+
+
+   .. py:method:: nas(nas_config, provider: str = Provider.INC.value, model_builder: Optional[Callable] = None, model_cls: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      The main entry point of NAS.
+
+      NAS is composed of two major stages, Model Exploration and Evaluation.
+
+      In Model Exploration, a search engine will search for a better compressed model from the architecture
+      design space in each iteration.
+
+      In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction
+      accuracy, the hardware performance etc.) in order to select the best model architecture.
+
+      :param nas_config: The path to the YAML configuration file or a configuration
+                         object containing settings for NAS, etc.
+      :param provider: Provide the baseic function. Default set to INC.
+      :type provider: str
+      :param model_builder: A function to build model instance with
+                            the specified model architecture parameters.
+      :type model_builder: :obj:`Callabel`, optional
+      :param model_cls: Class of the model.
+      :type model_cls: :obj:`Callabel`, optional
+      :param eval_func: The function to evaluate the model.
+      :type eval_func: :obj:`Callabel`, optional
+      :param train_func: The function to train the model.
+      :type train_func: :obj:`Callabel`, optional
+
+
+   .. py:method:: autodistillation(autodistillation_config, teacher_model: Union[transformers.PreTrainedModel, torch], provider: str = Provider.INC.value, model_builder: Optional[Callable] = None, model_cls: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      The main entry point of automatic distillation tuning.
+
+      AutoDistillation is composed of three major stages, Model Exploration, Flash Distillation, and Evaluation.
+
+      In Model Exploration, a search engine will search for a better compressed model from the architecture
+      design space in each iteration.
+
+      Flash Distillation is the stage for training the searched model to discover its potential.
+
+      In Evaluation stage, the trained model will be evaluated to measure its performances (e.g. the prediction
+      accuracy, the hardware performance etc.) in order to select the best model architecture.
+
+      :param autodistillation_config: The path to the YAML configuration file or a configuration
+                                      object containing search setting, flash distillation settings, etc.
+      :param teacher_model: The model(torch.nn.Module or PreTrainedModel) transfers knowledge to
+                            a smaller model.
+      :param provider: Provide the baseic function. Default set to INC.
+      :type provider: str
+      :param model_builder: A function to build model instance with
+                            the specified model architecture parameters.
+      :type model_builder: :obj:`Callabel`, optional
+      :param model_cls: Class of the model.
+      :type model_cls: :obj:`Callabel`, optional
+      :param eval_func: The function to evaluate the model.
+      :type eval_func: :obj:`Callabel`, optional
+      :param train_func: The function to train the model.
+      :type train_func: :obj:`Callabel`, optional
+
+
+   .. py:method:: model_builder_builtin(arch_paras=None, model_cls=None)
+
+      The function to use specified method to build model.
+
+      :param arch_paras: Parameters of the architecture to build a new model.
+      :param model_cls: Class for the model.
+
+
+   .. py:method:: auto_distil_evaluation_loop(dataloader: torch, description: str, prediction_loss_only: Optional[bool] = None, ignore_keys: Optional[List[str]] = None, metric_key_prefix: str = 'eval') -> transformers.trainer_utils.EvalLoopOutput
+
+      Prediction/evaluation loop, shared by :obj:`Trainer.evaluate()` and :obj:`Trainer.predict()`.
+
+      Works both with or without labels.
+      Does not save all predictions and labels to avoid out of memory when predictions is huge.
+
+      :param dataloader: the evaluation dataloader.
+      :param description: the description of the process.
+      :param prediction_loss_only: only return the prediction loss.
+      :param ignore_keys: A list of keys in the output of your model
+      :param (if it is a dictionary) that should be ignored when gathering predictions for evaluation:
+      :param during the training.:
+      :param metric_key_prefix: the prefix of the evaluation metric.
+
+
+   .. py:method:: export_to_onnx(*args, **kwargs)
+
+      The function to tranfer model into onnx model.
+
+      :param args: defined paramerts.
+      :param kwargs: additional keyword arguments used to hide deprecated arguments.
+
+
+   .. py:method:: export_to_fp32_onnx(save_path=None, opset_version=14, do_constant_folding=True, verbose=True)
+
+      The function to tranfer model into fp32 onnx model.
+
+      :param save_path: the save path of the exported model.
+      :param opset_version: the onnx op version of the exported model.
+      :param do_constant_folding: select to do constant folding or not.
+      :param verbose: save onnx model.
+
+
+   .. py:method:: export_to_bf16_onnx(save_path=None, opset_version=14, do_constant_folding=True, verbose=True)
+
+      The function to tranfer model into bf16 onnx model.
+
+      :param save_path: the save path of the exported model.
+      :param opset_version: the onnx op version of the exported model.
+      :param do_constant_folding: select to do constant folding or not.
+      :param verbose: save onnx model.
+
+
+   .. py:method:: export_to_int8_onnx(save_path=None, quant_format='QDQ', dtype='S8S8', opset_version=14, sample_size=100, calibrate_method='minmax', scale_mapping=False)
+
+      The function to tranfer model into int8 onnx model.
+
+      :param save_path: the save path of the exported model.
+      :param quant_format: quantization format.
+      :param dtype: the quantized op type.
+      :param opset_version: the onnx op version of the exported model.
+      :param sample_size: the sampling size to calibrate the min-max range of ops.
+      :param calibrate_method: the calibration method for onnx export.
+      :param scale_mapping: make scale mapping of pytorch model and onnx model.
+
+
+   .. py:method:: export_to_jit()
+
+      The function to tranfer model into jit model.
+
+
+   .. py:method:: benchmark(model_name_or_path=None, backend: str = 'torch', batch_size: int = 8, cores_per_instance: int = 4, num_of_instance: int = -1, torchscript: bool = False, generate: bool = False, **kwargs)
+
+      get performance of model
+
+      :param backend: Defaults to "torch".
+      :type backend: str, optional
+      :param cores_per_instance: Defaults to 4.
+      :type cores_per_instance: int, optional
+      :param num_of_instance: Defaults to -1.
+      :type num_of_instance: int, optional
+      :param torchscript: Defaults to False.
+      :type torchscript: bool, optional
+      :param generate: Defaults to False.
+      :type generate: bool, optional
+
+
+   .. py:method:: set_dynamic_config(dynamic_config: intel_extension_for_transformers.transformers.DynamicLengthConfig)
+
+      The function to set dynamic config.
+
+      :param dynamic_config: the settings of the dynamic config.
+
+
+   .. py:method:: run_evolutionary_search()
+
+      Do evolutionary search.
+
+
+
+.. py:class:: NLPTrainer(*args, **kwargs)
+
+
+
+
+   Trainer for nlp base on class BaseTrainer and Trainer form Transformers.
+
+
+.. py:class:: NLPSeq2SeqTrainer(*args, **kwargs)
+
+
+
+
+   Trainer for seq2seq model.
+
+   .. py:method:: builtin_eval_func(model)
+
+      Custom Evaluate function to inference the model for specified metric on validation dataset.
+
+      :param model: The model to evaluate.
+
+      :returns: evaluation result, the larger is better.
+
+
+

@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.layer_norm`
+==============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.layer_norm
+
+.. autoapi-nested-parse::
+
+   The LayerNorm Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.layer_norm.LayerNorm
+
+
+
+
+.. py:class:: LayerNorm
+
+
+
+
+   The LayerNorm pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'LayerNorm' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

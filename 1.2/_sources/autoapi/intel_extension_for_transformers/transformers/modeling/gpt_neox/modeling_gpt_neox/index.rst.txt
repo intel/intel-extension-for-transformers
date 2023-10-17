@@ -1,0 +1,141 @@
+:py:mod:`intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox`
+===========================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox
+
+.. autoapi-nested-parse::
+
+   PyTorch GPTNeoX model.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXPreTrainedModel
+   intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXModel
+   intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM
+   intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.GPTNeoXForSequenceClassification
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.gpt_neox.modeling_gpt_neox.rotate_half
+
+
+
+.. py:class:: GPTNeoXPreTrainedModel
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+
+.. py:function:: rotate_half(x)
+
+   Rotates half the hidden dims of the input.
+
+
+.. py:class:: GPTNeoXModel(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, position_ids: Optional[torch.LongTensor] = None, head_mask: Optional[torch.FloatTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.BaseModelOutputWithPast]
+
+      past_key_values (`tuple(tuple(torch.FloatTensor))` of length `config.n_layers` with
+          each tuple having 4 tensors of shape `(batch_size, num_heads, sequence_length - 1, embed_size_per_head)`):
+          Contains precomputed key and value hidden states of the attention blocks.
+          Can be used to speed up decoding.
+          If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those that
+          don't have their past key value states given to this model) of shape `(batch_size, 1)` instead of all
+          `decoder_input_ids` of shape `(batch_size, sequence_length)`.
+      use_cache (`bool`, *optional*):
+          If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
+          (see `past_key_values`).
+
+
+
+.. py:class:: GPTNeoXForCausalLM(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, attention_mask: Optional[torch.FloatTensor] = None, position_ids: Optional[torch.LongTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, labels: Optional[torch.LongTensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.CausalLMOutputWithPast]
+
+      past_key_values (`tuple(tuple(torch.FloatTensor))`,
+          *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+          Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of shape
+          `(batch_size, num_heads, sequence_length, embed_size_per_head)`) and 2 additional tensors of shape
+          `(batch_size, num_heads, encoder_sequence_length, embed_size_per_head)`. The two additional tensors are
+          only required when the model is used as a decoder in a Sequence to Sequence model.
+
+          Contains pre-computed hidden-states (key and values in the self-attention blocks that can be used (see
+          `past_key_values` input) to speed up sequential decoding.
+
+          If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those
+          that don't have their past key value states given to this model) of shape `(batch_size, 1)` instead of
+          all `decoder_input_ids` of shape `(batch_size, sequence_length)`.
+      labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+          Labels for computing the left-to-right language modeling loss (next word prediction). Indices should be
+          in `[-100, 0, ..., config.vocab_size]` (see `input_ids` docstring) Tokens with indices set to `-100` are
+          ignored (masked), the loss is only computed for the tokens with labels n `[0, ..., config.vocab_size]`.
+      use_cache (`bool`, *optional*):
+          If set to `True`, `past_key_values` key value states are returned and can be used to speed up decoding
+          (see `past_key_values`).
+
+      Returns:
+
+      Example:
+
+      ```python
+      >>> from transformers import AutoTokenizer, GPTNeoXForCausalLM, GPTNeoXConfig
+      >>> import torch
+
+      >>> tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
+      >>> config = GPTNeoXConfig.from_pretrained("EleutherAI/gpt-neox-20b")
+      >>> config.is_decoder = True
+      >>> model = GPTNeoXForCausalLM.from_pretrained("EleutherAI/gpt-neox-20b", config=config)
+
+      >>> inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
+      >>> outputs = model(**inputs)
+
+      >>> prediction_logits = outputs.logits
+      ```
+
+
+
+.. py:class:: GPTNeoXForSequenceClassification(config)
+
+
+
+
+   An abstract class to handle weights initialization and a simple interface for downloading and loading pretrained
+   models.
+
+   .. py:method:: forward(input_ids: Optional[torch.LongTensor] = None, attention_mask: Optional[torch.FloatTensor] = None, position_ids: Optional[torch.LongTensor] = None, inputs_embeds: Optional[torch.FloatTensor] = None, head_mask: Optional[torch.FloatTensor] = None, past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None, labels: Optional[torch.LongTensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple[torch.Tensor], transformers.modeling_outputs.SequenceClassifierOutputWithPast]
+
+      labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+          Labels for computing the sequence classification/regression loss. Indices should be in `[0, ...,
+          config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
+          `config.num_labels > 1` a classification loss is computed (Cross-Entropy).
+
+
+

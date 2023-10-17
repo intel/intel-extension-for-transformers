@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.qkv_reshape`
+===============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.qkv_reshape
+
+.. autoapi-nested-parse::
+
+   The QKVReshape Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.qkv_reshape.QKVReshape
+
+
+
+
+.. py:class:: QKVReshape
+
+
+
+
+   The QKVReshape pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'QKVReshape' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

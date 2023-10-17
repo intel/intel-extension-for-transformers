@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.memory.memory`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.memory.memory
+
+.. autoapi-nested-parse::
+
+   The memory fuction for saving chat history or loading chat history.
+
+
+

@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.indexing`
+===================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.indexing
+
+.. autoapi-nested-parse::
+
+   Wrapper for parsing the uploaded user file and then make document indexing.
+
+
+

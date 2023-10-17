@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`fastchat.serve.gradio_web_server_multi`
+================================================
+
+.. py:module:: fastchat.serve.gradio_web_server_multi
+
+

@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.reshape_after_restore_hidden_states`
+=======================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.reshape_after_restore_hidden_states
+
+.. autoapi-nested-parse::
+
+   The ReshapeAfterRestoreHiddenStates Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.reshape_after_restore_hidden_states.ReshapeAfterRestoreHiddenStates
+
+
+
+
+.. py:class:: ReshapeAfterRestoreHiddenStates
+
+
+
+
+   The ReshapeAfterRestoreHiddenStates pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'ReshapeAfterRestoreHiddenStates' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

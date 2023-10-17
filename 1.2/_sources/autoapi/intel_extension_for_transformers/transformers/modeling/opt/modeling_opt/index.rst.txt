@@ -1,0 +1,110 @@
+:py:mod:`intel_extension_for_transformers.transformers.modeling.opt.modeling_opt`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.opt.modeling_opt
+
+.. autoapi-nested-parse::
+
+   PyTorch OPT model.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.opt.modeling_opt.OPTLearnedPositionalEmbedding
+   intel_extension_for_transformers.transformers.modeling.opt.modeling_opt.OPTAttention
+   intel_extension_for_transformers.transformers.modeling.opt.modeling_opt.OPTDecoder
+
+
+
+
+.. py:class:: OPTLearnedPositionalEmbedding(num_embeddings: int, embedding_dim: int)
+
+
+
+
+   This module learns positional embeddings up to a fixed maximum size.
+
+   .. py:method:: forward(attention_mask: torch.LongTensor, past_key_values_length: int = 0)
+
+      `input_ids_shape` is expected to be [bsz x seqlen].
+
+
+
+.. py:class:: OPTAttention(embed_dim: int, num_heads: int, dropout: float = 0.0, is_decoder: bool = False, bias: bool = True)
+
+
+
+
+   Multi-headed attention from 'Attention Is All You Need' paper
+
+   .. py:method:: forward(hidden_states: torch.Tensor, key_value_states: Optional[torch.Tensor] = None, past_key_value: Optional[Tuple[torch.Tensor]] = None, attention_mask: Optional[torch.Tensor] = None, layer_head_mask: Optional[torch.Tensor] = None, output_attentions: bool = False) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]
+
+      Input shape: Batch x Time x Channel
+
+
+
+.. py:class:: OPTDecoder(config: transformers.models.opt.configuration_opt.OPTConfig)
+
+
+
+
+   Transformer decoder consisting of *config.num_hidden_layers* layers. Each layer is a [`OPTDecoderLayer`]
+
+   :param config: OPTConfig
+
+   .. py:method:: forward(input_ids: torch.LongTensor = None, attention_mask: Optional[torch.Tensor] = None, head_mask: Optional[torch.Tensor] = None, past_key_values: Optional[List[torch.FloatTensor]] = None, inputs_embeds: Optional[torch.FloatTensor] = None, use_cache: Optional[bool] = None, output_attentions: Optional[bool] = None, output_hidden_states: Optional[bool] = None, return_dict: Optional[bool] = None) -> Union[Tuple, transformers.modeling_outputs.BaseModelOutputWithPast]
+
+      :param input_ids: Indices of input sequence tokens in the vocabulary. Padding will be ignored by default should you
+                        provide it.
+
+                        Indices can be obtained using [`AutoTokenizer`]. See [`PreTrainedTokenizer.encode`] and
+                        [`PreTrainedTokenizer.__call__`] for details.
+
+                        [What are input IDs?](../glossary#input-ids)
+      :type input_ids: `torch.LongTensor` of shape `(batch_size, sequence_length)`
+      :param attention_mask: Mask to avoid performing attention on padding token indices. Mask values selected in `[0, 1]`:
+
+                             - 1 for tokens that are **not masked**,
+                             - 0 for tokens that are **masked**.
+
+                             [What are attention masks?](../glossary#attention-mask)
+      :type attention_mask: `torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*
+      :param head_mask: Mask to nullify selected heads of the attention modules. Mask values selected in `[0, 1]`:
+
+                        - 1 indicates the head is **not masked**,
+                        - 0 indicates the head is **masked**.
+      :type head_mask: `torch.Tensor` of shape `(num_hidden_layers, num_attention_heads)`, *optional*
+      :param past_key_values: *optional*, returned when `use_cache=True` is passed or when `config.use_cache=True`):
+                              Tuple of `tuple(torch.FloatTensor)` of length `config.n_layers`, with each tuple having 2 tensors of
+                              shape `(batch_size, num_heads, sequence_length, embed_size_per_head)`) and 2 additional tensors of
+
+                              Contains pre-computed hidden-states (key and values in the self-attention blocks and in the
+                              cross-attention blocks) that can be used (see `past_key_values` input) to speed up sequential
+                              decoding.
+
+                              If `past_key_values` are used, the user can optionally input only the last `decoder_input_ids` (those
+                              that don't have their past key value states given to this model) of shape `(batch_size, 1)`
+                              instead of all `decoder_input_ids` of shape `(batch_size, sequence_length)`.
+      :type past_key_values: `tuple(tuple(torch.FloatTensor)
+      :param inputs_embeds: Optionally, instead of passing `input_ids` you can choose to directly pass an embedded representation.
+                            This is useful if you want more control over how to convert `input_ids` indices into associated
+                            vectors than the model's internal embedding lookup matrix.
+      :type inputs_embeds: `torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*
+      :param output_attentions: Whether or not to return the attentions tensors of all attention layers. See `attentions` under
+                                returned tensors for more detail.
+      :type output_attentions: `bool`, *optional*
+      :param output_hidden_states: Whether or not to return the hidden states of all layers. See `hidden_states` under returned tensors
+                                   for more detail.
+      :type output_hidden_states: `bool`, *optional*
+      :param return_dict: Whether or not to return a [`~utils.ModelOutput`] instead of a plain tuple.
+      :type return_dict: `bool`, *optional*
+
+
+

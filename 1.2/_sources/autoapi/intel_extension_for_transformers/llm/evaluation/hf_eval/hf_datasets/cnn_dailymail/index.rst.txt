@@ -1,0 +1,42 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.evaluation.hf_eval.hf_datasets.cnn_dailymail`
+===========================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.evaluation.hf_eval.hf_datasets.cnn_dailymail
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.evaluation.hf_eval.hf_datasets.cnn_dailymail.DataCollatorForSupervisedDataset
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.evaluation.hf_eval.hf_datasets.cnn_dailymail.preprocess
+
+
+
+.. py:class:: DataCollatorForSupervisedDataset(tokenizer: transformers.PreTrainedTokenizer)
+
+
+
+
+   Collate examples for supervised fine-tuning.
+
+
+.. py:function:: preprocess(sources: Sequence[str], targets: Sequence[str], tokenizer: transformers.PreTrainedTokenizer) -> Dict
+
+   Preprocess the data by tokenizing.
+
+

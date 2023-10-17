@@ -1,0 +1,34 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr_chinese`
+=========================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr_chinese
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.audio.asr_chinese.ChineseAudioSpeechRecognition
+
+
+
+
+.. py:class:: ChineseAudioSpeechRecognition
+
+
+   Convert audio to text in Chinese.
+
+   .. py:method:: audio2text(audio_path)
+
+      Convert audio to text in Chinese.
+
+      audio_path: the path to the input audio, e.g. ~/xxx.mp3
+
+
+

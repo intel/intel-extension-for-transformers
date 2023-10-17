@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.collect_quant_info`
+======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.collect_quant_info
+
+.. autoapi-nested-parse::
+
+   The CollectQuantInfo Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.collect_quant_info.CollectQuantInfo
+
+
+
+
+.. py:class:: CollectQuantInfo
+
+
+
+
+   The CollectQuantInfo pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'CollectQuantInfo' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

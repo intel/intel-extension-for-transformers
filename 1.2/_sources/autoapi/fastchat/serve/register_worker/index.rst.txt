@@ -1,0 +1,14 @@
+:py:mod:`fastchat.serve.register_worker`
+========================================
+
+.. py:module:: fastchat.serve.register_worker
+
+.. autoapi-nested-parse::
+
+   Manually register workers.
+
+   Usage:
+   python3 -m fastchat.serve.register_worker --controller http://localhost:21001 --worker-name http://localhost:21002
+
+
+

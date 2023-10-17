@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.intent_detection`
+===========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.detector.intent_detection
+
+.. autoapi-nested-parse::
+
+   Check the intent of the input user query with LLM.
+
+
+

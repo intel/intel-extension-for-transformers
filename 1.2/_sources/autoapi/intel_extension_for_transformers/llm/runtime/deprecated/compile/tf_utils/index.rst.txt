@@ -1,0 +1,97 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils`
+==================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils
+
+.. autoapi-nested-parse::
+
+   The neural engine tensorflow utils.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.create_tf_node
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.graph_node_names_details
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.get_tensor_dest_op
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.tf_extract_operator
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.tf_utils.TF_DTYPE_ID
+
+
+.. py:function:: create_tf_node(op, name, inputs)
+
+   Create a nodedef object.
+
+   :param op: op type
+   :type op: string
+   :param name: op name
+   :type name: string
+   :param inputs: op's inputs name
+   :type inputs: string list
+
+   :returns: the created nodedef object
+   :rtype: nodedef
+
+
+.. py:function:: graph_node_names_details(nodes)
+
+   Parse the graph nodes ans get the graph_nodes_dict.
+
+   Be used for Grpah class when converting a tensorflow computation graph to an engine graph.
+   The node_name is the key, node in value is for getting the Const
+   tensor value and the input_tensor source op; outputs in value is for
+   output_tensor dest op.
+   :param nodes: NodeDef list
+   :type nodes: tendorflow graph_def.node
+
+   :returns: the graph node info dict
+   :rtype: node_names_details
+
+
+.. py:function:: get_tensor_dest_op(node_name, tensor_name, nodes_dict)
+
+   Get the tensor dest op name.
+
+   :param node_name: string, the source node name of tensor
+   :param tensor_name: string, with ':0' or something like it
+   :param nodes_dict: dict returned by the graph_node_names_details function
+
+   :returns: list, store the tensor's dest op names
+   :rtype: dest_op_names
+
+
+.. py:function:: tf_extract_operator(node, framework_model, nodes_dict, engine_graph=None)
+
+   Decorate the operator in tensorflow.
+
+   :param node: NodeDef
+   :param framework_model: TensorflowModel
+   :param nodes_dict: dict, return value from graph_node_names_details
+   :param tf_dtypes: dict, for get the dtype string
+   :param engine_graph: Engine Graph class
+
+   :returns: node op type
+             input_tensors: Tensor list, contains the node input tensors info
+             output_tensors: Tensor list, contains the node output tensor info
+   :rtype: op_type
+
+
+.. py:data:: TF_DTYPE_ID
+
+   Deal with the nodes which have multiple indeterminate outputs in tf_extract_operator function
+

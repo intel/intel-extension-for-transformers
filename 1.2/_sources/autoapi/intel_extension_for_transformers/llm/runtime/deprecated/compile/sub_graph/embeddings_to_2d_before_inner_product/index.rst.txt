@@ -1,0 +1,36 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.embeddings_to_2d_before_inner_product`
+=========================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.embeddings_to_2d_before_inner_product
+
+.. autoapi-nested-parse::
+
+   The GatherWithAdd Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.embeddings_to_2d_before_inner_product.EmbeddingsTo2DBeforeInnerProduct
+
+
+
+
+.. py:class:: EmbeddingsTo2DBeforeInnerProduct
+
+
+
+
+   The EmbeddingsTo2DBeforeInnerProduct pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'EmbeddingsTo2DBeforeInnerProduct' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+   It's better to call it after the 'OperatorAdaptor' and 'QuantGatherToBF16' patterns.
+
+

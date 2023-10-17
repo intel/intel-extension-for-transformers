@@ -1,0 +1,55 @@
+:py:mod:`intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils`
+======================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils
+
+.. autoapi-nested-parse::
+
+   Utils for drop and restore function.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_length_configuration
+   intel_extension_for_transformers.transformers.dynamic.drop_and_restore_utils.sample_layer_configuration
+
+
+
+.. py:function:: sample_length_configuration(max_seq_length, num_hidden_layers, layer_config=None, length_drop_prob=None, length_drop_ratio=None, length_drop_ratio_bound=None, min_length=2)
+
+   Get different sequence length for hidden layers.
+
+   :param max_seq_length: A number to set the max sequence length.
+   :param num_hidden_layers: A number of total hidden layers.
+   :param layer_config: Config to specify layers which use the max_seq_length.
+   :param length_drop_prob: Probability to truncate the sequence.
+   :param length_drop_ratio: Ratio to truncate the sequence.
+   :param length_drop_ratio_bound: The max ratio to truncate the sequence.
+                                   If the ratio set, the length will not less than max_seq_length * ratio.
+   :param min_length: The number to set the min sequence length.
+
+   :returns: The tuple of length configuration for different hidden layers.
+   :rtype: (Tuple)
+
+
+.. py:function:: sample_layer_configuration(num_hidden_layers, layer_dropout_prob=None, layer_dropout=None, layer_dropout_bound=None)
+
+   Get sample layers depends on the set paramaters.
+
+   :param num_hidden_layers: A number to set the max sequence length.
+   :param layer_dropout_prob: Probability to dropout a layer.
+   :param layer_dropout: Number of how many layers to dropout.
+   :param layer_dropout_bound: The bound of how many layers to dropout.
+
+   :returns: The tuple to the numbers of which samples are kept.
+   :rtype: (Tuple)
+
+

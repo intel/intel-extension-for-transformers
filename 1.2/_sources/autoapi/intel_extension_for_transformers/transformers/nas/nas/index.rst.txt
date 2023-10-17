@@ -1,0 +1,40 @@
+:py:mod:`intel_extension_for_transformers.transformers.nas.nas`
+===============================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.nas.nas
+
+.. autoapi-nested-parse::
+
+   Common classes for different NAS approaches.
+
+   NAS class for creating object of different NAS approaches.
+   NASBase class defines the common methods of different NAS approaches.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.nas.nas.NAS
+
+
+
+
+.. py:class:: NAS
+
+
+
+
+   Create object of different NAS approaches.
+
+   :param conf_fname_or_obj: The path to the YAML configuration file or the object of NASConfig.
+   :type conf_fname_or_obj: string or obj
+
+   :returns: An object of specified NAS approach.
+
+

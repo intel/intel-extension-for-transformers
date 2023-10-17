@@ -1,0 +1,44 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.compile`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.compile
+
+.. autoapi-nested-parse::
+
+   The neural engine compile module.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.compile.start_pipeline
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.compile.compile
+
+
+
+.. py:function:: start_pipeline(model, config=None)
+
+   The compile pipeline.
+
+
+.. py:function:: compile(model, config=None) -> intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.Graph
+
+   The compile interface.
+
+   Firstly, use model loader to get the computation graph with corresponding framework.
+   The graph contains nodes and edges, the node is op and the edge is the tensor.
+   Then extract the ops in the graph and pack them to our form.
+   Next exploit these above ops to consist sub-graph, which can see as "a new big op", like LayerNorm.
+
+   .. note:: There may have different computation flow in one subgraph.
+
+   Finally, convert them to .yaml file and .bin file for model configuration and inference.
+
+

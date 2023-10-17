@@ -1,0 +1,14 @@
+:py:mod:`fastchat.serve.cli`
+============================
+
+.. py:module:: fastchat.serve.cli
+
+.. autoapi-nested-parse::
+
+   Chat with a model with command line interface.
+
+   Usage:
+   python3 -m fastchat.serve.cli --model ~/model_weights/llama-7b
+
+
+

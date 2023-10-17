@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torchinsertbf16node`
+=======================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torchinsertbf16node
+
+.. autoapi-nested-parse::
+
+   The TorchInsertBF16Node Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.torchinsertbf16node.TorchInsertBF16Node
+
+
+
+
+.. py:class:: TorchInsertBF16Node
+
+
+
+
+   The TorchInsertBF16Node pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'TorchInsertBF16Node' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

@@ -1,0 +1,36 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.int8_bf16_mixed_precision_checker`
+=====================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.int8_bf16_mixed_precision_checker
+
+.. autoapi-nested-parse::
+
+   The QuantizedGraphDtypeRefactor Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.int8_bf16_mixed_precision_checker.Int8BF16MixedPrecisionChecker
+
+
+
+
+.. py:class:: Int8BF16MixedPrecisionChecker
+
+
+
+
+   The Int8BF16MixedPrecisionChecker pattern.
+
+   Check if the model can be inferenced under in8/bf16 mixed precision. And modify graph if need.
+   Quant -> InnerProduct / Matmul -> other Op
+   u8 / s8 -> fp32 -> fp32 -----> u8 / s8 -> bf16 -> bf16
+
+

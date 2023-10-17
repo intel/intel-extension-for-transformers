@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/autoapi/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils">
+<span id="intel-extension-for-transformers-llm-runtime-deprecated-compile-graph-utils"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils" title="Link to this heading"></a></h1>
+<p>The neural engine graph utils.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.LazyImport" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.LazyImport"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LazyImport</span></code></a></p></td>
+<td><p>Lazy import python module till use.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.names_from_input" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.names_from_input"><code class="xref py py-obj docutils literal notranslate"><span class="pre">names_from_input</span></code></a>(name)</p></td>
+<td><p>Static method that get the valid node / tensor name from input name.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_data_dtype" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_data_dtype"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_data_dtype</span></code></a>(data)</p></td>
+<td><p>Get the const data dtype.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.autocast_init" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.autocast_init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">autocast_init</span></code></a>()</p></td>
+<td><p>Initialize the quant info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_autocast" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_autocast"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_autocast</span></code></a>(key, value)</p></td>
+<td><p>Modify the quant info.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_autocast_info" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_autocast_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_autocast_info</span></code></a>()</p></td>
+<td><p>Get the quant info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.quant_info_init" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.quant_info_init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">quant_info_init</span></code></a>()</p></td>
+<td><p>Initialize the quant info.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_quant_info" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_quant_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">insert_quant_info</span></code></a>(key, value)</p></td>
+<td><p>Modify the quant info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_quant_info" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_quant_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_quant_info</span></code></a>()</p></td>
+<td><p>Get the quant info.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.environ_info_init" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.environ_info_init"><code class="xref py py-obj docutils literal notranslate"><span class="pre">environ_info_init</span></code></a>()</p></td>
+<td><p>Initialize the environ info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_environ_info" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_environ_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">insert_environ_info</span></code></a>(key, value)</p></td>
+<td><p>Modify the environ info.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_item" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_item"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_environ_info_item</span></code></a>(key)</p></td>
+<td><p>Remove an item in environ info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_items" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_items"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_environ_info_items</span></code></a>(keys)</p></td>
+<td><p>Remove a list of items in environ info.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_environ_info" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_environ_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_environ_info</span></code></a>()</p></td>
+<td><p>Get the environ info.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_straight_pattern" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_straight_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_straight_pattern</span></code></a>(input_pattern, graph)</p></td>
+<td><p>Search user specified patterns on internal grpah structure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_pattern" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">search_pattern</span></code></a>(pattern_list, graph)</p></td>
+<td><p>Search the complete pattern in the graph.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.construct_node" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.construct_node"><code class="xref py py-obj docutils literal notranslate"><span class="pre">construct_node</span></code></a>(node_name, op_type[, input_tensors, ...])</p></td>
+<td><p>Construct node with engine op_type.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_pattern" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_pattern"><code class="xref py py-obj docutils literal notranslate"><span class="pre">insert_pattern</span></code></a>(target_node_names, new_nodes, graph)</p></td>
+<td><p>Replace the specific pattern matched from the new constructed graph with new pattern.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pattern_mapping</span></code></a>(pattern_name, mapping_dict, graph)</p></td>
+<td><p>The pattern mapping function.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.list2str" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.list2str"><code class="xref py py-obj docutils literal notranslate"><span class="pre">list2str</span></code></a>(src_perm)</p></td>
+<td><p>Convert the shape list to str for emitting yaml.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.str2list" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.str2list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">str2list</span></code></a>(src_str)</p></td>
+<td><p>Convert the str to shape list.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping_conf_validation" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping_conf_validation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pattern_mapping_conf_validation</span></code></a>(conf_dict)</p></td>
+<td><p>The validation of the pattern mapping config.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_model_fwk_name" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_model_fwk_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_model_fwk_name</span></code></a>(model)</p></td>
+<td><p>Detect the input model belongs to which framework.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_var" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_environ_var</span></code></a>(key[, val])</p></td>
+<td><p>Set an env var.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_vars" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_environ_vars</span></code></a>(kvs)</p></td>
+<td><p>Set a list of env vars.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_var" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">del_environ_var</span></code></a>(key)</p></td>
+<td><p>Delete an env var.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_vars" title="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_vars"><code class="xref py py-obj docutils literal notranslate"><span class="pre">del_environ_vars</span></code></a>(keys)</p></td>
+<td><p>Delete a list of env vars.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.names_from_input">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">names_from_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.names_from_input" title="Link to this definition"></a></dt>
+<dd><p>Static method that get the valid node / tensor name from input name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>string</em>) – name defined in the input field.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(node’s name, tensor’s name)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>string tuple</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>for example: In NodeDef.input, the name from list is tensor name, may not end with ‘:0’,</dt><dd><p>which can not be used for tensor name in the new Graph class. If it end with ‘:0’,
+it can not also be used for node name in the new Graph class</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_data_dtype">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_data_dtype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_data_dtype" title="Link to this definition"></a></dt>
+<dd><p>Get the const data dtype.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>data</strong> (<em>numpy data</em>) – a const data to model</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>the value in DTYPES_DICT</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dtype (String)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.autocast_init">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">autocast_init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.autocast_init" title="Link to this definition"></a></dt>
+<dd><p>Initialize the quant info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_autocast">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">set_autocast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_autocast" title="Link to this definition"></a></dt>
+<dd><p>Modify the quant info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_autocast_info">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_autocast_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_autocast_info" title="Link to this definition"></a></dt>
+<dd><p>Get the quant info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.quant_info_init">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">quant_info_init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.quant_info_init" title="Link to this definition"></a></dt>
+<dd><p>Initialize the quant info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_quant_info">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">insert_quant_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_quant_info" title="Link to this definition"></a></dt>
+<dd><p>Modify the quant info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_quant_info">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_quant_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_quant_info" title="Link to this definition"></a></dt>
+<dd><p>Get the quant info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.environ_info_init">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">environ_info_init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.environ_info_init" title="Link to this definition"></a></dt>
+<dd><p>Initialize the environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_environ_info">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">insert_environ_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_environ_info" title="Link to this definition"></a></dt>
+<dd><p>Modify the environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_item">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">remove_environ_info_item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_item" title="Link to this definition"></a></dt>
+<dd><p>Remove an item in environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_items">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">remove_environ_info_items</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_items" title="Link to this definition"></a></dt>
+<dd><p>Remove a list of items in environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_environ_info">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_environ_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_environ_info" title="Link to this definition"></a></dt>
+<dd><p>Get the environ info.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_straight_pattern">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">search_straight_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_pattern</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_straight_pattern" title="Link to this definition"></a></dt>
+<dd><p>Search user specified patterns on internal grpah structure.</p>
+<dl class="simple">
+<dt>Attention: the input computation chain in the graph which can be called pattern, there must be</dt><dd><p>straight (or sequence). It means it has not any subgraph nodes. Otherwise this
+function returns []</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_pattern</strong> (<em>list</em>) – Contains the op_type of the nodes in pattern. The element of the</p></li>
+<li><p><strong>string/list/tuple</strong> (<em>list could be</em>) – </p></li>
+<li><p><strong>mandatory</strong> (<em>string</em><em> or </em><em>list means the specified op_type are</em>) – </p></li>
+<li><p><strong>optional.</strong> (<em>while tuple stands for</em>) – </p></li>
+<li><p><strong>example</strong> (<em>For</em>) – </p></li>
+<li><p><strong>this</strong> (<em>a input pattern mybe like</em>) – </p></li>
+<li><p><strong>[</strong><strong>'Mul'</strong> – </p></li>
+<li><p><strong>'Mul'</strong> – </p></li>
+<li><p><strong>[</strong><strong>'Add'</strong> – </p></li>
+<li><p><strong>patterns</strong> (<em>'AddV2'</em><em>]</em><em>] </em><em>it equals to below</em>) – </p></li>
+<li><p><strong>'Add'</strong> (<em>'Mul' + 'Mul' +</em>) – </p></li>
+<li><p><strong>'AddV2'</strong> (<em>'Mul' + 'Mul' +</em>) – </p></li>
+<li><p><strong>graph</strong> – Graph Class, the new graph generated from extractor.</p></li>
+</ul>
+</dd>
+</dl>
+<dl>
+<dt>Returns: [string list]. The length is the matched pattern results in the graph, for example,</dt><dd><p>the graph has 24 layers and each layer has a ‘LayerNorm’ pattern, then the length is
+24. Each match pattern result is still a list contains the node names, and the last
+element is the op_type list corresponding to the former node names.</p>
+<p>Here is the return result example:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
+<span class="w">    </span><span class="p">[</span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="err">&#39;</span><span class="n">Add</span><span class="err">&#39;</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="p">[</span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Add</span><span class="err">&#39;</span><span class="p">]],</span>
+
+<span class="w">    </span><span class="p">[</span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="err">&#39;</span><span class="n">AddV2</span><span class="err">&#39;</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="p">[</span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">AddV2</span><span class="err">&#39;</span><span class="p">]],</span>
+
+<span class="w">    </span><span class="p">...</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_pattern">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">search_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern_list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_pattern" title="Link to this definition"></a></dt>
+<dd><p>Search the complete pattern in the graph.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pattern_list</strong> – <p>a list contains  pattern representation. The pattern representation is also
+a list and each node in the list is a tuple, its form is like “(op_idx,
+op_type)”. However, due to a few complicated patterns, they have sub-graph
+computation flow. Therefore in a pattern representation, using the fist list
+represents the main top-down computation flow (from pattern head op to tail
+op), the left lists represent sub-graphs (their tail nodes must in the main
+computation flow).</p>
+<p>Example:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="cp">#LayerNorm pattern from bert_large_squad.pb</span>
+<span class="p">[</span>
+<span class="w">    </span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Mean</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">SquaredDifference</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Mean</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">AddV2</span><span class="err">&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Rsqrt</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">7</span><span class="w"> </span><span class="p">,</span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Sub</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">AddV2</span><span class="err">&#39;</span><span class="p">)],</span>
+<span class="w">    </span><span class="p">[(</span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Mul</span><span class="err">&#39;</span><span class="p">),</span><span class="w"> </span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">AddV2</span><span class="err">&#39;</span><span class="p">)]</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><strong>graph</strong> – Graph Class, the new graph generated from extractor</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: [string list], as same as search_straight_pattern func.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ol class="arabic">
+<li><p>The op_idx follows the order in the original frozen model, which means you had better
+not identify them on your own casually.</p></li>
+<li><p>the main top-down computation flow follows the “tf control flow”. It’s a straight chain
+from start to end in the pattern. Mostly, it has the longest path. Sometimes, this main
+flow may have sub connection. But you don’t need to represent them. A sub-graph must
+have one op at least that doesn’t exist in the main chain. For example, in the above
+LayerNorm pattern, (0, ‘Mean’) has a connection with (7 ,’Mul’). But you don’t need to
+represent this relationship.</p></li>
+<li><p>If a node in sub-graph has several input /output paths, you should split them, each
+sub-graph has one input /output op. (these ops must be in the pattern).
+For example, the below representtaion should be two sub-graphs:
+Add — Mul — Sub
+Add —^
+[…, [(idx, ‘Add’),(idx, ‘Mul’),(idx, ‘Sub’)], [(idx, ‘Add’),(id, ‘Mul’),</p>
+<blockquote>
+<div><p>(idx, ‘Sub’)], …]</p>
+</div></blockquote>
+</li>
+<li><p>If a node in sub-graph has several input ops, some of them are from outside. Then you
+don’t need to give the sub-graphs with the outside op.
+For example, the below representtaion should be one sub-graph:
+Add     —   Mul — Sub
+outside op —^
+[…, [(idx, ‘Add’),(idx, ‘Mul’),(idx, ‘Sub’)], …]</p></li>
+<li><p>If a node in sub-graph just has one input op and this op is from outside, you should
+use empty tuple () to represents a input op. However, the algorithm doesn’t support
+this kind of pattern completely. Beause the match result can’t make sure the whole
+connection. So you had better check the results.</p></li>
+<li><p>For the symmetric pattern, the sub-graph has consecutive same op type as the main chain
+(Y or O shape). So these two search results by DFS are duplicated. The algorithm would
+perform checking before splicing and de-duplication. The sub-graph length &lt;= the main
+chain length.</p></li>
+<li><p>Some pattern has several same sub-graphs, these sub-graphs have same tail node and op
+types are totally same.</p>
+<p>So the splicing step need to check the node name.</p>
+<p>Example:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">a</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">--</span><span class="n">d</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="o">--</span><span class="n">f</span>
+<span class="w">     </span><span class="o">|</span><span class="w">             </span><span class="o">|</span>
+<span class="w">     </span><span class="n">c1</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">d1</span><span class="w"> </span><span class="o">-----</span>
+<span class="w">     </span><span class="o">|</span><span class="w">             </span><span class="o">|</span>
+<span class="w">     </span><span class="n">c2</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">d2</span><span class="w"> </span><span class="o">-----</span>
+<span class="w">     </span><span class="o">|</span><span class="w">             </span><span class="o">|</span>
+<span class="w">     </span><span class="n">c3</span><span class="w"> </span><span class="o">--</span><span class="w"> </span><span class="n">d3</span><span class="w"> </span><span class="o">-----</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p>For now, the algorithm just support the sub-graph’s input /output ops are all in pattern.
+You can set the sub-graph input as (), but the results need you to check. Mostly, this
+sub-graph is a part of the pattern.
+As for pattern match / search, apply dfs to every graph list, then check the sub-graph’s
+connection with the main computation flow. The idx would make the returned string list
+with right order.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.construct_node">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">construct_node</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">op_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_tensors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.construct_node" title="Link to this definition"></a></dt>
+<dd><p>Construct node with engine op_type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node_name</strong> – string, name of the node</p></li>
+<li><p><strong>op_type</strong> – string, type of the node</p></li>
+<li><p><strong>input_tensors</strong> – list, contains the input tensors of the node</p></li>
+<li><p><strong>output_tensors</strong> – list, contains the output tensors of the node</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Operator class</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>new_node</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_pattern">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">insert_pattern</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_node_names</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">new_nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_pattern" title="Link to this definition"></a></dt>
+<dd><p>Replace the specific pattern matched from the new constructed graph with new pattern.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_node_names</strong> – A string list ccontains the names of nodes that will be replaced</p></li>
+<li><p><strong>new_nodes</strong> – a list contains nodes with Operator class</p></li>
+<li><p><strong>graph</strong> – The Graph class</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Graph class which some nodes inside have been replaced.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>graph</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">pattern_mapping</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mapping_dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">graph</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping" title="Link to this definition"></a></dt>
+<dd><p>The pattern mapping function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pattern_name</strong> – the name of the customized pattern representation, for example, ‘LayerNorm’</p></li>
+<li><p><strong>mapping_dict</strong> – a element in mapping_config[pattern_name], config for pattern mapping.</p></li>
+<li><p><strong>graph</strong> – Graph class.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple, the first element is the new nodes insert start idx, the second element is a new
+node list, the third is a list contains required old nodes need to be returned from origin
+pattern.</p>
+</dd>
+</dl>
+<p>Example of mapping_dict:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="err">&#39;</span><span class="n">patterns</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="err">&#39;</span><span class="n">in</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">Reshape</span><span class="p">),</span><span class="w"> </span><span class="p">...],</span><span class="w"> </span><span class="err">&#39;</span><span class="n">out</span><span class="err">&#39;</span><span class="o">:</span><span class="p">[(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="err">&#39;</span><span class="n">PaddingSequence</span><span class="err">&#39;</span><span class="p">)]},</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">search_mode</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="n">op_type</span><span class="p">,</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">node_names</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="o">:</span><span class="w"> </span><span class="err">&#39;</span><span class="n">embeddings</span><span class="o">/</span><span class="n">reshape</span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="p">...},</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">input_tensors</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="o">:</span><span class="p">[{</span><span class="mi">0</span><span class="o">:</span><span class="p">[</span><span class="mi">0</span><span class="p">]},</span><span class="w"> </span><span class="p">[[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">1</span><span class="p">]],</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="p">[{</span><span class="mi">1</span><span class="o">:</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="mi">2</span><span class="o">:</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]},[[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="mi">3</span><span class="p">]],</span>
+<span class="w">                   </span><span class="mi">2</span><span class="o">:</span><span class="p">[{},[[],</span><span class="mi">1</span><span class="p">]],</span><span class="w"> </span><span class="p">...,</span><span class="w"> </span><span class="n">m</span><span class="o">:</span><span class="p">[{</span><span class="err">&#39;</span><span class="n">input_data</span><span class="err">&#39;</span><span class="o">:</span><span class="p">[</span><span class="mi">1</span><span class="p">]},</span><span class="w"> </span><span class="p">[[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">]},</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">output_tensors</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="mi">2</span><span class="o">:</span><span class="p">[{</span><span class="mi">0</span><span class="o">:</span><span class="p">[</span><span class="mi">0</span><span class="p">]},</span><span class="w"> </span><span class="p">[[</span><span class="mi">0</span><span class="p">],</span><span class="mi">1</span><span class="p">]],</span><span class="w"> </span><span class="p">...},</span>
+<span class="w"> </span><span class="err">&#39;</span><span class="n">returns</span><span class="err">&#39;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">],</span>
+<span class="p">}</span><span class="w">                        </span><span class="err">#</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="n">representation</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="k">this</span><span class="w"> </span><span class="n">pattern</span>
+</pre></div>
+</div>
+<dl class="simple">
+<dt>‘patterns’: give the pattern representations before (‘in’) and after (‘out’) fusion. See the</dt><dd><p>search_pattern() function for more details about pattern representation.</p>
+</dd>
+<dt>‘search_mode’: ‘op_type’ or ‘node_name’. If set it as op_type, the algorithm will search</dt><dd><p>in_pattern in graph. If set node_name, means in_pattern is just representing the
+search result. For example:
+in_pattern is [[(0, ‘input_ids’), (1, ‘segment_ids’), (2, ‘input_mask’)]]
+out_pattern is [[(0, ‘Input’)]]</p>
+</dd>
+<dt>‘node_names’: set node name for each node in pattern after fusion. Key means the node idx,</dt><dd><p>the value must be string or int (idx). If the value is the string, just use it as
+the node’s name. If the value is the idx, use the name of idx-th node in the
+pattern berfore fusion. If the in_pattern has n match_results in the graph, it
+will add “_n” after the name, for example, the new node name should be
+“embeddings/reshape_0” after mapping of the first match_result.</p>
+</dd>
+<dt>‘input_tensors’: the input_tensors of patterns before or after fusion should be same. The key</dt><dd><p>in the dict is the idx of the new node, and the first dict in the value list means
+where this tensor get from the pattern before fusion, and the second means where
+this tensor go to the pattern after fusion. For example, in ‘0:[{0:[0]},
+[[0], 1]]’, ‘0’ in the key means it’s the first new node in out_pattern, ‘{0:[0]}’
+means the tensor is the first tensor of the first node in in_pattern, ‘[[0], 1]’
+means the first new node’s first input_tensor is the tensor and this node has
+total 1 input_tensor. So the first element in the value gives the source info of
+input_tensors, the second gives the dest info of the input_tensors.However,
+sometimes source info has the form like ‘{1:[0], 2:[1,2]}’, the ‘[1,2]’ means the
+idx of tensor is not sure, maybe 1 or 2. It will happens to some sepcial op, like
+‘BiasAdd’, its ‘bias’ tensor maybe in unfixed location. If some input_tensors only
+can get from other node outside the pattern, you can just specify it by give the
+node name in graph.</p>
+</dd>
+<dt>‘output_tensors’: the output_tensors of patterns before or after fusion should be same. The</dt><dd><p>representtaion is same meaning of ‘input_tensors’.</p>
+</dd>
+<dt>‘returns’: set the node idx, and return the idx-th node of pattern before fusion. Sometimes</dt><dd><p>need these nodes for writing node attributes in pattern after fusion. If don’t
+need return, set the value as [].</p>
+</dd>
+</dl>
+<p>Note that the pattern after fusion (n-&gt;n / n-&gt;1)is must be sequence pattern like
+[a-&gt;b-&gt;c-&gt;d-&gt;e], or [a]. That means if one pattern is too complicated, or the pattern after
+fusion is too complicated, you had better decompose it.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.list2str">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">list2str</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_perm</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.list2str" title="Link to this definition"></a></dt>
+<dd><p>Convert the shape list to str for emitting yaml.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>src_perm</strong> – list, for example [1,2,3,4]</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>str, for example ‘1,2,3,4’</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ret</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.str2list">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">str2list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">src_str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.str2list" title="Link to this definition"></a></dt>
+<dd><p>Convert the str to shape list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>src_str</strong> – for example ‘1,2,3,4’</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>list, for example [1,2,3,4]</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ret</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping_conf_validation">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">pattern_mapping_conf_validation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">conf_dict</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping_conf_validation" title="Link to this definition"></a></dt>
+<dd><p>The validation of the pattern mapping config.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.LazyImport">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">LazyImport</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_name</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.LazyImport" title="Link to this definition"></a></dt>
+<dd><p>Lazy import python module till use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>module_name</strong> (<em>string</em>) – The name of module imported later</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_model_fwk_name">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">get_model_fwk_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_model_fwk_name" title="Link to this definition"></a></dt>
+<dd><p>Detect the input model belongs to which framework.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<em>string</em>) – framework name that supported by Neural Engine,
+if there’s no available fwk info, then return ‘NA’.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_var">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">set_environ_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'1'</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_var" title="Link to this definition"></a></dt>
+<dd><p>Set an env var.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_vars">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">set_environ_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kvs</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_vars" title="Link to this definition"></a></dt>
+<dd><p>Set a list of env vars.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_var">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">del_environ_var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_var" title="Link to this definition"></a></dt>
+<dd><p>Delete an env var.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_vars">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.</span></span><span class="sig-name descname"><span class="pre">del_environ_vars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/llm/runtime/deprecated/compile/graph_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_vars" title="Link to this definition"></a></dt>
+<dd><p>Delete a list of env vars.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5862a07490> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

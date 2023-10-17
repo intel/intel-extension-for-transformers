@@ -1,0 +1,414 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils
+
+.. autoapi-nested-parse::
+
+   The neural engine graph utils.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.LazyImport
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.names_from_input
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_data_dtype
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.autocast_init
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_autocast
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_autocast_info
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.quant_info_init
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_quant_info
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_quant_info
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.environ_info_init
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_environ_info
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_item
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.remove_environ_info_items
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_environ_info
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_straight_pattern
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.search_pattern
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.construct_node
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.insert_pattern
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.list2str
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.str2list
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.pattern_mapping_conf_validation
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.get_model_fwk_name
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_var
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.set_environ_vars
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_var
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph_utils.del_environ_vars
+
+
+
+.. py:function:: names_from_input(name)
+
+   Static method that get the valid node / tensor name from input name.
+
+   :param name: name defined in the input field.
+   :type name: string
+
+   :returns: (node's name, tensor's name)
+   :rtype: string tuple
+
+   for example: In NodeDef.input, the name from list is tensor name, may not end with ':0',
+               which can not be used for tensor name in the new Graph class. If it end with ':0',
+               it can not also be used for node name in the new Graph class
+
+
+.. py:function:: get_data_dtype(data)
+
+   Get the const data dtype.
+
+   :param data: a const data to model
+   :type data: numpy data
+
+   :returns: the value in DTYPES_DICT
+   :rtype: dtype (String)
+
+
+.. py:function:: autocast_init()
+
+   Initialize the quant info.
+
+
+.. py:function:: set_autocast(key, value)
+
+   Modify the quant info.
+
+
+.. py:function:: get_autocast_info()
+
+   Get the quant info.
+
+
+.. py:function:: quant_info_init()
+
+   Initialize the quant info.
+
+
+.. py:function:: insert_quant_info(key, value)
+
+   Modify the quant info.
+
+
+.. py:function:: get_quant_info()
+
+   Get the quant info.
+
+
+.. py:function:: environ_info_init()
+
+   Initialize the environ info.
+
+
+.. py:function:: insert_environ_info(key, value)
+
+   Modify the environ info.
+
+
+.. py:function:: remove_environ_info_item(key)
+
+   Remove an item in environ info.
+
+
+.. py:function:: remove_environ_info_items(keys)
+
+   Remove a list of items in environ info.
+
+
+.. py:function:: get_environ_info()
+
+   Get the environ info.
+
+
+.. py:function:: search_straight_pattern(input_pattern, graph)
+
+   Search user specified patterns on internal grpah structure.
+
+   Attention: the input computation chain in the graph which can be called pattern, there must be
+               straight (or sequence). It means it has not any subgraph nodes. Otherwise this
+               function returns []
+
+   :param input_pattern: Contains the op_type of the nodes in pattern. The element of the
+   :type input_pattern: list
+   :param list could be string/list/tuple:
+   :param string or list means the specified op_type are mandatory:
+   :param while tuple stands for optional.:
+   :param For example:
+   :param a input pattern mybe like this:
+   :param ['Mul':
+   :param 'Mul':
+   :param ['Add':
+   :param 'AddV2']] it equals to below patterns:
+   :param 'Mul' + 'Mul' + 'Add':
+   :param 'Mul' + 'Mul' + 'AddV2':
+   :param graph: Graph Class, the new graph generated from extractor.
+
+   Returns: [string list]. The length is the matched pattern results in the graph, for example,
+           the graph has 24 layers and each layer has a 'LayerNorm' pattern, then the length is
+           24. Each match pattern result is still a list contains the node names, and the last
+           element is the op_type list corresponding to the former node names.
+
+           Here is the return result example::
+
+
+               [
+                   ['Mul' node name,
+                   'Mul' node name,
+                   'Add' node name,
+                   ['Mul', 'Mul', 'Add']],
+
+                   ['Mul' node name,
+                   'Mul' node name,
+                   'AddV2' node name,
+                   ['Mul', 'Mul', 'AddV2']],
+
+                   ...
+               ]
+
+
+.. py:function:: search_pattern(pattern_list, graph)
+
+   Search the complete pattern in the graph.
+
+   :param pattern_list: a list contains  pattern representation. The pattern representation is also
+                        a list and each node in the list is a tuple, its form is like "(op_idx,
+                        op_type)". However, due to a few complicated patterns, they have sub-graph
+                        computation flow. Therefore in a pattern representation, using the fist list
+                        represents the main top-down computation flow (from pattern head op to tail
+                        op), the left lists represent sub-graphs (their tail nodes must in the main
+                        computation flow).
+
+                        Example::
+
+                            #LayerNorm pattern from bert_large_squad.pb
+                            [
+                                [(0, 'Mean'), (1, 'SquaredDifference'), (2, 'Mean'), (3, 'AddV2'),
+                                (4, 'Rsqrt'), (5, 'Mul'), (7 ,'Mul'), (8, 'Sub'), (9, 'AddV2')],
+                                [(5, 'Mul'), (6, 'Mul'), (9, 'AddV2')]
+                            ]
+   :param graph: Graph Class, the new graph generated from extractor
+
+   Returns: [string list], as same as search_straight_pattern func.
+
+   .. note::
+
+      1. The op_idx follows the order in the original frozen model, which means you had better
+         not identify them on your own casually.
+      2. the main top-down computation flow follows the "tf control flow". It's a straight chain
+         from start to end in the pattern. Mostly, it has the longest path. Sometimes, this main
+         flow may have sub connection. But you don't need to represent them. A sub-graph must
+         have one op at least that doesn't exist in the main chain. For example, in the above
+         LayerNorm pattern, (0, 'Mean') has a connection with (7 ,'Mul'). But you don't need to
+         represent this relationship.
+      3. If a node in sub-graph has several input /output paths, you should split them, each
+         sub-graph has one input /output op. (these ops must be in the pattern).
+         For example, the below representtaion should be two sub-graphs:
+         Add --- Mul --- Sub
+         Add ---^
+         [..., [(idx, 'Add'),(idx, 'Mul'),(idx, 'Sub')], [(idx, 'Add'),(id, 'Mul'),
+          (idx, 'Sub')], ...]
+      4. If a node in sub-graph has several input ops, some of them are from outside. Then you
+         don't need to give the sub-graphs with the outside op.
+         For example, the below representtaion should be one sub-graph:
+         Add     ---   Mul --- Sub
+         outside op ---^
+         [..., [(idx, 'Add'),(idx, 'Mul'),(idx, 'Sub')], ...]
+      5. If a node in sub-graph just has one input op and this op is from outside, you should
+         use empty tuple () to represents a input op. However, the algorithm doesn't support
+         this kind of pattern completely. Beause the match result can't make sure the whole
+         connection. So you had better check the results.
+      6. For the symmetric pattern, the sub-graph has consecutive same op type as the main chain
+         (Y or O shape). So these two search results by DFS are duplicated. The algorithm would
+         perform checking before splicing and de-duplication. The sub-graph length <= the main
+         chain length.
+      7. Some pattern has several same sub-graphs, these sub-graphs have same tail node and op
+         types are totally same.
+      
+         So the splicing step need to check the node name.
+      
+         Example::
+      
+              a -- b -- c --d -- e --f
+                   |             |
+                   c1 -- d1 -----
+                   |             |
+                   c2 -- d2 -----
+                   |             |
+                   c3 -- d3 -----
+      
+      For now, the algorithm just support the sub-graph's input /output ops are all in pattern.
+      You can set the sub-graph input as (), but the results need you to check. Mostly, this
+      sub-graph is a part of the pattern.
+      As for pattern match / search, apply dfs to every graph list, then check the sub-graph's
+      connection with the main computation flow. The idx would make the returned string list
+      with right order.
+
+
+.. py:function:: construct_node(node_name, op_type, input_tensors=None, output_tensors=None, attr=None)
+
+   Construct node with engine op_type.
+
+   :param node_name: string, name of the node
+   :param op_type: string, type of the node
+   :param input_tensors: list, contains the input tensors of the node
+   :param output_tensors: list, contains the output tensors of the node
+
+   :returns: Operator class
+   :rtype: new_node
+
+
+.. py:function:: insert_pattern(target_node_names, new_nodes, graph)
+
+   Replace the specific pattern matched from the new constructed graph with new pattern.
+
+   :param target_node_names: A string list ccontains the names of nodes that will be replaced
+   :param new_nodes: a list contains nodes with Operator class
+   :param graph: The Graph class
+
+   :returns: The Graph class which some nodes inside have been replaced.
+   :rtype: graph
+
+
+.. py:function:: pattern_mapping(pattern_name, mapping_dict, graph)
+
+   The pattern mapping function.
+
+   :param pattern_name: the name of the customized pattern representation, for example, 'LayerNorm'
+   :param mapping_dict: a element in mapping_config[pattern_name], config for pattern mapping.
+   :param graph: Graph class.
+
+   :returns: tuple, the first element is the new nodes insert start idx, the second element is a new
+             node list, the third is a list contains required old nodes need to be returned from origin
+             pattern.
+
+   Example of mapping_dict::
+
+       {'patterns': {'in': [(0, 'Reshape), ...], 'out':[(0, 'PaddingSequence')]},
+        'search_mode': op_type,
+        'node_names': {0: 'embeddings/reshape', 1: 0, ...},
+        'input_tensors': {0:[{0:[0]}, [[0], 1]], 1:[{1:[0], 2:[1,2]},[[0,1], 3]],
+                          2:[{},[[],1]], ..., m:[{'input_data':[1]}, [[0],1]},
+        'output_tensors': {2:[{0:[0]}, [[0],1]], ...},
+        'returns': [0, 1, 2],
+       }                        # one representation of this pattern
+
+   'patterns': give the pattern representations before ('in') and after ('out') fusion. See the
+               search_pattern() function for more details about pattern representation.
+   'search_mode': 'op_type' or 'node_name'. If set it as op_type, the algorithm will search
+               in_pattern in graph. If set node_name, means in_pattern is just representing the
+               search result. For example:
+               in_pattern is [[(0, 'input_ids'), (1, 'segment_ids'), (2, 'input_mask')]]
+               out_pattern is [[(0, 'Input')]]
+   'node_names': set node name for each node in pattern after fusion. Key means the node idx,
+               the value must be string or int (idx). If the value is the string, just use it as
+               the node's name. If the value is the idx, use the name of idx-th node in the
+               pattern berfore fusion. If the in_pattern has n match_results in the graph, it
+               will add "_n" after the name, for example, the new node name should be
+               "embeddings/reshape_0" after mapping of the first match_result.
+   'input_tensors': the input_tensors of patterns before or after fusion should be same. The key
+               in the dict is the idx of the new node, and the first dict in the value list means
+               where this tensor get from the pattern before fusion, and the second means where
+               this tensor go to the pattern after fusion. For example, in '0:[{0:[0]},
+               [[0], 1]]', '0' in the key means it's the first new node in out_pattern, '{0:[0]}'
+               means the tensor is the first tensor of the first node in in_pattern, '[[0], 1]'
+               means the first new node's first input_tensor is the tensor and this node has
+               total 1 input_tensor. So the first element in the value gives the source info of
+               input_tensors, the second gives the dest info of the input_tensors.However,
+               sometimes source info has the form like '{1:[0], 2:[1,2]}', the '[1,2]' means the
+               idx of tensor is not sure, maybe 1 or 2. It will happens to some sepcial op, like
+               'BiasAdd', its 'bias' tensor maybe in unfixed location. If some input_tensors only
+               can get from other node outside the pattern, you can just specify it by give the
+               node name in graph.
+   'output_tensors': the output_tensors of patterns before or after fusion should be same. The
+               representtaion is same meaning of 'input_tensors'.
+   'returns': set the node idx, and return the idx-th node of pattern before fusion. Sometimes
+               need these nodes for writing node attributes in pattern after fusion. If don't
+               need return, set the value as [].
+
+   Note that the pattern after fusion (n->n / n->1)is must be sequence pattern like
+   [a->b->c->d->e], or [a]. That means if one pattern is too complicated, or the pattern after
+   fusion is too complicated, you had better decompose it.
+
+
+
+.. py:function:: list2str(src_perm)
+
+   Convert the shape list to str for emitting yaml.
+
+   :param src_perm: list, for example [1,2,3,4]
+
+   :returns: str, for example '1,2,3,4'
+   :rtype: ret
+
+
+.. py:function:: str2list(src_str)
+
+   Convert the str to shape list.
+
+   :param src_str: for example '1,2,3,4'
+
+   :returns: list, for example [1,2,3,4]
+   :rtype: ret
+
+
+.. py:function:: pattern_mapping_conf_validation(conf_dict)
+
+   The validation of the pattern mapping config.
+
+
+.. py:class:: LazyImport(module_name)
+
+
+
+
+   Lazy import python module till use.
+
+   :param module_name: The name of module imported later
+   :type module_name: string
+
+
+.. py:function:: get_model_fwk_name(model)
+
+   Detect the input model belongs to which framework.
+
+   :param model: framework name that supported by Neural Engine,
+                 if there's no available fwk info, then return 'NA'.
+   :type model: string
+
+
+.. py:function:: set_environ_var(key, val='1')
+
+   Set an env var.
+
+
+.. py:function:: set_environ_vars(kvs)
+
+   Set a list of env vars.
+
+
+.. py:function:: del_environ_var(key)
+
+   Delete an env var.
+
+
+.. py:function:: del_environ_vars(keys)
+
+   Delete a list of env vars.
+
+

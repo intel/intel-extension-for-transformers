@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.input_data`
+==============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.input_data
+
+.. autoapi-nested-parse::
+
+   The InputData Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.input_data.InputData
+
+
+
+
+.. py:class:: InputData
+
+
+
+
+   The InputData pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'InputData' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

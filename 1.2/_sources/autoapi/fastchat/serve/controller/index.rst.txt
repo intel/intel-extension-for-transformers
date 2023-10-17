@@ -1,0 +1,35 @@
+:py:mod:`fastchat.serve.controller`
+===================================
+
+.. py:module:: fastchat.serve.controller
+
+.. autoapi-nested-parse::
+
+   A controller manages distributed workers.
+   It sends worker addresses to clients.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.serve.controller.DispatchMethod
+
+
+
+
+.. py:class:: DispatchMethod
+
+
+
+
+   Generic enumeration.
+
+   Derive from this class to define new enumerations.
+
+

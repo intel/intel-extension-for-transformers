@@ -1,0 +1,41 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.cli.base_executor`
+========================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.cli.base_executor
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.cli.base_executor.BaseCommandExecutor
+
+
+
+
+.. py:class:: BaseCommandExecutor
+
+
+
+
+   An abstract executor class of neuralchat server tasks.
+
+   .. py:method:: execute(argv: List[str]) -> bool
+      :abstractmethod:
+
+      Command line entry. This method can only be accessed by a command line such as `neuralchat textchat`.
+
+      :param argv: Arguments from command line.
+      :type argv: List[str]
+
+      :returns: Result of the command execution. `True` for a success and `False` for a failure.
+      :rtype: int
+
+
+

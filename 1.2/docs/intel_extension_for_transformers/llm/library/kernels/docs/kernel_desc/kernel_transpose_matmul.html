@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transposed MatMul &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Transposed MatMul</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/llm/library/kernels/docs/kernel_desc/kernel_transpose_matmul.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="transposed-matmul">
+<h1>Transposed MatMul<a class="headerlink" href="#transposed-matmul" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference external" href="#introduction">Introduction</a></p>
+<ul>
+<li><p><a class="reference external" href="#problem-statements">Problem Statements</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#matmul_p2031_2013">Matmul_p2031_2013</a></p>
+<ul>
+<li><p><a class="reference external" href="#matmul_avx512f_p2031_p2013">Matmul_avx512f_p2031_2013</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="#matmul_noperm_p2031_p1302">Matmul_noperm_p2031_p1302</a></p>
+<ul>
+<li><p><a class="reference external" href="#matmul_vnni_noperm_p2013_p1302">Matmul_vnni_noperm_p2013_p1302</a></p>
+<ul>
+<li><p><a class="reference external" href="#reorder-beforehand">Reorder beforehand</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>This document introduces our specialized matmul kernels for the special permutations used in transformer models.</p>
+<section id="problem-statements">
+<h3>Problem Statements<a class="headerlink" href="#problem-statements" title="Link to this heading"></a></h3>
+<p>We focus our transpose matmul kernel on accelerating the “attention” of the transformer. Given the equation of dot-product attention,</p>
+<p>$$
+{\rm Attention}(Q, K, V) = {\rm softmax}(\frac{QK^T}{\sqrt{d_k}})V
+$$</p>
+<p>where $Q, K, V \in Q^{\rm seq{\textunderscore}len \times head{\textunderscore}size}$ for a single attention.
+In real computation, we evaluate this equation over multiple heads and over multiple samples in a batch, making $Q,K,V$ three matrices of <code class="docutils literal notranslate"><span class="pre">batch_size</span> <span class="pre">x</span> <span class="pre">head_num</span> <span class="pre">x</span> <span class="pre">seq_len</span> <span class="pre">x</span> <span class="pre">head_size</span></code>. As these three matrices are the results of linear layers, they are natively stored in the memory format of <code class="docutils literal notranslate"><span class="pre">batch_size</span> <span class="pre">x</span> <span class="pre">seq_len</span> <span class="pre">x</span> <span class="pre">head_num</span> <span class="pre">x</span> <span class="pre">head_size</span></code>.</p>
+<blockquote>
+<div><p>Note: For BERT base, head_num is 12 and head_size is 64.</p>
+</div></blockquote>
+<p>As the SpMM kernels of SpareLib <a class="reference external" href="./kernel_vnni.html">prefer transposed operation</a>, the $Q, K, V$ matrices are in <code class="docutils literal notranslate"><span class="pre">head_num</span> <span class="pre">x</span> <span class="pre">head_size</span> <span class="pre">x</span> <span class="pre">batch_size</span> <span class="pre">x</span> <span class="pre">seq_len</span></code> in terms of physical memory format. Therefore, to get the correct matrix shape for multiplication, the axises of the source and destination matrices of matmul kernels are conceptually permuted in the following way:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="nl">Q</span><span class="p">:</span><span class="w">                  </span><span class="n">head_nun</span><span class="w">   </span><span class="n">head_size</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">seq_len</span><span class="w"> </span><span class="o">====</span><span class="n">perm2031</span><span class="o">===&gt;</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w"> </span><span class="n">seq_len</span><span class="w">   </span><span class="n">head_size</span>
+<span class="nl">K</span><span class="p">:</span><span class="w">                  </span><span class="n">head_nun</span><span class="w">   </span><span class="n">head_size</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">seq_len</span><span class="w"> </span><span class="o">====</span><span class="n">perm2013</span><span class="o">===&gt;</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w"> </span><span class="n">head_size</span><span class="w"> </span><span class="n">seq_len</span>
+<span class="n">QK</span><span class="o">^</span><span class="n">T</span><span class="o">:</span><span class="w">               </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w">  </span><span class="n">seq_len</span><span class="w">    </span><span class="n">seq_len</span><span class="w"> </span><span class="o">===============&gt;</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w"> </span><span class="n">seq_len</span><span class="w">   </span><span class="n">seq_len</span>
+<span class="nl">V</span><span class="p">:</span><span class="w">                  </span><span class="n">head_nun</span><span class="w">   </span><span class="n">head_size</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">seq_len</span><span class="w"> </span><span class="o">====</span><span class="n">perm2031</span><span class="o">===&gt;</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w"> </span><span class="n">seq_len</span><span class="w">   </span><span class="n">head_size</span>
+<span class="n">Attention</span><span class="p">(</span><span class="n">Q</span><span class="p">,</span><span class="w"> </span><span class="n">K</span><span class="p">,</span><span class="w"> </span><span class="n">V</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">head_nun</span><span class="w">   </span><span class="n">head_size</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">seq_len</span><span class="w"> </span><span class="o">&lt;===</span><span class="n">perm1302</span><span class="o">====</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="n">head_nun</span><span class="w"> </span><span class="n">seq_len</span><span class="w">   </span><span class="n">head_size</span>
+</pre></div>
+</div>
+<blockquote>
+<div><p>Notes</p>
+<ul class="simple">
+<li><p>The concept of “perm” is derived from that of the <a class="reference external" href="https://github.com/onnx/onnx/blob/rel-1.11.0/docs/Operators.html#transpose">transpose operator of ONNX</a>. It is used to describe the permutation of tensor axes.</p></li>
+<li><p>The physical memory format is LHS, and the conceptual layout is RHS (where the last two dimensions perform matrix multiplication, leaving the rest for batching).</p></li>
+</ul>
+</div></blockquote>
+</section>
+</section>
+<section id="matmul-p2031-2013">
+<h2>Matmul_p2031_2013<a class="headerlink" href="#matmul-p2031-2013" title="Link to this heading"></a></h2>
+<blockquote>
+<div><p>i.e. The kernel for the first matmul operation</p>
+</div></blockquote>
+<p>Currently, we have only implemented a kernel of these permutations with float32 input and output.</p>
+<section id="matmul-avx512f-p2031-p2013">
+<h3>Matmul_avx512f_p2031_p2013<a class="headerlink" href="#matmul-avx512f-p2031-p2013" title="Link to this heading"></a></h3>
+<p>The following figure illustrates loops iterated by this kernel:</p>
+<p><img alt="matmul_avx512f_p2031_p2013 loops" src="../../../../../../../_images/kernel_matmul_avx512f_p2031_p2013_loops.png" /></p>
+<p>The inner-most loop body performs computation for each tile, where the results of multiplication continuously accumulate on a group of vector registers. The following figure shows a 16x1 tile (or 16x16 tile in terms of elements).</p>
+<blockquote>
+<div><p>Note: The $Q$ matrix in the first and second loops is drawn transposed in the figure for a better demonstration of the memory layout.</p>
+</div></blockquote>
+<p><img alt="matmul_avx512f_p2031_p2013 tile" src="../../../../../../../_images/kernel_matmul_avx512f_p2031_p2013_tile.png" /></p>
+<p>where lighter cells indicate values used in following steps along the k-axis.</p>
+</section>
+</section>
+<section id="matmul-noperm-p2031-p1302">
+<h2>Matmul_noperm_p2031_p1302<a class="headerlink" href="#matmul-noperm-p2031-p1302" title="Link to this heading"></a></h2>
+<blockquote>
+<div><p>i.e. The kernel for the second matmul operation</p>
+</div></blockquote>
+<p>Currently, we have only implemented a kernel of these permutations with uint8, int8, and uint8 as left matrix, right matrix, and output matrix respectfully.</p>
+<section id="matmul-vnni-noperm-p2013-p1302">
+<h3>Matmul_vnni_noperm_p2013_p1302<a class="headerlink" href="#matmul-vnni-noperm-p2013-p1302" title="Link to this heading"></a></h3>
+<p>The following figure illustrates loops iterated by the <code class="docutils literal notranslate"><span class="pre">vnni_noperm_p2013_p1302</span></code> kernel:</p>
+<p><img alt="matmul_vnni_noperm_p2031_p1302 loops" src="../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_loops.svg" /></p>
+<p>As the memory format does not match what VNNI needs, the kernel tile continuously performs two <code class="docutils literal notranslate"><span class="pre">transpose_4B_8x8</span></code> on both the left and right matrix for each step of 32 elements along the reduction axis:</p>
+<p><img alt="matmul_vnni_noperm_p2031_p1302 transform8x8" src="../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_transform8x8.png" /></p>
+<table border="1" class="docutils">
+<thead>
+<tr>
+<th>Legend</th>
+<th>Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cell values</td>
+<td>Original memory offset (may not be contiguous for those next to ellipsis)</td>
+</tr>
+<tr>
+<td>Thinner border</td>
+<td>Memory contiguous elements</td>
+</tr>
+<tr>
+<td>Bolder border</td>
+<td>Cache line</td>
+</tr>
+<tr>
+<td>Fill color</td>
+<td>The first and second <code>transpose_4B_8x8</code> tasks</td>
+</tr>
+</tbody>
+</table><p>Following the reordering, the kernel tile computes over 16x32x16 as the graph below demonstrated (similar legends applied):</p>
+<p><img alt="matmul_vnni_noperm_p2031_p1302 tile" src="../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_tile.png" /></p>
+<section id="reorder-beforehand">
+<h4>Reorder beforehand<a class="headerlink" href="#reorder-beforehand" title="Link to this heading"></a></h4>
+<p>Notice that sub-matrices from both the left and right matrices need to be reordered multiple times in the above workflow, leading to suboptimal performance. To avoid this overhead, we perform reordering on a temporary piece of memory beforehand. It turned out to be able to boost performance by more than twofold on large matrices. The following figure shows the loops iterated by this kernel:</p>
+<p><img alt="matmul_vnni_noperm_p2031_p1302_cpy loops" src="../../../../../../../_images/matmul_vnni_noperm_p2031_p1302_cpy_loops.svg" /></p>
+<p>Users can specify <code class="docutils literal notranslate"><span class="pre">op_attrs[&quot;unified&quot;]</span> <span class="pre">=</span> <span class="pre">&quot;true&quot;</span></code> to roll back to the non-copied implementation on small workloads where the transpose-copy introduces higher overhead than it saves.</p>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5861161b80> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fastchat.conversation &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fastchat.conversation</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/autoapi/fastchat/conversation/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-fastchat.conversation">
+<span id="fastchat-conversation"></span><h1><a class="reference internal" href="#module-fastchat.conversation" title="fastchat.conversation"><code class="xref py py-mod docutils literal notranslate"><span class="pre">fastchat.conversation</span></code></a><a class="headerlink" href="#module-fastchat.conversation" title="Link to this heading"></a></h1>
+<p>Conversation prompt templates.
+We kindly request that you import fastchat instead of copying this file if you want to use it.
+You can contribute back the changes you want to make.</p>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#fastchat.conversation.SeparatorStyle" title="fastchat.conversation.SeparatorStyle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SeparatorStyle</span></code></a></p></td>
+<td><p>Separator styles.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#fastchat.conversation.Conversation" title="fastchat.conversation.Conversation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Conversation</span></code></a></p></td>
+<td><p>A class that manages prompt templates and keeps all conversation history.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#fastchat.conversation.register_conv_template" title="fastchat.conversation.register_conv_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">register_conv_template</span></code></a>(template[, override])</p></td>
+<td><p>Register a new conversation template.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#fastchat.conversation.get_conv_template" title="fastchat.conversation.get_conv_template"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_conv_template</span></code></a>(→ Conversation)</p></td>
+<td><p>Get a conversation template.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="fastchat.conversation.SeparatorStyle">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fastchat.conversation.</span></span><span class="sig-name descname"><span class="pre">SeparatorStyle</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.SeparatorStyle" title="Link to this definition"></a></dt>
+<dd><p>Separator styles.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fastchat.conversation.Conversation">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fastchat.conversation.</span></span><span class="sig-name descname"><span class="pre">Conversation</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.Conversation" title="Link to this definition"></a></dt>
+<dd><p>A class that manages prompt templates and keeps all conversation history.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fastchat.conversation.Conversation.get_prompt">
+<span class="sig-name descname"><span class="pre">get_prompt</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.Conversation.get_prompt" title="Link to this definition"></a></dt>
+<dd><p>Get the prompt for generation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fastchat.conversation.Conversation.set_system_message">
+<span class="sig-name descname"><span class="pre">set_system_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">system_message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.Conversation.set_system_message" title="Link to this definition"></a></dt>
+<dd><p>Set the system message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fastchat.conversation.Conversation.append_message">
+<span class="sig-name descname"><span class="pre">append_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">role</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.Conversation.append_message" title="Link to this definition"></a></dt>
+<dd><p>Append a new message.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fastchat.conversation.Conversation.update_last_message">
+<span class="sig-name descname"><span class="pre">update_last_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.Conversation.update_last_message" title="Link to this definition"></a></dt>
+<dd><p>Update the last output.
+The last message is typically set to be None when constructing the prompt,
+so we need to update it in-place after getting the response from a model.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fastchat.conversation.Conversation.to_gradio_chatbot">
+<span class="sig-name descname"><span class="pre">to_gradio_chatbot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.Conversation.to_gradio_chatbot" title="Link to this definition"></a></dt>
+<dd><p>Convert the conversation to gradio chatbot format.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fastchat.conversation.Conversation.to_openai_api_messages">
+<span class="sig-name descname"><span class="pre">to_openai_api_messages</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.Conversation.to_openai_api_messages" title="Link to this definition"></a></dt>
+<dd><p>Convert the conversation to OpenAI chat completion format.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fastchat.conversation.register_conv_template">
+<span class="sig-prename descclassname"><span class="pre">fastchat.conversation.</span></span><span class="sig-name descname"><span class="pre">register_conv_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fastchat.conversation.Conversation" title="fastchat.conversation.Conversation"><span class="pre">Conversation</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">override</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.register_conv_template" title="Link to this definition"></a></dt>
+<dd><p>Register a new conversation template.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fastchat.conversation.get_conv_template">
+<span class="sig-prename descclassname"><span class="pre">fastchat.conversation.</span></span><span class="sig-name descname"><span class="pre">get_conv_template</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#fastchat.conversation.Conversation" title="fastchat.conversation.Conversation"><span class="pre">Conversation</span></a></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/fastchat/conversation.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#fastchat.conversation.get_conv_template" title="Link to this definition"></a></dt>
+<dd><p>Get a conversation template.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f587a2a1d60> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

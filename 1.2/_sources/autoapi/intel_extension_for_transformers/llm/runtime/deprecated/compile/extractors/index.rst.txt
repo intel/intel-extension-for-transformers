@@ -1,0 +1,23 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors`
+====================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.extractors
+
+.. autoapi-nested-parse::
+
+   The module of the neural engine extractor.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   extractor/index.rst
+   onnx_extractor/index.rst
+   tf_extractor/index.rst
+   torch_extractor/index.rst
+
+

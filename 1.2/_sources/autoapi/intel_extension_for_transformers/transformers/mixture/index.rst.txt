@@ -1,0 +1,20 @@
+:py:mod:`intel_extension_for_transformers.transformers.mixture`
+===============================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.mixture
+
+.. autoapi-nested-parse::
+
+   Mixture package.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   auto_distillation/index.rst
+
+

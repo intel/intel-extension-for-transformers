@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_reshape`
+=====================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_reshape
+
+.. autoapi-nested-parse::
+
+   The AttentionReshape Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_reshape.AttentionReshape
+
+
+
+
+.. py:class:: AttentionReshape
+
+
+
+
+   The AttentionReshape pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'AttentionReshape' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`fastchat.serve.gradio_block_arena_named`
+=================================================
+
+.. py:module:: fastchat.serve.gradio_block_arena_named
+
+

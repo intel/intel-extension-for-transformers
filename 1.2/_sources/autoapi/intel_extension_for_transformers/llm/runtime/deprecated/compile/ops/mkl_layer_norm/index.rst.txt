@@ -1,0 +1,11 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.mkl_layer_norm`
+============================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.mkl_layer_norm
+
+.. autoapi-nested-parse::
+
+   The neural engine operator mapping file.
+
+
+

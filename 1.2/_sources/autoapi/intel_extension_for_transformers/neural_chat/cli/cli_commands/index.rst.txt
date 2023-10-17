@@ -1,0 +1,120 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.cli.cli_commands`
+=======================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.cli.cli_commands
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand
+   intel_extension_for_transformers.neural_chat.cli.cli_commands.HelpCommand
+   intel_extension_for_transformers.neural_chat.cli.cli_commands.TextVoiceChatExecutor
+   intel_extension_for_transformers.neural_chat.cli.cli_commands.FinetuingExecutor
+
+
+
+
+.. py:class:: BaseCommand
+
+
+   BaseCommand class serving as a foundation for other neuralchat commands.
+
+   This class provides a common structure for neuralchat commands. It includes a
+   default implementation of the execute method, which acts as a fallback and
+   invokes the 'neuralchat.help' command to provide assistance to users when
+   no specific command is provided.
+
+   .. attribute:: None
+
+      
+
+   .. method:: execute(argv)
+
+      Executes the fallback 'neuralchat.help' command and
+      returns its execution result.
+      
+
+   Usage example:
+       base_command = BaseCommand()
+       base_command.execute([])
+
+
+.. py:class:: HelpCommand
+
+
+   HelpCommand class for displaying help about available neuralchat commands.
+
+   This class provides the functionality to display a list of available neuralchat
+   commands and their descriptions. It helps users understand how to use different
+   commands provided by the neuralchat package.
+
+   .. attribute:: None
+
+      
+
+   .. method:: execute(argv)
+
+      Executes the help display and returns a success status.
+      
+
+
+.. py:class:: TextVoiceChatExecutor
+
+
+
+
+   TextVoiceChatExecutor class for executing text-based or voice-based conversations with a chatbot.
+
+   This class extends the BaseCommandExecutor class and provides functionality for
+   interacting with a chatbot through the command line or the Python API. It initializes
+   the necessary components, including the argument parser and the chatbot instance.
+
+   .. attribute:: parser
+
+      An argument parser for command-line input.
+
+      :type: argparse.ArgumentParser
+
+   .. attribute:: config
+
+      Configuration instance for the chatbot.
+
+      :type: PipelineConfig
+
+   .. method:: execute(argv)
+
+      Execute the chatbot using command-line arguments.
+
+   .. method:: __call__(prompt)
+
+      Python API for calling the chatbot executor.
+      
+      
+
+   .. py:method:: execute(argv: List[str]) -> bool
+
+      Command line entry point.
+
+
+
+.. py:class:: FinetuingExecutor
+
+
+
+
+   An abstract executor class of neuralchat server tasks.
+
+   .. py:method:: execute(argv: List[str]) -> bool
+
+      Command line entry.
+
+
+

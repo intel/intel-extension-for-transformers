@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contribution Guidelines &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contribution Guidelines</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/contributions.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contribution-guidelines">
+<h1>Contribution Guidelines<a class="headerlink" href="#contribution-guidelines" title="Link to this heading"></a></h1>
+<ol>
+<li><p><a class="reference external" href="#General">General</a></p>
+<p>1.1 <a class="reference external" href="#pull-request-checklist">Pull Request Checklist</a></p>
+<p>1.2 <a class="reference external" href="#pull-request-template">Pull Request Template</a></p>
+<p>1.3 <a class="reference external" href="#pull-request-acceptance-criteria">Pull Request Acceptance Criteria</a></p>
+</li>
+<li><p><a class="reference external" href="#ci-introduction">CI Introduction</a></p></li>
+<li><p><a class="reference external" href="#faq">FAQ</a></p></li>
+<li><p><a class="reference external" href="#support">Support</a></p></li>
+<li><p><a class="reference external" href="#contributor-covenant-code-of-conduct">Contributor Covenant Code of Conduct</a></p></li>
+</ol>
+<section id="general">
+<h2>General<a class="headerlink" href="#general" title="Link to this heading"></a></h2>
+<p>If you have improvements to Intel® Extension for Transformers, pull requests for
+<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/pulls">review</a>. If you are new to Github, view the pull request <a class="reference external" href="https://help.github.com/articles/using-pull-requests/">How To</a>.</p>
+<section id="pull-request-checklist">
+<h3>Pull Request Checklist<a class="headerlink" href="#pull-request-checklist" title="Link to this heading"></a></h3>
+<p>Before sending your pull requests, follow the information below:</p>
+<ul class="simple">
+<li><p>Changes are consistent with the Python <a class="reference external" href="https://github.com/google/styleguide/blob/gh-pages/pyguide.html">Coding Style</a>.</p></li>
+<li><p>Use pylint to check your Python code, more detail please go to <a class="reference external" href="../.github/workflows/script/formatScan/pylint.sh">pylint script</a></p></li>
+</ul>
+</section>
+<section id="pull-request-template">
+<h3>Pull Request Template<a class="headerlink" href="#pull-request-template" title="Link to this heading"></a></h3>
+<p>See <a class="reference external" href="../.github/PULL_REQUEST_TEMPLATE/pull_request_template.html">PR template</a></p>
+</section>
+<section id="pull-request-acceptance-criteria">
+<h3>Pull Request Acceptance Criteria<a class="headerlink" href="#pull-request-acceptance-criteria" title="Link to this heading"></a></h3>
+<p>(1) At least two approvals from reviewers (1 approval from the component <a class="reference external" href="./component_owner.html">owner</a>)</p>
+<p>(2) ALL detected CI checks pass</p>
+<p>(3) ALL conversations solved</p>
+<p>(4) Third-party dependency license Compatible</p>
+</section>
+</section>
+<section id="ci-introduction">
+<h2>CI Introduction<a class="headerlink" href="#ci-introduction" title="Link to this heading"></a></h2>
+<p>See <a class="reference external" href="./CI_introduction.html">CI Introduction</a></p>
+</section>
+<section id="faq">
+<h2>FAQ<a class="headerlink" href="#faq" title="Link to this heading"></a></h2>
+<ol>
+<li><p>How to check third-party dependency license compliance</p>
+<p>If you are using third-party component by: (1) import lib and uses its API (2) static/dynamic linked (3) copy code and modified (4) other uncertain usage, please contact <a class="reference external" href="mailto:itrex&#46;maintainers&#37;&#52;&#48;intel&#46;com">Maintainers</a> to check license compliance before push code to repo.</p>
+</li>
+</ol>
+</section>
+<section id="support">
+<h2>Support<a class="headerlink" href="#support" title="Link to this heading"></a></h2>
+<p>Submit your questions, feature requests, and bug reports to the
+<a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/issues">GitHub issues</a> page. You may also reach out to <a class="reference external" href="mailto:itrex&#46;maintainers&#37;&#52;&#48;intel&#46;com">Maintainers</a>.</p>
+</section>
+<section id="contributor-covenant-code-of-conduct">
+<h2>Contributor Covenant Code of Conduct<a class="headerlink" href="#contributor-covenant-code-of-conduct" title="Link to this heading"></a></h2>
+<p>This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the <a class="reference external" href="./CODE_OF_CONDUCT.html">Contributor Covenant Code of Conduct</a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5877111460> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

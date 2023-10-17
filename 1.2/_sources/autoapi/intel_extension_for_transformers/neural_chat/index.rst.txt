@@ -1,0 +1,28 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat`
+======================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   pipeline/index.rst
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   chatbot/index.rst
+   config/index.rst
+   version/index.rst
+
+

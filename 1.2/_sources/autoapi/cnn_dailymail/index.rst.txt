@@ -1,0 +1,42 @@
+:orphan:
+
+:py:mod:`cnn_dailymail`
+=======================
+
+.. py:module:: cnn_dailymail
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   cnn_dailymail.DataCollatorForSupervisedDataset
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   cnn_dailymail.preprocess
+
+
+
+.. py:class:: DataCollatorForSupervisedDataset(tokenizer: transformers.PreTrainedTokenizer)
+
+
+
+
+   Collate examples for supervised fine-tuning.
+
+
+.. py:function:: preprocess(sources: Sequence[str], targets: Sequence[str], tokenizer: transformers.PreTrainedTokenizer) -> Dict
+
+   Preprocess the data by tokenizing.
+
+

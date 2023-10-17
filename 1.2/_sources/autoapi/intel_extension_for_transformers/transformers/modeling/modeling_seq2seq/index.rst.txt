@@ -1,0 +1,50 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.modeling.modeling_seq2seq`
+=================================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.modeling_seq2seq
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.modeling.modeling_seq2seq.INCEncoder
+   intel_extension_for_transformers.transformers.modeling.modeling_seq2seq.INCDecoder
+
+
+
+
+.. py:class:: INCEncoder(model, device: str, config)
+
+
+
+
+   Encoder model for inference.
+
+   :param model: The model to inference.
+   :type model: PyTorch model or neural-compressor model
+   :param device: The device type used by this process.
+   :type device: `torch.device`
+
+
+.. py:class:: INCDecoder(model, device: str, config)
+
+
+
+
+   Decoder model for inference.
+
+   :param model: The model to inference.
+   :type model: PyTorch model or neural-compressor model
+   :param device: The device type used by this process.
+   :type device: `torch.device`
+   :param config: The config of model.
+   :type config: PretrainedConfig
+
+

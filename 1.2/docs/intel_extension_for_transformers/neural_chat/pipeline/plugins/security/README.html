@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/pipeline/plugins/security/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div align="center">
+<h1>Safety Checker</h3>
+<div align="left"><section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<p>We are committed to ensuring that everyone uses our tool safely and responsibly. However, due to the inherent capabilities of large language models (LLMs), we cannot guarantee that the generated results are always safe and useful for users. To address this concern, we have developed a safety checker that carefully examines and filters sensitive or harmful words that may appear in both the input and output contexts.</p>
+<p>There are two commonly used methods to detect such sensitive or harmful words: the <a class="reference external" href="https://en.wikipedia.org/wiki/Deterministic_finite_automaton">Deterministic Finite Automata</a> approach and the  <a class="reference external" href="https://en.wikipedia.org/wiki/Trie">Trie Tree</a> method. To balance latency and accuracy considerations, our safety checker is designed using the Deterministic Finite Automata method.</p>
+</section>
+<section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
+<p>We offer an initial sensitive word dictionary located in this folder under the name ‘dict.txt.’ This dictionary includes sensitive words along with their corresponding reasons.  Users can easily utilize the <code class="docutils literal notranslate"><span class="pre">SafetyChecker</span></code> class to process the context. Alternatively, users have the option to provide their own customized sensitive dictionary for processing via the parm <code class="docutils literal notranslate"><span class="pre">dict_path</span></code> in <code class="docutils literal notranslate"><span class="pre">SafetyChecker</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.plugins.security</span> <span class="kn">import</span> <span class="n">SafetyChecker</span>
+<span class="n">safety_checker</span> <span class="o">=</span> <span class="n">SafetyChecker</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>There is also a parm names <code class="docutils literal notranslate"><span class="pre">matchType</span></code> in <code class="docutils literal notranslate"><span class="pre">SafetyChecker</span></code>. We defaulty set <code class="docutils literal notranslate"><span class="pre">matchType=2</span></code> to maintain a good checking accuracy. The user can set it to 1 for a more strict mapping rule.</p>
+<p>We enable users to check whether the input query/context contains sensitive words using the following function,</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">contain</span> <span class="o">=</span> <span class="n">safety_checker</span><span class="o">.</span><span class="n">sensitive_check</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If the input query contains the sensitive, it will return <code class="docutils literal notranslate"><span class="pre">True</span></code>. The user needs to modifiy the input query to avoid the sensitive word.</p>
+<p>Additionally, the chatbot can filter sensitive words with customized symbols. Users can access this function via the following method:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">processed_text</span> <span class="o">=</span> <span class="n">safety_checker</span><span class="o">.</span><span class="n">sensitive_filter</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">query</span><span class="p">,</span> <span class="n">replaceChar</span><span class="o">=</span><span class="s2">&quot;*&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The sensitive words will be masked by the <code class="docutils literal notranslate"><span class="pre">replaceChar</span></code> to avoid unexpected output.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f586a4ac550> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

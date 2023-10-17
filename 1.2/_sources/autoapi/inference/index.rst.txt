@@ -1,0 +1,26 @@
+:orphan:
+
+:py:mod:`inference`
+===================
+
+.. py:module:: inference
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   inference.correct_number
+
+
+
+.. py:function:: correct_number(text)
+
+   Ignore the year or other exception right now
+
+

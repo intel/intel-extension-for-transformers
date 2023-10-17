@@ -1,0 +1,17 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers.modeling.gpt_bigcode`
+============================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.modeling.gpt_bigcode
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   modeling_gpt_bigcode/index.rst
+
+

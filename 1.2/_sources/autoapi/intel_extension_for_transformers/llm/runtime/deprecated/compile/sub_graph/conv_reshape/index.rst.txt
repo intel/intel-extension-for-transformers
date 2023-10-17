@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.conv_reshape`
+================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.conv_reshape
+
+.. autoapi-nested-parse::
+
+   The ConvReshape Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.conv_reshape.ConvReshape
+
+
+
+
+.. py:class:: ConvReshape
+
+
+
+
+   The ConvReshape pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'ConvReshape' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

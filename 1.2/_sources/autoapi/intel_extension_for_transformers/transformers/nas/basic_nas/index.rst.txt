@@ -1,0 +1,63 @@
+:py:mod:`intel_extension_for_transformers.transformers.nas.basic_nas`
+=====================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.nas.basic_nas
+
+.. autoapi-nested-parse::
+
+   Basic NAS approach class.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.nas.basic_nas.BasicNAS
+
+
+
+
+.. py:class:: BasicNAS(conf_fname_or_obj, search_space=None, model_builder=None)
+
+
+
+
+   Basic NAS approach.
+
+   Defining the pipeline for basic NAS approach.
+
+   :param conf_fname: The path to the YAML configuration file or the object of NASConfig.
+   :type conf_fname: string or obj
+   :param search_space: A dictionary for defining the search space.
+   :type search_space: dict
+   :param model_builder: A function to build model instance with the specified
+                         model architecture parameters.
+   :type model_builder: function obj
+
+   .. py:method:: execute(res_save_path=None)
+
+      Execute the search process.
+
+      :returns: Best model architectures found in the search process.
+
+
+   .. py:method:: estimate(model)
+
+      Estimate performance of the model.
+
+      Depends on specific NAS algorithm. Here we use train and evaluate.
+
+      :returns: Evaluated metrics of the model.
+
+
+   .. py:method:: init_by_cfg(conf_fname_or_obj)
+
+      Initialize the configuration.
+
+
+

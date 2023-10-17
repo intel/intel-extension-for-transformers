@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Benchmark &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Export to ONNX" href="export.html" />
+    <link rel="prev" title="Data Augmentation" href="data_augmentation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../feature.html">Features</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="quantization.html">Quantization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="distillation.html">Distillation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pruning.html">Pruning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="autodistillation.html">AutoDistillation Design</a></li>
+<li class="toctree-l3"><a class="reference internal" href="data_augmentation.html">Data Augmentation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Benchmark</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#introduction">Introduction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#get-started-with-benchmark-api">Get Started with Benchmark API</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="export.html">Export to ONNX</a></li>
+<li class="toctree-l3"><a class="reference internal" href="metrics.html">Metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="objectives.html">Objective</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pipeline.html">Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../neural_engine.html">Neural Engine</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../feature.html">Features</a></li>
+      <li class="breadcrumb-item active">Benchmark</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/docs/benchmark.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="benchmark">
+<h1>Benchmark<a class="headerlink" href="#benchmark" title="Link to this heading"></a></h1>
+<ol>
+<li><p><a class="reference external" href="#introduction">Introduction</a></p></li>
+<li><p><a class="reference external" href="#get-started-with-benchmark-api">Get Started</a></p></li>
+<li><p><a class="reference external" href="#examples">Examples</a></p>
+<p>3.1. <a class="reference external" href="#stock-pytorch-model">Stock Pytorch Model</a></p>
+<p>3.2. <a class="reference external" href="#ipex-model">IPEX Model</a></p>
+<p>3.3. <a class="reference external" href="#benchmark-output">Benchmark Output</a></p>
+</li>
+</ol>
+<section id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h2>
+<p>The Benchmark is used to measure the model performance with the objective settings. It is inherited from Intel® Neural Compressor <a class="reference external" href="https://github.com/intel/neural-compressor/blob/master/docs/source/benchmark.html">Benchmark</a>.</p>
+</section>
+<section id="get-started-with-benchmark-api">
+<h2>Get Started with Benchmark API<a class="headerlink" href="#get-started-with-benchmark-api" title="Link to this heading"></a></h2>
+<p>The class <code class="docutils literal notranslate"><span class="pre">BenchmarkConfig</span></code> allows users to adjust the following parameters with objective settings to measure model performance:</p>
+<p><code class="docutils literal notranslate"><span class="pre">backend</span></code> (str, optional): the backend used for benchmark. Defaults to “torch”. <br /><code class="docutils literal notranslate"><span class="pre">warmup</span></code> (int, optional): number of iters to skip when collecting latency. Defaults to 5. <br /><code class="docutils literal notranslate"><span class="pre">iteration</span></code> (int, optional): total iters when collecting latency. Defaults to 20. <br /><code class="docutils literal notranslate"><span class="pre">cores_per_instance</span></code> (int, optional): the core number for 1 instance. Defaults to 4. <br /><code class="docutils literal notranslate"><span class="pre">num_of_instance</span></code> (int, optional): the instance number. Defaults to -1. <br /><code class="docutils literal notranslate"><span class="pre">torchscript</span></code> (bool, optional): enable it if you want to jit trace it before benchmarking. Defaults to False. <br /><code class="docutils literal notranslate"><span class="pre">generate</span></code> (bool, optional): enable it if you want to use model generate when benchmarking. Defaults to False.</p>
+<blockquote>
+<div><p><strong>Note</strong>: Benchmark provides capability to automatically run with multiple instance through <code class="docutils literal notranslate"><span class="pre">cores_per_instance</span></code> and <code class="docutils literal notranslate"><span class="pre">num_of_instance</span></code> config (CPU only). Please make sure <code class="docutils literal notranslate"><span class="pre">cores_per_instance</span> <span class="pre">*</span> <span class="pre">num_of_instance</span></code> must be less than CPU physical core numbers.</p>
+</div></blockquote>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<p>Example inputs or a dataloader is required for benchmark.</p>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_example_inputs</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">dataset_name</span><span class="o">=</span><span class="s1">&#39;sst2&#39;</span><span class="p">):</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">transformers</span><span class="o">.</span><span class="n">AutoTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">,</span> <span class="n">split</span><span class="o">=</span><span class="s1">&#39;validation&#39;</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;text&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">dataset_name</span><span class="o">==</span><span class="s1">&#39;lambada&#39;</span> <span class="k">else</span> <span class="n">dataset</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;sentence&#39;</span><span class="p">]</span>
+    <span class="n">example_inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;max_length&#39;</span><span class="p">,</span> <span class="n">max_length</span><span class="o">=</span><span class="mi">195</span><span class="p">,</span> <span class="n">return_tensors</span><span class="o">=</span><span class="s1">&#39;pt&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">example_inputs</span>
+</pre></div>
+</div>
+<section id="stock-pytorch-model">
+<h3>Stock Pytorch Model<a class="headerlink" href="#stock-pytorch-model" title="Link to this heading"></a></h3>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">BenchmarkConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.benchmark</span> <span class="kn">import</span> <span class="n">benchmark</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">BenchmarkConfig</span><span class="p">(</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">cores_per_instance</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">num_of_instance</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">example_inputs</span> <span class="o">=</span> <span class="n">get_example_inputs</span><span class="p">(</span><span class="n">model_name_or_path</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">model_name_or_path</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">example_inputs</span><span class="o">=</span><span class="n">example_inputs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="ipex-model">
+<h3>IPEX Model<a class="headerlink" href="#ipex-model" title="Link to this heading"></a></h3>
+<div class="highlight-py notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers</span> <span class="kn">import</span> <span class="n">BenchmarkConfig</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.transformers.benchmark</span> <span class="kn">import</span> <span class="n">benchmark</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">BenchmarkConfig</span><span class="p">(</span>
+    <span class="n">backend</span><span class="o">=</span><span class="s1">&#39;ipex&#39;</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">cores_per_instance</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">num_of_instance</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">example_inputs</span> <span class="o">=</span> <span class="n">get_example_inputs</span><span class="p">(</span><span class="n">model_name_or_path</span><span class="p">)</span>
+<span class="n">benchmark</span><span class="p">(</span><span class="n">model_name_or_path</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">example_inputs</span><span class="o">=</span><span class="n">example_inputs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="benchmark-output">
+<h3>Benchmark Output<a class="headerlink" href="#benchmark-output" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>**********************************************
+<span class="p">|</span>****Multiple<span class="w"> </span>Instance<span class="w"> </span>Benchmark<span class="w"> </span>Summary*****<span class="p">|</span>
++---------------------------------+----------+
+<span class="p">|</span><span class="w">              </span>Items<span class="w">              </span><span class="p">|</span><span class="w">  </span>Result<span class="w">  </span><span class="p">|</span>
++---------------------------------+----------+
+<span class="p">|</span><span class="w"> </span>Latency<span class="w"> </span>average<span class="w"> </span><span class="o">[</span>second/sample<span class="o">]</span><span class="w"> </span><span class="p">|</span><span class="w">  </span><span class="m">0</span>.003<span class="w">   </span><span class="p">|</span>
+<span class="p">|</span><span class="w"> </span>Throughput<span class="w"> </span>sum<span class="w"> </span><span class="o">[</span>samples/second<span class="o">]</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="m">5071</span>.933<span class="w"> </span><span class="p">|</span>
++---------------------------------+----------+
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="data_augmentation.html" class="btn btn-neutral float-left" title="Data Augmentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="export.html" class="btn btn-neutral float-right" title="Export to ONNX" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f58628b05e0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

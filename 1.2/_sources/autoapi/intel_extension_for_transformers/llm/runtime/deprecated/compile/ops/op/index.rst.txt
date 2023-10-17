@@ -1,0 +1,68 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op`
+================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op
+
+.. autoapi-nested-parse::
+
+   The neural engine operator file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op.Operator
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.op.operator_registry
+
+
+
+.. py:function:: operator_registry(operator_type)
+
+   The class decorator used to register all Algorithm subclasses.
+
+   :param cls: The class of register.
+   :type cls: class
+   :param operator_type: The operator registration name(s)
+   :type operator_type: str or str list
+
+   :returns: The class of register.
+   :rtype: cls
+
+
+.. py:class:: Operator
+
+
+
+
+   The class of neural engine operator.
+
+   .. py:method:: set_attr(framework, node)
+
+      Attr initialization.
+
+
+   .. py:method:: extract(framework, node, framework_model, nodes_dict, engine_graph=None)
+
+      Extract the op from framework.
+
+
+   .. py:method:: construct(name, op_type, input_tensors=[], output_tensors=[], attr=OrderedDict())
+
+      Make the op by set the attributes.
+
+
+

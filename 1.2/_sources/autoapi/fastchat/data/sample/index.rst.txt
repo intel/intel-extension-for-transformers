@@ -1,0 +1,13 @@
+:py:mod:`fastchat.data.sample`
+==============================
+
+.. py:module:: fastchat.data.sample
+
+.. autoapi-nested-parse::
+
+   Sample some conversations from a file.
+
+   Usage: python3 -m fastchat.data.sample --in sharegpt.json --out sampled.json
+
+
+

@@ -1,0 +1,115 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.ops`
+=============================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops
+
+.. autoapi-nested-parse::
+
+   The module of the neural engine operators.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   all/index.rst
+   assert/index.rst
+   baddbmm/index.rst
+   batch_matmul/index.rst
+   batch_matmul_v2/index.rst
+   bias_add/index.rst
+   cast/index.rst
+   concat/index.rst
+   conv/index.rst
+   cos/index.rst
+   empty_ops/index.rst
+   expand_dims/index.rst
+   fused_batch_matmul_v2/index.rst
+   fused_batch_norm_v3/index.rst
+   fused_gemm/index.rst
+   fused_matmul/index.rst
+   gather/index.rst
+   gather_elements/index.rst
+   gelu/index.rst
+   gemm/index.rst
+   iterator_get_next/index.rst
+   iterator_v2/index.rst
+   layer_normalization/index.rst
+   log_softmax/index.rst
+   map_and_batch_dataset/index.rst
+   matmul/index.rst
+   mean/index.rst
+   mkl_layer_norm/index.rst
+   model_dataset/index.rst
+   one_hot/index.rst
+   onnx_input/index.rst
+   op/index.rst
+   optimize_dataset/index.rst
+   pack/index.rst
+   padding_sequence/index.rst
+   placeholder/index.rst
+   pos_embed/index.rst
+   pow/index.rst
+   quantize_linear/index.rst
+   quantize_v2/index.rst
+   quantized_fused_matmul_and_dequantize/index.rst
+   quantized_matmul_with_bias_and_dequantize/index.rst
+   reduce_mean/index.rst
+   reduce_sum/index.rst
+   reorder/index.rst
+   reshape/index.rst
+   resize/index.rst
+   rsub/index.rst
+   scatter_elements/index.rst
+   shape/index.rst
+   sin/index.rst
+   size/index.rst
+   slice_position_ids/index.rst
+   softmax/index.rst
+   split/index.rst
+   squeeze/index.rst
+   strided_slice/index.rst
+   tensor/index.rst
+   top_k/index.rst
+   transpose/index.rst
+   unpack/index.rst
+   unsqueeze/index.rst
+   view/index.rst
+   where/index.rst
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.Operator
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.operator_registry
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.OPERATORS
+
+
+
+
+

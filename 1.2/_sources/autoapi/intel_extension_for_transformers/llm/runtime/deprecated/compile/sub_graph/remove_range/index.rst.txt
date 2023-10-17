@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_range`
+================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_range
+
+.. autoapi-nested-parse::
+
+   The RemoveRange Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_range.RemoveRange
+
+
+
+
+.. py:class:: RemoveRange
+
+
+
+
+   The RemoveRange pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'RemoveRange' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dynamic Quant Matmul &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Dynamic Quant Matmul</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/docs/intel_extension_for_transformers/llm/library/kernels/docs/kernel_desc/kernel_dynamic_quant_matmul.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dynamic-quant-matmul">
+<h1>Dynamic Quant Matmul<a class="headerlink" href="#dynamic-quant-matmul" title="Link to this heading"></a></h1>
+<section id="problem-description">
+<h2>problem description<a class="headerlink" href="#problem-description" title="Link to this heading"></a></h2>
+<p>Quantization technology, as an important method of model compression and acceleration, has been applied to more and more scenarios.  Among them, static quantization shows high enough accuracy in some models (such as bert), but its accuracy is not satisfactory in some other models (such as stable-diffusion).  Dynamic quantization can improve the accuracy performance, but it requires the inference engine to use multiple small operators to complete the quantization process, which will inevitably affect the throughput performance of the entire model.  To solve the above problems, we introduce a dynamic quantization matmul kernel based on AMX instructions, which can complete dynamic quantization while ensuring high performance of matrix computation.</p>
+</section>
+<section id="kernel-details">
+<h2>Kernel details<a class="headerlink" href="#kernel-details" title="Link to this heading"></a></h2>
+<section id="prerequisites-for-using-dynamic-quant-matmul">
+<h3>Prerequisites for using dynamic quant matmul<a class="headerlink" href="#prerequisites-for-using-dynamic-quant-matmul" title="Link to this heading"></a></h3>
+<ol class="simple">
+<li><p>In order to facilitate the dequantization of the matmul results of activation and weight, we require that the activation matrix and weight matrix use symmetric quantization with zero point as 0. At the same time, in order to cooperate with the subsequent dynamic quantization kernels, we will also use symmetric quantization for the result matrix, that is, only output the quantized dst matrix and the corresponding scale, and not output zero point.</p></li>
+<li><p>The current dynamic_quant_matmul supports flexible <code class="docutils literal notranslate"><span class="pre">batch</span></code>, <code class="docutils literal notranslate"><span class="pre">M</span></code>, <code class="docutils literal notranslate"><span class="pre">N</span></code>, but requires that <code class="docutils literal notranslate"><span class="pre">K</span></code> can be divisible by 4</p></li>
+</ol>
+</section>
+<section id="preprocessing-of-weight-matrix">
+<h3>Preprocessing of weight matrix<a class="headerlink" href="#preprocessing-of-weight-matrix" title="Link to this heading"></a></h3>
+<p>Our dynamic_quant_matmul is applied in the scenario of multiplying activation matrix and weight matrix. Since the weight matrix is static during inference, it can be preprocessed before inference to facilitate our ISA to accelerate the calculation of matrix multiplication, mainly divided into two steps:</p>
+<ol class="simple">
+<li><p>Padding + AMX reorder the weight matrix to facilitate the calculation of <code class="docutils literal notranslate"><span class="pre">tdpbssd</span></code> instruction, please refer to AMX document to understand the reorder method. Each <code class="docutils literal notranslate"><span class="pre">tdpbssd</span></code> instruction calculates block shape generally as <code class="docutils literal notranslate"><span class="pre">16</span> <span class="pre">×</span> <span class="pre">tile_k</span></code> * <code class="docutils literal notranslate"><span class="pre">tile_k</span> <span class="pre">x</span> <span class="pre">16</span></code>, where <code class="docutils literal notranslate"><span class="pre">tile_k</span></code> value satisfies the following formula <code class="docutils literal notranslate"><span class="pre">max_tile_k(tile_k&lt;=k&amp;&amp;k%tile_k==0&amp;&amp;tile_k%4==0)</span></code>. The build of each block is always 16 on <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">dimension</span></code>, so when weight matrix cannot be divisible by 16 on <code class="docutils literal notranslate"><span class="pre">N-dim</span></code>, we will pad 0 on <code class="docutils literal notranslate"><span class="pre">N-dim</span></code> to make it divisible by 16, and use mask register to avoid writing back extra values when writing back <code class="docutils literal notranslate"><span class="pre">N-dim</span></code> on the last result tile.</p></li>
+<li><p>Transpose the reordered matrix with tile of <code class="docutils literal notranslate"><span class="pre">(tile_k/4)*64</span></code> as the basic unit, its purpose is to <code class="docutils literal notranslate"><span class="pre">row-major</span></code> access weight matrix when we reduce on the <code class="docutils literal notranslate"><span class="pre">K-dim</span></code>, such access behavior is more friendly to cache.</p></li>
+</ol>
+<p>The whole weight matrix preprocessing process can be represented by the following figure
+<img alt="wei_preprocess" src="../../../../../../../_images/kernel_dynamic_quant_matmul_wei_preprocess.png" /></p>
+</section>
+<section id="different-jit-paths-for-different-weight-size">
+<h3>different jit-paths for different weight size<a class="headerlink" href="#different-jit-paths-for-different-weight-size" title="Link to this heading"></a></h3>
+<p>In our internal implementation of dynamic_quant_matmul, the weight matrix has a very high spatial locality, and we hope that the L2 cache can cache the entire weight matrix that the core is responsible for processing, so we will generate different jit kernels to meet the above requirements for different weight size. When the reuse-data-size is less than <code class="docutils literal notranslate"><span class="pre">L2-cache-size</span></code>×<code class="docutils literal notranslate"><span class="pre">large_wei_threshold</span></code> (can be specified by the user, default is 1) and each core will process enough row (M assigned for each core &gt;= 16, avoid to waste AMX), we will enable one-stage path, otherwise enable two-stage path.</p>
+<section id="one-stage-jit-path">
+<h4>one-stage jit-path<a class="headerlink" href="#one-stage-jit-path" title="Link to this heading"></a></h4>
+<p>In this jit-path, we will have a <code class="docutils literal notranslate"><span class="pre">16xpad_n</span></code> tmp_buffer, which is used for data write-back of <code class="docutils literal notranslate"><span class="pre">tilestored</span></code> instruction, dequantize of dst tile, and the calculation of scale and quantize of dst tile are all done on this tmp buffer, so this buffer also has a very high spatial locality. When <code class="docutils literal notranslate"><span class="pre">(16xpad_n+weight)</span></code>x<code class="docutils literal notranslate"><span class="pre">large_wei_threshold</span></code>&lt;<code class="docutils literal notranslate"><span class="pre">L2-cache-size</span></code>, this path has better performance for matmul. Specifically, this jit-path will parallelize on the <code class="docutils literal notranslate"><span class="pre">M-dim</span></code>, each core caches the entire weight matrix, and the pseudo code description of the kernel calculation process is as follows</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">M</span><span class="p">;</span><span class="w"> </span><span class="n">m</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">TILE_M</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// build 16xN dst block</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">DP_TILE_N</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">k_dim_dp</span><span class="p">();</span>
+<span class="w">        </span><span class="n">write_tile_to_tmp_buf</span><span class="p">();</span>
+<span class="w">        </span><span class="n">dequantize_tile_on_tmp_buf</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">calculate_scale_on_tmp_buf</span><span class="p">();</span>
+<span class="w">    </span><span class="n">write_back_scale</span><span class="p">();</span>
+<span class="w">    </span><span class="c1">// quant write back</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">N</span><span class="p">;</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">QUANT_TILE_N</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">quantize_on_tmp_buf</span><span class="p">();</span>
+<span class="w">        </span><span class="n">write_tile_to_dst</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="two-stage-jit-path">
+<h4>two-stage jit-path<a class="headerlink" href="#two-stage-jit-path" title="Link to this heading"></a></h4>
+<p>In this jit-path, the calculation of dynamic_quant_matmul will be done by two kernels</p>
+<ol class="simple">
+<li><p>s8(activation)s8(weight)bf16(dst) matmul</p></li>
+<li><p>scale_reduce_quantization</p></li>
+</ol>
+<p>The <code class="docutils literal notranslate"><span class="pre">scale_reduce_quantization</span></code> kernel can reduce the scales then apply dynamic-quantization. All of the cores will do reduce calculation and store the scales to their private buffer but only one core will write to the real-scale-dst address so we needn’t reduce-scale-sync. <code class="docutils literal notranslate"><span class="pre">scale_reduce_quantization</span></code> also promise the data processed by each core in 2nd stage is same as the previous (s8s8bf16 gemm) stage, which make the most cache-friendliness.</p>
+<p>In the first step of s8s8_dynamic_dequant matmul, the kernel will parallelize on both <code class="docutils literal notranslate"><span class="pre">M-dim</span></code> and <code class="docutils literal notranslate"><span class="pre">N-dim</span></code> as the weight is too large or the M assign to each core is too small in one-stage jit-path. It desides the <code class="docutils literal notranslate"><span class="pre">M</span></code> and <code class="docutils literal notranslate"><span class="pre">N</span></code> that each core is responsible for processing duing initialization. We split N-dim until the size of the weight processed by each core is less than L2-cache meanwhile the M processed by each core is large enough.</p>
+<p>The activation, weight and dst that each core is responsible for processing are roughly as follows</p>
+<p><img alt="NM_dim_parallel" src="../../../../../../../_images/kernel_dynamic_quant_matmul_MN_parallel.png" /></p>
+<p>Finally, we can intuitively feel the performance benefits of kernel executing on a suitable jit path through the following chart.</p>
+<div align=center>  <p><img alt="perf_chat" src="../../../../../../../_images/kernel_dynamic_quant_matmul_perf_chat.png" /></p>
+</div></section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5877111df0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

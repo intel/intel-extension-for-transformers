@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.runtime.graph.scripts`
+====================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.graph.scripts
+
+

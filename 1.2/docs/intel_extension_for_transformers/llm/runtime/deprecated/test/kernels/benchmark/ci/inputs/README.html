@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inputs format &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Inputs format</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/test/kernels/benchmark/ci/inputs/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="inputs-format">
+<h1>Inputs format<a class="headerlink" href="#inputs-format" title="Link to this heading"></a></h1>
+<ul>
+<li><p>First non-empty line should starts with 3 <code class="docutils literal notranslate"><span class="pre">#</span></code>s, labeling each input arguments divided by whitespace (lables cannot contain whitespace)</p></li>
+<li><p>List test cases line by line</p>
+<ul class="simple">
+<li><p>First argument should always be the number of cores per instance</p></li>
+<li><p>Following arguments will be append to benchmark command after the <code class="docutils literal notranslate"><span class="pre">kernel_type</span></code> (skipping <code class="docutils literal notranslate"><span class="pre">mode</span></code> (both will be run) and <code class="docutils literal notranslate"><span class="pre">kernel_type</span></code> (defined in <code class="docutils literal notranslate"><span class="pre">run_ci.sh</span></code>))</p></li>
+</ul>
+</li>
+<li><p>Lines starting with <code class="docutils literal notranslate"><span class="pre">$</span></code> are considered as environment variable overwriting, affecting following execution of <code class="docutils literal notranslate"><span class="pre">benchmark.sh</span></code>. e.g. <code class="docutils literal notranslate"><span class="pre">$it_per_core</span></code> will change the number of iterations to be run for following test cases</p></li>
+<li><p>Lines starting with <code class="docutils literal notranslate"><span class="pre">#</span></code> are commited and will be discard during testing</p></li>
+<li><p>Benchmarking</p>
+<ul>
+<li><p>To run benchmark with a new input file, run</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./benchmark.sh<span class="w"> </span>--modes<span class="o">=</span>&lt;acc,perf&gt;<span class="w"> </span>--op<span class="o">=</span>&lt;kernel_type&gt;<span class="w"> </span>--batch<span class="o">=</span>&lt;new_input_file&gt;<span class="w">  </span>--medium_n<span class="o">=[</span>medium_n<span class="o">]</span><span class="w"> </span>--it_per_core<span class="o">=[</span>it_per_core<span class="o">]</span>
+</pre></div>
+</div>
+<p>where,</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">kernel_type</span></code> is the same as that for <a class="reference external" href="../../README.html#usage">benchmark</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">medium_n</span></code> is the number of number benchmarking repeated to get the medium of GFLOPS</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">it_per_core</span></code> times number of cores per instance is the number of iterations per benchmarking</p></li>
+</ul>
+</li>
+<li><p>To add a new input file to CI, add an additional command to <a class="reference external" href="../run_ci.sh"><code class="docutils literal notranslate"><span class="pre">run_ci.sh</span></code></a></p></li>
+</ul>
+</li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5866f4d670> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

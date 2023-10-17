@@ -1,0 +1,166 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph`
+===================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph
+
+.. autoapi-nested-parse::
+
+   The neural engine sub_graph module.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   InnerproductReshapeFusion/index.rst
+   add_cls_token/index.rst
+   add_embeddings/index.rst
+   arangewithreciprocal/index.rst
+   attentionBlock_AttentionMaskAddReshape/index.rst
+   attentionBlock_ConstantOfShapeWithMul/index.rst
+   attentionBlock_QKVPreReshape/index.rst
+   attentionBlock_QKVReshape/index.rst
+   attentionBlock_WeightReshapeTo4D/index.rst
+   attention_mask_length_adaptive_keep_indices/index.rst
+   attention_output_layer_norm_length_adaptive_keep_indices/index.rst
+   attention_reshape/index.rst
+   cast_to/index.rst
+   collect_quant_info/index.rst
+   conv_reshape/index.rst
+   decoder_attn_reshape/index.rst
+   einsumwitharange/index.rst
+   embeddingbag/index.rst
+   embeddings_to_2d_before_inner_product/index.rst
+   gelu/index.rst
+   generate_sequence/index.rst
+   innerproductwithbiasgelu/index.rst
+   innerproductwithslice/index.rst
+   innerproductwithswish/index.rst
+   input_data/index.rst
+   input_file/index.rst
+   insert_bf16_node/index.rst
+   insert_quant_node/index.rst
+   int8_bf16_mixed_precision_checker/index.rst
+   interact_features/index.rst
+   last_layer_shape/index.rst
+   layer_norm/index.rst
+   layer_norm_with_reduce_mean/index.rst
+   layer_norm_with_transpose/index.rst
+   llama_embeding/index.rst
+   llama_matmulwithtranspose/index.rst
+   llama_postprocess/index.rst
+   llama_rotary_pos_emb/index.rst
+   lower_all_tuples/index.rst
+   matmul_with_bias/index.rst
+   matmul_with_bias_add/index.rst
+   matmul_with_bias_gelu/index.rst
+   matmul_with_bias_relu/index.rst
+   matmul_with_bias_sigmoid/index.rst
+   matmul_with_bias_tanh/index.rst
+   matmul_with_bias_unsqueeze/index.rst
+   matmul_with_transpose/index.rst
+   matmul_with_transpose_scale_add/index.rst
+   merged_embeddingbag/index.rst
+   neox_reorder_change/index.rst
+   neox_rotary_pos_emb/index.rst
+   operator_adaptor/index.rst
+   output_data/index.rst
+   padding_sequence/index.rst
+   pattern/index.rst
+   position_embeddings/index.rst
+   position_embeddings_v1/index.rst
+   qkv_merge/index.rst
+   qkv_reshape/index.rst
+   quant_gather_to_bf16/index.rst
+   quantize_fusion/index.rst
+   quantized_graph_dtype_refactor/index.rst
+   remove_constant_op/index.rst
+   remove_last_view/index.rst
+   remove_range/index.rst
+   remove_unused_operator/index.rst
+   remove_zeros/index.rst
+   removeslice/index.rst
+   reshape_after_restore_hidden_states/index.rst
+   reshape_before_and_after_attention_out_layer_norm_gather_elements/index.rst
+   reshape_before_restore_hidden_states/index.rst
+   reshape_fusion/index.rst
+   restore_hidden_states_in_length_adaptive_update_indices/index.rst
+   rms_norm/index.rst
+   rotary_pos_emb/index.rst
+   slicemask/index.rst
+   stableDiffusion_ExplicitNHWCTranspose/index.rst
+   stableDiffusion_ExplicitNHWCTransposeQAT/index.rst
+   stableDiffusion_MHAReshape/index.rst
+   stableDiffusion_QuantizeFusion/index.rst
+   stableDiffusion_ReshapeFusion/index.rst
+   stableDiffusion_bf16Convert/index.rst
+   stableDiffusion_collectQDQInfo/index.rst
+   stableDiffusion_insertQuantNode/index.rst
+   start_end_logits/index.rst
+   subgraph_matcher/index.rst
+   textEncdoer_word_embedding/index.rst
+   textEncoder_AttentionMaskAddReshape/index.rst
+   textEncoder_AttentionReshape/index.rst
+   textEncoder_KVReshape/index.rst
+   textEncoder_MulReshape/index.rst
+   textEncoder_QReshape/index.rst
+   textEncoder_SoftmaxReshape/index.rst
+   textEncoder_causal_attention_mask/index.rst
+   token_type_embeddings/index.rst
+   token_type_embeddings_v1/index.rst
+   torch_embedding/index.rst
+   torch_ip_insert_bias/index.rst
+   torch_unpack_baddbmm/index.rst
+   torchinsertbf16node/index.rst
+   torchpaddingsquence/index.rst
+   transformer2Dmodel_AttentionMaskAddReshape/index.rst
+   transformer2Dmodel_ConstantOfShapeWithMul/index.rst
+   transformer2Dmodel_FFNSlice/index.rst
+   transformer2Dmodel_FFNSlice_1/index.rst
+   transformer2Dmodel_QKVPreReshape/index.rst
+   transformer2Dmodel_QKVReshape/index.rst
+   transformer2Dmodel_QKVReshape4D/index.rst
+   transformer2Dmodel_encoderHiddenStatesReshape/index.rst
+   transformer2Dmodel_getSampleBatch/index.rst
+   transformer2Dmodel_sampleSlice/index.rst
+   transpose_batch_matmul/index.rst
+   word_embeddings/index.rst
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.Pattern
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.SubGraphMatcher
+
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.pattern_registry
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.PATTERNS
+
+
+
+
+
+

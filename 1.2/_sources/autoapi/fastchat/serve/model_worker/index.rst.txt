@@ -1,0 +1,11 @@
+:py:mod:`fastchat.serve.model_worker`
+=====================================
+
+.. py:module:: fastchat.serve.model_worker
+
+.. autoapi-nested-parse::
+
+   A model worker executes the model.
+
+
+

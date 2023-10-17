@@ -1,0 +1,31 @@
+:py:mod:`fastchat.data.split_long_conversation`
+===============================================
+
+.. py:module:: fastchat.data.split_long_conversation
+
+.. autoapi-nested-parse::
+
+   Split long conversations based on certain max length.
+
+   Usage: python3 -m fastchat.data.split_long_conversation     --in sharegpt_clean.json     --out sharegpt_split.json     --model-name-or-path $<model-name>
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   fastchat.data.split_long_conversation.split_all
+
+
+
+.. py:function:: split_all(content, begin, end, tokenizer_, max_length_)
+
+   Keep the maximum round of conversations within the max token length constraint
+
+

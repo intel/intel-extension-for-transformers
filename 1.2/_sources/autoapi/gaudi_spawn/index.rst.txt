@@ -1,0 +1,42 @@
+:py:mod:`gaudi_spawn`
+=====================
+
+.. py:module:: gaudi_spawn
+
+.. autoapi-nested-parse::
+
+   A simple launcher script for distributed training on HPUs.
+
+   Single node:
+   ::
+       >>> python gaudi_spawn.py --world_size=NUM_CARDS_YOU_HAVE --use_mpi
+                  YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3 and all other
+                  arguments of your training script)
+
+   Multi node:
+   ::
+       >>> python gaudi_spawn.py --hostfile=PATH_TO_HOSTFILE --use_deepspeed
+                  YOUR_TRAINING_SCRIPT.py (--arg1 --arg2 --arg3 and all other
+                  arguments of your training script)
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   gaudi_spawn.parse_args
+
+
+
+.. py:function:: parse_args()
+
+   Helper function parsing the command line options.
+   @retval ArgumentParser
+
+

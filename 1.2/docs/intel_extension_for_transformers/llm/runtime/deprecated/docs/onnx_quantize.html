@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quantize a ONNX model to engine low precision/int8 IR &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="Profiling" href="engine_profiling.html" />
+    <link rel="prev" title="Compile an ONNX model to Engine IR" href="onnx_compile.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../feature.html">Features</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../../neural_engine.html">Neural Engine</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="deploy_and_integration.html">Deploy and Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="onnx_compile.html">Compile an ONNX model to Engine IR</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Quantize a ONNX model to engine low precision/int8 IR</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#design">Design</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#prerequisite">Prerequisite</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-tuning-and-benchmark">Run tuning and benchmark</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="engine_profiling.html">Profiling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="engine_tuning.html">Engine Tuning</a></li>
+<li class="toctree-l3"><a class="reference internal" href="graph_fusion.html">Graph Fusion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pattern_recognize.html">Pattern Recognize</a></li>
+<li class="toctree-l3"><a class="reference internal" href="operator_register.html">Customized Operators Register</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add_customized_pattern.html">Add Customized Pattern</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../kernel.html">Kernels</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../user_guide.html">User Guide</a></li>
+          <li class="breadcrumb-item"><a href="../../../../../../neural_engine.html">Neural Engine</a></li>
+      <li class="breadcrumb-item active">Quantize a ONNX model to engine low precision/int8 IR</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/llm/runtime/deprecated/docs/onnx_quantize.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quantize-a-onnx-model-to-engine-low-precision-int8-ir">
+<h1>Quantize a ONNX model to engine low precision/int8 IR<a class="headerlink" href="#quantize-a-onnx-model-to-engine-low-precision-int8-ir" title="Link to this heading"></a></h1>
+<section id="design">
+<h2>Design<a class="headerlink" href="#design" title="Link to this heading"></a></h2>
+<p>Quantizing a ONNX model to engine low precision/int8 IR has two steps: 1. Convert ONNX model to engine float IR; 2. Quantize float IR to low precision/int8 IR. The first step will be finished in engine compile. We focus on the second step how to quantize a float engine IR to low precision IR in INC.</p>
+</section>
+<section id="prerequisite">
+<h2>Prerequisite<a class="headerlink" href="#prerequisite" title="Link to this heading"></a></h2>
+<section id="install-environment">
+<h3>Install environment<a class="headerlink" href="#install-environment" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="si">${</span><span class="nv">HOME</span><span class="si">}</span>/examples/huggingface/pytorch/text-classification/deployment/mrpc/distilbert_base_uncased
+conda<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>&lt;env<span class="w"> </span>name&gt;<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.7
+conda<span class="w"> </span>activate<span class="w"> </span>&lt;env<span class="w"> </span>name&gt;
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+</pre></div>
+</div>
+<p><strong>Note</strong>: Recommend install protobuf &lt;= 3.20.0 if use onnxruntime &lt;= 1.11</p>
+</section>
+<section id="prepare-dataset">
+<h3>Prepare Dataset<a class="headerlink" href="#prepare-dataset" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">prepare_dataset</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">tasks</span><span class="o">=</span><span class="s1">&#39;MRPC&#39;</span> <span class="o">--</span><span class="n">output_dir</span><span class="o">=./</span><span class="n">data</span>
+</pre></div>
+</div>
+</section>
+<section id="prepare-onnx-model">
+<h3>Prepare ONNX model<a class="headerlink" href="#prepare-onnx-model" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>prepare_model.sh
+</pre></div>
+</div>
+</section>
+</section>
+<section id="run-tuning-and-benchmark">
+<h2>Run tuning and benchmark<a class="headerlink" href="#run-tuning-and-benchmark" title="Link to this heading"></a></h2>
+<p>Users can run shell to tune model by optimization module and get its accuracy and output onnx model.</p>
+<section id="to-get-the-tuned-model-and-its-accuracy">
+<h3>1. To get the tuned model and its accuracy:<a class="headerlink" href="#to-get-the-tuned-model-and-its-accuracy" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>prepare_model.sh<span class="w"> </span>--input_model<span class="o">=</span>moshew/bert-mini-sst2-distilled<span class="w">  </span>--task_name<span class="o">=</span>sst2<span class="w"> </span>--output_dir<span class="o">=</span>./model_and_tokenizer<span class="w"> </span>--precision<span class="o">=</span>int8
+</pre></div>
+</div>
+</section>
+<section id="to-get-the-benchmark-of-tuned-model">
+<h3>2. To get the benchmark of tuned model:<a class="headerlink" href="#to-get-the-benchmark-of-tuned-model" title="Link to this heading"></a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">GLOG_minloglevel</span><span class="o">=</span><span class="m">2</span><span class="w"> </span>python<span class="w"> </span>run_executor.py<span class="w"> </span>--input_model<span class="o">=</span>./model_and_tokenizer/int8-model.onnx<span class="w">  </span>--tokenizer_dir<span class="o">=</span>./model_and_tokenizer<span class="w"> </span>--mode<span class="o">=</span>accuracy<span class="w"> </span>--data_dir<span class="o">=</span>./data<span class="w"> </span>--batch_size<span class="o">=</span><span class="m">8</span>
+</pre></div>
+</div>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span><span class="nv">GLOG_minloglevel</span><span class="o">=</span><span class="m">2</span><span class="w"> </span>python<span class="w"> </span>run_executor.py<span class="w"> </span>--input_model<span class="o">=</span>./model_and_tokenizer/int8-model.onnx<span class="w"> </span>--mode<span class="o">=</span>performance<span class="w"> </span>--batch_size<span class="o">=</span><span class="m">8</span><span class="w"> </span>--seq_len<span class="o">=</span><span class="m">128</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="onnx_compile.html" class="btn btn-neutral float-left" title="Compile an ONNX model to Engine IR" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="engine_profiling.html" class="btn btn-neutral float-right" title="Profiling" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5862be3f10> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

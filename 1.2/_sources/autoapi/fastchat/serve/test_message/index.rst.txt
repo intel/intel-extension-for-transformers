@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`fastchat.serve.test_message`
+=====================================
+
+.. py:module:: fastchat.serve.test_message
+
+

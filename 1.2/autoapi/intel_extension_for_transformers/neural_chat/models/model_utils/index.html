@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.neural_chat.models.model_utils &mdash; Intel® Extension for Transformers 1.2 documentation</title>
+      <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../versions.html">1.2▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../_sources/autoapi/intel_extension_for_transformers/neural_chat/models/model_utils/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.neural_chat.models.model_utils">
+<span id="intel-extension-for-transformers-neural-chat-models-model-utils"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.neural_chat.models.model_utils" title="intel_extension_for_transformers.neural_chat.models.model_utils"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.neural_chat.models.model_utils" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_repo_root" title="intel_extension_for_transformers.neural_chat.models.model_utils.get_repo_root"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_repo_root</span></code></a>(model_name_or_path[, local_rank, token])</p></td>
+<td><p>Downloads the specified model checkpoint and returns the repository where it was downloaded.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files" title="intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_checkpoint_files</span></code></a>(model_name_or_path, local_rank)</p></td>
+<td><p>Gets the list of files for the specified model checkpoint.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json" title="intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_checkpoints_json</span></code></a>(model_name_or_path, local_rank, ...)</p></td>
+<td><p>Dumps metadata into a JSON file for DeepSpeed-inference.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.model_on_meta" title="intel_extension_for_transformers.neural_chat.models.model_utils.model_on_meta"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_on_meta</span></code></a>(config)</p></td>
+<td><p>Checks if load the model to meta.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.model_is_optimized" title="intel_extension_for_transformers.neural_chat.models.model_utils.model_is_optimized"><code class="xref py py-obj docutils literal notranslate"><span class="pre">model_is_optimized</span></code></a>(config)</p></td>
+<td><p>Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.load_model" title="intel_extension_for_transformers.neural_chat.models.model_utils.load_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_model</span></code></a>(model_name, tokenizer_name[, device, ...])</p></td>
+<td><p>Load the model and initialize the tokenizer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.predict_stream" title="intel_extension_for_transformers.neural_chat.models.model_utils.predict_stream"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_stream</span></code></a>(**params)</p></td>
+<td><p>Generates streaming text based on the given parameters and prompt.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.predict" title="intel_extension_for_transformers.neural_chat.models.model_utils.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(**params)</p></td>
+<td><p>Generates streaming text based on the given parameters and prompt.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.get_repo_root">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">get_repo_root</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_rank</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_repo_root" title="Link to this definition"></a></dt>
+<dd><p>Downloads the specified model checkpoint and returns the repository where it was downloaded.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">get_checkpoint_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_rank</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files" title="Link to this definition"></a></dt>
+<dd><p>Gets the list of files for the specified model checkpoint.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">write_checkpoints_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_rank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoints_json</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json" title="Link to this definition"></a></dt>
+<dd><p>Dumps metadata into a JSON file for DeepSpeed-inference.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.model_on_meta">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">model_on_meta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.model_on_meta" title="Link to this definition"></a></dt>
+<dd><p>Checks if load the model to meta.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.model_is_optimized">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">model_is_optimized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.model_is_optimized" title="Link to this definition"></a></dt>
+<dd><p>Checks if the given config belongs to a model in optimum/habana/transformers/models, which has a
+new input token_idx.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.load_model">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tokenizer_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_hpu_graphs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu_jit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_cache</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peft_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_deepspeed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimization_config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hf_access_token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.load_model" title="Link to this definition"></a></dt>
+<dd><p>Load the model and initialize the tokenizer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_name</strong> (<em>str</em>) – The name of the model.</p></li>
+<li><p><strong>device</strong> (<em>str</em><em>, </em><em>optional</em>) – The device for the model. Defaults to ‘cpu’. The valid value is ‘cpu’, ‘cuda’ or ‘hpu’.</p></li>
+<li><p><strong>use_hpu_graphs</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to use HPU graphs. Defaults to False. Only set when device is hpu.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the model is not supported, ValueError is raised.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.predict_stream">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">predict_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.predict_stream" title="Link to this definition"></a></dt>
+<dd><p>Generates streaming text based on the given parameters and prompt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>dict</em>) – A dictionary containing the parameters for text generation.</p></li>
+<li><p><strong>device</strong> (<em>string</em>) – Specifies the device type for text generation. It can be either “cpu”, “cuda” or “hpu”.</p></li>
+<li><p><strong>prompt</strong> (<em>string</em>) – Represents the initial input or context provided to the text generation model.</p></li>
+<li><p><strong>temperature</strong> (<em>float</em>) – Controls the randomness of the generated text.
+Higher values result in more diverse outputs.</p></li>
+<li><p><strong>top_p</strong> (<em>float</em>) – Specifies the cumulative probability threshold for using in the top-p sampling strategy.
+Smaller values make the output more focused.</p></li>
+<li><p><strong>top_k</strong> (<em>int</em>) – Specifies the number of highest probability tokens to consider in the top-k sampling strategy.</p></li>
+<li><p><strong>repetition_penalty</strong> (<em>float</em>) – Controls the penalty applied to repeated tokens in the generated text.
+Higher values discourage repetition.</p></li>
+<li><p><strong>max_new_tokens</strong> (<em>int</em>) – Limits the maximum number of tokens to be generated.</p></li>
+<li><p><strong>do_sample</strong> (<em>bool</em>) – Determines whether to use sampling-based text generation.
+If set to True, the output will be sampled; otherwise,
+it will be determined by the model’s top-k or top-p strategy.</p></li>
+<li><p><strong>num_beams</strong> (<em>int</em>) – Controls the number of beams used in beam search.
+Higher values increase the diversity but also the computation time.</p></li>
+<li><p><strong>model_name</strong> (<em>string</em>) – Specifies the name of the pre-trained model to use for text generation.
+If not provided, the default model is “mosaicml/mpt-7b-chat”.</p></li>
+<li><p><strong>num_return_sequences</strong> (<em>int</em>) – Specifies the number of alternative sequences to generate.</p></li>
+<li><p><strong>bad_words_ids</strong> (<em>list</em><em> or </em><em>None</em>) – Contains a list of token IDs that should not appear in the generated text.</p></li>
+<li><p><strong>force_words_ids</strong> (<em>list</em><em> or </em><em>None</em>) – Contains a list of token IDs that must be included in the generated text.</p></li>
+<li><p><strong>use_hpu_graphs</strong> (<em>bool</em>) – Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.</p></li>
+<li><p><strong>use_cache</strong> (<em>bool</em>) – Determines whether to utilize kv cache for accelerated generation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A generator that yields the generated streaming text.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>generator</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.predict">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/v1.2/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.predict" title="Link to this definition"></a></dt>
+<dd><p>Generates streaming text based on the given parameters and prompt.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> (<em>dict</em>) – A dictionary containing the parameters for text generation.</p></li>
+<li><p><strong>device</strong> (<em>string</em>) – Specifies the device type for text generation. It can be either “cpu”, “cuda” or “hpu”.</p></li>
+<li><p><strong>prompt</strong> (<em>string</em>) – Represents the initial input or context provided to the text generation model.</p></li>
+<li><p><strong>temperature</strong> (<em>float</em>) – Controls the randomness of the generated text.
+Higher values result in more diverse outputs.</p></li>
+<li><p><strong>top_p</strong> (<em>float</em>) – Specifies the cumulative probability threshold for using in the top-p sampling strategy.
+Smaller values make the output more focused.</p></li>
+<li><p><strong>top_k</strong> (<em>int</em>) – Specifies the number of highest probability tokens to consider in the top-k sampling strategy.</p></li>
+<li><p><strong>repetition_penalty</strong> (<em>float</em>) – Controls the penalty applied to repeated tokens in the generated text.
+Higher values discourage repetition.</p></li>
+<li><p><strong>max_new_tokens</strong> (<em>int</em>) – Limits the maximum number of tokens to be generated.</p></li>
+<li><p><strong>do_sample</strong> (<em>bool</em>) – Determines whether to use sampling-based text generation.
+If set to True, the output will be sampled; otherwise,
+it will be determined by the model’s top-k or top-p strategy.</p></li>
+<li><p><strong>num_beams</strong> (<em>int</em>) – Controls the number of beams used in beam search.
+Higher values increase the diversity but also the computation time.</p></li>
+<li><p><strong>model_name</strong> (<em>string</em>) – Specifies the name of the pre-trained model to use for text generation.
+If not provided, the default model is “mosaicml/mpt-7b-chat”.</p></li>
+<li><p><strong>num_return_sequences</strong> (<em>int</em>) – Specifies the number of alternative sequences to generate.</p></li>
+<li><p><strong>bad_words_ids</strong> (<em>list</em><em> or </em><em>None</em>) – Contains a list of token IDs that should not appear in the generated text.</p></li>
+<li><p><strong>force_words_ids</strong> (<em>list</em><em> or </em><em>None</em>) – Contains a list of token IDs that must be included in the generated text.</p></li>
+<li><p><strong>use_hpu_graphs</strong> (<em>bool</em>) – Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.</p></li>
+<li><p><strong>use_cache</strong> (<em>bool</em>) – Determines whether to utilize kv cache for accelerated generation.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A generator that yields the generated streaming text.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>generator</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f5862d0b490> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

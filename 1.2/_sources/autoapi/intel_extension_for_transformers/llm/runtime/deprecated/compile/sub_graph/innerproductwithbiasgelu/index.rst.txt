@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithbiasgelu`
+============================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithbiasgelu
+
+.. autoapi-nested-parse::
+
+   The InnerproductWithBiasGelu Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.innerproductwithbiasgelu.InnerproductWithBiasGelu
+
+
+
+
+.. py:class:: InnerproductWithBiasGelu
+
+
+
+
+   The InnerproductWithBiasGelu pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'InnerproductWithBiasGelu' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

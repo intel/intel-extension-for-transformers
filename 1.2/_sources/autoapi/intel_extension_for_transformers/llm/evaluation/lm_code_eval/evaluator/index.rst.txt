@@ -1,0 +1,35 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.llm.evaluation.lm_code_eval.evaluator`
+================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.evaluation.lm_code_eval.evaluator
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.evaluation.lm_code_eval.evaluator.pattern_match
+   intel_extension_for_transformers.llm.evaluation.lm_code_eval.evaluator.evaluate
+
+
+
+.. py:function:: pattern_match(patterns, source_list)
+
+   Returns a list containing all values of the source_list that
+   match at least one of the patterns
+
+
+.. py:function:: evaluate(model, tokenizer, tasks, batch_size, args)
+
+   Instantiate and evaluate a model on a list of tasks.
+
+
+
+

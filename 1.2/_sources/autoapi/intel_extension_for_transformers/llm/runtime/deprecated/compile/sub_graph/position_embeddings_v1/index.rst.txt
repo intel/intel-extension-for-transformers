@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.position_embeddings_v1`
+==========================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.position_embeddings_v1
+
+.. autoapi-nested-parse::
+
+   The PositionEmbeddingsV1 pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.position_embeddings_v1.PositionEmbeddingsV1
+
+
+
+
+.. py:class:: PositionEmbeddingsV1
+
+
+
+
+   The PositionEmbeddingsV1 pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'PositionEmbeddingsV1' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

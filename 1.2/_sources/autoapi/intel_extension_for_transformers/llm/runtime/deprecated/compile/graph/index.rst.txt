@@ -1,0 +1,20 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.graph`
+===============================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.graph
+
+.. autoapi-nested-parse::
+
+   The module of the neural engine graph.
+
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   graph/index.rst
+
+

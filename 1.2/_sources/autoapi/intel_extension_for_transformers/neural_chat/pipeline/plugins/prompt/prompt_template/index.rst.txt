@@ -1,0 +1,8 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template`
+==============================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.prompt.prompt_template
+
+

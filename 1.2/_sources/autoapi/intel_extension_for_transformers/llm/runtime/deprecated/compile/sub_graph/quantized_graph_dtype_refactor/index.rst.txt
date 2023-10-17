@@ -1,0 +1,34 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.quantized_graph_dtype_refactor`
+==================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.quantized_graph_dtype_refactor
+
+.. autoapi-nested-parse::
+
+   The QuantizedGraphDtypeRefactor Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.quantized_graph_dtype_refactor.QuantizedGraphDtypeCheck
+
+
+
+
+.. py:class:: QuantizedGraphDtypeCheck
+
+
+
+
+   The QuantizedGraphDtypeRefactor pattern.
+   Fuse the original sub-graph into the custom acceleration 'QuantizedGraphDtypeRefactor' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

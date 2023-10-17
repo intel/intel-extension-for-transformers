@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices`
+============================================================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices
+
+.. autoapi-nested-parse::
+
+   The AttentionOutputLayerNormLengthAdaptiveExpandIndices Pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.attention_output_layer_norm_length_adaptive_keep_indices.AttentionOutputLayerNormLengthAdaptiveExpandIndices
+
+
+
+
+.. py:class:: AttentionOutputLayerNormLengthAdaptiveExpandIndices
+
+
+
+
+   The AttentionOutputLayerNormLengthAdaptiveExpandIndices pattern.
+
+   Fuse the original sub-graph into the custom acceleration graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

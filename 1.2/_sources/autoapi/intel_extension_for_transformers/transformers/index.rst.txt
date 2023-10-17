@@ -1,0 +1,39 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.transformers`
+=======================================================
+
+.. py:module:: intel_extension_for_transformers.transformers
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   dynamic/index.rst
+   mixture/index.rst
+   modeling/index.rst
+   nas/index.rst
+   pruner/index.rst
+   utils/index.rst
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   benchmark/index.rst
+   config/index.rst
+   distillation/index.rst
+   optimizer/index.rst
+   optimizer_tf/index.rst
+   pipeline/index.rst
+   pruning/index.rst
+   quantization/index.rst
+   trainer/index.rst
+
+

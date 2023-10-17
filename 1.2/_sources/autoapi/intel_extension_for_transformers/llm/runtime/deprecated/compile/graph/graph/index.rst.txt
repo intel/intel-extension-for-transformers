@@ -1,0 +1,144 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph`
+=====================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph
+
+.. autoapi-nested-parse::
+
+   The neural engine graph file.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.graph.graph.Graph
+
+
+
+
+.. py:class:: Graph
+
+
+
+
+   The defintion of the neural engine graph.
+
+   .. py:method:: add_config_item(key, val)
+
+      Add a pair into framework_modeling_config
+
+
+   .. py:method:: inquire_config_item(key)
+
+      Get a pair from framework_modeling_config
+
+
+   .. py:method:: insert_nodes(index, nodes)
+
+      Insert nodes to neural engine IR.
+
+
+   .. py:method:: remove_nodes(node_names)
+
+      Remove nodes from neural engine IR.
+
+
+   .. py:method:: get_node_id(node_name)
+
+      Get the node id according to the node name.
+
+
+   .. py:method:: get_node_by_name(node_name)
+
+      Get the node according to the node name.
+
+
+   .. py:method:: rename_node(old_name, new_name)
+
+      Modify the node name.
+
+
+   .. py:method:: change_node_input_tensors(node_name, index, tensor=None, mode='modify')
+
+      Modify the input tensors of the node.
+
+
+   .. py:method:: change_node_output_tensors(node_name, index, tensor=None, mode='modify')
+
+      Modify the output tensors of the node.
+
+
+   .. py:method:: get_pre_node_names(node_name)
+
+      Get the previous node name.
+
+
+   .. py:method:: get_next_node_names(node_name)
+
+      Get the next node name.
+
+
+   .. py:method:: get_tensor_idx(node_name, tensor_name, from_output=True)
+
+      Get the index of tensor.
+
+
+   .. py:method:: modify_node_connections(node, mode='insert')
+
+      Modify the order of nodes.
+
+
+   .. py:method:: dump_tensor(tensor_list=[])
+
+      Dump tensors to the bin and yaml file.
+
+
+   .. py:method:: engine_init(net_info={}, weight_data=b'', refresh_model=True)
+
+      Pybind engine executor.
+
+
+   .. py:method:: inference(input_data)
+
+      The inference API of the neural engine.
+
+
+   .. py:method:: graph_init(config, weight_data=None, load_weight=False)
+
+      The initialization of the neural engine graph.
+
+      Example::
+
+          from intel_extension_for_transformers.llm.runtime.deprecated.compile.graph import Graph
+          newgraph = Graph()
+          newgraph.graph_init('./ir/conf.yaml', './ir/model.bin')
+          out = newgraph.inference([input_0, input_1, input_2])
+
+
+   .. py:method:: save(output_dir=None)
+
+      Save the model IR to the bin and ymal file.
+
+
+   .. py:method:: graph_dispatch(tune=True, inputs_shape=[])
+
+      The graph dispatch for difference nodes.
+
+
+   .. py:method:: get_sparse_nodes_name(threshold=0.7)
+
+      According to the sparsity threshold to list all sparse nodes.
+
+
+   .. py:method:: transpose_mode_int8(node_name_list=None)
+
+      Transpose innerproduct nodes to the sparse mode by inserting reorder nodes.
+
+
+

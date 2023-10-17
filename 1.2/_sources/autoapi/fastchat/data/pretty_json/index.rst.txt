@@ -1,0 +1,12 @@
+:py:mod:`fastchat.data.pretty_json`
+===================================
+
+.. py:module:: fastchat.data.pretty_json
+
+.. autoapi-nested-parse::
+
+   Usage:
+   python3 pretty_json.py --in in.json --out out.json
+
+
+

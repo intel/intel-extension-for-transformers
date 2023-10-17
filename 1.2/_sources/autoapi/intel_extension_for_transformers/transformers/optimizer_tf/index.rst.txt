@@ -1,0 +1,123 @@
+:py:mod:`intel_extension_for_transformers.transformers.optimizer_tf`
+====================================================================
+
+.. py:module:: intel_extension_for_transformers.transformers.optimizer_tf
+
+.. autoapi-nested-parse::
+
+   TFOptimization: provides the optimization class for Tensorflow.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.transformers.optimizer_tf.TFOptimization
+
+
+
+
+.. py:class:: TFOptimization(model: transformers.PreTrainedModel, args, train_dataset=None, eval_dataset=None, compute_metrics: Optional[Callable] = None, criterion=None, optimizer=None, task_type=None, task_id=None, strategy=None)
+
+
+   TFOptimization is the entry class for Tensorflow to use the optimization techniques in neural compressor.
+
+   .. py:method:: builtin_eval_func(model)
+
+      Customize Evaluate function to inference the model for specified metric on the validation dataset.
+
+      :param model: The model will be the class of tf.saved_model.load(quantized_model_path).
+      :type model: [tf.saved_model.load]
+
+      :returns: evaluation result, the larger is better.
+      :rtype: [float]
+
+
+   .. py:method:: init_quantizer(quant_config)
+
+      Init a Quantization object with config.
+
+      :param quant_config: quantization config.
+
+
+   .. py:method:: quantize(quant_config: intel_extension_for_transformers.transformers.QuantizationConfig = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, train_dataset=None, eval_dataset=None)
+
+      Prepare for invoking INC quantize function.
+
+      :param quant_config: quantization config.
+      :param eval_func: evaluation function.
+      :param train_func: train function.
+      :param train_dataset: train dataset.
+      :param eval_dataset: evaluation dataset.
+
+
+   .. py:method:: init_pruner(pruning_config=None)
+
+      Init a Pruning object with config.
+
+      :param pruning_config: pruning config.
+
+
+   .. py:method:: prune(pruning_config=None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None, train_dataset=None, eval_dataset=None)
+
+      Do the pruning.
+
+      :param pruning_config: pruning config.
+      :param eval_func: evaluation function.
+      :param train_func: train function.
+      :param train_dataset: train dataset.
+      :param eval_dataset: evaluation dataset.
+
+
+   .. py:method:: init_distiller(distillation_config, teacher_model: transformers.PreTrainedModel)
+
+      Init a Distillation object with config and the teacher model.
+
+      :param distillation_config: distillation config.
+      :param teacher_model: set the teacher model.
+
+
+   .. py:method:: distill(distillation_config, teacher_model: transformers.PreTrainedModel, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      Do the distillation.
+
+      :param distillation_config: distillation config.
+      :param teacher_model: set the teacher model.
+      :param eval_func: evaluation function.
+      :param train_func: train function.
+
+
+   .. py:method:: model_builder_builtin(arch_paras=None, model_cls=None)
+
+      Specify model_cls to use the built-in model builder.
+
+      :param arch_paras: architecture parameters.
+      :param model_cls: model information.
+
+
+   .. py:method:: autodistill(autodistillation_config, teacher_model: transformers.PreTrainedModel, model_builder: Optional[Callable] = None, model_cls: Optional[Callable] = None, eval_func: Optional[Callable] = None, train_func: Optional[Callable] = None)
+
+      Do the auto distillation.
+
+      :param autodistillation_config: autodistillation config.
+      :param teacher_model: set the teacher model.
+      :param model_builder: the configuration of build in model.
+      :param model_cls: the model information.
+      :param eval_func: evaluation function.
+      :param train_func: train function.
+
+
+   .. py:method:: build_train_func(model)
+
+      Build the training function for pruning or distillation.
+
+      :param model: the input model
+      :type model: object
+
+
+

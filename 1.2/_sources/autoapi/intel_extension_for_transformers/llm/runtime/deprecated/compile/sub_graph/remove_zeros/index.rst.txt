@@ -1,0 +1,35 @@
+:py:mod:`intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_zeros`
+================================================================================================
+
+.. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_zeros
+
+.. autoapi-nested-parse::
+
+   The RemoveZeros pattern.
+
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.llm.runtime.deprecated.compile.sub_graph.remove_zeros.RemoveZeros
+
+
+
+
+.. py:class:: RemoveZeros
+
+
+
+
+   The RemoveZeros pattern.
+
+   Fuse the original sub-graph into the custom acceleration 'RemoveZeros' graph.
+   The search strategy is based on the following pattern mapping configs for different models.
+
+

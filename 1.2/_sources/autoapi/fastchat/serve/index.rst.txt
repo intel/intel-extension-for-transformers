@@ -1,0 +1,27 @@
+:orphan:
+
+:py:mod:`fastchat.serve`
+========================
+
+.. py:module:: fastchat.serve
+
+
+Submodules
+----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   api/index.rst
+   cacheflow_worker/index.rst
+   cli/index.rst
+   controller/index.rst
+   gradio_patch/index.rst
+   huggingface_api/index.rst
+   inference/index.rst
+   model_worker/index.rst
+   monkey_patch_non_inplace/index.rst
+   register_worker/index.rst
+   test_throughput/index.rst
+
+
