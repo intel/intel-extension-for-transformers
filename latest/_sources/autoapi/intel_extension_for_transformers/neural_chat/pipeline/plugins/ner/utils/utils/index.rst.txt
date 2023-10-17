@@ -1,0 +1,26 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.utils.utils`
+=======================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.utils.utils
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.utils.utils.enforce_stop_tokens
+
+
+
+.. py:function:: enforce_stop_tokens(text: str) -> str
+
+   Cut off the text as soon as any stop words occur.
+
+

@@ -1,0 +1,28 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner`
+===============================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner.NamedEntityRecognition
+
+
+
+
+.. py:class:: NamedEntityRecognition(model_path='./Llama-2-7b-chat-hf/', spacy_model='en_core_web_lg', bf16: bool = False)
+
+
+   NER class to inference with fp32 or bf16 llm models
+   Set bf16=True if you want to inference with bf16 model.
+
+

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🏠Introduction &mdash; Intel® Extension for Transformers 0.1.dev1+gaa5d8af documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">🏠Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/pipeline/plugins/ner/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div align="center">
+<h1>NER: Named Entity Recognition</h3>
+<div align="left"><section id="introduction">
+<h1>🏠Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<p>The Named Entity Recognition(NER) Plugin is a software component designed to enhance NER-related functionality in Neural Chat. NER is a subtask of information extraction that seeks to locate and classify named entities mentioned in unstructured text into pre-defined categories such as person names, organizations, locations, medical codes, time expressions, quantities, monetary values, percentages, etc.</p>
+<p>This plugin provides large language models(llm) with different precision, the supported precisions are listed below:</p>
+<ol class="simple">
+<li><p>Float32 (FP32)</p></li>
+<li><p>BFloat16 (BF16)</p></li>
+<li><p>INT8</p></li>
+<li><p>INT4</p></li>
+</ol>
+<p>As the precision decreases, the llm model inference time decreases, but so does the accuracy of the inference results. You can choose models with different accuracies to accomplish NER inferencing tasks according to your needs.</p>
+</section>
+<section id="install-dependencies">
+<h1>🔧Install dependencies<a class="headerlink" href="#install-dependencies" title="Link to this heading"></a></h1>
+<p>Before using NER plugin, install dependencies below. You need to download spacy model before using it, choose proper one according to Spacy Official Documents <a class="reference external" href="https://spacy.io/usage/models">here</a> to meet your demands. The example model here is <code class="docutils literal notranslate"><span class="pre">en_core_web_lg</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># install required packages</span>
+pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+<span class="c1"># download spacy model</span>
+python<span class="w"> </span>-m<span class="w"> </span>spacy<span class="w"> </span>download<span class="w"> </span>en_core_web_lg
+</pre></div>
+</div>
+</section>
+<section id="usage">
+<h1>🚀Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
+<p>With different model configurations, the NER plugins of varing precisions have two ways of usage as below.</p>
+<section id="inference-with-fp32-bf16">
+<h2>Inference with FP32/BF16<a class="headerlink" href="#inference-with-fp32-bf16" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat.pipeline.plugins.ner</span> <span class="kn">import</span> <span class="n">NamedEntityRecognition</span>
+<span class="n">ner_obj</span> <span class="o">=</span> <span class="n">NamedEntityRecognition</span>
+<span class="c1"># modify the query here for customized NER task</span>
+<span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;Show me photos taken in Shanghai today.&quot;</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">ner_obj</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">)</span> <span class="c1"># add argument &quot;bf16=True&quot; for BF16 inference</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;NER result: &quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="inference-with-int8-int4">
+<h2>Inference with INT8/INT4<a class="headerlink" href="#inference-with-int8-int4" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">ner_int</span> <span class="kn">import</span> <span class="n">NamedEntityRecognitionINT</span>
+<span class="c1"># set compute_dtype=&#39;int8&#39; and weight_dtype=&#39;int4&#39; for INT4 inference</span>
+<span class="n">ner_obj</span> <span class="o">=</span> <span class="n">NamedEntityRecognitionINT</span><span class="p">(</span><span class="n">compute_dtype</span><span class="o">=</span><span class="s1">&#39;fp32&#39;</span><span class="p">,</span> <span class="n">weight_dtype</span><span class="o">=</span><span class="s1">&#39;int8&#39;</span><span class="p">)</span>
+<span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;Show me photos taken in Shanghai today.&quot;</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">ner_obj</span><span class="o">.</span><span class="n">inference</span><span class="p">(</span><span class="n">query</span><span class="o">=</span><span class="n">query</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;NER result: &quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="parameters">
+<h1>🚗Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h1>
+<section id="plugin-parameters">
+<h2>Plugin Parameters<a class="headerlink" href="#plugin-parameters" title="Link to this heading"></a></h2>
+<p>You can costomize the NER inference parameters to meet the personal demands for better performance. You can set the specific parameter by <code class="docutils literal notranslate"><span class="pre">plugins.ner.args[&quot;xxx&quot;]</span></code>. Below are the descriptions of each available parameters.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model_name_or_path</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">huggingface</span> <span class="n">model</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">local</span> <span class="n">path</span> <span class="n">of</span> <span class="n">the</span> <span class="n">downloaded</span> <span class="n">llm</span> <span class="n">model</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;./Llama-2-7b-chat-hf/&quot;</span><span class="o">.</span>
+
+<span class="n">spacy_model</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">Spacy</span> <span class="n">model</span> <span class="k">for</span> <span class="n">NLP</span> <span class="n">process</span><span class="p">,</span> <span class="n">specify</span> <span class="n">it</span> <span class="n">according</span> <span class="n">to</span> <span class="n">the</span> <span class="n">downloaded</span> <span class="n">Spacy</span> <span class="n">model</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;en_core_web_lg&quot;</span><span class="o">.</span>
+
+<span class="n">bf16</span> <span class="p">[</span><span class="nb">bool</span><span class="p">]:</span> <span class="n">Choose</span> <span class="n">wether</span> <span class="n">to</span> <span class="n">use</span> <span class="n">BF16</span> <span class="n">precision</span> <span class="k">for</span> <span class="n">NER</span> <span class="n">inference</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="kc">False</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>As for INT8 and INT4 model the plugin parameters are slightly different. You can set the specific parameter by <code class="docutils literal notranslate"><span class="pre">plugins.ner_int.args[&quot;xxx&quot;]</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model_name_or_path</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">huggingface</span> <span class="n">model</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">local</span> <span class="n">path</span> <span class="n">of</span> <span class="n">the</span> <span class="n">downloaded</span> <span class="n">llm</span> <span class="n">model</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;./Llama-2-7b-chat-hf/&quot;</span><span class="o">.</span>
+
+<span class="n">spacy_model</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">Spacy</span> <span class="n">model</span> <span class="k">for</span> <span class="n">NLP</span> <span class="n">process</span><span class="p">,</span> <span class="n">specify</span> <span class="n">it</span> <span class="n">according</span> <span class="n">to</span> <span class="n">the</span> <span class="n">downloaded</span> <span class="n">Spacy</span> <span class="n">model</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;en_core_web_lg&quot;</span><span class="o">.</span>
+
+<span class="n">compute_dtype</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">dtype</span> <span class="n">of</span> <span class="n">model</span> <span class="k">while</span> <span class="n">computing</span><span class="o">.</span> <span class="n">Set</span> <span class="n">to</span> <span class="s2">&quot;int8&quot;</span> <span class="k">for</span> <span class="n">INT4</span> <span class="n">inference</span> <span class="k">for</span> <span class="n">better</span> <span class="n">performance</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;fp32&quot;</span><span class="o">.</span>
+
+<span class="n">weight_dtype</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">dtype</span> <span class="n">of</span> <span class="n">model</span> <span class="n">weight</span><span class="o">.</span> <span class="n">Set</span> <span class="n">to</span> <span class="s2">&quot;int4&quot;</span> <span class="k">for</span> <span class="n">INT4</span> <span class="n">inference</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s2">&quot;int8&quot;</span><span class="o">.</span>
+</pre></div>
+</div>
+</section>
+<section id="inference-parameters">
+<h2>Inference Parameters<a class="headerlink" href="#inference-parameters" title="Link to this heading"></a></h2>
+<section id="fp32-bf16-inference">
+<h3>FP32/BF16 Inference<a class="headerlink" href="#fp32-bf16-inference" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">query</span> <span class="n">string</span> <span class="n">that</span> <span class="n">needs</span> <span class="n">NER</span> <span class="n">to</span> <span class="n">extract</span> <span class="n">entities</span><span class="o">.</span> <span class="n">Mandatory</span> <span class="n">parameter</span> <span class="n">that</span> <span class="n">must</span> <span class="n">be</span> <span class="n">passed</span><span class="o">.</span>
+
+<span class="n">prompt</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">inference</span> <span class="n">prompt</span> <span class="k">for</span> <span class="n">llm</span> <span class="n">model</span><span class="o">.</span> <span class="n">You</span> <span class="n">could</span> <span class="n">construct</span> <span class="n">customized</span> <span class="n">prompt</span> <span class="k">for</span> <span class="n">certain</span> <span class="n">demands</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s1">&#39;construct_default_prompt&#39;</span> <span class="ow">in</span> <span class="s1">&#39;/neural_chat/pipeline/plugins/ner/utils/utils.py&#39;</span><span class="o">.</span>
+
+<span class="n">max_new_tokens</span> <span class="p">[</span><span class="nb">int</span><span class="p">]:</span> <span class="n">The</span> <span class="nb">max</span> <span class="n">generated</span> <span class="n">token</span> <span class="n">numbers</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="mf">32.</span>
+
+<span class="n">temperature</span> <span class="p">[</span><span class="nb">float</span><span class="p">]:</span> <span class="n">The</span> <span class="n">temperature</span> <span class="n">of</span> <span class="n">llm</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="mf">0.01</span><span class="o">.</span>
+
+<span class="n">top_k</span> <span class="p">[</span><span class="nb">int</span><span class="p">]:</span> <span class="n">The</span> <span class="n">top_k</span> <span class="n">parameter</span> <span class="n">of</span> <span class="n">llm</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="mf">3.</span>
+
+<span class="n">repetition_penalty</span> <span class="p">[</span><span class="nb">float</span><span class="p">]:</span> <span class="n">The</span> <span class="n">repetition</span> <span class="n">penalty</span> <span class="n">of</span> <span class="n">llm</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="mf">1.1</span><span class="o">.</span>
+</pre></div>
+</div>
+</section>
+<section id="int8-int4-inference">
+<h3>INT8/INT4 Inference<a class="headerlink" href="#int8-int4-inference" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">query</span> <span class="n">string</span> <span class="n">that</span> <span class="n">needs</span> <span class="n">NER</span> <span class="n">to</span> <span class="n">extract</span> <span class="n">entities</span><span class="o">.</span> <span class="n">Mandatory</span> <span class="n">parameter</span> <span class="n">that</span> <span class="n">must</span> <span class="n">be</span> <span class="n">passed</span><span class="o">.</span>
+
+<span class="n">prompt</span> <span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="n">The</span> <span class="n">inference</span> <span class="n">prompt</span> <span class="k">for</span> <span class="n">llm</span> <span class="n">model</span><span class="o">.</span> <span class="n">You</span> <span class="n">could</span> <span class="n">construct</span> <span class="n">customized</span> <span class="n">prompt</span> <span class="k">for</span> <span class="n">certain</span> <span class="n">demands</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="s1">&#39;construct_default_prompt&#39;</span> <span class="ow">in</span> <span class="s1">&#39;/neural_chat/pipeline/plugins/ner/utils/utils.py&#39;</span><span class="o">.</span>
+
+<span class="n">threads</span> <span class="p">[</span><span class="nb">int</span><span class="p">]:</span> <span class="n">The</span> <span class="n">thread</span> <span class="n">number</span> <span class="n">of</span> <span class="n">model</span> <span class="n">inference</span><span class="o">.</span> <span class="n">Set</span> <span class="n">to</span> <span class="n">the</span> <span class="n">core</span> <span class="n">number</span> <span class="n">of</span> <span class="n">your</span> <span class="n">server</span> <span class="k">for</span> <span class="n">minimal</span> <span class="n">inferencing</span> <span class="n">time</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="mf">52.</span>
+
+<span class="n">max_new_tokens</span> <span class="p">[</span><span class="nb">int</span><span class="p">]:</span> <span class="n">The</span> <span class="nb">max</span> <span class="n">generated</span> <span class="n">token</span> <span class="n">numbers</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="mf">32.</span>
+
+<span class="n">seed</span> <span class="p">[</span><span class="nb">int</span><span class="p">]:</span> <span class="n">The</span> <span class="n">random</span> <span class="n">seed</span> <span class="n">of</span> <span class="n">llm</span><span class="o">.</span> <span class="n">Default</span> <span class="n">to</span> <span class="mf">1234.</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7feb84cb2fb0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

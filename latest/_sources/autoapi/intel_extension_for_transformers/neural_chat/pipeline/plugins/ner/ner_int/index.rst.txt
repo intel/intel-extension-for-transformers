@@ -1,0 +1,29 @@
+:orphan:
+
+:py:mod:`intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner_int`
+===================================================================================
+
+.. py:module:: intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner_int
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.ner.ner_int.NamedEntityRecognitionINT
+
+
+
+
+.. py:class:: NamedEntityRecognitionINT(model_path='/home/tme/Llama-2-7b-chat-hf/', spacy_model='en_core_web_lg', compute_dtype='fp32', weight_dtype='int8')
+
+
+   Initialize spacy model and llm model
+   If you want to inference with int8 model, set compute_dtype='fp32' and weight_dtype='int8';
+   If you want to inference with int4 model, set compute_dtype='int8' and weight_dtype='int4'.
+
+
