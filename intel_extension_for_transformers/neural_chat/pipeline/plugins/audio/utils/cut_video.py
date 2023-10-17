@@ -107,8 +107,8 @@ def cut_video(args, outdir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, required=True)
-    parser.add_argument("--min", type=str, default=10)
-    parser.add_argument("--sr", type=str, default=16000)
+    parser.add_argument("--min", type=str, default='10')
+    parser.add_argument("--sr", type=str, default='16000')
     parser.add_argument("--out_path", type=str, default="../raw")
     args = parser.parse_args()
 
