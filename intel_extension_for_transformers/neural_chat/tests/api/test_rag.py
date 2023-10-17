@@ -48,7 +48,7 @@ class TestChatbotBuilder(unittest.TestCase):
         plugins.retrieval.args["persist_dir"] = "./test_for_threshold."
         plugins.retrieval.args["response_template"] = "check the result"
         plugins.retrieval.args['search_type'] = "similarity_score_threshold"
-        plugins.retrieval.args['"score_threshold": 0.9, "k": 1']
+        plugins.retrieval.args['search_kwargs'] = {"score_threshold": 0.9, "k": 1}
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
