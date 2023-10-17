@@ -129,7 +129,7 @@ RUN pip install intel-extension-for-deepspeed && \
     cd / && \
     pip install peft && \
     pip install einops && \
-    pip install datasets && \
+    pip install datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
     git checkout -b v1.11 origin/1.11.0 && \
