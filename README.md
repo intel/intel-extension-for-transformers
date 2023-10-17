@@ -97,12 +97,16 @@ The next token latency is based on 32 input tokens and greedy search on Intel's 
 | [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 21.98ms| 
 | [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 24.55ms|
 | [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 24.84ms|
-| [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) | 80.16ms|
-| [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat) | 35.84ms|
-| [tiiuae/falcon-7b](https://huggingface.co/tiiuae/falcon-7b) | 36.1ms|
-| [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 22.02ms|
 
-Find other models like Baichuan, ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) and accuracy data in [Release data](./docs/release.md). 
+1024 input tokens performance:
+
+| Model | INT4 Next Token Latency  |
+|---------------------|:------------:|
+| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 24.54ms|
+| [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 27.7ms|
+| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 27.97ms| 
+
+Find other models like Baichuan, ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) and accuracy data in [Release data](./docs/release.md) . 
 
 ## 📖Documentation
 <table>
