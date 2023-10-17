@@ -73,6 +73,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   const int n_ctx = hparams.n_ctx;
   int n_head = hparams.n_head;
   int head_size = n_embd / n_head;
+  int n_head_kv = hparams.n_head_kv;
 
   bool enable_tp = false;
 #ifdef NE_TP_MODEL
@@ -88,8 +89,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   }
 #endif
   const int n_vocab = hparams.n_vocab;
-  const int n_rot = hparams.n_embd / n_head;
-  const int n_head_kv = hparams.n_head_kv;
+  const int n_rot = head_size;
   const int n_embd_gqa = head_size * n_head_kv;
 
   auto& mem_per_token = lctx.mem_per_token;
@@ -124,7 +124,6 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
                jblas_reordered_attn_fp32_support(&attn_shape)));
     kv_shape_t kv_shape{
-        /* .heads_kv = */ static_cast<uint32_t>(n_head_kv),
         /* .head_num = */ static_cast<uint32_t>(n_head),
         /* .head_size = */ static_cast<uint32_t>(head_size),
         /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),

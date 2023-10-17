@@ -115,7 +115,6 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
                jblas_reordered_attn_fp32_support(&attn_shape)));
     kv_shape_t kv_shape{
-        /* .heads_kv = */ static_cast<uint32_t>(n_head),
         /* .head_num = */ static_cast<uint32_t>(n_head),
         /* .head_size = */ static_cast<uint32_t>(head_size),
         /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
@@ -182,7 +181,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                              ne_reshape_4d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), head_size,
                                            n_head, N, batch_size),
                              n_past, n_rot, 0, 0);
-      Vcur = ne_transpose(ctx0, ne_reshape_2d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[2], cur), n_head * head_size, N);
+      Vcur = ne_mul_mat(ctx0, model.layers[il].attn[2], cur);
     }
     ne_set_name(Qcur, "Qcur");
     ne_set_name(Kcur, "Kcur");
@@ -226,10 +225,12 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                    i * n_ctx * head_size * n_head * ne_element_size(kv_self.k));
 
           // batch V
-          Vcur_bs[i] = ne_reshape_4d(ctx0, ne_view_2d(ctx0, Vcur, head_size * n_head, N, 
-                                     ne_element_size(Vcur) * head_size * n_head,
-                                     i * ne_element_size(Vcur) * head_size * n_head * N),
-                                     head_size, n_head, N, 1);
+          Vcur_bs[i] = ne_permute(ctx0,
+                                  ne_reshape_4d(ctx0,
+                                                ne_view_2d(ctx0, Vcur, head_size * n_head, N, ne_element_size(Vcur) * head_size * n_head,
+                                                           i * ne_element_size(Vcur) * head_size * n_head * N),
+                                                head_size, n_head, N, 1),
+                                  1, 2, 0, 3);
           v_bs[i] = ne_view_4d(ctx0, kv_self.v, N, head_size, n_head, 1, n_ctx * ne_element_size(kv_self.v),
                                n_ctx * ne_element_size(kv_self.v) * head_size,
                                n_ctx * ne_element_size(kv_self.v) * head_size * n_head,
@@ -253,7 +254,7 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
                                       0, 0, v_size,                          // nb (jblas managed)
                                       il * kv_n_ctx_block * v_size);         // offset
       // jblas alway view V as (D, n_head, seq, bs)
-      const auto Vcur_plain = ne_reshape_4d(ctx0, Vcur, n_embd / n_head, n_head, N, batch_size);
+      const auto Vcur_plain = ne_reshape_4d(ctx0, Vcur, head_size, n_head, N, batch_size);
       ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, Vcur_plain, n_past));
     }
 
@@ -366,6 +367,12 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
     struct ne_tensor* KQV_out = ne_mul_mat(ctx0, model.layers[il].attn[3], KQV_merged_contiguous);
     ne_set_name(KQV_out, "KQV_out");
 
+#ifdef NE_TP_MODEL
+      if (enable_tp) {
+        KQV_out = ne_all_reduce(ctx0, KQV_out);
+      }
+#endif
+
     lctx.use_buf(ctx0, 1);
     struct ne_tensor* inpFF = KQV_out;
 
@@ -397,6 +404,9 @@ static bool gptj_model_eval_internal(model_context& lctx, const model_token* tok
       cur = ne_add(ctx0, ne_repeat(ctx0, model.layers[il].ffn[3], FFN_out), FFN_out);
     }
     cur = ne_add(ctx0, cur, inpFF);
+    // if (il == 20) {
+    //   cur = ne_dump_tensor(ctx0, cur);
+    // }
 
     // input for next layer
     inpL = ne_add(ctx0, cur, inpL);
