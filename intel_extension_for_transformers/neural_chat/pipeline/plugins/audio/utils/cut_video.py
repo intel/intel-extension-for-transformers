@@ -103,7 +103,7 @@ def cut_video(args, outdir):
                 start_min = int(end_min)
                 start_sec = int(end_sec)
             
-m
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, required=True)
