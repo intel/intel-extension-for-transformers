@@ -24,17 +24,18 @@ import unittest
 
 class TestSplitAudio(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree("/intel_extension_for_transformers/neural_chat/assets/raw", ignore_errors=True)
-        os.mkdir("/intel_extension_for_transformers/neural_chat/assets/raw")
+        shutil.rmtree("/raw", ignore_errors=True)
+        os.mkdir("/raw")
 
     def tearDown(self) -> None:
-        shutil.rmtree("/intel_extension_for_transformers/neural_chat/assets/raw", ignore_errors=True)
+        shutil.rmtree("/raw", ignore_errors=True)
     
     def test_split_audio_file(self):
         parser = argparse.ArgumentParser(__doc__)
-        parser.add_argument("--path", type=str, default='/intel_extension_for_transformers/neural_chat/assets/video/intel.mp4')
+        parser.add_argument("--path", type=str, default='/media/intel.mp4')
         parser.add_argument("--is_mono", type=str, default='True')
         parser.add_argument("--sr", type=str, default='16000')
+        parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
         args = parser.parse_args()
         output_sample_rate = shlex.quote(args.sr)
         is_exist = os.path.exists(shlex.quote(args.path))
@@ -45,13 +46,14 @@ class TestSplitAudio(unittest.TestCase):
             is_mono = shlex.quote(args.is_mono)
             convert_video_to_wav(path, output_sample_rate, is_mono) 
         
-        self.assertTrue(os.path.exists('/intel_extension_for_transformers/neural_chat/assets/raw/intel.wav'))
+        self.assertTrue(os.path.exists('/raw/intel.wav'))
 
     def test_split_audio_folder(self):
         parser = argparse.ArgumentParser(__doc__)
-        parser.add_argument("--path", type=str, default='/intel_extension_for_transformers/neural_chat/assets/video')
+        parser.add_argument("--path", type=str, default='/media/video')
         parser.add_argument("--is_mono", type=str, default='True')
         parser.add_argument("--sr", type=str, default='16000')
+        parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
         args = parser.parse_args()
         output_sample_rate = shlex.quote(args.sr)
         is_exist = os.path.exists(shlex.quote(args.path))
@@ -62,7 +64,7 @@ class TestSplitAudio(unittest.TestCase):
             is_mono = shlex.quote(args.is_mono)
             convert_video_to_wav(path, output_sample_rate, is_mono) 
         
-        self.assertTrue(os.path.exists('/intel_extension_for_transformers/neural_chat/assets/raw/intel.wav'))
+        self.assertTrue(os.path.exists('/raw/intel.wav'))
 
 if __name__ == "__main__":
     unittest.main()
