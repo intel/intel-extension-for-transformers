@@ -58,6 +58,21 @@ class TestTTS(unittest.TestCase):
         result = self.asr.audio2text(output_audio_path)
         self.assertEqual(text.lower(), result.lower())
 
+    def test_tts_customized_voice(self):
+        text = "Welcome to Neural Chat"
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/3.wav")
+        output_audio_path = self.tts.text2speech(text, output_audio_path, voice="male")
+        self.assertTrue(os.path.exists(output_audio_path))
+        # verify accuracy
+        result = self.asr.audio2text(output_audio_path)
+        self.assertEqual(text.lower(), result.lower())
+        output_audio_path = os.path.join(os.getcwd(), "tmp_audio/4.wav")
+        output_audio_path = self.tts.text2speech(text, output_audio_path, voice="female")
+        self.assertTrue(os.path.exists(output_audio_path))
+        # verify accuracy
+        result = self.asr.audio2text(output_audio_path)
+        self.assertEqual(text.lower(), result.lower())
+
     def test_streaming_tts(self):
         def text_generate():
             for i in ["Ann", "Bob", "Tim"]:
