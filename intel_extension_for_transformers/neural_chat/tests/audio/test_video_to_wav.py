@@ -22,7 +22,7 @@ import shlex
 import shutil
 import unittest
 
-class TestSplitAudio(unittest.TestCase):
+class TestVideo2Wav(unittest.TestCase):
     def setUp(self):
         shutil.rmtree("/raw", ignore_errors=True)
         os.mkdir("/raw")
@@ -30,7 +30,7 @@ class TestSplitAudio(unittest.TestCase):
     def tearDown(self) -> None:
         shutil.rmtree("/raw", ignore_errors=True)
     
-    def test_split_audio_file(self):
+    def test_video_to_wav_file(self):
         parser = argparse.ArgumentParser(__doc__)
         parser.add_argument("--path", type=str, default='/media/intel.mp4')
         parser.add_argument("--is_mono", type=str, default='True')
@@ -48,9 +48,9 @@ class TestSplitAudio(unittest.TestCase):
         
         self.assertTrue(os.path.exists('/raw/intel.wav'))
 
-    def test_split_audio_folder(self):
+    def test_video_to_wav_folder(self):
         parser = argparse.ArgumentParser(__doc__)
-        parser.add_argument("--path", type=str, default='/media/video')
+        parser.add_argument("--path", type=str, default='/media')
         parser.add_argument("--is_mono", type=str, default='True')
         parser.add_argument("--sr", type=str, default='16000')
         parser.add_argument("--verbose", help="increase output verbosity", action="store_true")
