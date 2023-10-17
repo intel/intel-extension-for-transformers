@@ -70,7 +70,8 @@ def build_chatbot(config: PipelineConfig=None):
     elif "opt" in config.model_name_or_path or \
          "gpt" in config.model_name_or_path or \
          "flan-t5" in config.model_name_or_path or \
-         "bloom" in config.model_name_or_path:
+         "bloom" in config.model_name_or_path or \
+         "starcoder" in config.model_name_or_path:
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
@@ -125,6 +126,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["device"] = config.device
     parameters["use_hpu_graphs"] = config.loading_config.use_hpu_graphs
     parameters["cpu_jit"] = config.loading_config.cpu_jit
+    parameters["ipex_int8"] = config.loading_config.ipex_int8
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
