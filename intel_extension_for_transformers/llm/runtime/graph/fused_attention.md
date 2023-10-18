@@ -23,31 +23,84 @@ With the KV-cache of customized type and layout, the attention can be computed a
 ## Supported Models
 Fused attention is designed to be able to easily support various models:
 
-| Model | Attention Type & Support |
-|---|:---:|
-|[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf), [LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf) | MHA ✅ |
-|[LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)| GQA 🚧 |
-|[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)| MHA ✅ |
-|[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b), [Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b) | MHA 🚧 |
-|[MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)| MHA with [ALiBi](https://arxiv.org/abs/2108.12409) 🚧 |
-|[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)| MQA, GQA ✅ |
-|[BLOOM-7B](https://huggingface.co/bigscience/bloomz-7b1)| MHA with [ALiBi](https://arxiv.org/abs/2108.12409) 🚧 |
-|[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| MHA 🚧 |
-|[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| MHA 🚧， GQA ✅ |
-|[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)| MHA 🚧 |
+<table>
+  <thead>
+    <tr>
+      <th>Models</th>
+      <th>Attention Type & Support</th>
+      <th>Runtime ISA</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
 
-## Limitations
-Currently the fused attention is only enabled when compiling the llm runtime with GCC13 and running it on platforms with the Intel® AMX Instructions.
+[LLaMA-7B](https://huggingface.co/decapoda-research/llama-7b-hf), [LLaMA-13B](https://huggingface.co/decapoda-research/llama-13b-hf), [LLaMA2-7B](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf), [LLaMA2-13B](https://huggingface.co/meta-llama/Llama-2-13b-chat-hf)
+</td>
+      <td align="center">MHA ✅</td>
+      <td rowspan=10>AMX_BF16</td>
+    </tr>
+    <tr>
+      <td>
+
+[LLaMA2-70B](https://huggingface.co/meta-llama/Llama-2-70b-chat-hf)</td>
+      <td align="center">GQA 🚧</td>
+    </tr>
+    <tr>
+      <td>
+[GPT-J-6B](https://huggingface.co/EleutherAI/gpt-j-6b)</td>
+      <td align="center">MHA ✅</td>
+    </tr>
+    <tr>
+      <td>
+[GPT-NeoX-20B](https://huggingface.co/EleutherAI/gpt-neox-20b), [Dolly-v2-3B](https://huggingface.co/databricks/dolly-v2-3b)</td>
+      <td align="center">MHA 🚧</td>
+    </tr>
+    <tr>
+      <td>
+[MPT-7B](https://huggingface.co/mosaicml/mpt-7b), [MPT-30B](https://huggingface.co/mosaicml/mpt-30b)</td>
+      <td align="center">MHA with [ALiBi](https://arxiv.org/abs/2108.12409) 🚧</td>
+    </tr>
+    <tr>
+      <td>
+[Falcon-7B](https://huggingface.co/tiiuae/falcon-7b), [Falcon-40B](https://huggingface.co/tiiuae/falcon-40b)</td>
+      <td align="center">MQA, GQA ✅</td>
+    </tr>
+    <tr>
+      <td>
+[BLOOM-7B](https://huggingface.co/bigscience/bloomz-7b1)</td>
+      <td align="center">MHA with [ALiBi](https://arxiv.org/abs/2108.12409) 🚧</td>
+    </tr>
+    <tr>
+      <td>
+[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)</td>
+      <td align="center">MHA 🚧</td>
+    </tr>
+    <tr>
+      <td>
+[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)</td>
+      <td align="center">MHA 🚧， GQA ✅</td>
+    </tr>
+    <tr>
+      <td>
+[StarCoder-1B](https://huggingface.co/bigcode/starcoderbase-1b), [StarCoder-3B](https://huggingface.co/bigcode/starcoderbase-3b), [StarCoder-15.5B](https://huggingface.co/bigcode/starcoder)</td>
+      <td align="center">MHA 🚧</td>
+    </tr>
+  </tbody>
+</table>
+
+### Limitations
+Currently the fused attention is only enabled when compiling the llm runtime with GCC13.
 
 ## Tips for parallelism
 Thanks to the mathematical nature of attention, one can simply parallel the whole kv-cache operations and fused attention on commonly-parallelizable dimensions. Just pass each part to every KV-cache operations (and merge them together if needed).
 
 ## References
 <details>
-<summary><a id="1">[1]</a> The data was tested on a single socket of Intel(R) Xeon(R) Platinum 8480L on commit 01a809d.  Details below.</summary>
+<summary><a id="1">[1]</a> The data was tested on a single socket of Intel(R) Xeon(R) Platinum 8480L on commit 01a809d. Details below.</summary>
 
 |                  | 1st-token fused attn disabled | 1st-token fused attn enabled | 4th-token fused attn disabled | 4th-token fused attn enabled |
-|:-----------------|------------------------------:|-----------------------------:|------------------------------:|-----------------------------:|
+| :--------------- | ----------------------------: | ---------------------------: | ----------------------------: | ---------------------------: |
 | total latency    |                     9748.26ms |                    1475.57ms |                       50.37ms |                      41.27ms |
 | fused-attn lat   |                             / |         179.883ms + 68.703ms |                             / |            6.271ms + 1.673ms |
 | est non-attn lat |                    1226.984ms |                   1226.984ms |                      33.326ms |                     33.326ms |
