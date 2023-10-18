@@ -67,6 +67,8 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
   const int n_rot = n_embd / n_head / 2;
   const int head_size = n_embd / n_head;
   const int rope_dim = head_size / 2;
+  const float attn_scale = 1.f / std::sqrt(head_size);
+  
   const int mqa_scale = n_head / hparams.multi_query_group_num;
   const int num_kv_heads = hparams.multi_query_group_num;
 
@@ -146,8 +148,6 @@ static bool chatglm_model_eval_internal(model_context& lctx, const model_token* 
           ne_view_3d(ctx0, cur, head_size, num_kv_heads, N, head_size * ne_element_size(cur), cur->nb[1],
                      (hidden_size + head_size * num_kv_heads) * ne_element_size(cur));  // [N, kv_heads, head_size]
 
-
-      const float attn_scale = 1.f / std::sqrt(head_size);
       if (!run_mha_reordered) {
         query_layer = ne_cont(ctx0, ne_permute(ctx0, query_layer, 0, 2, 1, 3));  // [heads, N, head_size]
         query_layer = ne_reshape_3d(ctx0, query_layer, head_size, mqa_scale * N,
