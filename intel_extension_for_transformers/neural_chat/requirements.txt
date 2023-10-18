@@ -40,7 +40,7 @@ lm_eval
 accelerate
 cchardet
 pydantic-settings
-pymsql==1.1.0
+pymsql -i http://pypi.douban.com/simple/ --trusted-host pypi.douban.com
 deepface
 exifread
 spacy
