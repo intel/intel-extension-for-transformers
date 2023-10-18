@@ -124,7 +124,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
     NE_ASSERT(("jblas managed kv-cache not supported; use `--memory-f16 / --memory-f32` instead",
                jblas_reordered_attn_fp32_support(&attn_shape)));
     kv_shape_t kv_shape{
-        /* .head_num = */ static_cast<uint32_t>(n_head),
+        /* .heads_kv = */ static_cast<uint32_t>(n_head_kv),
         /* .head_size = */ static_cast<uint32_t>(head_size),
         /* .sl_kv_max = */ static_cast<uint32_t>(n_ctx),
     };
