@@ -25,7 +25,7 @@ from ...autograd import matmul_4bit
 
 
 torch.ops.load_library(
-    os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../..", "libqbits.so")
+    os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../../..", "libqbits.so")
 )
 
 
