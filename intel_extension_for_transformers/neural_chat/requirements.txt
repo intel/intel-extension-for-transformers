@@ -43,3 +43,6 @@ pydantic-settings
 pymsql
 deepface
 exifread
+spacy
+neural-compressor
+

@@ -405,6 +405,7 @@ class LoadingModelConfig:
     use_hpu_graphs: bool = False
     use_cache: bool = True
     use_deepspeed: bool = False
+    ipex_int8: bool = False
 
 @dataclass
 class WeightOnlyQuantizationConfig:
