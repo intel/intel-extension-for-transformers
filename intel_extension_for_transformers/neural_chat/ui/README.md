@@ -46,7 +46,7 @@ For detailed information, please refer to the [README](./talkingbot/README.md).
 AI Talking Photo is a comprehensive chatbot system that seamlessly combines various features, such as text and voice chat, image uploads, and image enhancement. This innovative system empowers users to engage in diverse forms of communication and interaction, with a unique focus on conversing with uploaded photos. Whether you're on a web or mobile platform, AI Talking Photo enables dynamic interactions with your images, adding an exciting dimension to your conversations.
 
 ### 📸 Project Screenshots
-![project-screenshot](https://imgur.com/w6A4cgy.png)sss
+![project-screenshot](https://imgur.com/w6A4cgy.png)
 
 For detailed information, please refer to the [README](./talking_photo/README.md).
 
