@@ -36,7 +36,7 @@ class EnglishNormalizer:
             "M": "em",
             "N": "en",
             "O": "o",
-            "P": "pee",
+            "P": "pea",
             "Q": "cue",
             "R": "ar",
             "S": "ess",
@@ -46,7 +46,8 @@ class EnglishNormalizer:
             "W": "doubleliu",
             "X": "ex",
             "Y": "wy",
-            "Z": "zed"
+            "Z": "zed",
+            ".": "point",
         }
         
     def correct_abbreviation(self, text):
