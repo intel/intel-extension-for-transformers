@@ -10,6 +10,14 @@ Tensor Parallelism
 ## Introduction
 Tensor parallelism is a strategy employed to train and inference from very large language models by splitting the actual computations/tensors across multiple compute devices. It is a critical technique for the continued growth and application of massive deep learning models and offers a path to unlocking unprecedented model capacities.
 
+When we use tensor parallelism to partition and compute large language models, there are various ways in which we can perform the partitioning algorithm. In 1D algorithms, we can split by rows or columns. For a row-major order matrix, if you split by column, data rearrangement is required, which is a factor affecting performance. However, splitting a row-major order matrix by rows does not consume time. In our TP implementation, we adopt the method of pre-splitting the corresponding weights, so the time consumed for this part is one-time and does not affect inference performance. Meanwhile, another major factor impacting performance is 'all reduce'. Since each node computes partial and incomplete results, it is necessary to perform 'all reduce' on the output data. But all reduce is relatively time-consuming, interestingly, by using a reasonable splitting and combining method, primitives can be operated indepently across nodes, which is very helpful for performance optimization. Thus, a rational splitting method becomes extremely important. 
+
+Taking the FFN module as an example, if the first 'matmul' splits by column and computes the 'matmul' with input, it will result in two unrelated sub-matrices on each node. These two sub-matrices, when performing the second 'matmul' operation, can proceed directly without having to perform 'all reduce' if splitting by rows. Thus, the entire FFN module only requires one 'all reduce', meaning that with properly tailored split implementation, even with multiple 'matmul' operations, only one 'all_reduce' operation may be needed.
+![]('imgs/FFN.PNG')
+
+The scenario for the attention module is more complex. As shown in the following figure, a rational split can make it so that the entire attention module only requires one 'all reduce' operation, thus greatly saving synchronization time.
+![]('imgs/Attention.PNG')
+
 ## Prerequisites
 Multi-node and Multi-socket communications are needed in tensor parallelism, we use oneCCL for the distributed communications. 
 
