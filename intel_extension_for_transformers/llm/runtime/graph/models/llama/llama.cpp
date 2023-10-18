@@ -52,7 +52,7 @@
 static bool llama_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                       const int n_past, const int n_threads) {
   // enforce that the first token is BOS
-  if (n_past == 0 && tokens[0] != model_token_bos()) {
+  if (n_past == 0 && tokens[0] != lctx.vocab.bos_token_id) {
     fprintf(stderr, "%s: first token must be BOS\n", __func__);
     return false;
   }
