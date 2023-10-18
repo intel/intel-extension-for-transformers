@@ -37,3 +37,5 @@ lm_eval
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.0.1
 torchaudio==2.0.2
+spacy
+neural-compressor

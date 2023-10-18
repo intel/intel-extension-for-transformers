@@ -39,3 +39,5 @@ transformers_stream_generator==0.0.4
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch==2.0.1
 torchaudio==2.0.2
+spacy
+neural-compressor
