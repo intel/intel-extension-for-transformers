@@ -88,10 +88,8 @@ class Agent_QA():
             print("Chat with QA agent.")
             if self.retriever:
                 context, links = self.retriever.get_context(query)
-                
-                if context == None:
-                    return "Response with template."
-                
+                if len(context) == 0:
+                    return "Response with template.", links
                 if self.search_type == "similarity_score_threshold":
                     prompt = generate_qa_enterprise(query, context)
                 else:
