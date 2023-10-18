@@ -52,7 +52,7 @@ class TestChatbotBuilder(unittest.TestCase):
         config = PipelineConfig(model_name_or_path="facebook/opt-125m",
                                 plugins=plugins)
         chatbot = build_chatbot(config)
-        response = chatbot.predict("Who is the CTO of Intel?")
+        response = chatbot.predict("Who is the founder of Intel?")
         print(response)
         plugins.retrieval.args["persist_dir"] = "./output"
         self.assertTrue(response == "check the result")
