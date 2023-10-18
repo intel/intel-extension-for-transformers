@@ -17,7 +17,7 @@ PyPDF2
 langchain
 python-docx
 scikit-learn
-farm-haystack
+farm-haystack==1.20.1
 librosa
 beautifulsoup4
 InstructorEmbedding
@@ -39,7 +39,7 @@ tiktoken==0.4.0
 lm_eval
 accelerate
 cchardet
-pydantic-settings
+pydantic-settings==2.0.3
 pymysql
 deepface
 exifread
