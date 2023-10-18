@@ -83,7 +83,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
   enable_tp = world_size > 1 ? true : false;
 
   // after TP the Q K n_head will become 1/world_size
-  if(enable_tp) { 
+  if (enable_tp) {
     n_head /= world_size;
     n_head_kv /= world_size;
   }
@@ -167,21 +167,21 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
           ne_mul_qkv(ctx0, model.layers[il].attn[0], model.layers[il].attn[1], model.layers[il].attn[2], cur);
       Qcur = ne_rope_inplace(
           ctx0,
-          ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, qkv_size, 0 * qkv_size * ne_element_size(QKVcur)),
-                        head_size, n_head, N),
+          ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, qkv_size, 0 * qkv_size * ne_element_size(QKVcur)), head_size,
+                        n_head, N),
           n_past, n_rot, 0, 0);
       Kcur = ne_rope_inplace(
           ctx0,
-          ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, qkv_size, 1 * qkv_size * ne_element_size(QKVcur)),
-                        head_size, n_head, N),
+          ne_reshape_3d(ctx0, ne_view_1d(ctx0, QKVcur, qkv_size, 1 * qkv_size * ne_element_size(QKVcur)), head_size,
+                        n_head, N),
           n_past, n_rot, 0, 0);
       Vcur = ne_transpose(
           ctx0, ne_reshape_2d(ctx0, ne_view_1d(ctx0, QKVcur, qkv_size, 2 * qkv_size * ne_element_size(QKVcur)),
                               head_size * n_head, N));
     } else {
-      Qcur = ne_rope_inplace(
-          ctx0, ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), head_size, n_head, N),
-          n_past, head_size, 0, 0);
+      Qcur = ne_rope_inplace(ctx0,
+                             ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[0], cur), head_size, n_head, N),
+                             n_past, head_size, 0, 0);
       Kcur = ne_rope_inplace(
           ctx0,
           ne_reshape_3d(ctx0, ne_mul_mat(ctx0, model.layers[il].attn[1], cur), n_embd_gqa / n_head_kv, n_head_kv, N),
@@ -307,7 +307,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       cur = ne_mul_mat(ctx0, model.layers[il].attn[3], KQV_merged_contiguous);
     }
 #ifdef NE_TP_MODEL
-      if (enable_tp) { cur = ne_all_reduce(ctx0, cur); }
+    if (enable_tp) {
+      cur = ne_all_reduce(ctx0, cur);
+    }
 #endif
 
     lctx.use_buf(ctx0, 1);

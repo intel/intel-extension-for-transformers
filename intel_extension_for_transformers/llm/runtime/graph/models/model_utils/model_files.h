@@ -132,7 +132,7 @@ struct model_load_tensor {
 
 #ifdef NE_TP_MODEL
     if (enable_tp) {
-      //TODO it's not good to check type here, mmaybe move to specific model files
+      // TODO it's not good to check type here, mmaybe move to specific model files
       if (name.find(".attn.q_proj.weight") != std::string::npos ||
           name.find(".attn.k_proj.weight") != std::string::npos ||
           name.find(".attn.v_proj.weight") != std::string::npos ||
@@ -145,9 +145,8 @@ struct model_load_tensor {
           name.find(".feed_forward.w3.weight") != std::string::npos) {
         split_type = TP_1D_ROW;
       }
-      if (name.find(".mlp.fc_in.bias") != std::string::npos || 
-          name.find(".mlp.fc_out.weight") != std::string::npos || 
-          name.find(".attn.out_proj.weight") != std::string::npos || 
+      if (name.find(".mlp.fc_in.bias") != std::string::npos || name.find(".mlp.fc_out.weight") != std::string::npos ||
+          name.find(".attn.out_proj.weight") != std::string::npos ||
           // TODO check if this part should be column
           name.find(".attention.wo.weight") != std::string::npos ||
           name.find(".feed_forward.w2.weight") != std::string::npos) {
