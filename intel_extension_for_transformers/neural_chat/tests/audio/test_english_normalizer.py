@@ -28,9 +28,10 @@ class TestTTS(unittest.TestCase):
         pass
 
     def test_correct_number(self):
-        text = "3000 people among 1.2 billion people."
-        result = self.normalizer.correct_number(text)
-        self.assertEqual(result, "three thousand people among one point two billion people.")
+        text = "3000 people among 1.2 billion people under -40 degrees."
+        result = self.normalizer.correct_abbreviation(text)
+        result = self.normalizer.correct_number(result)
+        self.assertEqual(result, "three thousand people among one point two billion people under minus forty degrees.")
 
     def test_correct_abbreviation(self):
         text = "TTS a great technology."
