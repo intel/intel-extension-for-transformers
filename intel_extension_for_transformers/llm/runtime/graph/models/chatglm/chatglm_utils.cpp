@@ -154,12 +154,10 @@ void CHATGLM::load(model_context& lctx, model_progress_callback progress_callbac
     // layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 4096 / 32, 2048, 32);
     // layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, 2048, 4096 / 32, 32);
     if (backend != NE_BACKEND_CPU) {
-      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) +
-                    ne_nbytes(layer.norm[2]) + ne_nbytes(layer.norm[3]) +
-                    ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
-                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) +
-                    ne_nbytes(layer.ffn[0]) + ne_nbytes(layer.ffn[1]) +
-                    ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
+      vram_total += ne_nbytes(layer.norm[0]) + ne_nbytes(layer.norm[1]) + ne_nbytes(layer.norm[2]) +
+                    ne_nbytes(layer.norm[3]) + ne_nbytes(layer.attn[0]) + ne_nbytes(layer.attn[1]) +
+                    ne_nbytes(layer.attn[2]) + ne_nbytes(layer.attn[3]) + ne_nbytes(layer.ffn[0]) +
+                    ne_nbytes(layer.ffn[1]) + ne_nbytes(layer.ffn[2]) + ne_nbytes(layer.ffn[3]);
     }
   }
 

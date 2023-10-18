@@ -1156,6 +1156,8 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
         /* .sl_kv = */ static_cast<int>(hparams.n_ctx),
     };
     const bool support_jblas_kv = ctx->support_jblas_kv && jblas_reordered_attn_fp32_support(&attn_shape);
+    fprintf(stderr, "%s: support_jblas_kv = %d\n", __func__, support_jblas_kv);
+    
     const ne_type memory_type = params.kv_type == KV_MEM_TYPE_F16   ? NE_TYPE_F16
                                 : params.kv_type == KV_MEM_TYPE_F32 ? NE_TYPE_F32
                                 : params.kv_type == KV_MEM_TYPE_AUTO
@@ -1174,14 +1176,14 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
       const size_t memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                      ? ne_nelements(ctx->model.kv_self.k) + ne_nelements(ctx->model.kv_self.v)
                                      : ne_nbytes(ctx->model.kv_self.k) + ne_nbytes(ctx->model.kv_self.v);
-      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
+      fprintf(stderr, "%s: kv self size = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
     } else if (ctx->model.layers[0].k_cache != nullptr) {
       const auto k_cache = ctx->model.layers[0].k_cache;
       const auto v_cache = ctx->model.layers[0].v_cache;
       const size_t layer_memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                            ? ne_nelements(k_cache) + ne_nelements(v_cache)
                                            : ne_nbytes(k_cache) + ne_nbytes(v_cache);
-      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__,
+      fprintf(stderr, "%s: kv self size = %7.2f MB\n", __func__,
               layer_memory_size / 1024.0 / 1024.0 * hparams.n_layer);
     } else {
       NE_ASSERT(("KV-cache not allocated!", false));
