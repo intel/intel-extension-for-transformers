@@ -18,7 +18,7 @@ import argparse
 from typing import List, Optional
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
+model_maps = {"gpt_neox": "gptneox", "llama2": "llama", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def str2bool(v):
