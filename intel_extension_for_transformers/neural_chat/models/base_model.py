@@ -17,7 +17,7 @@
 
 from abc import ABC
 from typing import List
-import os
+import os, types
 from fastchat.conversation import get_conv_template, Conversation
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
@@ -42,6 +42,7 @@ def construct_parameters(query, model_name, device, config):
     params["force_words_ids"] = config.force_words_ids
     params["use_hpu_graphs"] = config.use_hpu_graphs
     params["use_cache"] = config.use_cache
+    params["ipex_int8"] = config.ipex_int8
     params["device"] = device
     return params
 
@@ -93,6 +94,7 @@ class BaseModel(ABC):
             "device": "cuda",
             "use_hpu_graphs": True,
             "cpu_jit": False,
+            "ipex_int8": False,
             "use_cache": True,
             "peft_path": "/path/to/peft",
             "use_deepspeed": False
@@ -109,6 +111,7 @@ class BaseModel(ABC):
                    device=kwargs["device"],
                    use_hpu_graphs=kwargs["use_hpu_graphs"],
                    cpu_jit=kwargs["cpu_jit"],
+                   ipex_int8=kwargs["ipex_int8"],
                    use_cache=kwargs["use_cache"],
                    peft_path=kwargs["peft_path"],
                    use_deepspeed=kwargs["use_deepspeed"],
@@ -135,6 +138,11 @@ class BaseModel(ABC):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
+        query_include_prompt = False
+        self.get_conv_template(self.model_name, config.task)
+        if self.conv_template.roles[0] in query and self.conv_template.roles[1] in query:
+            query_include_prompt = True
+
         # plugin pre actions
         for plugin_name in get_registered_plugins():
             if is_plugin_enabled(plugin_name):
@@ -150,11 +158,16 @@ class BaseModel(ABC):
                         if plugin_name == "safety_checker" and response:
                             return "Your query contains sensitive words, please try another query."
                         else:
-                            query = response
+                            if response != None and response != False:
+                                query = response
         assert query is not None, "Query cannot be None."
 
-        query = self.prepare_prompt(query, self.model_name, config.task)
+        if not query_include_prompt:
+            query = self.prepare_prompt(query, self.model_name, config.task)
         response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+
+        def is_generator(obj):
+            return isinstance(obj, types.GeneratorType)
 
         # plugin post actions
         for plugin_name in get_registered_plugins():
@@ -162,6 +175,8 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
+                        if plugin_name == "safety_checker" and is_generator(response):
+                            continue
                         response = plugin_instance.post_llm_inference_actions(response)
 
         # clear plugins config
@@ -195,6 +210,11 @@ class BaseModel(ABC):
             if not os.path.exists(query):
                 raise ValueError(f"The audio file path {query} is invalid.")
 
+        query_include_prompt = False
+        self.get_conv_template(self.model_name, config.task)
+        if self.conv_template.roles[0] in query and self.conv_template.roles[1] in query:
+            query_include_prompt = True
+
         # plugin pre actions
         for plugin_name in get_registered_plugins():
             if is_plugin_enabled(plugin_name):
@@ -214,8 +234,9 @@ class BaseModel(ABC):
                                 query = response
         assert query is not None, "Query cannot be None."
 
+        if not query_include_prompt:
+            query = self.prepare_prompt(query, self.model_name, config.task)
         # LLM inference
-        query = self.prepare_prompt(query, self.model_name, config.task)
         response = predict(**construct_parameters(query, self.model_name, self.device, config))
 
         # plugin post actions

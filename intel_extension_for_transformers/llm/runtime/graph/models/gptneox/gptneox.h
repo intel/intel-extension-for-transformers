@@ -29,7 +29,8 @@ static const model_scratch gptneox_mem_req(int n_layers) {
       return {2048ull * MB, 2048ull * MB, 4096ull * MB};
     case 32:
       return {512ull * MB, 512ull * MB, 1026ull * MB};
-    // TODO(hengyu): add more variants besides 6B
+    case 28:  // 5.8B
+      return {512ull * MB, 512ull * MB, 1024ull * MB};
     default:
       MODEL_ASSERT(false);
   }

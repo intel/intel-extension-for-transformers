@@ -64,15 +64,19 @@ def build_chatbot(config: PipelineConfig=None):
     elif "chatglm" in config.model_name_or_path:
         from .models.chatglm_model import ChatGlmModel
         adapter = ChatGlmModel()
+    elif "Qwen" in config.model_name_or_path:
+        from .models.qwen_model import QwenModel
+        adapter = QwenModel()
     elif "opt" in config.model_name_or_path or \
          "gpt" in config.model_name_or_path or \
          "flan-t5" in config.model_name_or_path or \
-         "bloom" in config.model_name_or_path:
+         "bloom" in config.model_name_or_path or \
+         "starcoder" in config.model_name_or_path:
         from .models.base_model import BaseModel
         adapter = BaseModel()
     else:
         raise ValueError("NeuralChat Error: Unsupported model name or path, \
-                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/NEURAL-CHAT now.")
+                         only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now.")
 
     # register plugin instance in model adaptor
     if config.plugins:
@@ -100,6 +104,12 @@ def build_chatbot(config: PipelineConfig=None):
                 elif plugin_name == "safety_checker":
                     from .pipeline.plugins.security.safety_checker import SafetyChecker
                     plugins[plugin_name]['class'] = SafetyChecker
+                elif plugin_name == "ner":
+                    from .pipeline.plugins.ner.ner import NamedEntityRecognition
+                    plugins[plugin_name]['class'] = NamedEntityRecognition
+                elif plugin_name == "ner_int":
+                    from .pipeline.plugins.ner.ner_int import NamedEntityRecognitionINT
+                    plugins[plugin_name]['class'] = NamedEntityRecognitionINT
                 else:
                     raise ValueError("NeuralChat Error: Unsupported plugin")
                 print(f"create {plugin_name} plugin instance...")
@@ -116,6 +126,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["device"] = config.device
     parameters["use_hpu_graphs"] = config.loading_config.use_hpu_graphs
     parameters["cpu_jit"] = config.loading_config.cpu_jit
+    parameters["ipex_int8"] = config.loading_config.ipex_int8
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed

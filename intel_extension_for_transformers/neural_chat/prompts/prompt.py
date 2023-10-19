@@ -37,7 +37,7 @@ short stories, and make jokes.</s>\n""",
 # neuralchat-v1.1 prompt template
 register_conv_template(
     Conversation(
-        name="neural-chat-7b-v1.1",
+        name="neural-chat-7b-v1-1",
         system_template="""<|im_start|>system
 {system_message}""",
         system_message="""- You are a helpful assistant chatbot trained by Intel.
@@ -128,6 +128,20 @@ register_conv_template(
     )
 )
 
+# NER template
+register_conv_template(
+    Conversation(
+        name="ner",
+        system_message="""Please determine the precise time mentioned in the user's query. 
+            Your response should consist only of an accurate time in the format 
+            'Time: YYYY-MM-DD' or 'Period: YYYY-MM-DD to YYYY-MM-DD.' 
+            If the user query does not include any time reference, please reply with 'None'.\n""",
+        roles=("Current Time: ", "User Query: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
 class PromptTemplate:
     def __init__(self, name="one_shot"):
         self.conv = get_conv_template(name)
@@ -141,3 +155,4 @@ class PromptTemplate:
 
     def get_prompt(self) -> str:
         return self.conv.get_prompt()
+    

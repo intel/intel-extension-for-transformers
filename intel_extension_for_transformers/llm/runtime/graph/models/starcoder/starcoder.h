@@ -34,7 +34,6 @@ static const model_scratch starcoder_mem_req(int n_layers) {
       return {8192ull * MB, 8192ull * MB, 8192ull * MB};
     case 40:
       return {32768ull * MB, 32768ull * MB, 32768ull * MB};
-    // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
   }
