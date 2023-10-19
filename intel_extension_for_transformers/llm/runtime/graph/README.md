@@ -81,6 +81,30 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 
 ```
 
+Augument description of generate:
+| Augument             | Description                                                              |
+| --------------       | -----------------------------------------------------------------------  |
+| inputs               | input ids after tokenizer                                                |
+| streamer             | Streamer object that will be used to stream the generated sequences. (default: None) |
+| interactive          | interactive mode, use history commands when True (default: False)        |
+| ignore_prompt        | generate outputs w/o prompt (default: False)                             |
+| max_new_tokens       | cnumber of tokens to predict (default: -1, -1 = infinity)                |
+| batch_size           | batch size for prompt processing (default: 512)                          |
+| ctx_size             | size of the prompt context (default: 512)                                |
+| seed                 | NG seed (default: -1, use random seed for < 0)                           |
+| threads              | number of threads to use during computation (default: 8)                 |
+| repetition_penalty   | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)        |
+| num_beams            | number of beams for beam_search (default: 1)                             |
+| do_sample            | Whether or not to use sampling ; use greedy decoding otherwise. (default: False) |
+| top_k                | top-k sampling (default: 40, 0 = disabled)                               |
+| top_p                | top-p sampling (default: 0.95, 1.0 = disabled)                           |
+| temperature          | temperature (default: 0.8)                                               |
+| min_new_tokens       | The minimum numbers of tokens to generate, ignoring the number of tokens in the prompt. |
+| length_penalty       | Exponential penalty to the length that is used with beam-based generation. |
+| early_stopping       | Controls the stopping condition for beam-based methods, like beam-search.|
+| n_keep               | number of tokens to keep from the initial prompt (default: 0, -1 = all)  |
+| n_discard            | number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded)   |
+
 ### 3. Run LLM with Python Script
 You can run LLM with one-click python script including convertion, quantization and inference.
 ```
