@@ -117,9 +117,10 @@ elif args.sq:
                                 alpha=float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
+                                calib_iters=4,
                                )
 elif args.woq:
-    quantization_config = WeightOnlyQuantConfig() #default is A32W4G32
+    quantization_config = WeightOnlyQuantConfig(compute_type="fp32", weight_type="int4_fullrange", group_size=32) #default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
@@ -133,6 +134,8 @@ elif args.bitsandbytes:
 if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                       quantization_config=quantization_config,
+                                                      trust_remote_code=args.trust_remote_code,
+                                                      torchscript=True if args.sq else False,
                                                       use_llm_runtime=False
                                                       )
     if args.sq:
