@@ -78,7 +78,6 @@ def main(args_in: Optional[List[str]] = None) -> None:
     hparams = model.config.to_dict()
     
     print("Model loaded: ", dir_model)
-    os.makedirs(os.path.dirname(fname_out), exist_ok=True)
     fout = open(fname_out, "wb")
 
     print(hparams)
