@@ -68,6 +68,7 @@ jobs:
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           -v ~/.cache/oneAPI:/cache \
+          -v /dataset/cache:/root/.cache \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Env build
@@ -103,14 +104,12 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-          && export HF_HOME=/dataset/cache/ \
           && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=fp32 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
 
       - name: INT8 Benchmark
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-          && export HF_HOME=/dataset/cache/ \
           && bash run_deploy.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=int8 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
 
       - name: Collect Log
