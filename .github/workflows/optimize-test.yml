@@ -103,21 +103,18 @@ jobs:
         run: |
             docker exec ${{ env.CONTAINER_NAME }} \
             bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-            && export HF_HOME=/dataset/cache/ \
             && bash run_optimize.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode='tuning'"
         
       - name: INT8 Benchmark
         run: |
             docker exec ${{ env.CONTAINER_NAME }} \
             bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-            && export HF_HOME=/dataset/cache/ \
             && bash run_optimize.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=int8 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
         
       - name: FP32 Benchmark
         run: |
             docker exec ${{ env.CONTAINER_NAME }} \
             bash -c "cd /intel-extension-for-transformers/.github/workflows/script/models \
-            && export HF_HOME=/dataset/cache/ \
             && bash run_optimize.sh --model=${{ matrix.modelName }} --framework=${{ matrix.framework }} --mode=${{ matrix.mode }} --precision=fp32 --PERF_STABLE_CHECK=${{ vars.PERF_STABLE_CHECK }}"
 
       - name: Collect Log
