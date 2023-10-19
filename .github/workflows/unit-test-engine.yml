@@ -71,7 +71,7 @@ jobs:
           docker run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           -v ~/.cache/oneAPI:/cache \
-          -v /tf_dataset2:/tf_dataset2 \
+          -v /dataset/tf_dataset2:/tf_dataset2 \
           ${{ env.REPO_NAME }}:${{ env.REPO_TAG }}
 
       - name: Env build
@@ -90,6 +90,7 @@ jobs:
         run: |
           docker exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
+          && export HF_HOME=/dataset/cache/ \
           && bash run_unit_test_engine.sh --test_name=${{ matrix.test_name }}"
 
       - name: Collect log
