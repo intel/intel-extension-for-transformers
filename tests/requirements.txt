@@ -1,6 +1,6 @@
 datasets>=1.17
 mlflow
-nlpaug
+nlpaug==1.1.9
 sacremoses
 neural-compressor
 onnx>=1.10

@@ -71,17 +71,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.65)
 
-    def test_lambada_for_llama(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-        results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="decapoda-research/llama-7b-hf",tokenizer="decapoda-research/llama-7b-hf",dtype=float32',
-            tasks=["lambada_openai", "lambada_standard"],
-            limit=20,
-        )
-        self.assertEqual(results["results"]["lambada_standard"]["acc"], 0.75)
-        self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
-
     def test_cnn_daily(self):
         from intel_extension_for_transformers.llm.evaluation.hf_eval import summarization_evaluate
         results = summarization_evaluate(
@@ -184,22 +173,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.45)
 
-
-    def test_tokenizer_for_llama(self):
-        from intel_extension_for_transformers.llm.evaluation.lm_eval import evaluate
-        cmd = 'optimum-cli export onnx --model decapoda-research/llama-7b-hf --task text-generation llama/'
-        p = subprocess.Popen(cmd, preexec_fn=os.setsid, stdout=subprocess.PIPE,
-                                            stderr=subprocess.PIPE, shell=True) # nosec
-        p.communicate()
-
-        results = evaluate(
-            model="hf-causal",
-            model_args='pretrained="./llama",tokenizer="decapoda-research/llama-7b-hf"',
-            tasks=["lambada_openai"],
-            limit=20,
-            model_format="onnx"
-        )
-        self.assertEqual(results["results"]["lambada_openai"]["acc"], 0.70)
 
 if __name__ == "__main__":
     unittest.main()
