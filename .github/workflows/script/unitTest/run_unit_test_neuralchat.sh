@@ -83,14 +83,6 @@ function main() {
     else
         echo "Not found requirements.txt file."
     fi
-
-    ASSETS_DIR="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"
-    cd ${ASSETS_DIR} || exit 1
-    VIDEO_DIR=/video
-    mkdir -p ${VIDEO_DIR}
-    cd ${VIDEO_DIR} || exit 1
-    curl -OL https://raw.githubusercontent.com/Liangyx2/intel_video/master/intel.mp4
-
     echo "test on ${test_name}"
     if [[ $test_name == "PR-test" ]]; then
         pytest "${LOG_DIR}/coverage_pr"
