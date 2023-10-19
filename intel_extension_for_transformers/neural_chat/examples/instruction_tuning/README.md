@@ -27,7 +27,7 @@ Pick either one of below options to setup docker environment.
 Please refer to this section : [How to build docker images for NeuralChat FineTuning](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#4-build-docker-image) to build docker image from scratch.  
 Once you have the docker image ready, please follow [run docker image](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#5-create-docker-container) session to launch a docker instance from the image.  
 
-#### Option 2: Pull existed Docker image
+#### Option 2: Pull existing Docker image
 Please follow the session [itrex docker setup](https://github.com/intel/intel-extension-for-transformers/tree/main/docker#set-up-docker-image) and use the docker pull command to pull itrex docker image.  
 Once you have itrex docker image, follow below section to update itrex docker instance for this finetuning example.  
 ```shell
@@ -36,7 +36,7 @@ cp requirement.txt /tmp
 # change intel/ai-tools:itrex-0.1.1 according to itrex docker setup session
 ./run_oneapi_docker.sh intel/ai-tools:itrex-0.1.1
 # don't need ipex in this sample
-pip uninstall pip install intel_extension_for_pytorch
+pip uninstall intel_extension_for_pytorch
 # update ITREX pip package in the docker instance
 pip install intel-extension-for-transformers --upgrade
 ```
