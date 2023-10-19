@@ -178,11 +178,19 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
     hidden_states = ne_mul(ctx0, hidden_states, model.layers[il].norm[1]);
 
     // mlp.forward
-    struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
-    gate = ne_silu(ctx0, gate);
-    struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[1], hidden_states);
-    struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
-    mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[2], mlp_output);
+    struct ne_tensor* mlp_output;
+    if (jblas_fusion_FFN_SiLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
+                                             model.layers[il].ffn[2]->data, N, hidden_states->ne[0],
+                                             model.layers[il].ffn[0]->ne[1], model.layers[il].ffn[1]->ne[1])) {
+      mlp_output =
+          ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], hidden_states);
+    } else {
+      struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[2], hidden_states);
+      struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
+      gate = ne_silu(ctx0, gate);
+      struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
+      mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
+    }
 
     inpL = ne_add_inplace(ctx0, mlp_output, residual);
   }

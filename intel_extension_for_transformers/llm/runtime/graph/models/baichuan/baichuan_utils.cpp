@@ -141,10 +141,11 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
     // ffn GEMM
     layer.ffn[0] = ml->get_tensor(layers_i + ".mlp.gate_proj.weight",
                                   {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
-    layer.ffn[1] =
-        ml->get_tensor(layers_i + ".mlp.up_proj.weight", {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
-    layer.ffn[2] = ml->get_tensor(layers_i + ".mlp.down_proj.weight",
+
+    layer.ffn[1] = ml->get_tensor(layers_i + ".mlp.down_proj.weight",
                                   {uint32_t(model.hparams.inner_hidden_size), n_embd}, backend);
+    layer.ffn[2] =
+        ml->get_tensor(layers_i + ".mlp.up_proj.weight", {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
 
     layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, n_embd / hparams.n_head, max_len,
                                        hparams.n_head);  // [n_head, maxlen, head_size]

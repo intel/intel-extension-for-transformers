@@ -306,14 +306,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
         cur = ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], cur);
       } else {
         struct ne_tensor* tmp = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
-
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], cur);
-
-        // SILU activation
         cur = ne_silu(ctx0, cur);
-
         cur = ne_mul(ctx0, cur, tmp);
-
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
       }
     }
