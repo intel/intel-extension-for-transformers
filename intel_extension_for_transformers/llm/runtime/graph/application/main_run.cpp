@@ -394,8 +394,7 @@ int main(int argc, char** argv) {
         int n_discard = params.n_discard;
         if (n_discard == -1) n_discard = (n_ctx - embd.size() - params.n_keep) / 2;
         // drop n_discard tokens
-        embd.insert(embd.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
-                              last_n_tokens.end() - embd.size());
+        embd.insert(embd.begin(), last_n_tokens.begin() + params.n_keep + n_discard, last_n_tokens.end() - embd.size());
 
         // stop saving session if we run out of context
         path_session.clear();

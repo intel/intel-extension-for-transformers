@@ -461,7 +461,9 @@ void gpt_print_usage(int /*argc*/, char** argv, const gpt_params& params) {
   fprintf(stderr, "  --perplexity          compute perplexity over the prompt\n");
   fprintf(stderr, "  --keep                number of tokens to keep from the initial prompt (default: %d, -1 = all)\n",
           params.n_keep);
-  fprintf(stderr, "  --n_discard           number of tokens will be discarded (default: %d, -1 = half of tokens will be discarded)\n",
+  fprintf(stderr,
+          "  --n_discard           number of tokens will be discarded (default: %d, -1 = half of tokens will be "
+          "discarded)\n",
           params.n_discard);
   if (model_mlock_supported()) {
     fprintf(stderr, "  --mlock               force system to keep model in RAM rather than swapping or compressing\n");
