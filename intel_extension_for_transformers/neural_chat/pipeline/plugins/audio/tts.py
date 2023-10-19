@@ -35,8 +35,7 @@ class TextToSpeech():
     2) Finetuned voice (Fine-tuned offline model of specific person's voice + corresponding embedding)
     3) Customized voice (Original model + User's customized input voice embedding)
     """
-    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu", 
-      asset_path="/intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/assets"):
+    def __init__(self, output_audio_path="./response.wav", voice="default", stream_mode=False, device="cpu"):
         """Make sure your export LD_PRELOAD=<path to libiomp5.so and libtcmalloc> beforehand."""
         # default setting
         self.device = device
@@ -62,6 +61,8 @@ class TextToSpeech():
             default_speaker_embedding_path = os.path.join(
                 script_dir, '../../../assets/speaker_embeddings/spk_embed_default.pt')
             self.default_speaker_embedding = torch.load(default_speaker_embedding_path)
+        elif os.path.exists('spk_embed_default.pt'):    # for notebook
+            self.default_speaker_embedding = torch.load('spk_embed_default.pt')
         else: # pragma: no cover
             print("Warning! Need to prepare speaker_embeddings, will use the backup embedding.")
             self.default_speaker_embedding = torch.zeros((1, 512))
@@ -96,10 +97,12 @@ class TextToSpeech():
 
     def _lookup_voice_embedding(self, voice):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.exists(os.path.join(script_dir, '../../../assets/speaker_embeddings/spk_embed_{voice}.pt')):
+        if os.path.exists(os.path.join(script_dir, f'../../../assets/speaker_embeddings/spk_embed_{voice}.pt')):
             specific_speaker_embedding_path = os.path.join(script_dir,
                                         f"../../../assets/speaker_embeddings/spk_embed_{voice}.pt")
             return torch.load(specific_speaker_embedding_path)
+        elif os.path.exists(f'spk_embed_{voice}.pt'):    # for notebook
+            return torch.load(f'spk_embed_{voice}.pt')
         else:
             print("No customized speaker embedding is found! Use the default one")
             return self.default_speaker_embedding

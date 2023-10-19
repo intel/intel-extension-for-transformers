@@ -54,7 +54,7 @@ class EnglishNormalizer:
         # TODO mixed abbreviation or proper noun like i7, ffmpeg, BTW should be supported
 
         # words = text.split()    # CVPR-15 will be upper but 1 and 5 will be splitted to two numbers
-        words = re.split(' |_', text)
+        words = re.split(' |_|/', text)
         results = []
         for idx, word in enumerate(words):
             if word.startswith("-"):    # bypass negative number
