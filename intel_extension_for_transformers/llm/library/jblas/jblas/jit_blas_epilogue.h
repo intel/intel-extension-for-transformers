@@ -137,13 +137,19 @@ template <JBLAS_ISA ISA_T>
 class ZpDequantInt32ToFp32 {
  public:
   struct Param {
+    // necessary
     float* C;
     int ldc;
-    uint8_t* zpA;
-    float* scalesA;
     int ldsa;
-    float* reduceB;
+    float* scalesA;
     float* scalesB;
+    // optional if A asym
+    uint8_t* zpA = nullptr;
+    float* reduceB = nullptr;
+    // optional if B asym
+    int8_t* zpB = nullptr;
+    float* reduceA = nullptr;
+    int K = 1;
   };
   JBLAS_CODE forward(const int32_t* cacheptr, const int cachestep, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& _param) {
@@ -155,9 +161,22 @@ class ZpDequantInt32ToFp32 {
     if (ret != JblasSuccess) {
       return ret;
     }
-    ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(
-        cptr, _param.ldc, M, N, _param.zpA + M_offset * _param.ldsa, _param.scalesA + M_offset * _param.ldsa,
-        _param.ldsa, _param.reduceB + N_offset);
+    if (_param.zpA == nullptr && _param.zpB == nullptr) {
+      return ret;
+    } else if (_param.zpA != nullptr && _param.zpB == nullptr) {
+      ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(
+          cptr, _param.ldc, M, N, _param.zpA + M_offset * _param.ldsa, _param.scalesA + M_offset * _param.ldsa,
+          _param.ldsa, _param.reduceB + N_offset);
+    } else if (_param.zpA == nullptr && _param.zpB != nullptr) {
+      ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(cptr, _param.ldc, M, N, _param.zpB + N_offset,
+                                                                          _param.scalesB + N_offset, _param.ldsa,
+                                                                          _param.reduceA + M_offset * _param.ldsa);
+    } else {
+      ret = kernel::wrapper::RemoveZeroPointBias::template forward<ISA_T>(
+          cptr, _param.ldc, M, N, _param.zpA + M_offset * _param.ldsa, _param.zpB + N_offset,
+          _param.scalesA + M_offset * _param.ldsa, _param.scalesB + N_offset, _param.ldsa, _param.K,
+          _param.reduceA + M_offset * _param.ldsa, _param.reduceB + N_offset);
+    }
     return ret;
   }
 };

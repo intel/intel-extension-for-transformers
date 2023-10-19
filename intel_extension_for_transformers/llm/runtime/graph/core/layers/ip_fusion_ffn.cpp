@@ -204,11 +204,22 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32pern_f32f32_forward(float* activation, SS
       auto offset = workspace == NULL ? 0 : quanA1.mSize;
       auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
       quanA2.assign((int8_t*)workspace + offset);
-      ret = finter.compute({seq,    fin,          fmid,         fout,          activation,   lda,          &quanA1,
-                            tmp1,   ldtmp1,       &quanA2,      w1ptr,         w2ptr,        w3ptr,        tmp1,
-                            ldtmp1, quanA1.mZPtr, quanA1.mSPtr, quanA1.mCStep, w1ptr->mRPtr, w1ptr->mSPtr, output,
-                            ldo,    quanA2.mZPtr, quanA2.mSPtr, quanA2.mCStep, w2ptr->mRPtr, w2ptr->mSPtr, tmp2,
-                            ldtmp2, quanA1.mZPtr, quanA1.mSPtr, quanA1.mCStep, w3ptr->mRPtr, w3ptr->mSPtr});
+      ret = finter.compute({seq,
+                            fin,
+                            fmid,
+                            fout,
+                            activation,
+                            lda,
+                            &quanA1,
+                            tmp1,
+                            ldtmp1,
+                            &quanA2,
+                            w1ptr,
+                            w2ptr,
+                            w3ptr,
+                            {tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1ptr->mSPtr, quanA1.mZPtr, w1ptr->mRPtr},
+                            {output, ldo, quanA2.mCStep, quanA2.mSPtr, w2ptr->mSPtr, quanA2.mZPtr, w2ptr->mRPtr},
+                            {tmp2, ldtmp2, quanA1.mCStep, quanA1.mSPtr, w3ptr->mSPtr, quanA1.mZPtr, w3ptr->mRPtr}});
     }
   }
   return ret;
@@ -255,11 +266,22 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4clipfp32pern_f32f32_forward(float* activation
       auto offset = workspace == NULL ? 0 : quanA1.mSize;
       auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
       quanA2.assign((int8_t*)workspace + offset);
-      ret = finter.compute({seq,    fin,          fmid,         fout,          activation,   lda,          &quanA1,
-                            tmp1,   ldtmp1,       &quanA2,      w1ptr,         w2ptr,        w3ptr,        tmp1,
-                            ldtmp1, quanA1.mZPtr, quanA1.mSPtr, quanA1.mCStep, w1ptr->mRPtr, w1ptr->mSPtr, output,
-                            ldo,    quanA2.mZPtr, quanA2.mSPtr, quanA2.mCStep, w2ptr->mRPtr, w2ptr->mSPtr, tmp2,
-                            ldtmp2, quanA1.mZPtr, quanA1.mSPtr, quanA1.mCStep, w3ptr->mRPtr, w3ptr->mSPtr});
+      ret = finter.compute({seq,
+                            fin,
+                            fmid,
+                            fout,
+                            activation,
+                            lda,
+                            &quanA1,
+                            tmp1,
+                            ldtmp1,
+                            &quanA2,
+                            w1ptr,
+                            w2ptr,
+                            w3ptr,
+                            {tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1ptr->mSPtr, quanA1.mZPtr, w1ptr->mRPtr},
+                            {output, ldo, quanA2.mCStep, quanA2.mSPtr, w2ptr->mSPtr, quanA2.mZPtr, w2ptr->mRPtr},
+                            {tmp2, ldtmp2, quanA1.mCStep, quanA1.mSPtr, w3ptr->mSPtr, quanA1.mZPtr, w3ptr->mRPtr}});
     }
   }
   return ret;
@@ -682,16 +704,24 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32pern_f32f32_forward(float* activation
       auto offset = workspace == NULL ? 0 : quanA1.mSize;
       auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
       quanA2.assign((int8_t*)workspace + offset);
-      ret = finter.compute({seq,          fin,           fmid,
-                            fout,         activation,    lda,
-                            &quanA1,      tmp1,          ldtmp1,
-                            &quanA2,      w1tmp,         w2tmp,
-                            tmp1,         ldtmp1,        quanA1.mZPtr,
-                            quanA1.mSPtr, quanA1.mCStep, w1tmp->mRPtr,
-                            w1tmp->mSPtr, b1ptr,         broadcast_bias ? 0 : ldtmp1,
-                            output,       ldo,           quanA2.mZPtr,
-                            quanA2.mSPtr, quanA2.mCStep, w2tmp->mRPtr,
-                            w2tmp->mSPtr, b2ptr,         broadcast_bias ? 0 : ldo});
+      ret = finter.compute({seq,
+                            fin,
+                            fmid,
+                            fout,
+                            activation,
+                            lda,
+                            &quanA1,
+                            tmp1,
+                            ldtmp1,
+                            &quanA2,
+                            w1tmp,
+                            w2tmp,
+                            {{tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1tmp->mSPtr, quanA1.mZPtr, w1tmp->mRPtr},
+                             b1ptr,
+                             broadcast_bias ? 0 : ldtmp1},
+                            {{output, ldo, quanA2.mCStep, quanA2.mSPtr, w2tmp->mSPtr, quanA2.mZPtr, w2tmp->mRPtr},
+                             b2ptr,
+                             broadcast_bias ? 0 : ldo}});
     }
   }
   return ret;
@@ -765,16 +795,24 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4clipfp32pern_f32f32_forward(float* activa
       auto offset = workspace == NULL ? 0 : quanA1.mSize;
       auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
       quanA2.assign((int8_t*)workspace + offset);
-      ret = finter.compute({seq,          fin,           fmid,
-                            fout,         activation,    lda,
-                            &quanA1,      tmp1,          ldtmp1,
-                            &quanA2,      w1tmp,         w2tmp,
-                            tmp1,         ldtmp1,        quanA1.mZPtr,
-                            quanA1.mSPtr, quanA1.mCStep, w1tmp->mRPtr,
-                            w1tmp->mSPtr, b1ptr,         broadcast_bias ? 0 : ldtmp1,
-                            output,       ldo,           quanA2.mZPtr,
-                            quanA2.mSPtr, quanA2.mCStep, w2tmp->mRPtr,
-                            w2tmp->mSPtr, b2ptr,         broadcast_bias ? 0 : ldo});
+      ret = finter.compute({seq,
+                            fin,
+                            fmid,
+                            fout,
+                            activation,
+                            lda,
+                            &quanA1,
+                            tmp1,
+                            ldtmp1,
+                            &quanA2,
+                            w1tmp,
+                            w2tmp,
+                            {{tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1tmp->mSPtr, quanA1.mZPtr, w1tmp->mRPtr},
+                             b1ptr,
+                             broadcast_bias ? 0 : ldtmp1},
+                            {{output, ldo, quanA2.mCStep, quanA2.mSPtr, w2tmp->mSPtr, quanA2.mZPtr, w2tmp->mRPtr},
+                             b2ptr,
+                             broadcast_bias ? 0 : ldo}});
     }
   }
   return ret;
