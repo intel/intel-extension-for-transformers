@@ -88,9 +88,16 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       auto& k_cache = model->layers[il].k_cache;
       auto& v_cache = model->layers[il].v_cache;
       if (wtype == NE_TYPE_F16) {  // chatglm does not support fp32 kv-cache in original impl of chatglm_util.cpp
-        const auto head_size = hparams.n_embd / hparams.n_head;
-        k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, hparams.n_ctx, hparams.multi_query_group_num);
-        v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, hparams.n_ctx, head_size, hparams.multi_query_group_num);
+        const int head_size = hparams.n_embd / hparams.n_head;
+        if (model->arch == MODEL_CHATGLM2) {
+          k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, hparams.n_ctx, hparams.multi_query_group_num);
+          v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, hparams.n_ctx, head_size, hparams.multi_query_group_num);
+        }
+
+        if (model->arch == MODEL_CHATGLM || model->arch == MODEL_BAICHUAN) {
+          k_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, head_size, hparams.n_ctx, hparams.n_head);
+          v_cache = d_ne_new_tensor_3d(model->ctx, NE_TYPE_F16, hparams.n_ctx, head_size, hparams.n_head);
+        }
       } else if (wtype == NE_TYPE_JBLAS) {
         k_cache = ne_new_tensor_1d(model->ctx, wtype_alloc, layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
         const auto k_align_off = reinterpret_cast<uintptr_t>(k_cache->data) % NE_ALIGNMENT;
@@ -1148,6 +1155,8 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
         /* .sl_kv = */ static_cast<int>(hparams.n_ctx),
     };
     const bool support_jblas_kv = ctx->support_jblas_kv && jblas_reordered_attn_fp32_support(&attn_shape);
+    fprintf(stderr, "%s: support_jblas_kv = %d\n", __func__, support_jblas_kv);
+    
     const ne_type memory_type = params.kv_type == KV_MEM_TYPE_F16   ? NE_TYPE_F16
                                 : params.kv_type == KV_MEM_TYPE_F32 ? NE_TYPE_F32
                                 : params.kv_type == KV_MEM_TYPE_AUTO
@@ -1156,7 +1165,7 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
     NE_ASSERT(memory_type != NE_TYPE_COUNT);
 
     if (!kv_cache_init(ctx->model.hparams, ctx->model.kv_self, memory_type, ctx->batch_size, ctx->beam_size,
-                       (arch == MODEL_CHATGLM2 ? &ctx->model : nullptr))) {
+                       ((arch == MODEL_CHATGLM2 || arch == MODEL_CHATGLM || arch == MODEL_BAICHUAN) ? &ctx->model : nullptr))) {
       fprintf(stderr, "%s: kv_cache_init() failed for self-attention cache\n", __func__);
       model_free(ctx);
       return nullptr;
@@ -1166,14 +1175,14 @@ struct model_context* model_init_from_file(const char* path_model, struct model_
       const size_t memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                      ? ne_nelements(ctx->model.kv_self.k) + ne_nelements(ctx->model.kv_self.v)
                                      : ne_nbytes(ctx->model.kv_self.k) + ne_nbytes(ctx->model.kv_self.v);
-      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
+      fprintf(stderr, "%s: kv self size = %7.2f MB\n", __func__, memory_size / 1024.0 / 1024.0);
     } else if (ctx->model.layers[0].k_cache != nullptr) {
       const auto k_cache = ctx->model.layers[0].k_cache;
       const auto v_cache = ctx->model.layers[0].v_cache;
       const size_t layer_memory_size = params.kv_type == KV_MEM_TYPE_AUTO
                                            ? ne_nelements(k_cache) + ne_nelements(v_cache)
                                            : ne_nbytes(k_cache) + ne_nbytes(v_cache);
-      fprintf(stderr, "%s: kv self size  = %7.2f MB\n", __func__,
+      fprintf(stderr, "%s: kv self size = %7.2f MB\n", __func__,
               layer_memory_size / 1024.0 / 1024.0 * hparams.n_layer);
     } else {
       NE_ASSERT(("KV-cache not allocated!", false));

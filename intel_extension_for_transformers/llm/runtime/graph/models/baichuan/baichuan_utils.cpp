@@ -48,6 +48,7 @@ void model_load_internal(const std::string& fname, model_archs arch, model_conte
   ms->init(fname.c_str(), lctx, n_ctx, n_gpu_layers, use_mmap, use_mlock, vocab_only);
   ms->load(lctx, progress_callback, progress_callback_user_data);
 
+  lctx.support_jblas_kv = true;
   lctx.t_load_us = ne_time_us() - lctx.t_start_us;
 }
 
@@ -147,10 +148,8 @@ void BAICHUAN::load(model_context& lctx, model_progress_callback progress_callba
     layer.ffn[2] =
         ml->get_tensor(layers_i + ".mlp.up_proj.weight", {n_embd, uint32_t(model.hparams.inner_hidden_size)}, backend);
 
-    layer.k_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, n_embd / hparams.n_head, max_len,
-                                       hparams.n_head);  // [n_head, maxlen, head_size]
-    layer.v_cache = d_ne_new_tensor_3d(model.ctx, NE_TYPE_F16, max_len, n_embd / hparams.n_head,
-                                       hparams.n_head);  // [n_head, head_size, maxlen]
+    layer.v_cache == nullptr;
+    layer.k_cache == nullptr;
   }
 
   // print memory requirements
