@@ -2,5 +2,5 @@ transformers
 datasets
 torchprofile
 torch==2.0.1
-intel_extension_for_pytorch
+intel_extension_for_pytorch==2.0.100
 accelerate

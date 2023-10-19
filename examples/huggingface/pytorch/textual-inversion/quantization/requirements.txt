@@ -1,9 +1,9 @@
 diffusers==0.4.1
 accelerate
 torch==2.0.1
-torchvision
+torchvision==0.15.2
 transformers
 ftfy
 tensorboard
 modelcards
-intel_extension_for_pytorch==2.0.0
+intel_extension_for_pytorch==2.0.100

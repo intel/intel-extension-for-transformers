@@ -85,7 +85,7 @@ jobs:
           podman exec ${{ env.CONTAINER_NAME }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
           && bash install_binary.sh \
-          && pip install intel_extension_for_pytorch wget sentencepiece \
+          && pip install intel_extension_for_pytorch==2.0.100 wget sentencepiece \
           && pip install transformers>=4.32.0 \
           && pip install peft torch num2words speechbrain paddlepaddle \
           && pip install paddlespeech==1.4.1 shortuuid gptcache evaluate \
