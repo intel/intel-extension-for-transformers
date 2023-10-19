@@ -20,9 +20,9 @@ import torch
 from transformers import BitsAndBytesConfig
 from transformers.utils.bitsandbytes import is_bitsandbytes_available
 from intel_extension_for_transformers.neural_chat import build_chatbot
-from intel_extension_for_transformers.neural_chat.config import PipelineConfig, WeightOnlyQuantConfig
-from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig, MixedPrecisionConfig
-
+from intel_extension_for_transformers.neural_chat.config import PipelineConfig
+from intel_extension_for_transformers.neural_chat.config import LoadingModelConfig
+from intel_extension_for_transformers.transformers import WeightOnlyQuantConfig, MixedPrecisionConfig
 
 class TestChatbotBuilder(unittest.TestCase):
     def setUp(self):
@@ -45,8 +45,10 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
 
     def test_build_chatbot_with_weight_only_quant(self):
+        loading_config = LoadingModelConfig(use_llm_runtime=False)
         config = PipelineConfig(model_name_or_path="/models/opt-125m",
-            optimization_config=WeightOnlyQuantConfig()
+            optimization_config=WeightOnlyQuantConfig(compute_dtype="fp32", weight_dtype="int4_fullrange"),
+            loading_config=loading_config
         )
         chatbot = build_chatbot(config)
         self.assertIsNotNone(chatbot)
@@ -57,7 +59,7 @@ class TestChatbotBuilder(unittest.TestCase):
     def test_build_chatbot_with_llm_runtime(self):
         loading_config = LoadingModelConfig(use_llm_runtime=True)
         config = PipelineConfig(model_name_or_path="/models/opt-125m",
-            optimization_config=WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4"),
+            optimization_config=WeightOnlyQuantConfig(),
             loading_config=loading_config
         )
         chatbot = build_chatbot(config)
