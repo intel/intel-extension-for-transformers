@@ -18,7 +18,6 @@ Classes
 .. autoapisummary::
 
    intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.AddV2
-   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.MultiHeadAttenion
    intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.Add
    intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.BinaryAdd
    intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.empty_ops.ConstantOfShape
@@ -92,14 +91,6 @@ Classes
 
 
    Register the AddV2 operator.
-
-
-.. py:class:: MultiHeadAttenion
-
-
-
-
-   The class of neural engine operator.
 
 
 .. py:class:: Add

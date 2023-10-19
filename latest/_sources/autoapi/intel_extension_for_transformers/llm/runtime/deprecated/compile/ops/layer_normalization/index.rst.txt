@@ -43,4 +43,9 @@ Classes
 
    Register the LayerNorm operator.
 
+   .. py:method:: set_attr(framework, node)
+
+      Attr initialization.
+
+
 

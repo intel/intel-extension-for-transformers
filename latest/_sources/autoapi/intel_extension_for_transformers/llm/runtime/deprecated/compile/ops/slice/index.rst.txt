@@ -6,29 +6,3 @@
 .. py:module:: intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.slice
 
 
-Module Contents
----------------
-
-Classes
-~~~~~~~
-
-.. autoapisummary::
-
-   intel_extension_for_transformers.llm.runtime.deprecated.compile.ops.slice.Slice
-
-
-
-
-.. py:class:: Slice
-
-
-
-
-   The class of neural engine operator.
-
-   .. py:method:: set_attr(framework, node)
-
-      Attr initialization.
-
-
-
