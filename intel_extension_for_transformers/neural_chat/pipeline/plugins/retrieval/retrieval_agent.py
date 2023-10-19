@@ -72,6 +72,13 @@ class Agent_QA():
                                                        embedding_model=embedding_model, max_length=max_length,
                                                        index_name = index_name)
                     self.db = self.doc_parser.KB_construct(self.input_path)
+            else:
+                    self.doc_parser = DocumentIndexing(retrieval_type=self.retrieval_type,
+                                                       document_store=document_store,
+                                                       persist_dir=persist_dir, process=process,
+                                                       embedding_model=embedding_model, max_length=max_length,
+                                                       index_name = index_name)
+                    self.db = self.doc_parser.KB_construct(self.input_path)
         self.retriever = Retriever(retrieval_type=self.retrieval_type, document_store=self.db, top_k=top_k,
                                    search_type=search_type, search_kwargs=search_kwargs)
 
