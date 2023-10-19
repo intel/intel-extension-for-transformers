@@ -16,8 +16,11 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Load environment variables
-        run: 
-          cat ~/itrex-actions-runner/.env >> $GITHUB_ENV
+        run:  |
+          bash -c "cd /intel-extension-for-transformers \
+          && pip install -r requirements.txt \
+          && pip install -v . 
+          
       - name: Prepare Cache
         run: cp ${{ env.CACHE }}/torch/* ./
 
