@@ -19,7 +19,7 @@ from typing import List, Optional
 import subprocess
 from transformers import AutoTokenizer
 
-model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
+model_maps = {"gpt_neox": "gptneox", "llama2": "llama", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def main(args_in: Optional[List[str]] = None) -> None:
