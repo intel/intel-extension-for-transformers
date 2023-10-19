@@ -113,6 +113,8 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
       ne_set_name(k_cache, "cache_k");
       ne_set_name(v_cache, "cache_v");
     }
+    const bool run_mha_reordered = model->layers[0].k_cache->type == NE_TYPE_JBLAS;
+    fprintf(stderr, "%s: run_mha_reordered = %d\n", __func__, run_mha_reordered);
   } else {
     cache.k = ne_new_tensor_1d(cache.ctx, wtype_alloc, n_layer * layer_ne_k + NE_ALIGNMENT, NE_SIZE_CALC);
     const auto k_align_off = reinterpret_cast<uintptr_t>(cache.k->data) % NE_ALIGNMENT;
