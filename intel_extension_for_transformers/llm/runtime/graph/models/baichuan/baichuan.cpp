@@ -68,6 +68,7 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
   const int n_vocab = hparams.n_vocab;
   const int head_size = n_embd / n_head;
   const int n_rot = n_embd / n_head / 2;
+  const float attn_scale = 1.f / std::sqrt(head_size);
 
   auto& mem_per_token = lctx.mem_per_token;
   auto& buf_compute = lctx.buf_compute;
@@ -131,46 +132,45 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
       cur = ne_mul_mat(ctx0, model.layers[il].attn[0], cur);
 
       ne_tensor* query_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
-                                          0);                   // [N, hidden]
-      query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);  // [heads, N, head_size]
+                                          0);  // [N, hidden]
 
-      ne_tensor* key_layer =
-          ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
-                     hidden_size * ne_element_size(cur));
-      key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3);  // [heads, N, head_size]
+      ne_tensor* key_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
+                                        hidden_size * ne_element_size(cur));
 
-      ne_tensor* value_layer =
-          ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
-                     2 * hidden_size * ne_element_size(cur));   // [N, heads, head_size]
-      value_layer = ne_permute(ctx0, value_layer, 1, 2, 0, 3);  // [heads, head_size, N]
+      ne_tensor* value_layer = ne_view_3d(ctx0, cur, head_size, n_head, N, head_size * ne_element_size(cur), cur->nb[1],
+                                          2 * hidden_size * ne_element_size(cur));  // [N, heads, head_size]
 
       if (!run_mha_reordered) {
+        query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);  // [heads, N, head_size]
+        key_layer = ne_permute(ctx0, key_layer, 0, 2, 1, 3);      // [heads, N, head_size]
+        value_layer = ne_permute(ctx0, value_layer, 1, 2, 0, 3);  // [heads, head_size, N]
+
         // store key and value to memory
         {
           struct ne_tensor* k_cache_view =
-              ne_view_3d(ctx0, model.layers[il].k_cache, head_size, N, n_head,
-                        model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
-                        n_past * head_size * ne_element_size(model.layers[il].k_cache));  // [kv_heads, N, head_size]
+              ne_view_3d(ctx0, model.layers[il].k_cache, head_size, N, n_head, model.layers[il].k_cache->nb[1],
+                         model.layers[il].k_cache->nb[2],
+                         n_past * head_size * ne_element_size(model.layers[il].k_cache));  // [kv_heads, N, head_size]
 
           struct ne_tensor* v_cache_view =
-              ne_view_3d(ctx0, model.layers[il].v_cache, N, head_size, n_head,
-                        model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
-                        n_past * ne_element_size(model.layers[il].v_cache));  // [kv_heads, head_size, N]
+              ne_view_3d(ctx0, model.layers[il].v_cache, N, head_size, n_head, model.layers[il].v_cache->nb[1],
+                         model.layers[il].v_cache->nb[2],
+                         n_past * ne_element_size(model.layers[il].v_cache));  // [kv_heads, head_size, N]
 
           ne_build_forward_expand(&gf, ne_cpy(ctx0, key_layer, k_cache_view));
           ne_build_forward_expand(&gf, ne_cpy(ctx0, value_layer, v_cache_view));
         }
         // concat key & value with past kv
         key_layer = ne_view_3d(ctx0, model.layers[il].k_cache, head_size, n_past + N, n_head,
-                              model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
-                              0);  // [kv_heads, klen, head_size]
+                               model.layers[il].k_cache->nb[1], model.layers[il].k_cache->nb[2],
+                               0);  // [kv_heads, klen, head_size]
         value_layer = ne_view_3d(ctx0, model.layers[il].v_cache, n_past + N, head_size, n_head,
-                                model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
-                                0);  // [kv_heads, head_size, klen]
+                                 model.layers[il].v_cache->nb[1], model.layers[il].v_cache->nb[2],
+                                 0);  // [kv_heads, head_size, klen]
 
         // attention
         struct ne_tensor* attn_scores = ne_mul_mat(ctx0, key_layer, query_layer);  // [heads, N, klen]
-        attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, 1.f / std::sqrt(head_size)));
+        attn_scores = ne_scale_inplace(ctx0, attn_scores, ne_new_f32(ctx0, attn_scale));
         attn_scores = ne_alibi(ctx0, attn_scores, n_past, n_head, 8);
         if (n_past == 0) {
           attn_scores = ne_diag_mask_inf_inplace(ctx0, attn_scores, n_past);
@@ -184,107 +184,145 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
 
         // F32 mul_mat
         cur = ne_mul_mat(ctx0, model.layers[il].attn[1], context_layer);
+      } else {
+        const auto k_size = kv_cache_info.k_bytes;
+        const auto v_size = kv_cache_info.v_bytes;
+
+        // store key and value to memory
+        {
+          const auto k_cache = ne_view_3d(ctx0, model.layers[il].k_cache,  // tensor
+                                          head_size, n_ctx, n_head,        // ne
+                                          0, 0,                            // nb (jblas managed)
+                                          0);                              // offset
+          ne_build_forward_expand(&gf, ne_flash_attn_update_k(ctx0, k_cache, key_layer, n_past));
+          const auto v_cache = ne_view_3d(ctx0, model.layers[il].v_cache,  // tensor
+                                          head_size, n_ctx, n_head,        // ne
+                                          0, 0,                            // nb (jblas managed)
+                                          0);                              // offset
+          ne_build_forward_expand(&gf, ne_flash_attn_update_v(ctx0, v_cache, value_layer, n_past));
+        }
+
+        query_layer = ne_permute(ctx0, query_layer, 0, 2, 1, 3);                          // [heads, N, head_size]
+        key_layer =                                                                       //
+            ne_view_3d(ctx0, model.layers[il].k_cache,                                    // tensor
+                       head_size, n_past + N, n_head,                                     // ne
+                       kv_cache_info.stride_k_sl, kv_cache_info.stride_k_head_num,        // nb (jblas managed)
+                       0);                                                                // offset
+        *reinterpret_cast<ATTN_FWD_LAYOUT*>(&key_layer->nb[0]) = kv_cache_info.k_layout;  // us nb0 for layout
+
+        value_layer =                                                                       //
+            ne_view_3d(ctx0, model.layers[il].v_cache,                                      // tensor
+                       n_past + N, head_size, n_head,                                       // ne
+                       kv_cache_info.stride_v_head_size, kv_cache_info.stride_v_head_num,   // nb (jblas managed)
+                       0);                                                                  // offset
+        *reinterpret_cast<ATTN_FWD_LAYOUT*>(&value_layer->nb[0]) = kv_cache_info.v_layout;  // us nb0 for layout
+
+        ne_attn_flags_t attn_flags = NE_ATTN_FLAG_IS_ALIBI8;
+        if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
+        struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, query_layer, key_layer, value_layer, attn_scale, attn_flags);
+        cur = ne_view_2d(ctx0, KQV_Out, n_embd, N, n_embd * ne_element_size(KQV_Out), 0);
+
+        // F32 mul_mat
+        cur = ne_mul_mat(ctx0, model.layers[il].attn[1], cur);
       }
-
-
-    }
-
-    lctx.use_buf(ctx0, 1);
-    cur = ne_add_inplace(ctx0, cur, residual);
-    residual = cur;
-
-    // post_attention_layernorm
-    struct ne_tensor* hidden_states = ne_rms_norm(ctx0, cur);
-    hidden_states = ne_mul(ctx0, hidden_states, model.layers[il].norm[1]);
-
-    // mlp.forward
-    struct ne_tensor* mlp_output;
-    if (jblas_fusion_FFN_SiLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
-                                             model.layers[il].ffn[2]->data, N, hidden_states->ne[0],
-                                             model.layers[il].ffn[0]->ne[1], model.layers[il].ffn[1]->ne[1])) {
-      mlp_output =
-          ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], hidden_states);
-    } else {
-      struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[2], hidden_states);
-      struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
-      gate = ne_silu(ctx0, gate);
-      struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
-      mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
-    }
-
-    inpL = ne_add_inplace(ctx0, mlp_output, residual);
   }
 
-  lctx.use_buf(ctx0, 0);
-  // used at the end to optionally extract the embeddings
-  struct ne_tensor* embeddings = NULL;
-  // norm
-  {
-    inpL = ne_rms_norm(ctx0, inpL);
-    inpL = ne_mul(ctx0, inpL, model.others[1]);
+  lctx.use_buf(ctx0, 1);
+  cur = ne_add_inplace(ctx0, cur, residual);
+  residual = cur;
+
+  // post_attention_layernorm
+  struct ne_tensor* hidden_states = ne_rms_norm(ctx0, cur);
+  hidden_states = ne_mul(ctx0, hidden_states, model.layers[il].norm[1]);
+
+  // mlp.forward
+  struct ne_tensor* mlp_output;
+  if (jblas_fusion_FFN_SiLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
+                                           model.layers[il].ffn[2]->data, N, hidden_states->ne[0],
+                                           model.layers[il].ffn[0]->ne[1], model.layers[il].ffn[1]->ne[1])) {
+    mlp_output =
+        ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], hidden_states);
+  } else {
+    struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[2], hidden_states);
+    struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
+    gate = ne_silu(ctx0, gate);
+    struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
+    mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
   }
 
-  lctx.use_buf(ctx0, -1);
-  if (embd->ne[0] > 1) {
-    inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
-  }
+  inpL = ne_add_inplace(ctx0, mlp_output, residual);
+}
 
-  // lm_head
-  inpL = ne_mul_mat(ctx0, model.others[2], inpL);
+lctx.use_buf(ctx0, 0);
+// used at the end to optionally extract the embeddings
+struct ne_tensor* embeddings = NULL;
+// norm
+{
+  inpL = ne_rms_norm(ctx0, inpL);
+  inpL = ne_mul(ctx0, inpL, model.others[1]);
+}
 
-  ne_build_forward_expand(&gf, inpL);
-  ne_graph_compute(ctx0, &gf);
+lctx.use_buf(ctx0, -1);
+if (embd->ne[0] > 1) {
+  inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
+}
+
+// lm_head
+inpL = ne_mul_mat(ctx0, model.others[2], inpL);
+
+ne_build_forward_expand(&gf, inpL);
+ne_graph_compute(ctx0, &gf);
 
 #ifdef NE_PERF
-  bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
-  if (engine_profiling_) {
-    ne_graph_profiling(&gf);
-  }
+bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
+if (engine_profiling_) {
+  ne_graph_profiling(&gf);
+}
 #endif
 
-  // update kv token count
-  lctx.model.kv_self.n = n_past + N;
+// update kv token count
+lctx.model.kv_self.n = n_past + N;
 
-  // extract logits
-  {
-    auto& logits_out = lctx.logits;
+// extract logits
+{
+  auto& logits_out = lctx.logits;
 
-    if (lctx.logits_all) {
-      logits_out.resize(n_vocab * N);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
-    } else {
-      // return result for just the last token
-      logits_out.resize(n_vocab);
-      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
-    }
+  if (lctx.logits_all) {
+    logits_out.resize(n_vocab * N);
+    memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+  } else {
+    // return result for just the last token
+    logits_out.resize(n_vocab);
+    memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
   }
+}
 
-  // extract embeddings
-  if (!lctx.embedding.empty()) {
-    auto& embedding_out = lctx.embedding;
+// extract embeddings
+if (!lctx.embedding.empty()) {
+  auto& embedding_out = lctx.embedding;
 
-    embedding_out.resize(n_embd);
-    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
-  }
+  embedding_out.resize(n_embd);
+  memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+}
 
-  if (mem_per_token == 0) {
-    mem_per_token = ne_used_mem(ctx0) / N;
-  }
+if (mem_per_token == 0) {
+  mem_per_token = ne_used_mem(ctx0) / N;
+}
 
-  ne_free(ctx0);
+ne_free(ctx0);
 
-  // measure the performance only for the single-token evals
-  int64_t time_interval = ne_time_us() - t_start_us;
-  if (N == 1) {
-    lctx.t_eval_us += time_interval;
-    lctx.n_eval++;
-  } else if (N > 1) {
-    lctx.t_p_eval_us += time_interval;
-    lctx.n_p_eval += N;
-  }
-  lctx.eval_times.push_back(time_interval);
+// measure the performance only for the single-token evals
+int64_t time_interval = ne_time_us() - t_start_us;
+if (N == 1) {
+  lctx.t_eval_us += time_interval;
+  lctx.n_eval++;
+} else if (N > 1) {
+  lctx.t_p_eval_us += time_interval;
+  lctx.n_p_eval += N;
+}
+lctx.eval_times.push_back(time_interval);
 
-  return true;
+return true;
 }
 
 int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
