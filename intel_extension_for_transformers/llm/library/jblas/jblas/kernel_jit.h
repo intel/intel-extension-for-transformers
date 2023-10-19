@@ -224,7 +224,7 @@ class DequanKBlockS8F32 {
     if (row2 > 0) {
       DequanS8F32::forward_avx512f(srcptr, dstptr, row2, col, ld_src, ld_dst, sptr, zptr);
     }
-    return JblasNotSupport;
+    return JblasSuccess;
   }
 };
 
