@@ -709,12 +709,12 @@ class MHAInterface {
     // TODO(Yi): init packed weight with p.tmp
     PackedWeightBatch<typename GemmQK::BType> K_pack(jblas::gemm::GemmCoreType::AMX_BF16_16x64);  // packed K
     K_pack.resize(padto(p.sl_kv, GemmQK::NTILE), padto(p.head_size, GemmQK::KTILE), num_heads);
-    jblas::utils::avector<int8_t> bufferK(K_pack.mSize);
-    K_pack.assign(bufferK.data());
+    auto bufferK = jblas::utils::amalloc<int8_t>(K_pack.mSize);
+    K_pack.assign(bufferK);
     PackedWeightBatch<typename GemmPV::BType> V_pack(jblas::gemm::GemmCoreType::AMX_BF16_16x64);  // packed V
     V_pack.resize(padto(p.head_size, GemmPV::NTILE), padto(p.sl_kv, GemmPV::KTILE), num_heads);
-    jblas::utils::avector<int8_t> bufferV(V_pack.mSize);
-    V_pack.assign(bufferV.data());
+    auto bufferV = jblas::utils::amalloc<int8_t>(V_pack.mSize);
+    V_pack.assign(bufferV);
     const auto K_pack_batch_off = K_pack.mKPad * K_pack.mNPad;
     const auto V_pack_batch_off = V_pack.mKPad * V_pack.mNPad;
 
@@ -853,6 +853,8 @@ class MHAInterface {
         }
       }
     }
+    jblas::utils::afree(bufferK);
+    jblas::utils::afree(bufferV);
     return JblasSuccess;
   }
 
