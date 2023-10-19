@@ -215,23 +215,23 @@ JBLAS_ISA constexpr DefaultISA = JblasAVX2;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
-        jblas::gemm::GemmCore_Row_NN_4x24_AVX2,             //
+        jblas::gemm::GemmCore_Row_NN_4x24_AVX2,                //
         jblas::prologue::gemm::ActivationBase,                 //
         jblas::prologue::gemm::WeightPack,                     //
         jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
     DefaultParallel>;
-}
+}  // namespace avx2
 namespace avx_vnni {
 JBLAS_ISA constexpr DefaultISA = JblasAVX_VNNI;
 using GemmKernel48 = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<  //
         DefaultISA,                                            //
-        jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI,         //
+        jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI,            //
         jblas::prologue::gemm::ActivationBase,                 //
         jblas::prologue::gemm::WeightPack,                     //
         jblas::epilogue::gemm::AlphaBetaProcessS32U8>,
     DefaultParallel>;
-}
+}  // namespace avx_vnni
 namespace avx512f {
 JBLAS_ISA constexpr DefaultISA = JblasAVX512F;
 using GemmKernel = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<

@@ -182,8 +182,15 @@ static JBLAS_CODE jblas_s8fp32perN_f32f32_forward(float* activation, SS8Fp32PerN
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
       quanA.assign((int8_t*)workspace);
-      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo, quanA.mZPtr,
-                                         quanA.mSPtr, quanA.mCStep, weiptr->mRPtr, weiptr->mSPtr});
+      ret = kernel.compute<true, false>(
+          {_m,
+           _n,
+           _k,
+           activation,
+           lda,
+           &quanA,
+           weiptr,
+           {output, ldo, quanA.mCStep, quanA.mSPtr, weiptr->mSPtr, quanA.mZPtr, weiptr->mRPtr}});
     }
   }
   return ret;
@@ -207,8 +214,15 @@ static JBLAS_CODE jblas_s4fp32perN_f32f32_forward(float* activation, SS4Fp32PerN
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
       quanA.assign((int8_t*)workspace);
-      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo, quanA.mZPtr,
-                                         quanA.mSPtr, quanA.mCStep, weiptr->mRPtr, weiptr->mSPtr});
+      ret = kernel.compute<true, false>(
+          {_m,
+           _n,
+           _k,
+           activation,
+           lda,
+           &quanA,
+           weiptr,
+           {output, ldo, quanA.mCStep, quanA.mSPtr, weiptr->mSPtr, quanA.mZPtr, weiptr->mRPtr}});
     }
   }
   return ret;
@@ -348,9 +362,17 @@ JBLAS_CODE jblas_fusion_add_s8fp32pern_f32f32_forward(float* activation, SS8Fp32
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
       quanA.assign((int8_t*)workspace);
-      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo, quanA.mZPtr,
-                                         quanA.mSPtr, quanA.mCStep, weiptr->mRPtr, weiptr->mSPtr, bias,
-                                         broadcast_bias ? 0 : ldo});
+      ret = kernel.compute<true, false>(
+          {_m,
+           _n,
+           _k,
+           activation,
+           lda,
+           &quanA,
+           weiptr,
+           {{output, ldo, quanA.mCStep, quanA.mSPtr, weiptr->mSPtr, quanA.mZPtr, weiptr->mRPtr},
+            bias,
+            broadcast_bias ? 0 : ldo}});
     }
   }
   return ret;
