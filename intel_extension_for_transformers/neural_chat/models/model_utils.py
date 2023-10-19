@@ -297,7 +297,7 @@ def load_model(
         )
 
         adapt_transformers_to_gaudi()
-    elif device == "cpu":
+    elif device == "cpu" and not ipex_int8:
         set_cpu_running_env()
 
     if isinstance(optimization_config, AMPConfig):

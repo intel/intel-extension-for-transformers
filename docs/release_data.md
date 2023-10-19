@@ -12,23 +12,19 @@ Validated Model Performance
 
 3. [LLM Runtime (GGML-Compatible)](#llm-runtime-GGML-compatible)
 
-    3.1 [LLama-7B-hf](#llama-7b-hf)
+    3.1 [MPT-7B](#mpt-7b)
 
-    3.2 [LLama2-7B-chat](#llama2-7b-chat)
+    3.2 [GPT-j-6B](#gpt-j-6b)
 
-    3.3 [MPT-7B](#mpt-7b)
+    3.3 [Falcon-7B](#falcon-7b)
 
-    3.4 [GPT-j-6B](#gpt-j-6b)
+    3.4 [GPT-NEOX-20B](#gpt-neox-20b)
 
-    3.5 [Falcon-7B](#falcon-7b)
+    3.5 [Dolly-V2-3B](#dolly-v2-3b)
 
-    3.6 [GPT-NEOX-20B](#gpt-neox-20b)
+    3.6 [OPT-1.3B](#opt-13b)
 
-    3.7 [Dolly-V2-3B](#dolly-v2-3b)
-
-    3.8 [OPT-1.3B](#opt-13b)
-
-    3.9 [StarCoder-3B](#starcoder-3b)
+    3.7 [StarCoder-3B](#starcoder-3b)
 
 4. [LLM Finetuning](#llm-finetuning)
 
@@ -58,8 +54,6 @@ Intel Neural Compressor: 2.3
 | pytorch   | bloom_7b1     | NeelNanda/pile-10k | 12.36                    | 60.14%            | 3.22                     | 57.64% | 3.83 | 4.34% |
 | pytorch   | opt_2.7b      | NeelNanda/pile-10k | 23.19                    | 63.67%            | 12.24                    | 63.65% | 1.89 | 0.03% |
 | pytorch   | opt_6.7b      | NeelNanda/pile-10k | 13.5                     | 67.01%            | 4.1                      | 67.69% | 3.29 | \-1.00% |
-| pytorch   | llama_13b     | NeelNanda/pile-10k | 8.9                      | 56.88%            | 2.24                     | 76.27% | 3.97 | \-25.42% |
-| pytorch   | llama_7b      | NeelNanda/pile-10k | 13.56                    | 58.55%            | 4.4                      | 73.61% | 3.09 | \-20.46% |
 | pytorch   | gpt_j_6b      | NeelNanda/pile-10k | 10.76                    | 67.59%            | 4.38                     | 68.31% | 2.46 | \-1.05% |
 | pytorch   | flan_t5_large | samsum             | 69.75                    | 46.25 (rougeLsum) | 33.16                    | 47.67 (rougeLsum) | 2.1 | \-2.99% |
 | pytorch   | gpt_neox_clm  | wikitext           | 1.47                     | 4.04 (eval_loss)  | 0.65                     | 3.52 (eval_loss) | 2.27 | \-14.78% |
@@ -80,7 +74,6 @@ Pytorch: 2.0.1+cpu
 | --------- | --------------------- | -------- | ------ |  --------- | --------- | --------- | --------- | --------- | --------- | -------- |
 | pytorch   | gpt-neox-20b          | 32       | 32  | 9283 (ms) |           |           |           |           |           |          |
 | pytorch   | dolly-v2-3b           | 32       | 32  | 3191 (ms) | 3798 (ms) | 2689 (ms) | 1.19x     | 1.41x     |           |
-| pytorch   | llama-7b-hf           | 32       | 32  | 1872 (ms) | 5402 (ms) | 2689 (ms) | 1935 (ms) | 2.89x     | 2.01x     | 2.79x    |
 | pytorch   | gpt-j-6b-pruned       | 32       | 32  | 4523 (ms) | 2421 (ms) | 1758 (ms) | 1.87x     | 2.57x     |
 | pytorch   | gpt-j-6b              | 32       | 32  | 1658 (ms) | 4561 (ms) | 2429 (ms) | 1793 (ms) | 2.75x     | 1.88x     | 2.54x    |
 
@@ -124,53 +117,6 @@ Pytorch: 2.0.1+cpu
 ## LLM Runtime (GGML-Compatible)
 Environment:
 GCC / G++:  12.1.0
-
-### LLama-7B-hf
-
-| Backend    | Input | Output | Cores/Instance | Precision | Compute Type | Group Size | Next Token(ms) | Memory mean used (Top 50%) MB | First Token(ms) | Total Latency(ms) | P90 Latency(ms) | P99 Latency(ms) |
-| ---------- | ----- | ------ | -------------- | --------- | ------------ | ---------- | -------------- | ----------------------------- | --------------- | ----------------- | --------------- | --------------- |
-| LLM Runtime | 32    | 32     | 32             | INT4      | INT8         | 128        | 27.2           |  4212                         | 72.69           | 915               | 27.37           | 58.73           |
-| LLM Runtime | 1024  | 32     | 32             | INT4      | INT8         | 128        | 30.39          | 4495                          | 3091            | 4033              | 30.75           | 2142            |
-| LLM Runtime | 32    | 32     | 48             | INT4      | INT8         | 128        | 24.41          | 4786                          | 71.1            | 827               | 24.63           | 56.85           |
-| LLM Runtime | 1024  | 32     | 48             | INT4      | INT8         | 128        | 27.46          | 4751                          | 2904            | 3755              | 27.56           | 2012            |
-| LLM Runtime | 32    | 32     | 56             | INT4      | INT8         | 128        | 24.84          | 4810                          | 72.1            | 842.05            | 25.01           | 57.72           |
-| LLM Runtime | 1024  | 32     | 56             | INT4      | INT8         | 128        | 27.97          | 4790                          | 2749            | 3616              | 28.09           | 1906            |
-| LLM Runtime | 32    | 32     | 32             | INT4      | INT8         | 32         | 28.95          | 4154                          | 125.24          | 1022              | 29.04           | 95.51           |
-| LLM Runtime | 1024  | 32     | 32             | INT4      | INT8         | 32         | 32.49          | 4966                          | 4645            | 5652              | 32.55           | 3215            |
-| LLM Runtime | 32    | 32     | 48             | INT4      | INT8         | 32         | 27.1           | 4780                          | 113.01          | 953               | 27.28           | 86.56           |
-| LLM Runtime | 1024  | 32     | 48             | INT4      | INT8         | 32         | 30.51          | 4853                          | 5077            | 6022              | 30.64           | 3513            |
-| LLM Runtime | 32    | 32     | 56             | INT4      | INT8         | 32         | 27.99          | 4808                          | 121.65          | 989               | 28.15           | 92.8            |
-| LLM Runtime | 1024  | 32     | 56             | INT4      | INT8         | 32         | 31.22          | 4855                          | 4805            | 5773              | 31.36           | 3326            |
-| GGML       | 32    | 32     | 32             | INT4      | INT8         | 32         | 29.78          | 4035                          | 426.64          | 1349              | 30.07           | 303             |
-| GGML       | 1024  | 32     | 32             | INT4      | INT8         | 32         | 34.07          | 4789                          | 14561           | 15617             | 34.57           | 10058           |
-| GGML       | 32    | 32     | 48             | INT4      | INT8         | 32         | 27.37          | 4776                          | 309.31          | 1157              | 27.52           | 222             |
-| GGML       | 1024  | 32     | 48             | INT4      | INT8         | 32         | 30.6           | 4811                          | 10653           | 11601             | 30.85           | 7360            |
-| GGML       | 32    | 32     | 56             | INT4      | INT8         | 32         | 27.2           | 4803                          | 282.86          | 1126              | 27.42           | 203             |
-| GGML       | 1024  | 32     | 56             | INT4      | INT8         | 32         | 30.06          | 4827                          | 9677            | 10609             | 30.24           | 6688            |
-
-
-### LLama2-7B-chat
-
-| Backend    | Input | Output | Cores/Instance | Precision | Compute Type | Group Size | Next Token(ms) | Memory mean used (Top 50%) MB | First Token(ms) | Total Latency(ms) | P90 Latency(ms) | P99 Latency(ms) |
-| ---------- | ----- | ------ | -------------- | --------- | ------------ | ---------- | -------------- | ----------------------------- | --------------- | ----------------- | --------------- | --------------- |
-| LLM Runtime | 32    | 32     | 32             | INT4      | INT8         | 128        | 26.2           |  4320                         | 103.62          | 915               | 26.38           | 79.73           |
-| LLM Runtime | 1024  | 32     | 32             | INT4      | INT8         | 128        | 30.74          | 4516                          | 4102            | 5055              | 31.19           | 2842            |
-| LLM Runtime | 32    | 32     | 48             | INT4      | INT8         | 128        | 24.34          | 4772                          | 91.57           | 846               | 24.64           | 70.99           |
-| LLM Runtime | 1024  | 32     | 48             | INT4      | INT8         | 128        | 27.52          | 4743                          | 4575            | 5428              | 27.58           | 3166            |
-| LLM Runtime | 32    | 32     | 56             | INT4      | INT8         | 128        | 24.55          | 4784                          | 95.24           | 856               | 24.75           | 73.58           |
-| LLM Runtime | 1024  | 32     | 56             | INT4      | INT8         | 128        | 27.7           | 4762                          | 4185            | 5043              | 27.82           | 2896            |
-| LLM Runtime | 32    | 32     | 32             | INT4      | INT8         | 32         | 29.37          | 4163                          | 130             | 1040              | 29.55           | 98.94           |
-| LLM Runtime | 1024  | 32     | 32             | INT4      | INT8         | 32         | 32.89          | 4952                          | 4812            | 5831              | 33.06           | 3330            |
-| LLM Runtime | 32    | 32     | 48             | INT4      | INT8         | 32         | 27.66          | 4771                          | 113             | 970               | 28.54           | 86.89           |
-| LLM Runtime | 1024  | 32     | 48             | INT4      | INT8         | 32         | 31.24          | 4857                          | 9884            | 10852             | 31.33           | 6829            |
-| LLM Runtime | 32    | 32     | 56             | INT4      | INT8         | 32         | 27.87          | 4782                          | 120.6           | 984               | 28.1            | 92.17           |
-| LLM Runtime | 1024  | 32     | 56             | INT4      | INT8         | 32         | 31.13          | 4819                          | 4507            | 5472              | 31.24           | 3119            |
-| GGML       | 32    | 32     | 32             | INT4      | INT8         | 32         | 32.2           | 3970                          | 426.65          | 1424              | 32.49           | 304.4           |
-| GGML       | 1024  | 32     | 32             | INT4      | INT8         | 32         | 33.99          | 4774                          | 14457           | 15511             | 34.2            | 9986            |
-| GGML       | 32    | 32     | 48             | INT4      | INT8         | 32         | 28.14          | 4768                          | 309.57          | 1181              | 28.38           | 222.4           |
-| GGML       | 1024  | 32     | 48             | INT4      | INT8         | 32         | 31.49          | 4786                          | 16512           | 17488             | 31.65           | 11404           |
-| GGML       | 32    | 32     | 56             | INT4      | INT8         | 32         | 27.71          | 4779                          | 283.91          | 1142              | 27.89           | 204.6           |
-| GGML       | 1024  | 32     | 56             | INT4      | INT8         | 32         | 31.53          | 4780                          | 15819           | 16797             | 31.59           | 10926           |
 
 
 ### MPT-7B
