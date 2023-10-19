@@ -1,5 +1,5 @@
 datasets >= 1.8.0
-torch==2.0.1
+torch==2.1.0
 transformers
 wandb
 accelerate
