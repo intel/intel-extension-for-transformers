@@ -27,13 +27,12 @@ class TestChatCache(unittest.TestCase):
         cache_plugin.init_similar_cache_from_config()
 
         prompt = "Tell me about Intel Xeon Scable Processors."
-        # response = build_chatbot.predict(prompt)
         config = PipelineConfig()
         chatbot = build_chatbot(config)
         response = chatbot.predict(prompt)
         cache_plugin.put(prompt, response)
 
-        answer = cache_plugin.get("Tell me about Intel Xeon Scable Processors.")
+        answer = cache_plugin.get(prompt)
         self.assertIn('Intel Xeon scalable processors are a line of high-performance server processors designed for data center and enterprise computing applications.', str(answer))
 
         
