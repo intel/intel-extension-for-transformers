@@ -119,24 +119,24 @@ python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and
 ```
 
 Argument description of run.py:
-| Argument                    | Description                                                              |
-| --------------              | ----------------------------------------------------------------------- |
-| model                       | Directory containing model file or model id: String                               |
-| --weight_dtype              | Data type of quantized weight: int4/int8 (default int4)                             |
-| --alg                       | Quantization algorithm: sym/asym (default sym)                    |
-| --group_size                | Group size: Int (default: 32)                                                  |
-| --scale_dtype               | Data type of scales: fp32/bf16 (dafault fp32)                                 |
-| --compute_dtype             | Data type of Gemm computation: int8/bf16/fp32 (default: int8)             |
-| --use_ggml                  | Enable ggml for quantization and inference                                |
-| -p / --prompt               | Prompt to start generation with: String (default: empty)                        |
-| -n / --n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                |
-| -t / --threads              | Number of threads to use during computation: Int (default: 56)               |
-| -b / --batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                |
-| -c / --ctx_size             | Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)                                                                                       |
-| -s / --seed                 | NG seed: Int (default: -1, use random seed for < 0)                          |
-| --repeat_penalty            | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)       |
-| --color                     | Colorise output to distinguish prompt and user input from generations   |
-| --keep                      | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all) |
+| Argument                    | Description                                                                                                   |
+| --------------              | ---------------------------------------------------------------------                                         |
+| model                       | Directory containing model file or model id: String                                                           |
+| --weight_dtype              | Data type of quantized weight: int4/int8 (default int4)                                                       |
+| --alg                       | Quantization algorithm: sym/asym (default sym)                                                                |
+| --group_size                | Group size: Int (default: 32)                                                                                 |
+| --scale_dtype               | Data type of scales: fp32/bf16 (dafault fp32)                                                                 |
+| --compute_dtype             | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                                                 |
+| --use_ggml                  | Enable ggml for quantization and inference                                                                    |
+| -p / --prompt               | Prompt to start generation with: String (default: empty)                                                      |
+| -n / --n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                 |
+| -t / --threads              | Number of threads to use during computation: Int (default: 56)                                                |
+| -b / --batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                                                          |                                      
+| -c / --ctx_size             | Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length) |
+| -s / --seed                 | NG seed: Int (default: -1, use random seed for < 0)                                                           |
+| --repeat_penalty            | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                      |
+| --color                     | Colorise output to distinguish prompt and user input from generations                                         |
+| --keep                      | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                  |
 
 
 ## Advanced Usage
