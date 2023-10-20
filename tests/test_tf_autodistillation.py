@@ -3,6 +3,8 @@ import numpy as np
 import unittest
 import tensorflow as tf
 from datasets import load_dataset, load_metric
+import sys
+sys.path.insert(0, './')
 from transformers import (TFAutoModelForSequenceClassification, AutoTokenizer,
                           DefaultDataCollator, HfArgumentParser,
                           TFTrainingArguments, set_seed)
@@ -29,12 +31,12 @@ class TestAutoDistillation(unittest.TestCase):
         self.strategy = tf.distribute.MultiWorkerMirroredStrategy()
         set_seed(42)
         self.model = TFAutoModelForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased')
+            'hf-internal-testing/tiny-random-DistilBertMode')
         self.teacher_model = TFAutoModelForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased-finetuned-sst-2-english')
+            'hf-internal-testing/tiny-random-DistilBertForSequenceClassification')
 
         raw_datasets = load_dataset("glue", "sst2")["validation"]
-        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-DistilBertMode")
         non_label_column_names = [
             name for name in raw_datasets.column_names if name != "label"
         ]
