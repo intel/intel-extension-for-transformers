@@ -15,12 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import traceback
+import re
 from typing import Optional, Dict
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File
+from ...config import GenerationConfig
 from ...cli.log import logger
-from ...server.restful.request import RetrievalRequest
+from ...pipeline.plugins.retrieval.retrieval_agent import Agent_QA
+from ...server.restful.request import RetrievalRequest, AskgmRequest
 from ...server.restful.response import RetrievalResponse
+from fastapi.responses import StreamingResponse
+from ...plugins import plugins
 
 
 def check_retrieval_params(request: RetrievalRequest) -> Optional[str]:
@@ -60,3 +64,72 @@ async def retrieval_endpoint(request: RetrievalRequest) -> RetrievalResponse:
     if ret is not None:
         raise RuntimeError("Invalid parametery.")
     return await router.handle_retrieval_request(request)
+
+
+@router.post("/v1/askgm/upload")
+async def retrieval_upload(file: UploadFile = File(...)):
+    global plugins
+    filename = file.filename
+    path_prefix = "/home/sdp/askgm_upload/enterprise_docs/"
+    print(f"[askgm - upload] filename: {filename}")
+    if '/' in filename:
+        filename = filename.split('/')[-1]
+    with open(f"{path_prefix+filename}", 'wb') as fout:
+        content = await file.read()
+        fout.write(content),
+    print("[askgm - upload] file saved to local path.")
+
+    try:
+        print("[askgm - upload] starting to append local db...")
+        instance = plugins['retrieval']["instance"]
+        instance.append_localdb(append_path=path_prefix)
+        print(f"[askgm - upload] kb appended successfully")
+    except Exception as e:
+        logger.info(f"[askgm - upload] create knowledge base failes! {e}")
+        return "Error occurred while uploading files."
+    fake_kb_id = "fake_knowledge_base_id"
+    return {"knowledge_base_id": fake_kb_id}
+
+
+@router.post("/v1/askgm/chat")
+async def retrieval_chat(request: AskgmRequest):
+    chatbot = router.get_chatbot()
+    
+    logger.info(f"[askgm - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
+    logger.info(f"[askgm - chat] Predicting chat completion using prompt '{request.query}'")
+    config = GenerationConfig()
+    # Set attributes of the config object from the request
+    for attr, value in request.__dict__.items():
+        if attr == "stream":
+            continue
+        setattr(config, attr, value)
+    generator, link = chatbot.predict_stream(query=request.query, config=config)
+    logger.info(f"[askgm - chat] chatbot predicted: {generator}")
+    if isinstance(generator, str):
+        def stream_generator():
+            yield f"data: {generator}\n\n"
+            yield f"data: [DONE]\n\n"
+    else: 
+        def stream_generator():
+            for output in generator:
+                ret = {
+                    "text": output,
+                    "error_code": 0,
+                }
+                logger.info(f"[askgm - chat] {ret}")
+                res = re.match("(http|https|ftp)://[^\s]+", output)
+                if res != None:
+                    formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{res.group()}" />'
+                    yield f"data: {formatted_link}\n\n"
+                else:
+                    yield f"data: {ret['text']}\n\n"
+            if link != []:
+                yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
+                for single_link in link:
+                    if single_link == None:
+                        continue
+                    raw_link = single_link["source"]
+                    formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{raw_link}">{raw_link}</a><br/>'
+                    yield f"data: {formatted_link}\n\n"
+            yield f"data: [DONE]\n\n"
+    return StreamingResponse(stream_generator(), media_type="text/event-stream")

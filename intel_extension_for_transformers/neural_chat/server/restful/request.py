@@ -47,3 +47,15 @@ class FinetuneRequest(RequestBaseModel):
     overwrite_output_dir: bool = True
     dataset_concatenation: bool = False
     peft: str = 'lora'
+
+
+class AskgmRequest(RequestBaseModel):
+    query: str
+    domain: str
+    blob: Optional[str]
+    filename: Optional[str]
+    knowledge_base_id: Optional[str] = 'default'
+    embedding: Optional[str] = 'dense'
+    params: Optional[dict] = None
+    debug: Optional[bool] = False
+    stream: bool = True
