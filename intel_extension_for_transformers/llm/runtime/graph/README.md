@@ -81,8 +81,8 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 
 ```
 
-Augument description of generate:
-| Augument             | Description                                                              |
+Argument description of generate function:
+| Argument             | Description                                                              |
 | --------------       | -----------------------------------------------------------------------  |
 | inputs               | input ids after tokenizer                                                |
 | streamer             | Streamer object that will be used to stream the generated sequences. (default: None) |
@@ -111,8 +111,8 @@ You can run LLM with one-click python script including conversion, quantization 
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
 
-Augument description of run.py:
-| Augument         | Description                                                              |
+Argument description of run.py:
+| Argument         | Description                                                              |
 | --------------    | ----------------------------------------------------------------------- |
 | model           | directory containing model file or model id                               |
 | --weight_dtype  | data type of quantized weight (default: int4)                             |
@@ -158,8 +158,8 @@ python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_fil
 python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_file ne-q4_j.bin --weight_dtype int4 --group_size 32 --compute_dtype int8
 
 ```
-Augument description of quantize.py:
-| Augument        | Description                                                 |
+Argument description of quantize.py:
+| Argument        | Description                                                 |
 | --------------  | ----------------------------------------------------------- |
 | --model_file    | path to the fp32 model                                      |
 | --out_file      | path to the quantized model                                 |
@@ -189,8 +189,8 @@ OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/inference.py --model_name
 OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/inference.py --model_name llama -m ne-q4_j.bin -c 512 -b 1024 -n 256 -t 56 --color -p "She opened the door and see" --repeat_penalty 1.2
 ```
 
-Augument description of inference.py:
-| Augument          | Description                                                             |
+Argument description of inference.py:
+| Argument          | Description                                                             |
 | --------------    | ----------------------------------------------------------------------- |
 | --model_name      | model name                                                              |
 | -m / --model      | path to the executed model                                              |
