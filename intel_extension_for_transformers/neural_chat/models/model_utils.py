@@ -28,6 +28,7 @@ from huggingface_hub import snapshot_download
 from typing import List
 from transformers import (
     GenerationConfig,
+    AutoModel,
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
@@ -253,11 +254,6 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
 
-
-def set_cpu_running_env():
-    os.environ["ONEDNN_MAX_CPU_ISA"] = "AVX512_CORE_BF16"
-
-
 def load_model(
     model_name,
     tokenizer_name,
@@ -297,8 +293,6 @@ def load_model(
         )
 
         adapt_transformers_to_gaudi()
-    elif device == "cpu" and not ipex_int8:
-        set_cpu_running_env()
 
     if isinstance(optimization_config, AMPConfig):
         dtype = optimization_config.dtype
@@ -331,9 +325,11 @@ def load_model(
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
         use_auth_token=hf_access_token,
-        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE)) else False,
+        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+            re.search("chatglm", model_name, re.IGNORECASE)) else False,
     )
-    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
+    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                        if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
@@ -350,6 +346,14 @@ def load_model(
                 use_auth_token=hf_access_token,
                 quantization_config=bitsandbytes_quant_config,
             )
+    elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = AutoModel.from_pretrained(
+                model_name,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
+                use_auth_token=hf_access_token,
+                trust_remote_code=True)
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
@@ -394,11 +398,13 @@ def load_model(
     if (
         hasattr(model.generation_config, "pad_token_id")
         and model.generation_config.pad_token_id is not None
+        and not "chatglm" in model_name
     ):
         tokenizer.pad_token_id = model.generation_config.pad_token_id
     if (
         hasattr(model.generation_config, "eos_token_id")
         and model.generation_config.eos_token_id is not None
+        and not "chatglm" in model_name
     ):
         tokenizer.eos_token_id = model.generation_config.eos_token_id
     if (
