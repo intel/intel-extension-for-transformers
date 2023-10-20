@@ -87,28 +87,28 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 ```
 
 Argument description of generate function:
-| Argument             | Description                                                              |
-| --------------       | -----------------------------------------------------------------------  |
-| inputs               | input ids after tokenizer                                                |
-| streamer             | Streamer object that will be used to stream the generated sequences. (default: None) |
-| interactive          | interactive mode, use history commands when True (default: False)        |
-| ignore_prompt        | generate outputs w/o prompt (default: False)                             |
-| max_new_tokens       | cnumber of tokens to predict (default: -1, -1 = infinity)                |
-| batch_size           | batch size for prompt processing (default: 512)                          |
-| ctx_size             | size of the prompt context (default: 512)                                |
-| seed                 | NG seed (default: -1, use random seed for < 0)                           |
-| threads              | number of threads to use during computation (default: 8)                 |
-| repetition_penalty   | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)        |
-| num_beams            | number of beams for beam_search (default: 1)                             |
-| do_sample            | Whether or not to use sampling ; use greedy decoding otherwise. (default: False) |
-| top_k                | top-k sampling (default: 40, 0 = disabled)                               |
-| top_p                | top-p sampling (default: 0.95, 1.0 = disabled)                           |
-| temperature          | temperature (default: 0.8)                                               |
-| min_new_tokens       | The minimum numbers of tokens to generate, ignoring the number of tokens in the prompt. |
-| length_penalty       | Exponential penalty to the length that is used with beam-based generation. |
-| early_stopping       | Controls the stopping condition for beam-based methods, like beam-search.|
-| n_keep               | number of tokens to keep from the initial prompt (default: 0, -1 = all)  |
-| n_discard            | number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded)   |
+| Argument          |  Type       | Description                                                                             |
+| --------------    | ----------  | -----------------------------------------------------------------------                 |
+| inputs            | Lists[Int]  | Input ids after tokenizer                                                               |
+| streamer          | Class       | Streamer object that will be used to stream the generated sequences. (default: None)    |
+| interactive       | Bool        | Interactive mode, use history commands when True (default: False)                       |
+| ignore_prompt     | Bool        | Generate outputs w/o prompt (default: False)                                            |
+| max_new_tokens    | Int         | Number of tokens to predict (default: -1, -1 = infinity)                                |
+| batch_size        | Int         | Batch size for prompt processing (default: 512)                                         |
+| ctx_size          | Int         | Size of the prompt context (default: 512)                                               |
+| seed              | Int         | NG seed (default: -1, use random seed for < 0)                                          |
+| threads           | Int         | Number of threads to use during computation (default: 8)                                |
+| repetition_penalty| Float       | Penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)                       |
+| num_beams         | Int         | Number of beams for beam_search (default: 1)                                            |
+| do_sample         | Int         | Whether or not to use sampling ; use greedy decoding otherwise. (default: False)        |
+| top_k             | Int         | Top-k sampling (default: 40, 0 = disabled)                                              |
+| top_p             | Int         | Top-p sampling (default: 0.95, 1.0 = disabled)                                          |
+| temperature       | Float       | Temperature (default: 0.8)                                                              |
+| min_new_tokens    | Int         | The minimum numbers of tokens to generate, ignoring the number of tokens in the prompt. |
+| length_penalty    | Float       | Exponential penalty to the length that is used with beam-based generation.              |
+| early_stopping    | Bool        | Controls the stopping condition for beam-based methods, like beam-search.               |
+| n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
+| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |
 
 
 
@@ -119,24 +119,24 @@ python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and
 ```
 
 Argument description of run.py:
-| Argument         | Description                                                              |
-| --------------    | ----------------------------------------------------------------------- |
-| model           | directory containing model file or model id                               |
-| --weight_dtype  | data type of quantized weight (default: int4)                             |
-| --alg           | quantization algorithm to use: sym/asym (default: sym)                    |
-| --group_size    | group size (default: 32)                                                  |
-| --scale_dtype   | fp32/bf16 type for scales (default: fp32)                                 |
-| --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)             |
-| --use_ggml      | enable ggml for quantization and inference                                |
-| -p / --prompt     | prompt to start generation with (default: empty)                        |
-| -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
-| -t / --threads    | number of threads to use during computation (default: 56)               |
-| -b / --batch_size_truncate | batch size for prompt processing (default: 512)                |
-| -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                       |
-| -s / --seed       | NG seed (default: -1, use random seed for < 0)                          |
-| --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
-| --color           | colorise output to distinguish prompt and user input from generations   |
-| --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
+| Argument                    | Description                                                              |
+| --------------              | ----------------------------------------------------------------------- |
+| model                       | Directory containing model file or model id: String                               |
+| --weight_dtype              | Data type of quantized weight: int4/int8 (default int4)                             |
+| --alg                       | Quantization algorithm: sym/asym (default sym)                    |
+| --group_size                | Group size: Int (default: 32)                                                  |
+| --scale_dtype               | Data type of scales: fp32/bf16 (dafault fp32)                                 |
+| --compute_dtype             | Data type of Gemm computation: int8/bf16/fp32 (default: int8)             |
+| --use_ggml                  | Enable ggml for quantization and inference                                |
+| -p / --prompt               | Prompt to start generation with: String (default: empty)                        |
+| -n / --n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                |
+| -t / --threads              | Number of threads to use during computation: Int (default: 56)               |
+| -b / --batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                |
+| -c / --ctx_size             | Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)                                                                                       |
+| -s / --seed                 | NG seed: Int (default: -1, use random seed for < 0)                          |
+| --repeat_penalty            | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)       |
+| --color                     | Colorise output to distinguish prompt and user input from generations   |
+| --keep                      | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all) |
 
 
 ## Advanced Usage
@@ -166,18 +166,19 @@ python scripts/quantize.py --model_name llama2 --model_file ne-f32.bin --out_fil
 
 ```
 Argument description of quantize.py:
-| Argument        | Description                                                 |
-| --------------  | ----------------------------------------------------------- |
-| --model_file    | path to the fp32 model                                      |
-| --out_file      | path to the quantized model                                 |
-| --config        | path to the configuration file (default: "")                |
-| --nthread       | number of threads to use (default: 1)                       |
-| --weight_dtype  | data type of quantized weight: int4/int8 (default: int4)    |
-| --alg           | quantization algorithm to use: sym/asym (default: sym)      |
-| --group_size    | group size (default: 32)                                    |
-| --scale_dtype   | data type of scales: bf16/fp32 (default: fp32)              |
-| --compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)  |
-| --use_ggml      | enable ggml for quantization and inference                  |
+| Argument        | Description                                                  |
+| --------------  | -----------------------------------------------------------  |
+| --model_file    | Path to the fp32 model: String                               |
+| --out_file      | Path to the quantized model: String                          |
+| --build_dir     | Path to the build file: String                               |
+| --config        | Path to the configuration file: String (default: "")         |
+| --nthread       | Number of threads to use: Int (default: 1)                   |
+| --weight_dtype  | Data type of quantized weight: int4/int8 (default: int4)     |
+| --alg           | Quantization algorithm to use: sym/asym (default: sym)       |
+| --group_size    | Group size: Int (default: 32)                                |
+| --scale_dtype   | Data type of scales: bf16/fp32 (default: fp32)               |
+| --compute_dtype | Data type of Gemm computation: int8/bf16/fp32 (default: int8)|
+| --use_ggml      | Enable ggml for quantization and inference                   |
 
 
 ### 2. Inference LLM
@@ -197,20 +198,21 @@ OMP_NUM_THREADS=56 numactl -m 0 -C 0-55 python scripts/inference.py --model_name
 ```
 
 Argument description of inference.py:
-| Argument          | Description                                                             |
-| --------------    | ----------------------------------------------------------------------- |
-| --model_name      | model name                                                              |
-| -m / --model      | path to the executed model                                              |
-| -p / --prompt     | prompt to start generation with (default: empty)                        |
-| -n / --n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
-| -t / --threads    | number of threads to use during computation (default: 56)               |
-| -b / --batch_size | batch size for prompt processing (default: 512)                         |
-| -c / --ctx_size   | size of the prompt context (default: 512, can not be larger than specific model's context window length)                                                                                |
-| -s / --seed       | NG seed (default: -1, use random seed for < 0)                          |
-| --repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
-| --color           | colorise output to distinguish prompt and user input from generations   |
-| --keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
-| --glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
+| Argument                                          | Description                                                                                                                                                                             |
+| --------------                                    | -----------------------------------------------------------------------                                                                                                                 |
+| --model_name                                      | Model name: String                                                                                                                                                                      |
+| -m / --model                                      | Path to the executed model: String                                                                                                                                                      |
+| --build_dir                                       | Path to the build file: String                                                                                                                                                          |
+| -p / --prompt                                     | Prompt to start generation with: String (default: empty)                                                                                                                                |
+| -n / --n_predict                                  | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                                                                                           |
+| -t / --threads                                    | Number of threads to use during computation: Int (default: 56)                                                                                                                          |
+| -b / --batch_size                                 | Batch size for prompt processing: Int (default: 512)                                                                                                                                    |
+| -c / --ctx_size                                   | Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)                                                                           |
+| -s / --seed                                       | NG seed: Int (default: -1, use random seed for < 0)                                                                                                                                     |
+| --repeat_penalty                                  | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                                                                                                |
+| --color                                           | Colorise output to distinguish prompt and user input from generations                                                                                                                   |
+| --keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
+| --glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
 | --memory-f32 <br> --memory-f16 <br> --memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 & AMX) and fall back to fp16 if failed |
 
 
