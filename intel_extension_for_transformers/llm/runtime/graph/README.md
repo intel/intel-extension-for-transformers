@@ -78,12 +78,6 @@ streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
-
-# To enable StreamingLLM with infinite inference, here is the sample code:
-# from [Paper](https://arxiv.org/pdf/2309.17453.pdf), we recommand you use n_keep=4 to do Attention sinks (four initial tokens),
-# and n_discard as -1 to drop half rencetly tokens when meet length threshold.
-# outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size=100, n_keep=4, n_discard=-1)
-
 ```
 
 To enable StreamingLLM for infinite inference, here is the sample code:
