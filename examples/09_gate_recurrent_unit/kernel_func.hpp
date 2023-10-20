@@ -285,8 +285,7 @@ template <typename input_T, typename Act_T, uint32_t wg_tile_m_t,
         uint32_t sg_tile_k_t>
 struct kernel_xcoder_gru_fusion {
     /// @brief
-    /// @param ei
-    /// input
+    /// @param item Is the sycl::nd_item
     /// @param layer_ptr  input from previous layer i.e X_t
     /// @param h0_ptr     hx_ptr input i.e. h_{0}  shape = layer_size x batch_size
     /// x hidden_size weights

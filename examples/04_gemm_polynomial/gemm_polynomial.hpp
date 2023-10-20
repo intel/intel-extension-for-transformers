@@ -18,10 +18,6 @@
 
 #include "xetla.hpp"
 
-using namespace gpu::xetla;
-using namespace gpu::xetla::group;
-using namespace gpu::xetla::subgroup;
-
 namespace gpu::xetla::subgroup {
 
 template <typename dtype_, uint32_t N>

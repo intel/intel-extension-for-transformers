@@ -122,6 +122,9 @@ void gemm_large_n_run(uint32_t iter) {
     if (!gemm_op_t::can_implement(gemm_arg)) {
         std::cout << "The arguments cannot be supported, aborting ... "
                   << std::endl;
+        free(A, queue);
+        free(B, queue);
+        free(C, queue);
         FAIL();
     }
 

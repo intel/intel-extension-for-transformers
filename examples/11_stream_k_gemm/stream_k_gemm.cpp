@@ -16,7 +16,7 @@
 #include "tests/utils/utils.hpp"
 #include "xetla.hpp"
 
-void streamK_gemm_run(uint32_t iter) {
+void stream_k_gemm_run(uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
     // Please contact us for support.
@@ -39,11 +39,11 @@ void streamK_gemm_run(uint32_t iter) {
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
 
     //Define SYCL queue, context and device
-    auto Queue = sycl::queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
     //Define and initialize the data required for the calculation
     auto A = alloc_device_and_init<data_type_a>(
@@ -51,19 +51,19 @@ void streamK_gemm_run(uint32_t iter) {
             [](data_type_a *data, size_t idx) {
                 data[idx] = static_cast<data_type_a>(random_float());
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto B = alloc_device_and_init<data_type_b>(
             size_b,
             [](data_type_b *data, size_t idx) {
                 data[idx] = static_cast<data_type_b>(random_float());
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto C = alloc_device_and_init<data_type_c>(
             size_c,
             [](data_type_c *data, size_t idx) {
                 data[idx] = static_cast<data_type_c>(0.0f);
             },
-            Queue, Device, Context);
+            queue, device, context);
 
     //Define the shape of workgroup and subgroup
     //It's tunable parameters based on different input shape and hardware for better performance
@@ -75,8 +75,8 @@ void streamK_gemm_run(uint32_t iter) {
     //There are implicit requirement for sg_tile_k range
     constexpr uint32_t sg_tile_k = 32;
 
-    //StreamK parameters - xecores available for streamK dispatch
-    uint32_t avail_xecores = 64;
+    //StreamK parameters - xecores available for stream_k dispatch
+    uint32_t avail_xecores = 32;
 
     // Org the compute shape for sub-matrix
     using tile_shape
@@ -103,61 +103,68 @@ void streamK_gemm_run(uint32_t iter) {
             4> // GPU arch, prefetch stages, periodic sync frequency
             ::gemm;
 
-    // setup streamK workgroup split
-    gpu::xetla::kernel::WorkgroupSplitStreamK_t workgroup_split_streamK(
-            matrix_m, matrix_k, matrix_n, wg_tile_m, gemm_config::k_stride,
-            wg_tile_n, sg_tile_m, sg_tile_n, avail_xecores);
+    using dispatch_stream_k
+            = gpu::xetla::kernel::dispatch_policy_stream_k<gpu_arch::Xe>;
 
     using epilogue_t = xetla::group::epilogue_t<
             xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
             mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
-    using gemm_op_t = xetla::kernel::gemm_universal_t<
-            gpu::xetla::kernel::dispatch_policy_streamK<gpu_arch::Xe>,
+    using gemm_op_t = xetla::kernel::gemm_universal_t<dispatch_stream_k,
             gemm_config, epilogue_t>;
 
+    // setup stream_k workgroup split
+    dispatch_stream_k stream_k(matrix_m, matrix_k, matrix_n, wg_tile_m,
+            gemm_config::k_stride, wg_tile_n, sg_tile_m, sg_tile_n,
+            avail_xecores);
+
     // allocate temp buffers for global split
-    size_t size_acc = gemm_op_t::get_acc_buf_size(workgroup_split_streamK);
-    size_t size_cnt = gemm_op_t::get_cnt_buf_size(workgroup_split_streamK);
+    size_t size_acc = gemm_op_t::get_acc_buf_size(stream_k);
+    size_t size_cnt = gemm_op_t::get_cnt_buf_size(stream_k);
 
     auto Acc = alloc_device_and_init<data_type_acc>(
             size_acc,
             [](data_type_acc *data, size_t idx) {
                 data[idx] = static_cast<data_type_acc>(0.0f);
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto Cnt = alloc_device_and_init<uint32_t>(
             size_cnt,
             [](uint32_t *data, size_t idx) {
                 data[idx] = static_cast<uint32_t>(0);
             },
-            Queue, Device, Context);
+            queue, device, context);
 
     // set up gemm arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A,
-            matrix_k, B, matrix_n, C, matrix_n, Acc, matrix_n, Cnt, size_cnt);
+            matrix_k, B, matrix_n, C, matrix_n, Acc, matrix_n, Cnt, size_cnt,
+            stream_k);
 
-    cl::sycl::nd_range<3> NDRange
-            = gemm_op_t::get_nd_range(workgroup_split_streamK);
+    cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(gemm_arg);
 
     if (!gemm_op_t::can_implement(gemm_arg)) {
         std::cout << "The arguments cannot be supported, aborting ... "
                   << std::endl;
+        free(A, queue);
+        free(B, queue);
+        free(C, queue);
+        free(Acc, queue);
+        free(Cnt, queue);
         FAIL();
     }
 
     uint32_t warmup = 5;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k;
-    profiling_helper prof("streamK_universalgemm", ops, "gflops");
+    profiling_helper prof("stream_k_universalgemm", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
-        auto gpu_event = Queue.submit([&](handler &cgh) {
+        auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 // allocate slm and nbarrier resource
                 slm_barrier_init<gemm_op_t>();
                 gemm_op_t gemm_op;
-                gemm_op(item, gemm_arg, workgroup_split_streamK);
+                gemm_op(item, gemm_arg);
             });
         });
         gpu_event.wait();
@@ -170,16 +177,16 @@ void streamK_gemm_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             gemm_result_validate(A, B, C, 1, matrix_m, matrix_k, matrix_n,
-                    Queue, mem_layout::row_major, mem_layout::row_major));
+                    queue, mem_layout::row_major, mem_layout::row_major));
 
     //performance
     if (iter > 0) { prof.print_profiling_result(profiling_selector::GPU); }
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
-    free(Acc, Context);
-    free(Cnt, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
+    free(Acc, context);
+    free(Cnt, context);
 }
 
 template <typename data_type_a, typename data_type_b, typename data_type_c,
@@ -223,7 +230,7 @@ int gemm_relu_bias_result_validate(data_type_a *A_device, data_type_b *B_device,
     return result ? 0 : 1;
 }
 
-void streamK_gemm_relu_biasadd_run(uint32_t iter) {
+void stream_k_gemm_relu_biasadd_run(uint32_t iter) {
     // Tips, the example demonstrates programming kernel with XeTLA, it works as expected with current configurations.
     // Please make sure you fully understand these configurations before you do any modifications, incomplete changes may lead to unexpected behaviors.
     // Please contact us for support.
@@ -248,11 +255,11 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
 
     //Define SYCL queue, context and device
-    auto Queue = sycl::queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
     //Define and initialize the data required for the calculation
     auto A = alloc_device_and_init<data_type_a>(
@@ -260,26 +267,26 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
             [](data_type_a *data, size_t idx) {
                 data[idx] = static_cast<data_type_a>(random_float());
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto B = alloc_device_and_init<data_type_b>(
             size_b,
             [](data_type_b *data, size_t idx) {
                 data[idx] = static_cast<data_type_b>(random_float());
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto C = alloc_device_and_init<data_type_c>(
             size_c,
             [](data_type_c *data, size_t idx) {
                 data[idx] = static_cast<data_type_c>(0.0f);
             },
-            Queue, Device, Context);
+            queue, device, context);
 
     auto Bias = alloc_device_and_init<data_type_bias>(
             size_bias,
             [](data_type_bias *data, size_t idx) {
                 data[idx] = static_cast<data_type_bias>(random_float());
             },
-            Queue, Device, Context);
+            queue, device, context);
 
     //Define the shape of workgroup and subgroup
     //It's tunable parameters based on different input shape and hardware for better performance
@@ -290,9 +297,6 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
 
     //There are implicit requirement for sg_tile_k range
     constexpr uint32_t sg_tile_k = 32;
-
-    //StreamK parameters - xecores available for streamK dispatch
-    uint32_t avail_xecores = 64;
 
     // Org the compute shape for sub-matrix
     using tile_shape
@@ -318,11 +322,6 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
             gpu_arch::Xe> // GPU arch
             ::gemm;
 
-    // setup streamK workgroup split
-    gpu::xetla::kernel::WorkgroupSplitStreamK_t workgroup_split_streamK(
-            matrix_m, matrix_k, matrix_n, wg_tile_m, gemm_config::k_stride,
-            wg_tile_n, sg_tile_m, sg_tile_n, avail_xecores);
-
     // [ReLuBias] Chain multiple elementwise op in chained_tile_op_t<>: relu_op_t, bias_add_op_t
     using bias_op_t
             = xetla::subgroup::bias_add_op_t<data_type_bias, gpu_arch::Xe>;
@@ -342,8 +341,10 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
             xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>,
             tile_shape, mem_desc_output_t>;
 
-    using gemm_op_t = xetla::kernel::gemm_universal_t<
-            gpu::xetla::kernel::dispatch_policy_streamK<gpu_arch::Xe>,
+    using dispatch_stream_k
+            = gpu::xetla::kernel::dispatch_policy_stream_k<gpu_arch::Xe>;
+
+    using gemm_op_t = xetla::kernel::gemm_universal_t<dispatch_stream_k,
             gemm_config, epilogue_t>;
 
     // [ReLuBias] define the shape of bias matrix bias, which should be identitcal to C
@@ -358,30 +359,32 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
             // It accepts the base pointer to matrix bias, and its dimensions
             {Bias, bias_add_shape}});
 
+    // setup stream_k workgroup split
+    dispatch_stream_k stream_k(matrix_m, matrix_k, matrix_n, wg_tile_m,
+            gemm_config::k_stride, wg_tile_n, sg_tile_m, sg_tile_n);
     // allocate temp buffers for splitK
-    size_t size_acc = gemm_op_t::get_acc_buf_size(workgroup_split_streamK);
-    size_t size_cnt = gemm_op_t::get_cnt_buf_size(workgroup_split_streamK);
+    size_t size_acc = gemm_op_t::get_acc_buf_size(stream_k);
+    size_t size_cnt = gemm_op_t::get_cnt_buf_size(stream_k);
 
     auto Acc = alloc_device_and_init<data_type_acc>(
             size_acc,
             [](data_type_acc *data, size_t idx) {
                 data[idx] = static_cast<data_type_acc>(0.0f);
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto Cnt = alloc_device_and_init<uint32_t>(
             size_cnt,
             [](uint32_t *data, size_t idx) {
                 data[idx] = static_cast<uint32_t>(0);
             },
-            Queue, Device, Context);
+            queue, device, context);
 
     // set up gemm arguments
     typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A,
             matrix_k, B, matrix_n, C, matrix_n, Acc, matrix_n, Cnt, size_cnt,
-            epilogue_args);
+            stream_k, epilogue_args);
 
-    cl::sycl::nd_range<3> NDRange
-            = gemm_op_t::get_nd_range(workgroup_split_streamK);
+    cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(gemm_arg);
 
     if (!gemm_op_t::can_implement(gemm_arg)) {
         std::cout << "The arguments cannot be supported, aborting ... "
@@ -391,16 +394,17 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
 
     uint32_t warmup = 5;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k;
-    profiling_helper prof("streamK_universal_gemm_relu_biasadd", ops, "gflops");
+    profiling_helper prof(
+            "stream_k_universal_gemm_relu_biasadd", ops, "gflops");
     for (uint32_t i = 0; i < iter + warmup; i++) {
         if (i >= warmup) { prof.cpu_start(); }
-        auto gpu_event = Queue.submit([&](handler &cgh) {
+        auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                 // allocate slm and nbarrier resource
                 slm_barrier_init<gemm_op_t>();
                 gemm_op_t gemm_op;
-                gemm_op(item, gemm_arg, workgroup_split_streamK);
+                gemm_op(item, gemm_arg);
             });
         });
         gpu_event.wait();
@@ -413,26 +417,26 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             gemm_relu_bias_result_validate(A, B, C, Bias, matrix_m, matrix_k,
-                    matrix_n, Queue, mem_layout::row_major,
+                    matrix_n, queue, mem_layout::row_major,
                     mem_layout::row_major));
 
     //performance
     if (iter > 0) { prof.print_profiling_result(profiling_selector::GPU); }
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
-    free(Acc, Context);
-    free(Cnt, Context);
-    free(Bias, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
+    free(Acc, context);
+    free(Cnt, context);
+    free(Bias, context);
 }
 
 int main() {
 
-    //Example for streamK parallel decomposition algorithm
+    //Example for stream_k parallel decomposition algorithm
     //Implementation loosely based on this paper "Stream-K: Work-centric Parallel Decomposition for Dense Matrix-Matrix Multiplication on the GPU" (https://arxiv.org/abs/2301.03598)
-    //First example demonstrates streamK GEMM split , Second example demonstrates streamK GEMM + post-op fusion
-    streamK_gemm_run(10);
-    streamK_gemm_relu_biasadd_run(10);
+    //First example demonstrates stream_k GEMM split , Second example demonstrates stream_k GEMM + post-op fusion
+    stream_k_gemm_run(10);
+    stream_k_gemm_relu_biasadd_run(10);
     return (0);
 }

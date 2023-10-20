@@ -194,11 +194,11 @@ void dequantize_gemm_run(int iter) {
 
     //Turn on the enable_profiling property to facilitate subsequent profiling
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
-    auto Queue = queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
     using tile_shape = xetla::group::tile_shape_t<wg_tile_n, wg_tile_m,
             sg_tile_n, sg_tile_m>;
@@ -236,41 +236,41 @@ void dequantize_gemm_run(int iter) {
 
     //Define and initialize the data required for the calculation
     auto *A_h = static_cast<data_type_a *>(
-            malloc_host(size_a * sizeof(data_type_a), Context));
+            malloc_host(size_a * sizeof(data_type_a), context));
     auto *B_h = static_cast<data_type_b *>(
-            malloc_host(size_b * sizeof(data_type_b), Context));
+            malloc_host(size_b * sizeof(data_type_b), context));
     auto *C_h = static_cast<data_type_c *>(
-            malloc_host(size_c * sizeof(data_type_c), Context));
+            malloc_host(size_c * sizeof(data_type_c), context));
     auto *Acc_h = static_cast<data_type_acc *>(
-            malloc_host(size_acc * sizeof(data_type_acc), Context));
+            malloc_host(size_acc * sizeof(data_type_acc), context));
     auto *Cnt_h = static_cast<uint32_t *>(
-            malloc_host(size_cnt * sizeof(uint32_t), Context));
+            malloc_host(size_cnt * sizeof(uint32_t), context));
     auto *scale_h = static_cast<data_type_scale *>(
-            malloc_host(size_scale * sizeof(data_type_scale), Context));
+            malloc_host(size_scale * sizeof(data_type_scale), context));
     auto *zero_pt_h = static_cast<data_type_zero_pt *>(
-            malloc_host(size_zero_pt * sizeof(data_type_zero_pt), Context));
+            malloc_host(size_zero_pt * sizeof(data_type_zero_pt), context));
 
     auto *A_d = static_cast<data_type_a *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
-                    size_a * sizeof(data_type_a), Device, Context));
+                    size_a * sizeof(data_type_a), device, context));
     auto *B_d = static_cast<data_type_b *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
-                    size_b * sizeof(data_type_b), Device, Context));
+                    size_b * sizeof(data_type_b), device, context));
     auto *C_d = static_cast<data_type_c *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
-                    size_c * sizeof(data_type_c), Device, Context));
+                    size_c * sizeof(data_type_c), device, context));
     auto *Acc_d = static_cast<data_type_acc *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
-                    size_acc * sizeof(data_type_acc), Device, Context));
+                    size_acc * sizeof(data_type_acc), device, context));
     auto *Cnt_d
             = static_cast<uint32_t *>(aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
-                    size_cnt * sizeof(uint32_t), Device, Context));
+                    size_cnt * sizeof(uint32_t), device, context));
     auto *scale_d = static_cast<data_type_scale *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
-                    size_scale * sizeof(data_type_scale), Device, Context));
+                    size_scale * sizeof(data_type_scale), device, context));
     auto *zero_pt_d = static_cast<data_type_zero_pt *>(
             aligned_alloc_device(DEVICE_MEM_ALIGNMENT,
-                    size_zero_pt * sizeof(data_type_zero_pt), Device, Context));
+                    size_zero_pt * sizeof(data_type_zero_pt), device, context));
 
     for (unsigned i = 0; i < size_a; ++i) {
         A_h[i] = random_float();
@@ -294,17 +294,17 @@ void dequantize_gemm_run(int iter) {
         Cnt_h[i] = 0;
     }
 
-    Queue.memcpy((void *)A_d, (void *)A_h, size_a * sizeof(data_type_a)).wait();
-    Queue.memcpy((void *)B_d, (void *)B_h, size_b * sizeof(data_type_b)).wait();
-    Queue.memcpy((void *)C_d, (void *)C_h, size_c * sizeof(data_type_c)).wait();
-    Queue.memcpy((void *)Acc_d, (void *)Acc_h, size_acc * sizeof(data_type_acc))
+    queue.memcpy((void *)A_d, (void *)A_h, size_a * sizeof(data_type_a)).wait();
+    queue.memcpy((void *)B_d, (void *)B_h, size_b * sizeof(data_type_b)).wait();
+    queue.memcpy((void *)C_d, (void *)C_h, size_c * sizeof(data_type_c)).wait();
+    queue.memcpy((void *)Acc_d, (void *)Acc_h, size_acc * sizeof(data_type_acc))
             .wait();
-    Queue.memcpy((void *)Cnt_d, (void *)Cnt_h, size_cnt * sizeof(uint32_t))
+    queue.memcpy((void *)Cnt_d, (void *)Cnt_h, size_cnt * sizeof(uint32_t))
             .wait();
-    Queue.memcpy((void *)scale_d, (void *)scale_h,
+    queue.memcpy((void *)scale_d, (void *)scale_h,
                  size_scale * sizeof(data_type_scale))
             .wait();
-    Queue.memcpy((void *)zero_pt_d, (void *)zero_pt_h,
+    queue.memcpy((void *)zero_pt_d, (void *)zero_pt_h,
                  size_zero_pt * sizeof(data_type_zero_pt))
             .wait();
 
@@ -325,7 +325,7 @@ void dequantize_gemm_run(int iter) {
     try {
         for (int i = 0; i < iter; i++) {
             prof.cpu_start();
-            auto e_esimd = Queue.submit([&](handler &cgh) {
+            auto e_esimd = queue.submit([&](handler &cgh) {
                 cgh.parallel_for<Test>(
                         nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                             // allocate slm and nbarrier resource
@@ -368,25 +368,25 @@ void dequantize_gemm_run(int iter) {
         }
     }
 
-    Queue.memcpy((void *)C_h, (void *)C_d, size_c * sizeof(data_type_c)).wait();
+    queue.memcpy((void *)C_h, (void *)C_d, size_c * sizeof(data_type_c)).wait();
     ASSERT_EQ(0,
             gemm_result_validate(A_h, dequantize_b.data(), C_h, matrix_m,
                     matrix_k, matrix_n));
 
-    free(A_h, Context);
-    free(B_h, Context);
-    free(C_h, Context);
-    free(scale_h, Context);
-    free(zero_pt_h, Context);
-    free(A_d, Context);
-    free(B_d, Context);
-    free(C_d, Context);
-    free(scale_d, Context);
-    free(zero_pt_d, Context);
-    free(Acc_h, Context);
-    free(Cnt_h, Context);
-    free(Acc_d, Context);
-    free(Cnt_d, Context);
+    free(A_h, context);
+    free(B_h, context);
+    free(C_h, context);
+    free(scale_h, context);
+    free(zero_pt_h, context);
+    free(A_d, context);
+    free(B_d, context);
+    free(C_d, context);
+    free(scale_d, context);
+    free(zero_pt_d, context);
+    free(Acc_h, context);
+    free(Cnt_h, context);
+    free(Acc_d, context);
+    free(Cnt_d, context);
 }
 
 template <typename T>

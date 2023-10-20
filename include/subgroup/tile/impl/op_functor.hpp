@@ -582,7 +582,7 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, arch_tag,
     }
 };
 
-/// @brief Is the element-wise reduce op functor, specialized for streamK dispatch
+/// @brief Is the element-wise reduce op functor, specialized for stream_k dispatch
 ///Load partial sum from scratchspace
 ///Reduce in GRF
 ///Store zero to scratchspace
@@ -592,10 +592,10 @@ struct elemwise_reduce_op_t<reduce_kind_, dtype_in_, arch_tag,
 /// @tparam arch_tag Is the hardware architecture tag.
 template <reduce_op reduce_kind, typename dtype_in,
         gpu_arch arch_tag = gpu_arch::Xe>
-struct elemwise_reduce_op_streamK_t {};
+struct elemwise_reduce_op_stream_k_t {};
 /// @brief Is the element-wise reduce op functor, specialized for Xe architecture.
 template <reduce_op reduce_kind_, typename dtype_in_>
-struct elemwise_reduce_op_streamK_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
+struct elemwise_reduce_op_stream_k_t<reduce_kind_, dtype_in_, gpu_arch::Xe> {
     using dtype_in = dtype_in_;
     using mem_desc_in_t
             = mem_desc_t<dtype_in, mem_layout::row_major, mem_space::global>;

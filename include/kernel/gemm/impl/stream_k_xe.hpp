@@ -22,8 +22,6 @@
 #include "kernel/gemm/api.hpp"
 #include "kernel/gemm/common.hpp"
 #include "kernel/gemm/dispatch_policy.hpp"
-#include "kernel/gemm/impl/workgroup_split_streamK.hpp"
-
 namespace gpu::xetla::kernel {
 
 /// @addtogroup xetla_gemm_universal
@@ -34,12 +32,13 @@ namespace gpu::xetla::kernel {
 /// @tparam gemm_t_ Is the gemm functor to compose a GEMM_UNIVERSAL.
 /// @tparam epilogue_t_ Is the epilogue functor to compose a GEMM_UNIVERSAL.
 template <typename gemm_t_, typename epilogue_t_>
-class gemm_universal_t<dispatch_policy_streamK<gpu_arch::Xe>, gemm_t_,
+class gemm_universal_t<dispatch_policy_stream_k<gpu_arch::Xe>, gemm_t_,
         epilogue_t_> {
     using gemm_t = gemm_t_;
     using epilogue_t = epilogue_t_;
     using gemm_args_t = typename gemm_t::arguments_t;
     using epilogue_args_t = typename epilogue_t::arguments_t;
+    using dispatch_stream_k = dispatch_policy_stream_k<gpu_arch::Xe>;
 
     //Scratchspace to accumulate partials
     using mem_desc_d_t
@@ -77,8 +76,8 @@ class gemm_universal_t<dispatch_policy_streamK<gpu_arch::Xe>, gemm_t_,
     using dtype_b = typename mem_desc_b_t::dtype;
     using dtype_c = typename mem_desc_c_t::dtype;
     using matAcc_t = typename gemm_t::matAcc_t;
-    using epilogue_streamK_t = group::epilogue_streamK_t<tile_shape, epilogue_t,
-            mem_desc_d_t, mem_desc_atomic_sync_t>;
+    using epilogue_stream_k_t = group::epilogue_stream_k_t<tile_shape,
+            epilogue_t, mem_desc_d_t, mem_desc_atomic_sync_t>;
 
 public:
     /// @brief GEMM arguments.
@@ -110,6 +109,8 @@ public:
         matD_base_t matD_base;
         /// @brief Is the base address of groupsync buf
         matatomic_sync_base_t matatomic_sync_base;
+        /// @brief Is the workgroup split streamk arguments.
+        dispatch_stream_k stream_k_args;
         /// @brief Is the epilogue arguments.
         epilogue_args_t epilogue_args;
 
@@ -140,7 +141,7 @@ public:
                 matC_base_t matC_base_, uint32_t matC_ld_,
                 matD_base_t matD_base_, uint32_t matD_ld_,
                 matatomic_sync_base_t matatomic_sync_base_,
-                uint32_t matatomic_sync_ld_,
+                uint32_t matatomic_sync_ld_, dispatch_stream_k stream_k_args_,
                 epilogue_args_t epilogue_args_ = {})
             : matrix_m(matrix_m_)
             , matrix_k(matrix_k_)
@@ -155,6 +156,7 @@ public:
             , matD_ld(matD_ld_)
             , matatomic_sync_base(matatomic_sync_base_)
             , matatomic_sync_ld(matatomic_sync_ld_)
+            , stream_k_args(stream_k_args_)
             , epilogue_args(epilogue_args_) {}
         // Be aware of the risks: Rule of three (copy constructor, copy assignment, destructor)
         // Please check if you need to add self-define destructor
@@ -173,6 +175,7 @@ public:
             , matD_ld(args.matD_ld)
             , matatomic_sync_base(args.matatomic_sync_base)
             , matatomic_sync_ld(args.matatomic_sync_ld)
+            , stream_k_args(args.stream_k_args)
             , epilogue_args(args.epilogue_args) {}
         inline arguments_t &operator=(const arguments_t &args) {
             this->matrix_m = args.matrix_m;
@@ -188,6 +191,7 @@ public:
             this->matD_ld = args.matD_ld;
             this->matatomic_sync_base = args.matatomic_sync_base;
             this->matatomic_sync_ld = args.matatomic_sync_ld;
+            this->stream_k_args = args.stream_k_args;
             this->epilogue_args = args.epilogue_args;
             return *this;
         }
@@ -198,7 +202,8 @@ public:
     /// @return The count of named barriers required.
     __XETLA_API static constexpr uint32_t get_barrier_count() {
         constexpr uint32_t count = gemm_t::barrier_count
-                + epilogue_t::barrier_count + epilogue_streamK_t::barrier_count;
+                + epilogue_t::barrier_count
+                + epilogue_stream_k_t::barrier_count;
         static_assert(
                 count <= 32, "The named_barrier count should be less than 32!");
         return count;
@@ -222,40 +227,16 @@ public:
         std::cout << "Local range: {" << 1 << ", " << local_range_m << ", "
                   << local_range_n << "} \n";
         assert(local_range_m * local_range_n <= 32);
-        //Linearize for streamK algorithm
+        //Linearize for stream_k algorithm
         return cl::sycl::range<3> {1, 1, local_range_m * local_range_n};
     };
 
     /// @brief Host helper function to get the expected nd_range under the current GEMM config.
     /// @return Expected nd_range.
-    static cl::sycl::nd_range<3> get_nd_range(
-            WorkgroupSplitStreamK_t &workgroup_mapping) {
+    static cl::sycl::nd_range<3> get_nd_range(arguments_t &args) {
         cl::sycl::range<3> local_range = get_local_range();
-        cl::sycl::range<3> group_range = workgroup_mapping.get_group_range();
+        cl::sycl::range<3> group_range = args.stream_k_args.get_group_range();
         return cl::sycl::nd_range<3> {group_range * local_range, local_range};
-    };
-
-    /// @brief Host helper function to get the expected accumulation buffer size of the current STREAMK_GEMM_UNIVERSAL config.
-    /// @param matrix_m Is the size of the m dimension of the matrix multiplication (m x k x n).
-    /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
-    /// @return Expected accumulation buffer size in unit of elements.
-    static size_t get_acc_buf_size(WorkgroupSplitStreamK_t &workgroup_mapping) {
-        return workgroup_mapping.matrix_m * workgroup_mapping.matrix_n;
-    };
-
-    /// @brief Host helper function to get the expected counter buffer size of the current STREAMK_GEMM_UNIVERSAL config.
-    /// @return Expected counter buffer size in unit of elements.
-    static size_t get_cnt_buf_size(WorkgroupSplitStreamK_t &workgroup_mapping) {
-
-        //For atomic reduction each SK group needs a synchronization flag
-        uint32_t num_flags = workgroup_mapping.sk_regions
-                * workgroup_mapping.sk_groups_per_region;
-        const int barrier_size = sizeof(uint32_t);
-        uint32_t atomic_space_bytes
-                = cacheline_align_up(num_flags * barrier_size);
-        uint32_t atomic_space_elements = atomic_space_bytes / barrier_size;
-
-        return atomic_space_elements;
     };
 
     /// @brief Check if the arguments can be implemented.
@@ -265,37 +246,44 @@ public:
         bool implementable = true;
         if (gemm_t::msg_type_a != msg_type::unaligned_2d) {
             if (gemm_t::msg_type_a == msg_type::block_2d) {
-                implementable &= kernel::block_2d<gpu_arch::Xe,
-                        dtype_a>::check_tensor((uint64_t)(args.matA_base.base),
-                        gemm_t::is_col_major_a ? args.matrix_m : args.matrix_k,
-                        gemm_t::is_col_major_a ? args.matrix_k : args.matrix_m,
-                        args.matA_ld);
+                implementable
+                        &= kernel::block_2d<arch_tag, dtype_a>::check_tensor(
+                                (uint64_t)(args.matA_base.base),
+                                gemm_t::is_col_major_a ? args.matrix_m
+                                                       : args.matrix_k,
+                                gemm_t::is_col_major_a ? args.matrix_k
+                                                       : args.matrix_m,
+                                args.matA_ld);
             } else {
-                implementable &= kernel::general_1d<gpu_arch::Xe,
+                implementable &= kernel::general_1d<arch_tag,
                         dtype_a>::check_alignment(args.matA_base.base,
                         args.matA_ld);
             }
         }
         if (gemm_t::msg_type_b != msg_type::unaligned_2d) {
             if (gemm_t::msg_type_b == msg_type::block_2d) {
-                implementable &= kernel::block_2d<gpu_arch::Xe,
-                        dtype_b>::check_tensor((uint64_t)(args.matB_base.base),
-                        gemm_t::is_col_major_b ? args.matrix_k : args.matrix_n,
-                        gemm_t::is_col_major_b ? args.matrix_n : args.matrix_k,
-                        args.matB_ld);
+                implementable
+                        &= kernel::block_2d<arch_tag, dtype_b>::check_tensor(
+                                (uint64_t)(args.matB_base.base),
+                                gemm_t::is_col_major_b ? args.matrix_k
+                                                       : args.matrix_n,
+                                gemm_t::is_col_major_b ? args.matrix_n
+                                                       : args.matrix_k,
+                                args.matB_ld);
             } else {
-                implementable &= kernel::general_1d<gpu_arch::Xe,
+                implementable &= kernel::general_1d<arch_tag,
                         dtype_b>::check_alignment(args.matB_base.base,
                         args.matB_ld);
             }
         }
         if (epilogue_t::msg_type_c != msg_type::unaligned_2d) {
             if (epilogue_t::msg_type_c == msg_type::block_2d) {
-                implementable &= kernel::block_2d<gpu_arch::Xe,
-                        dtype_c>::check_tensor((uint64_t)(args.matC_base.base),
-                        args.matrix_n, args.matrix_m, args.matC_ld);
+                implementable
+                        &= kernel::block_2d<arch_tag, dtype_c>::check_tensor(
+                                (uint64_t)(args.matC_base.base), args.matrix_n,
+                                args.matrix_m, args.matC_ld);
             } else {
-                implementable &= kernel::general_1d<gpu_arch::Xe,
+                implementable &= kernel::general_1d<arch_tag,
                         dtype_c>::check_alignment(args.matC_base.base,
                         args.matC_ld);
             }
@@ -368,17 +356,39 @@ protected:
     }
 
 public:
-    /// @brief Main execution function for streamK GEMM.
+    /// @brief Host helper function to get the expected accumulation buffer size of the current STREAMK_GEMM_UNIVERSAL config.
+    /// @param matrix_m Is the size of the m dimension of the matrix multiplication (m x k x n).
+    /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
+    /// @return Expected accumulation buffer size in unit of elements.
+    static size_t get_acc_buf_size(dispatch_stream_k &stream_k_args) {
+        return stream_k_args.matrix_m * stream_k_args.matrix_n;
+    };
+
+    /// @brief Host helper function to get the expected counter buffer size of the current STREAMK_GEMM_UNIVERSAL config.
+    /// @return Expected counter buffer size in unit of elements.
+    static size_t get_cnt_buf_size(dispatch_stream_k &stream_k_args) {
+
+        //For atomic reduction each SK group needs a synchronization flag
+        uint32_t num_flags
+                = stream_k_args.sk_regions * stream_k_args.sk_groups_per_region;
+        const int barrier_size = sizeof(uint32_t);
+        uint32_t atomic_space_bytes
+                = cacheline_align_up(num_flags * barrier_size);
+        uint32_t atomic_space_elements = atomic_space_bytes / barrier_size;
+
+        return atomic_space_elements;
+    };
+
+    /// @brief Main execution function for stream_k GEMM.
     /// The processing order is 1) set group-level base and boundary -> 2) gemm -> 3) epilogue.
-    /// @param ei Is the execution item, returns execution related information, such as workgroup id, subgroup id...
+    /// @param item Is the sycl::nd_item, returns execution related information, such as workgroup id, subgroup id...
     /// @param args Is the GEMM arguments for application-related runtime variables.
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.
     __XETLA_API KERNEL_FUNC void operator()(sycl::nd_item<3> &item,
-            const arguments_t &args,
-            const WorkgroupSplitStreamK_t &workgroup_mapping,
-            uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
-
+            const arguments_t &args, uint32_t slm_base = 0,
+            uint32_t nbarrier_base = 0) {
+        const dispatch_stream_k &workgroup_mapping = args.stream_k_args;
         int group_idx = item.get_group(2);
 
         int tile_idx = 0;
@@ -434,7 +444,7 @@ public:
         workgroup_mapping.get_tile_offsets(
                 tile_idx, tile_work.tile_offset_m, tile_work.tile_offset_n);
 
-        epilogue_streamK_t epilogue_streamK;
+        epilogue_stream_k_t epilogue_stream_k;
 
         //StreamK processing loop body
         while (true) {
@@ -511,7 +521,7 @@ public:
 
                 gemm(g, matAcc, gemm_args, gemm_slm_base, gemm_nbarr_base);
 
-                epilogue_streamK(g, matAcc, mem_desc_c, mem_desc_d,
+                epilogue_stream_k(g, matAcc, mem_desc_c, mem_desc_d,
                         mem_desc_atomic_sync, group_idx, first_group_idx,
                         tile_finished, tile_started, args.epilogue_args,
                         epilogue_slm_base, epilogue_nbarr_base);

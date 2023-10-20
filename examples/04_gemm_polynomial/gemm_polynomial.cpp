@@ -133,11 +133,86 @@ void gemm_polynomial_run(int iter) {
     uint32_t ldb = matrix_n;
     uint32_t ldc = matrix_n;
 
-    // Ndrange and workgroup shape
-    cl::sycl::range<3> group_range {1, group_range_m, group_range_n};
-    cl::sycl::range<3> local_range {1, thread_range_m, thread_range_n};
+    //There are implicit requirement for sg_tile_k range
+    constexpr uint32_t sg_tile_k = 32;
+    static constexpr uint32_t sync_freq = 8;
+    static constexpr uint32_t stages = 3;
 
-    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
+    // Org the compute shape for sub-matrix
+    using tile_shape
+            = xetla::group::tile_shape_t<wg_tile_n, // workgroup size in dim0
+                    wg_tile_m, //	workgroup size in dim1
+                    sg_tile_n, //	subgroup size in dim0
+                    sg_tile_m>; //	subgroup size in dim1
+
+    // Mirco-kernel configuration
+    using gemm_t = typename xetla::group::gemm_selector_t<
+            data_type_a, // input datatype for A
+            data_type_b, // input datatype for B
+            mem_layout::row_major, // memory layout for A
+            mem_layout::row_major, // memory layout for B
+            mem_space::global, // memory reading from global mem for A
+            mem_space::global, // memory reading from global mem for B
+            8, // buffer alignment for A, in unit of element
+            8, // buffer alignment for B, in unit of element
+            data_type_acc, // accumulator data type for intermediate resutls
+            tile_shape, // computation tile shape
+            sg_tile_k, // elements in each iteration
+            mma_engine::xmx, // compute engine
+            gpu_arch::Xe, // GPU arch
+            stages, // number of prefetch pipe stage
+            sync_freq> // frequency of periodic sync, in unit of inner loop
+            ::gemm;
+
+    // epilogue function to define how to write result back or post
+    // fusion
+    // [Polynomial] Define tile_op used in epilogue_t: polynomial_op_t
+    // evaluate a 2nd-order polynomial, datatype matches accumulator datatype
+    using polynomial_op_t = xetla::subgroup::polynomial_op_t<data_type_acc, 3>;
+    using tile_op_t = xetla::subgroup::chained_tile_op_t<polynomial_op_t>;
+    // [Polynomial] epilogue_t is an elementwise operation that will be applied to the
+    // accumulator C_acc in the final stage, in which
+    //   C_acc = A x B
+    // is already calculated.
+    // Mathematically epilogue_t is a map that applies to each element:
+    //   epilogue_t: [m, n] -> [m, n], C_acc |-> tile_op_t(C_acc)
+    using epilogue_t = xetla::group::epilogue_t<
+            xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>,
+            tile_shape,
+            mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
+
+    // [Polynomial] define arguments for each epilogue_tile_op in chained_tile_op_t<>
+    using epilogue_tile_op_args_t = epilogue_t::tile_op_t::arguments_t;
+    // [Polynomial] specify polynomial_op_t coefficients
+    // a_2 = 1.0f, a_1 = 2.0f, a_0 = 4.0f
+    using coeff_t = polynomial_op_t::coeff_t;
+    coeff_t polynomial_coeff({1.0f, 2.0f, 4.0f});
+    epilogue_tile_op_args_t tile_op_args(
+            // [Polynomial] polynomial_op_t coefficients
+            polynomial_coeff);
+
+    // [Polynomial] pass arguments of chained_tile_op_t<> to epilogue_args
+    using epilogue_args_t = epilogue_t::arguments_t;
+    epilogue_args_t epilogue_args(tile_op_args);
+
+    using gemm_op_t = xetla::kernel::gemm_universal_t<
+            xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, gemm_t,
+            epilogue_t>;
+
+    // set up gemm_universal arguments
+    typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n, A,
+            matrix_k, B, matrix_n, C, matrix_n, {epilogue_args});
+
+    cl::sycl::nd_range<3> nd_range = gemm_op_t::get_nd_range(gemm_arg);
+
+    if (!gemm_op_t::can_implement(gemm_arg)) {
+        std::cout << "The arguments cannot be supported, aborting ... "
+                  << std::endl;
+        free(A, context);
+        free(B, context);
+        free(C, context);
+        FAIL();
+    }
 
     uint32_t warmup = 10;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k
@@ -148,120 +223,9 @@ void gemm_polynomial_run(int iter) {
         auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                using namespace gpu::xetla;
-                using namespace gpu::xetla::group;
-                using namespace gpu::xetla::kernel;
-                using namespace gpu::xetla::subgroup;
-
-                // wrap the nd_range to XeTLA range
-
-                // Step 1: basic computation information
-                // define A, B and accumulator datatype
-                // Using float as accumuator for better accuracy
-                using compute_attr = compute_attr_t<data_type_a, data_type_b,
-                        data_type_acc>;
-
-                // Performance tuning setting based on different shapes
-                static constexpr uint32_t periodic_sync_interval = 8;
-                static constexpr uint32_t prefetch_distance = 3;
-                // should larger than 8
-                static constexpr uint32_t k_iter_num = 32;
-                using perf_tuning_knob = perf_tuning_knob_t<k_iter_num,
-                        prefetch_distance, periodic_sync_interval>;
-
-                // specific the computation, performance tuning and computation core
-                using compute_policy = compute_policy_default_xmx<compute_attr,
-                        perf_tuning_knob, gpu_arch::Xe>;
-
-                // Step 2: define the memory layout & location of input/output
-                // this setting could be used to optimize the data re-use in shared
-                // local memory
-                using mem_desc_input_a = mem_desc_t<data_type_a,
-                        mem_layout::row_major, mem_space::global>;
-                using mem_desc_input_b = mem_desc_t<data_type_b,
-                        mem_layout::row_major, mem_space::global>;
-                using mem_desc_output_c = mem_desc_t<data_type_c,
-                        mem_layout::row_major, mem_space::global>;
-
-                // Step 3: define mirco-kernel's configuration
-                using tile_shape = tile_shape_t<wg_tile_n, wg_tile_m, sg_tile_n,
-                        sg_tile_m>;
-                using gemm_t = gemm_t<compute_policy, tile_shape,
-                        mem_desc_input_a, mem_desc_input_b>;
-                gemm_t gemm;
-
-                // Step 4: epilogue function to define how to write result back or post
-                // fusion
-                // [Polynomial] Define tile_op used in epilogue_t: polynomial_op_t
-                // evaluate a 2nd-order polynomial, datatype matches accumulator datatype
-                using polynomial_op_t = polynomial_op_t<data_type_acc, 3>;
-                using tile_op_t = chained_tile_op_t<polynomial_op_t>;
-                // [Polynomial] epilogue_t is an elementwise operation that will be applied to the
-                // accumulator C_acc in the final stage, in which
-                //   C_acc = A x B
-                // is already calculated.
-                // Mathematically epilogue_t is a map that applies to each element:
-                //   epilogue_t: [m, n] -> [m, n], C_acc |-> tile_op_t(C_acc)
-                using epilogue_t = epilogue_t<
-                        epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>,
-                        tile_shape, mem_desc_output_c>;
-
-                // [Polynomial] define arguments for each epilogue_tile_op in chained_tile_op_t<>
-                using epilogue_tile_op_args_t
-                        = epilogue_t::tile_op_t::arguments_t;
-                // [Polynomial] specify polynomial_op_t coefficients
-                // a_2 = 1.0f, a_1 = 2.0f, a_0 = 4.0f
-                using coeff_t = polynomial_op_t::coeff_t;
-                coeff_t polynomial_coeff({1.0f, 2.0f, 4.0f});
-                epilogue_tile_op_args_t tile_op_args(
-                        // [Polynomial] polynomial_op_t coefficients
-                        polynomial_coeff);
-
-                // [Polynomial] pass arguments of chained_tile_op_t<> to epilogue_args
-                using epilogue_args_t = epilogue_t::arguments_t;
-                epilogue_args_t epilogue_args(tile_op_args);
-
-                // Step 5: define the shared local memory usages
-                // developers have the responsibility to set
-                // shared loacal memory through XeTLA API
-                static constexpr uint32_t barrier_count = gemm_t::barrier_count;
-                static constexpr uint32_t slm_size = gemm_t::slm_size;
-                xetla_nbarrier_init<barrier_count>();
-                xetla_local_init<slm_size>();
-
-                // Step 6: ecah workgroup gets it individual index to start computation
-                int start_n = item.get_group(2) * wg_tile_n;
-                int start_m = item.get_group(1) * wg_tile_m;
-                // no slicing in K direction so start from zero for all WG
-                int start_k = 0;
-
-                // Each workgroup will compute all data in K based on no k_sliciing
-                // The developer can set how much data a subgroup compute by k_iter_num
-                uint32_t wg_tile_k = matrix_k;
-                uint32_t inner_loop_count = wg_tile_k / k_iter_num;
-
-                // Step 7: define the workgroup start point for each workgroup
-                mem_desc_input_a md_a(
-                        {A}, {matrix_k, matrix_m, lda}, {start_k, start_m});
-                mem_desc_input_b md_b(
-                        {B}, {matrix_n, matrix_k, ldb}, {start_n, start_k});
-                mem_desc_output_c md_c(
-                        {C}, {matrix_n, matrix_m, ldc}, {start_n, start_m});
-
-                // Step 8: real calculation with accumulator varibales which suppose
-                // will be in register.
-                gemm_t::matAcc_t matAcc;
-                matAcc.init(0);
-
-                gemm_t::arguments_t gemm_args(md_a, md_b, inner_loop_count);
-
-                // the results is in the matAcc rather than real output C
-                gemm_t::work_group_t g(item.get_local_linear_id());
-                gemm(g, matAcc, gemm_args);
-
-                // Step 9: write the results from matACC to real output C
-                epilogue_t epilogue;
-                epilogue(g, matAcc, md_c, epilogue_args);
+                slm_barrier_init<gemm_op_t>();
+                gemm_op_t gemm_op;
+                gemm_op(item, gemm_arg);
             });
         });
         gpu_event.wait();

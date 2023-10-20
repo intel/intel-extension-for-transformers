@@ -267,7 +267,7 @@ public:
 
     /// @brief Main execution function for GEMM_UNIVERSAL.
     /// The processing order is 1) set group-level base and boundary -> 2) gemm -> 3) epilogue.
-    /// @param ei Is the execution item, returns execution related information, such as workgroup id, subgroup id...
+    /// @param item Is the sycl::nd_item, returns execution related information, such as workgroup id, subgroup id...
     /// @param args Is the GEMM_UNIVERSAL arguments for application-related runtime variables.
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.

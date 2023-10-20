@@ -1,6 +1,7 @@
 include_directories(${CMAKE_SOURCE_DIR}/tests/integration/gemm)
 
 add_subdirectory(bf16)
+add_subdirectory(bf16_stream_k)
 add_subdirectory(fp16)
 add_subdirectory(fp32)
 add_subdirectory(int8_quantization)

@@ -28,5 +28,4 @@
 #include "kernel/gemm/impl/block_xe.hpp"
 #include "kernel/gemm/impl/default_xe.hpp"
 #include "kernel/gemm/impl/kslicing_xe.hpp"
-#include "kernel/gemm/impl/streamK_xe.hpp"
-#include "kernel/gemm/impl/workgroup_split_streamK.hpp"
+#include "kernel/gemm/impl/stream_k_xe.hpp"

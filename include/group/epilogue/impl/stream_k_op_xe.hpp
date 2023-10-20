@@ -28,10 +28,10 @@ namespace gpu::xetla::group {
 /// @addtogroup xetla_epilogue
 /// @{
 
-/// @brief Is the epilogue functor specialized for streamK
+/// @brief Is the epilogue functor specialized for stream_k
 template <typename tile_shape_, typename epilogue_t_, typename mem_desc_d_t_,
         typename mem_desc_atomic_sync_t_>
-struct epilogue_streamK_t {
+struct epilogue_stream_k_t {
 
     static constexpr gpu_arch arch_tag = gpu_arch::Xe;
     using epilogue_t = epilogue_t_;
@@ -62,7 +62,7 @@ struct epilogue_streamK_t {
 
     //Use special residual op for finishing SK groups to read from scratchspace buffer and reduce in GRF; They also store zeros in scratchspace buffer
     using residual_op_t
-            = subgroup::elemwise_reduce_op_streamK_t<reduce_op::sum, dtype_d>;
+            = subgroup::elemwise_reduce_op_stream_k_t<reduce_op::sum, dtype_d>;
     using residual_op_args_t = typename residual_op_t::arguments_t;
 
     static constexpr mem_layout mem_layout_d = mem_desc_d_t::layout;
@@ -80,7 +80,7 @@ struct epilogue_streamK_t {
         mem_desc_d.update_coord(tile_offset_n, tile_offset_m);
     }
 
-    /// @brief Epilogue for streamK.
+    /// @brief Epilogue for stream_k.
     ///Differentiate between Non-finishing SK groups vs finishing SK groups vs DP groups
     ///Initial SK groups perform atomic writes to scratchspace
     ///Final SK groups wait for their peers to finish , reads partial data from scratchspace and reduce in GRF
@@ -89,7 +89,7 @@ struct epilogue_streamK_t {
     /// @param g Is the workgroup of the current tile.
     /// @param matAcc Is the input tile.
     /// @param mem_desc_c Is the memory description of matC, including base, shape and coordinate.
-    /// @param dp_group indicates whether current group is data-parallel or streamK
+    /// @param dp_group indicates whether current group is data-parallel or stream_k
     template <typename matAcc_t>
     __XETLA_API KERNEL_FUNC void operator()(work_group_t &g, matAcc_t &matAcc,
             mem_desc_c_t mem_desc_c, mem_desc_d_t mem_desc_d,
@@ -187,7 +187,7 @@ struct epilogue_streamK_t {
                 nbarrier.arrive();
                 nbarrier.wait();
 
-                //Invoke streamK residual op
+                //Invoke stream_k residual op
                 residual_op_t residual_op;
                 residual_op_args_t residual_args(
                         mem_desc_d.base, mem_desc_d.shape);

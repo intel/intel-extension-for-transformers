@@ -163,7 +163,7 @@ struct xetla_data_transformer<dtype_in_, dtype_out_, dtype_compute_,
 
     /// @brief Main execution function for data_transformer.
     /// The basic process is load data -> data_transformer -> write out.
-    /// @param ei
+    /// @param item Is the sycl::nd_item.
     /// @param args Includes base pointer and matrix size.
     /// @return
     __XETLA_API static void call(sycl::nd_item<3> &item, arguments_t *args) {

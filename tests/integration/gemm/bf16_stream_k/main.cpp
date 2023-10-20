@@ -66,7 +66,7 @@ int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
     return result ? 0 : 1;
 }
 
-//Test 0.25 wave on 1 Tile PVC.  Multiple streamK regions are created. Generalizes to fixed split-K technique
+//Test 0.25 wave on 1 Tile PVC.  Multiple stream_k regions are created. Generalizes to fixed split-K technique
 class Test1 {
 public:
     //Extract the parameters required by different test cases
@@ -171,7 +171,7 @@ public:
     using data_type_c = bf16;
 };
 
-//Test 3.515625 wave on 1 Tile PVC.  One StreamK wave and Two Data Parallel waves created. Also tests big_groups logic, where one of the streamK groups perform a extra iteration
+//Test 3.515625 wave on 1 Tile PVC.  One StreamK wave and Two Data Parallel waves created. Also tests big_groups logic, where one of the stream_k groups perform a extra iteration
 class Test6 {
 public:
     //Extract the parameters required by different test cases
@@ -193,7 +193,7 @@ public:
 };
 
 template <class Test>
-void streamK_gemm_run(uint32_t iter) {
+void stream_k_gemm_run(uint32_t iter) {
 
     using namespace gpu;
     //Accept incoming parameters
@@ -211,7 +211,7 @@ void streamK_gemm_run(uint32_t iter) {
     constexpr mem_layout mem_layout_b = Test::layout_b;
     constexpr bool postop_enable = Test::postop_enable;
 
-    //StreamK parameters - xecores available for streamK dispatch
+    //StreamK parameters - xecores available for stream_k dispatch
     constexpr size_t avail_xecores = Test::num_xecores;
 
     uint32_t size_a = matrix_m * matrix_k;
@@ -230,11 +230,11 @@ void streamK_gemm_run(uint32_t iter) {
     sycl::property_list properties {sycl::property::queue::enable_profiling()};
 
     //Define SYCL queue, context and device
-    auto Queue = sycl::queue(properties);
-    auto Context = Queue.get_info<info::queue::context>();
-    auto Device = Queue.get_info<info::queue::device>();
+    auto queue = sycl::queue(properties);
+    auto context = queue.get_info<info::queue::context>();
+    auto device = queue.get_info<info::queue::device>();
 
-    std::cout << "Running on " << Device.get_info<info::device::name>() << "\n";
+    std::cout << "Running on " << device.get_info<info::device::name>() << "\n";
 
     // Org the compute shape for sub-matrix
     using tile_shape
@@ -247,7 +247,7 @@ void streamK_gemm_run(uint32_t iter) {
     static constexpr uint32_t prefetch_distance = 4;
 
     // Mirco-kernel configuration
-    using gemm_config = xetla::group::gemm_selector_t<
+    using gemm_config = typename xetla::group::gemm_selector_t<
             data_type_a, // input datatype for A
             data_type_b, // input datatype for B
             mem_layout_a, // memory layout for A
@@ -264,12 +264,7 @@ void streamK_gemm_run(uint32_t iter) {
             periodic_sync_interval> // GPU arch, prefetch stages, periodic sync frequency
             ::gemm;
 
-    // setup streamK workgroup split
-    gpu::xetla::kernel::WorkgroupSplitStreamK_t workgroup_split_streamK(
-            matrix_m, matrix_k, matrix_n, wg_tile_m, gemm_config::k_stride,
-            wg_tile_n, sg_tile_m, sg_tile_n, avail_xecores);
-
-    // Test post-op fusion with streamK
+    // Test post-op fusion with stream_k
     //[ReLuBias] epilogue_t is an elementwise operation that will be applied to the
     // accumulator C_acc in the final stage, in which
     //   C_acc = A x B
@@ -292,9 +287,16 @@ void streamK_gemm_run(uint32_t iter) {
     using epilogue_t = xetla::group::epilogue_t<epilogue_policy_t, tile_shape,
             mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
-    using gemm_op_t = xetla::kernel::gemm_universal_t<
-            gpu::xetla::kernel::dispatch_policy_streamK<gpu_arch::Xe>,
+    using dispatch_stream_k
+            = gpu::xetla::kernel::dispatch_policy_stream_k<gpu_arch::Xe>;
+
+    using gemm_op_t = xetla::kernel::gemm_universal_t<dispatch_stream_k,
             gemm_config, epilogue_t>;
+
+    // setup stream_k workgroup split
+    dispatch_stream_k stream_k(matrix_m, matrix_k, matrix_n, wg_tile_m,
+            gemm_config::k_stride, wg_tile_n, sg_tile_m, sg_tile_n,
+            avail_xecores);
 
     setenv("SYCL_PROGRAM_COMPILE_OPTIONS",
             " -vc-codegen -doubleGRF -vc-disable-indvars-opt "
@@ -307,51 +309,48 @@ void streamK_gemm_run(uint32_t iter) {
             [](data_type_a *data, size_t idx) {
                 data[idx] = static_cast<data_type_a>(random_float());
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto B = alloc_device_and_init<data_type_b>(
             size_b,
             [](data_type_b *data, size_t idx) {
                 data[idx] = static_cast<data_type_b>(random_float());
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto C = alloc_device_and_init<data_type_c>(
             size_c,
             [](data_type_c *data, size_t idx) {
                 data[idx] = static_cast<data_type_c>(0.0f);
             },
-            Queue, Device, Context);
+            queue, device, context);
 
     // allocate temp buffers for global split
-    size_t size_acc = gemm_op_t::get_acc_buf_size(workgroup_split_streamK);
-    size_t size_cnt = gemm_op_t::get_cnt_buf_size(workgroup_split_streamK);
+    size_t size_acc = gemm_op_t::get_acc_buf_size(stream_k);
+    size_t size_cnt = gemm_op_t::get_cnt_buf_size(stream_k);
 
     auto Acc = alloc_device_and_init<data_type_acc>(
             size_acc,
             [](data_type_acc *data, size_t idx) {
                 data[idx] = static_cast<data_type_acc>(0.0f);
             },
-            Queue, Device, Context);
+            queue, device, context);
     auto Cnt = alloc_device_and_init<uint32_t>(
             size_cnt,
             [](uint32_t *data, size_t idx) {
                 data[idx] = static_cast<uint32_t>(0);
             },
-            Queue, Device, Context);
+            queue, device, context);
 
     auto Bias = alloc_device_and_init<data_type_bias>(
             size_bias,
             [](data_type_bias *data, size_t idx) {
                 data[idx] = static_cast<data_type_bias>(random_float());
             },
-            Queue, Device, Context);
+            queue, device, context);
 
-    cl::sycl::nd_range<3> NDRange
-            = gemm_op_t::get_nd_range(workgroup_split_streamK);
-
-    using epilogue_args_t = epilogue_t::arguments_t;
+    using epilogue_args_t = typename epilogue_t::arguments_t;
     uint32_t warmup = 0;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k;
-    profiling_helper prof("streamK_universal_gemm", ops, "gflops");
+    profiling_helper prof("stream_k_universal_gemm", ops, "gflops");
 
     if constexpr (postop_enable) {
 
@@ -369,7 +368,9 @@ void streamK_gemm_run(uint32_t iter) {
 
         typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n,
                 A, matrix_k, B, matrix_n, C, matrix_n, Acc, matrix_n, Cnt,
-                size_cnt, epilogue_args);
+                size_cnt, stream_k, epilogue_args);
+
+        cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(gemm_arg);
 
         if (!gemm_op_t::can_implement(gemm_arg)) {
             std::cout << "The arguments cannot be supported, aborting ... "
@@ -379,14 +380,14 @@ void streamK_gemm_run(uint32_t iter) {
 
         for (uint32_t i = 0; i < iter + warmup; i++) {
             if (i >= warmup) { prof.cpu_start(); }
-            auto gpu_event = Queue.submit([&](handler &cgh) {
+            auto gpu_event = queue.submit([&](handler &cgh) {
                 // GPU kernel
                 cgh.parallel_for(
                         NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                             // allocate slm and nbarrier resource
                             slm_barrier_init<gemm_op_t>();
                             gemm_op_t gemm_op;
-                            gemm_op(item, gemm_arg, workgroup_split_streamK);
+                            gemm_op(item, gemm_arg);
                         });
             });
             gpu_event.wait();
@@ -405,24 +406,25 @@ void streamK_gemm_run(uint32_t iter) {
         // set up gemm arguments
         typename gemm_op_t::arguments_t gemm_arg(matrix_m, matrix_k, matrix_n,
                 A, matrix_k, B, matrix_n, C, matrix_n, Acc, matrix_n, Cnt,
-                size_cnt, epilogue_args);
+                size_cnt, stream_k, epilogue_args);
 
         if (!gemm_op_t::can_implement(gemm_arg)) {
             std::cout << "The arguments cannot be supported, aborting ... "
                       << std::endl;
             FAIL();
         }
+        cl::sycl::nd_range<3> NDRange = gemm_op_t::get_nd_range(gemm_arg);
 
         for (uint32_t i = 0; i < iter + warmup; i++) {
             if (i >= warmup) { prof.cpu_start(); }
-            auto gpu_event = Queue.submit([&](handler &cgh) {
+            auto gpu_event = queue.submit([&](handler &cgh) {
                 // GPU kernel
                 cgh.parallel_for(
                         NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
                             // allocate slm and nbarrier resource
                             slm_barrier_init<gemm_op_t>();
                             gemm_op_t gemm_op;
-                            gemm_op(item, gemm_arg, workgroup_split_streamK);
+                            gemm_op(item, gemm_arg);
                         });
             });
             gpu_event.wait();
@@ -438,29 +440,29 @@ void streamK_gemm_run(uint32_t iter) {
 
     ASSERT_EQ(0,
             gemm_result_validate(A, B, C, Bias, matrix_m, matrix_k, matrix_n,
-                    Queue, mem_layout_a, mem_layout_b, postop_enable));
+                    queue, mem_layout_a, mem_layout_b, postop_enable));
 
     //performance
     if (iter > 0) { prof.print_profiling_result(profiling_selector::GPU); }
 
-    free(A, Context);
-    free(B, Context);
-    free(C, Context);
-    free(Acc, Context);
-    free(Cnt, Context);
-    free(Bias, Context);
+    free(A, context);
+    free(B, context);
+    free(C, context);
+    free(Acc, context);
+    free(Cnt, context);
+    free(Bias, context);
 }
 
 template <typename T>
-class streamK_gemm_test : public ::testing::Test {};
-TYPED_TEST_SUITE_P(streamK_gemm_test);
+class stream_k_gemm_test : public ::testing::Test {};
+TYPED_TEST_SUITE_P(stream_k_gemm_test);
 
-TYPED_TEST_P(streamK_gemm_test, esimd) {
-    streamK_gemm_run<TypeParam>(ITER);
+TYPED_TEST_P(stream_k_gemm_test, esimd) {
+    stream_k_gemm_run<TypeParam>(ITER);
 }
 
-REGISTER_TYPED_TEST_SUITE_P(streamK_gemm_test, esimd);
+REGISTER_TYPED_TEST_SUITE_P(stream_k_gemm_test, esimd);
 using tests = ::testing::Types<Test1, Test2, Test3, Test4, Test5, Test6>;
 
 INSTANTIATE_TYPED_TEST_SUITE_P(
-        streamK_gemm_test_suite, streamK_gemm_test, tests);
+        stream_k_gemm_test_suite, stream_k_gemm_test, tests);
