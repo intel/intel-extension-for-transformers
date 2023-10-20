@@ -38,7 +38,9 @@ public:
     using mem_desc_c_t = mem_desc_c_t_;
     static constexpr gpu_arch arch_tag = arch_tag_;
     static constexpr uint32_t barrier_count = 0;
-    static constexpr uint32_t slm_size = 0;
+    static constexpr uint32_t slm_size = mem_desc_c_t::is_local
+            ? tile_shape::wg_tile_size_x * tile_shape::wg_tile_size_y
+            : 0;
     /// @brief Epilogue arguments.
     struct arguments_t {};
 

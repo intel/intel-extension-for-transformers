@@ -14,8 +14,8 @@
 * limitations under the License.
 *******************************************************************************/
 #include <algorithm>
+#include "multi_layer_perceptron.hpp"
 #include "tests/utils/utils.hpp"
-#include "xetla.hpp"
 
 using namespace cl::sycl;
 using namespace gpu::xetla;
@@ -145,36 +145,105 @@ void mlp_run(uint32_t iter) {
 
     //Define the shape of workgroup and subgroup
     //It's tunable parameters based on different input shape and hardware for better performance
-    constexpr uint32_t wg_tile_m = 256;
-    constexpr uint32_t wg_tile_n = 256;
-    constexpr uint32_t sg_tile_m = 32;
-    constexpr uint32_t sg_tile_n = 64;
+    constexpr uint32_t wg_tile_m_layer1 = 256;
+    constexpr uint32_t wg_tile_n_layer1 = 256;
+    constexpr uint32_t sg_tile_m_layer1 = 32;
+    constexpr uint32_t sg_tile_n_layer1 = 64;
+
+    constexpr uint32_t wg_tile_m_layer2 = 256;
+    constexpr uint32_t wg_tile_n_layer2 = 32;
+    constexpr uint32_t sg_tile_m_layer2 = 16;
+    constexpr uint32_t sg_tile_n_layer2 = 16;
 
     //There are implicit requirement for sg_tile_k range
     constexpr uint32_t sg_tile_k = 32;
+    static constexpr uint32_t sync_freq = 8;
+    static constexpr uint32_t stages = 3;
 
-    //Workload mapping, linear mapping will be used in the code
-    constexpr uint32_t group_range_m = matrix_m / wg_tile_m;
-    constexpr uint32_t group_range_n = matrix_n / wg_tile_n;
+    // Org the compute shape for sub-matrix
+    using tile_shape_layer1 = xetla::group::tile_shape_t<
+            wg_tile_n_layer1, // workgroup size in dim0
+            wg_tile_m_layer1, //   workgroup size in dim1
+            sg_tile_n_layer1, //   subgroup size in dim0
+            sg_tile_m_layer1>; //  subgroup size in dim1
 
-    //Each subgroup will be executed in one hardware thread
-    //Calculate how many threads in a workgroup
-    constexpr uint32_t thread_range_m = wg_tile_m / sg_tile_m;
-    constexpr uint32_t thread_range_n = wg_tile_n / sg_tile_n;
+    // Mirco-kernel configuration
+    using gemm_layer1_t = xetla::group::gemm_selector_t<
+            data_type_a, // input datatype for A
+            data_type_w, // input datatype for W
+            mem_layout::row_major, // memory layout for A
+            mem_layout::row_major, // memory layout for W
+            mem_space::global, // memory reading from global mem for A
+            mem_space::global, // memory reading from global mem for W
+            8, // buffer alignment for A, in unit of element
+            8, // buffer alignment for W, in unit of element
+            data_type_acc, // accumulator data type for intermediate resutls
+            tile_shape_layer1, // computation tile shape
+            sg_tile_k, // elements in each iteration
+            mma_engine::xmx, // compute engine
+            gpu_arch::Xe, // GPU arch
+            stages, // number of prefetch pipe stage
+            sync_freq> // frequency of periodic sync, in unit of inner loop
+            ::gemm;
 
-    // [MLP] tile parameters for Layer2
-    constexpr uint32_t wg_tile_m_layer2 = matrix_m / group_range_m;
-    constexpr uint32_t wg_tile_n_layer2 = matrix_l / group_range_n;
-    constexpr uint32_t sg_tile_m_layer2 = 16;
-    constexpr uint32_t sg_tile_n_layer2 = 16;
-    constexpr uint32_t sg_tile_k_layer2 = 8;
+    using epilogue_layer1_t = xetla::group::epilogue_t<
+            xetla::group::epilogue_policy_tile_op<
+                    xetla::subgroup::chained_tile_op_t<
+                            gpu::xetla::subgroup::relu_op_t>,
+                    gpu_arch::Xe>,
+            tile_shape_layer1,
+            mem_desc_t<data_type_b, mem_layout::row_major, mem_space::global>>;
 
-    //Ndrange and workgroup shape
-    cl::sycl::range<3> group_range {1, group_range_m, group_range_n};
-    cl::sycl::range<3> local_range {1, thread_range_m, thread_range_n};
+    using tile_shape_layer2 = xetla::group::tile_shape_t<
+            wg_tile_n_layer2, // workgroup size in dim0
+            wg_tile_m_layer2, // workgroup size in dim1
+            sg_tile_n_layer2, // subgroup size in dim0
+            sg_tile_m_layer2>; // subgroup size in dim1
 
-    cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
+    // Mirco-kernel configuration
+    using gemm_layer2_t = xetla::group::gemm_selector_t<
+            data_type_b, // input datatype for B
+            data_type_v, // input datatype for V
+            mem_layout::row_major, // memory layout for B
+            mem_layout::row_major, // memory layout for V
+            mem_space::global, // memory reading from global mem for B
+            mem_space::global, // memory reading from global mem for V
+            8, // buffer alignment for B, in unit of element
+            8, // buffer alignment for V, in unit of element
+            data_type_acc, // accumulator data type for intermediate resutls
+            tile_shape_layer2, // computation tile shape
+            sg_tile_k, // elements in each iteration
+            mma_engine::xmx, // compute engine
+            gpu_arch::Xe, // GPU arch
+            stages, // number of prefetch pipe stage
+            sync_freq> // frequency of periodic sync, in unit of inner loop
+            ::gemm;
 
+    using epilogue_layer2_t = xetla::group::epilogue_t<
+            xetla::group::epilogue_policy_default<gpu_arch::Xe>,
+            tile_shape_layer2,
+            mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
+
+    using mlp_op_t = xetla::kernel::multi_layer_perceptron_t<gemm_layer1_t,
+            epilogue_layer1_t, gemm_layer2_t, epilogue_layer2_t, gpu_arch::Xe>;
+
+    // set up mlp arguments
+    // for relu we don't need to set arguments
+    typename mlp_op_t::arguments_t mlp_arg(matrix_m, matrix_k, matrix_n,
+            matrix_m, matrix_n, matrix_l, A, matrix_k, W, matrix_n, B, matrix_n,
+            V, matrix_l, C, matrix_l);
+    cl::sycl::nd_range<3> nd_range = mlp_op_t::get_nd_range(mlp_arg);
+
+    if (!mlp_op_t::can_implement(mlp_arg)) {
+        std::cout << "The arguments cannot be supported, aborting ... "
+                  << std::endl;
+        free(A, context);
+        free(B, context);
+        free(C, context);
+        free(W, context);
+        free(V, context);
+        FAIL();
+    }
     uint32_t warmup = 10;
     long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k
             + 2 * static_cast<long>(matrix_m) * matrix_n * matrix_l;
@@ -184,191 +253,11 @@ void mlp_run(uint32_t iter) {
         auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                using namespace gpu::xetla;
-                using namespace gpu::xetla::group;
-                using namespace gpu::xetla::kernel;
-                using namespace gpu::xetla::subgroup;
-
-                // [MLP] Layer1
-                {
-
-                    // Org the compute shape for sub-matrix
-                    // [MLP] define tile_shape for Layer1
-                    // This is used for loading block matrix for multiplication:
-                    //   B<i, j> = sum_{k} A<i, k> x W<k, j>
-                    //           = A<i, :> x W<:, j>
-                    // where:
-                    //   <r, c>: block matrix selector
-                    // Note:
-                    //   - checkout 01_gemm_universal example for more description
-
-                    // [MLP] Suppose for each xetla_exec_item<3> ei,
-                    // the index tuple (i, j) assigned to it has the following value:
-                    //   i <- ei.get_group(2)
-                    //   j <- ei.get_group(1)
-                    // Then the block matrix could be expressed using numpy notation:
-                    //   A<i, k> = A[Q:E, F:G]
-                    //   W<k, j> = W[X:Y, S:H]
-                    // where:
-                    //   Q = j * wg_tile_m
-                    //   E = (j + 1) * wg_tile_m
-                    //   F = k * sg_tile_k
-                    //   G = (k + 1) * sg_tile_k
-                    //   X = k * sg_tile_k
-                    //   Y = (k + 1) * sg_tile_k
-                    //   S = i * wg_tile_n
-                    //   H = (i + 1) * wg_tile_n
-                    using tile_shape
-                            = tile_shape_t<wg_tile_n, // workgroup size in dim0
-                                    wg_tile_m, //   workgroup size in dim1
-                                    sg_tile_n, //   subgroup size in dim0
-                                    sg_tile_m>; //  subgroup size in dim1
-
-                    // Mirco-kernel configuration
-                    using gemm_t = gemm_selector_t<
-                            data_type_a, // input datatype for A
-                            data_type_w, // input datatype for W
-                            mem_layout::row_major, // memory layout for A
-                            mem_layout::row_major, // memory layout for W
-                            mem_space::
-                                    global, // memory reading from global mem for A
-                            mem_space::
-                                    global, // memory reading from global mem for W
-                            8, // buffer alignment for A, in unit of element
-                            8, // buffer alignment for W, in unit of element
-                            data_type_acc, // accumulator data type for intermediate resutls
-                            tile_shape, // computation tile shape
-                            sg_tile_k, // elements in each iteration
-                            mma_engine::xmx, // compute engine
-                            gpu_arch::Xe> // GPU arch
-                            ::gemm;
-
-                    // [MLP] Use relu_op_t as activation function
-                    using mem_desc_output_t = mem_desc_t<data_type_b,
-                            mem_layout::row_major, mem_space::global>;
-                    using epilogue_t = epilogue_t<
-                            epilogue_policy_tile_op<
-                                    chained_tile_op_t<relu_op_t>, gpu_arch::Xe>,
-                            tile_shape, mem_desc_output_t>;
-                    // [MLP] Define tile_op arguments
-                    using epilogue_tile_op_args_t
-                            = epilogue_t::tile_op_t::arguments_t;
-                    // [MLP] ReLU accepts no arguments
-                    epilogue_tile_op_args_t tile_op_args {};
-
-                    using gemm_op_t = gemm_universal_t<
-                            dispatch_policy_default<gpu_arch::Xe>, gemm_t,
-                            epilogue_t>;
-
-                    typename gemm_op_t::arguments_t arg(matrix_m, matrix_k,
-                            matrix_n, A, matrix_k, W, matrix_n, B, matrix_n,
-                            tile_op_args);
-
-                    slm_barrier_init<gemm_op_t>();
-
-                    gemm_op_t gemm_op;
-
-                    xetla_exec_item<3> ei(item);
-                    gemm_op(ei, arg);
-                }
-
-                // [MLP] Layer2
-                {
-
-                    // Org the compute shape for sub-matrix
-                    // [MLP] The work-item xetla_exec_item<3> ei is shared
-                    // between Layer1 and Layer2. However, due to different
-                    // memory size of the input matrices and output matrices,
-                    // the tile_shape needs to be reconfigured.
-                    // Old task:
-                    //   B<i, j> = A<i, :> x W<:, j>
-                    // where:
-                    //   shape(A) = [m, k]
-                    //   shape(W) = [k, n]
-                    //   shape(B) = [m, n]
-                    // New task:
-                    //   C<i, j> = B<i, :> x V<:, j>
-                    // where:
-                    //   shape(B) = [m, n]
-                    //   shape(V) = [n, l]
-                    //   shape(C) = [m, l]
-                    // Note:
-                    //   - the block matrix size B<i, j> differs between tasks,
-                    //     which is dependent on tile_shape
-
-                    // [MLP] We show again the index space:
-                    //   (i, j) ∈ I x J
-                    // where:
-                    //   I = {i: 0, 1, ..., group_range_n - 1}
-                    //   J = {j: 0, 1, ..., group_range_m - 1}
-
-                    // [MLP] The reconfiguration should find a set of parameters
-                    //   - wg_tile_n_layer2
-                    //   - wg_tile_m_layer2
-                    //   - sg_tile_n_layer2
-                    //   - sg_tile_m_layer2
-                    //   - sg_tile_k_layer2
-                    // that satisfy the following requirements:
-                    //   ; load all rows from B
-                    //   wg_tile_m_layer2 * U(J) = m
-                    //   ; load all columns from V
-                    //   wg_tile_n_layer2 * U(I) = l
-                    //   ; accumulate step size in dimension n
-                    //   sg_tile_k_layer2 <= n
-                    //   ; remapping invariant Z from index space to tile_shape
-                    //   Z = O * P = L * D
-                    // where:
-                    //   U: X |-> max X + 1
-                    //   O = wg_tile_n_layer2 / sg_tile_n_layer2
-                    //   P = wg_tile_m_layer2 / sg_tile_m_layer2
-                    //   L = thread_range_m
-                    //   D = thread_range_n
-                    //   Z: invariant that all tile_shape definition should satisfy
-                    using tile_shape = tile_shape_t<
-                            wg_tile_n_layer2, // workgroup size in dim0
-                            wg_tile_m_layer2, //   workgroup size in dim1
-                            sg_tile_n_layer2, //   subgroup size in dim0
-                            sg_tile_m_layer2>; //  subgroup size in dim1
-
-                    // Mirco-kernel configuration
-                    using gemm_t = gemm_selector_t<
-                            data_type_b, // input datatype for B
-                            data_type_v, // input datatype for V
-                            mem_layout::row_major, // memory layout for B
-                            mem_layout::row_major, // memory layout for V
-                            mem_space::
-                                    global, // memory reading from global mem for B
-                            mem_space::
-                                    global, // memory reading from global mem for V
-                            8, // buffer alignment for B, in unit of element
-                            8, // buffer alignment for V, in unit of element
-                            data_type_acc, // accumulator data type for intermediate resutls
-                            tile_shape, // computation tile shape
-                            sg_tile_k, // elements in each iteration
-                            mma_engine::xmx, // compute engine
-                            gpu_arch::Xe> // GPU arch
-                            ::gemm;
-
-                    using epilogue_t = epilogue_t<
-                            epilogue_policy_default<gpu_arch::Xe>, tile_shape,
-                            mem_desc_t<data_type_c, mem_layout::row_major,
-                                    mem_space::global>>;
-
-                    using gemm_op_t = gemm_universal_t<
-                            dispatch_policy_default<gpu_arch::Xe>, gemm_t,
-                            epilogue_t>;
-
-                    // [MLP] specify Layer2 tensor dimensions
-                    typename gemm_op_t::arguments_t arg(matrix_m, matrix_n,
-                            matrix_l, B, matrix_n, V, matrix_l, C, matrix_l);
-
-                    slm_barrier_init<gemm_op_t>();
-
-                    gemm_op_t gemm_op;
-
-                    xetla_exec_item<3> ei(item);
-                    gemm_op(ei, arg);
-                }
+                xetla_exec_item<3> ei(item);
+                // allocate slm and nbarrier resource
+                slm_barrier_init<mlp_op_t>();
+                mlp_op_t mlp_op;
+                mlp_op(ei, mlp_arg);
             });
         });
         gpu_event.wait();

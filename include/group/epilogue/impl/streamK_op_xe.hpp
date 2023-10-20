@@ -51,6 +51,8 @@ struct epilogue_streamK_t {
 
     //Barrier required to synchronize all threads in workgroup for atomic sync across xecores
     static constexpr uint32_t barrier_count = 1;
+    static constexpr uint32_t slm_size
+            = mem_desc_c_t::is_local ? wg_tile_m * wg_tile_n : 0;
     static constexpr uint32_t N_SG = wg_size_x * wg_size_y;
 
     xetla_nbarrier_t<N_SG, N_SG> nbarrier;
