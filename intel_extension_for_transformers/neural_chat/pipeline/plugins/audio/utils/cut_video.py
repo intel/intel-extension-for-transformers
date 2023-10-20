@@ -92,7 +92,7 @@ def cut_video(args, outdir):
                 mark += 1
                 command = 'ffmpeg -i {} -ss {}:{}:{} -to {}:{}:{} -ac 1 -ar {} -f wav {}'.format(
                     os.path.join(path,file_name), start_hour, start_min, start_sec, end_hour,
-                    end_min, end_sec, shlex.quote(args.sr), os.path.join(save_path, str(name))+'.wav')
+                    end_min, end_sec, shlex.quote(args.sr), os.path.join(save_path, str(name))+'.wav').split()
                 print(start_hour, start_min, start_sec)
                 print(end_hour, end_min, end_sec)
                 try:
@@ -107,8 +107,8 @@ def cut_video(args, outdir):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--path", type=str, required=True)
-    parser.add_argument("--min", type=str, default=10)
-    parser.add_argument("--sr", type=str, default=16000)
+    parser.add_argument("--min", type=str, default='10')
+    parser.add_argument("--sr", type=str, default='16000')
     parser.add_argument("--out_path", type=str, default="../raw")
     args = parser.parse_args()
 
