@@ -47,7 +47,7 @@ struct igemm_quantize_func {
     static constexpr uint32_t barrier_count = gemm_op_t::get_barrier_count();
     static constexpr uint32_t slm_size = gemm_op_t::get_slm_size();
 
-    static inline void run(xetla_exec_item<3> &ei, dtype_a *A, dtype_b *B,
+    static inline void run(sycl::nd_item<3> &item, dtype_a *A, dtype_b *B,
             dtype_c *C, dtype_param *scale, dtype_param *offset, int mat_m,
             int mat_n, int mat_k) {
 
@@ -59,6 +59,6 @@ struct igemm_quantize_func {
                         typename quant_op_t::arguments_t {{scale}, {offset},
                                 {static_cast<uint32_t>(mat_n), 1, 1}}));
         gemm_op_t gemm_op;
-        gemm_op(ei, arg);
+        gemm_op(item, arg);
     }
 };

@@ -22,13 +22,13 @@ using namespace gpu::xetla;
 
 template <typename dtype_in, typename dtype_out, typename dtype_acc, int wg_n,
         int wg_m, int sg_n, int sg_m, mem_layout mem_layout_in, int need_fp8_op>
-KERNEL_FUNC inline void data_transformer_func(xetla_exec_item<3> &ei,
+KERNEL_FUNC inline void data_transformer_func(sycl::nd_item<3> &item,
         dtype_in *buffer_in, dtype_out *buffer_out, int matrix_m, int matrix_n,
         int mat_in_ld, int mat_out_ld, dtype_acc *scale_ptr,
         dtype_acc *amax_ptr) {
 
-    int gid_x = ei.get_group(2);
-    int gid_y = ei.get_group(1);
+    int gid_x = item.get_group(2);
+    int gid_y = item.get_group(1);
 
     //input and output starting point for wg
     int wg_ld_start_x;
@@ -67,5 +67,5 @@ KERNEL_FUNC inline void data_transformer_func(xetla_exec_item<3> &ei,
     args.wg_st_start_x = wg_st_start_x;
     args.wg_st_start_y = wg_st_start_y;
 
-    data_transformer::call(ei, &args);
+    data_transformer::call(item, &args);
 }

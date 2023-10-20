@@ -144,7 +144,7 @@ struct gru_layer {
             msg_type::block_2d, layout_out, mem_loc_out, gpu_arch::Xe>;
     using sigmoid_t = typename subgroup::sigmoid_op_t;
     using tanh_t = typename subgroup::tanh_op_t;
-    static void inline call(xetla_exec_item<3> &ei, fused_config_t<T> *args) {
+    static void inline call(sycl::nd_item<3> &item, fused_config_t<T> *args) {
         gemm_op op;
         sigmoid_t sigmoid;
         tanh_t tanh;
@@ -193,7 +193,7 @@ struct gru_layer {
         uint32_t inner_loop_count_0 = (wg_tile_k_0 + sg_tile_k - 1) / sg_tile_k;
         uint32_t inner_loop_count_1 = (wg_tile_k_1 + sg_tile_k - 1) / sg_tile_k;
 
-        int start_m = ei.get_group(1) * wg_tile_m;
+        int start_m = item.get_group(1) * wg_tile_m;
 
         boundary_m = (start_m + wg_tile_m) > batch_size ? batch_size
                                                         : (start_m + wg_tile_m);
@@ -204,7 +204,7 @@ struct gru_layer {
         start_y_a = start_m;
         int io_size = batch_size * hidden_size;
         int pre_layer_size = batch_size * input_size;
-        work_group_t g(ei.get_local_linear_id());
+        work_group_t g(item.get_local_linear_id());
         for (uint32_t seq_id = 0; seq_id < seq_len; ++seq_id) {
             for (int j = (hidden_size + wg_tile_n - 1) / wg_tile_n - 1; j >= 0;
                     j--) {
@@ -306,7 +306,7 @@ struct kernel_xcoder_gru_fusion {
     /// x batch_size x hidden_size
     /// @param hidden_out_ptr   the last layer output for per gru cell, shape =
     /// sequence_length x batch_size x hidden_size
-    static void inline run(xetla_exec_item<3> &ei, input_T *layer_ptr,
+    static void inline run(sycl::nd_item<3> &item, input_T *layer_ptr,
             input_T *h0_ptr, input_T *W_ir_ptr, input_T *W_hr_ptr,
             input_T *W_iz_ptr, input_T *W_hz_ptr, input_T *W_in_ptr,
             input_T *W_hn_ptr, input_T *layer_out_ptr, input_T *hidden_out_ptr,
@@ -348,7 +348,7 @@ struct kernel_xcoder_gru_fusion {
         args.W_in_ptr = (W_in_ptr);
         args.W_hn_ptr = (W_hn_ptr);
         SW_BARRIER();
-        fused_op::call(ei, &args);
+        fused_op::call(item, &args);
         ping = (ping + 1) % 2;
         pong = (pong + 1) % 2;
 
@@ -372,7 +372,7 @@ struct kernel_xcoder_gru_fusion {
                     : (ping_pong_buffer + ping * one_layer_size);
             args.layer_ptr = ((ping_pong_buffer + pong * one_layer_size));
             SW_BARRIER();
-            fused_op::call(ei, &args);
+            fused_op::call(item, &args);
             ping = (ping + 1) % 2;
             pong = (pong + 1) % 2;
         }

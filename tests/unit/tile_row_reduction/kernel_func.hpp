@@ -27,7 +27,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         bool transpose = false>
 struct tile_row_reduction_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         using matA_tile_desc_t = tile_desc_t<twidth, theight, bwidth, bheight,
                 reg_layout::tiled>;
         using matC_tile_desc_t

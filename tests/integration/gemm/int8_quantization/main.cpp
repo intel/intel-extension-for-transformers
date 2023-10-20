@@ -98,7 +98,6 @@ static void igemm_quantize_run() {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test1>(
                     nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                        xetla_exec_item<3> ei(item);
                         using igemm_quantize_functor
                                 = igemm_quantize_func<data_type_a, data_type_b,
                                         data_type_c, data_type_param, wg_tile_m,
@@ -115,8 +114,8 @@ static void igemm_quantize_run() {
                         if constexpr (slm_size != 0) {
                             xetla_local_init<slm_size>();
                         }
-                        igemm_quantize_functor::run(ei, A, B, C, scale, offset,
-                                matrix_m, matrix_n, matrix_k);
+                        igemm_quantize_functor::run(item, A, B, C, scale,
+                                offset, matrix_m, matrix_n, matrix_k);
                     });
         });
         e_esimd.wait();

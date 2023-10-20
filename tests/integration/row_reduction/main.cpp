@@ -119,8 +119,7 @@ static void row_reduction_run() {
                             __ESIMD_ENS::named_barrier_init<barrier_count>();
                         }
 
-                        xetla_exec_item<3> ei(item);
-                        row_reduction_func::call(ei, buffer_in, buffer_out,
+                        row_reduction_func::call(item, buffer_in, buffer_out,
                                 matrix_m, matrix_n, buffer_w, buffer_x,
                                 buffer_d, buffer_mask, drop_out_prob,
                                 drop_out_scale);

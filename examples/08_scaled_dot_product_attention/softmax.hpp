@@ -77,14 +77,14 @@ struct xetla_softmax_fwd_t {
     };
 
     __XETLA_API KERNEL_FUNC void operator()(
-            xetla_exec_item<3> &ei, arguments_t *args) {
+            sycl::nd_item<3> &item, arguments_t *args) {
 
         softmax_load_t softmax_load;
         softmax_load_payload_t softmax_load_payload;
         softmax_store_t softmax_store;
         softmax_store_payload_t softmax_store_payload;
 
-        uint32_t local_offset_y = block_height * ei.get_local_linear_id();
+        uint32_t local_offset_y = block_height * item.get_local_linear_id();
 
         // read original data from SLM:
         // reshape 1 * 512 to 32 * 16

@@ -61,13 +61,13 @@ struct dropout_func_t {
             mem_desc_out_t>;
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
-    static inline void run(xetla_exec_item<3> &ei, dtype_in *mat_in_ptr,
+    static inline void run(sycl::nd_item<3> &item, dtype_in *mat_in_ptr,
             uint8_t *mask_ptr, dtype_out *mat_out_ptr,
             uint64_t *rand_offset_ptr, uint32_t mat_m, uint32_t mat_n,
             uint32_t mat_ld, float dropout_prob, float dropout_scale) {
-        work_group_t g(ei.get_local_linear_id());
-        int start_n = ei.get_group(2) * wg_n;
-        int start_m = ei.get_group(1) * wg_m;
+        work_group_t g(item.get_local_linear_id());
+        int start_n = item.get_group(2) * wg_n;
+        int start_m = item.get_group(1) * wg_m;
         uint32_t boundary_n
                 = (start_n + wg_n) > mat_n ? mat_n : (start_n + wg_n);
         uint32_t boundary_m

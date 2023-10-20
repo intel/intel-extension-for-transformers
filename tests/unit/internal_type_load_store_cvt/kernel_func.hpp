@@ -24,7 +24,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int bwidth,
         int bheight, bool transform = false, bool transpose = false>
 struct load_store_cvt_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         xetla_tdescriptor a_src_tdesc;
         xetla_tdescriptor b_src_tdesc;

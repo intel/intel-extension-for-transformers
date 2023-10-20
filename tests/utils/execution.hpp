@@ -136,10 +136,9 @@ void gemm_exec(const std::string &compile_str, size_t batch = 1) {
                 cgh.use_kernel_bundle(exeBundle);
                 cgh.parallel_for<Test>(
                         nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                            gpu::xetla::xetla_exec_item<3> ei(item);
                             gpu::xetla::xetla_local_init<SLMSIZE>();
                             gpu::xetla::xetla_nbarrier_init<BARNUM>();
-                            KERNEL::run(ei, A_ptr, B_ptr, C_ptr, matrix_m,
+                            KERNEL::run(item, A_ptr, B_ptr, C_ptr, matrix_m,
                                     matrix_n, matrix_k, Acc_ptr, Cnt_ptr);
                         });
             });
@@ -203,10 +202,9 @@ void kernel_run(auto nd_range, auto validate_result) {
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<>(nd_range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
-                gpu::xetla::xetla_exec_item ei(ndi);
                 gpu::xetla::xetla_local_init<SLMSIZE>();
                 gpu::xetla::xetla_nbarrier_init<BARNUM>();
-                KERNEL::run(&ei, A, B, C);
+                KERNEL::run(&ndi, A, B, C);
             });
         });
         e_esimd.wait();

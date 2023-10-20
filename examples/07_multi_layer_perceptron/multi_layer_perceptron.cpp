@@ -253,11 +253,10 @@ void mlp_run(uint32_t iter) {
         auto gpu_event = queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                xetla_exec_item<3> ei(item);
                 // allocate slm and nbarrier resource
                 slm_barrier_init<mlp_op_t>();
                 mlp_op_t mlp_op;
-                mlp_op(ei, mlp_arg);
+                mlp_op(item, mlp_arg);
             });
         });
         gpu_event.wait();

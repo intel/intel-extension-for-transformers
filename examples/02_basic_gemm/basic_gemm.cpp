@@ -107,7 +107,6 @@ void basic_gemm_run(uint32_t iter) {
                 using namespace gpu::xetla::subgroup;
 
                 // wrap the nd_range to XeTLA range
-                xetla_exec_item<3> ei(item);
 
                 // Step 1: basic computation information
                 // define A, B and accumulator datatype
@@ -158,8 +157,8 @@ void basic_gemm_run(uint32_t iter) {
                 xetla_local_init<slm_size>();
 
                 // Step 6: ecah workgroup gets it individual index to start computation
-                int start_n = ei.get_group(2) * wg_tile_n;
-                int start_m = ei.get_group(1) * wg_tile_m;
+                int start_n = item.get_group(2) * wg_tile_n;
+                int start_m = item.get_group(1) * wg_tile_m;
                 // no slicing in K direction so start from zero for all WG
                 int start_k = 0;
 
@@ -184,7 +183,7 @@ void basic_gemm_run(uint32_t iter) {
                 gemm_t::arguments_t gemm_args(md_a, md_b, inner_loop_count);
 
                 // the results is in the matAcc rather than real output C
-                gemm_t::work_group_t g(ei.get_local_linear_id());
+                gemm_t::work_group_t g(item.get_local_linear_id());
                 gemm(g, matAcc, gemm_args);
 
                 // Step 9: write the results from matACC to real output C

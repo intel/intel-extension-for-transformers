@@ -155,8 +155,8 @@ typename gemm_op_t::arguments_t arg(matrix_n, matrix_k,
 ```
 ```c++ 
 gemm_op_t gemm_op;
-xetla_exec_item<3> ei(item);
-gemm_op(ei, arg);
+
+gemm_op(item, arg);
 ```
 ## Copyright
 Copyright (c) 2022-2023 Intel Corporation Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at

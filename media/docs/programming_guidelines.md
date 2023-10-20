@@ -31,11 +31,11 @@ And then this GEMM can be executed inside `parallel_for`.
 auto gpu_event = queue.submit([&](handler &cgh) {
     // GPU kernel
     cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-        xetla_exec_item<3> ei(item);
+        
         // allocate slm and nbarrier resource
         slm_barrier_init<gemm_op_t>();
         gemm_op_t gemm_op;
-        gemm_op(ei, gemm_arg);
+        gemm_op(item, gemm_arg);
     });
 });
 ```
@@ -55,7 +55,7 @@ matAcc.init(0);
 gemm_t::arguments_t gemm_args(md_a, md_b, inner_loop_count);
 
 // the results is in the matAcc rather than real output C
-gemm_t::work_group_t g(ei.get_local_linear_id());
+gemm_t::work_group_t g(item.get_local_linear_id());
 gemm(g, matAcc, gemm_args);
 
 // any customized operation here based on matACC

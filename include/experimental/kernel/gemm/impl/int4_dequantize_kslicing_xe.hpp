@@ -383,14 +383,14 @@ public:
     /// @param args Is the GEMM arguments for application-related runtime variables.
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.
-    __XETLA_API KERNEL_FUNC void operator()(xetla_exec_item<3> &ei,
+    __XETLA_API KERNEL_FUNC void operator()(sycl::nd_item<3> &item,
             const arguments_t &args, uint32_t slm_base = 0,
             uint32_t nbarrier_base = 0) {
         // set up workgroup level coordinates and boundaries
-        work_group_t g(ei.get_local_linear_id() % work_group_size);
-        uint32_t wg_id = ei.get_local_linear_id() / work_group_size;
-        int start_n = ei.get_group(2) * wg_tile_n;
-        int start_m = ei.get_group(1) * wg_tile_m;
+        work_group_t g(item.get_local_linear_id() % work_group_size);
+        uint32_t wg_id = item.get_local_linear_id() / work_group_size;
+        int start_n = item.get_group(2) * wg_tile_n;
+        int start_m = item.get_group(1) * wg_tile_m;
         int start_k = 0;
         uint32_t wg_tile_k = args.matrix_k;
         uint32_t boundary_n = (start_n + wg_tile_n) > args.matrix_n
@@ -403,7 +403,7 @@ public:
         if constexpr (num_global_kslicing > 1) {
             wg_tile_k = (wg_tile_k + num_global_kslicing - 1)
                     / num_global_kslicing;
-            start_k = start_k + ei.get_group(0) * wg_tile_k;
+            start_k = start_k + item.get_group(0) * wg_tile_k;
             boundary_k = (start_k + wg_tile_k) > boundary_k
                     ? boundary_k
                     : (start_k + wg_tile_k);
@@ -481,13 +481,13 @@ public:
             int32_t acc_start_x = start_n + coop_offset_x;
             int32_t acc_start_y = start_m + coop_offset_y;
             int32_t cnt_start_x
-                    = ei.get_group(2) * tile_shape_cnt::wg_tile_size_x
+                    = item.get_group(2) * tile_shape_cnt::wg_tile_size_x
                     + kslicing.coop_id_x;
             int32_t cnt_start_y
-                    = ei.get_group(1) * tile_shape_cnt::wg_tile_size_y
+                    = item.get_group(1) * tile_shape_cnt::wg_tile_size_y
                     + kslicing.coop_id_y;
-            uint32_t group_range_x = ei.get_group_range(2);
-            uint32_t group_range_y = ei.get_group_range(1);
+            uint32_t group_range_x = item.get_group_range(2);
+            uint32_t group_range_y = item.get_group_range(1);
             uint32_t cnt_size_x
                     = group_range_x * tile_shape_cnt::wg_tile_size_x;
             uint32_t cnt_size_y

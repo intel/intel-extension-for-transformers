@@ -263,13 +263,13 @@ public:
     /// @param args Is the BATCH_GEMM arguments for application-related runtime variables.
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.
-    __XETLA_API KERNEL_FUNC void operator()(xetla_exec_item<3> &ei,
+    __XETLA_API KERNEL_FUNC void operator()(sycl::nd_item<3> &item,
             const arguments_t &args, uint32_t slm_base = 0,
             uint32_t nbarrier_base = 0) {
         // set up workgroup level coordinates and boundaries
-        int batch_id = ei.get_group(0);
-        int start_n = ei.get_group(2) * wg_tile_n;
-        int start_m = ei.get_group(1) * wg_tile_m + batch_id * args.matrix_m;
+        int batch_id = item.get_group(0);
+        int start_n = item.get_group(2) * wg_tile_n;
+        int start_m = item.get_group(1) * wg_tile_m + batch_id * args.matrix_m;
         int start_k_a = 0;
         int start_k_b = batch_id * args.matrix_k;
         uint32_t wg_tile_k = args.matrix_k;
@@ -290,7 +290,7 @@ public:
 
         // set up arguments
         work_group_t g;
-        g.init(ei.get_local_linear_id());
+        g.init(item.get_local_linear_id());
         mem_desc_a_t mem_desc_a;
         mem_desc_b_t mem_desc_b;
         mem_desc_c_t mem_desc_c;

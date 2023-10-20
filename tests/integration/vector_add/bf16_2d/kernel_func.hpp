@@ -22,7 +22,7 @@ using namespace gpu::xetla;
 
 template <typename dtype, int SIMD, int BLOCK_SIZE>
 KERNEL_FUNC inline void vector_add_func(
-        xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+        sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
     xetla_tdescriptor a_src_tdesc;
     xetla_tdescriptor b_src_tdesc;

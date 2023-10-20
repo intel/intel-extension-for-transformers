@@ -422,12 +422,12 @@ public:
     /// @param args Is the MLP arguments for application-related runtime variables.
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.
-    __XETLA_API KERNEL_FUNC void operator()(xetla_exec_item<3> &ei,
+    __XETLA_API KERNEL_FUNC void operator()(sycl::nd_item<3> &item,
             const arguments_t &args, uint32_t slm_base = 0,
             uint32_t nbarrier_base = 0) {
         // set up workgroup level coordinates and boundaries
-        int start_n = ei.get_group(2) * wg_tile_n_layer1;
-        int start_m = ei.get_group(1) * wg_tile_m_layer1;
+        int start_n = item.get_group(2) * wg_tile_n_layer1;
+        int start_m = item.get_group(1) * wg_tile_m_layer1;
         int start_k = 0;
         uint32_t wg_tile_k = args.matrix_k_layer1;
         uint32_t boundary_n
@@ -460,7 +460,7 @@ public:
 
         // set up arguments
         work_group_layer1_t g_layer1;
-        g_layer1.init(ei.get_local_linear_id());
+        g_layer1.init(item.get_local_linear_id());
         mem_desc_a_t mem_desc_a;
         mem_desc_w_t mem_desc_w;
         mem_desc_b_t mem_desc_b;
@@ -496,8 +496,8 @@ public:
         nbarrier_global.arrive_wait();
 
         // set up workgroup level coordinates and boundaries
-        start_n = ei.get_group(2) * wg_tile_n_layer2;
-        start_m = ei.get_group(1) * wg_tile_m_layer2;
+        start_n = item.get_group(2) * wg_tile_n_layer2;
+        start_m = item.get_group(1) * wg_tile_m_layer2;
         start_k = 0;
         wg_tile_k = args.matrix_k_layer2;
         boundary_n = (start_n + wg_tile_n_layer2) > args.matrix_n_layer2
@@ -511,7 +511,7 @@ public:
         // set up arguments
         // reuse mem_desc_b
         work_group_layer2_t g_layer2;
-        g_layer2.init(ei.get_local_linear_id());
+        g_layer2.init(item.get_local_linear_id());
         mem_desc_v_t mem_desc_v;
         mem_desc_c_t mem_desc_c;
         //setup for matA

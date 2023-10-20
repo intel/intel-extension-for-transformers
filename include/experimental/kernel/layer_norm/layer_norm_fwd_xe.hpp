@@ -171,15 +171,15 @@ struct layer_norm_fwd_t<dtype_x_, dtype_y_, dtype_weight_, dtype_acc_,
     /// @param nbarrier_base
     /// @param fused_op_args
     /// @return
-    __XETLA_API static void call(xetla_exec_item<3> &ei, arguments_t *args,
+    __XETLA_API static void call(sycl::nd_item<3> &item, arguments_t *args,
             uint32_t slm_base = 0, uint32_t nbarrier_base = 0,
             ln_fused_op_arguments_t *fused_op_args = nullptr) {
         work_group_t g;
-        g.init(ei.get_local_linear_id());
+        g.init(item.get_local_linear_id());
         int sg_idx = g.get_id() % wg_size_x;
         int sg_idy = g.get_id() / wg_size_x;
-        int wg_idx = ei.get_group(2);
-        int wg_idy = ei.get_group(1);
+        int wg_idx = item.get_group(2);
+        int wg_idy = item.get_group(1);
         int start_n = wg_idx * wg_tile_n + sg_idx * sg_tile_n;
         int start_m = wg_idy * wg_tile_m + sg_idy * sg_tile_m;
 

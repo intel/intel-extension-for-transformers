@@ -116,11 +116,11 @@ static void data_transformer_run() {
                 constexpr uint32_t slm_size
                         = data_transformer::get_slm_size::size;
                 if constexpr (slm_size != 0) { xetla_local_init<slm_size>(); }
-                xetla_exec_item<3> ei(item);
+
                 data_transformer_func<data_type_in, data_type_out,
                         data_type_acc, wg_tile_n, wg_tile_m, sg_tile_n,
-                        sg_tile_m, Test::layout_in, need_fp8_op>(ei, buffer_in,
-                        buffer_out, matrix_m, matrix_n, matrix_in_ld,
+                        sg_tile_m, Test::layout_in, need_fp8_op>(item,
+                        buffer_in, buffer_out, matrix_m, matrix_n, matrix_in_ld,
                         matrix_out_ld, scale, amax_ptr);
             });
         });

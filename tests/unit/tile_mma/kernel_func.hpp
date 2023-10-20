@@ -26,7 +26,7 @@ template <typename dtypeA, typename dtypeB, typename dtypeC, typename dtypeAcc,
         uint32_t m, uint32_t n, uint32_t k>
 struct tile_mma_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtypeA *a, dtypeB *b, dtypeC *c) {
+            sycl::nd_item<1> *item, dtypeA *a, dtypeB *b, dtypeC *c) {
 
         int width_a = k;
         int height_a = m;

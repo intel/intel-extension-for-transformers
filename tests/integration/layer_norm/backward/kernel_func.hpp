@@ -35,7 +35,7 @@ struct ln_bwd_func_t {
     static constexpr uint32_t barrier_count
             = layer_norm_bwd::get_barrier_count::count;
 
-    static inline void call(xetla_exec_item<3> &ei, dtype_y *dy_in,
+    static inline void call(sycl::nd_item<3> &item, dtype_y *dy_in,
             dtype_x *x_in, dtype_weight *gamma_in, int matrix_m, int matrix_n,
             int mat_ld, dtype_acc *buffer_rs, dtype_acc *buffer_mu,
             dtype_x *dx_out, dtype_acc *dgamma, dtype_acc *dbeta,
@@ -67,7 +67,7 @@ struct ln_bwd_func_t {
         ln_fused_args.dropout_prob = drop_out_prob;
         ln_fused_args.gradAdd_ptr = grad_in;
 
-        layer_norm_bwd::call(ei, &args, 0, 0, &ln_fused_args);
+        layer_norm_bwd::call(item, &args, 0, 0, &ln_fused_args);
     }
 };
 
@@ -86,7 +86,7 @@ struct ln_bwd_final_func_t {
     static constexpr uint32_t barrier_count
             = row_reduction0::get_barrier_count::count;
 
-    static inline void call(xetla_exec_item<3> &ei, dtype_acc *dgamma_acc,
+    static inline void call(sycl::nd_item<3> &item, dtype_acc *dgamma_acc,
             dtype_acc *dbeta_acc, dtype_weight *dgamma, dtype_weight *dbeta,
             int matrix_m, int matrix_n, dtype_acc *dbias_acc, dtype_x *dbias) {
         typename row_reduction0::arguments_t args0;
@@ -108,12 +108,12 @@ struct ln_bwd_final_func_t {
         args2.matrix_n = matrix_n;
         args2.mat_in_ld = matrix_n;
 
-        if (ei.get_group(0) == 0) {
-            row_reduction0::call(ei, &args0);
-        } else if (ei.get_group(0) == 1) {
-            row_reduction1::call(ei, &args1);
-        } else if (ei.get_group(0) == 2) {
-            row_reduction2::call(ei, &args2);
+        if (item.get_group(0) == 0) {
+            row_reduction0::call(item, &args0);
+        } else if (item.get_group(0) == 1) {
+            row_reduction1::call(item, &args1);
+        } else if (item.get_group(0) == 2) {
+            row_reduction2::call(item, &args2);
         }
     }
 };

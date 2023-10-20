@@ -247,8 +247,7 @@ void sdp_fwd_run(uint32_t iter) {
                     using namespace gpu::xetla::kernel;
                     using namespace gpu::xetla::subgroup;
 
-                    xetla_exec_item<3> ei(item);
-                    uint32_t batch_id = ei.get_group(0);
+                    uint32_t batch_id = item.get_group(0);
                     // disable sync in gemm
                     static constexpr uint32_t periodic_sync_interval = 0;
                     static constexpr uint32_t prefetch_distance = 3;
@@ -293,7 +292,7 @@ void sdp_fwd_run(uint32_t iter) {
                     typename post_op1_t::arguments_t post_op1_arg(
                             attn_mask + batch_id / head_num * size_mask
                                     + wg_tile_m_qk * wg_tile_n_qk
-                                            * ei.get_group(
+                                            * item.get_group(
                                                     1), // attn_mask pre-load ptr batch offset
                             {matrix_n_qk, // attn_mask tdesc width
                                     matrix_m_qk, // attn_mask tdesc height
@@ -309,7 +308,7 @@ void sdp_fwd_run(uint32_t iter) {
                             matrix_n_qk, // matC load width
                             {{post_op0_arg, post_op1_arg}});
                     gemm_op0_t gemm_op0;
-                    gemm_op0(ei, arg0);
+                    gemm_op0(item, arg0);
                     xetla_fence<memory_kind::shared_local>();
                     nbarrier.arrive_wait();
 
@@ -323,7 +322,7 @@ void sdp_fwd_run(uint32_t iter) {
                     arg1.data_in_base = 0;
                     arg1.data_out_base = 0;
 
-                    softmax_op(ei, &arg1);
+                    softmax_op(item, &arg1);
                     xetla_fence<memory_kind::shared_local>();
                     nbarrier.arrive_wait();
 
@@ -362,8 +361,8 @@ void sdp_fwd_run(uint32_t iter) {
                             + batch_id * size_qkv; // matB_ptr + batch offset
                     uint32_t matB_ld = matrix_n_sv; // matB load width
 
-                    int start_n = ei.get_group(2) * wg_tile_n_sv;
-                    int start_m = ei.get_group(1) * wg_tile_m_sv;
+                    int start_n = item.get_group(2) * wg_tile_n_sv;
+                    int start_m = item.get_group(1) * wg_tile_m_sv;
                     int start_k = 0;
                     uint32_t wg_tile_k = matrix_k;
                     uint32_t boundary_n = (start_n + wg_tile_n_sv) > matrix_n
@@ -375,7 +374,7 @@ void sdp_fwd_run(uint32_t iter) {
                     uint32_t boundary_k = wg_tile_k;
 
                     work_group_t g;
-                    g.init(ei.get_local_linear_id());
+                    g.init(item.get_local_linear_id());
 
                     mem_desc_a_t mem_desc_a;
                     mem_desc_b_t mem_desc_b;
@@ -400,8 +399,8 @@ void sdp_fwd_run(uint32_t iter) {
                     // Define a temprary vector as output buffer
                     xetla_vector<dtype_out, sg_tile_n_sv> out_reg;
                     // Calculate new coordination of each element
-                    uint32_t b = ei.get_group(0) / head_num;
-                    uint32_t n = ei.get_group(0) % head_num;
+                    uint32_t b = item.get_group(0) / head_num;
+                    uint32_t n = item.get_group(0) % head_num;
                     uint32_t f = start_m + gemm1_t::get_matC_offset_y(g);
                     uint32_t h = start_n + gemm1_t::get_matC_offset_x(g);
 

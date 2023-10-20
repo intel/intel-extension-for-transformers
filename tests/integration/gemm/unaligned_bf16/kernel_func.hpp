@@ -46,7 +46,7 @@ struct unaligned_gemm_test_func {
 
     static const char *func_name() { return "unaligned_gemm_test_func"; }
 
-    static inline void run(xetla_exec_item<3> &ei, dtype_a *A, dtype_b *B,
+    static inline void run(sycl::nd_item<3> &item, dtype_a *A, dtype_b *B,
             dtype_c *C, uint32_t mat_m, uint32_t mat_n, uint32_t mat_k,
             dtype_acc *Acc, uint32_t *Cnt) {
         typename gemm_op_t::arguments_t arg(mat_m, mat_k, mat_n, A,
@@ -54,6 +54,6 @@ struct unaligned_gemm_test_func {
                 layout_b == mem_layout::col_major ? mat_k : mat_n, C, mat_n,
                 Acc, Cnt);
         gemm_op_t gemm_op;
-        gemm_op(ei, arg);
+        gemm_op(item, arg);
     }
 };

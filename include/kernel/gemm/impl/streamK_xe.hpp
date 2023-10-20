@@ -374,12 +374,12 @@ public:
     /// @param args Is the GEMM arguments for application-related runtime variables.
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.
-    __XETLA_API KERNEL_FUNC void operator()(xetla_exec_item<3> &ei,
+    __XETLA_API KERNEL_FUNC void operator()(sycl::nd_item<3> &item,
             const arguments_t &args,
             const WorkgroupSplitStreamK_t &workgroup_mapping,
             uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
 
-        int group_idx = ei.get_group(2);
+        int group_idx = item.get_group(2);
 
         int tile_idx = 0;
         int group_iter_begin = 0;
@@ -459,7 +459,7 @@ public:
 
                 // set up arguments
                 work_group_t g;
-                g.init(ei.get_local_linear_id());
+                g.init(item.get_local_linear_id());
                 mem_desc_a_t mem_desc_a;
                 mem_desc_b_t mem_desc_b;
                 mem_desc_c_t mem_desc_c;

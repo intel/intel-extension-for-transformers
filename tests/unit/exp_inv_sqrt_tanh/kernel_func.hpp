@@ -23,7 +23,7 @@ using namespace gpu::xetla;
 template <typename dtype, int SIMD>
 struct exp_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
         //hardcode for float to avoid load restriction
         xetla_vector<float, SIMD> src0 = xetla_load_global<float, SIMD>(a, 0);
         xetla_vector<dtype, SIMD> src = xetla_cvt<dtype, float, SIMD>(src0) + 5;
@@ -39,7 +39,7 @@ struct exp_func {
 template <typename dtype, int SIMD>
 struct exp2_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
         //hardcode for float to avoid load restriction
         xetla_vector<float, SIMD> src0 = xetla_load_global<float, SIMD>(a, 0);
         xetla_vector<dtype, SIMD> src = xetla_cvt<dtype, float, SIMD>(src0) + 5;
@@ -55,7 +55,7 @@ struct exp2_func {
 template <typename dtype, int SIMD>
 struct inv_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
         //hardcode for float to avoid load restriction
         xetla_vector<float, SIMD> src0 = xetla_load_global<float, SIMD>(a, 0);
         xetla_vector<dtype, SIMD> src = xetla_cvt<dtype, float, SIMD>(src0) + 5;
@@ -71,7 +71,7 @@ struct inv_func {
 template <typename dtype, int SIMD>
 struct sqrt_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
         //hardcode for float to avoid load restriction
         xetla_vector<float, SIMD> src0 = xetla_load_global<float, SIMD>(a, 0);
         xetla_vector<dtype, SIMD> src = xetla_cvt<dtype, float, SIMD>(src0) + 5;
@@ -87,7 +87,7 @@ struct sqrt_func {
 template <typename dtype, int SIMD>
 struct sqrt_ieee_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
         //hardcode for float to avoid load restriction
         xetla_vector<float, SIMD> src0 = xetla_load_global<float, SIMD>(a, 0);
         xetla_vector<dtype, SIMD> src = xetla_cvt<dtype, float, SIMD>(src0) + 5;
@@ -103,7 +103,7 @@ struct sqrt_ieee_func {
 template <typename dtype, int SIMD>
 struct rsqrt_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
         //hardcode for float to avoid load restriction
         xetla_vector<float, SIMD> src0 = xetla_load_global<float, SIMD>(a, 0);
         xetla_vector<dtype, SIMD> src = xetla_cvt<dtype, float, SIMD>(src0) + 5;
@@ -119,7 +119,7 @@ struct rsqrt_func {
 template <typename dtype, int SIMD>
 struct tanh_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
         //hardcode for float to avoid load restriction
         xetla_vector<float, SIMD> src0 = xetla_load_global<float, SIMD>(a, 0);
         xetla_vector<dtype, SIMD> src = xetla_cvt<dtype, float, SIMD>(src0) - 5;
@@ -135,7 +135,7 @@ struct tanh_func {
 template <typename dtype, int SIMD>
 struct tanh_func_long_vector {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
         xetla_vector<dtype, SIMD> src0;
         src0.copy_from(a);
 

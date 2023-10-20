@@ -27,7 +27,7 @@ template <typename dtype, int dst_swidth, int dst_sheight, int dst_spitch,
         int src_spitch = dst_spitch, gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_store_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         constexpr int ele_per_dw
                 = transform ? sizeof(uint32_t) / sizeof(dtype) : 1;
@@ -81,7 +81,7 @@ template <typename dtype, int dst_swidth, int dst_sheight, int dst_spitch,
         int src_spitch = dst_spitch, gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_store_unaligned_2d_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         constexpr int ele_per_dw
                 = transform ? sizeof(uint32_t) / sizeof(dtype) : 1;
@@ -136,7 +136,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_store_atomic_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         uint64_t offset = check_boundary ? 33554432UL * swidth : 0;
         using check_tag_t = typename std::conditional<check_oob,
                 global_atomic_oob_check_on_tag,
@@ -185,7 +185,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         bool transpose = false, gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_broadcast_store_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         using tile_desc_a
                 = tile_desc_t<twidth, 1, bwidth, 1, reg_layout::tiled>;
@@ -222,7 +222,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_load_store_1d_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         uint64_t offset = check_boundary ? 33554432UL * swidth : 0;
         using tile_desc = tile_desc_t<twidth, theight, bwidth, bheight,
                 reg_layout::tiled>;
@@ -257,7 +257,7 @@ template <typename dtype, int dst_swidth, int dst_sheight, int dst_spitch,
         gpu_arch arch_tag = gpu_arch::Xe>
 struct tile_padding_load_store_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         mem_desc_t<dtype, mem_layout::row_major, mem_space::global> mem_desc_c(
                 {c}, {dst_swidth, dst_sheight, dst_spitch}, {0, 0});

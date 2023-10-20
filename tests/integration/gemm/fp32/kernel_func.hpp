@@ -57,7 +57,7 @@ struct fp32_gemm_test_func {
             gemm_t, epilogue_t>;
     static const char *func_name() { return "fp32_gemm_test_func"; }
 
-    static inline void run(xetla_exec_item<3> &ei, dtype_a *A, dtype_b *B,
+    static inline void run(sycl::nd_item<3> &item, dtype_a *A, dtype_b *B,
             dtype_c *C, uint32_t mat_m, uint32_t mat_n, uint32_t mat_k,
             dtype_acc *Acc, uint32_t *Cnt) {
 
@@ -66,6 +66,6 @@ struct fp32_gemm_test_func {
                 layout_b == mem_layout::col_major ? mat_k : mat_n, C, mat_n,
                 Acc, Cnt);
         gemm_op_t gemm_op;
-        gemm_op(ei, arg);
+        gemm_op(item, arg);
     }
 };

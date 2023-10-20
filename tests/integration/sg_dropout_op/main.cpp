@@ -90,13 +90,12 @@ static void dropout_op_run() {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<test>(
                     nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                        xetla_exec_item<3> ei(item);
                         using dropout_func = dropout_func_t<data_type_x,
                                 data_type_y, data_type_acc, test::wg_n,
                                 test::wg_m, test::sg_n, test::sg_m,
                                 test::dropout_kind>;
 
-                        dropout_func::run(ei, buffer_x, buffer_mask, buffer_y,
+                        dropout_func::run(item, buffer_x, buffer_mask, buffer_y,
                                 buffer_rand_offset, matrix_m, matrix_n,
                                 matrix_n, drop_out_ratio, drop_out_scale);
                     });

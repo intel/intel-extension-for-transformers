@@ -36,7 +36,7 @@ struct row_reduction_func_t {
     static constexpr uint32_t barrier_count
             = row_reduction::get_barrier_count::count;
 
-    static inline void call(xetla_exec_item<3> &ei, dtype_in *buffer_in,
+    static inline void call(sycl::nd_item<3> &item, dtype_in *buffer_in,
             dtype_out *buffer_out, int matrix_m, int matrix_n,
             dtype_w *buffer_w, dtype_x *buffer_x, dtype_d *buffer_d,
             uint8_t *buffer_mask, float drop_out_prob, float drop_out_scale) {
@@ -60,6 +60,6 @@ struct row_reduction_func_t {
         fused_op_args.dropout_prob = drop_out_prob;
         fused_op_args.dropout_scale_inv = drop_out_scale;
 
-        row_reduction::call(ei, &args, &fused_op_args);
+        row_reduction::call(item, &args, &fused_op_args);
     }
 };

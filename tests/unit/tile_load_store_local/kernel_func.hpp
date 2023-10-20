@@ -27,7 +27,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         bool transform = false, bool transpose = false>
 struct tile_load_store_local_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         using tile_desc = tile_desc_t<twidth, theight, bwidth, bheight>;
         using mat_t = tile_t<dtype, tile_desc>;
         using payload_global_t
@@ -58,7 +58,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         bool transform = false, bool transpose = false>
 struct tile_load_store_vnni_local_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         using tile_desc = tile_desc_t<twidth, theight, bwidth, bheight>;
         using vnni_tile_desc = tile_desc_t<twidth, theight, bwidth, bheight,
                 reg_layout::vnni_tiled>;
@@ -117,7 +117,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         bool transpose = false>
 struct tile_transpose_store_local_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         /// in order to use the same input and validation function, we should
         /// 1) transpose the data in global mem
@@ -166,7 +166,7 @@ template <typename dtype, int swidth, int sheight, int spitch, int twidth,
         bool transform = false, bool transpose = false>
 struct tile_load_store_1d_local_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         using tile_desc = tile_desc_t<twidth, theight, bwidth, bheight>;
         using mat_t = tile_t<dtype, tile_desc>;
         using payload_global = mem_payload_t<dtype, tile_desc,

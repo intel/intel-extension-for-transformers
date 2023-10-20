@@ -149,9 +149,7 @@ void ln_fwd_run() {
                 }
                 if constexpr (slm_size != 0) { xetla_local_init<slm_size>(); }
 
-                xetla_exec_item<3> ei(item);
-
-                ln_fwd_func::call(ei, buffer_x, buffer_y, matrix_m, matrix_n,
+                ln_fwd_func::call(item, buffer_x, buffer_y, matrix_m, matrix_n,
                         buffer_gamma, buffer_beta, buffer_rs, buffer_mu,
                         matrix_n, matrix_n, buffer_bias, buffer_resAdd,
                         buffer_mask, buffer_rand_offset, drop_out_ratio,

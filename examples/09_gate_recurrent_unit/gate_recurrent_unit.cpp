@@ -355,14 +355,13 @@ void gru_run(uint32_t iter) {
         auto gpu_event = queue.submit([&](handler &cgh) {
             cgh.parallel_for<gru_config>(
                     nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                        xetla_exec_item ei(item);
                         using xcoder_gru_op = kernel_xcoder_gru_fusion<
                                 typename gru_config::dtype_in,
                                 typename gru_config::dtype_acc,
                                 gru_config::wg_tile_m, gru_config::wg_tile_n,
                                 gru_config::sg_tile_m, gru_config::sg_tile_n,
                                 gru_config::sg_tile_k>;
-                        xcoder_gru_op::run(ei, layer_inputs, h0_inputs,
+                        xcoder_gru_op::run(item, layer_inputs, h0_inputs,
                                 ir_weights, hr_weights, iz_weights, hz_weights,
                                 in_weights, hn_weights, layer_outputs,
                                 hidden_outputs, ping_pong_buffer,

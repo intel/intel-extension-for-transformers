@@ -154,11 +154,10 @@ void streamK_gemm_run(uint32_t iter) {
         auto gpu_event = Queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                xetla_exec_item<3> ei(item);
                 // allocate slm and nbarrier resource
                 slm_barrier_init<gemm_op_t>();
                 gemm_op_t gemm_op;
-                gemm_op(ei, gemm_arg, workgroup_split_streamK);
+                gemm_op(item, gemm_arg, workgroup_split_streamK);
             });
         });
         gpu_event.wait();
@@ -398,11 +397,10 @@ void streamK_gemm_relu_biasadd_run(uint32_t iter) {
         auto gpu_event = Queue.submit([&](handler &cgh) {
             // GPU kernel
             cgh.parallel_for(NDRange, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                xetla_exec_item<3> ei(item);
                 // allocate slm and nbarrier resource
                 slm_barrier_init<gemm_op_t>();
                 gemm_op_t gemm_op;
-                gemm_op(ei, gemm_arg, workgroup_split_streamK);
+                gemm_op(item, gemm_arg, workgroup_split_streamK);
             });
         });
         gpu_event.wait();

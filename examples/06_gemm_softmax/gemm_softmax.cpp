@@ -175,8 +175,7 @@ void gemm_softmax_run(uint32_t iter) {
                             using namespace gpu::xetla::kernel;
                             using namespace gpu::xetla::subgroup;
 
-                            xetla_exec_item<3> ei(item);
-                            uint32_t batch_id = ei.get_group(0);
+                            uint32_t batch_id = item.get_group(0);
 
                             using compute_attr = compute_attr_t<data_type_a,
                                     data_type_b, data_type_sfx>;
@@ -245,8 +244,8 @@ void gemm_softmax_run(uint32_t iter) {
                             uint32_t matC_ld = matrix_n;
 
                             // ecah workgroup gets it individual index to start computation
-                            int start_n = ei.get_group(2) * wg_tile_n;
-                            int start_m = ei.get_group(1) * wg_tile_m;
+                            int start_n = item.get_group(2) * wg_tile_n;
+                            int start_m = item.get_group(1) * wg_tile_m;
                             int start_k = 0;
                             uint32_t wg_tile_k = matrix_k;
                             uint32_t boundary_n
@@ -275,7 +274,8 @@ void gemm_softmax_run(uint32_t iter) {
                             // call gemm function and result will be written in matAcc
                             gemm_args_t gemm_args(
                                     mem_desc_a, mem_desc_b, inner_loop_count);
-                            gemm_op_t::work_group_t g(ei.get_local_linear_id());
+                            gemm_op_t::work_group_t g(
+                                    item.get_local_linear_id());
                             gemm_op_t::matAcc_t matAcc(0);
                             gemm_op_t gemm;
                             gemm(g, matAcc, gemm_args);

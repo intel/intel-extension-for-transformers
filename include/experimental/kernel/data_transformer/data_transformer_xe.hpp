@@ -166,10 +166,10 @@ struct xetla_data_transformer<dtype_in_, dtype_out_, dtype_compute_,
     /// @param ei
     /// @param args Includes base pointer and matrix size.
     /// @return
-    __XETLA_API static void call(xetla_exec_item<3> &ei, arguments_t *args) {
-        int tid_x = ei.get_local_id(2);
-        int tid_y = ei.get_local_id(1);
-        uint32_t sg_id = ei.get_local_linear_id();
+    __XETLA_API static void call(sycl::nd_item<3> &item, arguments_t *args) {
+        int tid_x = item.get_local_id(2);
+        int tid_y = item.get_local_id(1);
+        uint32_t sg_id = item.get_local_linear_id();
 
         global_ld_t mat_global_ld;
         global_ld_payload_t global_ld_payload;

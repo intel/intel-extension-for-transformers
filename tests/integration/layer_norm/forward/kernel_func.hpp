@@ -37,7 +37,7 @@ struct ln_fwd_func_t {
     static constexpr uint32_t barrier_count
             = layer_norm_fwd::get_barrier_count::count;
 
-    static inline void call(xetla_exec_item<3> &ei, dtype_x *x_in,
+    static inline void call(sycl::nd_item<3> &item, dtype_x *x_in,
             dtype_y *y_out, int matrix_m, int matrix_n,
             dtype_weight *buffer_gamma, dtype_weight *buffer_beta,
             dtype_acc *buffer_rs, dtype_acc *buffer_mu, int mat_ld, int mask_ld,
@@ -69,6 +69,6 @@ struct ln_fwd_func_t {
         ln_fused_args.dropout_scale = drop_out_scale;
         ln_fused_args.bias_dropout_res_ptr = res_dropout_res_out;
 
-        layer_norm_fwd::call(ei, &args, 0, 0, &ln_fused_args);
+        layer_norm_fwd::call(item, &args, 0, 0, &ln_fused_args);
     }
 };

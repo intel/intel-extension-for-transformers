@@ -52,9 +52,8 @@ static void vadd_run() {
     try {
         auto e_esimd = queue.submit([&](handler &cgh) {
             cgh.parallel_for<Test1>(
-                    nd_range, [=](nd_item<1> ndi) SYCL_ESIMD_KERNEL {
-                        xetla_exec_item ei(ndi);
-                        vector_add_func<data_type, VL, BL>(&ei, A, B, C);
+                    nd_range, [=](nd_item<1> item) SYCL_ESIMD_KERNEL {
+                        vector_add_func<data_type, VL, BL>(&item, A, B, C);
                     });
         });
         e_esimd.wait();

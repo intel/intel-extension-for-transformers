@@ -271,15 +271,15 @@ public:
     /// @param args Is the GEMM_UNIVERSAL arguments for application-related runtime variables.
     /// @param slm_base Is the slm base address.
     /// @param nbarrier_base Is the named barrier base.
-    __XETLA_API KERNEL_FUNC void operator()(xetla_exec_item<3> &ei,
+    __XETLA_API KERNEL_FUNC void operator()(sycl::nd_item<3> &item,
             const arguments_t &args, uint32_t slm_base = 0,
             uint32_t nbarrier_base = 0) {
         // remap workgroups into a 2D block shape and re-coordinates workgroups
-        uint32_t group_range_n = ei.get_group_range(2);
-        uint32_t group_range_m = ei.get_group_range(1);
+        uint32_t group_range_n = item.get_group_range(2);
+        uint32_t group_range_m = item.get_group_range(1);
         uint32_t wg_repeat_n = group_range_n / wg_num_n;
         uint32_t wg_repeat_m = group_range_m / wg_num_m;
-        uint32_t repeat_id = ei.get_group_linear_id() / max_wg_num;
+        uint32_t repeat_id = item.get_group_linear_id() / max_wg_num;
 
         uint32_t repeat_id_n = repeat_id % wg_repeat_n;
         uint32_t repeat_id_m = repeat_id / wg_repeat_n;
@@ -292,7 +292,7 @@ public:
                 = (repeat_id_m & 1) == 0 ? repeat_start_n_0 : repeat_start_n_1;
         uint32_t repeat_start_m = repeat_id_m * wg_num_m * wg_tile_m;
 
-        uint32_t wg_inner_id = ei.get_group_linear_id() % max_wg_num;
+        uint32_t wg_inner_id = item.get_group_linear_id() % max_wg_num;
         uint32_t wg_coord_n = wg_inner_id % wg_num_n;
         uint32_t wg_coord_m = wg_inner_id / wg_num_n;
         int start_n = repeat_start_n + wg_coord_n * wg_tile_n;
@@ -316,7 +316,7 @@ public:
 
         // set up arguments
         work_group_t g;
-        g.init(ei.get_local_linear_id());
+        g.init(item.get_local_linear_id());
         mem_desc_a_t mem_desc_a;
         mem_desc_b_t mem_desc_b;
         mem_desc_c_t mem_desc_c;

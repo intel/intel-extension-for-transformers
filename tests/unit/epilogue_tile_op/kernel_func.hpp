@@ -40,14 +40,14 @@ struct tile_elemwise_op_func {
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         matA_t matA;
         matA_payload_t matA_payload;
         matA_payload.init(a, swidth, sheight, spitch, 0, 0);
         subgroup::tile_load(matA, matA_payload);
         matA.reg = (matA.reg - 50.f) / 100.f;
         mem_desc_c_t mem_desc_c({c}, {swidth, sheight, spitch}, {0, 0});
-        work_group_t g(ei->get_local_linear_id());
+        work_group_t g(item->get_local_linear_id());
         epilogue_args_t epilogue_args {};
         epilogue_t epilogue;
         epilogue(g, matA, mem_desc_c, epilogue_args);
@@ -75,14 +75,14 @@ struct tile_elemwise_op_func<dtype, swidth, sheight, spitch, twidth, theight,
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         matA_t matA;
         matA_payload_t matA_payload;
         matA_payload.init(a, swidth, sheight, spitch, 0, 0);
         subgroup::tile_load(matA, matA_payload);
         matA.reg = (matA.reg - 50.f) / 100.f;
         mem_desc_b_t mem_desc_b({b}, {swidth, sheight, spitch}, {0, 0});
-        work_group_t g(ei->get_local_linear_id());
+        work_group_t g(item->get_local_linear_id());
         epilogue_args_t epilogue_args {{{c}, {swidth, sheight, spitch}}};
         epilogue_t epilogue;
         epilogue(g, matA, mem_desc_b, epilogue_args);
@@ -110,14 +110,14 @@ struct tile_elemwise_op_func<dtype, swidth, sheight, spitch, twidth, theight,
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         matA_t matA;
         matA_payload_t matA_payload;
         matA_payload.init(a, swidth, sheight, spitch, 0, 0);
         subgroup::tile_load(matA, matA_payload);
         matA.reg = (matA.reg - 50.f) / 100.f;
         mem_desc_c_t mem_desc_c({c}, {swidth, sheight, spitch}, {0, 0});
-        work_group_t g(ei->get_local_linear_id());
+        work_group_t g(item->get_local_linear_id());
         epilogue_args_t epilogue_args {{{b}, {swidth, sheight, spitch}}};
         epilogue_t epilogue;
         epilogue(g, matA, mem_desc_c, epilogue_args);
@@ -141,11 +141,11 @@ struct tile_elemwise_op_func<dtype, swidth, sheight, spitch, twidth, theight,
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         matAcc_t matAcc;
         matAcc.reg = 0;
         mem_desc_c_t mem_desc_c({c}, {swidth, sheight, spitch}, {0, 0});
-        work_group_t g(ei->get_local_linear_id());
+        work_group_t g(item->get_local_linear_id());
         epilogue_args_t epilogue_args {{{a}, {swidth, sheight, spitch}}};
         epilogue_t epilogue;
         epilogue(g, matAcc, mem_desc_c, epilogue_args);
@@ -170,11 +170,11 @@ struct tile_elemwise_op_func<dtype, swidth, sheight, spitch, twidth, theight,
     using epilogue_args_t = typename epilogue_t::arguments_t;
 
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         matAcc_t matAcc;
         matAcc.reg = 0;
         mem_desc_c_t mem_desc_c({c}, {swidth, sheight, spitch}, {0, 0});
-        work_group_t g(ei->get_local_linear_id());
+        work_group_t g(item->get_local_linear_id());
         epilogue_args_t epilogue_args {{{a}, {swidth, sheight, spitch}}};
         epilogue_t epilogue;
         epilogue(g, matAcc, mem_desc_c, epilogue_args);

@@ -205,13 +205,13 @@ struct xetla_mha_core_attn_fwd_t {
     /// @param ei
     /// @param args Includes base descriptors and tid info.
     /// @return
-    __XETLA_API static void call(xetla_exec_item<3> &ei, arguments_t *args) {
+    __XETLA_API static void call(sycl::nd_item<3> &item, arguments_t *args) {
 
         int tru_seqlen = 0;
         int tru_seqlen_ex = 0;
         int seqlen_entry = 0;
 
-        int groupid = ei.get_group(0);
+        int groupid = item.get_group(0);
         int hiddensize = 1024;
         int numhead = 16;
         int hdsz = 64;
@@ -221,7 +221,7 @@ struct xetla_mha_core_attn_fwd_t {
         int headid = groupid % numhead;
 
         work_group_t g_thd32_tid;
-        int tid_linear = ei.get_local_linear_id();
+        int tid_linear = item.get_local_linear_id();
         g_thd32_tid.init(tid_linear);
 
         uint32_t batch_offset = sizeof(uint32_t) * list_width * batchid;
@@ -1139,7 +1139,7 @@ struct xetla_mha_core_attn_bwd_t {
     /// @param ei
     /// @param args Includes base descriptors and tid info.
     /// @return
-    __XETLA_API static void call(xetla_exec_item<3> &ei, arguments_t *args) {
+    __XETLA_API static void call(sycl::nd_item<3> &item, arguments_t *args) {
 
         int tru_seqlen = 0;
         int tru_seqlen_ex = 0;
@@ -1151,7 +1151,7 @@ struct xetla_mha_core_attn_bwd_t {
         int wg_tile_QKT_k = hdsz; //args->matrix_k;
         int wg_tile_out_k;
 
-        int groupid = ei.get_group(0);
+        int groupid = item.get_group(0);
         int batchid = groupid / numhead;
         int headid = groupid % numhead;
 
@@ -1209,7 +1209,7 @@ struct xetla_mha_core_attn_bwd_t {
         }
 
         work_group_t g_thd32_tid;
-        int tid_linear = ei.get_local_linear_id();
+        int tid_linear = item.get_local_linear_id();
         g_thd32_tid.init(tid_linear);
 
         static_assert(ThreadNum == 32, "All Thread Sync");

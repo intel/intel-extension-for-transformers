@@ -23,7 +23,7 @@ using namespace gpu::xetla;
 template <typename dtype, int SIMD>
 struct named_barrier_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(dtype);
@@ -34,7 +34,7 @@ struct named_barrier_func {
         nbarrier.wait();
 #pragma unroll
         for (int i = 0; i < 16; i++) {
-            if (ei->get_local_id(0) == i) {
+            if (item->get_local_id(0) == i) {
                 xetla_vector<dtype, SIMD> A_load_vec
                         = xetla_load_global(a, offsets);
                 xetla_vector<dtype, SIMD> Dst = A_load_vec * 2;
@@ -53,10 +53,10 @@ struct named_barrier_producer_consumer_1_func {
     // tidX=2,3 are producers, reads original data , multiplies by 2 and writes to SLM
     // tidX=0,1 are consumers, reads multiplied data from SLM and writes to output buffer
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         xetla_nbarrier_t<2, 2> nbarrier;
         auto nelem_per_thread = SIMD;
-        auto tidX = ei->get_local_id(0);
+        auto tidX = item->get_local_id(0);
 
         if (tidX >= 2) {
             auto read_offset = (tidX - 2) * nelem_per_thread * sizeof(dtype);
@@ -88,11 +88,11 @@ struct named_barrier_producer_consumer_2_func {
     // tidX=0..15 are consumers, reads multiplied data from SLM and writes to output buffer
     // only 1 producer , 1 consumer per named barrier
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         xetla_nbarrier_t<1, 1> nbarrier;
         auto nelem_per_thread = SIMD;
-        auto tidX = ei->get_local_id(0);
+        auto tidX = item->get_local_id(0);
         auto barrier_id = tidX % 16;
 
         if (tidX >= 16) {
@@ -125,13 +125,13 @@ struct named_barrier_producer_consumer_3_func {
     // tidX=0..7  reads original data , multiplies by 2 writes to SLM, do a barrier wait, then multiplies by 2 again, writes to SLM
     // tidX=8..15 wait for (tidX%8) thread finish the first write, reads multiplied data from SLM ,wait again and do another read, then add the two vector, and writes to output buffer
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         xetla_nbarrier_t<1, 1> nbarrier1;
         xetla_nbarrier_t<1, 1> nbarrier2;
 
         auto nelem_per_thread = SIMD;
-        auto tidX = ei->get_local_id(0);
+        auto tidX = item->get_local_id(0);
         auto barrier_id_1 = tidX % 8;
         auto barrier_id_2 = tidX % 8 + 8;
 

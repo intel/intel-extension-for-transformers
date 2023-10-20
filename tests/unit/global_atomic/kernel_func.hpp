@@ -23,9 +23,9 @@ using namespace gpu::xetla;
 template <int SIMD>
 struct global_atomic_iinc_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -40,9 +40,9 @@ struct global_atomic_iinc_base {
 template <int SIMD>
 struct global_atomic_iinc_mask {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -58,9 +58,9 @@ struct global_atomic_iinc_mask {
 template <int SIMD>
 struct global_atomic_iinc_return {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -77,9 +77,9 @@ struct global_atomic_iinc_return {
 template <int SIMD>
 struct global_atomic_idec_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -94,9 +94,9 @@ struct global_atomic_idec_base {
 template <int SIMD>
 struct global_atomic_iadd_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -112,9 +112,9 @@ struct global_atomic_iadd_base {
 template <int SIMD>
 struct global_atomic_iadd_mask {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -131,9 +131,9 @@ struct global_atomic_iadd_mask {
 template <int SIMD>
 struct global_atomic_iadd_return {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -151,9 +151,9 @@ struct global_atomic_iadd_return {
 template <int SIMD>
 struct global_atomic_isub_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -169,9 +169,9 @@ struct global_atomic_isub_base {
 template <int SIMD>
 struct global_atomic_smin_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -187,9 +187,9 @@ struct global_atomic_smin_base {
 template <int SIMD>
 struct global_atomic_smax_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, int *a, int *b, int *c) {
+            sycl::nd_item<1> *item, int *a, int *b, int *c) {
 
-        uint64_t offset = sizeof(int) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(int) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(int);
@@ -205,9 +205,9 @@ struct global_atomic_smax_base {
 template <int SIMD>
 struct global_atomic_fadd_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
 
-        uint64_t offset = sizeof(float) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(float) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(float);
@@ -223,9 +223,9 @@ struct global_atomic_fadd_base {
 template <int SIMD>
 struct global_atomic_fsub_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
 
-        uint64_t offset = sizeof(float) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(float) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(float);
@@ -241,9 +241,9 @@ struct global_atomic_fsub_base {
 template <int SIMD>
 struct global_atomic_fmin_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
 
-        uint64_t offset = sizeof(float) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(float) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(float);
@@ -259,9 +259,9 @@ struct global_atomic_fmin_base {
 template <int SIMD>
 struct global_atomic_fmax_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
 
-        uint64_t offset = sizeof(float) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(float) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(float);
@@ -277,9 +277,9 @@ struct global_atomic_fmax_base {
 template <int SIMD>
 struct global_atomic_umin_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -295,9 +295,9 @@ struct global_atomic_umin_base {
 template <int SIMD>
 struct global_atomic_umax_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -313,9 +313,9 @@ struct global_atomic_umax_base {
 template <int SIMD>
 struct global_atomic_bit_and_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -331,9 +331,9 @@ struct global_atomic_bit_and_base {
 template <int SIMD>
 struct global_atomic_bit_or_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -349,9 +349,9 @@ struct global_atomic_bit_or_base {
 template <int SIMD>
 struct global_atomic_bit_xor_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -367,9 +367,9 @@ struct global_atomic_bit_xor_base {
 template <int SIMD>
 struct global_atomic_load {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -387,9 +387,9 @@ struct global_atomic_load {
 template <int SIMD>
 struct global_atomic_store {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -405,9 +405,9 @@ struct global_atomic_store {
 template <int SIMD>
 struct global_atomic_cmpxchg_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -424,9 +424,9 @@ struct global_atomic_cmpxchg_base {
 template <int SIMD>
 struct global_atomic_cmpxchg_mask {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -444,9 +444,9 @@ struct global_atomic_cmpxchg_mask {
 template <int SIMD>
 struct global_atomic_cmpxchg_return {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, uint32_t *a, uint32_t *b, uint32_t *c) {
+            sycl::nd_item<1> *item, uint32_t *a, uint32_t *b, uint32_t *c) {
 
-        uint64_t offset = sizeof(uint32_t) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(uint32_t) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(uint32_t);
@@ -466,9 +466,9 @@ struct global_atomic_cmpxchg_return {
 template <int SIMD>
 struct global_atomic_fcmpxchg_base {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, float *a, float *b, float *c) {
+            sycl::nd_item<1> *item, float *a, float *b, float *c) {
 
-        uint64_t offset = sizeof(float) * SIMD * ei->get_group(0);
+        uint64_t offset = sizeof(float) * SIMD * item->get_group(0);
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);
         offsets *= sizeof(float);

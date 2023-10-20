@@ -143,16 +143,16 @@ struct xetla_row_reduction_t<dtype_in_, dtype_out_, dtype_acc_, reduction_attr_,
     /// @param slm_base
     /// @param nbarrier_base
     /// @return
-    __XETLA_API static void call(xetla_exec_item<3> &ei, arguments_t *args,
+    __XETLA_API static void call(sycl::nd_item<3> &item, arguments_t *args,
             fused_op_arguments_t *fused_op_args = nullptr,
             uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
         work_group_t g;
-        g.init(ei.get_local_linear_id());
+        g.init(item.get_local_linear_id());
         int sg_idx = g.get_id() % wg_size_x;
         int sg_idy = g.get_id() / wg_size_x;
 
         int global_start_x_in
-                = ei.get_group(2) * wg_tile_n + sg_idx * sg_tile_n;
+                = item.get_group(2) * wg_tile_n + sg_idx * sg_tile_n;
         int global_start_y_in = sg_idy * sg_tile_m;
         xetla_nbarrier_t<wg_size_y, wg_size_y> nbarrier;
         nbarrier.init_nbarrier(

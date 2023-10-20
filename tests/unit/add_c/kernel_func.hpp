@@ -26,7 +26,7 @@ int add_update_carry_result_validate(
 template <typename dtype, int SIMD>
 struct add_update_carry_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         xetla_vector<dtype, SIMD> src0 = xetla_load_global<dtype, SIMD>(a, 0);
         xetla_vector<dtype, SIMD> carry;
         xetla_vector<dtype, SIMD> dst = xetla_add_c<dtype, SIMD>(

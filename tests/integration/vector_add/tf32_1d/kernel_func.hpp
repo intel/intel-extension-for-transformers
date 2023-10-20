@@ -22,8 +22,8 @@ using namespace gpu::xetla;
 
 template <typename dtype, int SIMD>
 KERNEL_FUNC inline void vector_add_func(
-        xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
-    uint64_t offset = sizeof(dtype) * SIMD * ei->get_group(0);
+        sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
+    uint64_t offset = sizeof(dtype) * SIMD * item->get_group(0);
     xetla_vector<uint32_t, SIMD> offsets
             = xetla_vector_gen<uint32_t, SIMD>(0, 1);
     offsets *= sizeof(dtype);

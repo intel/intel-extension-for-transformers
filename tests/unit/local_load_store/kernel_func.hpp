@@ -23,7 +23,7 @@ using namespace gpu::xetla;
 template <typename dtype, int SIMD>
 struct local_load_store_block {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         uint64_t offset = 0;
         xetla_vector<dtype, SIMD> A_load_vec
@@ -41,7 +41,7 @@ struct local_load_store_block {
 template <typename dtype, int SIMD>
 struct local_load_store_scatter {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         uint64_t offset = 0;
         xetla_vector<dtype, SIMD> A_load_vec
                 = xetla_load_global<dtype, SIMD>(a, offset);
@@ -63,7 +63,7 @@ struct local_load_store_scatter {
 template <typename dtype, int SIMD>
 struct local_load_scatter_mask {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         uint64_t offset = 0;
         xetla_vector<dtype, SIMD> A_load_vec
@@ -91,7 +91,7 @@ struct local_load_scatter_mask {
 template <typename dtype, int SIMD>
 struct local_store_scatter_mask {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         uint64_t offset = 0;
         xetla_vector<dtype, SIMD> A_load_vec
@@ -122,7 +122,7 @@ struct local_store_scatter_mask {
 template <typename dtype, int SIMD>
 struct local_load_store_scatter_nelt2 {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
         xetla_vector<uint32_t, SIMD> offsets
                 = xetla_vector_gen<uint32_t, SIMD>(0, 1);

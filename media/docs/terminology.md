@@ -29,7 +29,7 @@ Intel® XeTLA based on [SYCL](https://registry.khronos.org/SYCL/specs/sycl-2020/
 
 **tile**: Subgroup level problem. It also involves underneath register storage and operations.
 
-**xetla_exec_item**: The item structure to explict identify the group / local id information. Wrapped SYCL item related operations.
+**sycl::nd_item**: The item structure to explict identify the group / local id information. Wrapped SYCL item related operations.
 
 **XMX**:  Intel Xe Matrix Extensions.
 

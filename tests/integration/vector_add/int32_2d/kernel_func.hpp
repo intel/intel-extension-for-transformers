@@ -98,7 +98,7 @@ KERNEL_FUNC inline void store2D_D32_A64_WB_WB(
 
 template <typename dtype, int SIMD, int BLOCK_SIZE>
 KERNEL_FUNC inline void vector_add_func(
-        xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+        sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
 
     //    xetla_vector<uint32_t, 16> A_prefetch_msg;
     //    xetla_vector<uint32_t, 16> B_prefetch_msg;
@@ -122,7 +122,7 @@ KERNEL_FUNC inline void vector_add_func(
     xetla_vector<uint32_t, 2> xy_A;
 
     // construct matA read and prefetch message
-    xy_A[0] = ei->get_group(0) * BLOCK_SIZE;
+    xy_A[0] = item->get_group(0) * BLOCK_SIZE;
     xy_A[1] = 0;
     A_load_msg[TWOD_BUF_BLOCK_W_H_A_IN_ELEM] = 0x00707;
     A_load_msg.xetla_select<2, 1>(TWOD_BUF_ADDR0).xetla_format<uint64_t>()
@@ -154,11 +154,11 @@ KERNEL_FUNC inline void vector_add_func(
         C_store_msg[TWOD_BUF_Y_COORD_IN_ELEM] = iy;
         for (int ix = 0; ix < BLOCK_SIZE; ix += SIMD) {
             A_load_msg[TWOD_BUF_X_COORD_IN_ELEM]
-                    = ei->get_group(0) * BLOCK_SIZE + ix;
+                    = item->get_group(0) * BLOCK_SIZE + ix;
             B_load_msg[TWOD_BUF_X_COORD_IN_ELEM]
-                    = ei->get_group(0) * BLOCK_SIZE + ix;
+                    = item->get_group(0) * BLOCK_SIZE + ix;
             C_store_msg[TWOD_BUF_X_COORD_IN_ELEM]
-                    = ei->get_group(0) * BLOCK_SIZE + ix;
+                    = item->get_group(0) * BLOCK_SIZE + ix;
             load2D_D32_A64_CA_CA<dtype, SIMD * SIMD, uint32_t, 16>(
                     A_buffer.xetla_format<dtype>(),
                     A_load_msg.xetla_format<uint32_t>());

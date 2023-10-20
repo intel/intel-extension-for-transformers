@@ -23,7 +23,7 @@ using namespace gpu::xetla;
 template <typename dtype, int SIMD, reduce_op BinaryOperation>
 struct reduce_func {
     static KERNEL_FUNC inline void run(
-            xetla_exec_item<1> *ei, dtype *a, dtype *b, dtype *c) {
+            sycl::nd_item<1> *item, dtype *a, dtype *b, dtype *c) {
         xetla_vector<dtype, SIMD> src0 = xetla_load_global<dtype, SIMD>(a, 0);
         src0 += 5;
 
