@@ -38,6 +38,7 @@ struct gpt_params {
   int32_t n_ctx = 512;       // context size
   int32_t n_batch = 512;     // batch size for prompt processing (must be >=32 to use BLAS)
   int32_t n_keep = 0;        // number of tokens to keep from initial prompt
+  int32_t n_discard = -1;    // number of tokens to drop when reaching n_ctx
   int32_t n_gpu_layers = 0;  // number of layers to store in VRAM
 
   // sampling parameters

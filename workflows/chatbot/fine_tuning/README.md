@@ -18,7 +18,7 @@ Recommend python 3.9 or higher version.
 ```shell
 pip install -r requirements.txt
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
-python -m pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu
+python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
 
 ## 2. Prepare the Model
