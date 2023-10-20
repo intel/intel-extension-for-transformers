@@ -28,6 +28,7 @@ from huggingface_hub import snapshot_download
 from typing import List
 from transformers import (
     GenerationConfig,
+    AutoModel,
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
@@ -332,9 +333,11 @@ def load_model(
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
         use_auth_token=hf_access_token,
-        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE)) else False,
+        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+            re.search("chatglm", model_name, re.IGNORECASE)) else False,
     )
-    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
+    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token,trust_remote_code=True \
+                                        if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
@@ -351,6 +354,14 @@ def load_model(
                 use_auth_token=hf_access_token,
                 quantization_config=bitsandbytes_quant_config,
             )
+    elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = AutoModel.from_pretrained(
+                model_name,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
+                use_auth_token=hf_access_token,
+                trust_remote_code=True)
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
@@ -395,11 +406,13 @@ def load_model(
     if (
         hasattr(model.generation_config, "pad_token_id")
         and model.generation_config.pad_token_id is not None
+        and not "chatglm" in model_name
     ):
         tokenizer.pad_token_id = model.generation_config.pad_token_id
     if (
         hasattr(model.generation_config, "eos_token_id")
         and model.generation_config.eos_token_id is not None
+        and not "chatglm" in model_name
     ):
         tokenizer.eos_token_id = model.generation_config.eos_token_id
     if (
@@ -683,7 +696,7 @@ def predict_stream(**params):
                                     temperature=temperature,
                                     top_p=top_p,
                                     top_k=top_k,
-                                    repeat_penalty=repetition_penalty,
+                                    repetition_penalty=repetition_penalty,
                                     max_new_tokens=max_new_tokens,
                                     do_sample=do_sample,
                                     num_beams=num_beams
@@ -904,7 +917,7 @@ def predict(**params):
                             temperature=temperature,
                             top_p=top_p,
                             top_k=top_k,
-                            repeat_penalty=repetition_penalty,
+                            repetition_penalty=repetition_penalty,
                             max_new_tokens=max_new_tokens,
                             do_sample=do_sample,
                             num_beams=num_beams

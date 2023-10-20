@@ -18,8 +18,10 @@
 import re
 from typing import Union
 from intel_extension_for_transformers.transformers import (
+    AutoModel,
     AutoModelForSeq2SeqLM,
     AutoModelForCausalLM,
+    GPTBigCodeForCausalLM,
     MixedPrecisionConfig,
     WeightOnlyQuantConfig,
     BitsAndBytesConfig
@@ -51,6 +53,18 @@ class Optimization:
             or re.search("neural-chat-7b-v2", model.config._name_or_path, re.IGNORECASE)
         ):
             optimized_model = AutoModelForCausalLM.from_pretrained(
+                model.config._name_or_path,
+                quantization_config=config,
+                use_llm_runtime=use_llm_runtime,
+                trust_remote_code=True)
+        elif re.search("starcoder", model.config._name_or_path, re.IGNORECASE):
+            optimized_model = GPTBigCodeForCausalLM.from_pretrained(
+                model.config._name_or_path,
+                quantization_config=config,
+                use_llm_runtime=use_llm_runtime,
+                trust_remote_code=True)
+        elif re.search("chatglm", model.config._name_or_path, re.IGNORECASE):
+            optimized_model = AutoModel.from_pretrained(
                 model.config._name_or_path,
                 quantization_config=config,
                 use_llm_runtime=use_llm_runtime,
