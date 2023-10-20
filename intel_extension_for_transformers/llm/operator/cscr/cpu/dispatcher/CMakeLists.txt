@@ -23,7 +23,7 @@ file(GLOB HEADERS
     ${PROJECT_SOURCE_DIR}/include/*.hpp
 )
 
-add_subdirectory(../../../library/jblas jblas_out)
+add_subdirectory(../../../../library/jblas jblas_out)
 
 add_library(jblas_dispatcher STATIC ${HEADERS} ${SOURCES})
 if(WIN32)
