@@ -92,6 +92,15 @@ using PerNFp32Fp32 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
     jblas::utils::parallel::Parallel2DGemm>;
 }  // namespace avx512_vnni
 
+namespace avx2 {
+JBLAS_ISA constexpr DefaultISA = JblasAVX2;
+template <template <class GC, JBLAS_ISA ISA> class ProB>
+using Default = jblas::wrapper::gemm_pack_weight::GemmInterfacePackWeight<
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA, jblas::gemm::GemmCore_Row_NN_2x48_AVX2,
+                                                             jblas::prologue::gemm::ActivationBase, ProB,
+                                                             jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+    jblas::utils::parallel::Parallel2DGemm>;
+}  // namespace avx2
 }  // namespace
 
 static JBLAS_CODE jblas_s4fp32kblock_f32f32_forward(float* activation, SS4Fp32* weiptr, float* output, int _m, int _n,
@@ -123,6 +132,10 @@ static JBLAS_CODE jblas_s4fp32kblock_f32f32_forward(float* activation, SS4Fp32* 
   } else if (weiptr->mCoreType == GcCompFp32::TYPE) {
     if (_cd->AVX512F()) {
       using GemmKernel = avx512f::Default<WeiS4ClipFp32>;
+      static GemmKernel kernel;
+      ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, ldo});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = avx2::Default<WeiS4ClipFp32>;
       static GemmKernel kernel;
       ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, ldo});
     }
@@ -159,6 +172,10 @@ static JBLAS_CODE jblas_s8fp32kblock_f32f32_forward(float* activation, SS8Fp32* 
       using GemmKernel = avx512f::Default<WeiS8Fp32>;
       static GemmKernel kernel;
       ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, ldo});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = avx2::Default<WeiS8Fp32>;
+      static GemmKernel kernel;
+      ret = kernel.compute({_m, _n, _k, activation, lda, weiptr, output, ldo});
     }
   }
   return ret;
@@ -182,8 +199,15 @@ static JBLAS_CODE jblas_s8fp32perN_f32f32_forward(float* activation, SS8Fp32PerN
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
       quanA.assign((int8_t*)workspace);
-      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo, quanA.mZPtr,
-                                         quanA.mSPtr, quanA.mCStep, weiptr->mRPtr, weiptr->mSPtr});
+      ret = kernel.compute<true, false>(
+          {_m,
+           _n,
+           _k,
+           activation,
+           lda,
+           &quanA,
+           weiptr,
+           {output, ldo, quanA.mCStep, quanA.mSPtr, weiptr->mSPtr, quanA.mZPtr, weiptr->mRPtr}});
     }
   }
   return ret;
@@ -207,8 +231,15 @@ static JBLAS_CODE jblas_s4fp32perN_f32f32_forward(float* activation, SS4Fp32PerN
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
       quanA.assign((int8_t*)workspace);
-      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo, quanA.mZPtr,
-                                         quanA.mSPtr, quanA.mCStep, weiptr->mRPtr, weiptr->mSPtr});
+      ret = kernel.compute<true, false>(
+          {_m,
+           _n,
+           _k,
+           activation,
+           lda,
+           &quanA,
+           weiptr,
+           {output, ldo, quanA.mCStep, quanA.mSPtr, weiptr->mSPtr, quanA.mZPtr, weiptr->mRPtr}});
     }
   }
   return ret;
@@ -348,9 +379,17 @@ JBLAS_CODE jblas_fusion_add_s8fp32pern_f32f32_forward(float* activation, SS8Fp32
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k);
       quanA.assign((int8_t*)workspace);
-      ret = kernel.compute<true, false>({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo, quanA.mZPtr,
-                                         quanA.mSPtr, quanA.mCStep, weiptr->mRPtr, weiptr->mSPtr, bias,
-                                         broadcast_bias ? 0 : ldo});
+      ret = kernel.compute<true, false>(
+          {_m,
+           _n,
+           _k,
+           activation,
+           lda,
+           &quanA,
+           weiptr,
+           {{output, ldo, quanA.mCStep, quanA.mSPtr, weiptr->mSPtr, quanA.mZPtr, weiptr->mRPtr},
+            bias,
+            broadcast_bias ? 0 : ldo}});
     }
   }
   return ret;

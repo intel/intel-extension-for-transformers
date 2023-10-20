@@ -200,11 +200,12 @@ static inline void dequant_f4_N(_DST_T* dstptr, int8_t* srcptr, __m256* vscales)
   }
 }
 
-template <typename _ST>
-static inline JBLAS_CODE decompress_kblock_bit4_fp32(utils::bit4x2* srcptr, float* dstptr, int row, int col, int ld_src,
-                                                     int ld_dst, _ST* scales, int8_t* zero_points, int k_offset,
-                                                     int kblock, int NPad, void (*dequantize)(float*, int8_t*, __m256*),
-                                                     void (*pad_bit4)(int8_t*, int8_t*)) {
+template <typename _ST, typename _DST_T>
+static inline JBLAS_CODE decompress_kblock_bit4_packrow1(utils::bit4x2* srcptr, _DST_T* dstptr, int row, int col,
+                                                         int ld_src, int ld_dst, _ST* scales, int8_t* zero_points,
+                                                         int k_offset, int kblock, int NPad,
+                                                         void (*dequantize)(_DST_T*, int8_t*, __m256*),
+                                                         void (*pad_bit4)(int8_t*, int8_t*)) {
   uint32_t mask = 0xf0f0f0f0;
   auto vmask = _mm256_set1_epi32(*(int*)&mask);
   if (col == 48) {
@@ -262,24 +263,26 @@ static inline JBLAS_CODE decompress_kblock_bit4_fp32(utils::bit4x2* srcptr, floa
   return JblasNotSupport;
 }
 
-template <typename _ST>
-static inline JBLAS_CODE decompress_kblock_bit4_bf16(utils::bit4x2* srcptr, utils::bf16* dstptr, int row, int col,
-                                                     int ld_src, int ld_dst, _ST* scales, int8_t* zero_points,
-                                                     int k_offset, int kblock, int NPad,
-                                                     void (*dequantize)(utils::bf16*, int8_t*, __m256*),
-                                                     void (*pad_bit4)(int8_t*, int8_t*)) {
+template <typename _ST, typename _DST_T>
+static inline JBLAS_CODE decompress_kblock_bit4_packrow2(utils::bit4x2* srcptr, _DST_T* dstptr, int row, int col,
+                                                         int ld_src, int ld_dst, _ST* scales, int8_t* zero_points,
+                                                         int k_offset, int kblock, int NPad,
+                                                         void (*dequantize)(_DST_T*, int8_t*, __m256*),
+                                                         void (*pad_bit4)(int8_t*, int8_t*)) {
   return JblasNotSupport;
 }
 
-template <typename _ST, typename _DST_T, JBLAS_F4_TYPE F4_T>
+template <JBLAS_F4_TYPE _F4_T, typename _DST_T, int _PACK_ROW, typename _ST>
 static inline JBLAS_CODE decompress_kblock_f4_fp(utils::f4x2* srcptr, _DST_T* dstptr, int row, int col, int ld_src,
                                                  int ld_dst, _ST* scales, int k_offset, int kblock, int NPad) {
-  if constexpr (std::is_same<_DST_T, float>::value) {
-    return decompress_kblock_bit4_fp32<_ST>(srcptr, (float*)dstptr, row, col, ld_src, ld_dst, scales, nullptr, k_offset,
-                                            kblock, NPad, &dequant_f4_N<48, float, F4_T>, fp4_pad_4bit);
-  } else if constexpr (std::is_same<_DST_T, utils::bf16>::value) {
-    return decompress_kblock_bit4_bf16<_ST>(srcptr, (utils::bf16*)dstptr, row, col, ld_src, ld_dst, scales, nullptr,
-                                            k_offset, kblock, NPad, &dequant_f4_N<64, utils::bf16, F4_T>, fp4_pad_4bit);
+  if constexpr (_PACK_ROW == 1) {
+    return decompress_kblock_bit4_packrow1<_ST, _DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr,
+                                                        k_offset, kblock, NPad, &dequant_f4_N<48, _DST_T, _F4_T>,
+                                                        fp4_pad_4bit);
+  } else if constexpr (_PACK_ROW == 2) {
+    return decompress_kblock_bit4_packrow2<_ST, _DST_T>(srcptr, dstptr, row, col, ld_src, ld_dst, scales, nullptr,
+                                                        k_offset, kblock, NPad, &dequant_f4_N<64, _DST_T, _F4_T>,
+                                                        fp4_pad_4bit);
   }
   return JblasNotSupport;
 }
@@ -361,7 +364,7 @@ static inline JBLAS_CODE quantize_fp_u8_colblock(int row, int col, const SRC_T* 
         for (; ij < blocksize; ij++) {
           auto srcval = (float)srcptr[(j + ij) + i * ld_src];
           srcval = srcval * rscale;
-          auto srcint = int(srcval + 0.5f) + zp;
+          auto srcint = int(roundf(srcval)) + zp;
           srcint = std::min(srcint, 0xff);
           srcint = std::max(srcint, 0);
           dstptr[(j + ij) + i * ld_dst] = static_cast<uint8_t>(srcint);

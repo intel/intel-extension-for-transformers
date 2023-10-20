@@ -17,13 +17,13 @@
 
 #include "vec_base.hpp"
 
-inline fp32x16 min_fp32x16(fp32x16 a, fp32x16 b);
+fp32x16 min_fp32x16(fp32x16 a, fp32x16 b);
 
-inline int32x16 max_int32x16(int32x16 a, int32x16 b);
+s32x16 max_s32x16(s32x16 a, s32x16 b);
 
-inline fp32x16 max_fp32x16(fp32x16 a, fp32x16 b);
+fp32x16 max_fp32x16(fp32x16 a, fp32x16 b);
 
-inline float reduce_max_fp32x16(fp32x16 x);
+float reduce_max_fp32x16(fp32x16 x);
 REGISTER_KERNEL_T(reduce_max_fp32x16, float, fp32x16);
 
 #endif  // ENGINE_EXECUTOR_INCLUDE_VEC_COMPARE_HPP_
