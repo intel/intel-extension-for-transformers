@@ -254,11 +254,6 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
 
-
-def set_cpu_running_env():
-    os.environ["ONEDNN_MAX_CPU_ISA"] = "AVX512_CORE_BF16"
-
-
 def load_model(
     model_name,
     tokenizer_name,
@@ -298,8 +293,6 @@ def load_model(
         )
 
         adapt_transformers_to_gaudi()
-    elif device == "cpu" and not ipex_int8:
-        set_cpu_running_env()
 
     if isinstance(optimization_config, AMPConfig):
         dtype = optimization_config.dtype
