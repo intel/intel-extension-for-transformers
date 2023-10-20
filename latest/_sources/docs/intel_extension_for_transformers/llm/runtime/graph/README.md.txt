@@ -61,7 +61,7 @@ cd build
 cmake ..
 cmake --build . -j
 ```
-
+Note: add compile args ```-DNE_AVX512=OFF -DNE_AVX512_VBMI=OFF -DNE_AVX512_VNNI=OFF``` to ```cmake``` when compiling it on a CPU without AVX512
 ### 2. Run LLM with Python API
 
 You can use Python API to run Hugging Face model simply. Here is the sample code:
