@@ -692,7 +692,8 @@ def predict_stream(**params):
                                     repetition_penalty=repetition_penalty,
                                     max_new_tokens=max_new_tokens,
                                     do_sample=do_sample,
-                                    num_beams=num_beams
+                                    num_beams=num_beams,
+                                    seed=1
                                 )
                             else:
                                 output_token=model.generate(
@@ -913,7 +914,8 @@ def predict(**params):
                             repetition_penalty=repetition_penalty,
                             max_new_tokens=max_new_tokens,
                             do_sample=do_sample,
-                            num_beams=num_beams
+                            num_beams=num_beams,
+                            seed=1
                         )
                     else:
                         generation_output = model.generate(
