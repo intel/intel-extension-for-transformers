@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g5f4175a documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+ga8873ea documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -103,12 +103,38 @@
 <h1>Prerequisite​<a class="headerlink" href="#prerequisite" title="Link to this heading"></a></h1>
 <section id="environment">
 <h2>1. Environment​<a class="headerlink" href="#environment" title="Link to this heading"></a></h2>
+<section id="bare-metal">
+<h3>Bare Metal<a class="headerlink" href="#bare-metal" title="Link to this heading"></a></h3>
 <p>Recommend python 3.9 or higher version.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.txt
 <span class="c1"># To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.</span>
 python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="nv">oneccl_bind_pt</span><span class="o">==</span><span class="m">2</span>.1.0<span class="w"> </span>-f<span class="w"> </span>https://developer.intel.com/ipex-whl-stable-cpu
 </pre></div>
 </div>
+</section>
+<section id="docker">
+<h3>Docker<a class="headerlink" href="#docker" title="Link to this heading"></a></h3>
+<p>Pick either one of below options to setup docker environment.</p>
+<section id="option-1-build-docker-image-from-scratch">
+<h4>Option 1 : Build Docker image from scratch<a class="headerlink" href="#option-1-build-docker-image-from-scratch" title="Link to this heading"></a></h4>
+<p>Please refer to this section : <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#4-build-docker-image">How to build docker images for NeuralChat FineTuning</a> to build docker image from scratch.<br />Once you have the docker image ready, please follow <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#5-create-docker-container">run docker image</a> session to launch a docker instance from the image.</p>
+</section>
+<section id="option-2-pull-existing-docker-image">
+<h4>Option 2: Pull existing Docker image<a class="headerlink" href="#option-2-pull-existing-docker-image" title="Link to this heading"></a></h4>
+<p>Please follow the session <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/docker#set-up-docker-image">itrex docker setup</a> and use the docker pull command to pull itrex docker image.<br />Once you have itrex docker image, follow below section to update itrex docker instance for this finetuning example.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>https://raw.githubusercontent.com/oneapi-src/oneAPI-samples/master/AI-and-Analytics/Getting-Started-Samples/IntelAIKitContainer_GettingStarted/run_oneapi_docker.sh
+cp<span class="w"> </span>requirement.txt<span class="w"> </span>/tmp
+<span class="c1"># change intel/ai-tools:itrex-0.1.1 according to itrex docker setup session</span>
+./run_oneapi_docker.sh<span class="w"> </span>intel/ai-tools:itrex-0.1.1
+<span class="c1"># don&#39;t need ipex in this sample</span>
+pip<span class="w"> </span>uninstall<span class="w"> </span>intel_extension_for_pytorch
+<span class="c1"># update ITREX pip package in the docker instance</span>
+pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-transformers<span class="w"> </span>--upgrade
+</pre></div>
+</div>
+<p>After those instructions, you should be able to run below steps inside the docker instance.</p>
+</section>
+</section>
 </section>
 <section id="prepare-the-model">
 <h2>2. Prepare the Model<a class="headerlink" href="#prepare-the-model" title="Link to this heading"></a></h2>
@@ -564,7 +590,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f6683c8cbb0> 
+   <jinja2.runtime.BlockReference object at 0x7fa890090fa0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
