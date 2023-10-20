@@ -91,7 +91,7 @@ if config.model_type == "llama":
    from transformers import LlamaTokenizer
    tokenizer = LlamaTokenizer.from_pretrained(args.model)
 else:
-   tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=False,trust_remote_code=args.trust_remote_code)
+   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
 
 # quantization config setting
 quantization_config = None
