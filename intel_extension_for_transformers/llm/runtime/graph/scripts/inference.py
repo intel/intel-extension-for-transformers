@@ -24,63 +24,63 @@ build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="main program llm running")
-    parser.add_argument("--model_name", type=str, help="model name", required=True)
-    parser.add_argument("-m", "--model", type=Path, help="path ne model", required=True)
+    parser.add_argument("--model_name", type=str, help="Model name: String", required=True)
+    parser.add_argument("-m", "--model", type=Path, help="Path to the executed model: String", required=True)
     parser.add_argument(
-        "--build_dir", type=Path, help="path to build directory", default=build_path
+        "--build_dir", type=Path, help="Path to the build file: String", default=build_path
     )
     parser.add_argument(
         "-p",
         "--prompt",
         type=str,
-        help="prompt to start generation with (default: empty)",
+        help="Prompt to start generation with: String (default: empty)",
         default="",
     )
     parser.add_argument(
         "--tokenizer",
         type=str,
-        help="the path of the chatglm tokenizer",
+        help="The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)",
         default="THUDM/chatglm-6b",
     )
     parser.add_argument(
         "-n",
         "--n_predict",
         type=int,
-        help="number of tokens to predict (default: -1, -1 = infinity)",
+        help="Number of tokens to predict: Int (default: 0, -1 = all)",
         default=-1,
     )
     parser.add_argument(
         "-t",
         "--threads",
         type=int,
-        help="number of threads to use during computation (default: 56)",
+        help="Number of threads to use during computation: Int (default: 56)",
         default=56,
     )
     parser.add_argument(
         "-b",
         "--batch_size_truncate",
         type=int,
-        help="batch size for prompt processing (default: 512)",
+        help="Batch size for prompt processing: Int (default: 512)",
         default=512,
     )
     parser.add_argument(
         "-c",
         "--ctx_size",
         type=int,
-        help="size of the prompt context (default: 512)",
+        help="Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
         default=512,
     )
     parser.add_argument(
         "-s",
         "--seed",
         type=int,
-        help="NG seed (default: -1, use random seed for < 0)",
+        help="NG seed: Int (default: -1, use random seed for < 0)",
         default=-1,
     )
     parser.add_argument(
         "--repeat_penalty",
         type=float,
-        help="penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)",
+        help="Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)",
         default=1.1,
     )
     parser.add_argument(
@@ -91,7 +91,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--keep",
         type=int,
-        help="number of tokens to keep from the initial prompt (default: 0, -1 = all)",
+        help="Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)",
         default=0,
     )
     parser.add_argument(
