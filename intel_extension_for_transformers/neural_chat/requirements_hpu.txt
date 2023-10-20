@@ -34,4 +34,4 @@ numpy==1.23.5
 tiktoken==0.4.0
 lm_eval
 spacy
-neural-compressor
+neural-compressor==2.3.1

@@ -31,5 +31,4 @@ tiktoken==0.4.0
 cchardet
 transformers_stream_generator==0.0.4
 spacy
-neural-compressor
-
+neural-compressor==2.3.1
