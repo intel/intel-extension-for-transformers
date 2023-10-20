@@ -91,7 +91,7 @@ if config.model_type == "llama":
    from transformers import LlamaTokenizer
    tokenizer = LlamaTokenizer.from_pretrained(args.model)
 else:
-   tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.trust_remote_code)
+   tokenizer = AutoTokenizer.from_pretrained(args.model, use_fast=False,trust_remote_code=args.trust_remote_code)
 
 # quantization config setting
 quantization_config = None
@@ -117,7 +117,6 @@ elif args.sq:
                                 alpha=float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
-                                calib_iters=4,
                                )
 elif args.woq:
     quantization_config = WeightOnlyQuantConfig(compute_type="fp32", weight_type="int4_fullrange", group_size=32) #default is A32W4G32
@@ -148,8 +147,8 @@ elif args.load_in_4bit or args.load_in_8bit:
                                                       load_in_8bit=args.load_in_8bit,
                                                       use_llm_runtime=False
                                                       )
-elif not args.int8 or not args.int8_bf16_mixed:
-    user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, use_llm_runtime=False)
+elif not args.int8 and not args.int8_bf16_mixed:
+    user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, trust_remote_code=args.trust_remote_code, use_llm_runtime=False)
     # peft
     if args.peft_model_id is not None:
         from peft import PeftModel
