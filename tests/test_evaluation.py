@@ -69,7 +69,6 @@ class TestLmEvaluationHarness(unittest.TestCase):
         )
         self.assertEqual(results["results"]["piqa"]["acc"], 0.6)
 
-
     def test_cnn_daily(self):
         from intel_extension_for_transformers.llm.evaluation.hf_eval import summarization_evaluate
         model = AutoModelForCausalLM.from_pretrained("facebook/opt-125m")
