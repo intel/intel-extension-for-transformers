@@ -254,11 +254,6 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
 
-
-def set_cpu_running_env():
-    os.environ["ONEDNN_MAX_CPU_ISA"] = "AVX512_CORE_BF16"
-
-
 def load_model(
     model_name,
     tokenizer_name,
@@ -299,8 +294,6 @@ def load_model(
         )
 
         adapt_transformers_to_gaudi()
-    elif device == "cpu" and not ipex_int8:
-        set_cpu_running_env()
 
     if isinstance(optimization_config, MixedPrecisionConfig):
         dtype = optimization_config.dtype
@@ -336,7 +329,7 @@ def load_model(
         trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
             re.search("chatglm", model_name, re.IGNORECASE)) else False,
     )
-    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token,trust_remote_code=True \
+    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
                                         if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
