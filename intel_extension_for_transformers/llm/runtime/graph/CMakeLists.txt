@@ -65,13 +65,6 @@ if (NOT MSVC)
     option(NE_F16C               "neural_engine: enable F16C"                                    ON)
 endif()
 
-execute_process(COMMAND lscpu OUTPUT_VARIABLE CPUINFO)
-if (CPUINFO MATCHES "avx512")
-    set(NE_AVX512 ON)
-    set(NE_AVX512_VBMI ON)
-    set(NE_AVX512_VNNI ON)
-endif()
-
 # 3rd party libs
 option(NE_ONEDNN                 "neural_engine: use oneDNN"                                     ON)
 option(NE_LIBXSMM                "neural_engine: use libxsmm"                                    OFF)
