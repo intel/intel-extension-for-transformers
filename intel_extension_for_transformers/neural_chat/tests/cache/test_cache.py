@@ -18,6 +18,10 @@
 from intel_extension_for_transformers.neural_chat.pipeline.plugins.caching.cache import ChatCache
 from intel_extension_for_transformers.neural_chat import build_chatbot, PipelineConfig
 import unittest
+
+from huggingface_hub import login
+login("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")
+
 class TestChatCache(unittest.TestCase):
     def setUp(self):
         return super().setUp()
