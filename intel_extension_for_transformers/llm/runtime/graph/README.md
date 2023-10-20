@@ -79,6 +79,10 @@ streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 
+# for enabling Streaming LLM with infinite inference, here is the sample code:
+// from [Paper](https://arxiv.org/pdf/2309.17453.pdf), we recommand you use n_keep=4 to do Attention sinks (four initial tokens), and n_discard as -1 to drop half rencetly tokens when meet lenght threshold.
+outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size=100, n_keep=4, n_discard=-1)
+
 ```
 
 Argument description of generate function:
@@ -104,6 +108,8 @@ Argument description of generate function:
 | early_stopping       | Controls the stopping condition for beam-based methods, like beam-search.|
 | n_keep               | number of tokens to keep from the initial prompt (default: 0, -1 = all)  |
 | n_discard            | number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded)   |
+
+
 
 ### 3. Run LLM with Python Script
 You can run LLM with one-click python script including convertion, quantization and inference.
