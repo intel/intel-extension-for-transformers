@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+g0f6aee6 documentation</title>
+  <title>NeuralChat Fine-tuning &mdash; Intel® Extension for Transformers 0.1.dev1+ga8db98f documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -123,6 +123,7 @@ python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </sp
 <h4>Option 2: Pull existing Docker image<a class="headerlink" href="#option-2-pull-existing-docker-image" title="Link to this heading"></a></h4>
 <p>Please follow the session <a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/main/docker#set-up-docker-image">itrex docker setup</a> and use the docker pull command to pull itrex docker image.<br />Once you have itrex docker image, follow below section to update itrex docker instance for this finetuning example.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>https://raw.githubusercontent.com/oneapi-src/oneAPI-samples/master/AI-and-Analytics/Getting-Started-Samples/IntelAIKitContainer_GettingStarted/run_oneapi_docker.sh
+chmod<span class="w"> </span>+x<span class="w"> </span>run_oneapi_docker.sh
 cp<span class="w"> </span>requirement.txt<span class="w"> </span>/tmp
 <span class="c1"># change intel/ai-tools:itrex-0.1.1 according to itrex docker setup session</span>
 ./run_oneapi_docker.sh<span class="w"> </span>intel/ai-tools:itrex-0.1.1
@@ -140,12 +141,42 @@ pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-tr
 <h2>2. Prepare the Model<a class="headerlink" href="#prepare-the-model" title="Link to this heading"></a></h2>
 <section id="llama">
 <h3>LLaMA<a class="headerlink" href="#llama" title="Link to this heading"></a></h3>
-<p>To acquire the checkpoints and tokenizer, the user has two options: completing the <a class="reference external" href="https://forms.gle/jk851eBVbX1m5TAv5">Google form</a> or attempting <a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">the released model on Huggingface</a>.</p>
+<section id="decapoda-research-llama-7b-hf">
+<h4>decapoda-research/llama-7b-hf<a class="headerlink" href="#decapoda-research-llama-7b-hf" title="Link to this heading"></a></h4>
+<p>To acquire the checkpoints and tokenizer, the user has two options: completing the <a class="reference external" href="https://forms.gle/jk851eBVbX1m5TAv5">Google form</a> or attempting <a class="reference external" href="https://huggingface.co/decapoda-research/llama-7b-hf">the released model on Huggingface</a>.
+Users could follow below commands to get the checkpoints from github repository.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/decapoda-research/llama-7b-hf
+</pre></div>
+</div>
 <p>It should be noticed that the early version of LLama model’s name in Transformers has resulted in many loading issues, please refer to this <a class="reference external" href="https://github.com/huggingface/transformers/pull/21955">revision history</a>. Therefore, Transformers has reorganized the code and rename LLaMA model as <code class="docutils literal notranslate"><span class="pre">Llama</span></code> in the model file. But the release model on Huggingface did not make modifications in react to this change. To avoid unexpexted confliction issues, we advise the user to modify the local <code class="docutils literal notranslate"><span class="pre">config.json</span></code> and <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> files according to the following recommendations:</p>
 <ol class="simple">
 <li><p>The <code class="docutils literal notranslate"><span class="pre">tokenizer_class</span></code> in <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">LLaMATokenizer</span></code> to <code class="docutils literal notranslate"><span class="pre">LlamaTokenizer</span></code>;</p></li>
 <li><p>The <code class="docutils literal notranslate"><span class="pre">architectures</span></code> in <code class="docutils literal notranslate"><span class="pre">config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">LLaMAForCausalLM</span></code> to <code class="docutils literal notranslate"><span class="pre">LlamaForCausalLM</span></code>.</p></li>
 </ol>
+</section>
+<section id="meta-llama-llama-2-7b">
+<h4>meta-llama/Llama-2-7b<a class="headerlink" href="#meta-llama-llama-2-7b" title="Link to this heading"></a></h4>
+<p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="%5Bhttps://huggingface.co/mosaicml/mpt-7b%5D(https://huggingface.co/meta-llama/Llama-2-7b)">meta-llama/Llama-2-7b</a>.
+Users could follow below commands to get the checkpoints from github repository after the access request to the files is approved.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/meta-llama/Llama-2-7b
+</pre></div>
+</div>
+</section>
+<section id="mpt">
+<h4>MPT<a class="headerlink" href="#mpt" title="Link to this heading"></a></h4>
+<p>To acquire the checkpoints and tokenizer, the user can get those files from <a class="reference external" href="https://huggingface.co/mosaicml/mpt-7b">mosaicml/mpt-7b</a>.
+Users could follow below commands to get the checkpoints from github repository.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>lfs<span class="w"> </span>install
+git<span class="w"> </span>clone<span class="w"> </span>https://huggingface.co/mosaicml/mpt-7b
+</pre></div>
+</div>
+<p>For missing GPTNeoTokenizer issue, we advise the user to modify the local <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> file according to the following recommendation:</p>
+<ol class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">tokenizer_class</span></code> in <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">GPTNeoXTokenizer</span></code> to <code class="docutils literal notranslate"><span class="pre">GPTNeoXTokenizerFast</span></code>;</p></li>
+</ol>
+</section>
 </section>
 <section id="flan-t5">
 <h3>FLAN-T5<a class="headerlink" href="#flan-t5" title="Link to this heading"></a></h3>
@@ -317,6 +348,7 @@ pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-tr
 <span class="w">        </span>--output_dir<span class="w"> </span>./mpt_peft_finetuned_model<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--peft<span class="w"> </span>lora<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--trust_remote_code<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--use_fast_tokenizer<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--tokenizer_name<span class="w"> </span><span class="s2">&quot;EleutherAI/gpt-neox-20b&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">        </span>--no_cuda<span class="w"> </span><span class="se">\</span>
 </pre></div>
@@ -325,7 +357,7 @@ pip<span class="w"> </span>install<span class="w"> </span>intel-extension-for-tr
 <p>For finetuning on SPR, add <code class="docutils literal notranslate"><span class="pre">--bf16</span></code> argument will speedup the finetuning process without the loss of model’s performance.
 You could also indicate <code class="docutils literal notranslate"><span class="pre">--peft</span></code> to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for FLAN-T5/MPT, only LoRA is supported.</p>
-<p>Add option <strong>“–use_fast_tokenizer False”</strong> when using latest transformers if you met failure in llama fast tokenizer for llama, The <code class="docutils literal notranslate"><span class="pre">tokenizer_class</span></code> in <code class="docutils literal notranslate"><span class="pre">tokenizer_config.json</span></code> should be changed from <code class="docutils literal notranslate"><span class="pre">LLaMATokenizer</span></code> to <code class="docutils literal notranslate"><span class="pre">LlamaTokenizer</span></code></p>
+<p>Add option <strong>“–use_fast_tokenizer False”</strong> when using latest transformers if you met failure in llama fast tokenizer for llama.</p>
 </section>
 </section>
 <section id="multi-node-fine-tuning-in-xeon-spr">
@@ -590,7 +622,7 @@ see https://github.com/huggingface/peft. Note for MPT, only LoRA is supported.</
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f1084c279a0> 
+   <jinja2.runtime.BlockReference object at 0x7f57fed4e1d0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
