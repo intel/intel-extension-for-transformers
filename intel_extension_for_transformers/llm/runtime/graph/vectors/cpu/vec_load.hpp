@@ -26,7 +26,7 @@ inline fp32x16 load_fp32x16(void const* mem_addr) {
 #endif
 }
 template <>
-fp32x16 load_kernel_t<fp32x16>(const void* src) {
+inline fp32x16 load_kernel_t<fp32x16>(const void* src) {
   return load_fp32x16(src);
 }
 inline fp32x16 mask_load_fp32x16(fp32x16 src, int mask, void const* mem_addr) {
@@ -43,7 +43,7 @@ inline bf16x16 load_bf16x16(void const* mem_addr) {
   return {_mm256_loadu_si256(mem_addr_bf16)};
 }
 template <>
-bf16x16 load_kernel_t<bf16x16>(const void* src) {
+inline bf16x16 load_kernel_t<bf16x16>(const void* src) {
   return load_bf16x16(src);
 }
 
