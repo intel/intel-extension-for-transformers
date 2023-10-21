@@ -35,7 +35,3 @@ def get_current_time() -> str:
     utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
     cur_time = utc_now.astimezone(SHA_TZ).strftime("%Y/%m/%d")
     return cur_time
-
-
-def set_cpu_running_env():
-    os.environ["ONEDNN_MAX_CPU_ISA"] = "AVX512_CORE_BF16"

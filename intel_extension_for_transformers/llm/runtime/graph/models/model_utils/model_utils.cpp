@@ -863,7 +863,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS4ClipFp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AVX512_FP16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -876,7 +876,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS4ClipFp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AMX_BF16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -926,7 +926,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS8Fp32<GcCompFp32, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AVX512_FP16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
@@ -939,7 +939,7 @@ size_t jblas_quantize(const float* f32ptr, void* dstpr, const quant_params_inter
         using KernelRef = WeiS8Fp32<GcCompBf16, JblasNoSIMD>;
         static Kernel kernel;
         static KernelRef kernelref;
-        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::sym);
+        auto packedw = kernel.createStorage(n, k, params.group_size, params.alg == quant_alg::asym);
         packedw.assign(dstbptr);
         if (cd->AMX_BF16()) {
           kernel.packTransposeWeight(n, k, f32ptr, k, &packedw);
