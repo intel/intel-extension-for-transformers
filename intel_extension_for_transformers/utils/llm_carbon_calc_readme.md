@@ -1,7 +1,7 @@
 
 # LLM Carbon Calculator 
-llm_carbon_calc.py is a simple calculator script of LLM infernce carbon emission. 
-User can use it to calculate rough carbon emission in one infernce procedure of LLMs given some parameters.
+llm_carbon_calc.py is a simple calculator script of LLM inference carbon emission. 
+User can use it to calculate rough carbon emission in one inference procedure of LLMs given some parameters.
 The calculate formula is quite simple, you can refer to script source code for more detail. 
 
 ## Usages
@@ -33,7 +33,7 @@ When the total time of one inference procedure is measured, you can specific -t 
     TDP (W):  350
     Memory Consumption (MB): 27412.98
     Output token number:  32
-    Total time of one infernce (ms): 6510.3
+    Total time of one inference (ms): 6510.3
     Carbon emission in one inference (kgCO2e): 0.0003575115963544682
 ```
 When the total time of one inference procedure is not measured but first token latency and next token latency are measured, you can refer to following example
@@ -42,6 +42,6 @@ When the total time of one inference procedure is not measured but first token l
     TDP (W):  350
     Memory Consumption (MB): 27412.98
     Output token number:  32
-    Total time of one infernce (ms): 6510.36
+    Total time of one inference (ms): 6510.36
     Carbon emission in one inference (kgCO2e): 0.00035751489124038457
 ```    

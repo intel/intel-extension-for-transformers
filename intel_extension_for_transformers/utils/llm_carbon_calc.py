@@ -69,7 +69,7 @@ def main():
     print('TDP (W): ', tdp)
     print('Memory Consumption (MB): ', m)
     print('Output token number: ', args.token_size)
-    print('Total time of one infernce (ms): ', t)
+    print('Total time of one inference (ms): ', t)
     print('Carbon emission in one inference (kgCO2e): ', carbon)
     return carbon    
 
