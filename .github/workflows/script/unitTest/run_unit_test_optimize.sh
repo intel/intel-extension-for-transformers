@@ -30,7 +30,7 @@ function pytest() {
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
     coverage erase
     ## exclude tf UT
-    sed -i "test_tf.*.py" run.sh
+    sed -i "s/test_tf.*.py//g" run.sh
 
     # run UT
     $BOLD_YELLOW && echo "cat run.sh..." && $RESET
