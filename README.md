@@ -12,10 +12,10 @@ Intel® Extension for Transformers
 
 ## 🚀Latest News
 * [2023/10] LLM runtime, an Intel-optimized [GGML](https://github.com/ggerganov/ggml) compatiable runtime, demonstrates **up to 15x performance gain in 1st token generation and 1.5x in other token generation** over the default [llama.cpp](https://github.com/ggerganov/llama.cpp).
-* [2023/10] LLM runtime now supports LLM infernce with **infinite-length inputs up to 4 million tokens**, inspired from [StreamingLLM](https://arxiv.org/abs/2309.17453).
+* [2023/10] LLM runtime now supports LLM inference with **infinite-length inputs up to 4 million tokens**, inspired by [StreamingLLM](https://arxiv.org/abs/2309.17453).
 * [2023/09] NeuralChat has been showcased in [**Intel Innovation’23 Keynote**](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) and [Google Cloud Next'23](https://cloud.google.com/blog/topics/google-cloud-next/welcome-to-google-cloud-next-23) to demonstrate GenAI/LLM capabilities on Intel Xeon Scalable Processors.
 * [2023/08] NeuralChat supports **custom chatbot development and deployment within minutes** on broad Intel HWs such as Xeon Scalable Processors, Gaudi2, Xeon CPU Max Series, Data Center GPU Max Series, Arc Series, and Core Processors. Check out [Notebooks](./intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
-* [2023/07] LLM runtime extends Hugging Face Transformers API to provide seamless low precision inference for popular LLMs, supporting mainstream low precision data types such as INT3/INT4/FP4/NF4/INT5/INT8/FP8.
+* [2023/07] LLM runtime extends the Hugging Face Transformers API to provide seamless low precision inference for popular LLMs, supporting mainstream low precision data types such as INT3/INT4/FP4/NF4/INT5/INT8/FP8.
 
 ---
 <div align="left">
@@ -28,9 +28,9 @@ pip install intel-extension-for-transformers
 > For more installation methods, please refer to [Installation Page](./docs/installation.md)
 
 ## 🌟Introduction
-Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the below key features and examples:
+Intel® Extension for Transformers is an innovative toolkit to accelerate Transformer-based models on Intel platforms, in particular effective on 4th Intel Xeon Scalable processor Sapphire Rapids (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). The toolkit provides the following key features and examples:
 
-*  Seamless user experience of model compressions on Transformer-based models by extending [Hugging Face transformers](https://github.com/huggingface/transformers) APIs and leveraging [Intel® Neural Compressor](https://github.com/intel/neural-compressor)
+*  Seamless user experience of model compressions on Transformer-based models by extending [Hugging Face transformer](https://github.com/huggingface/transformers) APIs and leveraging [Intel® Neural Compressor](https://github.com/intel/neural-compressor)
 
 *  Advanced software optimizations and unique compression-aware runtime (released with NeurIPS 2022's paper [Fast Distilbert on CPUs](https://arxiv.org/abs/2211.07715) and [QuaLA-MiniLM: a Quantized Length Adaptive MiniLM](https://arxiv.org/abs/2210.17114), and NeurIPS 2021's paper [Prune Once for All: Sparse Pre-Trained Language Models](https://arxiv.org/abs/2111.05754))
 
@@ -211,4 +211,4 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 
 ## 💁Collaborations
 
-Welcome to raise any interesting ideas on model compression techniques and LLM-based chatbot development! Feel free to reach [us](mailto:itrex.maintainers@intel.com) and look forward to our collaborations on Intel Extension for Transformers!
+Welcome to raise any interesting ideas on model compression techniques and LLM-based chatbot development! Feel free to reach out to [us](mailto:itrex.maintainers@intel.com) and look forward to our collaborations on Intel Extension for Transformers!
