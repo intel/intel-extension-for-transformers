@@ -60,7 +60,7 @@ Performance varies by use, configuration and other factors. See platform configu
   </tr>
   <tr>
     <td>IRQ Balance</td>
-    <td>Eabled</td>
+    <td>Enabled</td>
   </tr>
   <tr>
     <td>CPU Model</td>
@@ -103,7 +103,7 @@ Performance varies by use, configuration and other factors. See platform configu
     <td>Enabled</td>
   </tr>
   <tr>
-    <td>FrequencyGoverner</td>
+    <td>FrequencyGovernor</td>
     <td>Performance</td>
   </tr>
 </tbody>
