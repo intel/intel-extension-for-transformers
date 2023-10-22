@@ -256,7 +256,7 @@ NOTES: ** the multiplication and addition operation amount when model inference 
   </tr>
   <tr>
     <td>IRQ Balance</td>
-    <td>Eabled</td>
+    <td>Enabled</td>
   </tr>
   <tr>
     <td>CPU Model</td>
