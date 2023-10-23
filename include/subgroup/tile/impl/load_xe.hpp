@@ -419,7 +419,7 @@ tile_load(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
     using dtype = typename payload_t::dtype;
     using tile_desc = typename payload_t::tile_desc;
     using load_dtype = typename payload_t::mem_dtype;
-    using check_load = subgroup::check_load<gpu_arch::Xe, dtype,
+    using check_load = typename subgroup::check_load<gpu_arch::Xe, dtype,
             load_dtype>::template unaligned_2d<payload_t::mem_transform,
             tile_desc::block_size_x>;
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;

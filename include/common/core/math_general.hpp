@@ -562,6 +562,18 @@ __XETLA_API xetla_vector<T1, SZ> xetla_add(
         return __ESIMD_NS::saturate<T1, T0, SZ>(temp);
 }
 
+/// Saturation function.
+/// @tparam T0 element type of the input vectors.
+/// @tparam T1 element type of the return vector.
+/// @tparam SZ size of the input and returned vectors.
+template <typename T1, typename T0, int SZ>
+__XETLA_API xetla_vector<T1, SZ> xetla_sat(xetla_vector<T0, SZ> src) {
+    static_assert(
+            !((is_internal_type<T0>::value) || (is_internal_type<T1>::value)),
+            "The internal types are not yet supported!");
+    return __ESIMD_NS::saturate<T1, T0, SZ>(src);
+}
+
 /// @} xetla_core_math
 
 } // namespace gpu::xetla

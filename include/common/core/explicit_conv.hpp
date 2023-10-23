@@ -125,7 +125,7 @@ xetla_cvt(xetla_vector<T_src, N> src, float scaling_value) {
 
 /// @brief xetpp explicit data conversion with scaling and quantization, float32->int8.
 /// @tparam T_dst is the int8 data type.
-/// @tparam T_src is the float16 data type.
+/// @tparam T_src is the float32 data type.
 /// @tparam N is the element number in xetla_vector.
 template <typename T_dst, typename T_src, int N>
 __XETLA_API typename std::enable_if_t<std::is_same<T_dst, int8_t>::value

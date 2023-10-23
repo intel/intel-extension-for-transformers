@@ -82,13 +82,10 @@ public:
     __XETLA_API KERNEL_FUNC void operator()(work_group_t &g, matAcc_t &matAcc,
             mem_desc_c_t mem_desc_c, arguments_t args = {},
             uint32_t slm_base = 0, uint32_t nbarrier_base = 0) {
-        using matC_tile_desc_t = subgroup::tile_desc_t<matAcc_t::tile_size_x,
-                matAcc_t::tile_size_y, matAcc_t::block_size_x,
-                matAcc_t::block_size_y, reg_layout::tiled>;
-        using matC_t = subgroup::tile_t<dtype_c, matC_tile_desc_t>;
-        using matC_payload_t
-                = subgroup::mem_payload_t<dtype_c, matC_tile_desc_t, msg_type_c,
-                        mem_layout_c, mem_space_c, arch_tag>;
+        using mat_tile_desc = typename matAcc_t::tile_desc;
+        using matC_t = subgroup::tile_t<dtype_c, mat_tile_desc>;
+        using matC_payload_t = subgroup::mem_payload_t<dtype_c, mat_tile_desc,
+                msg_type_c, mem_layout_c, mem_space_c, arch_tag>;
         update_sg_tile_tdesc(g, mem_desc_c);
         matC_t matC;
         matC_payload_t matC_payload(mem_desc_c);

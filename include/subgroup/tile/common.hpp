@@ -209,6 +209,21 @@ __XETLA_API static void reset_tile_desc_core(
 
 } // namespace detail
 
+template <typename T_dst, typename T_src>
+struct is_same_layout {
+    static constexpr bool value = (T_src::block_size_y == T_dst::block_size_y)
+            && (T_src::block_size_x == T_dst::block_size_x)
+            && (T_src::tile_size_y == T_dst::tile_size_y)
+            && (T_src::tile_size_x == T_dst::tile_size_x);
+};
+
+template <typename T_dst, typename T_src>
+struct is_floating_to_integer {
+    static constexpr bool value
+            = is_floating_point<typename T_src::dtype>::value
+            && is_integral<typename T_dst::dtype>::value;
+};
+
 template <typename tile_desc_, mem_space memory_space,
         mem_layout memory_layout = mem_layout::row_major>
 struct msg_type_query {

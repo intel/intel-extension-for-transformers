@@ -21,6 +21,7 @@
 
 #include "subgroup/tile/api.hpp"
 #include "subgroup/tile/common.hpp"
+
 namespace gpu::xetla::subgroup {
 
 // dim=0 : reduce along y dir;

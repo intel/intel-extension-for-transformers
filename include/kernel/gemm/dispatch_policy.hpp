@@ -54,7 +54,9 @@ struct dispatch_policy_kslicing {
 /// @tparam arch_tag_ Is the HW architecture.
 template <gpu_arch arch_tag_ = gpu_arch::Xe>
 struct dispatch_policy_stream_k {
+
     static constexpr gpu_arch arch_tag = arch_tag_;
+
     uint32_t matrix_m;
     uint32_t matrix_k;
     uint32_t matrix_n;

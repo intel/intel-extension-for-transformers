@@ -25,6 +25,19 @@ __XETLA_API constexpr uint32_t div_round_up(uint32_t n, uint32_t d) {
     return (n + d - 1) / d;
 }
 
+//Rounds number down towards the next lowest number
+//e.g. -2.0/3.0 ~ -0.666 -> -1.
+__XETLA_API constexpr int div_round_down(int n, int d) {
+
+    return (n - (((n % d) + d) % d)) / d;
+}
+
+//Calculate modulo based on definition that uses floored divison.
+//Result has the same sign as d.
+__XETLA_API constexpr int modulo(int n, int d) {
+    return (d + (n % d)) % d;
+}
+
 //Pad the given allocation size upto nearest cacheline
 __XETLA_API constexpr uint32_t cacheline_align_up(size_t size) {
 

@@ -69,6 +69,31 @@ struct is_internal_type {
             || std::is_same<remove_const_t<T>, tf32>::value;
 };
 
+/// @brief Used to check if the type is floating_point.
+/// @tparam T is the data type
+template <typename T>
+struct is_floating_point {
+    static constexpr bool value = std::is_same<remove_const_t<T>, bf16>::value
+            || std::is_same<remove_const_t<T>, fp16>::value
+            || std::is_same<remove_const_t<T>, tf32>::value
+            || std::is_same<remove_const_t<T>, float>::value
+            || std::is_same<remove_const_t<T>, double>::value;
+};
+
+/// @brief Used to check if the type is floating_point.
+/// @tparam T is the data type
+template <typename T>
+struct is_integral {
+    static constexpr bool value = std::is_same<remove_const_t<T>, int8_t>::value
+            || std::is_same<remove_const_t<T>, uint8_t>::value
+            || std::is_same<remove_const_t<T>, int16_t>::value
+            || std::is_same<remove_const_t<T>, uint16_t>::value
+            || std::is_same<remove_const_t<T>, int32_t>::value
+            || std::is_same<remove_const_t<T>, uint32_t>::value
+            || std::is_same<remove_const_t<T>, int64_t>::value
+            || std::is_same<remove_const_t<T>, uint64_t>::value;
+};
+
 /// @brief Set the native data type of T
 /// @tparam T is the data type
 template <typename T>

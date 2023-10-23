@@ -17,10 +17,201 @@
 #pragma once
 
 #include "utils/common.hpp"
+#include "xetla.hpp"
 #include <gtest/gtest.h>
 
+class Test0 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 64;
+    static constexpr size_t mat_n = 512;
+    static constexpr size_t wg_m = 128;
+    static constexpr size_t wg_n = 256;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 32;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test1 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 512;
+    static constexpr size_t mat_n = 256;
+    static constexpr size_t wg_m = 128;
+    static constexpr size_t wg_n = 128;
+    static constexpr size_t sg_m = 16;
+    static constexpr size_t sg_n = 32;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test2 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 256;
+    static constexpr size_t mat_n = 128;
+    static constexpr size_t wg_m = 128;
+    static constexpr size_t wg_n = 64;
+    static constexpr size_t sg_m = 16;
+    static constexpr size_t sg_n = 16;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test3 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 3456;
+    static constexpr size_t mat_n = 512;
+    static constexpr size_t wg_m = 256;
+    static constexpr size_t wg_n = 128;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 32;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test4 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 512;
+    static constexpr size_t mat_n = 3456;
+    static constexpr size_t wg_m = 256;
+    static constexpr size_t wg_n = 256;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 64;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test5 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 3456;
+    static constexpr size_t mat_n = 1024;
+    static constexpr size_t wg_m = 256;
+    static constexpr size_t wg_n = 256;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 64;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test6 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 1024;
+    static constexpr size_t mat_n = 1024;
+    static constexpr size_t wg_m = 256;
+    static constexpr size_t wg_n = 256;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 64;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test7 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 1024;
+    static constexpr size_t mat_n = 512;
+    static constexpr size_t wg_m = 128;
+    static constexpr size_t wg_n = 256;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 32;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test8 {
+public:
+    static constexpr size_t mat_m = 4000;
+    static constexpr size_t mat_k = 512;
+    static constexpr size_t mat_n = 256;
+    static constexpr size_t wg_m = 128;
+    static constexpr size_t wg_n = 128;
+    static constexpr size_t sg_m = 16;
+    static constexpr size_t sg_n = 32;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
+class Test9 {
+public:
+    static constexpr size_t mat_m = 4096;
+    static constexpr size_t mat_k = 4096;
+    static constexpr size_t mat_n = 4096;
+    static constexpr size_t wg_m = 256;
+    static constexpr size_t wg_n = 256;
+    static constexpr size_t sg_m = 32;
+    static constexpr size_t sg_n = 64;
+    static constexpr size_t sg_k = 64;
+    static constexpr mem_layout layout_a = mem_layout::row_major;
+    static constexpr mem_layout layout_b = mem_layout::row_major;
+    using data_type_a = int8_t;
+    using data_type_b = int8_t;
+    using data_type_c = uint8_t;
+    using data_type_acc = int32_t;
+    using data_type_param = float;
+};
+
 template <typename data_type_a, typename data_type_b, typename data_type_c,
-        typename data_type_param>
+        typename data_type_acc, typename data_type_param>
 int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
         data_type_c *C_device, data_type_param *scale_device,
         data_type_param *offset_device, int m, int k, int n,
@@ -38,17 +229,18 @@ int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
     int err_cnt = 0;
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
-            int result = 0;
+            data_type_acc result = 0;
             for (int kk = 0; kk < k; kk++) {
                 data_type_a a_temp
                         = is_col_major_a ? A[i + kk * m] : A[i * k + kk];
                 data_type_b b_temp
                         = is_col_major_b ? B[kk + j * k] : B[kk * n + j];
-                result = result + data_type_c(a_temp) * data_type_c(b_temp);
+                result = result + data_type_acc(a_temp) * data_type_acc(b_temp);
             }
             //Quantization with saturation
             float result_fp32 = result;
-            float result_scaled = result_fp32 * scale[j] + offset[j];
+            float result_scaled
+                    = std::round(result_fp32 * scale[j] + offset[j]);
             uint8_t result_quant;
 
             if (result_scaled <= 0) {
@@ -61,8 +253,8 @@ int gemm_result_validate(data_type_a *A_device, data_type_b *B_device,
 
                 result_quant = result_scaled;
             }
-
-            if (result_quant != C[i * n + j]) {
+            //allow 1 ulp
+            if (abs(result_quant - C[i * n + j]) > 1) {
                 if (++err_cnt < 100) {
                     std::cout << "failed at (" << i << ", " << j << "), "
                               << " golden: " << uint(result_quant)

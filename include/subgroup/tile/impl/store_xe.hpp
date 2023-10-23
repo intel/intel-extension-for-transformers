@@ -317,8 +317,8 @@ tile_store(tile_t &tile, payload_t &payload, oob_check_tag tag = {}) {
     using dtype = typename payload_t::dtype;
     using tile_desc = typename payload_t::tile_desc;
     using store_dtype = typename payload_t::mem_dtype;
-    using check_store
-            = subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::
+    using check_store =
+            typename subgroup::check_store<gpu_arch::Xe, dtype, store_dtype>::
                     template unaligned_2d<payload_t::tile_desc::block_size_x>;
     static constexpr uint32_t block_size_x = tile_desc::block_size_x;
     static constexpr uint32_t block_size_y = tile_desc::block_size_y;

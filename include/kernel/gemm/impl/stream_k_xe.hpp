@@ -239,6 +239,29 @@ public:
         return cl::sycl::nd_range<3> {group_range * local_range, local_range};
     };
 
+    /// @brief Host helper function to get the expected accumulation buffer size of the current STREAMK_GEMM_UNIVERSAL config.
+    /// @param matrix_m Is the size of the m dimension of the matrix multiplication (m x k x n).
+    /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
+    /// @return Expected accumulation buffer size in unit of elements.
+    static size_t get_acc_buf_size(dispatch_stream_k &stream_k_args) {
+        return stream_k_args.matrix_m * stream_k_args.matrix_n;
+    };
+
+    /// @brief Host helper function to get the expected counter buffer size of the current STREAMK_GEMM_UNIVERSAL config.
+    /// @return Expected counter buffer size in unit of elements.
+    static size_t get_cnt_buf_size(dispatch_stream_k &stream_k_args) {
+
+        //For atomic reduction each SK group needs a synchronization flag
+        uint32_t num_flags
+                = stream_k_args.sk_regions * stream_k_args.sk_groups_per_region;
+        const int barrier_size = sizeof(uint32_t);
+        uint32_t atomic_space_bytes
+                = cacheline_align_up(num_flags * barrier_size);
+        uint32_t atomic_space_elements = atomic_space_bytes / barrier_size;
+
+        return atomic_space_elements;
+    };
+
     /// @brief Check if the arguments can be implemented.
     /// @param args Is the GEMM_UNIVERSAL arguments for application-related runtime variables.
     /// @return Check result.
@@ -356,29 +379,6 @@ protected:
     }
 
 public:
-    /// @brief Host helper function to get the expected accumulation buffer size of the current STREAMK_GEMM_UNIVERSAL config.
-    /// @param matrix_m Is the size of the m dimension of the matrix multiplication (m x k x n).
-    /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
-    /// @return Expected accumulation buffer size in unit of elements.
-    static size_t get_acc_buf_size(dispatch_stream_k &stream_k_args) {
-        return stream_k_args.matrix_m * stream_k_args.matrix_n;
-    };
-
-    /// @brief Host helper function to get the expected counter buffer size of the current STREAMK_GEMM_UNIVERSAL config.
-    /// @return Expected counter buffer size in unit of elements.
-    static size_t get_cnt_buf_size(dispatch_stream_k &stream_k_args) {
-
-        //For atomic reduction each SK group needs a synchronization flag
-        uint32_t num_flags
-                = stream_k_args.sk_regions * stream_k_args.sk_groups_per_region;
-        const int barrier_size = sizeof(uint32_t);
-        uint32_t atomic_space_bytes
-                = cacheline_align_up(num_flags * barrier_size);
-        uint32_t atomic_space_elements = atomic_space_bytes / barrier_size;
-
-        return atomic_space_elements;
-    };
-
     /// @brief Main execution function for stream_k GEMM.
     /// The processing order is 1) set group-level base and boundary -> 2) gemm -> 3) epilogue.
     /// @param item Is the sycl::nd_item, returns execution related information, such as workgroup id, subgroup id...

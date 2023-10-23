@@ -13,21 +13,26 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 *******************************************************************************/
-
-/// @file
-/// C++ API
-
 #pragma once
 
-#include "common/core/base_ops.hpp"
-#include "common/core/base_types.hpp"
-#include "common/core/common.hpp"
+#include "kernel_func.hpp"
 
-namespace gpu::xetla {
-
-/// @addtogroup xetla_core_misc
-/// @{
-
-/// @} xetla_core_misc
-
-} // namespace gpu::xetla
+template <typename dtype>
+int kernel_validation(
+        dtype *A, dtype *B, dtype *C, uint32_t size_x, uint32_t size_y) {
+    int err_cnt = 0;
+    for (int i = 0; i < size_y; ++i) {
+        for (int j = 0; j < size_x; ++j) {
+            int offset = i * size_x + j;
+            if ((A[offset] + j) != C[offset]) {
+                if (++err_cnt < 100) {
+                    std::cout << "failed at [" << i << ", " << j
+                              << "], CPU: " << A[offset] + j
+                              << ", GPU: " << C[offset] << std::endl;
+                }
+            }
+        }
+    }
+    std::cout << (err_cnt > 0 ? "FAILED\n" : "PASSED\n");
+    return err_cnt;
+}

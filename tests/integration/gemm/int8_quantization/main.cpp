@@ -16,32 +16,29 @@
 
 #include "common.hpp"
 #include "kernel_func.hpp"
-#include "utils/common.hpp"
+#include "utils/utils.hpp"
 #include <gtest/gtest.h>
 
-class Test1;
-
-template <typename data_type_a, typename data_type_b, typename data_type_c,
-        typename data_type_param>
-static void igemm_quantize_run() {
+template <typename Test>
+static void igemm_quantize_run(int iter = 100) {
     using namespace gpu::xetla::subgroup;
 
-    size_t matrix_m = 512;
-    size_t matrix_n = 512;
-    size_t matrix_k = 256;
-    constexpr size_t wg_tile_m = 256;
-    constexpr size_t wg_tile_n = 256;
-    constexpr size_t sg_tile_m = 32;
-    constexpr size_t sg_tile_n = 64;
-    constexpr size_t sg_tile_k = 32;
+    size_t matrix_m = Test::mat_m;
+    size_t matrix_n = Test::mat_n;
+    size_t matrix_k = Test::mat_k;
+    constexpr size_t wg_tile_m = Test::wg_m;
+    constexpr size_t wg_tile_n = Test::wg_n;
+    constexpr size_t sg_tile_m = Test::sg_m;
+    constexpr size_t sg_tile_n = Test::sg_n;
+    constexpr size_t sg_tile_k = Test::sg_k;
+    using data_type_a = typename Test::data_type_a;
+    using data_type_b = typename Test::data_type_b;
+    using data_type_c = typename Test::data_type_c;
+    using data_type_acc = typename Test::data_type_acc;
+    using data_type_param = typename Test::data_type_param;
 
-    constexpr gpu::xetla::mem_layout mem_layout_a
-            = gpu::xetla::mem_layout::row_major;
-    constexpr gpu::xetla::mem_layout mem_layout_b
-            = gpu::xetla::mem_layout::row_major;
-
-    std::string string_mem_layout_a = "gpu::xetla::mem_layout::row_major";
-    std::string string_mem_layout_b = "gpu::xetla::mem_layout::row_major";
+    constexpr gpu::xetla::mem_layout mem_layout_a = Test::layout_a;
+    constexpr gpu::xetla::mem_layout mem_layout_b = Test::layout_b;
 
     constexpr bool is_col_major_a
             = mem_layout_a == gpu::xetla::mem_layout::col_major;
@@ -51,7 +48,9 @@ static void igemm_quantize_run() {
     int size_a = matrix_m * matrix_k;
     int size_b = matrix_k * matrix_n;
     int size_c = matrix_m * matrix_n;
-    queue queue {};
+
+    sycl::property_list properties {sycl::property::queue::enable_profiling()};
+    auto queue = sycl::queue(properties);
     auto context = queue.get_info<info::queue::context>();
     auto device = queue.get_info<info::queue::device>();
 
@@ -60,13 +59,13 @@ static void igemm_quantize_run() {
     auto A = alloc_device_and_init<data_type_a>(
             size_a,
             [](data_type_a *data, size_t idx) {
-                data[idx] = (data_type_a)((idx * 3) % 17);
+                data[idx] = (random_float() - 0.5f) * 256;
             },
             queue, device, context);
     auto B = alloc_device_and_init<data_type_b>(
             size_b,
             [](data_type_b *data, size_t idx) {
-                data[idx] = (data_type_b)((idx * 5) % 19);
+                data[idx] = (random_float() - 0.5f) * 256;
             },
             queue, device, context);
     auto C = alloc_device_and_init<data_type_c>(
@@ -87,49 +86,67 @@ static void igemm_quantize_run() {
             },
             queue, device, context);
 
-    // here keep the same dim in CM and esimd, diff the index in kernel code
-    cl::sycl::range<3> group_range {1, (matrix_m + wg_tile_m - 1) / wg_tile_m,
-            (matrix_n + wg_tile_n - 1) / wg_tile_n};
-    cl::sycl::range<3> local_range {1, (wg_tile_m + sg_tile_m - 1) / sg_tile_m,
-            (wg_tile_n + sg_tile_n - 1) / sg_tile_n};
+    size_t group_range_m = (matrix_m + wg_tile_m - 1) / wg_tile_m;
+    size_t group_range_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;
+    size_t subgroup_range_m = (wg_tile_m + sg_tile_m - 1) / sg_tile_m;
+    size_t subgroup_range_n = (wg_tile_n + sg_tile_n - 1) / sg_tile_n;
+    cl::sycl::range<3> group_range {1, group_range_m, group_range_n};
+    cl::sycl::range<3> local_range {1, subgroup_range_m, subgroup_range_n};
     cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
+    std::cout << "group_num_x: " << group_range_n
+              << ", group_num_y: " << group_range_m << ", group_num_z: " << 1
+              << "\n";
+    std::cout << "group_size_x: " << subgroup_range_n
+              << ", group_size_y: " << subgroup_range_m << std::endl;
+
+    size_t ops = 2 * matrix_m * matrix_n * matrix_k;
+    profiling_helper prof("igemm_quantize", ops, "gflops");
 
     try {
-        auto e_esimd = queue.submit([&](handler &cgh) {
-            cgh.parallel_for<Test1>(
-                    nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
-                        using igemm_quantize_functor
-                                = igemm_quantize_func<data_type_a, data_type_b,
-                                        data_type_c, data_type_param, wg_tile_m,
-                                        wg_tile_n, sg_tile_m, sg_tile_n,
-                                        sg_tile_k, mem_layout_a, mem_layout_b>;
+        for (int i = 0; i < iter; i++) {
+            prof.cpu_start();
+            auto e_esimd = queue.submit([&](handler &cgh) {
+                cgh.parallel_for<
+                        Test>(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+                    using igemm_quantize_functor
+                            = igemm_quantize_func<data_type_a, data_type_b,
+                                    data_type_c, data_type_param, wg_tile_m,
+                                    wg_tile_n, sg_tile_m, sg_tile_n, sg_tile_k,
+                                    mem_layout_a, mem_layout_b>;
 
-                        constexpr uint32_t barrier_count
-                                = igemm_quantize_functor::barrier_count;
-                        constexpr uint32_t slm_size
-                                = igemm_quantize_functor::slm_size;
-                        if constexpr (barrier_count != 0) {
-                            xetla_nbarrier_init<barrier_count>();
-                        }
-                        if constexpr (slm_size != 0) {
-                            xetla_local_init<slm_size>();
-                        }
-                        igemm_quantize_functor::run(item, A, B, C, scale,
-                                offset, matrix_m, matrix_n, matrix_k);
-                    });
-        });
-        e_esimd.wait();
+                    constexpr uint32_t barrier_count
+                            = igemm_quantize_functor::barrier_count;
+                    constexpr uint32_t slm_size
+                            = igemm_quantize_functor::slm_size;
+                    if constexpr (barrier_count != 0) {
+                        xetla_nbarrier_init<barrier_count>();
+                    }
+                    if constexpr (slm_size != 0) {
+                        xetla_local_init<slm_size>();
+                    }
+                    igemm_quantize_functor::run(item, A, B, C, scale, offset,
+                            matrix_m, matrix_n, matrix_k);
+                });
+            });
+            e_esimd.wait();
+            prof.cpu_end();
+            prof.add_gpu_event(e_esimd);
+        }
     } catch (cl::sycl::exception const &e) {
         std::cout << "SYCL exception caught: " << e.what() << '\n';
         FAIL();
     }
 
+    //performance
+    prof.print_profiling_result(profiling_selector::GPU);
+
     // validation
     int err_cnt;
     ASSERT_EQ(0,
             (gemm_result_validate<data_type_a, data_type_b, data_type_c,
-                    data_type_param>(A, B, C, scale, offset, matrix_m, matrix_k,
-                    matrix_n, mem_layout_a, mem_layout_b, queue)));
+                    data_type_acc, data_type_param>(A, B, C, scale, offset,
+                    matrix_m, matrix_k, matrix_n, mem_layout_a, mem_layout_b,
+                    queue)));
 
     free(A, context);
     free(B, context);
@@ -138,6 +155,16 @@ static void igemm_quantize_run() {
     free(offset, context);
 }
 
-TEST(igemm_quantize, cm_esimd) {
-    igemm_quantize_run<int8_t, int8_t, uint8_t, float>();
+template <typename T>
+class igemm_quantize_test : public ::testing::Test {};
+TYPED_TEST_SUITE_P(igemm_quantize_test);
+
+TYPED_TEST_P(igemm_quantize_test, esimd) {
+    igemm_quantize_run<TypeParam>(100);
 }
+
+REGISTER_TYPED_TEST_SUITE_P(igemm_quantize_test, esimd);
+using tests = ::testing::Types<Test0>;
+
+INSTANTIATE_TYPED_TEST_SUITE_P(
+        igemm_quantize_test_suite, igemm_quantize_test, tests);
