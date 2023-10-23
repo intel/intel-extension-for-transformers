@@ -2,8 +2,6 @@ import shutil
 import numpy as np
 import unittest
 import tensorflow as tf
-import sys
-sys.path.insert(0, './')
 from datasets import load_dataset, load_metric
 from transformers import (TFAutoModelForSequenceClassification, AutoTokenizer,
                           HfArgumentParser, TFTrainingArguments, set_seed,

@@ -3,8 +3,6 @@ import numpy as np
 import unittest
 import tensorflow as tf
 from datasets import load_dataset, load_metric
-import sys
-sys.path.insert(0, './')
 from transformers import (TFAutoModelForSequenceClassification, AutoTokenizer,
                           DefaultDataCollator, HfArgumentParser,
                           TFTrainingArguments, set_seed)
