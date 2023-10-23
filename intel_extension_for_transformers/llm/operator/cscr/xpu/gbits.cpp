@@ -25,6 +25,7 @@
 #include <sycl/ext/intel/esimd.hpp>
 
 #include "gblas/esimd_test_utils.hpp"
+#include "customop.hpp"
 #ifdef __SYCL_DEVICE_ONLY__
 #define CONSTANT __attribute__((opencl_constant))
 #else
@@ -38,25 +39,48 @@
 #define JJJ 8
 #define III 32
 
-static void gbits_linear(const torch::Tensor& activation, const torch::Tensor& weight, const torch::Tensor& bias,
+static void gbits_dequantize(const torch::Tensor compressed_weight, torch::Tensor& dequantize_weight, bool transpose,
+                             const std::string& compute_type, const std::string& weight_type, int64_t blksize) {
+  queue q;
+  int K = dequantize_weight.sizes()[0];
+  int N = dequantize_weight.sizes()[1];
+  CompressWei4Bit obj(K, N, blksize, false);
+  obj.deserialize(compressed_weight.data_ptr<int8_t>());
+  gpu_dequant(q, &obj, dequantize_weight.data_ptr<float>(), transpose, compute_type, weight_type);
+}
+
+
+static torch::Tensor gbits_quantize(const torch::Tensor& weight, bool transpose, int64_t block_size,
+                                    const std::string& compute_type, const std::string& weight_type) {
+  torch::Tensor output = quantize(weight.data_ptr<float>(), weight.sizes()[0], weight.sizes()[1], block_size, transpose, weight_type, compute_type);
+  return output;
+}
+
+static void gbits_linear(const torch::Tensor& activation, const torch::Tensor weight, const torch::Tensor& bias,
                          torch::Tensor& output, int64_t ldo, bool with_bias, const std::string& compute_type,
-                         const std::string& weight_type) {
-
+                         const std::string& weight_type, int64_t blksize) {
   sycl::property_list properties {sycl::property::queue::enable_profiling()};
-
   auto q = sycl::queue(properties);
-  auto dev = q.get_device();
-  std::cout << "Running on " << dev.get_info<info::device::name>() << "\n";
   unsigned long TOTAL_I = activation.sizes()[0];
   unsigned long TOTAL_J = ldo;
   unsigned long TOTAL_K = activation.sizes()[1];
+
+  // dequant
+  torch::Tensor revert_weight = torch::zeros(TOTAL_K * TOTAL_J, torch::kFloat32);
+  CompressWei4Bit obj(TOTAL_K, TOTAL_J, blksize, false);
+  obj.deserialize(weight.data_ptr<int8_t>());
+  gpu_dequant(q, &obj, revert_weight.data_ptr<float>(), false, compute_type, weight_type);
+  //std::cout << "finish dequant " << "\n";
+
+  auto dev = q.get_device();
+  std::cout << "Running on " << dev.get_info<info::device::name>() << "\n";
 
   unsigned long I = TOTAL_I / (II * III);
   unsigned long J = TOTAL_J / (JJ * JJJ);
   range<2> GlobalRange(JJ * J, II * I);
   range<2> LocalRange(JJ, II);
   sycl::image<2> imgA(activation.data_ptr<float>(), sycl::image_channel_order::rgba, sycl::image_channel_type::fp32, sycl::range<2>{TOTAL_K / 4, TOTAL_I});
-  sycl::image<2> imgB(weight.data_ptr<float>(), sycl::image_channel_order::rgba, sycl::image_channel_type::fp32, sycl::range<2>{TOTAL_J / 4, TOTAL_K});
+  sycl::image<2> imgB(revert_weight.data_ptr<float>(), sycl::image_channel_order::rgba, sycl::image_channel_type::fp32, sycl::range<2>{TOTAL_J / 4, TOTAL_K});
   sycl::image<2> imgC(output.data_ptr<float>(), sycl::image_channel_order::rgba, sycl::image_channel_type::fp32, sycl::range<2>{TOTAL_J / 4, TOTAL_I});
 
   auto e = q.submit([&](handler &cgh) {
@@ -173,4 +197,6 @@ static void gbits_linear(const torch::Tensor& activation, const torch::Tensor& w
 
 TORCH_LIBRARY(weight_only_gblasop, m) {
   m.def("gbits_linear", &gbits_linear);
+  m.def("gbits_quantize", &gbits_quantize);
+  m.def("gbits_dequantize", &gbits_dequantize);
 }

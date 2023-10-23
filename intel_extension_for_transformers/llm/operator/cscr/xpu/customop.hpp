@@ -9,8 +9,6 @@ using namespace sycl;
 #include <chrono>
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-inline float randn(float _off = -1.f) { return 2 * (rand() + 0.5f) / (RAND_MAX + 1.f) + _off; }
-
 struct bit4x2 {
   int8_t x : 4;
   int8_t y : 4;
@@ -127,10 +125,11 @@ void compress_s8_s4(const int8_t* srcptr, int4x2* dstptr, int row, int col, int 
   }
 }
 
-void* quantize(float* weight, int k, int n, int blksize, bool transpose, std::string weight_type,
+torch::Tensor quantize(float* weight, int k, int n, int blksize, bool transpose, std::string weight_type,
                std::string cmpt_type) {
   CompressWei4Bit compress_wei(k, n, blksize);
-  void* ret = malloc(compress_wei.get_serialize_size());
+  torch::Tensor ret = torch::zeros(compress_wei.get_serialize_size(), torch::kInt8);
+  //void* ret = malloc(compress_wei.get_serialize_size());
   assert(!transpose);
   if (weight_type == "s4fullrange_scalef32") {
     std::vector<int8_t> s8quant_tmp(k * n);
@@ -138,53 +137,11 @@ void* quantize(float* weight, int k, int n, int blksize, bool transpose, std::st
     s8_quant_row_blk(weight, s8quant_tmp.data(), k, n, n, n, scale, blksize);
     int4x2* wei = reinterpret_cast<int4x2*>(compress_wei.get_4bit_wei_ptr());
     compress_s8_s4(s8quant_tmp.data(), wei, k, n, n, n);
-    compress_wei.serialize(ret);
+    compress_wei.serialize(ret.data_ptr<int8_t>());
   } else {
     assert(0);
   }
   return ret;
-}
-
-enum SIGN_INT_TYPE { S4_CLIP, S4_FULLRANGE };
-
-template <SIGN_INT_TYPE S4_T>
-inline int8_t get_s8(int8_t v) {
-  switch (S4_T) {
-    case S4_CLIP:
-      return v << 4;
-    case S4_FULLRANGE:
-      v &= 0x0f;
-      return v - 8;
-    default:
-      assert(false);
-      break;
-  }
-  return int8_t(0);
-}
-
-template <SIGN_INT_TYPE S4_T>
-void decompress_s4_s8(int4x2* srcptr, int8_t* dstptr, int row, int col, int ld_src, int ld_dst) {
-  for (int i = 0; i < row; i++) {
-    for (int j = 0; j < col; j += 2) {
-      auto tmp = srcptr[i * ld_src / 2 + j / 2];
-      dstptr[i * ld_dst + j + 0] = get_s8<S4_T>(tmp.x);
-      dstptr[i * ld_dst + j + 1] = get_s8<S4_T>(tmp.y);
-    }
-  }
-}
-
-template <typename _DST_T, typename _S_T>
-void decompress_kblock_s8_f32(int8_t* srcptr, _DST_T* dstptr, int row, int col, int ld_src, int ld_dst, _S_T* scales,
-                              int8_t* zero_points, int k_offset, int kblock, int NPad) {
-  for (int i = 0; i < row; i++) {
-    int kpos = (k_offset + i) / kblock;
-    auto sptr = scales + kpos * NPad;
-    for (int j = 0; j < col; j += 1) {
-      float tmp = (float)(srcptr[i * ld_src + j]);
-      if (zero_points != nullptr) tmp -= (float)(zero_points[kpos * NPad + j]);
-      dstptr[i * ld_dst + j] = static_cast<_DST_T>(tmp * sptr[j]);
-    }
-  }
 }
 
 template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N>
@@ -230,28 +187,6 @@ void gpu_dequant_s4fullrange_f32_KxN(queue& q, int8_t* src, DST_T* dst, float* s
   });
 }
 
-void dequantize(CompressWei4Bit* compress_wei, float* dequant_weight, bool transpose, const std::string& compute_type,
-                const std::string& weight_type) {
-  using namespace std::chrono;
-  auto m_start = high_resolution_clock::now();
-  assert(!transpose);
-  int n = compress_wei->_N;
-  int k = compress_wei->_K;
-  std::vector<int8_t> s8_wei(k * n);
-  int4x2* raw_wei = reinterpret_cast<int4x2*>(compress_wei->get_4bit_wei_ptr());
-  float* scale = reinterpret_cast<float*>(compress_wei->get_scale_ptr());
-  if (weight_type == "s4fullrange_scalef32") {
-    decompress_s4_s8<S4_FULLRANGE>(raw_wei, s8_wei.data(), k, n, n, n);
-    decompress_kblock_s8_f32(s8_wei.data(), dequant_weight, k, n, n, n,
-                             reinterpret_cast<float*>(compress_wei->get_scale_ptr()), nullptr, 0,
-                             compress_wei->_blksize, n);
-  } else {
-    assert(0);
-  }
-  auto m_end = high_resolution_clock::now();
-  std::cout << "CPU dequant cost" << duration_cast<nanoseconds>(m_end - m_start).count() / 1e6 << "ms" << std::endl;
-}
-
 template <typename DST_T>
 void gpu_dequant(queue& q, CompressWei4Bit* compress_wei, DST_T* dequant_weight, bool transpose,
                  const std::string& compute_type, const std::string& weight_type) {
@@ -294,69 +229,3 @@ void gpu_dequant(queue& q, int8_t* src, DST_T* dst, float* scale, int k, int n, 
   return;
 }
 
-template <typename DST_T>
-void dump_matrix(DST_T* mat, int k, int n) {
-  for (int i = 0; i < k; i++) {
-    for (int j = 0; j < n; j++) {
-      std::cout << mat[i * n + j] << " ";
-    }
-    std::cout << std::endl;
-  }
-}
-
-void ut(int K, int N, int blksize) {
-  std::cout << "K:" << K << " N:" << N << " blksize:" << blksize << std::endl;
-  assert(N % 2 == 0);
-  bool sym = false;
-  std::vector<float> f32wei(K * N);
-  for (int i = 0; i < K * N; i++) f32wei[i] = randn() * 10;
-  void* s4_wei = quantize(f32wei.data(), K, N, blksize, false, "s4fullrange_scalef32", "fp32");
-  std::vector<float> gpu_dq(K * N);
-  std::vector<__fp16> fp16_gpu_dq(K * N);
-  std::vector<float> cpu_dq(K * N);
-  queue q;
-
-  CompressWei4Bit obj(K, N, blksize, false);
-  obj.deserialize(s4_wei);
-
-  dequantize(&obj, cpu_dq.data(), false, "fp32", "s4fullrange_scalef32");
-  int8_t* dev_src = malloc_device<int8_t>(K * N / 2, q);
-  float* dev_scale = malloc_device<float>(K / blksize * N, q);
-  float* dev_dst = malloc_device<float>(K * N, q);
-  __fp16* fp16_dev_dst = malloc_device<__fp16>(K * N, q);
-
-  q.submit([&](handler& h) { h.memcpy(dev_src, obj.get_4bit_wei_ptr(), K * N / 2); });
-  q.submit([&](handler& h) { h.memcpy(dev_scale, obj.get_scale_ptr(), K / blksize * N * sizeof(float)); });
-  q.wait();
-
-  // gpu_dequant(q, &obj, gpu_dq.data(), false, "fp32", "s4fullrange_scalef32");
-  gpu_dequant(q, dev_src, dev_dst, dev_scale, K, N, blksize);
-  gpu_dequant(q, dev_src, fp16_dev_dst, dev_scale, K, N, blksize);
-
-  q.submit([&](handler& h) { h.memcpy(gpu_dq.data(), dev_dst, K * N * sizeof(float)); });
-  q.submit([&](handler& h) { h.memcpy(fp16_gpu_dq.data(), fp16_dev_dst, K * N * sizeof(__fp16)); });
-  q.wait();
-
-  bool ok = true;
-  for (int i = 0; i < cpu_dq.size(); i++) {
-    if (cpu_dq[i] != gpu_dq[i] || abs(cpu_dq[i] - fp16_gpu_dq[i]) > 0.1) ok = false;
-  }
-  if (ok)
-    std::cout << "ok" << std::endl;
-  else
-    std::cout << "fail" << std::endl;
-
-  free(s4_wei);
-  free(dev_src, q);
-  free(dev_scale, q);
-  free(dev_dst, q);
-  free(fp16_dev_dst, q);
-}
-
-int main() {
-  ut(1024, 1024, 8);
-  ut(1020, 1024, 30);
-  ut(11008, 4096, 32);
-
-  return 0;
-}

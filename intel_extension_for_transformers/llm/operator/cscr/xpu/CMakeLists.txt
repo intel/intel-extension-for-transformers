@@ -36,7 +36,7 @@ add_subdirectory(../../../library/gblas gblas_out)
 add_compile_options(-fsycl)
 add_link_options(-fsycl)
 
-file(GLOB gbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp)
+file(GLOB gbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 # Define our library target
 add_library(gbits SHARED ${gbits_src})
 # Enable C++17

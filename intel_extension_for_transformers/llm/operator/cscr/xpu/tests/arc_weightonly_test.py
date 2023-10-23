@@ -40,9 +40,8 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)
     tar_activation = ref_activation.clone()
-
-    bias = torch.rand(n, dtype=torch.float)*10
-
+    if src_dt == "bf16":
+        tar_activation = ref_activation.to(torch.bfloat16)
     wei_row = k
     wei_col = n
     if transpose:
@@ -50,19 +49,26 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src
     raw_wei = torch.rand(wei_row, wei_col, dtype=torch.float)
     if dump_tensor_info:
         print(raw_wei)
-
+    compress_wei = torch.ops.weight_only_gblasop.gbits_quantize(
+        raw_wei, transpose, blocksize, compute_type, weight_type)
+    revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
+    torch.ops.weight_only_gblasop.gbits_dequantize(
+        compress_wei, revert_wei, transpose, compute_type, weight_type, blocksize)
+    bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
         print(revert_wei)
-
     tar_dst = torch.zeros(m, n, dtype=torch.float)
-
+    if dst_dt == "bf16":
+        tar_dst = tar_dst.to(torch.bfloat16)
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
-
-    ref_dst = torch.matmul(ref_activation, raw_wei)
+    ref_dst = torch.matmul(ref_activation, revert_wei)
     torch.ops.weight_only_gblasop.gbits_linear(
-        tar_activation, raw_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)
-
+        tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type, blocksize)
+    if dst_dt == "bf16":
+        tar_dst = tar_dst.to(torch.float)
+    if add_bias:
+        ref_dst += bias
     if dump_tensor_info:
         print(tar_dst)
         print(ref_dst)
@@ -72,7 +78,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src
         print("fail")
 
 
-configs = {"fp32": {"fp32"}}
+configs = {"s4fullrange_scalef32": {"fp32"}}
 
 blocksizes = [128]
 do_trans = [False]
@@ -86,6 +92,11 @@ for weight_type in configs:
     k = 512  # contain unalign calc error bug currently.
     for compute_type in configs[weight_type]:
         for blocksize in blocksizes:
+            if compute_type == "int8" and blocksize % 8 != 0 and blocksize != -1:
+                continue
+            if blocksize == -1:
+                if weight_type != "s8_scalef32" or compute_type != "int8":
+                    continue
             for trans in do_trans:
                 for bias in add_bias:
                     for src_dt in src_dts:
