@@ -64,12 +64,6 @@ RUN conda init bash && \
     echo "conda activate neuralchat" >> ~/.bashrc && \
     source ~/.bashrc
 
-## If local torch whl are feasible, use localfile to install, avoiding donwloading time
-COPY ./torch*.whl /
-RUN if [ -f /torch-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torch-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-RUN if [ -f /torchaudio-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchaudio-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-RUN if [ -f /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-
 RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
