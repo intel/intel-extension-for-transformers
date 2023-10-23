@@ -1,5 +1,5 @@
 pip
-torch==2.0.1
+torch==2.1.0
 diffusers==0.8.1
 transformers
 requests
