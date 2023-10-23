@@ -151,6 +151,20 @@ struct model_layer {
   struct ne_tensor* v_cache;
 };
 
+typedef int32_t model_pos;
+typedef int32_t model_seq_id;
+
+struct kv_token_cell {
+  model_pos pos = -1;   // token idx (for rope)
+  model_pos delta = 0;  // token shift delta (pos += delta)
+};
+
+struct kv_seq_cell {
+  std::vector<kv_token_cell> token_cells;
+  model_seq_id seq_id = -1;
+  bool empty = true;
+};
+
 struct model_kv_cache {
   struct ne_tensor* k = NULL;
   struct ne_tensor* v = NULL;
@@ -161,6 +175,9 @@ struct model_kv_cache {
   model_ctx_buffer buf;
 
   int n;  // number of tokens currently in the cache
+
+  bool has_shift = false;  // ring-buffer (for too long text generation like streaming-llm)
+  std::vector<kv_seq_cell> seq_cells;
 
   ~model_kv_cache() {
     if (ctx) {
