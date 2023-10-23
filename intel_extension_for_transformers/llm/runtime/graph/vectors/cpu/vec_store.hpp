@@ -21,7 +21,7 @@ inline void store_s8x16(void* mem_addr, s8x16 a) { _mm_storeu_si128(reinterpret_
 inline void store_u8x16(void* mem_addr, u8x16 a) { _mm_storeu_si128(reinterpret_cast<__m128i*>(mem_addr), a.first); }
 template <>
 
-inline void store_kernel_t<s8x16>(void* dst, s8x16 src) {
+void store_kernel_t<s8x16>(void* dst, s8x16 src) {
 
   store_s8x16(dst, src);
 }
