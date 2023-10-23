@@ -70,7 +70,7 @@ Modify the `user.conf` when you run different models:
 
 + When you run minilm, please also add `--minilm=true` for both performance and accuracy.
 
-+ When you run benchmark on `SPR` machine, please add `--inter_parallel=28 and set --INST_NUM=28` for both perfomance and accuracy.
++ When you run benchmark on `SPR` machine, please add `--inter_parallel=28 and set --INST_NUM=28` for both performance and accuracy.
 
 + When you run bert large please keep batch size as 4.
 

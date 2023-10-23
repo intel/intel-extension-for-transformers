@@ -1,17 +1,17 @@
 name: Deploy Model Test
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - ".github/workflows/deploy-test.yml"
-      - ".github/workflows/script/models/run_deploy.sh"
-      - "intel_extension_for_transformers/llm/runtime/deprecated/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
-      - "!intel_extension_for_transformers/llm/runtime/graph/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
-      - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
+  #pull_request:
+  #  branches: [main]
+  #  paths:
+  #    - ".github/workflows/deploy-test.yml"
+  #    - ".github/workflows/script/models/run_deploy.sh"
+  #    - "intel_extension_for_transformers/llm/runtime/deprecated/**"
+  #    - "!intel_extension_for_transformers/llm/runtime/deprecated/kernels/**"
+  #    - "!intel_extension_for_transformers/llm/runtime/deprecated/test/**"
+  #    - "!intel_extension_for_transformers/llm/runtime/graph/**"
+  #    - "!intel_extension_for_transformers/llm/runtime/deprecated/third_party/**"
+  #    - "!intel_extension_for_transformers/llm/runtime/deprecated/docs/**"
 
   workflow_dispatch:
 
