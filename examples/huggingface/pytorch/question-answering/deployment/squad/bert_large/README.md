@@ -72,7 +72,7 @@ graph.save('./ir')
 ```
 
 # Benchmark
-If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir fisrt.
+If you want to run local onnx model inference, we provide with python API and C++ API. To use C++ API, you need to transfer to model ir first.
 
 By setting ``--dynamic_quanzite`` for FP32 model, you could benchmark dynamic quantize int8 model.
 ## Accuracy
