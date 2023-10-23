@@ -384,13 +384,8 @@ class logits_processor {
 class beam_search_kv_cache_reorder {
  public:
   explicit beam_search_kv_cache_reorder(model_context* lctx)
-      : ctx(lctx),
-        n_ctx(lctx->n_ctx),
-        n_embd(lctx->model.hparams.n_embd),
-        head_dim(lctx->model.hparams.n_embd / lctx->model.hparams.n_head),
-        n_head(lctx->model.hparams.n_head),
-        kv_n_ctx_block(lctx->kv_n_ctx_block) {}
-  ~beam_search_kv_cache_reorder() {}
+      : ctx(lctx), n_ctx(lctx->model.hparams.n_ctx), kv_n_ctx_block(lctx->kv_n_ctx_block) {}
+  virtual ~beam_search_kv_cache_reorder() {}
 
   virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
                       const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
@@ -399,10 +394,6 @@ class beam_search_kv_cache_reorder {
  protected:
   model_context* ctx = nullptr;
   const uint32_t n_ctx;
-  const uint32_t n_embd;
-  // const uint32_t n_head_kv;
-  const uint32_t head_dim;
-  const uint32_t n_head;
   const uint32_t kv_n_ctx_block;
 };
 

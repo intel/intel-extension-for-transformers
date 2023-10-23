@@ -2191,86 +2191,36 @@ void logits_processor::process(const uint32_t& cur_len, const model_vocab::id& e
 void beam_search_kv_cache_reorder::update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
                                           const std::vector<std::tuple<int, int>>& kv_reorder_indices,
                                           const std::vector<beam>& next_beams) {
-  // TODO(Yi): use get_batch_kv_elements_from_gpt_params;
-  NE_ASSERT(ctx->model.kv_self.k->type != NE_TYPE_JBLAS);
   // first step
   if (n_past == n_prompt_tokens) {
     // cpy batch 1 to all batches
-#pragma omp parallel for collapse(2)
-    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
-      for (int j = 1; j < kv_n_ctx_block; ++j) {
-        // [n_embd, N]
-        memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
-                   (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                    j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd),
-               static_cast<char*>(ctx->model.kv_self.k->data) +
-                   i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block,
-               ne_element_size(ctx->model.kv_self.k) * n_embd * n_prompt_tokens);
-      }
-    }
-#pragma omp parallel for collapse(3)
-    for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
-      for (int j = 1; j < kv_n_ctx_block; ++j) {
-        // [N, n_embd]
-        for (int k = 0; k < n_embd; ++k) {
-          memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
-                     (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                      j * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd +
-                      n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
-                 static_cast<char*>(ctx->model.kv_self.v->data) +
-                     (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                      n_ctx * k * ne_element_size(ctx->model.kv_self.v)),
-                 ne_element_size(ctx->model.kv_self.v) * n_prompt_tokens);
-        }
-      }
+    for (int b = 1; b < kv_n_ctx_block; ++b) {
+      model_kv_cache_seq_cpy(ctx, 0, b, 0, n_prompt_tokens);
     }
   } else if (n_past > n_prompt_tokens) {
     // next setp
+    model_pos p0 = 0;
+    model_pos p1 = 0;
     for (auto t : kv_reorder_indices) {
       int cur_id = std::get<0>(t);
       int cpy_id = std::get<1>(t);
-      if (cur_id != cpy_id) {
-        uint32_t len = next_beams[cur_id].token_ids.size() - 1;
-        // last token in beam is for next step inference
-        MODEL_ASSERT(len == n_past - n_prompt_tokens);
-        size_t input_token_offset_k = n_prompt_tokens * ne_element_size(ctx->model.kv_self.k) * n_embd;
-        size_t input_token_offset_v = n_prompt_tokens * ne_element_size(ctx->model.kv_self.v);
-        if (len + n_prompt_tokens > n_ctx) {
-          // all token hidden states cache should be updated
-          input_token_offset_k = 0;
-          input_token_offset_v = 0;
-          len = n_ctx;
-        }
-#pragma omp parallel for
-        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
-          // [n_embd, N]
-          memcpy(static_cast<char*>(ctx->model.kv_self.k->data) +
-                     (i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                      cur_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd) +
-                     input_token_offset_k,
-                 static_cast<char*>(ctx->model.kv_self.k->data) +
-                     i * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd * kv_n_ctx_block +
-                     cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.k) * n_embd + input_token_offset_k,
-                 ne_element_size(ctx->model.kv_self.k) * n_embd * len);
-        }
-#pragma omp parallel for collapse(2)
-        for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
-          // [N, n_embd]
-          for (int k = 0; k < n_embd; ++k) {
-            memcpy(static_cast<char*>(ctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        cur_id * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                        n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
-                   static_cast<char*>(ctx->model.kv_self.v->data) +
-                       (i * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd * kv_n_ctx_block +
-                        cpy_id * n_ctx * ne_element_size(ctx->model.kv_self.v) * n_embd +
-                        n_ctx * ne_element_size(ctx->model.kv_self.v) * k + input_token_offset_v),
-                   ne_element_size(ctx->model.kv_self.v) * len);
-          }
-        }
+      if (cur_id == cpy_id) {
+        continue;
       }
+      uint32_t len = next_beams[cur_id].token_ids.size() - 1;
+      // last token in beam is for next step inference
+      MODEL_ASSERT(len == n_past - n_prompt_tokens);
+      p0 = n_prompt_tokens;
+      p1 = n_past;
+      if (n_past > n_ctx) {
+        // all token hidden states cache should be updated
+        p0 = 0;
+        p1 = n_ctx;
+      }
+      model_kv_cache_seq_cpy(ctx, cpy_id, cur_id, p0, p1);
     }
   } else {
+    fprintf(stderr, "%s: error: unable to update kv cache\n", __func__);
     return;
   }
 }
@@ -2585,7 +2535,9 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
   if (kv_reorder == nullptr) {
     kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
-    printf("WARNING: using default kv cache update function. \n");
+    printf(
+        "WARNING: using default kv cache update function. Ignore this warning if your K shape =[head_dim, N, n_head], "
+        "V shape = [N, head_dim, n_head]\n");
 #endif
   }
   beam_hypos.push_back(beam_hypotheses(ctx));  // TODO ctx->request_running_bs;

@@ -366,10 +366,7 @@ static bool gptneox_model_eval_internal(model_context& lctx, const model_token* 
     size_t bs_stride = n_vocab * N;
     if (lctx.logits_all) {
       logits_out.resize(n_vocab * N * batch_size);
-      for (int i = 0; i < batch_size; ++i) {
-        memcpy(logits_out.data() + i * bs_stride, (float*)ne_get_data(inpL) + (i * bs_stride),
-               sizeof(float) * n_vocab * N);
-      }
+      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N * batch_size);
     } else {
       // return result for just the last token
       logits_out.resize(n_vocab * batch_size);
