@@ -89,24 +89,9 @@ outputs = tokenizer.batch_decode(gen_tokens)
 ```
 
 ## 🎯Validated  Models
-Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
-The subsequent token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
+You can access the int4 performance and accuracy details at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
 
-| Model | INT4 Next Token Latency  |
-|---------------------|:------------:| 
-| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 21.98ms| 
-| [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 24.55ms|
-| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 24.84ms|
-
-1024 input tokens performance:
-
-| Model | INT4 Next Token Latency  |
-|---------------------|:------------:|
-| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 24.54ms|
-| [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 27.7ms|
-| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 27.97ms| 
-
-Find other models like Baichuan, ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) and accuracy data in [Release data](./docs/release.md) . 
+Additionally, we are preparing to introduce Baichuan, Mistral, and other models into [LLM Runtime (Intel Optimized llamacpp)](./intel_extension_for_transformers/llm/runtime/graph). For further accuracy data, please refer to the [Release data](./docs/release.md) . 
 
 ## 📖Documentation
 <table>
@@ -196,7 +181,7 @@ Find other models like Baichuan, ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime
 * Blog published on Medium: [Simplify Your Custom Chatbot Deployment](https://medium.com/intel-analytics-software/simplify-your-custom-chatbot-deployment-on-intel-platforms-c8a911d906cf) (June 2023)
 
 
-> View [Full Publication List](./docs/publication.md)
+> View [Full Publication List](./docs/publication.md).
 ## Additional Content
 
 * [Release Information](./docs/release.md)
