@@ -82,7 +82,7 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 ```
 
 ### 3. Run LLM with Python Script
-You can run LLM with one-click python script including convertion, quantization and inference.
+You can run LLM with one-click python script including conversion, quantization and inference.
 ```
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
