@@ -78,30 +78,11 @@ streamer = TextStreamer(tokenizer)
 
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
-```
-
-To enable StreamingLLM for infinite inference, here is the sample code:
-```python
-from transformers import AutoTokenizer, TextStreamer
-from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
-model_name = "Intel/neural-chat-7b-v1-1"     # Hugging Face model_id or local model
-woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
-prompt = "Once upon a time, a little girl"
-
-tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-inputs = tokenizer(prompt, return_tensors="pt").input_ids
-streamer = TextStreamer(tokenizer)
-
-model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
- 
-# Paper: https://arxiv.org/pdf/2309.17453.pdf
-# Recommend n_keep=4 to do attention sinks (four initial tokens) and n_discard=-1 to drop half rencetly tokens when meet length threshold
-outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size=100, n_keep=4, n_discard=-1)
 
 ```
 
 ### 3. Run LLM with Python Script
-You can run LLM with one-click python script including conversion, quantization and inference.
+You can run LLM with one-click python script including convertion, quantization and inference.
 ```
 python scripts/run.py model-path --weight_dtype int4 -p "She opened the door and see"
 ```
