@@ -1,1 +1,1 @@
-num2words
+PyPDF2
