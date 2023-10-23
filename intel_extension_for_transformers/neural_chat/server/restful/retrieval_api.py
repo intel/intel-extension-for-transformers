@@ -15,14 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
 import re
+import csv
+import datetime
 from typing import Optional, Dict
 from fastapi import APIRouter, UploadFile, File
 from ...config import GenerationConfig
 from ...cli.log import logger
-from ...server.restful.request import RetrievalRequest, AskgmRequest, FeedbackRequest
+from ...server.restful.request import RetrievalRequest, AskDocRequest, FeedbackRequest
 from ...server.restful.response import RetrievalResponse
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import StreamingResponse
 from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
 
@@ -66,37 +69,37 @@ async def retrieval_endpoint(request: RetrievalRequest) -> RetrievalResponse:
     return await router.handle_retrieval_request(request)
 
 
-@router.post("/v1/askgm/upload")
+@router.post("/v1/askdoc/upload")
 async def retrieval_upload(file: UploadFile = File(...)):
     global plugins
     filename = file.filename
-    path_prefix = "/home/sdp/askgm_upload/enterprise_docs/"
-    print(f"[askgm - upload] filename: {filename}")
+    path_prefix = "/home/sdp/askdoc_upload/enterprise_docs/"
+    print(f"[askdoc - upload] filename: {filename}")
     if '/' in filename:
         filename = filename.split('/')[-1]
     with open(f"{path_prefix+filename}", 'wb') as fout:
         content = await file.read()
         fout.write(content),
-    print("[askgm - upload] file saved to local path.")
+    print("[askdoc - upload] file saved to local path.")
 
     try:
-        print("[askgm - upload] starting to append local db...")
+        print("[askdoc - upload] starting to append local db...")
         instance = plugins['retrieval']["instance"]
         instance.append_localdb(append_path=path_prefix)
-        print(f"[askgm - upload] kb appended successfully")
+        print(f"[askdoc - upload] kb appended successfully")
     except Exception as e:
-        logger.info(f"[askgm - upload] create knowledge base failes! {e}")
+        logger.info(f"[askdoc - upload] create knowledge base failes! {e}")
         return "Error occurred while uploading files."
     fake_kb_id = "fake_knowledge_base_id"
     return {"knowledge_base_id": fake_kb_id}
 
 
-@router.post("/v1/askgm/chat")
-async def retrieval_chat(request: AskgmRequest):
+@router.post("/v1/askdoc/chat")
+async def retrieval_chat(request: AskDocRequest):
     chatbot = router.get_chatbot()
     
-    logger.info(f"[askgm - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
-    logger.info(f"[askgm - chat] Predicting chat completion using prompt '{request.query}'")
+    logger.info(f"[askdoc - chat] Predicting chat completion using kb '{request.knowledge_base_id}'")
+    logger.info(f"[askdoc - chat] Predicting chat completion using prompt '{request.query}'")
     config = GenerationConfig()
     # Set attributes of the config object from the request
     for attr, value in request.__dict__.items():
@@ -104,7 +107,7 @@ async def retrieval_chat(request: AskgmRequest):
             continue
         setattr(config, attr, value)
     generator, link = chatbot.predict_stream(query=request.query, config=config)
-    logger.info(f"[askgm - chat] chatbot predicted: {generator}")
+    logger.info(f"[askdoc - chat] chatbot predicted: {generator}")
     if isinstance(generator, str):
         def stream_generator():
             yield f"data: {generator}\n\n"
@@ -116,7 +119,7 @@ async def retrieval_chat(request: AskgmRequest):
                     "text": output,
                     "error_code": 0,
                 }
-                logger.info(f"[askgm - chat] {ret}")
+                logger.info(f"[askdoc - chat] {ret}")
                 res = re.match("(http|https|ftp)://[^\s]+", output)
                 if res != None:
                     formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{res.group()}" />'
@@ -137,23 +140,54 @@ async def retrieval_chat(request: AskgmRequest):
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
 
 
-@router.post("/v1/askgm/feedback")
+@router.post("/v1/askdoc/feedback")
 def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
-    logger.info(f'fastrag feedback received.')
-    # create mysql db instance
+    logger.info(f'[askdoc - feedback] fastrag feedback received.')
     mysql_db = MysqlDb()
     question, answer, feedback = request.question, request.answer, request.feedback
     feedback_str = 'dislike' if int(feedback) else 'like'
-    logger.info(f'feedback question: [{question}], answer: [{answer}], feedback: [{feedback_str}]')
-    # define sql statement
+    logger.info(f'''[askdoc - feedback] feedback question: [{question}], 
+                answer: [{answer}], feedback: [{feedback_str}]''')
     sql = f"INSERT INTO feedback VALUES(null, '{question}', '{answer}', {feedback})"
+    logger.info(f'[askdoc - feedback] sql: {sql}')
     try:
-        # execute sql statement and close db connection automatically
-        mysql_db.insert(sql, None)
+        with mysql_db.transaction():
+            mysql_db.insert(sql, None)
     except:
-        # catch exceptions while inserting into db
         raise Exception("""Exception occurred when inserting data into MySQL, 
                         please check the db session and your syntax.""")
     else:
-        logger.info('feedback inserted.')
+        logger.info('[askdoc - feedback] feedback inserted.')
+        mysql_db._close()
         return "Succeed"
+    
+
+@router.get("/v1/askdoc/downloadFeedback")
+def get_feedback_from_db():
+    mysql_db = MysqlDb()
+    sql = f"SELECT * FROM feedback ;"
+    try:
+        feedback_list = mysql_db.fetch_all(sql)
+            
+    except:
+        raise Exception("""Exception occurred when querying data from MySQL, 
+                        please check the db session and your syntax.""")
+    else:
+        mysql_db._close()
+        def data_generator():
+            output = io.StringIO()
+            writer = csv.DictWriter(
+                output, 
+                fieldnames=['feedback_id', 'question', 'answer', 'feedback_result']
+            )
+            writer.writeheader()
+            for row in feedback_list:
+                writer.writerow(row)
+                yield output.getvalue()
+                output.seek(0)
+                output.truncate(0)
+
+        cur_time = datetime.datetime.now()
+        cur_time_str = cur_time.strftime("%Y%m%d")
+        return StreamingResponse(data_generator(), media_type='text/csv', headers={"Content-Disposition": f"attachment;filename=feedback{cur_time_str}.csv"})
+    

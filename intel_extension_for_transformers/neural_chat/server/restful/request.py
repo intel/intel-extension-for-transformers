@@ -49,7 +49,7 @@ class FinetuneRequest(RequestBaseModel):
     peft: str = 'lora'
 
 
-class AskgmRequest(RequestBaseModel):
+class AskDocRequest(RequestBaseModel):
     query: str
     domain: str
     blob: Optional[str]
