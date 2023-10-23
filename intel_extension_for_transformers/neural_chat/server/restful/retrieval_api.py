@@ -20,10 +20,10 @@ from typing import Optional, Dict
 from fastapi import APIRouter, UploadFile, File
 from ...config import GenerationConfig
 from ...cli.log import logger
-from ...pipeline.plugins.retrieval.retrieval_agent import Agent_QA
-from ...server.restful.request import RetrievalRequest, AskgmRequest
+from ...server.restful.request import RetrievalRequest, AskgmRequest, FeedbackRequest
 from ...server.restful.response import RetrievalResponse
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from ...utils.database.mysqldb import MysqlDb
 from ...plugins import plugins
 
 
@@ -122,14 +122,38 @@ async def retrieval_chat(request: AskgmRequest):
                     formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{res.group()}" />'
                     yield f"data: {formatted_link}\n\n"
                 else:
-                    yield f"data: {ret['text']}\n\n"
+                    formatted_str = ret['text'].replace('\n', '<br/>')
+                    yield f"data: {formatted_str}\n\n"
             if link != []:
                 yield f"data: <hr style='border: 1px solid white; margin:0.5rem 0; '>\n\n"
                 for single_link in link:
                     if single_link == None:
                         continue
                     raw_link = single_link["source"]
-                    formatted_link = f'<a style="color: blue; text-decoration: underline;"   href="{raw_link}">{raw_link}</a><br/>'
+                    formatted_link = f"""<a style="color: blue; text-decoration: underline;"   
+                                        href="{raw_link}">{raw_link}</a><br/>"""
                     yield f"data: {formatted_link}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
+
+
+@router.post("/v1/askgm/feedback")
+def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
+    logger.info(f'fastrag feedback received.')
+    # create mysql db instance
+    mysql_db = MysqlDb()
+    question, answer, feedback = request.question, request.answer, request.feedback
+    feedback_str = 'dislike' if int(feedback) else 'like'
+    logger.info(f'feedback question: [{question}], answer: [{answer}], feedback: [{feedback_str}]')
+    # define sql statement
+    sql = f"INSERT INTO feedback VALUES(null, '{question}', '{answer}', {feedback})"
+    try:
+        # execute sql statement and close db connection automatically
+        mysql_db.insert(sql, None)
+    except:
+        # catch exceptions while inserting into db
+        raise Exception("""Exception occurred when inserting data into MySQL, 
+                        please check the db session and your syntax.""")
+    else:
+        logger.info('feedback inserted.')
+        return "Succeed"
