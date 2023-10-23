@@ -47,7 +47,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing \
 # Install system dependencies
 SHELL ["/bin/bash", "--login", "-c"]
 RUN apt-get update && apt-get install -y build-essential autoconf ffmpeg lsof \
-    wget numactl git openssh-server ca-certificates cmake vim npm nvm && \
+    wget numactl git openssh-server ca-certificates cmake vim npm curl && \
     apt-get clean autoclean && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
@@ -64,9 +64,12 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
     /bin/bash ~/miniconda.sh -b -p /opt/conda
 
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash && \
-    source ~/.bashrc && \
+    source ~/.nvm/nvm.sh && \
     nvm install 18.17.1 && \
     nvm use 18.17.1
+
+RUN wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb && \
+    dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
 
 # Put conda in path so we can use conda activate
 SHELL ["/bin/bash", "--login", "-c"]
@@ -84,11 +87,11 @@ RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt -
     cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \
     cd /intel-extension-for-transformers/examples/huggingface/pytorch/code-generation/quantization && pip install -r requirements.txt --no-cache-dir && \
-    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y && \
+    conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi future six requests dataclasses -y && \
     conda install jemalloc gperftools -c conda-forge -y && \
-    pip install datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.2 tokenizers einops peft && \
+    pip install typing_extensions datasets accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.2 tokenizers einops peft && \
     pip install torch==2.1.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html && \
-    pip install /intel-extension-for-transformers/intel_extension_for_pytorch-2.1.0-cp310-cp310-manylinux2014_x86_64.whl && \
+    pip install intel_extension_for_pytorch==2.1.0 && \
     pip install torchaudio==2.1.0+cpu torchvision==0.16.0+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
 # Enable passwordless ssh for mpirun
