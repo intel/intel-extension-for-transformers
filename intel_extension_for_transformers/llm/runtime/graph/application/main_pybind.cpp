@@ -57,7 +57,7 @@ class Model {
   }
   void init_model(const std::string& model_path, int n_predict, int batch_size, int ctx_size, int seed, int threads,
                   float repetition_penalty, int num_beams, bool do_sample, int top_k, float top_p, float temperature,
-                  int min_new_tokens, float length_penalty, bool early_stopping);
+                  int min_new_tokens, float length_penalty, bool early_stopping, int n_keep, int n_discard);
   void reinit();
   std::vector<model_token> generate(const std::vector<model_token>& input_ids);
   std::vector<model_token> generate_tokens(const std::vector<model_token>& input_ids);
@@ -85,7 +85,8 @@ class Model {
 
 void Model::init_model(const std::string& model_path, int max_new_tokens, int batch_size, int ctx_size, int seed,
                        int threads, float repetition_penalty, int num_beams, bool do_sample, int top_k, float top_p,
-                       float temperature, int min_new_tokens, float length_penalty, bool early_stopping) {
+                       float temperature, int min_new_tokens, float length_penalty, bool early_stopping, int n_keep,
+                       int n_discard) {
 #ifdef MODEL_NAME
   params.model_name = MODEL_NAME;
 #endif
@@ -106,6 +107,8 @@ void Model::init_model(const std::string& model_path, int max_new_tokens, int ba
   params.top_k = top_k;
   params.top_p = top_p;
   params.temp = temperature;
+  params.n_keep = n_keep;
+  params.n_discard = n_discard;
 
   printf("beam_size: %d, do_sample: %d, top_k: %d, top_p: %f\n", params.beam_size, params.do_sample, params.top_k,
          params.top_p);
@@ -141,17 +144,14 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
     last_n_tokens.push_back(item);
   }
   // infinite text generation via context swapping
-  // if we run out of context:
-  // - take the n_keep first tokens from the original prompt (via n_past)
-  // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
   if (n_past + curr_input_ids.size() > n_ctx) {
-    const int n_left = n_past - params.n_keep;
-
-    // always keep the first token - BOS
+    // always keep the first token
     n_past = std::max(1, params.n_keep);
 
-    // insert n_left/2 tokens at the start of embd from last_n_tokens
-    curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - curr_input_ids.size(),
+    int n_discard = params.n_discard;
+    if (n_discard == -1) n_discard = (n_ctx - curr_input_ids.size() - params.n_keep) / 2;
+    // drop n_discard tokens
+    curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
                           last_n_tokens.end() - curr_input_ids.size());
   }
   model_eval(ctx, &curr_input_ids[0], curr_input_ids.size(), n_past, params.n_threads);
@@ -182,17 +182,14 @@ std::vector<model_token> Model::generate_tokens(const std::vector<model_token>& 
       last_n_tokens.push_back(item);
     }
     // infinite text generation via context swapping
-    // if we run out of context:
-    // - take the n_keep first tokens from the original prompt (via n_past)
-    // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
     if (n_past + curr_input_ids.size() > n_ctx) {
-      const int n_left = n_past - params.n_keep;
-
-      // always keep the first token - BOS
+      // always keep the first token
       n_past = std::max(1, params.n_keep);
 
-      // insert n_left/2 tokens at the start of embd from last_n_tokens
-      curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - curr_input_ids.size(),
+      int n_discard = params.n_discard;
+      if (n_discard == -1) n_discard = (n_ctx - curr_input_ids.size() - params.n_keep) / 2;
+      // drop n_discard tokens
+      curr_input_ids.insert(curr_input_ids.begin(), last_n_tokens.begin() + params.n_keep + n_discard,
                             last_n_tokens.end() - curr_input_ids.size());
     }
     if (ctx->beam_search) {
@@ -374,7 +371,8 @@ PYBIND11_MODULE(polyglot_cpp, m)
            py::arg("max_new_tokens") = -1, py::arg("batch_size") = 512, py::arg("ctx_size") = 512, py::arg("seed") = -1,
            py::arg("threads") = 8, py::arg("repetition_penalty") = 1.1f, py::arg("num_beams") = 1,
            py::arg("do_sample") = false, py::arg("top_k") = 40, py::arg("top_p") = 0.95, py::arg("temperature") = 0.8,
-           py::arg("min_new_tokens") = 0, py::arg("length_penalty") = 1.0, py::arg("early_stopping") = false)
+           py::arg("min_new_tokens") = 0, py::arg("length_penalty") = 1.0, py::arg("early_stopping") = false,
+           py::arg("n_keep") = 0, py::arg("n_discard") = -1)
       .def("generate", &Model::generate, "Generate token with input ids", py::arg("input_ids"))
       .def("generate_tokens", &Model::generate_tokens, "Generate tokens with input ids", py::arg("input_ids"))
       .def_static("quant_model", &Model::quant_model, "Quantize model", py::arg("model_path"), py::arg("out_path"),

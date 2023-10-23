@@ -19,10 +19,10 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <type_traits>
-#include <vector>
 #include "jblas/jit_blas.h"
 #include "jblas/jit_blas_epilogue.h"
 #include "jblas/jit_blas_gemm.h"
@@ -91,23 +91,31 @@ void qbits_quantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   static PrologueB compress_kernel;
   set_nk(ctx, ctx->weight);
 
+  if (initer.verbose) timer.start();
   auto do_quant = [&](typename PrologueB::StorageWeight* ptr) {
-    std::vector<int8_t> buffer(ptr->mSize);
-    ptr->assign(buffer.data());
+    int8_t* buffer = jblas::utils::amalloc<int8_t>(ptr->mSize);
+    ptr->assign(buffer);
     if (ctx->transpose)
       compress_kernel.packTransposeWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->k, ptr);
     else
       compress_kernel.packWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->n, ptr);
     *(ctx->output) = torch::zeros(ptr->mSize, torch::kInt8);
     ptr->serialize(ctx->output->data_ptr<int8_t>());
+    jblas::utils::afree(buffer);
   };
-
   if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>) {
     auto storage = compress_kernel.createStorage(ctx->n, ctx->k, ctx->blocksize);
     do_quant(&storage);
   } else {
     auto storage = compress_kernel.createStorage(ctx->n, ctx->k, false);
     do_quant(&storage);
+  }
+  if (initer.verbose) {
+    timer.stop();
+    auto cost_time = timer.get_elapsed_time();
+    std::cout << "QBits quantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
+              << " blocksize:" << ctx->blocksize << " src_type:" << dispatcher_utils::get_torch_dt_name(ctx->weight)
+              << " execute time:" << cost_time << "ms" << std::endl;
   }
 }
 
@@ -116,12 +124,20 @@ void qbits_dequantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
   using PrologueB = typename KERNEL::WeightType;
   static PrologueB decompress_kernel;
   set_nk(ctx, ctx->output);
+  if (initer.verbose) timer.start();
   if (ctx->transpose)
     decompress_kernel.unpackTransposeWeight(int(ctx->n), int(ctx->k), ctx->deseries_wei, ctx->output->data_ptr<float>(),
                                             int(ctx->k));
   else
     decompress_kernel.unpackWeight(int(ctx->n), int(ctx->k), ctx->deseries_wei, ctx->output->data_ptr<float>(),
                                    int(ctx->n));
+  if (initer.verbose) {
+    timer.stop();
+    auto cost_time = timer.get_elapsed_time();
+    std::cout << "QBits dequantize verbose\nn:" << ctx->n << " k:" << ctx->k << " weight_type:" << p->weight_type
+              << " blocksize:" << ctx->blocksize << " dst_type:" << dispatcher_utils::get_torch_dt_name(ctx->output)
+              << " execute time:" << cost_time << "ms" << std::endl;
+  }
 }
 
 template <class KERNEL, class ParamA, class ParamC>
@@ -136,7 +152,7 @@ void do_compute(qbits_config_param* p, qbits_runtime_ctx* ctx, const ParamA para
   if (initer.verbose) {
     timer.stop();
     auto cost_time = timer.get_elapsed_time();
-    std::cout << "QBits verbose\nm:" << ctx->m << " n:" << ctx->n << " k:" << ctx->k
+    std::cout << "QBits linear verbose\nm:" << ctx->m << " n:" << ctx->n << " k:" << ctx->k
               << " weight_type:" << p->weight_type << " compute_type:" << p->compute_type
               << " blocksize:" << ctx->blocksize << " src_type:" << dispatcher_utils::get_torch_dt_name(ctx->activation)
               << " dst_type:" << dispatcher_utils::get_torch_dt_name(ctx->output) << " execute time:" << cost_time
@@ -201,7 +217,7 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
                     "Qbits: workspace size should large than " + std::to_string(need_size) + " bytes");
         return workspace;
       } else {
-        tmpbuf = malloc(need_size);
+        tmpbuf = jblas::utils::amalloc<int8_t>(need_size);
         return tmpbuf;
       }
     };
@@ -218,7 +234,7 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
       ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, &quantA};
       parse_paramC<KERNEL, ParamA>(p, ctx, param_a);
     }
-    if (tmpbuf != NULL) free(tmpbuf);
+    if (tmpbuf != NULL) jblas::utils::afree(tmpbuf);
   }
 }
 
