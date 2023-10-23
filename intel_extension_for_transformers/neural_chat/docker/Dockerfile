@@ -119,7 +119,7 @@ RUN git clone https://github.com/huggingface/optimum-habana.git && \
     pip install -e .
 
 # Download ITREX code
-ARG ITREX_VER=main
+ARG ITREX_VER=yuxiang/hpu_docker
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers && \
