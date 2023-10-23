@@ -1,1 +1,1 @@
-scikit-learn
+InstructorEmbedding
