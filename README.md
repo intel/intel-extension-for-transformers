@@ -11,8 +11,8 @@ Intel® Extension for Transformers
 </div>
 
 ## 🚀Latest News
-* [2023/10] LLM runtime, an Intel-optimized [GGML](https://github.com/ggerganov/ggml) compatiable runtime, demonstrates **up to 15x performance gain in 1st token generation and 1.5x in other token generation** over the default [llama.cpp](https://github.com/ggerganov/llama.cpp).
-* [2023/10] LLM runtime now supports LLM infernce with **infinite-length inputs up to 4 million tokens**, inspired from [StreamingLLM](https://arxiv.org/abs/2309.17453).
+* [2023/10] LLM runtime, an Intel-optimized [GGML](https://github.com/ggerganov/ggml) compatible runtime, demonstrates **up to 15x performance gain in 1st token generation and 1.5x in other token generation** over the default [llama.cpp](https://github.com/ggerganov/llama.cpp).
+* [2023/10] LLM runtime now supports LLM inference with **infinite-length inputs up to 4 million tokens**, inspired from [StreamingLLM](https://arxiv.org/abs/2309.17453).
 * [2023/09] NeuralChat has been showcased in [**Intel Innovation’23 Keynote**](https://www.youtube.com/watch?v=RbKRELWP9y8&t=2954s) and [Google Cloud Next'23](https://cloud.google.com/blog/topics/google-cloud-next/welcome-to-google-cloud-next-23) to demonstrate GenAI/LLM capabilities on Intel Xeon Scalable Processors.
 * [2023/08] NeuralChat supports **custom chatbot development and deployment within minutes** on broad Intel HWs such as Xeon Scalable Processors, Gaudi2, Xeon CPU Max Series, Data Center GPU Max Series, Arc Series, and Core Processors. Check out [Notebooks](./intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
 * [2023/07] LLM runtime extends Hugging Face Transformers API to provide seamless low precision inference for popular LLMs, supporting low precision data types such as INT3/INT4/FP4/NF4/INT5/INT8/FP8.
@@ -42,7 +42,7 @@ Intel® Extension for Transformers is an innovative toolkit to accelerate Transf
 
 
 ## 🌱Getting Started
-Below is the sample code to enable chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
+Below is the sample code to enable the chatbot. See more [examples](intel_extension_for_transformers/neural_chat/docs/full_notebooks.md).
 
 ### Chatbot 
 ```python
@@ -90,7 +90,7 @@ outputs = tokenizer.batch_decode(gen_tokens)
 
 ## 🎯Validated  Models
 Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
-The next token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
+The subsequent token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
 
 | Model |  FP32         | INT4 Accuracy (Group size 32) | INT4 Accuracy (Group size 128) | Next Token Latency   | 
 |---------------------|:----------------------:|:-----------------------:|:----------------------------:|:------------:| 
@@ -211,4 +211,4 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 
 ## 💁Collaborations
 
-Welcome to raise any interesting ideas on model compression techniques and LLM-based chatbot development! Feel free to reach [us](mailto:itrex.maintainers@intel.com) and look forward to our collaborations on Intel Extension for Transformers!
+Welcome to raise any interesting ideas on model compression techniques and LLM-based chatbot development! Feel free to reach [us](mailto:itrex.maintainers@intel.com), and we look forward to our collaborations on Intel Extension for Transformers!
