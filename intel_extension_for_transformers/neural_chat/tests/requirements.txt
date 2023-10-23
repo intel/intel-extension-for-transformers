@@ -40,3 +40,4 @@ lm_eval
 spacy
 neural-compressor
 onnxruntime==1.15.0
+pymysql
