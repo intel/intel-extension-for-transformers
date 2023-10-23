@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+g606cbeb documentation</title>
+  <title>LLM Runtime &mdash; Intel® Extension for Transformers 0.1.dev1+ga33909a documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -187,6 +187,29 @@ ninja
 <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">inputs</span><span class="p">,</span> <span class="n">streamer</span><span class="o">=</span><span class="n">streamer</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">ctx_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">n_keep</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_discard</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>Argument description of generate function:
+| Argument          |  Type       | Description                                                                             |
+| ————–    | ———-  | ———————————————————————–                 |
+| inputs            | Lists[Int]  | Input ids after tokenizer                                                               |
+| streamer          | Class       | Streamer object that will be used to stream the generated sequences. (default: None)    |
+| interactive       | Bool        | Interactive mode, use history commands when True (default: False)                       |
+| ignore_prompt     | Bool        | Generate outputs w/o prompt (default: False)                                            |
+| max_new_tokens    | Int         | Number of tokens to predict (default: -1, -1 = infinity)                                |
+| batch_size        | Int         | Batch size for prompt processing (default: 512)                                         |
+| ctx_size          | Int         | Size of the prompt context (default: 512)                                               |
+| seed              | Int         | NG seed (default: -1, use random seed for &lt; 0)                                          |
+| threads           | Int         | Number of threads to use during computation (default: 8)                                |
+| repetition_penalty| Float       | Penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)                       |
+| num_beams         | Int         | Number of beams for beam_search (default: 1)                                            |
+| do_sample         | Int         | Whether or not to use sampling ; use greedy decoding otherwise. (default: False)        |
+| top_k             | Int         | Top-k sampling (default: 40, 0 = disabled)                                              |
+| top_p             | Int         | Top-p sampling (default: 0.95, 1.0 = disabled)                                          |
+| temperature       | Float       | Temperature (default: 0.8)                                                              |
+| min_new_tokens    | Int         | The minimum numbers of tokens to generate, ignoring the number of tokens in the prompt. |
+| length_penalty    | Float       | Exponential penalty to the length that is used with beam-based generation.              |
+| early_stopping    | Bool        | Controls the stopping condition for beam-based methods, like beam-search.               |
+| n_keep            | Int         | Number of tokens to keep from the initial prompt (default: 0, -1 = all)                 |
+| n_discard         | Int         | Number of tokens will be discarded (default: -1, -1 = half of tokens will be discarded) |</p>
 </section>
 <section id="run-llm-with-python-script">
 <h3>3. Run LLM with Python Script<a class="headerlink" href="#run-llm-with-python-script" title="Link to this heading"></a></h3>
@@ -194,25 +217,24 @@ ninja
 <div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">scripts</span><span class="o">/</span><span class="n">run</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="n">model</span><span class="o">-</span><span class="n">path</span><span class="w"> </span><span class="o">--</span><span class="n">weight_dtype</span><span class="w"> </span><span class="n">int4</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="s">&quot;She opened the door and see&quot;</span>
 </pre></div>
 </div>
-<p>Augument description of run.py:
-| Augument         | Description                                                              |
-| ————–    | ———————————————————————– |
-| model           | directory containing model file or model id                               |
-| –weight_dtype  | data type of quantized weight (default: int4)                             |
-| –alg           | quantization algorithm to use: sym/asym (default: sym)                    |
-| –group_size    | group size (default: 32)                                                  |
-| –scale_dtype   | fp32/bf16 type for scales (default: fp32)                                 |
-| –compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)             |
-| –use_ggml      | enable ggml for quantization and inference                                |
-| -p / –prompt     | prompt to start generation with (default: empty)                        |
-| -n / –n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
-| -t / –threads    | number of threads to use during computation (default: 56)               |
-| -b / –batch_size_truncate | batch size for prompt processing (default: 512)                |
-| -c / –ctx_size   | size of the prompt context (default: 512, can not be larger than specific model’s context window length)                                                                                       |
-| -s / –seed       | NG seed (default: -1, use random seed for &lt; 0)                          |
-| –repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
-| –color           | colorise output to distinguish prompt and user input from generations   |
-| –keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |</p>
+<p>Argument description of run.py:
+| Argument                    | Description                                                                                                   |
+| ————–              | ———————————————————————                                         |
+| model                       | Directory containing model file or model id: String                                                           |
+| –weight_dtype              | Data type of quantized weight: int4/int8 (default int4)                                                       |
+| –alg                       | Quantization algorithm: sym/asym (default sym)                                                                |
+| –group_size                | Group size: Int (default: 32)                                                                                 |
+| –scale_dtype               | Data type of scales: fp32/bf16 (dafault fp32)                                                                 |
+| –compute_dtype             | Data type of Gemm computation: int8/bf16/fp32 (default: int8)                                                 |
+| –use_ggml                  | Enable ggml for quantization and inference                                                                    |
+| -p / –prompt               | Prompt to start generation with: String (default: empty)                                                      |
+| -n / –n_predict            | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                 |
+| -t / –threads              | Number of threads to use during computation: Int (default: 56)                                                |
+| -b / –batch_size_truncate  | Batch size for prompt processing: Int (default: 512)                                                          |<br />| -c / –ctx_size             | Size of the prompt context: Int (default: 512, can not be larger than specific model’s context window length) |
+| -s / –seed                 | NG seed: Int (default: -1, use random seed for &lt; 0)                                                           |
+| –repeat_penalty            | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                      |
+| –color                     | Colorise output to distinguish prompt and user input from generations                                         |
+| –keep                      | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                  |</p>
 </section>
 </section>
 <section id="advanced-usage">
@@ -239,19 +261,20 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model_name<span class="w"> </span>llama2<span class="w"> </span>--model_file<span class="w"> </span>ne-f32.bin<span class="w"> </span>--out_file<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>--weight_dtype<span class="w"> </span>int4<span class="w"> </span>--group_size<span class="w"> </span><span class="m">32</span><span class="w"> </span>--compute_dtype<span class="w"> </span>int8
 </pre></div>
 </div>
-<p>Augument description of quantize.py:
-| Augument        | Description                                                 |
-| ————–  | ———————————————————– |
-| –model_file    | path to the fp32 model                                      |
-| –out_file      | path to the quantized model                                 |
-| –config        | path to the configuration file (default: “”)                |
-| –nthread       | number of threads to use (default: 1)                       |
-| –weight_dtype  | data type of quantized weight: int4/int8 (default: int4)    |
-| –alg           | quantization algorithm to use: sym/asym (default: sym)      |
-| –group_size    | group size (default: 32)                                    |
-| –scale_dtype   | data type of scales: bf16/fp32 (default: fp32)              |
-| –compute_dtype | data type of Gemm computation: int8/bf16/fp32 (default: int8)  |
-| –use_ggml      | enable ggml for quantization and inference                  |</p>
+<p>Argument description of quantize.py:
+| Argument        | Description                                                  |
+| ————–  | ———————————————————–  |
+| –model_file    | Path to the fp32 model: String                               |
+| –out_file      | Path to the quantized model: String                          |
+| –build_dir     | Path to the build file: String                               |
+| –config        | Path to the configuration file: String (default: “”)         |
+| –nthread       | Number of threads to use: Int (default: 1)                   |
+| –weight_dtype  | Data type of quantized weight: int4/int8 (default: int4)     |
+| –alg           | Quantization algorithm to use: sym/asym (default: sym)       |
+| –group_size    | Group size: Int (default: 32)                                |
+| –scale_dtype   | Data type of scales: bf16/fp32 (default: fp32)               |
+| –compute_dtype | Data type of Gemm computation: int8/bf16/fp32 (default: int8)|
+| –use_ggml      | Enable ggml for quantization and inference                   |</p>
 </section>
 <section id="inference-llm">
 <h3>2. Inference LLM<a class="headerlink" href="#inference-llm" title="Link to this heading"></a></h3>
@@ -268,21 +291,22 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
 <span class="nv">OMP_NUM_THREADS</span><span class="o">=</span><span class="m">56</span><span class="w"> </span>numactl<span class="w"> </span>-m<span class="w"> </span><span class="m">0</span><span class="w"> </span>-C<span class="w"> </span><span class="m">0</span>-55<span class="w"> </span>python<span class="w"> </span>scripts/inference.py<span class="w"> </span>--model_name<span class="w"> </span>llama<span class="w"> </span>-m<span class="w"> </span>ne-q4_j.bin<span class="w"> </span>-c<span class="w"> </span><span class="m">512</span><span class="w"> </span>-b<span class="w"> </span><span class="m">1024</span><span class="w"> </span>-n<span class="w"> </span><span class="m">256</span><span class="w"> </span>-t<span class="w"> </span><span class="m">56</span><span class="w"> </span>--color<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;She opened the door and see&quot;</span><span class="w"> </span>--repeat_penalty<span class="w"> </span><span class="m">1</span>.2
 </pre></div>
 </div>
-<p>Augument description of inference.py:
-| Augument          | Description                                                             |
-| ————–    | ———————————————————————– |
-| –model_name      | model name                                                              |
-| -m / –model      | path to the executed model                                              |
-| -p / –prompt     | prompt to start generation with (default: empty)                        |
-| -n / –n_predict  | number of tokens to predict (default: -1, -1 = infinity)                |
-| -t / –threads    | number of threads to use during computation (default: 56)               |
-| -b / –batch_size | batch size for prompt processing (default: 512)                         |
-| -c / –ctx_size   | size of the prompt context (default: 512, can not be larger than specific model’s context window length)                                                                                |
-| -s / –seed       | NG seed (default: -1, use random seed for &lt; 0)                          |
-| –repeat_penalty  | penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)       |
-| –color           | colorise output to distinguish prompt and user input from generations   |
-| –keep            | number of tokens to keep from the initial prompt (default: 0, -1 = all) |
-| –glm_tokenizer   | the path of the chatglm tokenizer (default: THUDM/chatglm-6b)           |
+<p>Argument description of inference.py:
+| Argument                                          | Description                                                                                                                                                                             |
+| ————–                                    | ———————————————————————–                                                                                                                 |
+| –model_name                                      | Model name: String                                                                                                                                                                      |
+| -m / –model                                      | Path to the executed model: String                                                                                                                                                      |
+| –build_dir                                       | Path to the build file: String                                                                                                                                                          |
+| -p / –prompt                                     | Prompt to start generation with: String (default: empty)                                                                                                                                |
+| -n / –n_predict                                  | Number of tokens to predict: Int (default: -1, -1 = infinity)                                                                                                                           |
+| -t / –threads                                    | Number of threads to use during computation: Int (default: 56)                                                                                                                          |
+| -b / –batch_size                                 | Batch size for prompt processing: Int (default: 512)                                                                                                                                    |
+| -c / –ctx_size                                   | Size of the prompt context: Int (default: 512, can not be larger than specific model’s context window length)                                                                           |
+| -s / –seed                                       | NG seed: Int (default: -1, use random seed for &lt; 0)                                                                                                                                     |
+| –repeat_penalty                                  | Penalize repeat sequence of tokens: Float (default: 1.1, 1.0 = disabled)                                                                                                                |
+| –color                                           | Colorise output to distinguish prompt and user input from generations                                                                                                                   |
+| –keep                                            | Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)                                                                                                            |
+| –glm_tokenizer                                   | The path of the chatglm tokenizer: String (default: THUDM/chatglm-6b)                                                                                                                   |
 | –memory-f32 <br> –memory-f16 <br> –memory-auto | Data type of kv memory (default to auto);<br>If set to auto, the runtime will try with jblas flash attn managed format (currently requires GCC13 &amp; AMX) and fall back to fp16 if failed |</p>
 </section>
 <section id="tensor-parallelism-cross-nodes-sockets">
@@ -306,7 +330,7 @@ python<span class="w"> </span>scripts/quantize.py<span class="w"> </span>--model
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f603471a110> 
+   <jinja2.runtime.BlockReference object at 0x7f8a02ad8f10> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
