@@ -225,104 +225,104 @@ static bool baichuan_model_eval_internal(model_context& lctx, const model_token*
         // F32 mul_mat
         cur = ne_mul_mat(ctx0, model.layers[il].attn[1], cur);
       }
+    }
+
+    lctx.use_buf(ctx0, 1);
+    cur = ne_add_inplace(ctx0, cur, residual);
+    residual = cur;
+
+    // post_attention_layernorm
+    struct ne_tensor* hidden_states = ne_rms_norm(ctx0, cur);
+    hidden_states = ne_mul(ctx0, hidden_states, model.layers[il].norm[1]);
+
+    // mlp.forward
+    struct ne_tensor* mlp_output;
+    if (jblas_fusion_FFN_SiLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
+                                             model.layers[il].ffn[2]->data, N, hidden_states->ne[0],
+                                             model.layers[il].ffn[0]->ne[1], model.layers[il].ffn[1]->ne[1])) {
+      mlp_output =
+          ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], hidden_states);
+    } else {
+      struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[2], hidden_states);
+      struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
+      gate = ne_silu(ctx0, gate);
+      struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
+      mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
+    }
+
+    inpL = ne_add_inplace(ctx0, mlp_output, residual);
   }
 
-  lctx.use_buf(ctx0, 1);
-  cur = ne_add_inplace(ctx0, cur, residual);
-  residual = cur;
-
-  // post_attention_layernorm
-  struct ne_tensor* hidden_states = ne_rms_norm(ctx0, cur);
-  hidden_states = ne_mul(ctx0, hidden_states, model.layers[il].norm[1]);
-
-  // mlp.forward
-  struct ne_tensor* mlp_output;
-  if (jblas_fusion_FFN_SiLu_f32f32_support(model.layers[il].ffn[0]->data, model.layers[il].ffn[1]->data,
-                                           model.layers[il].ffn[2]->data, N, hidden_states->ne[0],
-                                           model.layers[il].ffn[0]->ne[1], model.layers[il].ffn[1]->ne[1])) {
-    mlp_output =
-        ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], hidden_states);
-  } else {
-    struct ne_tensor* up = ne_mul_mat(ctx0, model.layers[il].ffn[2], hidden_states);
-    struct ne_tensor* gate = ne_mul_mat(ctx0, model.layers[il].ffn[0], hidden_states);
-    gate = ne_silu(ctx0, gate);
-    struct ne_tensor* mlp_output = ne_mul(ctx0, gate, up);
-    mlp_output = ne_mul_mat(ctx0, model.layers[il].ffn[1], mlp_output);
+  lctx.use_buf(ctx0, 0);
+  // used at the end to optionally extract the embeddings
+  struct ne_tensor* embeddings = NULL;
+  // norm
+  {
+    inpL = ne_rms_norm(ctx0, inpL);
+    inpL = ne_mul(ctx0, inpL, model.others[1]);
   }
 
-  inpL = ne_add_inplace(ctx0, mlp_output, residual);
-}
+  lctx.use_buf(ctx0, -1);
+  if (embd->ne[0] > 1) {
+    inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
+  }
 
-lctx.use_buf(ctx0, 0);
-// used at the end to optionally extract the embeddings
-struct ne_tensor* embeddings = NULL;
-// norm
-{
-  inpL = ne_rms_norm(ctx0, inpL);
-  inpL = ne_mul(ctx0, inpL, model.others[1]);
-}
+  // lm_head
+  inpL = ne_mul_mat(ctx0, model.others[2], inpL);
 
-lctx.use_buf(ctx0, -1);
-if (embd->ne[0] > 1) {
-  inpL = ne_view_1d(ctx0, inpL, hidden_size, (embd->ne[0] - 1) * hidden_size * ne_element_size(inpL));
-}
-
-// lm_head
-inpL = ne_mul_mat(ctx0, model.others[2], inpL);
-
-ne_build_forward_expand(&gf, inpL);
-ne_graph_compute(ctx0, &gf);
+  ne_build_forward_expand(&gf, inpL);
+  ne_graph_compute(ctx0, &gf);
 
 #ifdef NE_PERF
-bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
-if (engine_profiling_) {
-  ne_graph_profiling(&gf);
-}
+  bool engine_profiling_ = (getenv("ENGINE_PROFILING") != NULL);
+  if (engine_profiling_) {
+    ne_graph_profiling(&gf);
+  }
 #endif
 
-// update kv token count
-lctx.model.kv_self.n = n_past + N;
+  // update kv token count
+  lctx.model.kv_self.n = n_past + N;
 
-// extract logits
-{
-  auto& logits_out = lctx.logits;
+  // extract logits
+  {
+    auto& logits_out = lctx.logits;
 
-  if (lctx.logits_all) {
-    logits_out.resize(n_vocab * N);
-    memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
-  } else {
-    // return result for just the last token
-    logits_out.resize(n_vocab);
-    memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
+    if (lctx.logits_all) {
+      logits_out.resize(n_vocab * N);
+      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab * N);
+    } else {
+      // return result for just the last token
+      logits_out.resize(n_vocab);
+      memcpy(logits_out.data(), (float*)ne_get_data(inpL), sizeof(float) * n_vocab);
+    }
   }
-}
 
-// extract embeddings
-if (!lctx.embedding.empty()) {
-  auto& embedding_out = lctx.embedding;
+  // extract embeddings
+  if (!lctx.embedding.empty()) {
+    auto& embedding_out = lctx.embedding;
 
-  embedding_out.resize(n_embd);
-  memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
-}
+    embedding_out.resize(n_embd);
+    memcpy(embedding_out.data(), (float*)ne_get_data(embeddings) + (n_embd * (N - 1)), sizeof(float) * n_embd);
+  }
 
-if (mem_per_token == 0) {
-  mem_per_token = ne_used_mem(ctx0) / N;
-}
+  if (mem_per_token == 0) {
+    mem_per_token = ne_used_mem(ctx0) / N;
+  }
 
-ne_free(ctx0);
+  ne_free(ctx0);
 
-// measure the performance only for the single-token evals
-int64_t time_interval = ne_time_us() - t_start_us;
-if (N == 1) {
-  lctx.t_eval_us += time_interval;
-  lctx.n_eval++;
-} else if (N > 1) {
-  lctx.t_p_eval_us += time_interval;
-  lctx.n_p_eval += N;
-}
-lctx.eval_times.push_back(time_interval);
+  // measure the performance only for the single-token evals
+  int64_t time_interval = ne_time_us() - t_start_us;
+  if (N == 1) {
+    lctx.t_eval_us += time_interval;
+    lctx.n_eval++;
+  } else if (N > 1) {
+    lctx.t_p_eval_us += time_interval;
+    lctx.n_p_eval += N;
+  }
+  lctx.eval_times.push_back(time_interval);
 
-return true;
+  return true;
 }
 
 int model_eval(struct model_context* ctx, const model_token* tokens, int n_tokens, int n_past, int n_threads) {
