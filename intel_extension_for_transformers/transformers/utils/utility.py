@@ -104,7 +104,28 @@ def generate_dummy_past_key_values(input_bs, model):
     past_key_values = tuple(tuple(pkv) for _ in range(num_layers))
     return past_key_values
 
-def get_example_inputs_for_trace(model, return_type="tuple"):
+def generate_dummy_past_key_values_for_optimize_transformers(input_bs, model, num_beams):
+    """
+        Generate the dummy past_key_values.
+    """
+    from optimum.utils import NormalizedConfigManager
+    normalized_config = NormalizedConfigManager.get_normalized_config_class(
+        model.config.model_type
+    )(model.config)
+    num_layers = normalized_config.num_layers
+    num_attention_heads = normalized_config.num_attention_heads
+    hidden_size = normalized_config.hidden_size
+    d_k = hidden_size // num_attention_heads
+    new_shape = [input_bs, num_attention_heads, 1, d_k]
+    dummy_tensor = torch.zeros(size=new_shape).contiguous()
+    beam_idx_tmp = torch.zeros((2048, int(input_bs * num_beams)), dtype=torch.long)
+    past_key_values = [(torch.zeros(1, 0, 0, 1, dtype=torch.long).contiguous(),
+            dummy_tensor,
+            dummy_tensor,
+            beam_idx_tmp) for _ in range(num_layers)]
+    return past_key_values
+
+def get_example_inputs(model, return_type="tuple"):
     """
         Generate the example_input for tracing, support models load from AutoModelForCausalLM.
 
@@ -113,14 +134,47 @@ def get_example_inputs_for_trace(model, return_type="tuple"):
     input_bs, input_len = input_ids.shape
     past_key_values = generate_dummy_past_key_values(input_bs, model)
     attention_mask = torch.ones(input_bs, input_len + 1)
-    attention_mask[:,0] = 0
+    attention_mask[:, 0] = 0
     example_inputs = (input_ids, tuple(past_key_values), attention_mask)
     # do inference to check example_inputs formats
     model(*example_inputs)
     if return_type != "tuple":
         example_inputs = {
             "input_ids": input_ids,
+            "attention_mask": attention_mask,
             "past_key_values": tuple(past_key_values),
-            "attention_mask": attention_mask
         }
+    return example_inputs
+
+def get_example_inputs_for_optimize_transformers(model, num_beams=4, return_type="tuple"):
+    """
+        Generate the example_input for tracing, support models load from AutoModelForCausalLM.
+
+    """
+    input_ids = model.dummy_inputs["input_ids"]
+    input_bs, input_len = input_ids.shape
+    past_key_values = generate_dummy_past_key_values_for_optimize_transformers(input_bs, model, num_beams)
+    attention_mask = torch.ones(input_bs, input_len)
+    position_ids = torch.vstack([torch.arange(input_len) for i in range(input_bs)])
+    if model.config.model_type != "opt":
+        example_inputs = (input_ids, attention_mask, position_ids, tuple(past_key_values))
+    else:
+        example_inputs = (input_ids, attention_mask, tuple(past_key_values))
+    # do inference to check example_inputs formats
+    model(*example_inputs)
+
+    if return_type != "tuple":
+        if model.config.model_type != "opt":
+            example_inputs = {
+                "input_ids": input_ids,
+                "past_key_values": tuple(past_key_values),
+                "position_ids": position_ids,
+                "attention_mask": attention_mask
+            }
+        else:
+            example_inputs = {
+                "input_ids": input_ids,
+                "past_key_values": tuple(past_key_values),
+                "attention_mask": attention_mask
+            }
     return example_inputs

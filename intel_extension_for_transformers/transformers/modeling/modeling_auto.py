@@ -45,7 +45,9 @@ from intel_extension_for_transformers.transformers.utils.utility import (
     logger,
     LazyImport,
     generate_dummy_past_key_values,
-    get_example_inputs_for_trace,
+    generate_dummy_past_key_values_for_optimize_transformers,
+    get_example_inputs,
+    get_example_inputs_for_optimize_transformers,
 )
 from transformers.utils import is_accelerate_available, is_bitsandbytes_available
 
@@ -57,7 +59,6 @@ class _BaseQBitsAutoModelClass:
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *model_args, **kwargs):
-        import intel_extension_for_transformers.transformers.modeling.modeling_map
         load_in_8bit = kwargs.pop("load_in_8bit", False)
         load_in_4bit = kwargs.pop("load_in_4bit", False)
         quantization_config = kwargs.pop("quantization_config", None)
@@ -71,7 +72,7 @@ class _BaseQBitsAutoModelClass:
                 *model_args,
                 **kwargs,
             )
-        if load_in_8bit or load_in_4bit:
+        elif load_in_8bit or load_in_4bit:
             use_cpu = (
                 True
                 if device_map == torch.device("cpu")
@@ -122,15 +123,23 @@ class _BaseQBitsAutoModelClass:
                         and quantization_config.compute_dtype == torch_dtype
                     ), f"Quantization_config.weight_dtype should be 'int8' and compute_dtype should be {torch_dtype}."
 
-        if isinstance(quantization_config, MixedPrecisionConfig):
-            kwargs["torch_dtype"] = torch.bfloat16
+        elif isinstance(quantization_config, MixedPrecisionConfig):
+            if quantization_config.dtype == "float16" or quantization_config.dtype == "fp16":
+                kwargs["torch_dtype"] = torch.float16
+            else:
+                kwargs["torch_dtype"] = torch.bfloat16
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            model.eval()
             logger.info("Mixed Precision done.")
-        model = cls.ORIG_MODEL.from_pretrained(
-            pretrained_model_name_or_path, *model_args, **kwargs
-        )
-        model.eval()
-        if isinstance(quantization_config, WeightOnlyQuantConfig):
+        elif isinstance(quantization_config, WeightOnlyQuantConfig):
             logger.info("Applying Weight Only Quantization.")
+            # get fp32 model
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )
+            model.eval()
             if use_llm_runtime:
                 logger.info("Using LLM runtime.")
                 quantization_config.post_init_runtime()
@@ -159,10 +168,80 @@ class _BaseQBitsAutoModelClass:
             logger.info("Applying SmoothQuant.")
             try:
                 import intel_extension_for_pytorch as ipex
+                # disable
+                try:
+                    ipex._C.disable_jit_linear_repack()
+                except Exception:
+                    pass
             except ImportError:
                 warnings.warn(
                     "Please install Intel Extension for PyTorch to accelerate the model inference."
                 )
+            # get fp32 model
+            if ipex.__version__  >= "2.1.0":
+                from .gpt_bigcode.modeling_gpt_bigcode import GPTBigCodeForCausalLM    
+                MODEL_CLASSES = {
+                    "starcoder": GPTBigCodeForCausalLM, # improve IPEX MHA Fusion.
+                    "auto": transformers.AutoModelForCausalLM,
+                }
+                model_type = next(
+                    (
+                        x
+                        for x in MODEL_CLASSES.keys()
+                        if x in pretrained_model_name_or_path.lower()
+                    ),
+                    "auto",
+                )
+                model = MODEL_CLASSES[model_type].from_pretrained(
+                    pretrained_model_name_or_path, *model_args, **kwargs
+                )
+                model.eval()  
+                model_type = model.config.model_type
+                if quantization_config.ipex_optimize_transformers:
+                    qconfig = ipex.quantization.get_smooth_quant_qconfig_mapping(alpha=0.5)
+                    model = ipex.optimize_transformers(
+                        model.eval(),
+                        quantization_config=qconfig,
+                        dtype=torch.float32,
+                        inplace=True,
+                        deployment_mode=False
+                    )
+                    model.eval()
+            elif ipex.__version >= "2.0.0":
+                # To support IPEX 2.0 make smoothquant, op fusion at INC side.
+                from .gptj.modeling_gptj import GPTJForCausalLM
+                from .llama.modeling_llama import LlamaForCausalLM
+                from .bloom.modeling_bloom import BloomForCausalLM
+                from .gpt_neox.modeling_gpt_neox import GPTNeoXForCausalLM
+                from .opt.modeling_opt import OPTForCausalLM
+                from .gpt_bigcode.modeling_gpt_bigcode import GPTBigCodeForCausalLM    
+                MODEL_CLASSES = {
+                    "gptj": GPTJForCausalLM,
+                    "llama": LlamaForCausalLM,
+                    "bloom": BloomForCausalLM,
+                    "gpt_neox": GPTNeoXForCausalLM,
+                    "opt": OPTForCausalLM,
+                    "starcoder": GPTBigCodeForCausalLM, # improve IPEX MHA Fusion.
+                    "auto": transformers.AutoModelForCausalLM,
+                }
+                model_type = next(
+                    (
+                        x
+                        for x in MODEL_CLASSES.keys()
+                        if x in pretrained_model_name_or_path.lower()
+                    ),
+                    "auto",
+                )
+                model = MODEL_CLASSES[model_type].from_pretrained(
+                    pretrained_model_name_or_path, *model_args, **kwargs
+                )
+                model.eval()
+            else:
+                logger.error(
+                    "Please install Intel Extension for PyTorch version higher or equal than 2.0."
+                )
+                exit(0) 
+            # calibration setting
             calib_func = quantization_config.calib_func
             if calib_func is None:
                 if quantization_config.tokenizer is None:
@@ -235,13 +314,45 @@ class _BaseQBitsAutoModelClass:
                         attention_mask=attention_mask,
                     )
 
+            def default_calib_func_for_optimize_transformers(model):
+                """
+                This is the default calibration function, the dataset is NeelNanda/pile-10k,
+                the default calib_iters is 100.
+                """
+
+                for i, (input_ids) in enumerate(calib_dataloader):
+                    input_bs, input_len = input_ids.shape
+                    past_key_values = generate_dummy_past_key_values_for_optimize_transformers(input_bs, model, quantization_config.num_beams)
+                    attention_mask = torch.ones(input_bs, input_len)
+                    position_ids = torch.vstack([torch.arange(len(input_ids)) for i in range(input_bs)])
+                    if i >= calib_iters:
+                        break
+                    if model.config.model_type != "opt":
+                        model(
+                            input_ids=input_ids,
+                            position_ids=position_ids,
+                            attention_mask=attention_mask,
+                            past_key_values=past_key_values,
+                        )
+                    else:
+                        model(
+                            input_ids=input_ids,
+                            attention_mask=attention_mask,
+                            past_key_values=past_key_values,
+                        )
+            # INC smoothquant
             recipes = {
                 "smooth_quant": True,
                 "smooth_quant_args": {"alpha": quantization_config.alpha},
             }
-            example_inputs = get_example_inputs_for_trace(model)
-            from neural_compressor import PostTrainingQuantConfig, quantization
+            if ipex.__version__ >="2.1.0" and quantization_config.ipex_optimize_transformers:
+                example_inputs = get_example_inputs_for_optimize_transformers(model, num_beams=quantization_config.num_beams)
+            elif ipex.__version__ >="2.1.0" and model_type not in ["qwen", "baichuan"]:
+                example_inputs = get_example_inputs(model, return_type="dict")
+            else:
+                example_inputs = get_example_inputs(model, return_type="tuple")
 
+            from neural_compressor import PostTrainingQuantConfig, quantization
             conf = PostTrainingQuantConfig(
                 backend="ipex",
                 excluded_precisions=quantization_config.excluded_precisions,
@@ -255,12 +366,19 @@ class _BaseQBitsAutoModelClass:
                     + "the calibration dataset is NeelNanda/pile-10k,"
                     + "batchsize is 1 and calibration iteration is 100."
                 )
-                calib_func = default_calib_func
+                if ipex.__version__ >="2.1.0" and quantization_config.ipex_optimize_transformers:
+                    calib_func = default_calib_func_for_optimize_transformers
+                else:
+                    calib_func = default_calib_func
             else:
                 calib_func = calib_func
             model.config.torchscript = True
             model = quantization.fit(model, conf, calib_func=calib_func)
             logger.info("SmoothQuant done.")
+        else:
+            model = cls.ORIG_MODEL.from_pretrained(
+                pretrained_model_name_or_path, *model_args, **kwargs
+            )  
         return model
 
 
