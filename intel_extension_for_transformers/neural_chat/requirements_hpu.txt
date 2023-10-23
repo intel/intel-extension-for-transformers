@@ -1,1 +1,1 @@
-spacy
+neural-compressor
