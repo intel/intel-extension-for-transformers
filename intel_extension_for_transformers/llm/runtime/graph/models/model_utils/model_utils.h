@@ -259,6 +259,20 @@ MODEL_API const char* model_print_system_info(void);
 }
 #endif
 
+/* kv cache utils */
+// kv cache both stores permuted tensor
+// k shape is [head_dim, N, n_head]
+// v shape is [N, head_dim, n_head] or [N, n_embd]
+/* kv cache utils */
+
+// copy consecutive tokens from one seq to another
+MODEL_API void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                                         const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1);
+MODEL_API void jblas_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                                            const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1);
+MODEL_API void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                                      const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1);
+
 /*  beam search utils  */
 #define NEG_INF -std::numeric_limits<float>::max()
 

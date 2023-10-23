@@ -77,6 +77,10 @@ static bool kv_cache_init(const struct model_hparams& hparams, struct model_kv_c
 #endif
 
   cache.buf.resize(n_layer * (layer_ne_k + layer_ne_v) * wsize + 2u * MB);
+  cache.seq_cells.resize(batch_size * beam_size);
+  for (int i = 0; i < cache.seq_cells.size(); ++i) {
+    cache.seq_cells[i].token_cells.resize(hparams.n_ctx);
+  }
 
   struct ne_init_params params;
   params.mem_size = cache.buf.size;
@@ -2037,6 +2041,51 @@ const char* model_print_system_info(void) {
 // For internal test use
 std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tensor_map(struct model_context* ctx) {
   return ctx->model.tensors_by_name;
+}
+
+void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
+                               const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1) {
+  const uint32_t kv_n_ctx_block = ctx->kv_n_ctx_block;
+  const uint32_t n_embd = ctx->model.hparams.n_embd;
+  const uint32_t n_head = ctx->model.hparams.n_head;
+  const uint32_t head_dim = n_embd / n_head;
+  const uint32_t n_ctx = ctx->model.hparams.n_ctx;
+  const size_t k_elem_size = ne_element_size(ctx->model.kv_self.k);
+  const size_t v_elem_size = ne_element_size(ctx->model.kv_self.v);
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < ctx->model.layers.size(); ++i) {  // K
+    // [head_dim, N, n_head]
+    for (int nh = 0; nh < n_head; ++nh) {
+      memcpy(static_cast<char*>(ctx->model.kv_self.k->data) + i * n_ctx * k_elem_size * n_embd * kv_n_ctx_block +
+                 seq_id_dst * n_ctx * k_elem_size * n_embd + k_elem_size * nh * head_dim * n_ctx +
+                 p0 * k_elem_size * head_dim,
+             static_cast<char*>(ctx->model.kv_self.k->data) + i * n_ctx * k_elem_size * n_embd * kv_n_ctx_block +
+                 seq_id_src * n_ctx * k_elem_size * n_embd + k_elem_size * nh * head_dim * n_ctx +
+                 p0 * k_elem_size * head_dim,
+             k_elem_size * head_dim * (p1 - p0 + 1));
+    }
+  }
+#pragma omp parallel for collapse(2)
+  for (int i = 0; i < ctx->model.layers.size(); ++i) {  // V
+    // [N, head_dim, n_head] or [N, n_embd]
+    for (int nm = 0; nm < n_embd; ++nm) {
+      memcpy(static_cast<char*>(ctx->model.kv_self.v->data) + i * n_ctx * v_elem_size * n_embd * kv_n_ctx_block +
+                 seq_id_dst * n_ctx * v_elem_size * n_embd + n_ctx * nm * v_elem_size + p0 * v_elem_size,
+             static_cast<char*>(ctx->model.kv_self.v->data) + i * n_ctx * v_elem_size * n_embd * kv_n_ctx_block +
+                 seq_id_src * n_ctx * v_elem_size * n_embd + n_ctx * nm * v_elem_size + p0 * v_elem_size,
+             v_elem_size * (p1 - p0 + 1));
+    }
+  }
+}
+
+void model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src, const model_seq_id& seq_id_dst,
+                            const model_pos& p0, const model_pos& p1) {
+  if (ctx->model.kv_self.k->type != NE_TYPE_JBLAS) {
+    ne_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
+  } else {
+    return;
+    // jblas_model_kv_cache_seq_cpy(ctx, seq_id_src, seq_id_dst, p0, p1);
+  }
 }
 
 // beam search
