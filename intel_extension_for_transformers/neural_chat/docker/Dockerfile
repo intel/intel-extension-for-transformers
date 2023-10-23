@@ -42,11 +42,15 @@ RUN apt-get update \
     && apt-get install -y build-essential \
     && apt-get install -y wget numactl git \
     && apt-get install -y openssh-server \
+    && apt-get install -y libgl1-mesa-glx \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Download ITREX code
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
+# RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
+RUN mkdir -p /intel-extension-for-transformers
+WORKDIR /intel-extension-for-transformers
+COPY . /intel-extension-for-transformers
 
 # Install miniconda
 ENV CONDA_DIR /opt/conda
