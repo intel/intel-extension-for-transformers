@@ -28,7 +28,6 @@ from transformers import (
 )
 import intel_extension_for_pytorch as intel_ipex
 from .utils.utils import (
-    set_cpu_running_env, 
     enforce_stop_tokens,
     get_current_time
 )
@@ -43,9 +42,6 @@ class NamedEntityRecognition():
     """
 
     def __init__(self, model_path="./Llama-2-7b-chat-hf/", spacy_model="en_core_web_lg", bf16: bool=False) -> None:
-        # set up cpu running environment
-        if bf16:
-            set_cpu_running_env()
         # initialize tokenizer and models
         self.nlp = spacy.load(spacy_model)
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)

@@ -41,7 +41,7 @@ class TestDataAugmentation(unittest.TestCase):
         aug = DataAugmentation(augmenter_type="TextGenerationAug")
         aug.input_dataset = self.origin_data
         aug.output_path = os.path.join(self.result_path, "test1.cvs")
-        aug.augmenter_arguments = {'model_name_or_path': 'gpt2-medium'}
+        aug.augmenter_arguments = {'model_name_or_path': 'hf-internal-testing/tiny-random-gpt2'}
         aug.data_augment()
         print("Augmented data:")
         count = 0
@@ -84,7 +84,7 @@ class TestDataAugmentation(unittest.TestCase):
         aug.input_dataset = self.origin_data
         aug.column_names = "sentence"
         aug.output_path = os.path.join(self.result_path, "test2.cvs")
-        aug.augmenter_arguments = {"model_path": "xlnet-base-cased"}
+        aug.augmenter_arguments = {"model_path": "hf-internal-testing/tiny-random-xlnet"}
         aug.data_augment()
         raw_datasets = load_dataset("csv", data_files=aug.output_path, delimiter="\t", split="train")
         self.assertTrue(len(raw_datasets) == 10)
