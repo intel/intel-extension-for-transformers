@@ -152,10 +152,10 @@ def baichuan13B_convert(model, tokenizer, dir_model, fname_out, ftype, hparams):
     fout.write(struct.pack("i", 0))
     fout.write(struct.pack("i", hparams["intermediate_size"]))
 
-    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id else 1))
-    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id else 2))
-    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id else -1))
-    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id else -1))
+    fout.write(struct.pack("i", tokenizer.bos_token_id if tokenizer.bos_token_id is not None else 1))
+    fout.write(struct.pack("i", tokenizer.eos_token_id if tokenizer.eos_token_id is not None else 2))
+    fout.write(struct.pack("i", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else -1))
+    fout.write(struct.pack("i", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else -1))
 
     vocab = load_vocab_for_baichuan(Path(dir_model))
     counter = 0
