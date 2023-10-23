@@ -89,9 +89,9 @@ outputs = tokenizer.batch_decode(gen_tokens)
 ```
 
 ## 🎯Validated  Models
-You can access the int4 performance and accuracy details at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
+You can access the latest int4 performance and accuracy at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
 
-Additionally, we are preparing to introduce Baichuan, Mistral, and other models into [LLM Runtime (Intel Optimized llamacpp)](./intel_extension_for_transformers/llm/runtime/graph). For further accuracy data, please refer to the [Release data](./docs/release.md) . 
+Additionally, we are preparing to introduce Baichuan, Mistral, and other models into [LLM Runtime (Intel Optimized llamacpp)](./intel_extension_for_transformers/llm/runtime/graph). For comprehensive accuracy and performance data, though not the most up-to-date, please refer to the [Release data](./docs/release_data.md). 
 
 ## 📖Documentation
 <table>
