@@ -259,7 +259,12 @@ class _BaseQBitsAutoModelClass:
             else:
                 calib_func = calib_func
             model.config.torchscript = True
-            model = quantization.fit(model, conf, calib_func=calib_func)
+            model = quantization.fit(
+                                    model, 
+                                    conf,
+                                    calib_func=calib_func,
+                                    calib_dataloader=calib_dataloader if quantization_config.alpha=="auto" else None
+                                    )
             logger.info("SmoothQuant done.")
         return model
 
