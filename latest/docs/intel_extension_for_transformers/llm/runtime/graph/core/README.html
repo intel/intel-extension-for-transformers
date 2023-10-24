@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Highly Optimized Low Precision Kernels &mdash; Intel® Extension for Transformers 0.1.dev1+gfc3d622 documentation</title>
+  <title>Highly Optimized Low Precision Kernels &mdash; Intel® Extension for Transformers 0.1.dev1+gceac524 documentation</title>
       <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
@@ -146,7 +146,8 @@
 </tr>
 </tbody>
 </table><p><sup>1</sup>: per-batch and per-K group-wise dynamic quantization for input tensor, where per-K group-wise also applies to weight quantization
-group size of weight tensor; support both symmetric and asymmetric quantization.<br /><sup>2</sup>: per-batch dynamic dequantization for output tensor.</p>
+group size of weight tensor; support both symmetric and asymmetric quantization.
+<sup>2</sup>: per-batch dynamic dequantization for output tensor.</p>
 <section id="weight-only-quantization-support">
 <h3>Weight-only Quantization Support<a class="headerlink" href="#weight-only-quantization-support" title="Link to this heading"></a></h3>
 <p>dtype | algo | group size
@@ -157,42 +158,45 @@ int4 | asymmetric int4 full range<sup>3</sup> | multiplier of 8, -1<sup>1</sup>
 int8 | symmetric | multiplier of 8, -1<sup>1</sup>
 fp4 | | multiplier of 8
 nf4 | | multiplier of 8</p>
-<p><sup>1</sup>: group size=-1 means per channel quantization on output channel (or group size equals to input channel size).<br /><sup>2</sup>: truncated quant means keep the high 4 bits of int8 quantization result for model saving and computation.<br /><sup>3</sup>: full range is a quantization method that utilizes the -8 value of int4 range compared with the normal int4 range [-7,7].</p>
+<p><sup>1</sup>: group size=-1 means per channel quantization on output channel (or group size equals to input channel size).
+<sup>2</sup>: truncated quant means keep the high 4 bits of int8 quantization result for model saving and computation.
+<sup>3</sup>: full range is a quantization method that utilizes the -8 value of int4 range compared with the normal int4 range [-7,7].</p>
 <p>NOTE: AMX_INT8 requires group size is aligend to 128 (best hardware efficiency)</p>
 </section>
 </section>
 <section id="fusion-support">
 <h2>Fusion Support<a class="headerlink" href="#fusion-support" title="Link to this heading"></a></h2>
 <p>We support three kinds of kernel fusion for transformer models: QKV, MHA (multi-head attention), and FFN (feed-forward network) fusion.</p>
-<table border="1" class="docutils">
-<thead>
-<tr>
-<th>fusion type</th>
-<th>models</th>
-<th>runtime ISA</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>QKV</td>
-<td>GPT-J<br>LLaMA</td>
-<td>AMX_INT8,AVX512_VNNI</td>
-</tr>
-<tr>
-<td>MHA</td>
-<td>GPT-J<br>LLaMA</td>
-<td>AMX_BF16</td>
-</tr>
-<tr>
-<td>FFN</td>
-<td>GPT-J<br>LLaMA<br>BLOOM<br>ChatGLM<br>Falcon<br>MPT</td>
-<td>AMX_INT8, AVX512_VNNI, AVX512F and AMX_BF16</td>
-</tr>
-</tbody>
+<table>
+    <thead>
+        <tr>
+            <th>fusion type</th>
+            <th>models</th>
+            <th>runtime ISA</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>QKV</td>
+            <td >GPT-J<br>LLaMA</td>
+            <td>AMX_INT8, AVX512_VNNI</td>
+        </tr>
+        <tr>
+            <td>FFN</td>
+            <td>GPT-J<br>LLaMA<br>BLOOM<br>ChatGLM<br>Falcon<br>MPT</td>
+            <td>AMX_INT8, AVX512_VNNI, AVX512F and AMX_BF16</td>
+        </tr>
+        <tr>
+            <td>MHA</td>
+            <td colspan=2><p>Referring <a class="reference external" href="../fused_attention.html#supported-models">the fused-attention doc for details</a></p>
+</td>
+        </tr>
+    </tbody>
 </table></section>
 <section id="fastest-configuration-for-cpus">
 <h2>Fastest Configuration for CPUs<a class="headerlink" href="#fastest-configuration-for-cpus" title="Link to this heading"></a></h2>
-<p>codename | weight config | runtime ISA<br />—|—|—
+<p>codename | weight config | runtime ISA
+—|—|—
 Sapphire Rapids | any int4<br>group size=-1<br>compute type=int8 | AMX_INT8
 Ice Lake<br>Cascade Lake<br>Cooper Lake<br>Tiger Lake<br>Rocket Lake | any int4<br>group size=-1<br>compute type=int8 | AVX512_VNNI
 Skylake |  any 4bits<br>group size=-1<br>compute type=fp32 | AVX512F</p>
@@ -213,7 +217,7 @@ Skylake |  any 4bits<br>group size=-1<br>compute type=fp32 | AVX512F</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fef228b7430> 
+   <jinja2.runtime.BlockReference object at 0x7f4d4ad1f0a0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
