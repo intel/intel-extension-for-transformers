@@ -185,9 +185,9 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
   //   token_eos = true;
   // }
   count++;
-  if (count % 1000 == 0) {
-    fprintf(stderr, "\n===================count: %d====================\n", count);
-  }
+  // if (count % 1000 == 0) {
+  //   fprintf(stderr, "\n===================count: %d====================\n", count);
+  // }
   return {next_token_id};
 }
 
