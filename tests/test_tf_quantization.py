@@ -26,10 +26,10 @@ class TestTFQuantization(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.model = TFAutoModelForSequenceClassification.from_pretrained(
-            'bhadresh-savani/distilbert-base-uncased-sentiment-sst2'
+            'hf-internal-testing/tiny-random-DistilBertForSequenceClassification'
         )
         raw_datasets = load_dataset("glue", "sst2")["validation"]
-        tokenizer = AutoTokenizer.from_pretrained("bhadresh-savani/distilbert-base-uncased-sentiment-sst2")
+        tokenizer = AutoTokenizer.from_pretrained("hf-internal-testing/tiny-random-DistilBertForSequenceClassification")
         non_label_column_names = [name for name in raw_datasets.column_names if name != "label"]
         def preprocess_function(examples):
             # Tokenize the texts
