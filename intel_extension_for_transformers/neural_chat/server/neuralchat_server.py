@@ -98,6 +98,7 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
         device = config.get("device", "auto")
         model_name_or_path = config.get("model_name_or_path", "meta-llama/Llama-2-7b-hf")
         ipex_int8 = config.get("ipex_int8", False)
+        tokenizer_name_or_path = config.get("tokenizer_name_or_path", model_name_or_path)
 
         # Update plugins based on YAML configuration
         for plugin_name, plugin_config in plugins.items():
@@ -112,7 +113,8 @@ class NeuralChatServerExecutor(BaseCommandExecutor):
             "model_name_or_path": model_name_or_path,
             "device": device,
             "plugins": plugins,
-            "loading_config": loading_config
+            "loading_config": loading_config,
+            "tokenizer_name_or_path": tokenizer_name_or_path
         }
 
         pipeline_config = PipelineConfig(**params)
