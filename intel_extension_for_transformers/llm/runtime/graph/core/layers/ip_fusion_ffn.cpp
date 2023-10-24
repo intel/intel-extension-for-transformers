@@ -37,9 +37,13 @@ bool jblas_fusion_FFN_SiLu_f32f32_support(void* w1ptr, void* w2ptr, void* w3ptr,
     if (sameKernel) {
       if (w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32) ||
           w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
-        constexpr size_t EleNum = sizeof(GcCompInt8KBlockSet) / sizeof(GcCompInt8KBlockSet[0]);
-        support = contains(w1tmp->mCoreType, GcCompInt8KBlockSet, EleNum);
-        support &= hasISA(GcCompInt8KBlockSet, EleNum);
+        constexpr jblas::gemm::GemmCoreType cores[] = {
+            jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+            jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48,
+            jblas::gemm::GemmCoreType::AVX2_2X48};
+        constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
+        support = contains(w1tmp->mCoreType, cores, EleNum);
+        support &= hasISA(cores, EleNum);
       } else if (w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32PerChannelN) ||
                  w1tmp->mPrologueID == int(WeightCompType::WeightS4ClipScaleFp32PerChannelN)) {
         constexpr size_t EleNum = sizeof(GcCompInt8Set) / sizeof(GcCompInt8Set[0]);
@@ -115,6 +119,42 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4fp32_f32f32_forward(float* activation, SS4Fp3
                               w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,    tmp2, ldtmp2, NULL});
       }
     }
+  } else if (w1ptr->mCoreType == GcCompFp32::TYPE) {
+    if (_cd->AVX512F()) {
+      using GemmKernel = custom::wrapper::kblock::avx512f::GemmS4KBlock;
+      using SiluGemmKernel = custom::wrapper::kblock::avx512f::SiluGemmS4KBlock;
+      using FusedInter = custom::wrapper::transformer::FPFFNFusedInterface<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      GemmKernel::AParam paramA = {activation, lda};
+      SiluGemmKernel::BParam paramW1 = {w1ptr};
+      GemmKernel::BParam paramW2 = {w2ptr};
+      GemmKernel::BParam paramW3 = {w3ptr};
+      SiluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo, NULL};
+      GemmKernel::EpiParam param3 = {tmp2, ldtmp2, NULL};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramW1, paramW2, paramW3, param1, param2, param3});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = custom::wrapper::kblock::avx2::GemmS4KBlock;
+      using SiluGemmKernel = custom::wrapper::kblock::avx2::SiluGemmS4KBlock;
+      using FusedInter = custom::wrapper::transformer::FPFFNFusedInterface<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      GemmKernel::AParam paramA = {activation, lda};
+      SiluGemmKernel::BParam paramW1 = {w1ptr};
+      GemmKernel::BParam paramW2 = {w2ptr};
+      GemmKernel::BParam paramW3 = {w3ptr};
+      SiluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo, NULL};
+      GemmKernel::EpiParam param3 = {tmp2, ldtmp2, NULL};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramW1, paramW2, paramW3, param1, param2, param3});
+    }
   }
   return ret;
 }
@@ -159,6 +199,42 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32_f32f32_forward(float* activation, SS8Fp3
       quanA2.assign((int8_t*)workspace + offset);
       ret = finter.compute({seq,   fin,   fmid, fout,   activation, lda, &quanA1, tmp1, ldtmp1, &quanA2, w1ptr,
                             w2ptr, w3ptr, tmp1, ldtmp1, output,     ldo, NULL,    tmp2, ldtmp2, NULL});
+    }
+  } else if (w1ptr->mCoreType == GcCompFp32::TYPE) {
+    if (_cd->AVX512F()) {
+      using GemmKernel = custom::wrapper::kblock::avx512f::GemmS8KBlock;
+      using SiluGemmKernel = custom::wrapper::kblock::avx512f::SiluGemmS8KBlock;
+      using FusedInter = custom::wrapper::transformer::FPFFNFusedInterface<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      GemmKernel::AParam paramA = {activation, lda};
+      SiluGemmKernel::BParam paramW1 = {w1ptr};
+      GemmKernel::BParam paramW2 = {w2ptr};
+      GemmKernel::BParam paramW3 = {w3ptr};
+      SiluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo, NULL};
+      GemmKernel::EpiParam param3 = {tmp2, ldtmp2, NULL};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramW1, paramW2, paramW3, param1, param2, param3});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = custom::wrapper::kblock::avx2::GemmS8KBlock;
+      using SiluGemmKernel = custom::wrapper::kblock::avx2::SiluGemmS8KBlock;
+      using FusedInter = custom::wrapper::transformer::FPFFNFusedInterface<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      GemmKernel::AParam paramA = {activation, lda};
+      SiluGemmKernel::BParam paramW1 = {w1ptr};
+      GemmKernel::BParam paramW2 = {w2ptr};
+      GemmKernel::BParam paramW3 = {w3ptr};
+      SiluGemmKernel::EpiParam param1 = {tmp1, ldtmp1};
+      GemmKernel::EpiParam param2 = {output, ldo, NULL};
+      GemmKernel::EpiParam param3 = {tmp2, ldtmp2, NULL};
+      ret = finter.compute({seq, fin, fmid, fout, paramA, paramW1, paramW2, paramW3, param1, param2, param3});
     }
   }
   return ret;
@@ -460,7 +536,8 @@ bool jblas_fusion_FFN_Add_GeLu_f32f32_support(void* w1ptr, void* w2ptr, int seq,
           w1tmp->mPrologueID == int(WeightCompType::WeightS8ScaleFp32)) {
         constexpr jblas::gemm::GemmCoreType cores[] = {
             jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK, jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
-            jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48};
+            jblas::gemm::GemmCoreType::AVX512F_8x48, jblas::gemm::GemmCoreType::AMX_BF16_16x48,
+            jblas::gemm::GemmCoreType::AVX2_2X48};
         constexpr size_t EleNum = sizeof(cores) / sizeof(cores[0]);
         support = contains(w1tmp->mCoreType, cores, EleNum);
         support &= hasISA(cores, EleNum);
@@ -538,10 +615,16 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS
       int lda = fin;
       int ldtmp1 = fmid;
       int ldo = fout;
-      // FusedInter::Arguments::paramA paramA={activation, lda};
-      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
-      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
-      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
+                            broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = custom::wrapper::kblock::avx2::AddGemmS4KBlock;
+      using GeluGemmKernel = custom::wrapper::kblock::avx2::AddGeluGemmS4KBlock;
+      using FusedInter = custom::wrapper::transformer::FpGeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
       ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
                             broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
     }
@@ -554,10 +637,6 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4fp32_f32f32_forward(float* activation, SS
       int lda = fin;
       int ldtmp1 = fmid;
       int ldo = fout;
-      // FusedInter::Arguments::paramA paramA={activation, lda};
-      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
-      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
-      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
       ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
                             broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
     }
@@ -626,10 +705,16 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32_f32f32_forward(float* activation, SS
       int lda = fin;
       int ldtmp1 = fmid;
       int ldo = fout;
-      // FusedInter::Arguments::paramA paramA={activation, lda};
-      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
-      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
-      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
+      ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
+                            broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
+    } else if (_cd->AVX2()) {
+      using GemmKernel = custom::wrapper::kblock::avx2::AddGemmS8KBlock;
+      using GeluGemmKernel = custom::wrapper::kblock::avx2::AddGeluGemmS8KBlock;
+      using FusedInter = custom::wrapper::transformer::FpGeluFusedInterface<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
       ret = finter.compute({seq, fin, fmid, fout, activation, lda, w1tmp, w2tmp, tmp1, b1ptr, ldtmp1,
                             broadcast_bias ? 0 : ldtmp1, output, b2ptr, ldo, broadcast_bias ? 0 : ldo});
     }

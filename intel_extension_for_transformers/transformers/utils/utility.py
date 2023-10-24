@@ -99,8 +99,10 @@ def generate_dummy_past_key_values(input_bs, model):
             else:
                 new_shape = [input_bs * num_attention_heads, 1, d_k]
             pkv = pkv + (torch.ones(size=new_shape),)
-    if model.config.model_type == "mistral":
+    elif model.config.model_type == "mistral":
         new_shape = [input_bs, num_key_value_heads, 1, d_k]
+    elif model.config.model_type == "qwen":
+        new_shape = [input_bs, 1, num_attention_heads, d_k]
         dummy_tensor = torch.ones(size=new_shape)
         pkv = tuple(dummy_tensor for _ in range(nb_pkv))
     else:
