@@ -40,3 +40,4 @@ transformers_stream_generator==0.0.4
 torch==2.1.0
 torchaudio==2.1.0
 spacy
+neural-compressor
