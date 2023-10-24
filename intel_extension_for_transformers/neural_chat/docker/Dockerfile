@@ -42,11 +42,15 @@ RUN apt-get update \
     && apt-get install -y build-essential \
     && apt-get install -y wget numactl git \
     && apt-get install -y openssh-server \
+    && apt-get install -y libgl1-mesa-glx \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # Download ITREX code
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
+# RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
+RUN mkdir -p /intel-extension-for-transformers
+WORKDIR /intel-extension-for-transformers
+COPY . /intel-extension-for-transformers
 
 # Install miniconda
 ENV CONDA_DIR /opt/conda
@@ -66,11 +70,11 @@ RUN conda init bash && \
 
 ## If local torch whl are feasible, use localfile to install, avoiding donwloading time
 COPY ./torch*.whl /
-RUN if [ -f /torch-2.0.1+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torch-2.0.1+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-RUN if [ -f /torchaudio-2.0.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchaudio-2.0.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-RUN if [ -f /torchvision-0.15.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchvision-0.15.2+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
+RUN if [ -f /torch-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torch-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
+RUN if [ -f /torchaudio-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchaudio-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
+RUN if [ -f /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
 
-RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt==2.0.0 -f https://developer.intel.com/ipex-whl-stable-cpu && \
+RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt==2.0.0+cpu -f https://developer.intel.com/ipex-whl-stable-cpu && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     cd ./intel_extension_for_transformers/neural_chat/examples/instruction_tuning && pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat && pip install -r requirements_cpu.txt && \

@@ -4,6 +4,6 @@ sentencepiece != 0.1.92
 rouge-score
 nltk
 py7zr
-torch==2.0.1
+torch==2.1.0
 transformers
 protobuf
