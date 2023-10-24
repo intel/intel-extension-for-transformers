@@ -213,7 +213,7 @@ async def handle_ai_photos_get_image_by_type(request: Request):
     try:
         result = get_images_by_type(user_id, type, subtype)
     except Exception as e:
-        raise Response(content=str(e), status_code=status.HTTP_400_BAD_REQUEST)
+        return Response(content=str(e), status_code=status.HTTP_400_BAD_REQUEST)
     return result
 
 

@@ -680,7 +680,9 @@ def get_image_list_by_ner_query(ner_result: Dict, user_id: str, query: str) -> L
             format = "%Y-%m-%d"
             to_time = datetime.datetime.strptime(to_time, format)
             new_to_time = to_time + datetime.timedelta(days=1)
-            sql_conditions.append(f' image_info.captured_time BETWEEN "{from_time}" AND "{new_to_time.strftime(format)}" ')
+            sql_conditions.append(
+                f' image_info.captured_time BETWEEN "{from_time}" AND "{new_to_time.strftime(format)}" '
+            )
         if sql_conditions != []:
             if not query_flag:
                 query_sql += " WHERE "
