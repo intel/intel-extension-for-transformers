@@ -100,8 +100,9 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 
 ```
 
-![](/docs/imgs/streamingLLM_v2.mp4)
-
+<video controls>
+  <source src="/docs/imgs/streamingLLM_v2.mp4" type="video/mp4">
+</video>
 
 Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |
