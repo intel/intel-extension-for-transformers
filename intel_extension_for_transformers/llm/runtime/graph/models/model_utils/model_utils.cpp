@@ -2046,9 +2046,9 @@ std::vector<std::pair<std::string, struct ne_tensor*>>& model_internal_get_tenso
 void ne_model_kv_cache_seq_cpy(struct model_context* ctx, const model_seq_id& seq_id_src,
                                const model_seq_id& seq_id_dst, const model_pos& p0, const model_pos& p1) {
   const uint32_t kv_n_ctx_block = ctx->kv_n_ctx_block;
-  const uint32_t n_embd = ctx->model.hparams.n_embd;
-  const uint32_t n_head = ctx->model.hparams.n_head;
-  const uint32_t head_dim = n_embd / n_head;
+  const uint32_t n_head = ctx->model.hparams.n_head_kv > 0 ? ctx->model.hparams.n_head_kv : ctx->model.hparams.n_head;
+  const uint32_t head_dim = ctx->model.hparams.n_embd / ctx->model.hparams.n_head;
+  const uint32_t n_embd = n_head * head_dim;
   const uint32_t n_ctx = ctx->model.hparams.n_ctx;
   const size_t k_elem_size = ne_element_size(ctx->model.kv_self.k);
   const size_t v_elem_size = ne_element_size(ctx->model.kv_self.v);
@@ -2536,7 +2536,7 @@ std::vector<model_token> beam_search_flow::loop(const model_token* tokens_inp, c
     kv_reorder = std::make_shared<beam_search_kv_cache_reorder>(ctx);
 #ifdef NE_BEAM_SEARCH_VERBOSE_ON
     printf(
-        "WARNING: using default kv cache update function. Ignore this warning if your K shape =[head_dim, N, n_head], "
+        "WARNING: Using default kv cache update function. Ignore this warning if your K shape = [head_dim, N, n_head], "
         "V shape = [N, head_dim, n_head]\n");
 #endif
   }
