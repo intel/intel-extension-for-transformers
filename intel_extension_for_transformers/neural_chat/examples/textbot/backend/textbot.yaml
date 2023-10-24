@@ -27,13 +27,5 @@ model_name_or_path: "starcoder_int8"
 device: "cpu"
 ipex_int8: True
 
-# enable cache plugin
-cache:
-    enable: true
-
-# enable safety checker plugin
-safety_checker:
-    enable: true
-
 # task choices = ['textchat', 'voicechat', 'retrieval', 'text2image', 'finetune']
 tasks_list: ['textchat']
