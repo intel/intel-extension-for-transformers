@@ -30,7 +30,7 @@ ARG UBUNTU_VER=22.04
 FROM ubuntu:${UBUNTU_VER} as cpu
 
 ARG ITREX_VER=yuxiang/hpu_docker
-ARG PYTHON_VERSION=3.9
+ARG PYTHON_VERSION=3.10
 ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
 
 # See http://bugs.python.org/issue19846
