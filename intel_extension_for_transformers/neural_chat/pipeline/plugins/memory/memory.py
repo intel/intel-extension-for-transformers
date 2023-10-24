@@ -62,4 +62,4 @@ class Buffer_Memory:
         if length > self.buffer_size:
             self.chat_memory = self.chat_memory[1:]
         cur_conversation = "[Round {}]\nUser Query: {}\nAI Answer:{}".format(self.turn+1, query, answer)
-        self.chat_memory.add(cur_conversation)
+        self.chat_memory.append(cur_conversation)

@@ -1,4 +1,5 @@
 transformers>=4.32.0
+scikit-learn
 peft
 fschat
 num2words
@@ -13,8 +14,7 @@ python-multipart
 PyPDF2
 langchain
 python-docx
-scikit-learn
-farm-haystack
+farm-haystack>=1.20.1
 librosa
 beautifulsoup4
 InstructorEmbedding
