@@ -96,7 +96,7 @@ RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
-COPY ./inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
+COPY inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
     cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
