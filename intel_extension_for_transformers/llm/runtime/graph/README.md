@@ -97,8 +97,9 @@ model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq
 # Paper: https://arxiv.org/pdf/2309.17453.pdf
 # Recommend n_keep=4 to do attention sinks (four initial tokens) and n_discard=-1 to drop half rencetly tokens when meet length threshold
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size=100, n_keep=4, n_discard=-1)
-
 ```
+
+https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
 Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |
