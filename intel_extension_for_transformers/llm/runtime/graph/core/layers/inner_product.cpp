@@ -92,6 +92,32 @@ using PerNFp32Fp32 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
     jblas::utils::parallel::Parallel2DGemm>;
 }  // namespace avx512_vnni
 
+namespace avx_vnni {
+JBLAS_ISA constexpr DefaultISA = JblasAVX_VNNI;
+
+template <template <class GC, JBLAS_ISA ISA> class ProB>
+using KBlockFp32Fp32 = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+    jblas::wrapper::gemm_kblock::GemmLauncherKBlock<
+        DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_1x48_AVX_VNNI_KBLOCK,
+        jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+    jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+
+// template <template <class GC, JBLAS_ISA ISA> class ProB>
+// using KBlockFp32Fp32Next = jblas::wrapper::gemm_kblock::GemmInterfaceKBlockPackWeight<
+//     jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
+//         DefaultISA, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX512_VNNI_KBLOCK,
+//         jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, jblas::epilogue::gemm::AccumulatorWriteBackFp32>,
+//     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
+
+// template <template <class GC, JBLAS_ISA ISA> class ProB>
+// using PerNFp32Fp32 = jblas::wrapper::gemm_pack_weight::GemmInterfaceParallelAB<
+//     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<DefaultISA,
+//     jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI,
+//                                                              jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
+//                                                              ProB, jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
+//     jblas::utils::parallel::Parallel2DGemm>;
+}  // namespace avx_vnni
+
 namespace avx2 {
 JBLAS_ISA constexpr DefaultISA = JblasAVX2;
 template <template <class GC, JBLAS_ISA ISA> class ProB>
@@ -128,6 +154,12 @@ static JBLAS_CODE jblas_s4fp32kblock_f32f32_forward(float* activation, SS4Fp32* 
         quanA.assign((int8_t*)workspace);
         ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
       }
+    } else if (_cd->AVX_VNNI() && weiptr->mBlockSize % 8 == 0) {
+      using GemmKernel = avx_vnni::KBlockFp32Fp32<WeiS4ClipFp32>;
+      static GemmKernel kernel;
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
+      quanA.assign((int8_t*)workspace);
+      ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
     }
   } else if (weiptr->mCoreType == GcCompFp32::TYPE) {
     if (_cd->AVX512F()) {
@@ -162,6 +194,12 @@ static JBLAS_CODE jblas_s8fp32kblock_f32f32_forward(float* activation, SS8Fp32* 
       ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = avx512_vnni::KBlockFp32Fp32<WeiS8Fp32>;
+      static GemmKernel kernel;
+      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
+      quanA.assign((int8_t*)workspace);
+      ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
+    } else if (_cd->AVX_VNNI()) {
+      using GemmKernel = avx_vnni::KBlockFp32Fp32<WeiS8Fp32>;
       static GemmKernel kernel;
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
       quanA.assign((int8_t*)workspace);

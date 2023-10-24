@@ -122,7 +122,8 @@ using GcCompFp16 = jblas::gemm::GemmCore_Row_NN_8x64_AVX512_FP16;
 using GcCompInt8 = jblas::gemm::GemmCore_Row_NN_8x48_AVX512_VNNI;
 
 constexpr jblas::gemm::GemmCoreType GcCompInt8KBlockSet[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_KBLOCK,
-                                                             jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK};
+                                                             jblas::gemm::GemmCoreType::AVX512_VNNI_3x48_KBLOCK,
+                                                             jblas::gemm::GemmCoreType::AVX_VNNI_1x48_KBLOCK};
 
 constexpr jblas::gemm::GemmCoreType GcCompInt8Set[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_SS,
                                                        jblas::gemm::GemmCoreType::AVX512_VNNI_8x48};
