@@ -18,16 +18,13 @@
 import os
 from dotenv import load_dotenv
 from functools import lru_cache
-from pydantic import AnyUrl, BaseSettings
+from pydantic import BaseSettings
 
 
 load_dotenv()
 
 
 class Settings(BaseSettings):
-    redis_url: AnyUrl = os.environ.get("REDIS_URL", "redis://localhost:6379")
-    redis_password: str = os.getenv("REDIS_PASSWORD", "")
-    redis_db: int = int(os.getenv("REDIS_DB", 0))
     mysql_user: str = os.environ.get("MYSQL_USER", "root")
     mysql_password: str = os.environ.get("MYSQL_PASSWORD", "root")
     mysql_host: str = os.environ.get("MYSQL_HOST", "localhost")
