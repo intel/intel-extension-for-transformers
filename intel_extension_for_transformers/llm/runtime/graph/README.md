@@ -101,7 +101,6 @@ outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
-
 Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |
 | --------------    | ----------  | -----------------------------------------------------------------------                 |
