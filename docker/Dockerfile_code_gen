@@ -55,7 +55,8 @@ RUN ${PYTHON} -m pip install -r examples/huggingface/pytorch/code-generation/qua
 
 RUN ${PYTHON} -m pip install  /app/intel-extension-for-transformers/intel_extension_for_pytorch-2.1.0-cp310-cp310-manylinux2014_x86_64.whl
 
-RUN ${PYTHON} -m pip install intel_extension_for_transformers
+RUN ${PYTHON} -m pip install . --no-cache-dir
+#RUN ${PYTHON} -m pip install intel_extension_for_transformers
 FROM itrex-base as prod
 
 ARG PYTHON=python3.10

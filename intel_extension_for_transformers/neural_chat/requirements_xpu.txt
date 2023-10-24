@@ -29,3 +29,7 @@ openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
 cchardet
+transformers_stream_generator==0.0.4
+spacy
+neural-compressor
+

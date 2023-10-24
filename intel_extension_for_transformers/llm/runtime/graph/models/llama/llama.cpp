@@ -52,7 +52,7 @@
 static bool llama_model_eval_internal(model_context& lctx, const model_token* tokens, const int n_tokens,
                                       const int n_past, const int n_threads) {
   // enforce that the first token is BOS
-  if (n_past == 0 && tokens[0] != model_token_bos()) {
+  if (n_past == 0 && tokens[0] != lctx.vocab.bos_token_id) {
     fprintf(stderr, "%s: first token must be BOS\n", __func__);
     return false;
   }
@@ -275,7 +275,7 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
       *reinterpret_cast<ATTN_FWD_LAYOUT*>(&V->nb[0]) = kv_cache_info.v_layout;           // us nb0 for layout
       ne_set_name(V, "V");
 
-      ne_attn_flags_t attn_flags = 0;
+      ne_attn_flags_t attn_flags = NE_ATTN_FLAG_NONE;
       if (n_past == 0) attn_flags |= NE_ATTN_FLAG_IS_CAUSAL;  // no causal mask on next-token cases
       struct ne_tensor* KQV_Out = ne_flash_attn(ctx0, Q, K, V, attn_scale, attn_flags);
       struct ne_tensor* KQV_merged_contiguous =
@@ -306,14 +306,9 @@ static bool llama_model_eval_internal(model_context& lctx, const model_token* to
         cur = ne_ffn_silu(ctx0, model.layers[il].ffn[0], model.layers[il].ffn[1], model.layers[il].ffn[2], cur);
       } else {
         struct ne_tensor* tmp = ne_mul_mat(ctx0, model.layers[il].ffn[2], cur);
-
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[0], cur);
-
-        // SILU activation
         cur = ne_silu(ctx0, cur);
-
         cur = ne_mul(ctx0, cur, tmp);
-
         cur = ne_mul_mat(ctx0, model.layers[il].ffn[1], cur);
       }
     }

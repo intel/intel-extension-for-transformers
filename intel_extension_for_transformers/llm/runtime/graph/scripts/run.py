@@ -19,7 +19,7 @@ from typing import List, Optional
 from transformers import AutoConfig
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox"}
+model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def str2bool(v):
@@ -45,28 +45,28 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--weight_dtype",
         choices=["int4", "int8"],
-        help="weight data type, default: int4",
+        help="Data type of quantized weight: int4/int8 (default int4)",
         default="int4",
     )
     parser.add_argument(
         "--alg",
         type=str,
-        help="qquantization algorithm to use: sym/asym (default: sym)",
+        help="Quantization algorithm: sym/asym (default sym)",
         default="sym",
     )
     parser.add_argument(
-        "--group_size", type=int, help="group size (default: 32)", default=32
+        "--group_size", type=int, help="Group size: Int (default: 32)", default=32
     )
     parser.add_argument(
         "--scale_dtype",
         type=str,
-        help="fp32/bf16 type for scales (default: fp32)",
+        help="Data type of scales: fp32/bf16 (dafault fp32)",
         default="fp32",
     )
     parser.add_argument(
         "--compute_dtype",
         type=str,
-        help="data type of Gemm computation: int8/bf16/fp32 (default: int8)",
+        help="Data type of Gemm computation: int8/bf16/fp32 (default: int8)",
         default="int8",
     )
     parser.add_argument(
@@ -79,48 +79,48 @@ def main(args_in: Optional[List[str]] = None) -> None:
         "-p",
         "--prompt",
         type=str,
-        help="prompt to start generation with (default: empty)",
+        help="Prompt to start generation with: String (default: empty)",
         default="Once upon a time, there existed a ",
     )
     parser.add_argument(
         "-n",
         "--n_predict",
         type=int,
-        help="number of tokens to predict (default: -1, -1 = infinity)",
+        help="Number of tokens to predict: Int (default: -1, -1 = infinity)",
         default=-1,
     )
     parser.add_argument(
         "-t",
         "--threads",
         type=int,
-        help="number of threads to use during computation (default: 56)",
+        help="Number of threads to use during computation: Int (default: 56)",
         default=56,
     )
     parser.add_argument(
         "-b",
         "--batch_size_truncate",
         type=int,
-        help="batch size for prompt processing (default: 512)",
+        help="Batch size for prompt processing: Int (default: 512)",
         default=512,
     )
     parser.add_argument(
         "-c",
         "--ctx_size",
         type=int,
-        help="size of the prompt context (default: 512)",
+        help="Size of the prompt context: Int (default: 512, can not be larger than specific model's context window length)",
         default=512,
     )
     parser.add_argument(
         "-s",
         "--seed",
         type=int,
-        help="NG seed (default: -1, use random seed for < 0)",
+        help="NG seed: Int (default: -1, use random seed for < 0)",
         default=-1,
     )
     parser.add_argument(
         "--repeat_penalty",
         type=float,
-        help="penalize repeat sequence of tokens (default: 1.1, 1.0 = disabled)",
+        help="NG seed: Int (default: -1, use random seed for < 0)",
         default=1.1,
     )
     parser.add_argument(
@@ -131,7 +131,7 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser.add_argument(
         "--keep",
         type=int,
-        help="number of tokens to keep from the initial prompt (default: 0, -1 = all)  ",
+        help="Number of tokens to keep from the initial prompt: Int (default: 0, -1 = all)",
         default=0,
     )
 

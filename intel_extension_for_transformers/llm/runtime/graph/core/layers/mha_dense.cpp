@@ -699,7 +699,7 @@ class MHAInterface {
     const auto cb = CpuBase();
     omp_set_num_threads(cb.mNumThreads);
     const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
-    const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+    const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI8) != 0;
     assert(!is_causal || p.sl_q <= p.sl_kv);
     assert(("alibi not supported!", !is_alibi));
     assert(("GQA not supported!", p.head_num == p.heads_kv));
@@ -709,12 +709,12 @@ class MHAInterface {
     // TODO(Yi): init packed weight with p.tmp
     PackedWeightBatch<typename GemmQK::BType> K_pack(jblas::gemm::GemmCoreType::AMX_BF16_16x64);  // packed K
     K_pack.resize(padto(p.sl_kv, GemmQK::NTILE), padto(p.head_size, GemmQK::KTILE), num_heads);
-    jblas::utils::avector<int8_t> bufferK(K_pack.mSize);
-    K_pack.assign(bufferK.data());
+    auto bufferK = jblas::utils::amalloc<int8_t>(K_pack.mSize);
+    K_pack.assign(bufferK);
     PackedWeightBatch<typename GemmPV::BType> V_pack(jblas::gemm::GemmCoreType::AMX_BF16_16x64);  // packed V
     V_pack.resize(padto(p.head_size, GemmPV::NTILE), padto(p.sl_kv, GemmPV::KTILE), num_heads);
-    jblas::utils::avector<int8_t> bufferV(V_pack.mSize);
-    V_pack.assign(bufferV.data());
+    auto bufferV = jblas::utils::amalloc<int8_t>(V_pack.mSize);
+    V_pack.assign(bufferV);
     const auto K_pack_batch_off = K_pack.mKPad * K_pack.mNPad;
     const auto V_pack_batch_off = V_pack.mKPad * V_pack.mNPad;
 
@@ -853,6 +853,8 @@ class MHAInterface {
         }
       }
     }
+    jblas::utils::afree(bufferK);
+    jblas::utils::afree(bufferV);
     return JblasSuccess;
   }
 
@@ -961,16 +963,29 @@ class ScaleTrackMax<ISA_T, float, float> {
     int causal_offset;  // offset for causal mask; negative value for disabling causal mask
     float alibi_slope;  // m-factor in the alibi paper for current head: https://arxiv.org/abs/2108.12409
   };
+  static constexpr float seq15[16]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 
   JBLAS_CODE forward(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
                      const int N, const Param& p) const {
+    return p.alibi_slope == 0 ? forward_<false>(src, src_step, M_offset, N_offset, M, N, p)
+                              : forward_<true>(src, src_step, M_offset, N_offset, M, N, p);
+  }
+
+  template <bool HAS_ALIBI>
+  JBLAS_CODE forward_(const SType* src, const int src_step, const int M_offset, const int N_offset, const int M,
+                      const int N, const Param& p) const {
     const auto dst = p.dst + M_offset * p.ld_dst + N_offset;
     const auto dst_max = p.dst_max + M_offset;
 #if CompileAVX512F()
 #if MHA_2ND_EXP
     const auto v_scale = _mm512_set1_ps(p.scale);
+    const auto v_seq15 = _mm512_loadu_ps(seq15);
+    const auto alibi_slope = _mm512_set1_ps(p.alibi_slope);
+    const auto alibi_base = _mm512_mul_ps(alibi_slope, _mm512_add_ps(v_seq15, _mm512_set1_ps(N_offset)));
+    const auto alibi_step = _mm512_set1_ps(p.alibi_slope * 16);
 
     for (int i = 0; i < M; ++i) {
+      auto alibi_curr = alibi_base;
       const auto N_unmasked =
           std::min(N, p.causal_offset < 0 ? INT32_MAX : i + M_offset - N_offset + p.causal_offset + 1);
 
@@ -978,14 +993,16 @@ class ScaleTrackMax<ISA_T, float, float> {
       int j = 0;
       auto v_max = _mm512_set1_ps(-INFINITY);
       for (; j < N_unmasked - 15; j += 16) {
-        const auto xs = _mm512_mul_ps(v_scale, _mm512_loadu_ps(src + i * src_step + j));
+        const auto xs = _mm512_fmadd_ps(v_scale, _mm512_loadu_ps(src + i * src_step + j), alibi_curr);
         v_max = _mm512_max_ps(v_max, xs);
         _mm512_storeu_ps(dst + i * p.ld_dst + j, xs);
+        if constexpr (HAS_ALIBI) alibi_curr = _mm512_add_ps(alibi_curr, alibi_step);
       }
       if (j < N_unmasked) {
-        const auto xs = _mm512_mul_ps(v_scale, _mm512_maskz_loadu_ps(v_mask, src + i * src_step + j));
+        const auto xs = _mm512_fmadd_ps(v_scale, _mm512_maskz_loadu_ps(v_mask, src + i * src_step + j), alibi_curr);
         v_max = _mm512_mask_max_ps(v_max, v_mask, v_max, xs);
         _mm512_storeu_ps(dst + i * p.ld_dst + j, xs);
+        if constexpr (HAS_ALIBI) alibi_curr = _mm512_add_ps(alibi_curr, alibi_step);
         j += 16;
       }
       dst_max[i] = std::max(dst_max[i], _mm512_reduce_max_ps(v_max));
@@ -1363,12 +1380,16 @@ class MHAStableInterface {
     const auto num_heads = p.batch_size * p.head_num;  // Total number of heads
     omp_set_num_threads(cb.mNumThreads);
     const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
-    const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+    const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI8) != 0;
     assert(!is_causal || p.sl_q <= p.sl_kv);
-    assert(("alibi not supported!", !is_alibi));
     assert(("head_num must be a multiple of heads_kv!", p.head_num % p.heads_kv == 0));
     const auto group_heads = p.head_num / p.heads_kv;
     const auto sl_diff = p.sl_kv - p.sl_q;
+
+    // alibi slope
+    const int n_heads_log2_floor = 1 << static_cast<int>(floor(log2(p.head_num)));
+    const float m0 = powf(2.0f, -(8.f) / n_heads_log2_floor);
+    const float m1 = powf(2.0f, -(8.f / 2.0f) / n_heads_log2_floor);
 
     Parallel2DRowMajor parl;  // main parallel scheme
     const auto m_tiles = updiv(p.sl_q, M_TILE);
@@ -1400,6 +1421,10 @@ class MHAStableInterface {
           const int ihn = ibat % p.head_num;
           const int ihkv = ihn / group_heads;
           const int m_size = std::min(M_TILE, p.sl_q - i_m);
+
+          const auto alibi_ihn_m = !is_alibi                    ? 0.f
+                                   : (ihn < n_heads_log2_floor) ? powf(m0, ihn + 1)
+                                                                : powf(m1, 2 * (ihn - n_heads_log2_floor) + 1);
 
           float s_max[M_TILE]{};  // maximum for each row of the S matrix
           std::fill_n(s_max, M_TILE, -INFINITY);
@@ -1453,7 +1478,7 @@ class MHAStableInterface {
                       /* .ld_dst = */ ld_tmp_s,
                       /* .scale = */ p.QK_scale * p.Q_sc * p.K_sc,
                       /* .causal_offset = */ is_causal ? sl_diff : -1,
-                      /* .alibi_slope = */ 0.f,
+                      /* .alibi_slope = */ alibi_ihn_m,
                   },
                   /* .workspace = */ nullptr,
               });
@@ -1693,9 +1718,8 @@ void jblas_fusion_attn_forward<float, bf16, bf16, float>(const attn_fwd_args_t<f
 template <typename Q_T, typename K_T, typename V_T, typename DST_T>
 void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& p) {
   const bool is_causal = (p.attn_flags & NE_ATTN_FLAG_IS_CAUSAL) != 0;
-  const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI) != 0;
+  const bool is_alibi = (p.attn_flags & NE_ATTN_FLAG_IS_ALIBI8) != 0;
   assert(!is_causal || p.sl_q <= p.sl_kv);
-  assert(("alibi not supported!", !is_alibi));
   assert(("head_num must be a multiple of heads_kv!", p.head_num % p.heads_kv == 0));
   const auto group_heads = p.head_num / p.heads_kv;
   attn_shape_t attn_shape{
@@ -1727,6 +1751,9 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
   const auto ROWPACK = p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 4
                        : p.V_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 2
                                                                         : 0;
+  const int n_heads_log2_floor = 1 << static_cast<int>(floor(log2(p.head_num)));
+  const float m0 = powf(2.0f, -(8.f) / n_heads_log2_floor);
+  const float m1 = powf(2.0f, -(8.f / 2.0f) / n_heads_log2_floor);
 
 #pragma omp parallel for collapse(3)
   for (int ibs = 0; ibs < p.batch_size; ++ibs)
@@ -1742,6 +1769,10 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
         const auto sl_diff = p.sl_kv - p.sl_q;
         const auto unmasked = is_causal ? sl_diff + i + 1 : p.sl_kv;
         const auto curr_row = std::unique_ptr<float[]>(new float[unmasked]);
+
+        const auto alibi_ihn_m = !is_alibi                    ? 0.f
+                                 : (ihn < n_heads_log2_floor) ? powf(m0, ihn + 1)
+                                                              : powf(m1, 2 * (ihn - n_heads_log2_floor) + 1);
 
         // Q x K
         float row_max = -INFINITY;
@@ -1764,7 +1795,7 @@ void jblas_fusion_attn_forward_ref(const attn_fwd_args_t<Q_T, K_T, V_T, DST_T>& 
                              static_cast<float>(k_curr[j * p.step_k_sl + k * p.step_k_head_size]);
             }
           }
-          curr_row[j] *= p.QK_scale * p.Q_sc * p.K_sc;
+          curr_row[j] = curr_row[j] * p.QK_scale * p.Q_sc * p.K_sc + j * alibi_ihn_m;
           row_max = std::max(row_max, curr_row[j]);
         }
 
@@ -1990,7 +2021,7 @@ void jblas_reordered_attn_fp32_update_v(const jblas_fusion_attn_fp32_update_kv_a
 
 #ifdef NE_TESTS
 namespace {
-bool return_success = true;
+bool ret_ok = true;
 
 class TestMhaDese {
  public:
@@ -1998,51 +2029,53 @@ class TestMhaDese {
     printf("Test suit: %s\n", __FUNCTION__);
     CheckISA(AMX_BF16);
     jblas::utils::request_perm_xtile_data();
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, false);
-    return_success &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, false);
-    return_success &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, false);
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 256, 63, 63}, false);
-    return_success &= test_case<float, fp16, fp16, float>({3, 4, 4, 256, 1, 384}, false);
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, true);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL);
 
-    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 32, 128, 64}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({2, 5, 5, 32, 64, 128}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({2, 5, 5, 80, 128, 77}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 256, 63, 63}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({3, 4, 4, 256, 1, 384}, false, true);
-    return_success &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 64, 64, 64}, true, true);
+    ret_ok &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<fp16, fp16, fp16, fp16>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<fp16, fp16, fp16, fp16>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<fp16, fp16, fp16, fp16>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<fp16, fp16, fp16, fp16>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, true);
 
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 256, 63, 63}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({3, 4, 4, 256, 1, 384}, false, true);
-    return_success &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, true, true);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<float, fp16, fp16, float>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<float, fp16, fp16, float>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, true);
+    ret_ok &= test_case<float, fp16, fp16, float>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, true);
 
     const auto s8layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK4;
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 32, 128, 64}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 32, 64, 128}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 80, 128, 77}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 256, 63, 63}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 4, 256, 1, 384}, false, false, s8layout);
-    return_success &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 64, 64, 64}, true, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, false, s8layout);
+    ret_ok &= test_case<int8_t, int8_t, int8_t, int8_t>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, false, s8layout);
 
     const auto bf16layout = ATTN_FWD_LAYOUT_NTILE48_ROWPACK2;
-    return_success &= test_case<float, bf16, bf16, float>({1, 1, 1, 32, 128, 64}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({2, 5, 5, 32, 64, 128}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({2, 5, 5, 80, 128, 77}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({1, 1, 1, 256, 63, 63}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({3, 4, 4, 256, 1, 384}, false, false, bf16layout);
-    return_success &= test_case<float, bf16, bf16, float>({1, 1, 1, 64, 64, 64}, true, false, bf16layout);
+    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 32, 128, 64}, NE_ATTN_FLAG_NONE, false, bf16layout);
+    ret_ok &= test_case<float, bf16, bf16, float>({2, 5, 5, 32, 64, 128}, NE_ATTN_FLAG_NONE, false, bf16layout);
+    ret_ok &= test_case<float, bf16, bf16, float>({2, 5, 5, 80, 128, 77}, NE_ATTN_FLAG_NONE, false, bf16layout);
+    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 256, 63, 63}, NE_ATTN_FLAG_NONE, false, bf16layout);
+    ret_ok &= test_case<float, bf16, bf16, float>({3, 4, 4, 256, 1, 384}, NE_ATTN_FLAG_NONE, false, bf16layout);
+    ret_ok &= test_case<float, bf16, bf16, float>({1, 1, 1, 64, 64, 64}, NE_ATTN_FLAG_IS_CAUSAL, false, bf16layout);
 
-    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 32, 128, 64}, 64, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 32, 64, 128}, 256, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 80, 128, 77}, 256, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({2, 5, 1, 80, 128, 77}, 256, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 256, 63, 63}, 256, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({3, 4, 4, 256, 1, 384}, 384, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({3, 4, 2, 256, 1, 384}, 384, false);
-    return_success &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 64, 64, 64}, 128, true);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 32, 128, 64}, 64, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 32, 64, 128}, 256, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({2, 5, 5, 80, 128, 77}, 256, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({2, 5, 1, 80, 128, 77}, 256, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 256, 63, 63}, 256, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({3, 4, 4, 256, 1, 384}, 384, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({3, 4, 2, 256, 1, 384}, 384, NE_ATTN_FLAG_NONE);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({1, 1, 1, 64, 64, 64}, 128, NE_ATTN_FLAG_IS_CAUSAL);
+    ret_ok &= test_reorder_pipe<float, float, float, float>({1, 8, 8, 64, 64, 64}, 128,
+                                                            NE_ATTN_FLAG_IS_CAUSAL | NE_ATTN_FLAG_IS_ALIBI8);
     printf("Test suit done: %s\n", __FUNCTION__);
   }
 
@@ -2062,7 +2095,7 @@ class TestMhaDese {
 #endif
 
   template <class Q_T, class K_T, class V_T, class DST_T>
-  bool test_case(const attn_shape_t& s, bool is_causal, bool k_trans = false,
+  bool test_case(const attn_shape_t& s, ne_attn_flags_t flags, bool k_trans = false,
                  ATTN_FWD_LAYOUT kv_layout = ATTN_FWD_LAYOUT_PLAIN) {
     assert(kv_layout == ATTN_FWD_LAYOUT_PLAIN || !k_trans);
     using namespace jblas::utils;
@@ -2075,8 +2108,8 @@ class TestMhaDese {
     assert(("GQA not supported!", s.head_num == s.heads_kv));
 
     printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
-    printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
-           is_causal ? "maksed" : "unmask");
+    printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
+           flags & NE_ATTN_FLAG_IS_CAUSAL ? "maksed" : "unmask", flags & NE_ATTN_FLAG_IS_ALIBI8 ? "alibi8" : "");
 
     const auto NTILE = kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK4   ? 48
                        : kv_layout == ATTN_FWD_LAYOUT_NTILE48_ROWPACK2 ? 48
@@ -2150,7 +2183,7 @@ class TestMhaDese {
         /* .dst_sc = */ init_scale_val<V_T>,
         /* .tmp = */ tmp.data(),
         /* .QK_scale = */ 1.f / sqrtf(static_cast<float>(head_size)),
-        /* .is_causal = */ is_causal,
+        /* .attn_flags = */ flags,
         /* .batch_size = */ batch_size,
         /* .head_num = */ head_num,
         /* .heads_kv = */ heads_kv,
@@ -2197,7 +2230,7 @@ class TestMhaDese {
   }
 
   template <class Q_T, class K_T, class V_T, class DST_T>
-  bool test_reorder_pipe(const attn_shape_t& s, int sl_kv_max, bool is_causal) {
+  bool test_reorder_pipe(const attn_shape_t& s, int sl_kv_max, ne_attn_flags_t flags) {
     using namespace jblas::utils;
     const auto batch_size = s.batch_size;
     const auto head_num = s.head_num;
@@ -2208,8 +2241,8 @@ class TestMhaDese {
     assert(("head_num must be a multiple of heads_kv!", head_num % heads_kv == 0));
 
     printf("\ntest_case: %s\t", __PRETTY_FUNCTION__);
-    printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
-           is_causal ? "maksed" : "unmask");
+    printf("bs_%d hn_%d hs_%d hkv_%d sl_q_%d sk_kv_%d %s %s\n", batch_size, head_num, heads_kv, head_size, sl_q, sl_kv,
+           flags & NE_ATTN_FLAG_IS_CAUSAL ? "maksed" : "unmask", flags & NE_ATTN_FLAG_IS_ALIBI8 ? "alibi8" : "");
 
     assert(sl_kv_max >= sl_kv);
 
@@ -2273,7 +2306,7 @@ class TestMhaDese {
         /* .dst_sc = */ init_scale_val<V_T>,
         /* .tmp = */ tmp.data(),
         /* .QK_scale = */ 1.f / sqrtf(static_cast<float>(head_size)),
-        /* .is_causal = */ is_causal,
+        /* .attn_flags = */ flags,
         /* .batch_size = */ batch_size,
         /* .head_num = */ head_num,
         /* .heads_kv = */ heads_kv,
@@ -2361,7 +2394,7 @@ class TestMhaDese {
           /* .dst_sc = */ init_scale_val<V_T>,
           /* .tmp = */ tmp.data(),
           /* .QK_scale = */ 1.f / sqrtf(static_cast<float>(head_size)),
-          /* .is_causal = */ is_causal,
+          /* .attn_flags = */ flags,
           /* .batch_size = */ batch_size,
           /* .head_num = */ head_num,
           /* .heads_kv = */ heads_kv,
@@ -2402,7 +2435,7 @@ static const TestMhaDese inst_;
 
 int main() {
   printf("NE_TESTS: mha_dense ");
-  printf(return_success ? "OK\n" : "FAILED\n");
-  return return_success ? 0 : -1;
+  printf(ret_ok ? "OK\n" : "FAILED\n");
+  return ret_ok ? 0 : -1;
 }
 #endif

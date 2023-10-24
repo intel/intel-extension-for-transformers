@@ -30,7 +30,6 @@ static const model_scratch mpt_mem_req(int n_layers) {
       return {2048ull * MB, 2048ull * MB, 4096ull * MB};
     case 48:
       return {4096ull * MB, 4096ull * MB, 8192ull * MB};
-    // TODO(hengyu): add more variants besides 6B
     default:
       MODEL_ASSERT(false);
   }

@@ -1,7 +1,7 @@
 transformers>=4.32.0
 peft
 fschat
-intel_extension_for_pytorch
+intel_extension_for_pytorch==2.1.0
 num2words
 speechbrain
 paddlepaddle
@@ -27,7 +27,7 @@ yacs
 uvicorn
 optimum
 optimum-intel
-sentence_transformers
+git+https://github.com/UKPLab/sentence-transformers.git
 unstructured
 markdown
 rouge_score
@@ -35,6 +35,9 @@ openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
 lm_eval
+transformers_stream_generator==0.0.4
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.0.1
-torchaudio==2.0.2
+torch==2.1.0
+torchaudio==2.1.0
+spacy
+neural-compressor

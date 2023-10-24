@@ -19,7 +19,8 @@ Welcome to use Jupyter Notebooks to explore how to build and customize chatbots 
 | 2.4     | Deploying Chatbot on Habana Gaudi1/Gaudi2     | Learn how to deploy chatbot on Habana Gaudi1/Gaudi2   | [Notebook](./notebooks/deploy_chatbot_on_habana_gaudi.ipynb) |
 | 2.5     | Deploying Chatbot on Nvidia A100              | Learn how to deploy chatbot on A100                   | [Notebook](./notebooks/deploy_chatbot_on_nv_a100.ipynb) |
 | 2.6     | Deploying Chatbot with Load Balance           | Learn how to deploy chatbot with load balance         | [Notebook](./notebooks/chatbot_with_load_balance.ipynb) |
-| 2.7     | Deploying End-to-end Chatbot on Intel CPU SPR  | Learn how to deploy an end to end text chatbot on Intel CPU SPR including frontend GUI and backend | [Notebook](./notebooks/setup_text_chatbot_service_on_spr.ipynb) |
+| 2.7     | Deploying End-to-end text Chatbot on Intel CPU SPR  | Learn how to deploy an end to end text chatbot on Intel CPU SPR including frontend GUI and backend | [Notebook](./notebooks/setup_text_chatbot_service_on_spr.ipynb) |
+| 2.8     | Deploying End-to-end talkingbot on Intel CPU SPR  | Learn how to deploy an end to end talkingbot on Intel CPU SPR including frontend GUI and backend | [Notebook](./notebooks/setup_talking_chatbot_service_on_spr.ipynb) |
 | 3       | Optimizing Chatbots                         |                                                            |                                                         |
 | 3.1     | Enabling Chatbot with BF16 Optimization on SPR        | Learn how to optimize chatbot using mixed precision on SPR | [Notebook](./notebooks/amp_optimization_on_spr.ipynb) |
 | 3.2     | Enabling Chatbot with BF16 Optimization on Habana Gaudi1/Gaudi2 | Learn how to optimze chatbot using mixed precision on Habana Gaudi1/Gaudi2 | [Notebook](./notebooks/amp_optimization_on_habana_gaudi.ipynb) |

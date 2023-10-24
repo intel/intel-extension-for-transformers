@@ -18,7 +18,7 @@ import argparse
 from typing import List, Optional
 import subprocess
 
-model_maps = {"gpt_neox": "gptneox", "llama2": "llama"}
+model_maps = {"gpt_neox": "gptneox", "llama2": "llama", "gpt_bigcode": "starcoder"}
 build_path = Path(Path(__file__).parent.absolute(), "../build/")
 
 def str2bool(v):
@@ -35,48 +35,48 @@ def main(args_in: Optional[List[str]] = None) -> None:
     parser = argparse.ArgumentParser(description="Quantize weights of NE files")
     parser.add_argument("--model_name", type=str, help="model name", required=True)
     parser.add_argument(
-        "--model_file", type=Path, help="path to the fp32 model", required=True
+        "--model_file", type=Path, help="Path to the fp32 model: String", required=True
     )
     parser.add_argument(
-        "--out_file", type=Path, help="path to the quantized model", required=True
+        "--out_file", type=Path, help="Path to the quantized model: String", required=True
     )
     parser.add_argument(
-        "--build_dir", type=Path, help="path to build directory", default=build_path
+        "--build_dir", type=Path, help="Path to the build file: String", default=build_path
     )
     parser.add_argument(
         "--config",
         type=Path,
-        help="path to the configuration file (default: )",
+        help="Path to the configuration file: String (default: \"\")",
         default="",
     )
     parser.add_argument(
-        "--nthread", type=int, help="number of threads to use (default: 1)", default=1
+        "--nthread", type=int, help="Number of threads to use: Int (default: 1)", default=1
     )
     parser.add_argument(
         "--weight_dtype",
         choices=["int4", "int8"],
-        help="weight data type, default: int4",
+        help="Data type of quantized weight: int4/int8 (default: int4)",
         default="int4",
     )
     parser.add_argument(
         "--alg",
         type=str,
-        help="qquantization algorithm to use: sym/asym (default: sym)",
+        help="Quantization algorithm to use: sym/asym (default: sym)",
         default="sym",
     )
     parser.add_argument(
-        "--group_size", type=int, help="group size (default: 32)", default=32
+        "--group_size", type=int, help="Group size: Int (default: 32)", default=32
     )
     parser.add_argument(
         "--scale_dtype",
         type=str,
-        help="fp32/bf16 type for scales (default: fp32)",
+        help="Data type of scales: bf16/fp32 (default: fp32)",
         default="fp32",
     )
     parser.add_argument(
         "--compute_dtype",
         type=str,
-        help="data type of Gemm computation: int8/bf16/fp32 (default: int8)",
+        help="Data type of Gemm computation: int8/bf16/fp32 (default: int8)",
         default="int8",
     )
     parser.add_argument(

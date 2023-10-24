@@ -318,7 +318,7 @@ class FinetuningArguments:
     task: Optional[str] = field(
         default="completion",
         metadata={"help": "task name, different task means different data format.",
-            "choices": ["completion", "chat", "summarization"]
+            "choices": ["completion", "chat", "summarization", "code-generation"]
             },
     )
     do_lm_eval: bool = field(
@@ -405,6 +405,7 @@ class LoadingModelConfig:
     use_hpu_graphs: bool = False
     use_cache: bool = True
     use_deepspeed: bool = False
+    ipex_int8: bool = False
 
 @dataclass
 class WeightOnlyQuantizationConfig:

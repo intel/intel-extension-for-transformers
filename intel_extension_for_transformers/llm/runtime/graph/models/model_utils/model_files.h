@@ -478,14 +478,17 @@ struct model_model_loader {
         if (it == tensors_map.name_to_idx.end()) {
           it = tensors_map.name_to_idx.find("model/wte");
           if (it == tensors_map.name_to_idx.end()) {
-            it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");  // ChatGLM-1
+            it = tensors_map.name_to_idx.find("model.embed_tokens.weight");  // baichuan13B
             if (it == tensors_map.name_to_idx.end()) {
-              it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
+              it = tensors_map.name_to_idx.find("transformer.word_embeddings.weight");  // ChatGLM-1
               if (it == tensors_map.name_to_idx.end()) {
-                it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
-                if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
+                it = tensors_map.name_to_idx.find("transformer.embedding.word_embeddings.weight");  // ChatGLM-2
                 if (it == tensors_map.name_to_idx.end()) {
-                  throw std::string("missing tok_embeddings.weight");
+                  it = tensors_map.name_to_idx.find("model.decoder.embed_tokens.weight");
+                  if (it != tensors_map.name_to_idx.end()) return 1;  // hacky solution for OPT loading
+                  if (it == tensors_map.name_to_idx.end()) {
+                    throw std::string("missing tok_embeddings.weight");
+                  }
                 }
               }
             }

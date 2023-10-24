@@ -17,10 +17,10 @@
 
 # pylint: disable=wrong-import-position
 from typing import Any
-
+import os
 import gptcache.processor.post
 import gptcache.processor.pre
-from gptcache import Cache, Config
+from gptcache import Cache, cache, Config
 from gptcache.adapter.adapter import adapt
 from gptcache.embedding import (
     Onnx,
@@ -55,8 +55,11 @@ from gptcache.utils import import_ruamel
 import time
 
 class ChatCache:
-    def __init__(self):
-        self.cache_obj = Cache()
+    def __init__(self, config_dir: str=os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "./cache_config.yaml"),
+            embedding_model_dir: str="hkunlp/instructor-large"):
+        self.cache_obj = cache
+        self.init_similar_cache_from_config(config_dir, embedding_model_dir)
 
     def _cache_data_converter(self, cache_data):
         return self._construct_resp_from_cache(cache_data)
@@ -130,8 +133,7 @@ class ChatCache:
             config=config,
         )
 
-    def init_similar_cache_from_config(self, config_dir: str="./config/cache_config.yml",
-                                       embedding_model_dir: str="hkunlp/instructor-large"):
+    def init_similar_cache_from_config(self, config_dir, embedding_model_dir):
         import_ruamel()
         from ruamel.yaml import YAML # pylint: disable=C0415
 

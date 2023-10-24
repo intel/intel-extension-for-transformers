@@ -148,6 +148,8 @@ struct ne_tensor {
   char padding[8];
 };
 
+static const size_t NE_TENSOR_SIZE = sizeof(struct ne_tensor);
+
 // computation graph
 struct ne_cgraph {
   int n_nodes;
