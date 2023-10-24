@@ -169,7 +169,7 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
 
 ## 🙌Demo
 
-StreamingLLM for infinite inference:
+Streaming LLM for infinite inference:
 
 https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
