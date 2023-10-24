@@ -125,7 +125,8 @@ RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-
 # Build ITREX
 RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
     pip install transformers==4.32.0 && \
-    pip install accelerate==0.22.0
+    pip install accelerate==0.22.0 && \
+    pip install intel_extension_for_deepspeed
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
