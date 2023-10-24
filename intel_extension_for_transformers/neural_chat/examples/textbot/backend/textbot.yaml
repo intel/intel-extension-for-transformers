@@ -24,7 +24,7 @@ host: 127.0.0.1
 port: 8000
 
 model_name_or_path: "starcoder_int8"
-tokenizer_name_or_path: "bigcoder/starcoder"
+tokenizer_name_or_path: "bigcode/starcoder"
 device: "cpu"
 ipex_int8: True
 
