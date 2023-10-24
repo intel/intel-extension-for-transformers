@@ -23,6 +23,5 @@ Submodules
 
    chatbot/index.rst
    config/index.rst
-   version/index.rst
 
 
