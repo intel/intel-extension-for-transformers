@@ -120,6 +120,8 @@ class Model:
                 sys.exit(1)
             if self.generate_round == 0 and not ignore_prompt:
                 streamer.put(input_ids)
+            if interactive:
+                self.model.reset_token_end()
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
                 streamer.put(torch.tensor([out]))

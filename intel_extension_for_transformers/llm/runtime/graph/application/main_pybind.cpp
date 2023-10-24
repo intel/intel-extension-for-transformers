@@ -65,7 +65,7 @@ class Model {
   static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
                          const std::string& alg, int group_size, const std::string& scale_dtype,
                          const std::string& compute_dtype, bool use_ggml);
-
+  void reset_token_end() { token_eos = false; curr_input_ids.clear();}
  private:
   model_context* ctx = nullptr;
   gpt_params params;
@@ -383,5 +383,6 @@ PYBIND11_MODULE(polyglot_cpp, m)
                   py::arg("weight_dtype") = "int4", py::arg("alg") = "sym", py::arg("group_size") = 32,
                   py::arg("scale_dtype") = "fp32", py::arg("compute_dtype") = "ggml", py::arg("use_ggml") = false)
       .def("is_token_end", &Model::is_token_end)
+      .def("reset_token_end", &Model::reset_token_end)
       .def("reinit", &Model::reinit);
 }
