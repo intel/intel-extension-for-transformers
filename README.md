@@ -187,6 +187,7 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 
 
 > View [Full Publication List](./docs/publication.md).
+
 ## Additional Content
 
 * [Release Information](./docs/release.md)
