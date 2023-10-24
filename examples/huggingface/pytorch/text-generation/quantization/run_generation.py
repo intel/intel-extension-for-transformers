@@ -114,7 +114,7 @@ elif args.sq:
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     quantization_config = SmoothQuantConfig(
                                 tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                alpha=float(args.alpha),    # default is 0.5
+                                alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
                                )
@@ -134,7 +134,6 @@ if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                       quantization_config=quantization_config,
                                                       trust_remote_code=args.trust_remote_code,
-                                                      torchscript=True if args.sq else False,
                                                       use_llm_runtime=False
                                                       )
     if args.sq:
