@@ -31,6 +31,9 @@ Install the following Python dependencies using Conda:
 conda install astunparse ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses -y
 conda install jemalloc gperftools -c conda-forge -y
 conda install git-lfs -y
+# install libGL.so.1 for opencv
+sudo apt-get update
+sudo apt-get install -y libgl1-mesa-glx
 ```
 
 Install other dependencies using pip:
