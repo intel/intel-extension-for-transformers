@@ -67,6 +67,7 @@ class BaseModel(ABC):
         self.cache = None
         self.device = None
         self.conv_template = None
+        self.ipex_int8 = None
 
     def match(self, model_path: str):
         """
@@ -106,6 +107,7 @@ class BaseModel(ABC):
         self.use_hpu_graphs = kwargs["use_hpu_graphs"]
         self.cpu_jit = kwargs["cpu_jit"]
         self.use_cache = kwargs["use_cache"]
+        self.ipex_int8 = kwargs["ipex_int8"]
         load_model(model_name=kwargs["model_name"],
                    tokenizer_name=kwargs["tokenizer_name"],
                    device=kwargs["device"],
@@ -133,6 +135,7 @@ class BaseModel(ABC):
         config.use_hpu_graphs = self.use_hpu_graphs
         config.cpu_jit = self.cpu_jit
         config.use_cache = self.use_cache
+        config.ipex_int8 = self.ipex_int8
 
         if is_audio_file(query):
             if not os.path.exists(query):
@@ -140,7 +143,8 @@ class BaseModel(ABC):
 
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
-        if self.conv_template.roles[0] in query and self.conv_template.roles[1] in query:
+        if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
+              "starcoder" in self.model_name:
             query_include_prompt = True
 
         # plugin pre actions
@@ -199,6 +203,7 @@ class BaseModel(ABC):
         config.use_hpu_graphs = self.use_hpu_graphs
         config.cpu_jit = self.cpu_jit
         config.use_cache = self.use_cache
+        config.ipex_int8 = self.ipex_int8
 
         if is_audio_file(query):
             if not os.path.exists(query):
@@ -206,7 +211,8 @@ class BaseModel(ABC):
 
         query_include_prompt = False
         self.get_conv_template(self.model_name, config.task)
-        if self.conv_template.roles[0] in query and self.conv_template.roles[1] in query:
+        if (self.conv_template.roles[0] in query and self.conv_template.roles[1] in query) or \
+               "starcoder" in self.model_name:
             query_include_prompt = True
 
         # plugin pre actions
