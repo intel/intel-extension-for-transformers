@@ -2351,6 +2351,7 @@ dequantized
 dq
 frac
 zp
+baichuan
 Epoches
 FID
 GGML
