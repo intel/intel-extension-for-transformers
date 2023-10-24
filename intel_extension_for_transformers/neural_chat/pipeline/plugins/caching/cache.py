@@ -133,7 +133,9 @@ class ChatCache:
             config=config,
         )
 
-    def init_similar_cache_from_config(self, config_dir, embedding_model_dir):
+    def init_similar_cache_from_config(self, config_dir: str=os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "./cache_config.yaml"),
+            embedding_model_dir: str="hkunlp/instructor-large"):
         import_ruamel()
         from ruamel.yaml import YAML # pylint: disable=C0415
 
