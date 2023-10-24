@@ -89,23 +89,9 @@ outputs = tokenizer.batch_decode(gen_tokens)
 ```
 
 ## 🎯Validated  Models
-Here is the average accuracy of validated models on Lambada (OpenAI), HellaSwag, Winogrande, PIQA, and WikiText.
-The subsequent token latency is based on 32 input tokens and greedy search on Intel's 4th Generation Xeon Scalable Sapphire Rapids processor.
+You can access the latest int4 performance and accuracy at [int4 blog](https://medium.com/@NeuralCompressor/llm-performance-of-intel-extension-for-transformers-f7d061556176).
 
-| Model |  FP32         | INT4 Accuracy (Group size 32) | INT4 Accuracy (Group size 128) | Next Token Latency   | 
-|---------------------|:----------------------:|:-----------------------:|:----------------------------:|:------------:| 
-| [EleutherAI/gpt-j-6B](https://huggingface.co/EleutherAI/gpt-j-6B) | 0.643 | 0.644 | 0.64 | 21.98ms|
-| [meta-llama/Llama-2-7b-hf](https://huggingface.co/meta-llama/Llama-2-7b-hf) | 0.69 | 0.69 | 0.685 | 24.55ms|
-| [decapoda-research/llama-7b-hf](https://huggingface.co/decapoda-research/llama-7b-hf) | 0.689 | 0.682 | 0.68 | 24.84ms|
-| [EleutherAI/gpt-neox-20b](https://huggingface.co/EleutherAI/gpt-neox-20b) | 0.674 | 0.672 | 0.669 | 80.16ms|
-| [mosaicml/mpt-7b-chat](https://huggingface.co/mosaicml/mpt-7b-chat) | 0.672 | 0.67 | 0.666 | 35.84ms|
-| [tiiuae/falcon-7b](https://huggingface.co/tiiuae/falcon-7b) | 0.698 | 0.694 | 0.693 |36.1ms|
-| [baichuan-inc/baichuan-7B](https://huggingface.co/baichuan-inc/baichuan-7B) | 0.474 | 0.471 | 0.47 | Coming Soon |
-| [facebook/opt-6.7b](https://huggingface.co/facebook/opt-6.7b) | 0.65 | 0.647 | 0.643 | Coming Soon |
-| [databricks/dolly-v2-3b](https://huggingface.co/databricks/dolly-v2-3b) | 0.613 | 0.609 | 0.609 |22.02ms|
-| [tiiuae/falcon-40b-instruct](https://huggingface.co/tiiuae/falcon-40b-instruct) | 0.756 | 0.757 | 0.755 | Coming Soon |
-
-Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_extension_for_transformers/llm/runtime/graph) 
+Additionally, we are preparing to introduce Baichuan, Mistral, and other models into [LLM Runtime (Intel Optimized llamacpp)](./intel_extension_for_transformers/llm/runtime/graph). For comprehensive accuracy and performance data, though not the most up-to-date, please refer to the [Release data](./docs/release_data.md). 
 
 ## 📖Documentation
 <table>
@@ -181,6 +167,11 @@ Find other models like ChatGLM, ChatGLM2, StarCoder... in [LLM Runtime](./intel_
 </tbody>
 </table>
 
+## 🙌Demo
+
+* Infinite inference (up to 4M tokens)
+
+https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
 ## 📃Selected Publications/Events
 * Blog published on Medium: [NeuralChat: Simplifying Supervised Instruction Fine-tuning and Reinforcement Aligning for Chatbots](https://medium.com/@NeuralCompressor/neuralchat-simplifying-supervised-instruction-fine-tuning-and-reinforcement-aligning-for-chatbots-d034bca44f69) (Sep 2023)
