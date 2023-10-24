@@ -40,8 +40,8 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src
     torch.manual_seed(0)
     ref_activation = torch.rand(m, k, dtype=torch.float)
     tar_activation = ref_activation.clone()
-    if src_dt == "bf16":
-        tar_activation = ref_activation.to(torch.bfloat16)
+    if src_dt == "fp16":
+        tar_activation = ref_activation.to(torch.float16)
     wei_row = k
     wei_col = n
     if transpose:
@@ -53,19 +53,19 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src
         raw_wei, transpose, blocksize, compute_type, weight_type)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
     torch.ops.weight_only_gblasop.gbits_dequantize(
-        compress_wei, revert_wei, transpose, compute_type, weight_type, blocksize)
+        compress_wei, revert_wei, transpose, compute_type, weight_type)
     bias = torch.rand(n, dtype=torch.float)*10
     if dump_tensor_info:
         print(revert_wei)
     tar_dst = torch.zeros(m, n, dtype=torch.float)
-    if dst_dt == "bf16":
-        tar_dst = tar_dst.to(torch.bfloat16)
+    if dst_dt == "fp16":
+        tar_dst = tar_dst.to(torch.float16)
     if transpose:
         revert_wei = torch.transpose(revert_wei, 0, 1)
     ref_dst = torch.matmul(ref_activation, revert_wei)
     torch.ops.weight_only_gblasop.gbits_linear(
-        tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type, blocksize)
-    if dst_dt == "bf16":
+        tar_activation, compress_wei, bias, tar_dst, n, add_bias, compute_type, weight_type)
+    if dst_dt == "fp16":
         tar_dst = tar_dst.to(torch.float)
     if add_bias:
         ref_dst += bias
@@ -78,13 +78,13 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src
         print("fail")
 
 
-configs = {"s4fullrange_scalef32": {"fp32"}}
+configs = {"s4fullrange_scalef32": {"fp32", "fp16"}}
 
 blocksizes = [128]
 do_trans = [False]
 add_bias = [False]
-src_dts = ["fp32"]
-dst_dts = ["fp32"]
+src_dts = ["fp32", "fp16"]
+dst_dts = ["fp32", "fp16"]
 
 for weight_type in configs:
     m = 256

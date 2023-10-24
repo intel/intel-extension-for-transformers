@@ -32,15 +32,22 @@ PATHS ${torch_path}
 NO_DEFAULT_PATH)
 
 add_subdirectory(../../../library/gblas gblas_out)
+# add_subdirectory(../../../library/xetla xetla_out)
 
 add_compile_options(-fsycl)
 add_link_options(-fsycl)
 
+
 file(GLOB gbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
 # Define our library target
 add_library(gbits SHARED ${gbits_src})
-# Enable C++17
-target_compile_features(gbits PRIVATE cxx_std_17)
+# Enable C++20
+target_compile_features(gbits PRIVATE cxx_std_20)
+
+target_include_directories(gbits PRIVATE 
+../../../library/xetla
+../../../library/xetla/include
+)
 
 # Link against LibTorch
 set_target_properties(gbits PROPERTIES POSITION_INDEPENDENT_CODE ON)
