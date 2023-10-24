@@ -14,7 +14,7 @@ PyPDF2
 langchain
 python-docx
 scikit-learn
-farm-haystack==1.14.1
+farm-haystack==1.14.0
 librosa
 beautifulsoup4
 InstructorEmbedding
