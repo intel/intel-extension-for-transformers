@@ -30,7 +30,7 @@ jobs:
         run: |
           cid=$(docker ps -q --filter "name=chatbotinfer-hpu")
           if [[ ! -z "$cid" ]]; then docker stop $cid && docker rm $cid; fi
-          docker run -tid -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-hpu" --hostname="chatbotinfer-hpu-container" chatbotinfer-hpu:latest
+          docker run -tid --runtime=habana -v /mnt/DP_disk1/huggingface/cache/:/root/.cache/huggingface/hub -v .:/root/chatbot -e http_proxy="${{ env.HTTP_PROXY_CONTAINER_RUN }}" -e https_proxy="${{ env.HTTPS_PROXY_CONTAINER_RUN }}" --name="chatbotinfer-hpu" --hostname="chatbotinfer-hpu-container" chatbotinfer-hpu:latest
 
       - name: Run Inference Test
         run: |
