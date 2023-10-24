@@ -63,7 +63,6 @@ RUN conda init bash && \
     echo "conda activate chatbot-finetuning" >> ~/.bashrc && \
     source ~/.bashrc
 
-
 RUN source activate && conda activate chatbot-finetuning && pip install oneccl_bind_pt -f https://developer.intel.com/ipex-whl-stable-cpu && \
     pip install datasets torch accelerate SentencePiece evaluate nltk rouge_score protobuf==3.20.1 tokenizers einops && \
     git clone https://github.com/huggingface/peft.git && cd peft && python setup.py install && \
