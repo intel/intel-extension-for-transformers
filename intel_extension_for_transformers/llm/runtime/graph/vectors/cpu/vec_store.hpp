@@ -20,7 +20,7 @@
 inline void store_s8x16(void* mem_addr, s8x16 a) { _mm_storeu_si128(reinterpret_cast<__m128i*>(mem_addr), a.first); }
 inline void store_u8x16(void* mem_addr, u8x16 a) { _mm_storeu_si128(reinterpret_cast<__m128i*>(mem_addr), a.first); }
 template <>
-void store_kernel_t<s8x16>(void* dst, s8x16 src) {
+inline void store_kernel_t<s8x16>(void* dst, s8x16 src) {
   store_s8x16(dst, src);
 }
 
@@ -57,7 +57,7 @@ inline void store_fp32x16(void* mem_addr, fp32x16 a) {
 }
 
 template <>
-void store_kernel_t<fp32x16>(void* dst, fp32x16 src) {
+inline void store_kernel_t<fp32x16>(void* dst, fp32x16 src) {
   store_fp32x16(dst, src);
 }
 
@@ -66,7 +66,7 @@ inline void store_bf16x16(void* mem_addr, bf16x16 a) {
 }
 
 template <>
-void store_kernel_t<bf16x16>(void* dst, bf16x16 src) {
+inline void store_kernel_t<bf16x16>(void* dst, bf16x16 src) {
   store_bf16x16(dst, src);
 }
 

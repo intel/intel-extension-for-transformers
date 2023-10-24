@@ -52,7 +52,7 @@ OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python ru
 ```
 
 ### Advanced Inference
-Neural Engine also supports weight compression to `fp8_4e3m`, `fp8_5e2m` and `int8` **only when runing bf16 graph**. If you want to try, please add arg `--weight_type`, like:
+Neural Engine also supports weight compression to `fp8_4e3m`, `fp8_5e2m` and `int8` **only when running bf16 graph**. If you want to try, please add arg `--weight_type`, like:
 ```bash
 OMP_NUM_THREADS=<physical cores num> numactl -m <node N> -C <cpu list> python run_llm.py --max-new-tokens 32 --input-tokens 32 --batch-size 1 --model_path <path to bf16 engine model> --model <model name> --weight_type=fp8_5e2m
 ```
