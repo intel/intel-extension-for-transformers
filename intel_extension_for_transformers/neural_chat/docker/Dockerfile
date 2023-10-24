@@ -45,7 +45,7 @@ RUN apt-get update \
     && apt-get install -y libgl1-mesa-glx \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-https://github.com/intel/intel-extension-for-transformers/pull/479/conflict?name=intel_extension_for_transformers%252Fneural_chat%252Fdocker%252FDockerfile&ancestor_oid=09ab00f65dcf865f88da0a5f95c7cd6e30c71ca2&base_oid=18de9896504921c2bd6e71f9c2bcb5709a534fac&head_oid=f4621884b35b29fa76c8169afa737bcfcffdc368
+
 # Download ITREX code
 # RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
 RUN mkdir -p /intel-extension-for-transformers
@@ -73,7 +73,6 @@ COPY ./torch*.whl /
 RUN if [ -f /torch-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torch-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
 RUN if [ -f /torchaudio-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchaudio-2.1.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
 RUN if [ -f /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl ]; then source activate && conda activate neuralchat && pip install /torchvision-0.16.0+cpu-cp3${PYTHON_VERSION##*.}-cp3${PYTHON_VERSION##*.}-linux_x86_64.whl; fi
-
 
 RUN source activate && conda activate neuralchat && pip install oneccl_bind_pt==2.0.0+cpu -f https://developer.intel.com/ipex-whl-stable-cpu && \
     cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
