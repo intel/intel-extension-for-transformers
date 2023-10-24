@@ -44,3 +44,4 @@ jobs:
 
       - name: Test Summary
         run: echo "Inference completed successfully"
+
