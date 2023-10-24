@@ -226,20 +226,21 @@ def prepare_qat_model(
     model_name: str,
     output_path: Path,
     fake_quant_model_qinit_path: str = "./",
-    fake_quant_model_qinit_name: str = "fake_quant_model_qinit.pt"
+    fake_quant_model_qinit_name: str = "quant_model.pt"
 ):
     device = 'cpu'
     output_path = Path(output_path)
     pipeline = StableDiffusionPipeline.from_pretrained(model_name).to(device)
     unet = pipeline.unet
 
-    from quantization_modules import find_and_replace, convert2quantized_model
-    find_and_replace(unet)
-    unet.load_state_dict(torch.load(os.path.join(fake_quant_model_qinit_path, fake_quant_model_qinit_name)))
-    unet = convert2quantized_model(unet)
+    #from quantization_modules import find_and_replace, convert2quantized_model
+    #find_and_replace(unet)
+    #unet.load_state_dict(torch.load(os.path.join(fake_quant_model_qinit_path, fake_quant_model_qinit_name)))
+    #unet = convert2quantized_model(unet)
+    from quantization_modules import load_int8_model
+    unet = load_int8_model(unet, os.path.join(fake_quant_model_qinit_path, fake_quant_model_qinit_name), 'fake' in os.path.join(fake_quant_model_qinit_path, fake_quant_model_qinit_name))
     unet.eval()
     setattr(pipeline, "unet", unet)
-
     onnx_model_path = output_path / "unet_qat_int8" / "model.onnx"
     os.makedirs(os.path.dirname(onnx_model_path), exist_ok=True)
     if os.path.exists(os.path.dirname(onnx_model_path)):
@@ -315,7 +316,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--fake_quant_model_qinit_name",
         type=str,
-        default="fake_quant_model_qinit.pt",
+        default="quant_model.pt",
         help="Name of the fake_quant_model_qinit",
     )
 
