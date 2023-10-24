@@ -75,6 +75,7 @@ class Model {
   int n_ctx = 0;
   std::vector<model_token> last_n_tokens;
   bool token_eos = false;
+  long int generate_count = 0;
 
   model_token post_process(float* logits);
   model_token post_greedy_search(float* logits);
@@ -133,6 +134,7 @@ void Model::reinit() {
   curr_input_ids.clear();
   ctx->n_sample = 0;
   ctx->t_sample_us = 0;
+  generate_count = 0;
 }
 
 std::vector<model_token> Model::generate(const std::vector<model_token>& input_ids) {
@@ -161,7 +163,8 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
   model_token next_token_id = post_process(logits);
   curr_input_ids = {next_token_id};
 
-  if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() >= params.n_predict) {
+  generate_count++;
+  if (next_token_id == ctx->vocab.eos_token_id || generate_count >= params.n_predict) {
     token_eos = true;
   }
 
@@ -203,7 +206,8 @@ std::vector<model_token> Model::generate_tokens(const std::vector<model_token>& 
     model_token next_token_id = post_process(logits);
     curr_input_ids = {next_token_id};
     output_ids.push_back(next_token_id);
-    if (next_token_id == ctx->vocab.eos_token_id || n_past - input_ids.size() >= params.n_predict) {
+    generate_count++;
+    if (next_token_id == ctx->vocab.eos_token_id || generate_count >= params.n_predict) {
       token_eos = true;
       break;
     }
