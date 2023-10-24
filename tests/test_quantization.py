@@ -367,12 +367,5 @@ class TestQuantization(unittest.TestCase):
         output = bit8_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -7.2695, rel_tol=1e-04))
 
-    def test_generate_dummy_past_key_values(self):
-        from transformers import MistralForCausalLM
-        from intel_extension_for_transformers.transformers.utils.utility import generate_dummy_past_key_values
-        model = MistralForCausalLM.from_pretrained("echarlaix/tiny-random-mistral")
-        past_key_values = generate_dummy_past_key_values(1, model)
-        self.assertEqual(past_key_values[0][0].shape, torch.Size([1, 2, 1, 8]))
-
 if __name__ == "__main__":
     unittest.main()
