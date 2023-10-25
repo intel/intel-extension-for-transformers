@@ -87,20 +87,29 @@ class Agent_QA():
     def pre_llm_inference_actions(self, model_name, query):
         intent = self.intent_detector.intent_detection(model_name, query)
         links = []
-        docs = []
-        if 'qa' not in intent.lower():
-            print("Chat with AI Agent.")
-            prompt = generate_prompt(query)
-        else:
-            print("Chat with QA agent.")
-            if self.retriever:
-                context, links = self.retriever.get_context(query)
-                if len(context) == 0:
-                    return "Response with template.", links
-                if self.search_type == "similarity_score_threshold":
+        context = ""
+        if self.retrieval_type == "mmr":
+            if 'qa' not in intent.lower():
+                print("Chat with AI Agent.")
+                prompt = generate_prompt(query)
+            else:
+                print("Chat with QA agent.")
+                if self.retriever:
+                    context, links = self.retriever.get_context(query)
+                    prompt = generate_qa_prompt(query, context)
+                else:
+                    prompt = generate_prompt(query)
+        elif self.retrieval_type == "similarity_score_threshold":
+            context, links = self.retriever.get_context(query)
+            if 'qa' not in intent.lower() and context == "":
+                print("Chat with AI Agent.")
+                prompt = generate_prompt(query)
+            else:
+                print("Chat with QA agent.")
+                if self.retriever:
+                    if len(context) == 0:
+                        return "Response with template.", links
                     prompt = generate_qa_enterprise(query, context)
                 else:
-                    prompt = generate_qa_prompt(query, context)
-            else:
-                prompt = generate_prompt(query)
+                    prompt = generate_prompt(query)
         return prompt, links
