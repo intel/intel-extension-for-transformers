@@ -38,7 +38,8 @@ inputs = tokenizer(prompt, return_tensors="pt").input_ids
 
 from intel_extension_for_transformers.llm.runtime.graph import Model
 model = Model()
-model.init_from_bin("llama", "/home/zhenweil/temp/ne_llama_q.bin", num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, seed=1, repetition_penalty=1.1) # n_keep=4, ctx_size = 15, n_discard=1 temperature=0.001, top_k=1, top_p=0.95,
+model.init_from_bin("llama", "/home/zhenweil/temp/ne_llama_q.bin", #"/mnt/disk2/data/zhenweil/codes/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph/llama2.f32.bin", 
+                    num_beams=1, max_new_tokens=1024, ctx_size = 2048, do_sample=True, threads=28, repetition_penalty=1.1) # n_keep=4, ctx_size = 15, n_discard=1 temperature=0.001, top_k=1, top_p=0.95,
 # import pdb; pdb.set_trace()
 # # # # import pudb; pudb.set_trace()
 # outputs = model.generate(inputs, streamer=streamer, interactive=True, ingore_prompt=False)
@@ -59,11 +60,16 @@ model.init_from_bin("llama", "/home/zhenweil/temp/ne_llama_q.bin", num_beams=1, 
 #     outputs = model.generate(inputs, streamer=streamer, interactive=False, ingore_prompt=False)
 history = []
 def build_prompt(h):
-    out_prompt = "This is a conversation between User and Llama, a friendly chatbot. Llama is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision.\n\n"
+    # out_prompt = "This is a conversation between User and Llama, a friendly chatbot. Llama is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision.\n\n"
+    # out_prompt = """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n
+    # If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\"\"\"\n
+    # """
+    out_prompt = ""
+
     for idx in range(0, len(h), 2):
-        out_prompt += "User: {}\nLlama:".format(h[idx])
+        out_prompt += "[INST]{}[/INST]".format(h[idx])
         if idx < len(h) - 1:
-            out_prompt += "{}\n".format(h[idx + 1])
+            out_prompt += "{}".format(h[idx + 1])
     return out_prompt
 while True:
     print(">", end="")
@@ -71,11 +77,12 @@ while True:
     history.append(prompt)
     # import pdb; pdb.set_trace()
     b_prompt = build_prompt(history)
-    # print(b_prompt)
+    print(b_prompt)
     inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
     # print(inputs)
     # print("new prompt", prompt)
     # import pdb; pdb.set_trace()
     outputs = model.generate(inputs, streamer=streamer, interactive=False, ignore_prompt=True)
+    # stop token special token
     history.append(tokenizer.batch_decode(outputs)[0])
     # print(history)
