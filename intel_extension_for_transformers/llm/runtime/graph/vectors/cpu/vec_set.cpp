@@ -14,57 +14,39 @@
 
 #include "vec_set.hpp"
 
-inline fp32x16 set1_fp32x16(const float x) {
+fp32x16 set1_fp32x16(const float x) {
 #if __AVX512F__
-  return _mm512_set1_ps(x);
+  return {_mm512_set1_ps(x)};
 #else
   return {_mm256_set1_ps(x), _mm256_set1_ps(x)};
 #endif
 }
 
-inline int32x16 set1_int8x16(const int8_t x) {
-#if __AVX512F__
-  return _mm512_set1_epi8(x);
-#else
-  return {_mm256_set1_epi8(x), _mm256_set1_epi8(x)};
-#endif
-}
+s8x16 set1_s8x16(const int8_t x) { return {_mm_set1_epi8(x)}; }
 
-inline int32x16 set1_int16x16(const int16_t x) {
-#if __AVX512F__
-  return _mm512_set1_epi16(x);
-#else
-  return {_mm256_set1_epi16(x), _mm256_set1_epi16(x)};
-#endif
-}
+s16x16 set1_s16x16(const int16_t x) { return {_mm256_set1_epi16(x)}; }
 
-inline int32x16 set1_fp16x16(const uint16_t x) {
-#if __AVX512F__
-  return _mm512_set1_epi16(x);
-#else
-  return {_mm256_set1_epi16(x), _mm256_set1_epi16(x)};
-#endif
-}
+fp16x16 set1_fp16x16(const uint16_t x) { return {_mm256_set1_epi16(x)}; }
 
-inline int32x16 set1_int32x16(const int16_t x) {
+s32x16 set1_s32x16(const int32_t x) {
 #if __AVX512F__
-  return _mm512_set1_epi32(x);
+  return {_mm512_set1_epi32(x)};
 #else
   return {_mm256_set1_epi32(x), _mm256_set1_epi32(x)};
 #endif
 }
 
-inline int32x16 setzero_int32x16() {
+s32x16 setzero_s32x16() {
 #if __AVX512F__
-  return _mm512_setzero_epi32();
+  return {_mm512_setzero_epi32()};
 #else
   return {_mm256_setzero_si256(), _mm256_setzero_si256()};
 #endif
 }
 
-inline fp32x16 setzero_fp32x16() {
+fp32x16 setzero_fp32x16() {
 #if __AVX512F__
-  return _mm512_setzero_ps();
+  return {_mm512_setzero_ps()};
 #else
   return {_mm256_setzero_ps(), _mm256_setzero_ps()};
 #endif

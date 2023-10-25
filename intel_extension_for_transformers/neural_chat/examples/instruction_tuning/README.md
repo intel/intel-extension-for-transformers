@@ -14,21 +14,67 @@ This example demonstrates how to finetune the pretrained large language model (L
 # Prerequisite​
 
 ## 1. Environment​
+### Bare Metal
 Recommend python 3.9 or higher version.
 ```shell
 pip install -r requirements.txt
 # To use ccl as the distributed backend in distributed training on CPU requires to install below requirement.
-python -m pip install oneccl_bind_pt==1.13 -f https://developer.intel.com/ipex-whl-stable-cpu
+python -m pip install oneccl_bind_pt==2.1.0 -f https://developer.intel.com/ipex-whl-stable-cpu
 ```
+### Docker 
+Pick either one of below options to setup docker environment.
+#### Option 1 : Build Docker image from scratch
+Please refer to this section : [How to build docker images for NeuralChat FineTuning](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#4-build-docker-image) to build docker image from scratch.  
+Once you have the docker image ready, please follow [run docker image](https://github.com/intel/intel-extension-for-transformers/tree/main/intel_extension_for_transformers/neural_chat/docker/finetuning#5-create-docker-container) session to launch a docker instance from the image.  
+
+#### Option 2: Pull existing Docker image
+Please follow the session [itrex docker setup](https://github.com/intel/intel-extension-for-transformers/tree/main/docker#set-up-docker-image) and use the docker pull command to pull itrex docker image.  
+Once you have itrex docker image, follow below section to update itrex docker instance for this finetuning example.  
+```shell
+wget https://raw.githubusercontent.com/oneapi-src/oneAPI-samples/master/AI-and-Analytics/Getting-Started-Samples/IntelAIKitContainer_GettingStarted/run_oneapi_docker.sh
+chmod +x run_oneapi_docker.sh
+cp requirement.txt /tmp
+# change intel/ai-tools:itrex-0.1.1 according to itrex docker setup session
+./run_oneapi_docker.sh intel/ai-tools:itrex-0.1.1
+# don't need ipex in this sample
+pip uninstall intel_extension_for_pytorch
+# update ITREX pip package in the docker instance
+pip install intel-extension-for-transformers --upgrade
+```
+After those instructions, you should be able to run below steps inside the docker instance.  
+
+
 
 ## 2. Prepare the Model
 
 ### LLaMA
+#### decapoda-research/llama-7b-hf
 To acquire the checkpoints and tokenizer, the user has two options: completing the [Google form](https://forms.gle/jk851eBVbX1m5TAv5) or attempting [the released model on Huggingface](https://huggingface.co/decapoda-research/llama-7b-hf).
-
+Users could follow below commands to get the checkpoints from github repository.
+```bash
+git lfs install
+git clone https://huggingface.co/decapoda-research/llama-7b-hf
+```
 It should be noticed that the early version of LLama model's name in Transformers has resulted in many loading issues, please refer to this [revision history](https://github.com/huggingface/transformers/pull/21955). Therefore, Transformers has reorganized the code and rename LLaMA model as `Llama` in the model file. But the release model on Huggingface did not make modifications in react to this change. To avoid unexpexted confliction issues, we advise the user to modify the local `config.json` and `tokenizer_config.json` files according to the following recommendations:
 1. The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`;
 2. The `architectures` in `config.json` should be changed from `LLaMAForCausalLM` to `LlamaForCausalLM`.
+
+#### meta-llama/Llama-2-7b
+To acquire the checkpoints and tokenizer, the user can get those files from [meta-llama/Llama-2-7b]([https://huggingface.co/mosaicml/mpt-7b](https://huggingface.co/meta-llama/Llama-2-7b)).
+Users could follow below commands to get the checkpoints from github repository after the access request to the files is approved.
+```bash
+git lfs install
+git clone https://huggingface.co/meta-llama/Llama-2-7b
+```
+#### MPT 
+To acquire the checkpoints and tokenizer, the user can get those files from [mosaicml/mpt-7b](https://huggingface.co/mosaicml/mpt-7b).
+Users could follow below commands to get the checkpoints from github repository.
+```bash
+git lfs install
+git clone https://huggingface.co/mosaicml/mpt-7b
+```
+For missing GPTNeoTokenizer issue, we advise the user to modify the local `tokenizer_config.json` file according to the following recommendation:
+1. The `tokenizer_class` in `tokenizer_config.json` should be changed from `GPTNeoXTokenizer` to `GPTNeoXTokenizerFast`;
 
 ### FLAN-T5
 The user can obtain the [release model](https://huggingface.co/google/flan-t5-xl) from Huggingface.
@@ -206,6 +252,7 @@ python finetune_clm.py \
         --output_dir ./mpt_peft_finetuned_model \
         --peft lora \
         --trust_remote_code True \
+        --use_fast_tokenizer True \
         --tokenizer_name "EleutherAI/gpt-neox-20b" \
         --no_cuda \
 ```
@@ -216,7 +263,7 @@ For finetuning on SPR, add `--bf16` argument will speedup the finetuning process
 You could also indicate `--peft` to switch peft method in P-tuning, Prefix tuning, Prompt tuning, LLama Adapter, LoRA,
 see https://github.com/huggingface/peft. Note for FLAN-T5/MPT, only LoRA is supported.
 
-Add option **"--use_fast_tokenizer False"** when using latest transformers if you met failure in llama fast tokenizer for llama, The `tokenizer_class` in `tokenizer_config.json` should be changed from `LLaMATokenizer` to `LlamaTokenizer`
+Add option **"--use_fast_tokenizer False"** when using latest transformers if you met failure in llama fast tokenizer for llama.
 
 ## 2. Multi-node Fine-tuning in Xeon SPR
 

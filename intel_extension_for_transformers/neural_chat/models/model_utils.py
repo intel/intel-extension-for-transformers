@@ -28,6 +28,7 @@ from huggingface_hub import snapshot_download
 from typing import List
 from transformers import (
     GenerationConfig,
+    AutoModel,
     AutoModelForCausalLM,
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
@@ -253,17 +254,13 @@ def init_deepspeed_inference(model, model_name_or_path, use_hpu_graphs, is_meta)
     model = deepspeed.init_inference(model, **ds_inference_kwargs)
     return model.module
 
-
-def set_cpu_running_env():
-    os.environ["ONEDNN_MAX_CPU_ISA"] = "AVX512_CORE_BF16"
-
-
 def load_model(
     model_name,
     tokenizer_name,
     device="cpu",
     use_hpu_graphs=False,
     cpu_jit=False,
+    ipex_int8=False,
     use_cache=True,
     peft_path=None,
     use_deepspeed=False,
@@ -296,8 +293,6 @@ def load_model(
         )
 
         adapt_transformers_to_gaudi()
-    elif device == "cpu":
-        set_cpu_running_env()
 
     if isinstance(optimization_config, AMPConfig):
         dtype = optimization_config.dtype
@@ -330,9 +325,11 @@ def load_model(
         use_fast=False if (re.search("llama", model_name, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)) else True,
         use_auth_token=hf_access_token,
-        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE)) else False,
+        trust_remote_code=True if (re.search("qwen", model_name, re.IGNORECASE) or \
+            re.search("chatglm", model_name, re.IGNORECASE)) else False,
     )
-    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token)
+    config = AutoConfig.from_pretrained(model_name, use_auth_token=hf_access_token, trust_remote_code=True \
+                                        if re.search("chatglm", model_name, re.IGNORECASE) else False)
     load_to_meta = model_on_meta(config)
     if peft_path and device == "hpu" and use_deepspeed and load_to_meta:
         print("PEFT could not work in deepspeed sharded checkpt loading mode, set load_to_meta to False")
@@ -340,7 +337,7 @@ def load_model(
     if device == "hpu" and use_deepspeed and load_to_meta:
         with deepspeed.OnDevice(dtype=torch.bfloat16, device="meta"):
             model = AutoModelForCausalLM.from_config(config, torch_dtype=torch.bfloat16)
-    elif re.search("flan-t5", model_name, re.IGNORECASE):
+    elif re.search("flan-t5", model_name, re.IGNORECASE) and not ipex_int8:
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForSeq2SeqLM.from_pretrained(
                 model_name,
@@ -349,6 +346,14 @@ def load_model(
                 use_auth_token=hf_access_token,
                 quantization_config=bitsandbytes_quant_config,
             )
+    elif re.search("chatglm", model_name, re.IGNORECASE) and not ipex_int8:
+        with smart_context_manager(use_deepspeed=use_deepspeed):
+            model = AutoModel.from_pretrained(
+                model_name,
+                torch_dtype=torch_dtype,
+                low_cpu_mem_usage=True,
+                use_auth_token=hf_access_token,
+                trust_remote_code=True)
     elif (
         re.search("gpt", model_name, re.IGNORECASE)
         or re.search("mpt", model_name, re.IGNORECASE)
@@ -358,7 +363,8 @@ def load_model(
         or re.search("neural-chat-7b-v1", model_name, re.IGNORECASE)
         or re.search("neural-chat-7b-v2", model_name, re.IGNORECASE)
         or re.search("qwen", model_name, re.IGNORECASE)
-    ):
+        or re.search("starcoder", model_name, re.IGNORECASE)
+    ) and not ipex_int8:
         with smart_context_manager(use_deepspeed=use_deepspeed):
             model = AutoModelForCausalLM.from_pretrained(
                 model_name,
@@ -367,6 +373,17 @@ def load_model(
                 low_cpu_mem_usage=True,
                 quantization_config=bitsandbytes_quant_config,
             )
+    elif (
+            (re.search("starcoder", model_name, re.IGNORECASE)
+            ) and ipex_int8
+        ):
+            with smart_context_manager(use_deepspeed=use_deepspeed):
+                import intel_extension_for_pytorch
+                from optimum.intel.generation.modeling import TSModelForCausalLM
+                model = TSModelForCausalLM.from_pretrained(
+                        model_name,
+                        file_name="best_model.pt",
+                 )
     else:
         raise ValueError(
             f"Unsupported model {model_name}, only supports FLAN-T5/LLAMA/MPT/GPT/BLOOM/OPT/QWEN/NEURAL-CHAT now."
@@ -381,11 +398,13 @@ def load_model(
     if (
         hasattr(model.generation_config, "pad_token_id")
         and model.generation_config.pad_token_id is not None
+        and not "chatglm" in model_name
     ):
         tokenizer.pad_token_id = model.generation_config.pad_token_id
     if (
         hasattr(model.generation_config, "eos_token_id")
         and model.generation_config.eos_token_id is not None
+        and not "chatglm" in model_name
     ):
         tokenizer.eos_token_id = model.generation_config.eos_token_id
     if (
@@ -434,7 +453,7 @@ def load_model(
             model = model.to(dtype=torch_dtype)
 
         if device == "cpu":
-            if torch_dtype == torch.bfloat16:
+            if torch_dtype == torch.bfloat16 and not ipex_int8:
                 import intel_extension_for_pytorch as intel_ipex
 
                 model = intel_ipex.optimize(
@@ -471,7 +490,13 @@ def load_model(
     if tokenizer.pad_token is None and tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
         model.generation_config.pad_token_id = model.generation_config.eos_token_id
-
+    # warmup for int8 model
+    if ipex_int8:
+        input_ids = tokenizer("A chat between a curious human and an artificial intelligence assistant.\n"
+                              " Human: Tell me about Intel.\n Assistant:", return_tensors="pt").input_ids.to('cpu')
+        with torch.inference_mode(), torch.no_grad():
+            for i in range(2):
+                model.generate(input_ids, max_new_tokens=32, do_sample=False, temperature=0.9)
     MODELS[model_name]["model"] = model
     MODELS[model_name]["tokenizer"] = tokenizer
     print("Model loaded.")
@@ -550,6 +575,7 @@ def predict_stream(**params):
         `use_hpu_graphs` (bool): 
                     Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -579,6 +605,7 @@ def predict_stream(**params):
     use_cache = params["use_cache"] if "use_cache" in params else True
     return_stats = params["return_stats"] if "return_stats" in params else False
     prompt = params["prompt"]
+    ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
     errors_queue = Queue()
@@ -624,17 +651,28 @@ def predict_stream(**params):
                         context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
                     elif device == "xpu":
                         context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-                    with context:
+                    if ipex_int8:
                         global output_token_len
                         output_token=model.generate(
-                            **input_tokens,
-                            **generate_kwargs,
-                            streamer=streamer,
-                            generation_config=generation_config,
-                            return_dict_in_generate=True,
-                        )
-                        output_token_len=output_token.sequences[0].shape[-1]
-                        return output_token
+                                **input_tokens,
+                                **generate_kwargs,
+                                streamer=streamer,
+                                generation_config=generation_config,
+                                return_dict_in_generate=True,
+                            )
+
+                    else:
+                        with context:
+                            global output_token_len
+                            output_token=model.generate(
+                                **input_tokens,
+                                **generate_kwargs,
+                                streamer=streamer,
+                                generation_config=generation_config,
+                                return_dict_in_generate=True,
+                            )
+                    output_token_len=output_token.sequences[0].shape[-1]
+                    return output_token
             except Exception as e:
                 errors_queue.put(e)
 
@@ -759,6 +797,7 @@ def predict(**params):
         `use_hpu_graphs` (bool): 
                  Determines whether to utilize Habana Processing Units (HPUs) for accelerated generation.
         `use_cache` (bool): Determines whether to utilize kv cache for accelerated generation.
+        `ipex_int8` (bool): Whether to use IPEX int8 model to inference.
 
     Returns:
         generator: A generator that yields the generated streaming text.
@@ -785,6 +824,7 @@ def predict(**params):
     force_words_ids = params["force_words_ids"] if "force_words_ids" in params else None
     use_hpu_graphs = params["use_hpu_graphs"] if "use_hpu_graphs" in params else False
     use_cache = params["use_cache"] if "use_cache" in params else False
+    ipex_int8 = params["ipex_int8"] if "ipex_int8" in params else False
     prompt = params["prompt"]
     model = MODELS[model_name]["model"]
     tokenizer = MODELS[model_name]["tokenizer"]
@@ -824,14 +864,21 @@ def predict(**params):
                 context = torch.cuda.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
             elif device == "xpu":
                 context = torch.xpu.amp.autocast(enabled=True, dtype=dtype, cache_enabled=True)
-            
-            with context:
+            if ipex_int8:
                 generation_output = model.generate(
-                    **input_tokens,
-                    **generate_kwargs,
-                    generation_config=generation_config,
-                    return_dict_in_generate=True
-                )
+                        **input_tokens,
+                        **generate_kwargs,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True
+                        )
+            else:
+                with context:
+                    generation_output = model.generate(
+                        **input_tokens,
+                        **generate_kwargs,
+                        generation_config=generation_config,
+                        return_dict_in_generate=True
+                    )
     elif device == "hpu":
         # Move inputs to target device(s)
         input_tokens = prepare_inputs(input_tokens, model.device)

@@ -28,7 +28,7 @@ python run_qa.py \
 
 ## Step 2: Distributed Data Parallel Training
 
-We supporte Distributed Data Parallel training on single node and multi nodes settings for pruning. To use Distributed Data Parallel to speedup training, the bash command needs a small adjustment.
+We support Distributed Data Parallel training on single node and multi nodes settings for pruning. To use Distributed Data Parallel to speedup training, the bash command needs a small adjustment.
 <br>
 *`<MASTER_ADDRESS>`* is the address of the master node, it won't be necessary for single node case,
 <br>

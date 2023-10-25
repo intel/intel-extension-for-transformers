@@ -819,9 +819,10 @@ class WeightPack {
   }
 
   void packWeightTranspose(const int N, const int K, const Param& _param) {
-    utils::aligned_vector<WType> B_NT(N * K);
-    transposeWeight<WType, ISA_T>(N, K, _param.B, _param.ldb, B_NT.data(), N);
-    return packWeight(N, K, {B_NT.data(), N, _param.packedW});
+    auto B_NT = utils::amalloc<WType>((size_t)N * K);
+    transposeWeight<WType, ISA_T>(N, K, _param.B, _param.ldb, B_NT, N);
+    packWeight(N, K, {B_NT, N, _param.packedW});
+    utils::afree(B_NT);
   }
 
   // from KxN int8 symmetric weight to packed N//NtilexKPadxNTile int4 weight
