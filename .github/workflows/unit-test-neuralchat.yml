@@ -30,7 +30,7 @@ env:
 
 jobs:
   unit-test:
-    runs-on: [self-hosted, Linux, X64, neuralchat-node]
+    runs-on: [self-hosted, Linux, X64, neuralchat-node-tmp]
     strategy:
       matrix:
         include:
