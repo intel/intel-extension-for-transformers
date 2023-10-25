@@ -40,7 +40,11 @@ class NamedEntityRecognition():
         Set bf16=True if you want to inference with bf16 model.
     """
 
-    def __init__(self, model_path="./Llama-2-7b-chat-hf/", spacy_model="en_core_web_lg", bf16: bool=False, device="cpu") -> None:
+    def __init__(self, 
+                 model_path="./Llama-2-7b-chat-hf/", 
+                 spacy_model="en_core_web_lg", 
+                 bf16: bool=False, 
+                 device="cpu") -> None:
         # initialize tokenizer and models
         self.nlp = spacy.load(spacy_model)
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
