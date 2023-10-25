@@ -32,6 +32,7 @@ conda install jemalloc gperftools -c conda-forge -y
 Install other dependencies using pip:
 
 ```bash
+pip install transformers >= 4.34.1
 pip install -r ../../../requirements.txt
 ```
 

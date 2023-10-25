@@ -1,4 +1,6 @@
-transformers>=4.32.0
+scikit-learn
+farm-haystack
+transformers>=4.32.1
 peft
 fschat
 torch==2.1.0
@@ -16,8 +18,6 @@ python-multipart
 PyPDF2
 langchain
 python-docx
-scikit-learn
-farm-haystack
 librosa
 beautifulsoup4
 InstructorEmbedding
