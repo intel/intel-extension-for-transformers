@@ -167,6 +167,11 @@ Additionally, we are preparing to introduce Baichuan, Mistral, and other models 
 </tbody>
 </table>
 
+## 🙌Demo
+
+* Infinite inference (up to 4M tokens)
+
+https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
 ## 📃Selected Publications/Events
 * Blog published on Medium: [NeuralChat: Simplifying Supervised Instruction Fine-tuning and Reinforcement Aligning for Chatbots](https://medium.com/@NeuralCompressor/neuralchat-simplifying-supervised-instruction-fine-tuning-and-reinforcement-aligning-for-chatbots-d034bca44f69) (Sep 2023)

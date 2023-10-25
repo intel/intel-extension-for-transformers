@@ -1,4 +1,4 @@
-transformers>=4.32.0
+transformers >= 4.34.1
 peft
 fschat
 intel_extension_for_pytorch==2.1.0
