@@ -73,8 +73,10 @@ function main() {
     apt-get update
     apt-get install ffmpeg -y
     apt-get install lsof
+    apt-get install libgl1
     apt-get install -y libgl1-mesa-glx
     apt-get install -y libgl1-mesa-dev
+    apt-get install libsm6 libxext6 -y
     wget http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     dpkg -i libssl1.1_1.1.1f-1ubuntu2.19_amd64.deb
     python -m pip install --upgrade --force-reinstall torch
