@@ -139,6 +139,13 @@ void Model::reinit() {
 
 std::vector<model_token> Model::generate(const std::vector<model_token>& input_ids) {
   if (curr_input_ids.empty()) {
+    // if (params.model_arch == MODEL_CHATGLM2) {
+    //   std::vector<std::string> prompts;
+    //   prompts.push_back(params.prompt);
+    //   std::string prompt = build_prompt_glm2(prompts);
+    //   embd_inp = ::model_tokenize(ctx, prompt, false);
+    //   embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
+    // } 
     curr_input_ids = input_ids;
   }
   for (auto item : curr_input_ids) {
