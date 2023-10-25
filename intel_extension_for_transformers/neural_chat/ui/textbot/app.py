@@ -367,6 +367,8 @@ def http_bot(state, model_selector, temperature, max_new_tokens, topk, request: 
         output = ""
         for chunk in response.iter_lines(decode_unicode=False, delimiter=b"\0"):
             if chunk:
+                if chunk.strip() == b'data: [DONE]':
+                    break
                 data = json.loads(chunk.decode())
                 # print("data======", data, skip_echo_len)
                 if data["error_code"] == 0:
@@ -788,5 +790,5 @@ if __name__ == "__main__":
     demo.queue(
         concurrency_count=concurrency_count, status_update_rate=10, api_open=False
     ).launch(
-        server_name=host, share=share, max_threads=200
+        server_name=host, server_port=80, share=share, max_threads=200
     )
