@@ -30,12 +30,15 @@ Multi-node and Multi-socket communications are needed in tensor parallelism, we 
 Taking "llama" as an example, we need three modifications:
 
 - First, we need to split the weight used in the 'matmul' calculation.
-- Second, determine the size of 'n_head' after splitting, based on the number of nodes in parallel computation(world_size).
-- Finally, insert the 'all_reduce' operator where necessary.
+- Second, determine the size of 'n_head' after splitting, based on the total number of nodes in parallel(world_size).
+- Finally, insert the 'all_reduce' operator after the final matmul.
 
-For instance, when splitting the FFN (feed-forward network) module, it is visible in the FFN flowchart that both 'feedforward.w1.weight' and 'feedforward.w3.weight' are part of the first 'matmul' computation. This portion of the 'matmul' should be split by column, considering the weight in ITREX is already transposed. Here, we only need to set the 'split_type' of these two weights to 'TP_1D_ROW' within the 'calc_split_type()' function in 'models/modelutils/model_files.h'. 
-The 'feedforward.w1.weight' belongs to the second part of the 'matmul' calculation in the FFN process diagram, the 'split_type' should be set to 'TP_1D_COLUMN'. This ensures that the partial results from the first 'matmul' calculation can be independently used for the second 'matmul' calculation. There are also some primitives between the two 'matmul' calculations, and since these primitives are element-wise, they are also calculated independently on their respective nodes.
+For instance, when splitting the FFN (feed-forward network) module, it is visible in the FFN flowchart that both 'feed_forward.w1.weight' and 'feed_forward.w3.weight' are part of the first 'matmul' computation. This portion of the 'matmul' should be split by column, considering the weight in ITREX is already transposed. We only need to set the 'split_type' of these two weights to 'TP_1D_ROW' within the 'calc_split_type()' function in 'models/modelutils/model_files.h'. 
+
+The 'feed_forward.w1.weight' belongs to the second part of the 'matmul' calculation in the FFN process diagram, the 'split_type' should be set to 'TP_1D_COLUMN'. This ensures that the partial results from the first 'matmul' calculation can be independently used for the second 'matmul' calculation. There are also some primitives between the two 'matmul' operations, and since these primitives are element-wise, they are also calculated independently on their respective nodes.
+
 For the attention module, there are four weights: 'attention.wq.weight', 'attention.wk.weight', 'attention.wv.weight', and 'attention.wo.weight'. The 'split_type' for 'attention.wq.weight', 'attention.wk.weight', and 'attention.wv.weight' should be set to 'TP_1D_ROW'. In contrast, 'attention.wo.weight' should be set to 'TP_1D_COLUMN'. The calculations for the primitives in between are all independent.
+
 When the weight splitting is complete, the actual 'n_head' computed by each node when running the model is correspondingly reduced, so it is necessary to reset the size of 'n_head'. Code is simple like:
 
 ```C++
