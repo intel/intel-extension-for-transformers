@@ -623,12 +623,12 @@ class StableDiffusionPipeline(DiffusionPipeline):
                 # noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
 
                 # The ITREX Unet Code
-                if i <= 4 or i >=15:
+                if i <= 4 or i >= len(timesteps) - 5:
                     t_1d1 = torch.tensor([t], dtype=torch.float32)
-                    engine_output = engine_graph[3].inference([latent_model_input, t_1d1, prompt_embeds])
+                    engine_output = engine_graph[1].inference([latent_model_input, t_1d1, prompt_embeds])
                 else:
                     t_1d2 = torch.tensor([t], dtype=torch.float32)
-                    engine_output = engine_graph[1].inference([latent_model_input, t_1d2, prompt_embeds])
+                    engine_output = engine_graph[3].inference([latent_model_input, t_1d2, prompt_embeds])
                 noise_pred = torch.from_numpy(engine_output['out_sample:0'])
 
                 # perform guidance
