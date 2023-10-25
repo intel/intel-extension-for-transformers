@@ -23,7 +23,7 @@ import torch
 def get_gpu_family():
     ''' Get gpu device family info.
 
-    Return 'flex'|'max'|'arc' or assert
+    Return 'flex'|'max'|'arc'| 'no_gpu'| assert
 
     Note, this function need to import intel_extension_for_pytorch
 
@@ -34,6 +34,8 @@ def get_gpu_family():
     '''
 
     import intel_extension_for_pytorch as ipex
+    if not (hasattr(torch, "xpu") and torch.xpu.is_available()):
+        return 'no_gpu'
 
     name = torch.xpu.get_device_name()
     if 'GPU Flex' in name:

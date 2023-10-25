@@ -187,7 +187,6 @@ def _replace_linear(
         current_key_name.pop(-1)
     return model, is_replaced
 
-
 def convert_to_quantized_model(model, config, device=torch.device("cpu")):
     if device == "xpu" or device == torch.device("xpu"):
         import intel_extension_for_pytorch
@@ -269,3 +268,49 @@ def convert_to_quantized_model(model, config, device=torch.device("cpu")):
                                  calib_func=calib_func,
                                  calib_dataloader=calib_dataloader)
     return replace_linear(inc_model.model, None, None, config, device=device)
+
+def convert_dtype_str2torch(str_dtype):
+    if str_dtype == "int8":
+        return torch.int8
+    elif str_dtype == "fp32":
+        return torch.float
+    elif str_dtype == "fp16":
+        return torch.float16
+    elif str_dtype == "bf16":
+        return torch.bfloat16
+    else:
+        assert False, "Unsupport dtype {} for by IPEX backend".format(str_dtype)
+
+def convert_to_quantized_model_by_ipex(model, config, device=torch.device("cpu")):
+    import intel_extension_for_pytorch as ipex
+    tmp_quan_weight_path = "./itrex_tmp_quantized_weight.pt"
+
+    if config.weight_dtype == "int8":
+        bits = 8
+    elif "int4" in config.weight_dtype:
+        bits = 4
+    else:
+        assert False, "Unsupport {} for quantize weight only by IPEX backend".format(config.weight_dtype)
+
+    amp_dtype = convert_dtype_str2torch(config.compute_dtype)
+    dataloader = config.calib_dataloader
+    assert dataloader is not None, "Must provide config.calib_dataloader"
+
+    ipex.woq(model,
+        dataloader,
+        tmp_quan_weight_path,
+        wbits=bits,
+        mixed_weight=True,
+        group_size = config.group_size,
+        param_dtype=amp_dtype)
+
+    woq_config = {}
+    woq_config['is_int4'] = (bits == 4)
+    woq_config['group_size'] = config.group_size
+    woq_config['weight_path'] = tmp_quan_weight_path
+    amp_dtype = torch.float16
+    model = ipex.optimize_transformers(model.eval(), dtype=amp_dtype, **woq_config)
+
+    model.to(device)
+
+    return model

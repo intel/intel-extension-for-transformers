@@ -64,7 +64,7 @@ class _BaseQBitsAutoModelClass:
         quantization_config = kwargs.pop("quantization_config", None)
 
         use_llm_runtime = kwargs.pop("use_llm_runtime", True)
-        device_map = kwargs.get("device_map", None)
+        device_map = kwargs.get("device_map", 'cpu')
         if isinstance(quantization_config, BitsAndBytesConfig):
             model = cls.ORIG_MODEL.from_pretrained(
                 pretrained_model_name_or_path,
@@ -160,15 +160,20 @@ class _BaseQBitsAutoModelClass:
                     name = get_gpu_family()
                     if name == "max":
                         is_max = True
-                        pass  # TODO: weight only quantization for PVC
                     elif name != "arc":
                         raise Exception("{} device Unsupport weight only quantization!".format(device_map))
-                if not is_max:
-                    quantization_config.post_init()
+
+                if is_max:
+                    from intel_extension_for_transformers.llm.quantization.utils import (
+                        convert_to_quantized_model_by_ipex as convert_to_quantized_model,
+                    )
+                else:
                     from intel_extension_for_transformers.llm.quantization.utils import (
                         convert_to_quantized_model,
                     )
-                    model = convert_to_quantized_model(model, quantization_config, device=device_map)
+                quantization_config.post_init()
+                model = convert_to_quantized_model(model, quantization_config, device=device_map)
+
             logger.info("WeightOnlyQuant done.")
         elif isinstance(quantization_config, SmoothQuantConfig):
             logger.info("Applying SmoothQuant.")

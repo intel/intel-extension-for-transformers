@@ -1,3 +1,4 @@
+tests/*.pt
 *.pyc
 .vscode
 .idea
