@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from transformers import AutoConfig
+from transformers import AutoConfig, AutoTokenizer
 from intel_extension_for_transformers.llm.runtime.graph.scripts.convert import convert_model
 import torch
 model_maps = {"gpt_neox": "gptneox", "gpt_bigcode": "starcoder"}
@@ -27,6 +27,7 @@ class Model:
         self.model_type = None
         self.bin_file = None
         self.generate_round = 0
+        self.tokenizer = None
 
     def __import_package(self, model_name):
         if self.module:
@@ -63,6 +64,7 @@ class Model:
 
     def init(self, model_name, **kwargs):
         config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
         model_type = model_maps.get(config.model_type, config.model_type)
         if model_type == "chatglm" and "chatglm2" in config._name_or_path:
             model_type = "chatglm2"
@@ -95,7 +97,14 @@ class Model:
         self.module.Model.quant_model(model_path = model_path,
                                     out_path = out_path, **kwargs)
 
+    def chat(input_ids, streamer=None, ignore_prompt=False):
+        out_prompt = "[INST] <<SYS>> This is a conversation between User and Llama, a friendly chatbot. Llama is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision.\n\n <</SYS>> "
+        self.history = []
+        
+
     def generate(self, input_ids, streamer=None, interactive=False, ignore_prompt=False, **kwargs):
+        if interactive:
+            return chat(input_ids, streamer, ignore_prompt)
         if self.model is None:
             self.init_from_bin(self.model_type, self.bin_file, **kwargs)
             self.generate_round = 0
