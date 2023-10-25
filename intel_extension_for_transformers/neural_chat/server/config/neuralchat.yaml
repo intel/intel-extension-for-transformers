@@ -77,6 +77,7 @@ safety_checker:
 ner:
     enable: false
     args:
+        device: "cpu"
         model_path: "meta-llama/Llama-2-7b-chat-hf"
         spacy_model: "en_core_web_lg"
         bf16: False
@@ -84,6 +85,7 @@ ner:
 ner_int:
     enable: false
     args:
+        device: "cpu"
         model_path: "meta-llama/Llama-2-7b-chat-hf"
         spacy_model: "en_core_web_lg"
         compute_dtype: "fp32"

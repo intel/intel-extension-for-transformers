@@ -390,7 +390,7 @@ async def handle_ai_photos_chat_to_image(request: Request):
 
     try:
         start_time = time.time()
-        ner_obj = NamedEntityRecognition(model_path="mosaicml/mpt-7b-chat", bf16=True)
+        ner_obj = NamedEntityRecognition(model_path="mosaicml/mpt-7b-chat", bf16=False)
         result = ner_obj.inference(query=query)
         end_time = time.time()
         print("<chatWithImage> NER inference cost {} seconds.".format(end_time - start_time))

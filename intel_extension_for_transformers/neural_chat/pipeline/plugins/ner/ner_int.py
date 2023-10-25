@@ -41,7 +41,8 @@ class NamedEntityRecognitionINT():
                  model_path="/home/tme/Llama-2-7b-chat-hf/", 
                  spacy_model="en_core_web_lg", 
                  compute_dtype="fp32", 
-                 weight_dtype="int8") -> None:
+                 weight_dtype="int8",
+                 device="cpu") -> None:
         self.nlp = spacy.load(spacy_model)
         config = WeightOnlyQuantConfig(compute_dtype=compute_dtype, weight_dtype=weight_dtype)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)

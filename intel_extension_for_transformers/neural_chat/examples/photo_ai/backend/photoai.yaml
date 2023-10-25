@@ -44,6 +44,7 @@ tts:
 ner:
     enable: true
     args:
+        device: "cpu"
         model_path: "./Llama-2-7b-chat-hf"
         spacy_model: "en_core_web_lg"
         bf16: true
