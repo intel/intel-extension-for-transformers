@@ -18,30 +18,17 @@
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "/mnt/disk1/data2/zhenweil/models/llama/Llama-2-7b-chat-hf"  # or local path to model
+model_name = "/mnt/disk1/data2/zhenweil/models/llama/Llama-2-7b-chat-hf"  # or local path to model # meta-llama/Llama-2-7b-chat-hf
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 streamer = TextStreamer(tokenizer)
-# model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
-
-from intel_extension_for_transformers.llm.runtime.graph import Model
-model = Model()
-model.init_from_bin("llama", "/home/zhenweil/temp/ne_llama_q.bin", #"/mnt/disk2/data/zhenweil/codes/intel-extension-for-transformers/intel_extension_for_transformers/llm/runtime/graph/llama2.f32.bin", 
-                    num_beams=1, max_new_tokens=1024, ctx_size = 2048, do_sample=True, threads=28, repetition_penalty=1.1) # n_keep=4, ctx_size = 15, n_discard=1 temperature=0.001, top_k=1, top_p=0.95,
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 
 history = []
 def build_prompt(h):
-    out_prompt = """[INST] <<SYS>> You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe. 
-    Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. 
-    Please ensure that your responses are socially unbiased and positive in nature.\n If a question does not make any sense, 
-    or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, 
-    please don't share false information.\n\n <</SYS>> "
-    """
+    out_prompt = ""
     for idx in range(0, len(h), 2):
-        if idx == 0:
-            out_prompt += "{}[/INST]".format(h[idx])
-        else:
-            out_prompt += "[INST]{}[/INST]".format(h[idx])
+        out_prompt += "[INST]{}[/INST]".format(h[idx])
         if idx < len(h) - 1:
             out_prompt += "{}".format(h[idx + 1])
     return out_prompt
