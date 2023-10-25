@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
     std::string prompt = build_prompt_glm2(prompts);
     embd_inp = ::model_tokenize(ctx, prompt, false);
     embd_inp.insert(embd_inp.begin(), {64790, 64792});  // special prefix
-  } else if (params.model_arch == MODEL_CHATGLM or params.model_arch == MODEL_BAICHUAN) {
+  } else if (params.model_arch == MODEL_CHATGLM || params.model_arch == MODEL_BAICHUAN) {
     for (auto& i : params.ids) {
       embd_inp.emplace_back(i);
     }
@@ -388,14 +388,13 @@ int main(int argc, char** argv) {
       // - take the n_keep first tokens from the original prompt (via n_past)
       // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
       if (n_past + (int)embd.size() > n_ctx) {
-        const int n_left = n_past - params.n_keep;
-
-        // always keep the first token - BOS
+        // always keep the first token
         n_past = std::max(1, params.n_keep);
 
-        // insert n_left/2 tokens at the start of embd from last_n_tokens
-        embd.insert(embd.begin(), last_n_tokens.begin() + n_ctx - n_left / 2 - embd.size(),
-                    last_n_tokens.end() - embd.size());
+        int n_discard = params.n_discard;
+        if (n_discard == -1) n_discard = (n_ctx - embd.size() - params.n_keep) / 2;
+        // drop n_discard tokens
+        embd.insert(embd.begin(), last_n_tokens.begin() + params.n_keep + n_discard, last_n_tokens.end() - embd.size());
 
         // stop saving session if we run out of context
         path_session.clear();

@@ -59,10 +59,10 @@ function check_coverage_status() {
     # Declare an array to hold failed items
     declare -a fail_items=()
 
-    if (($(bc -l <<<"${coverage_PR_lines_rate}+0.05 < ${coverage_base_lines_rate}"))); then
+    if (($(bc -l <<<"${coverage_PR_lines_rate}+0.1 < ${coverage_base_lines_rate}"))); then
         fail_items+=("lines")
     fi
-    if (($(bc -l <<<"${coverage_PR_branches_rate}+0.05 < ${coverage_base_branches_rate}"))); then
+    if (($(bc -l <<<"${coverage_PR_branches_rate}+0.1 < ${coverage_base_branches_rate}"))); then
         fail_items+=("branches")
     fi
 

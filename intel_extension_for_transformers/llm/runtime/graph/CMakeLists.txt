@@ -54,9 +54,9 @@ option(NE_SANITIZE_UNDEFINED     "neural_engine: enable undefined sanitizer"    
 # instruction set specific
 option(NE_AVX                    "neural_engine: enable AVX"                                     ON)
 option(NE_AVX2                   "neural_engine: enable AVX2"                                    ON)
-option(NE_AVX512                 "neural_engine: enable AVX512"                                  ON)
-option(NE_AVX512_VBMI            "neural_engine: enable AVX512-VBMI"                             ON)
-option(NE_AVX512_VNNI            "neural_engine: enable AVX512-VNNI"                             ON)
+option(NE_AVX512                 "neural_engine: enable AVX512"                                  OFF)
+option(NE_AVX512_VBMI            "neural_engine: enable AVX512-VBMI"                             OFF)
+option(NE_AVX512_VNNI            "neural_engine: enable AVX512-VNNI"                             OFF)
 option(NE_FMA                    "neural_engine: enable FMA"                                     ON)
 option(NE_AMX                    "neural_engine: enable AMX"                                     OFF)
 

@@ -23,9 +23,9 @@ jobs:
 
       - name: Build Docker Image
         run: 
-          ITREX_VER=${{ github.sha }} || true
-          
-          docker build --no-cache ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune
+          if [ $(docker images | grep chatbotinfer | wc -l) == 0 ]; then
+            docker build ./ --target cpu --build-arg REPO=${{ github.server_url }}/${{ github.repository }}.git --build-arg ITREX_VER=${{ github.head_ref }} --build-arg http_proxy="${{ env.HTTP_PROXY_IMAGE_BUILD }}" --build-arg https_proxy="${{ env.HTTPS_PROXY_IMAGE_BUILD }}" -f intel_extension_for_transformers/neural_chat/docker/Dockerfile -t chatbotinfer:latest && yes | docker container prune && yes | docker image prune;
+          fi
 
       - name: Start Docker Container
         run: |
@@ -35,7 +35,11 @@ jobs:
 
       - name: Run Inference Test
         run: |
-          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate neuralchat; python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"${{ env.HF_ACCESS_TOKEN }}\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
+          docker exec "chatbotinfer" bash -c "cd /root/chatbot && source activate && conda activate neuralchat;\
+                 pip uninstall intel-extension-for-transformers -y; \
+                 pip install -r requirements.txt; \
+                 python setup.py install; \
+                 python workflows/chatbot/inference/generate.py --base_model_path \"meta-llama/Llama-2-7b-chat-hf\" --hf_access_token \"${{ env.HF_ACCESS_TOKEN }}\" --instructions \"Transform the following sentence into one that shows contrast. The tree is rotten.\" "
 
       - name: Stop Container
         if: success() || failure()

@@ -17,15 +17,29 @@
 
 #include <immintrin.h>
 #include <cstdint>
-#include <utility>
 
 #if __AVX512F__
-typedef __m512 fp32x16;
-typedef __m512i int32x16;
-#else
-typedef std::pair<__m256, __m256> fp32x16;
-typedef std::pair<__m256i, __m256i> int32x16;
+struct fp32x16 {
+  __m512 first;
+};
 
+struct s32x16 {
+  __m512i first;
+};
+struct u32x16 {
+  __m512i first;
+};
+#else
+struct fp32x16 {
+  __m256 first, second;
+};
+
+struct s32x16 {
+  __m256i first, second;
+};
+struct u32x16 {
+  __m256i first, second;
+};
 #define MASK_DECORATOR(blend_func, a, b, mask, res) \
   switch ((mask)) {                                 \
     case 1:                                         \
@@ -54,16 +68,49 @@ typedef std::pair<__m256i, __m256i> int32x16;
   }
 
 #endif
-typedef __m256i bf16x16;
-typedef __m256i int16x16;
-typedef __m128i int8x16;
+
+struct bf16x16 {
+  __m256i first;
+};
+
+struct fp16x16 {
+  __m256i first;
+};
+
+struct s16x16 {
+  __m256i first;
+};
+struct s8x16 {
+  __m128i first;
+};
+struct u8x16 {
+  __m128i first;
+};
+
 #define CPU_VEC_STEP 16
 
 template <typename T>
-T load_kernel_t(const void*);
+T load_kernel_t(const void* src) {
+  return *reinterpret_cast<const T*>(src);
+}
+
+template <>
+fp32x16 load_kernel_t<fp32x16>(const void* src);
+template <>
+bf16x16 load_kernel_t<bf16x16>(const void* src);
 
 template <typename T>
-void store_kernel_t(void*, T);
+void store_kernel_t(void* dst, T src) {
+  T* dst_T = reinterpret_cast<T*>(dst);
+  *dst_T = src;
+}
+
+template <>
+void store_kernel_t<s8x16>(void* dst, s8x16 src);
+template <>
+void store_kernel_t<fp32x16>(void* dst, fp32x16 src);
+template <>
+void store_kernel_t<bf16x16>(void* dst, bf16x16 src);
 
 template <typename dstT, typename src0T = void, typename src1T = void, typename src2T = void>
 struct kernel_t {

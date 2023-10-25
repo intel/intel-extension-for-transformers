@@ -12,7 +12,9 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 #pragma once
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -20,6 +22,11 @@
 #include <cstring>
 #include <functional>
 #include <vector>
+#ifdef _WIN32
+#include <cstdlib>
+#else
+#include <stdlib.h>
+#endif
 
 #include "jit_blas.h"
 #include "xbyak/xbyak_util.h"
@@ -279,7 +286,7 @@ static inline _DSTT cast(_SRCT _src) {
 
 template <>
 int8_t cast(float _src) {
-  _src = _src >= 0.f ? _src + 0.5f : _src - 0.5f;
+  _src = roundf(_src);
   _src = std::min(_src, 127.f);
   _src = std::max(_src, -128.f);
   return static_cast<int8_t>(_src);
@@ -320,11 +327,36 @@ _T deserialize(int8_t*& buf) {
 static inline int padto(int a, int b) { return updiv(a, b) * b; }
 static inline size_t padto(size_t a, int b) { return updiv(a, b) * b; }
 
+template <typename _T>
+static inline _T* amalloc(size_t _size, size_t _alignment = 64) {
+  if (_size == 0) {
+    return NULL;
+  }
+  auto psize = padto(_size * sizeof(_T), _alignment);
+#ifdef _WIN32
+  return (_T*)_aligned_malloc(psize, _alignment);
+#else
+  return (_T*)aligned_alloc(_alignment, psize);
+#endif
+}
+
+static inline void afree(void* ptr) {
+  if (ptr == NULL) {
+    return;
+  }
+#ifdef _WIN32
+  _aligned_free(ptr);
+#else
+  free(ptr);
+#endif
+}
+
 template <typename _T, int _Alignment = 64>
 class aligned_vector {
  public:
   aligned_vector() : mRawsize(0), mPtr(nullptr), mAlignedsize(0) {}
-  aligned_vector(size_t _size, _T _val = _T(0)) {
+  aligned_vector(size_t _size) { resize(_size); }
+  aligned_vector(size_t _size, _T _val) {
     resize(_size);
     std::fill_n(mVec.begin(), mVec.size(), _val);
   }
@@ -502,12 +534,15 @@ class CpuDevice {
     ADD_FLAG(AVX512_BF16);
     ADD_FLAG(AVX512_FP16);
     numcores = _cpu.getNumCores(Xbyak::util::IntelCpuTopologyLevel::CoreLevel);
+#ifdef _OPENMP
     ompthreads = omp_get_max_threads();
-    numthreads = std::min(numcores, ompthreads);
-#ifdef FORCE_NUM_THREADS
-    numthreads = FORCE_NUM_THREADS;
+#else
+    ompthreads = numcores;
 #endif
+    numthreads = std::min(numcores, ompthreads);
+#ifdef _OPENMP
     omp_set_num_threads(numthreads);
+#endif
   }
 
   static CpuDevice* getInstance() {

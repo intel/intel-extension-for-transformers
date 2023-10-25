@@ -1,8 +1,8 @@
 transformers>=4.32.0
 peft
 fschat
-torch==2.0.1
-torchaudio==2.0.2
+torch==2.1.0
+torchaudio==2.1.0
 intel_extension_for_pytorch
 num2words
 speechbrain
@@ -37,5 +37,7 @@ openpyxl
 numpy==1.23.5
 tiktoken==0.4.0
 git+https://github.com/EleutherAI/lm-evaluation-harness.git@2c18e367c6ded428863cd1fd4cf9558ca49d68dc
+spacy
+neural-compressor
 onnxruntime==1.15.0
 

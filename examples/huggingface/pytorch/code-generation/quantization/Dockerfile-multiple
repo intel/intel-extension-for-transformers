@@ -53,9 +53,14 @@ RUN apt-get install  git -y
 RUN python3 -m pip uninstall UNKNOWN -y
 RUN ln -s /usr/bin/python3 /usr/bin/python
 ENV COMPOSE_DOCKER_CLI_BUILD=0
-RUN wget https://raw.githubusercontent.com/intel/intel-extension-for-pytorch/master/scripts/compile_bundle.sh
-RUN bash compile_bundle.sh
-RUN python3 -m pip install intel_extension_for_transformers optimum
+
+# Source install torch and intel-extension-for-pytorch
+#RUN wget https://raw.githubusercontent.com/intel/intel-extension-for-pytorch/master/scripts/compile_bundle.sh
+#RUN bash compile_bundle.sh
+
+# Install torch and intel-extension-for-pytorch 2.1
+RUN python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN python3 -m pip install intel-extension-for-pytorch intel-extension-for-transformers optimum
 RUN python3 -m pip install git+https://github.com/huggingface/optimum-intel.git@1f57059e9bd65380f93c8951f16da58d56ad0859
 RUN python3 -m pip install git+https://github.com/bigcode-project/bigcode-evaluation-harness@0d84db85f9ff971fa23a187a3347b7f59af288dc
 

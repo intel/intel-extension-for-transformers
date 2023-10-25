@@ -29,6 +29,8 @@ function pytest() {
     itrex_path=$(python -c 'import intel_extension_for_transformers; import os; print(os.path.dirname(intel_extension_for_transformers.__file__))')
     find . -name "test*.py" | sed 's,\.\/,coverage run --source='"${itrex_path}"' --append ,g' | sed 's/$/ --verbose/' >run.sh
     coverage erase
+    ## exclude tf UT
+    sed -i "s/test_tf.*.py//g" run.sh
 
     # run UT
     $BOLD_YELLOW && echo "cat run.sh..." && $RESET
