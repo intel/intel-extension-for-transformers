@@ -1,18 +1,18 @@
 name: NeuralChat Unit Test
 
 on:
-  #pull_request:
-  #  branches: [main]
-  #  paths:
-  #    - '.github/workflows/unit-test-neuralchat.yml'
-  #    - 'intel_extension_for_transformers/neural_chat/**'
-  #    - 'intel_extension_for_transformers/llm/finetuning/**'
-  #    - 'intel_extension_for_transformers/llm/quantization/**'
-  #    - 'intel_extension_for_transformers/transformers/**'
-  #    - '!intel_extension_for_transformers/neural_chat/docs/**'
-  #    - '!intel_extension_for_transformers/neural_chat/examples/**'
-  #    - '!intel_extension_for_transformers/neural_chat/assets/**'
-  #    - '!intel_extension_for_transformers/neural_chat/README.md'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/unit-test-neuralchat.yml'
+      - 'intel_extension_for_transformers/neural_chat/**'
+      - 'intel_extension_for_transformers/llm/finetuning/**'
+      - 'intel_extension_for_transformers/llm/quantization/**'
+      - 'intel_extension_for_transformers/transformers/**'
+      - '!intel_extension_for_transformers/neural_chat/docs/**'
+      - '!intel_extension_for_transformers/neural_chat/examples/**'
+      - '!intel_extension_for_transformers/neural_chat/assets/**'
+      - '!intel_extension_for_transformers/neural_chat/README.md'
   workflow_dispatch:
 
 # If there is a new commit, the previous jobs will be canceled
