@@ -138,7 +138,7 @@ register_conv_template(
         system_message="Please identify the intent of the user query." + \
             " You may only respond with \"chitchat\" or \"QA\" without explanations" + \
             " or engaging in conversation.\n",
-        roles=("User Query: ", "Intent: "),
+        roles=("### User Query: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
