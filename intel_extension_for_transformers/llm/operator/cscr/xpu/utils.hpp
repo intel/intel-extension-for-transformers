@@ -1,6 +1,20 @@
 #pragma once
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
+#include "xetla.hpp"
+#include <assert.h>
+#include <chrono>
+#include <cstring>
+#include <iostream>
+#include <math.h>
+#include <sycl/ext/intel/esimd.hpp>
+#include <sycl/sycl.hpp>
+#include <torch/extension.h>
+
+#include <vector>
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define DEVICE_MEM_ALIGNMENT (64)
+
+namespace gblas {
 struct bit4x2 {
   int8_t x : 4;
   int8_t y : 4;
@@ -20,6 +34,29 @@ struct int4x2 : bit4x2 {
     return static_cast<int8_t>(dst);
   }
 };
+} // namespace gblas
+
+template <typename data_type>
+inline data_type *alloc_device_and_init(
+    size_t size,
+    std::function<void(data_type *data, size_t elements)> init_func,
+    sycl::queue &queue, sycl::device &device, sycl::context &context) {
+  auto host_ptr = static_cast<data_type *>(malloc(size * sizeof(data_type)));
+
+  for (size_t i = 0; i < size; ++i) {
+    init_func(host_ptr, i);
+  }
+
+  auto device_ptr = static_cast<data_type *>(aligned_alloc_device(
+      DEVICE_MEM_ALIGNMENT, size * sizeof(data_type), device, context));
+
+  queue.memcpy((void *)device_ptr, (void *)host_ptr, size * sizeof(data_type))
+      .wait();
+
+  free(host_ptr);
+
+  return device_ptr;
+}
 
 class CompressWei4Bit {
 public:
@@ -148,17 +185,18 @@ void compress_s8_s4(const int8_t *srcptr, gblas::int4x2 *dstptr, int row,
 }
 
 template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N, typename DST_T>
-void gpu_dequant_s4fullrange_f32_KxN(queue &q, buffer<int8_t, 2> &src,
-                                     buffer<DST_T, 2> &dst,
-                                     buffer<float, 1> &scale, int k, int n,
-                                     int blksize, int k_pos, int n_pos) {
-  q.submit([&](handler &h) {
-    accessor s4_wei{src, h};
-    accessor fp32_wei{dst, h};
-    accessor s{scale, h};
-    range global{TILE_K, TILE_N};
-    range local{LOCAL_K, LOCAL_N};
-    h.parallel_for(nd_range{global, local}, [=](nd_item<2> it) {
+void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q,
+                                     sycl::buffer<int8_t, 2> &src,
+                                     sycl::buffer<DST_T, 2> &dst,
+                                     sycl::buffer<float, 1> &scale, int k,
+                                     int n, int blksize, int k_pos, int n_pos) {
+  q.submit([&](sycl::handler &h) {
+    sycl::accessor s4_wei{src, h};
+    sycl::accessor fp32_wei{dst, h};
+    sycl::accessor s{scale, h};
+    sycl::range global{TILE_K, TILE_N};
+    sycl::range local{LOCAL_K, LOCAL_N};
+    h.parallel_for(sycl::nd_range{global, local}, [=](sycl::nd_item<2> it) {
       int i = it.get_global_id(0) + k_pos;
       int s4_j = it.get_global_id(1) + n_pos / 2;
       int fp32_j = s4_j * 2;
@@ -173,13 +211,13 @@ void gpu_dequant_s4fullrange_f32_KxN(queue &q, buffer<int8_t, 2> &src,
 }
 
 template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N, typename DST_T>
-void gpu_dequant_s4fullrange_f32_KxN(queue &q, int8_t *src, DST_T *dst,
+void gpu_dequant_s4fullrange_f32_KxN(sycl::queue &q, int8_t *src, DST_T *dst,
                                      float *scale, int k, int n, int blksize,
                                      int k_pos, int n_pos) {
-  q.submit([&](handler &h) {
-    range global{TILE_K, TILE_N};
-    range local{LOCAL_K, LOCAL_N};
-    h.parallel_for(nd_range{global, local}, [=](nd_item<2> it) {
+  q.submit([&](sycl::handler &h) {
+    sycl::range global{TILE_K, TILE_N};
+    sycl::range local{LOCAL_K, LOCAL_N};
+    h.parallel_for(sycl::nd_range{global, local}, [=](sycl::nd_item<2> it) {
       int i = it.get_global_id(0) + k_pos;
       int s4_j = it.get_global_id(1) + n_pos / 2;
       int fp32_j = s4_j * 2;
@@ -195,19 +233,21 @@ void gpu_dequant_s4fullrange_f32_KxN(queue &q, int8_t *src, DST_T *dst,
 }
 
 template <typename DST_T>
-void gpu_dequant(queue &q, CompressWei4Bit *compress_wei, DST_T *dequant_weight,
-                 bool transpose, const std::string &compute_type,
+void gpu_dequant(sycl::queue &q, CompressWei4Bit *compress_wei,
+                 DST_T *dequant_weight, bool transpose,
+                 const std::string &compute_type,
                  const std::string &weight_type) {
   int8_t *bit4_wei =
       reinterpret_cast<int8_t *>(compress_wei->get_4bit_wei_ptr());
   float *scale = reinterpret_cast<float *>(compress_wei->get_scale_ptr());
-  buffer<DST_T, 2> dst_buf(dequant_weight,
-                           range<2>(compress_wei->_K, compress_wei->_N));
-  buffer<float, 1> scale_buf(
-      scale,
-      range<1>(compress_wei->_K / compress_wei->_blksize * compress_wei->_N));
-  buffer<int8_t, 2> src_buf(reinterpret_cast<int8_t *>(bit4_wei),
-                            range<2>(compress_wei->_K, compress_wei->_N / 2));
+  sycl::buffer<DST_T, 2> dst_buf(
+      dequant_weight, sycl::range<2>(compress_wei->_K, compress_wei->_N));
+  sycl::buffer<float, 1> scale_buf(
+      scale, sycl::range<1>(compress_wei->_K / compress_wei->_blksize *
+                            compress_wei->_N));
+  sycl::buffer<int8_t, 2> src_buf(
+      reinterpret_cast<int8_t *>(bit4_wei),
+      sycl::range<2>(compress_wei->_K, compress_wei->_N / 2));
   constexpr int KTILE = 1024, NTILE = 1024;
   constexpr int LOCAL_K = 32, LOCAL_N = 32;
   using namespace std::chrono;
@@ -229,8 +269,8 @@ void gpu_dequant(queue &q, CompressWei4Bit *compress_wei, DST_T *dequant_weight,
 
 // device mem impl
 template <typename DST_T>
-void gpu_dequant(queue &q, int8_t *src, DST_T *dst, float *scale, int k, int n,
-                 int blksize) {
+void gpu_dequant(sycl::queue &q, int8_t *src, DST_T *dst, float *scale, int k,
+                 int n, int blksize) {
   constexpr int KTILE = 1024, NTILE = 1024;
   constexpr int LOCAL_K = 32, LOCAL_N = 32;
   using namespace std::chrono;
@@ -249,7 +289,7 @@ void gpu_dequant(queue &q, int8_t *src, DST_T *dst, float *scale, int k, int n,
   return;
 }
 
-void dequant_dispatch(queue &q, CompressWei4Bit *compress_wei,
+void dequant_dispatch(sycl::queue &q, CompressWei4Bit *compress_wei,
                       torch::Tensor &dequant_weight, bool transpose,
                       const std::string &compute_type,
                       const std::string &weight_type) {
@@ -268,9 +308,10 @@ void dequant_dispatch(queue &q, CompressWei4Bit *compress_wei,
 }
 
 template <typename T1, typename T2>
-void gpu_linear(queue &queue, const torch::Tensor &activation, const T1 *weight,
-                const torch::Tensor &bias, torch::Tensor &output, int64_t ldo,
-                bool with_bias, const std::string &compute_type,
+void gpu_linear(sycl::queue &queue, const torch::Tensor &activation,
+                const T1 *weight, const torch::Tensor &bias,
+                torch::Tensor &output, int64_t ldo, bool with_bias,
+                const std::string &compute_type,
                 const std::string &weight_type) {
 
   // GEMM input size
@@ -291,8 +332,8 @@ void gpu_linear(queue &queue, const torch::Tensor &activation, const T1 *weight,
   sycl::property_list properties{sycl::property::queue::enable_profiling()};
 
   // Define SYCL context and device
-  auto context = queue.get_info<info::queue::context>();
-  auto device = queue.get_info<info::queue::device>();
+  auto context = queue.get_info<sycl::info::queue::context>();
+  auto device = queue.get_info<sycl::info::queue::device>();
 
   auto A = alloc_device_and_init<data_type_a>(
       size_a,
@@ -336,16 +377,16 @@ void gpu_linear(queue &queue, const torch::Tensor &activation, const T1 *weight,
   uint32_t ldc = matrix_n;
 
   // Ndrange and workgroup shape
-  cl::sycl::range<3> group_range{1, group_range_m, group_range_n};
-  cl::sycl::range<3> local_range{1, thread_range_m, thread_range_n};
+  sycl::range<3> group_range{1, group_range_m, group_range_n};
+  sycl::range<3> local_range{1, thread_range_m, thread_range_n};
 
-  cl::sycl::nd_range<3> nd_range(group_range * local_range, local_range);
+  sycl::nd_range<3> nd_range(group_range * local_range, local_range);
 
   long ops = 2 * static_cast<long>(matrix_m) * matrix_n * matrix_k;
 
-  auto gpu_event = queue.submit([&](handler &cgh) {
+  auto gpu_event = queue.submit([&](sycl::handler &cgh) {
     // GPU kernel
-    cgh.parallel_for(nd_range, [=](nd_item<3> item) SYCL_ESIMD_KERNEL {
+    cgh.parallel_for(nd_range, [=](sycl::nd_item<3> item) SYCL_ESIMD_KERNEL {
       using namespace gpu::xetla;
       using namespace gpu::xetla::group;
       using namespace gpu::xetla::kernel;
@@ -442,16 +483,12 @@ void gpu_linear(queue &queue, const torch::Tensor &activation, const T1 *weight,
   free(C, context);
 }
 
-void linear_dispatch(queue &q, const torch::Tensor &activation,
+void linear_dispatch(sycl::queue &q, const torch::Tensor &activation,
                      const torch::Tensor weight, const torch::Tensor &bias,
                      torch::Tensor &output, int64_t ldo, bool with_bias,
                      const std::string &compute_type,
                      const std::string &weight_type) {
-  if (compute_type == "fp32") {
-    gpu_linear<float, gpu::xetla::tf32>(q, activation, weight.data_ptr<float>(),
-                                        bias, output, ldo, with_bias,
-                                        compute_type, weight_type);
-  } else {
+  if (compute_type == "fp16") {
     gpu_linear<__fp16, sycl::half>(q, activation, weight.data_ptr<__fp16>(),
                                    bias, output, ldo, with_bias, compute_type,
                                    weight_type);

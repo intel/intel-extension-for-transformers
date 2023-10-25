@@ -1,18 +1,20 @@
-#include <torch/extension.h>
-#include <ipex.h>
 #include "utils.hpp"
+#include <ipex.h>
+#include <torch/extension.h>
 
-torch::Tensor quantize(float* weight, int k, int n, int blksize, bool transpose, std::string weight_type,
-               std::string cmpt_type) {
+torch::Tensor quantize(float *weight, int k, int n, int blksize, bool transpose,
+                       std::string weight_type, std::string cmpt_type) {
   CompressWei4Bit compress_wei(k, n, blksize);
-  torch::Tensor ret = torch::zeros(compress_wei.get_serialize_size(), torch::kInt8);
-  //void* ret = malloc(compress_wei.get_serialize_size());
+  torch::Tensor ret =
+      torch::zeros(compress_wei.get_serialize_size(), torch::kInt8);
+  // void* ret = malloc(compress_wei.get_serialize_size());
   assert(!transpose);
   if (weight_type == "s4fullrange_scalef32") {
     std::vector<int8_t> s8quant_tmp(k * n);
-    float* scale = reinterpret_cast<float*>(compress_wei.get_scale_ptr());
+    float *scale = reinterpret_cast<float *>(compress_wei.get_scale_ptr());
     s8_quant_row_blk(weight, s8quant_tmp.data(), k, n, n, n, scale, blksize);
-    int4x2* wei = reinterpret_cast<int4x2*>(compress_wei.get_4bit_wei_ptr());
+    gblas::int4x2 *wei =
+        reinterpret_cast<gblas::int4x2 *>(compress_wei.get_4bit_wei_ptr());
     compress_s8_s4(s8quant_tmp.data(), wei, k, n, n, n);
     compress_wei.serialize(ret.data_ptr<int8_t>());
   } else {
