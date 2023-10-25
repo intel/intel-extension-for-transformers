@@ -18,7 +18,7 @@
 from transformers import AutoTokenizer, TextStreamer
 from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
 
-model_name = "/mnt/disk1/data2/zhenweil/models/chatglm2-6b"  # or local path to model
+model_name = "Intel/neural-chat-7b-v1-1"  # or local path to model
 woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
 prompt = "Once upon a time, a little girl"
 
@@ -30,6 +30,6 @@ model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq
 # top_k_top_p sample or greedy_search
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300)
 # beam search
-# outputs = model.generate(inputs, num_beams=4, max_new_tokens=128, min_new_tokens=30, early_stopping=True)
-# ans = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
-# print(ans)
+outputs = model.generate(inputs, num_beams=4, max_new_tokens=128, min_new_tokens=30, early_stopping=True)
+ans = tokenizer.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+print(ans)
