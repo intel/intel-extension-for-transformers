@@ -66,6 +66,7 @@ compile_quant(quant_bloom     quant_model.cpp bloom     bloom)
 compile_quant(quant_chatglm   quant_model.cpp chatglm   chatglm)
 compile_quant(quant_chatglm2  quant_model.cpp chatglm2  chatglm2)
 compile_quant(quant_baichuan  quant_model.cpp baichuan  baichuan)
+compile_quant(quant_qwen      quant_model.cpp qwen      qwen)
 
 # all models running
 if (NE_PYTHON_API)
@@ -117,3 +118,4 @@ compile_run(run_bloom     main_run.cpp bloom     bloom)
 compile_run(run_chatglm2  main_run.cpp chatglm2  chatglm2)
 compile_run(run_chatglm   main_run.cpp chatglm   chatglm)
 compile_run(run_baichuan  main_run.cpp baichuan  baichuan)
+compile_run(run_qwen      main_run.cpp qwen      qwen)
