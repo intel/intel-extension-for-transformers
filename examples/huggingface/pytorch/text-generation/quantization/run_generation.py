@@ -114,12 +114,12 @@ elif args.sq:
     excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
     quantization_config = SmoothQuantConfig(
                                 tokenizer=tokenizer,  # either two of one, tokenizer or calib_func
-                                alpha=float(args.alpha),    # default is 0.5
+                                alpha="auto" if args.alpha == "auto" else float(args.alpha),    # default is 0.5
                                 op_type_dict=op_type_dict,  # default is {}
                                 excluded_precisions=excluded_precisions,  # default is []
                                )
 elif args.woq:
-    quantization_config = WeightOnlyQuantConfig() #default is A32W4G32
+    quantization_config = WeightOnlyQuantConfig(compute_type="fp32", weight_type="int4_fullrange", group_size=32) #default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
@@ -133,6 +133,7 @@ elif args.bitsandbytes:
 if quantization_config is not None:
     user_model = AutoModelForCausalLM.from_pretrained(args.model,
                                                       quantization_config=quantization_config,
+                                                      trust_remote_code=args.trust_remote_code,
                                                       use_llm_runtime=False
                                                       )
     if args.sq:
@@ -145,8 +146,8 @@ elif args.load_in_4bit or args.load_in_8bit:
                                                       load_in_8bit=args.load_in_8bit,
                                                       use_llm_runtime=False
                                                       )
-elif not args.int8 or not args.int8_bf16_mixed:
-    user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, use_llm_runtime=False)
+elif not args.int8 and not args.int8_bf16_mixed:
+    user_model = AutoModelForCausalLM.from_pretrained(args.model, config=config, trust_remote_code=args.trust_remote_code, use_llm_runtime=False)
     # peft
     if args.peft_model_id is not None:
         from peft import PeftModel
