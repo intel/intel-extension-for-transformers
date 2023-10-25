@@ -82,3 +82,7 @@
 [submodule "intel_extension_for_transformers/llm/runtime/graph/application/third_party/pybind11"]
 	path = intel_extension_for_transformers/llm/runtime/graph/application/third_party/pybind11
 	url = https://github.com/pybind/pybind11.git
+[submodule "intel_extension_for_transformers/llm/library/xetla"]
+	path = intel_extension_for_transformers/llm/library/xetla
+	url = https://github.com/intel-innersource/libraries.gpu.xetla.git
+	branch = ARC_int4_gemm
