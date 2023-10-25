@@ -1,18 +1,6 @@
-#include <ipex.h>
-#include <sycl/sycl.hpp>
-using namespace sycl;
-
-#include "tests/utils/utils.hpp"
-#include "xetla.hpp"
-#include <assert.h>
-#include <chrono>
-#include <cstring>
-#include <iostream>
-#include <math.h>
-#include <vector>
+#pragma once
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
-namespace gblas {
 struct bit4x2 {
   int8_t x : 4;
   int8_t y : 4;
@@ -32,7 +20,6 @@ struct int4x2 : bit4x2 {
     return static_cast<int8_t>(dst);
   }
 };
-} // namespace gblas
 
 class CompressWei4Bit {
 public:
@@ -158,27 +145,6 @@ void compress_s8_s4(const int8_t *srcptr, gblas::int4x2 *dstptr, int row,
       dstptr[j * ld_dst / 2 + ii / 2] = tmp;
     }
   }
-}
-
-torch::Tensor quantize(float *weight, int k, int n, int blksize, bool transpose,
-                       std::string weight_type, std::string cmpt_type) {
-  CompressWei4Bit compress_wei(k, n, blksize);
-  torch::Tensor ret =
-      torch::zeros(compress_wei.get_serialize_size(), torch::kInt8);
-  // void* ret = malloc(compress_wei.get_serialize_size());
-  assert(!transpose);
-  if (weight_type == "s4fullrange_scalef32") {
-    std::vector<int8_t> s8quant_tmp(k * n);
-    float *scale = reinterpret_cast<float *>(compress_wei.get_scale_ptr());
-    s8_quant_row_blk(weight, s8quant_tmp.data(), k, n, n, n, scale, blksize);
-    gblas::int4x2 *wei =
-        reinterpret_cast<gblas::int4x2 *>(compress_wei.get_4bit_wei_ptr());
-    compress_s8_s4(s8quant_tmp.data(), wei, k, n, n, n);
-    compress_wei.serialize(ret.data_ptr<int8_t>());
-  } else {
-    assert(0);
-  }
-  return ret;
 }
 
 template <int TILE_K, int TILE_N, int LOCAL_K, int LOCAL_N, typename DST_T>
