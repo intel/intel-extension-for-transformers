@@ -172,7 +172,14 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
   n_past += curr_input_ids.size();
 
   float* logits = model_get_logits(ctx);
+  logits[ctx->vocab.eos_token_id] = -99999;
+  logits[13] = -99999;
   model_token next_token_id = post_process(logits);
+  // fprintf(stderr, "\ntoken id: %d\n", next_token_id);
+  // if (next_token_id == 13)
+  //   next_token_id = 18565;
+  // if (next_token_id == ctx->vocab.eos_token_id || next_token_id == 13)
+  //   next_token_id = 18565;
   curr_input_ids = {next_token_id};
 
   generate_count++;
