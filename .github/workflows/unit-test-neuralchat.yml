@@ -42,15 +42,15 @@ jobs:
       - name: podman Clean Up
         run: |
           podman ps -a
-          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-              podman start ${{ env.CONTAINER_NAME }}
+          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+              podman start ${{ env.CONTAINER_NAME }}-${{ runner.name }}
               echo "remove left files through container ..."
-              podman exec ${{ env.CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+              podman exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
-          if [[ $(podman ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}'$) ]]; then
-              podman start ${{ env.EXTRA_CONTAINER_NAME }}
+          if [[ $(podman ps -a | grep -i '${{ env.EXTRA_CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+              podman start ${{ env.EXTRA_CONTAINER_NAME }}-${{ runner.name }}
               echo "remove left files through container ..."
-              podman exec ${{ env.EXTRA_CONTAINER_NAME }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
+              podman exec ${{ env.EXTRA_CONTAINER_NAME }}-${{ runner.name }} bash -c "ls -a /intel-extension-for-transformers && rm -fr /intel-extension-for-transformers/* && rm -fr /intel-extension-for-transformers/.* || true"
           fi
 
       - name: Checkout out Repo
@@ -66,11 +66,11 @@ jobs:
 
       - name: podman Run
         run: |
-          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}'$) ]]; then
-            podman stop ${{ env.CONTAINER_NAME }}
-            podman rm -vf ${{ env.CONTAINER_NAME }} || true
+          if [[ $(podman ps -a | grep -i '${{ env.CONTAINER_NAME }}-${{ runner.name }}'$) ]]; then
+            podman stop ${{ env.CONTAINER_NAME }}-${{ runner.name }}
+            podman rm -vf ${{ env.CONTAINER_NAME }}-${{ runner.name }} || true
           fi
-          podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }} -v /dev/shm:/dev/shm \
+          podman run -dit --disable-content-trust --privileged --name=${{ env.CONTAINER_NAME }}-${{ runner.name }} -v /dev/shm:/dev/shm \
           -v ${{ github.workspace }}:/intel-extension-for-transformers \
           -v ~/.cache/oneAPI:/cache \
           -v /models:/models \
@@ -79,12 +79,12 @@ jobs:
 
       - name: Env build
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          podman exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
           bash /intel-extension-for-transformers/.github/workflows/script/prepare_env.sh
 
       - name: Binary build
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          podman exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script \
           && bash install_binary.sh \
           && pip install intel_extension_for_pytorch wget sentencepiece \
@@ -100,14 +100,14 @@ jobs:
 
       - name: Run UT
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          podman exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
           bash -c "cd /intel-extension-for-transformers/.github/workflows/script/unitTest \
           && bash run_unit_test_neuralchat.sh --test_name=${{ matrix.test_name }}"
 
       - name: Collect log
         if: ${{ !cancelled() }}
         run: |
-          podman exec ${{ env.CONTAINER_NAME }} \
+          podman exec ${{ env.CONTAINER_NAME }}-${{ runner.name }} \
           bash -c "cd /intel-extension-for-transformers && \
                  mv /log_dir . "
       
