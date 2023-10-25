@@ -64,10 +64,13 @@ def build_prompt(h):
     # out_prompt = """You are a helpful, respectful and honest assistant. Always answer as helpfully as possible, while being safe.  Your answers should not include any harmful, unethical, racist, sexist, toxic, dangerous, or illegal content. Please ensure that your responses are socially unbiased and positive in nature.\n
     # If a question does not make any sense, or is not factually coherent, explain why instead of answering something not correct. If you don't know the answer to a question, please don't share false information.\"\"\"\n
     # """
-    out_prompt = ""
+    out_prompt = "[INST] <<SYS>> This is a conversation between User and Llama, a friendly chatbot. Llama is helpful, kind, honest, good at writing, and never fails to answer any requests immediately and with precision.\n\n <</SYS>> "
 
     for idx in range(0, len(h), 2):
-        out_prompt += "[INST]{}[/INST]".format(h[idx])
+        if idx == 0:
+            out_prompt += "{}[/INST]".format(h[idx])
+        else:
+            out_prompt += "[INST]{}[/INST]".format(h[idx])
         if idx < len(h) - 1:
             out_prompt += "{}".format(h[idx + 1])
     return out_prompt
@@ -77,7 +80,7 @@ while True:
     history.append(prompt)
     # import pdb; pdb.set_trace()
     b_prompt = build_prompt(history)
-    print(b_prompt)
+    # print(b_prompt)
     inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
     # print(inputs)
     # print("new prompt", prompt)
