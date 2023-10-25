@@ -623,8 +623,12 @@ class StableDiffusionPipeline(DiffusionPipeline):
                 # noise_pred = self.unet(latent_model_input, t, encoder_hidden_states=prompt_embeds).sample
 
                 # The ITREX Unet Code
-                t_1d = torch.tensor([t], dtype=torch.float32)
-                engine_output = engine_graph[1].inference([latent_model_input, t_1d, prompt_embeds])
+                if i <= 4 or i >=15:
+                    t_1d1 = torch.tensor([t], dtype=torch.float32)
+                    engine_output = engine_graph[3].inference([latent_model_input, t_1d1, prompt_embeds])
+                else:
+                    t_1d2 = torch.tensor([t], dtype=torch.float32)
+                    engine_output = engine_graph[1].inference([latent_model_input, t_1d2, prompt_embeds])
                 noise_pred = torch.from_numpy(engine_output['out_sample:0'])
 
                 # perform guidance
@@ -658,7 +662,7 @@ class StableDiffusionPipeline(DiffusionPipeline):
         return StableDiffusionPipelineOutput(images=image, nsfw_content_detected=has_nsfw_concept)
 
 
-def neural_engine_init(ir_path):
+def neural_engine_init(ir_path,ir_path2):
     text_encoder_graph = Graph()
     text_encoder_path = ir_path + '/text_encoder/'
     text_encoder_conf = text_encoder_path + 'conf.yaml'
@@ -671,13 +675,19 @@ def neural_engine_init(ir_path):
     unet_bin = uent_path + 'model.bin'
     unet_graph.graph_init(unet_conf, unet_bin, True)
 
+    unet_graph2 = Graph()
+    uent_path2 = ir_path2 + '/unet/'
+    unet_conf2 = uent_path2 + 'conf.yaml'
+    unet_bin2 = uent_path2 + 'model.bin'
+    unet_graph2.graph_init(unet_conf2, unet_bin2, True)
+
     vae_decoder_graph = Graph()
     vae_decoder_path = ir_path + '/vae_decoder/'
     vae_decoder_conf = vae_decoder_path + 'conf.yaml'
     vae_decoder_bin = vae_decoder_path + 'model.bin'
     vae_decoder_graph.graph_init(vae_decoder_conf, vae_decoder_bin)
 
-    return [text_encoder_graph, unet_graph, vae_decoder_graph]
+    return [text_encoder_graph, unet_graph, vae_decoder_graph, unet_graph2]
 
 def fp32_to_bf16(fp32_np):
   assert(fp32_np.dtype==np.float32)

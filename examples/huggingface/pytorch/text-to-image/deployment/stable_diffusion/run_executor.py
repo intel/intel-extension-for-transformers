@@ -94,6 +94,7 @@ def parse_args():
         type=str,
         help="The input of the model, like: 'a photo of an astronaut riding a horse on mars'.")
     parser.add_argument("--ir_path", default="./ir", type=str, help="Neural engine IR path.")
+    parser.add_argument("--ir_path2", default="./ir2", type=str, help="Neural engine IR path.")
     parser.add_argument("--name", default="output_image", type=str, help="output image name.")
     parser.add_argument("--mode", type=str, help="Benchmark mode of latency or accuracy.")
     parser.add_argument("--pipeline", default="text2img", type=str, help="text2img or img2img pipeline.")
@@ -105,7 +106,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path)
+    neural_engine_graph = diffusion_utils.neural_engine_init(args.ir_path,args.ir_path2)
     if args.pipeline == "text2img":
         dpm = DPMSolverMultistepScheduler.from_pretrained(args.input_model, subfolder="scheduler")
         pipe = diffusion_utils.StableDiffusionPipeline.from_pretrained(args.input_model, scheduler=dpm)
