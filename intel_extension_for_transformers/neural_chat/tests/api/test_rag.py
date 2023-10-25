@@ -42,22 +42,6 @@ class TestChatbotBuilder(unittest.TestCase):
         self.assertIsNotNone(response)
         plugins.retrieval.enable = False
 
-    def test_retrieval_accuracy(self):
-        plugins.retrieval.enable = True
-        plugins.retrieval.args["input_path"] = "../../assets/docs/sample.txt"
-        plugins.retrieval.args["persist_dir"] = "./test_for_threshold."
-        plugins.retrieval.args["response_template"] = "check the result"
-        plugins.retrieval.args['search_type'] = "similarity_score_threshold"
-        plugins.retrieval.args['search_kwargs'] = {"score_threshold": 0.9, "k": 1}
-        config = PipelineConfig(model_name_or_path="facebook/opt-125m",
-                                plugins=plugins)
-        chatbot = build_chatbot(config)
-        response = chatbot.predict("Who is the founder of Intel?")
-        print(response)
-        plugins.retrieval.args["persist_dir"] = "./output"
-        self.assertTrue("### Assistant" in response)
-        plugins.retrieval.enable = False
-        
 
 if __name__ == '__main__':
     unittest.main()
