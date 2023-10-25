@@ -175,6 +175,12 @@ recur_col_reduce(xetla_vector<dtype, N_x * N_y> in) {
     return recur_col_reduce<reduce_kind, dtype, N_x / 2, N_y>(temp);
 }
 
+/// @brief get linear group id of the last two dimensions.
+/// @tparam item Is the given sycl::nd_item<3>.
+uint32_t get_2d_group_linear_id(sycl::nd_item<3> &item) {
+    return item.get_group(2) + item.get_group(1) * item.get_group_range(2);
+}
+
 /// @} xetla_util_misc
 
 } // namespace gpu::xetla

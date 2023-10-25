@@ -34,17 +34,16 @@ namespace gpu::xetla::kernel {
 /// @tparam gemm_t_ Is the gemm functor to compose a GEMM.
 /// @tparam epilogue_t_ Is the epilogue functor to compose a GEMM.
 template <int num_global_kslicing_, int num_local_kslicing_, typename gemm_t_,
-        typename epilogue_t_>
-class gemm_universal_t<
-        dispatch_policy_int4_dequantize_kslicing<num_global_kslicing_,
-                num_local_kslicing_, gpu_arch::Xe>,
+        typename epilogue_t_, typename group_swizzle_>
+class gemm_universal_t<dispatch_policy_int4_dequantize_kslicing<group_swizzle_,
+                               num_global_kslicing_, num_local_kslicing_>,
         gemm_t_, epilogue_t_> {
     using gemm_t = gemm_t_;
     using epilogue_t = epilogue_t_;
     using gemm_args_t = typename gemm_t::arguments_t;
     using epilogue_args_t = typename epilogue_t::arguments_t;
-
     using tile_shape = typename gemm_t::tile_shape;
+    using group_swizzle_t = group_swizzle_;
     static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
     static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
@@ -291,6 +290,7 @@ public:
             uint32_t matrix_m, uint32_t matrix_n) {
         uint32_t group_range_m = (matrix_m + wg_tile_m - 1) / wg_tile_m;
         uint32_t group_range_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;
+        group_swizzle_t::update_group_range(group_range_m, group_range_n);
         std::cout << "Group range: {" << num_global_kslicing << ", "
                   << group_range_m << ", " << group_range_n << "} \n";
         return cl::sycl::range<3> {
@@ -389,8 +389,9 @@ public:
         // set up workgroup level coordinates and boundaries
         work_group_t g(item.get_local_linear_id() % work_group_size);
         uint32_t wg_id = item.get_local_linear_id() / work_group_size;
-        int start_n = item.get_group(2) * wg_tile_n;
-        int start_m = item.get_group(1) * wg_tile_m;
+        group_swizzle_t group_swizzle;
+        int start_m = group_swizzle.template get_tile_idx<1>(item) * wg_tile_m;
+        int start_n = group_swizzle.template get_tile_idx<2>(item) * wg_tile_n;
         int start_k = 0;
         uint32_t wg_tile_k = args.matrix_k;
         uint32_t boundary_n = (start_n + wg_tile_n) > args.matrix_n
@@ -403,7 +404,8 @@ public:
         if constexpr (num_global_kslicing > 1) {
             wg_tile_k = (wg_tile_k + num_global_kslicing - 1)
                     / num_global_kslicing;
-            start_k = start_k + item.get_group(0) * wg_tile_k;
+            start_k = start_k
+                    + group_swizzle.template get_tile_idx<0>(item) * wg_tile_k;
             boundary_k = (start_k + wg_tile_k) > boundary_k
                     ? boundary_k
                     : (start_k + wg_tile_k);
@@ -480,11 +482,11 @@ public:
                     = kslicing.coop_id_y * mat_slice_t::tile_size_y;
             int32_t acc_start_x = start_n + coop_offset_x;
             int32_t acc_start_y = start_m + coop_offset_y;
-            int32_t cnt_start_x
-                    = item.get_group(2) * tile_shape_cnt::wg_tile_size_x
+            int32_t cnt_start_x = group_swizzle.template get_tile_idx<2>(item)
+                            * tile_shape_cnt::wg_tile_size_x
                     + kslicing.coop_id_x;
-            int32_t cnt_start_y
-                    = item.get_group(1) * tile_shape_cnt::wg_tile_size_y
+            int32_t cnt_start_y = group_swizzle.template get_tile_idx<1>(item)
+                            * tile_shape_cnt::wg_tile_size_y
                     + kslicing.coop_id_y;
             uint32_t group_range_x = item.get_group_range(2);
             uint32_t group_range_y = item.get_group_range(1);

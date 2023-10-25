@@ -195,8 +195,9 @@ void gemm_polynomial_run(int iter) {
     using epilogue_args_t = epilogue_t::arguments_t;
     epilogue_args_t epilogue_args(tile_op_args);
 
+    using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
     using gemm_op_t = xetla::kernel::gemm_universal_t<
-            xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, gemm_t,
+            xetla::kernel::dispatch_policy_default<group_swizzle>, gemm_t,
             epilogue_t>;
 
     // set up gemm_universal arguments

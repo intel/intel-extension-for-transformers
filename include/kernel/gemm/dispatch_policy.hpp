@@ -22,16 +22,108 @@
 #include "kernel/gemm/common.hpp"
 
 namespace gpu::xetla::kernel {
-
 /// @addtogroup xetla_gemm_universal
 /// @{
+
+/// @brief Default GROUP_SWIZZLE implementation.
+/// A general GROUP_SWIZZLE implementation to get an workgroup id .
+/// @tparam arch_tag_ Is the HW architecture.
+template <gpu_arch arch_tag_ = gpu_arch::Xe>
+struct group_swizzle_default {
+public:
+    static constexpr gpu_arch arch_tag = arch_tag_;
+
+    template <int>
+    int get_tile_idx(sycl::nd_item<3> &item);
+    // get dim0 group id
+    template <>
+    __XETLA_API int get_tile_idx<0>(sycl::nd_item<3> &item) {
+        return item.get_group(0);
+    }
+    // get dim1 group id
+    template <>
+    __XETLA_API int get_tile_idx<1>(sycl::nd_item<3> &item) {
+        return item.get_group(1);
+    }
+    // get dim2 group id
+    template <>
+    __XETLA_API int get_tile_idx<2>(sycl::nd_item<3> &item) {
+        return item.get_group(2);
+    }
+    // correct group range, nothing will be done under this swizzle policy
+    static __XETLA_API void update_group_range(
+            uint32_t &group_range_m, uint32_t &group_range_n) {}
+};
+
+/// @brief GROUP_SWIZZLE implementation of snake curve.
+/// A GROUP_SWIZZLE implementation to remap linear workgroup id to a 2d coordination in snake order.
+/// @tparam wg_num_n_ Is the number of workgroup in horizontal direction, given by users.
+/// @tparam arch_tag_ Is the HW architecture.
+template <int wg_num_n_, gpu_arch arch_tag_ = gpu_arch::Xe>
+struct group_swizzle_snake {
+public:
+    static constexpr gpu_arch arch_tag = arch_tag_;
+
+    template <int>
+    int get_tile_idx(sycl::nd_item<3> &item);
+    // get dim0 group id
+    template <>
+    __XETLA_API int get_tile_idx<0>(sycl::nd_item<3> &item) {
+        return item.get_group(0);
+    }
+    // get transformed dim1 group id
+    template <>
+    __XETLA_API int get_tile_idx<1>(sycl::nd_item<3> &item) {
+        uint32_t group_range_n = item.get_group_range(2);
+        uint32_t wg_repeat_n = group_range_n / wg_num_n;
+        uint32_t repeat_id = get_2d_group_linear_id(item) / max_wg_num;
+        uint32_t repeat_id_m = repeat_id / wg_repeat_n;
+        uint32_t repeat_start_m = repeat_id_m * wg_num_m;
+        uint32_t wg_inner_id = get_2d_group_linear_id(item) % max_wg_num;
+        uint32_t wg_coord_m = wg_inner_id / wg_num_n;
+        int start_m_id = repeat_start_m + wg_coord_m;
+        return start_m_id;
+    }
+    // get transformed dim2 group id
+    template <>
+    __XETLA_API int get_tile_idx<2>(sycl::nd_item<3> &item) {
+        uint32_t group_range_n = item.get_group_range(2);
+        uint32_t wg_repeat_n = group_range_n / wg_num_n;
+        uint32_t repeat_id = get_2d_group_linear_id(item) / max_wg_num;
+        uint32_t repeat_id_n = repeat_id % wg_repeat_n;
+        uint32_t repeat_id_m = repeat_id / wg_repeat_n;
+        uint32_t repeat_start_n_0 = repeat_id_n * wg_num_n;
+        uint32_t repeat_start_n_1 = (wg_repeat_n - repeat_id_n - 1) * wg_num_n;
+        uint32_t repeat_start_n
+                = (repeat_id_m & 1) == 0 ? repeat_start_n_0 : repeat_start_n_1;
+        uint32_t wg_inner_id = get_2d_group_linear_id(item) % max_wg_num;
+        uint32_t wg_coord_n = wg_inner_id % wg_num_n;
+        int start_n_id = repeat_start_n + wg_coord_n;
+        return start_n_id;
+    }
+    // correct group range, workgroup will be padded to fit the given wg_num_n
+    // under this swizzle policy
+    static __XETLA_API void update_group_range(
+            uint32_t &group_range_m, uint32_t &group_range_n) {
+        group_range_m = (group_range_m + wg_num_m - 1) / wg_num_m * wg_num_m;
+        group_range_n = (group_range_n + wg_num_n - 1) / wg_num_n * wg_num_n;
+    }
+
+private:
+    static constexpr uint32_t max_wg_num = arch_attr_t<arch_tag>::max_wg_num;
+    static constexpr uint32_t wg_num_n = wg_num_n_;
+    static_assert(!(max_wg_num % wg_num_n),
+            "max_wg_num cannot be divisible by given wg_num_n!");
+    static constexpr uint32_t wg_num_m = max_wg_num / wg_num_n;
+};
 
 /// @brief Default GEMM_UNIVERSAL implementation.
 /// A general GEMM_UNIVERSAL implementation to provide a composition point of gemm_universal and epilogue.
 /// @tparam arch_tag_ Is the HW architecture.
-template <gpu_arch arch_tag_>
+template <typename group_swizzle_policy_>
 struct dispatch_policy_default {
-    static constexpr gpu_arch arch_tag = arch_tag_;
+    using group_swizzle_policy = group_swizzle_policy_;
+    static constexpr gpu_arch arch_tag = group_swizzle_policy::arch_tag;
 };
 
 /// @brief Kslicing GEMM_UNIVERSAL implementation.
@@ -40,11 +132,13 @@ struct dispatch_policy_default {
 /// @tparam num_global_kslicing_ Is the k dim split ratio between groups.
 /// @tparam num_local_kslicing_ Is the k dim split ratio within a group.
 /// @tparam arch_tag_ Is the HW architecture.
-template <int num_global_kslicing_, int num_local_kslicing_, gpu_arch arch_tag_>
+template <typename group_swizzle_policy_, int global_ratio_ = 1,
+        int local_ratio_ = 1>
 struct dispatch_policy_kslicing {
-    static constexpr int num_global_kslicing = num_global_kslicing_;
-    static constexpr int num_local_kslicing = num_local_kslicing_;
-    static constexpr gpu_arch arch_tag = arch_tag_;
+    using group_swizzle_policy = group_swizzle_policy_;
+    static constexpr int global_ratio = global_ratio_;
+    static constexpr int local_ratio = local_ratio_;
+    static constexpr gpu_arch arch_tag = group_swizzle_policy::arch_tag;
 };
 
 /// @brief StreamK GEMM implementation.
@@ -434,20 +528,6 @@ struct dispatch_policy_stream_k {
 
         return owning_group_idx;
     }
-};
-
-/// @brief Blocked dispatch GEMM_UNIVERSAL implementation.
-/// A GEMM_UNIVERSAL implementation to provide a composition point of gemm and epilogue.
-/// @tparam wg_num_n_ Is the x-dir workgroup number of repeat block.
-/// @tparam arch_tag_ Is the HW architecture.
-template <int wg_num_n_, gpu_arch arch_tag_>
-struct dispatch_policy_block {
-    static constexpr gpu_arch arch_tag = arch_tag_;
-    static constexpr uint32_t max_wg_num = arch_attr_t<arch_tag>::max_wg_num;
-    static constexpr int wg_num_n = wg_num_n_;
-    static_assert(!(max_wg_num % wg_num_n),
-            "max_wg_num cannot be divisible by given wg_num_n!");
-    static constexpr int wg_num_m = max_wg_num / wg_num_n;
 };
 
 /// @} xetla_gemm_universal

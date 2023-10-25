@@ -41,9 +41,13 @@ struct tf32_gemm_test_func {
             tile_shape,
             mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>>;
 
-    using gemm_op_t = gemm_universal_t<dispatch_policy_kslicing<global_kslicing,
-                                               local_kslicing, gpu_arch::Xe>,
-            gemm_t, epilogue_t>;
+    using group_swizzle
+            = gpu::xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
+
+    using dispatch_policy = dispatch_policy_kslicing<group_swizzle,
+            global_kslicing, local_kslicing>;
+
+    using gemm_op_t = gemm_universal_t<dispatch_policy, gemm_t, epilogue_t>;
 
     static const char *func_name() { return "tf32_gemm_test_func"; }
 

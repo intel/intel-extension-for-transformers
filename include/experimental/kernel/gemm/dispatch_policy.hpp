@@ -33,12 +33,13 @@ namespace gpu::xetla::kernel {
 /// @tparam num_global_kslicing_ Is the k dim split ratio between groups.
 /// @tparam num_local_kslicing_ Is the k dim split ratio within a group.
 /// @tparam arch_tag_ Is the HW architecture.
-template <int num_global_kslicing_ = 1, int num_local_kslicing_ = 1,
-        gpu_arch arch_tag_ = gpu_arch::Xe>
+template <typename group_swizzle_policy_, int num_global_kslicing_ = 1,
+        int num_local_kslicing_ = 1>
 struct dispatch_policy_int4_dequantize_kslicing {
+    using group_swizzle_policy = group_swizzle_policy_;
     static constexpr int num_global_kslicing = num_global_kslicing_;
     static constexpr int num_local_kslicing = num_local_kslicing_;
-    static constexpr gpu_arch arch_tag = arch_tag_;
+    static constexpr gpu_arch arch_tag = group_swizzle_policy::arch_tag;
 };
 
 /// @} xetla_gemm

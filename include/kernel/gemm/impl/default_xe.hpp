@@ -32,15 +32,17 @@ namespace gpu::xetla::kernel {
 ///
 /// @tparam gemm_t_ Is the gemm functor to compose a GEMM_UNIVERSAL.
 /// @tparam epilogue_t_ Is the epilogue functor to compose a GEMM_UNIVERSAL.
-template <gpu_arch arch_tag_, typename gemm_t_, typename epilogue_t_>
-class gemm_universal_t<dispatch_policy_default<arch_tag_>, gemm_t_, epilogue_t_,
-        std::enable_if_t<(arch_tag_ == gpu_arch::Xe)>> {
+template <typename gemm_t_, typename epilogue_t_, typename group_swizzle_>
+class gemm_universal_t<dispatch_policy_default<group_swizzle_>, gemm_t_,
+        epilogue_t_,
+        std::enable_if_t<(group_swizzle_::arch_tag == gpu_arch::Xe)>> {
     using gemm_t = gemm_t_;
     using epilogue_t = epilogue_t_;
     using gemm_args_t = typename gemm_t::arguments_t;
     using epilogue_args_t = typename epilogue_t::arguments_t;
-
     using tile_shape = typename gemm_t::tile_shape;
+    using group_swizzle_t = group_swizzle_;
+
     static constexpr uint32_t wg_tile_m = tile_shape::wg_tile_size_y;
     static constexpr uint32_t wg_tile_n = tile_shape::wg_tile_size_x;
     static constexpr uint32_t sg_tile_m = tile_shape::sg_tile_size_y;
@@ -53,7 +55,7 @@ class gemm_universal_t<dispatch_policy_default<arch_tag_>, gemm_t_, epilogue_t_,
     static constexpr uint32_t k_stride = gemm_t::k_stride;
     using work_group_t = typename gemm_t::work_group_t;
 
-    static constexpr gpu_arch arch_tag = arch_tag_;
+    static constexpr gpu_arch arch_tag = group_swizzle_t::arch_tag;
     static_assert(arch_tag == gemm_t::arch_tag, "arch_tag should be the same");
     static_assert(
             arch_tag == epilogue_t::arch_tag, "arch_tag should be the same");
@@ -198,6 +200,7 @@ public:
             uint32_t matrix_m, uint32_t matrix_n) {
         uint32_t group_range_m = (matrix_m + wg_tile_m - 1) / wg_tile_m;
         uint32_t group_range_n = (matrix_n + wg_tile_n - 1) / wg_tile_n;
+        group_swizzle_t::update_group_range(group_range_m, group_range_n);
         std::cout << "Group range: {" << 1 << ", " << group_range_m << ", "
                   << group_range_n << "} \n";
         return cl::sycl::range<3> {1, group_range_m, group_range_n};
@@ -269,8 +272,9 @@ public:
             const arguments_t &args, uint32_t slm_base = 0,
             uint32_t nbarrier_base = 0) {
         // set up workgroup level coordinates and boundaries
-        int start_n = item.get_group(2) * wg_tile_n;
-        int start_m = item.get_group(1) * wg_tile_m;
+        group_swizzle_t group_swizzle;
+        int start_m = group_swizzle.template get_tile_idx<1>(item) * wg_tile_m;
+        int start_n = group_swizzle.template get_tile_idx<2>(item) * wg_tile_n;
         int start_k = 0;
         uint32_t wg_tile_k = args.matrix_k;
         uint32_t boundary_n = (start_n + wg_tile_n) > args.matrix_n

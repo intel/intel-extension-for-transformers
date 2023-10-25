@@ -170,8 +170,9 @@ void gemm_relu_bias_run(uint32_t iter) {
             xetla::group::epilogue_policy_tile_op<tile_op_t, gpu_arch::Xe>,
             tile_shape, mem_desc_output_t>;
 
+    using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
     using gemm_op_t = xetla::kernel::gemm_universal_t<
-            xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, gemm_t,
+            xetla::kernel::dispatch_policy_default<group_swizzle>, gemm_t,
             epilogue_t>;
 
     // [ReLuBias] define the shape of bias matrix D, which should be identitcal to C

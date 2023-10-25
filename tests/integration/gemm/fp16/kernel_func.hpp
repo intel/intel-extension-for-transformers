@@ -55,9 +55,14 @@ struct fp16_gemm_test_func {
     using epilogue_t = epilogue_t<epilogue_policy_default<gpu_arch::Xe>,
             tile_shape, mem_desc_output_c>;
 
-    using gemm_op_t = gemm_universal_t<dispatch_policy_kslicing<global_kslicing,
-                                               local_kslicing, gpu_arch::Xe>,
-            gemm_t, epilogue_t>;
+    using group_swizzle
+            = gpu::xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
+
+    using dispatch_policy = dispatch_policy_kslicing<group_swizzle,
+            global_kslicing, local_kslicing>;
+
+    using gemm_op_t = gemm_universal_t<dispatch_policy, gemm_t, epilogue_t>;
+
     static const char *func_name() { return "fp16_gemm_test_func"; }
 
     static inline void run(sycl::nd_item<3> &item, dtype_a *A, dtype_b *B,

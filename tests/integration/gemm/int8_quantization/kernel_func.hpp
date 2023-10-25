@@ -44,9 +44,14 @@ struct igemm_quantize_func {
             tile_shape,
             mem_desc_t<dtype_c, mem_layout::row_major, mem_space::global>>;
 
-    using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<
-            gpu::xetla::kernel::dispatch_policy_default<gpu_arch::Xe>, gemm_t,
-            epilogue_t>;
+    using group_swizzle
+            = gpu::xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
+
+    using dispatch_policy
+            = gpu::xetla::kernel::dispatch_policy_default<group_swizzle>;
+    using gemm_op_t = gpu::xetla::kernel::gemm_universal_t<dispatch_policy,
+            gemm_t, epilogue_t>;
+
     static constexpr uint32_t barrier_count = gemm_op_t::get_barrier_count();
     static constexpr uint32_t slm_size = gemm_op_t::get_slm_size();
 

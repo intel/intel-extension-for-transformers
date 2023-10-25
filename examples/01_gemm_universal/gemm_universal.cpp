@@ -121,9 +121,12 @@ void gemm_universal_run(uint32_t iter) {
     constexpr int num_local_splitk
             = (kslicing_type == kslicing_impl_t::local) ? 2 : 1;
 
+    using group_swizzle
+            = gpu::xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
+
     using dispatch_policy
-            = gpu::xetla::kernel::dispatch_policy_kslicing<num_global_splitk,
-                    num_local_splitk, gpu_arch::Xe>;
+            = gpu::xetla::kernel::dispatch_policy_kslicing<group_swizzle,
+                    num_global_splitk, num_local_splitk>;
 
     using gemm_op_t = xetla::kernel::gemm_universal_t<dispatch_policy, gemm_t,
             epilogue_t>;

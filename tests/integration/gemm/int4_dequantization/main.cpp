@@ -226,9 +226,10 @@ void dequantize_gemm_run(int iter) {
     using epilogue_t = xetla::group::epilogue_t<
             xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
             mem_desc_c_t>;
+    using group_swizzle = xetla::kernel::group_swizzle_default<gpu_arch::Xe>;
     using gemm_op_t = xetla::kernel::gemm_universal_t<
             gpu::xetla::kernel::dispatch_policy_int4_dequantize_kslicing<
-                    global_kslicing, local_kslicing, gpu_arch::Xe>,
+                    group_swizzle, global_kslicing, local_kslicing>,
             gemm_t, epilogue_t>;
 
     size_t size_acc = gemm_op_t::get_acc_buf_size(matrix_m, matrix_n);

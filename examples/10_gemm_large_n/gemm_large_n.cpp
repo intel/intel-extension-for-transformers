@@ -108,8 +108,11 @@ void gemm_large_n_run(uint32_t iter) {
             xetla::group::epilogue_policy_default<gpu_arch::Xe>, tile_shape,
             mem_desc_t<data_type_c, mem_layout::row_major, mem_space::global>>;
 
+    using group_swizzle
+            = xetla::kernel::group_swizzle_snake<wg_num_n, gpu_arch::Xe>;
+
     using dispatch_policy
-            = xetla::kernel::dispatch_policy_block<wg_num_n, gpu_arch::Xe>;
+            = xetla::kernel::dispatch_policy_default<group_swizzle>;
 
     using gemm_op_t = xetla::kernel::gemm_universal_t<dispatch_policy, gemm_t,
             epilogue_t>;

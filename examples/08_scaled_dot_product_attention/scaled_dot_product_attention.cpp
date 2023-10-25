@@ -271,8 +271,9 @@ void sdp_fwd_run(uint32_t iter) {
                             tile_shape0,
                             mem_desc_t<dtype_sfx, mem_layout::row_major,
                                     mem_space::local>>;
+                    using group_swizzle = group_swizzle_default<gpu_arch::Xe>;
                     using gemm_op0_t = gemm_universal_t<
-                            dispatch_policy_default<gpu_arch::Xe>, gemm0_t,
+                            dispatch_policy_default<group_swizzle>, gemm0_t,
                             epilogue0_t>;
 
                     // initialize SLM size
