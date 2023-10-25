@@ -367,6 +367,5 @@ class TestQuantization(unittest.TestCase):
         output = bit8_model(dummy_input)
         self.assertTrue(isclose(float(output[0][0][0][0]), -7.2695, rel_tol=1e-04))
 
-
 if __name__ == "__main__":
     unittest.main()
