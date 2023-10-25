@@ -296,13 +296,13 @@ void gpu_linear(queue& queue, const torch::Tensor& activation, const T1* weight,
     auto A = alloc_device_and_init<data_type_a>(
             size_a,
             [&activation](data_type_a *data, size_t idx) {
-                data[idx] = static_cast<data_type_a>(activation.data_ptr<T1>()[idx]);
+                data[idx] = static_cast<data_type_a>(*(activation.data_ptr<T1>() + idx));
             },
             queue, device, context);
     auto B = alloc_device_and_init<data_type_b>(
             size_b,
             [&weight](data_type_b *data, size_t idx) {
-                data[idx] = static_cast<data_type_b>(weight[idx]);
+                data[idx] = static_cast<data_type_b>(*(weight + idx));
             },
             queue, device, context);
     auto C = alloc_device_and_init<data_type_c>(

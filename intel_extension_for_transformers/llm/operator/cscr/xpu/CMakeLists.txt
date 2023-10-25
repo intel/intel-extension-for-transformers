@@ -31,11 +31,10 @@ find_package(Torch REQUIRED
 PATHS ${torch_path}
 NO_DEFAULT_PATH)
 
-add_subdirectory(../../../library/gblas gblas_out)
-# add_subdirectory(../../../library/xetla xetla_out)
+# add_subdirectory(../../../library/gblas gblas_out)
 
 add_compile_options(-fsycl)
-add_link_options(-fsycl)
+add_link_options(-fsycl -lpthread -lm)
 
 
 file(GLOB gbits_src ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/*.hpp)
@@ -52,5 +51,6 @@ target_include_directories(gbits PRIVATE
 # Link against LibTorch
 set_target_properties(gbits PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(gbits PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(gbits "${TORCH_LIBRARIES}" gblas::gblas)
+# target_link_libraries(gbits "${TORCH_LIBRARIES}" gblas::gblas)
+target_link_libraries(gbits "${TORCH_LIBRARIES}")
 set_property(TARGET torch_cpu PROPERTY INTERFACE_COMPILE_OPTIONS "")
