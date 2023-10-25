@@ -28,7 +28,7 @@ tokenizer_name_or_path: "bigcode/starcoder"
 device: "cpu"
 
 # users can choose one of the ipex int8, itrex int4, mix precision and
-# bitsandbytes to run the optimized mode for inference speedup
+# bitsandbytes to run the optimized model for inference speedup
 
 # ipex int8 optimization
 optimization:
