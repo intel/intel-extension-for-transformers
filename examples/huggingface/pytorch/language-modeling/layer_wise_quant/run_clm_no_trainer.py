@@ -36,7 +36,7 @@ parser.add_argument("--sq", action="store_true")
 parser.add_argument("--alpha", default="ll0.5",
                     help="Smooth quant parameter.")
 parser.add_argument("--layer_wise", action="store_true")
-parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ'],
+parser.add_argument("--weight_only_algo", default="RTN", choices=['RTN', 'AWQ', 'TEQ', 'GPTQ'],
                     help="Weight-only parameter.")
 parser.add_argument("--int8", action="store_true")
 parser.add_argument("--weight_only_sym_full_range", action="store_true")
@@ -85,9 +85,10 @@ class Evaluator:
             # if self.tokenizer.pad_token is None:
             #     if self.tokenizer.eos_token:
             #         self.tokenizer.pad_token = self.tokenizer.eos_token
-            # example = self.tokenizer(examples["text"], padding="max_length", max_length=self.pad_max)
+            self.tokenizer.pad_token = ' '
+            example = self.tokenizer(examples["text"], padding="max_length", max_length=self.pad_max)
             # example = self.tokenizer(examples["text"], truncation=True, max_length=self.pad_max)
-            example = self.tokenizer(examples["text"])
+            # example = self.tokenizer(examples["text"])
         return example
 
     @torch.no_grad()
@@ -150,14 +151,27 @@ if args.sq or args.weight_only_algo in ['AWQ', 'TEQ']:
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from torch.utils.data import Dataset
+
+class TestDataset(Dataset):
+    def __init__(self, size=5, shape=128):
+        self.len = size
+        self.input_ids = torch.randint(low=0, high=30522, size=(size, shape), dtype=torch.int64)
+
+    def __getitem__(self, index):
+        return self.input_ids[index]
+
+    def __len__(self):
+        return self.len
+    
 from memory_profiler import profile
 
 @profile(precision=4)
 def run():
     if args.layer_wise:
         print('load empty shell model...')
-        from neural_compressor.adaptor.torch_utils.layer_wise_quant import load_shell
-        user_model = load_shell(args.model, AutoModelForCausalLM, torchscript=torchscript)
+        from neural_compressor.adaptor.torch_utils.layer_wise_quant import load_empty_model
+        user_model = load_empty_model(args.model, torchscript=torchscript)
     else:
         user_model = AutoModelForCausalLM.from_pretrained(
             args.model,
@@ -178,15 +192,19 @@ def run():
 
     if args.quantize:
         # dataset
-        calib_dataset = load_dataset(args.dataset, split="train")
-        calib_dataset = calib_dataset.shuffle(seed=42)
-        calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
-        calib_dataloader = DataLoader(
-            calib_evaluator.dataset,
-            batch_size=calib_size,
-            shuffle=False,
-            collate_fn=calib_evaluator.collate_batch,
-        )
+        # print(f'load dataset from {args.dataset}')
+        # calib_dataset = load_dataset(args.dataset, split="train")
+        # calib_dataset = calib_dataset.shuffle(seed=42)
+        # calib_evaluator = Evaluator(calib_dataset, tokenizer, args.batch_size, pad_max=args.pad_max_length, is_calib=True)
+        # calib_dataloader = DataLoader(
+        #     calib_evaluator.dataset,
+        #     batch_size=calib_size,
+        #     shuffle=False,
+        #     collate_fn=calib_evaluator.collate_batch,
+        # )
+
+        calib_dataset = TestDataset()
+        calib_dataloader = DataLoader(calib_dataset, batch_size=8)
 
         def calib_func(prepared_model):
             for i, calib_input in enumerate(calib_dataloader):
@@ -218,14 +236,9 @@ def run():
                 op_type_dict = {}
         excluded_precisions = [] if args.int8_bf16_mixed else ["bf16"]
         if args.layer_wise:
-            recipes = {
+            recipes.update({
                 "layer_wise_quant": True,
-                "layer_wise_quant_args": {
-                    "model_path": args.model,
-                    "smooth_quant": args.sq,
-                    "smooth_quant_alpha": args.alpha
-                    }
-            }
+            })
         conf = PostTrainingQuantConfig(
             backend="ipex" if args.ipex else "default",
             approach=args.approach,
@@ -233,6 +246,7 @@ def run():
             op_type_dict=op_type_dict,
             recipes=recipes,
         )
+        print(conf)
 
         if args.weight_only_algo == 'TEQ':
             # set calib_func=None, use default training func as calib_func
@@ -240,6 +254,8 @@ def run():
 
         st = time.time()
         print(f'start quantization, time: {st}')
+        from neural_compressor import print_memo
+        print_memo('start quantization')
         q_model = quantization.fit(
             user_model,
             conf,
