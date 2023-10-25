@@ -55,7 +55,7 @@ class TestChatbotBuilder(unittest.TestCase):
         response = chatbot.predict("Who is the founder of Intel?")
         print(response)
         plugins.retrieval.args["persist_dir"] = "./output"
-        self.assertTrue(response == "check the result")
+        self.assertTrue("### Assistant" in response)
         plugins.retrieval.enable = False
         
 
