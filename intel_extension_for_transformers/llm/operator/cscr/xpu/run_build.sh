@@ -13,7 +13,7 @@
 # limitations under the License.
 export CC=icx
 export CXX=icpx
-export ONEAPI_DEVICE_SELECTOR=level
+export ONEAPI_DEVICE_SELECTOR=level_zero1:*
 
 rm -rf build;
 mkdir build;

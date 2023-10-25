@@ -15,6 +15,7 @@ cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(gbits LANGUAGES C CXX)
 
 set(GBITS_TORCH_PATH "" CACHE STRING "Torch install path")
+set(GBITS_IPEX_PATH "" CACHE STRING "IPEX install path")
 
 if(GBITS_TORCH_PATH)
     set(torch_path ${GBITS_TORCH_PATH})
@@ -27,9 +28,19 @@ else()
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
-find_package(Torch REQUIRED
-PATHS ${torch_path}
-NO_DEFAULT_PATH)
+if(GBITS_IPEX_PATH)
+    set(ipex_path ${GBITS_IPEX_PATH})
+else()
+    execute_process(COMMAND python -c "import torch; import intel_extension_for_pytorch; print(intel_extension_for_pytorch.__path__[0])"
+                    OUTPUT_VARIABLE ipex_path
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
+
+
+find_package(Python COMPONENTS Interpreter Development)
+find_package(Torch REQUIRED PATHS ${torch_path} NO_DEFAULT_PATH)
+message("${ipex_path}")
+find_package(IPEX REQUIRED PATHS ${ipex_path} NO_DEFAULT_PATH)
 
 # add_subdirectory(../../../library/gblas gblas_out)
 
@@ -48,9 +59,13 @@ target_include_directories(gbits PRIVATE
 ../../../library/xetla/include
 )
 
+target_include_directories(gbits PUBLIC "${Python_INCLUDE_DIRS}")
+target_include_directories(gbits PUBLIC "${TORCH_IPEX_INCLUDE_DIRS}")
+
 # Link against LibTorch
 set_target_properties(gbits PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(gbits PROPERTIES LINKER_LANGUAGE CXX)
 # target_link_libraries(gbits "${TORCH_LIBRARIES}" gblas::gblas)
 target_link_libraries(gbits "${TORCH_LIBRARIES}")
+target_link_libraries(gbits "${TORCH_IPEX_LIBRARIES}")
 set_property(TARGET torch_cpu PROPERTY INTERFACE_COMPILE_OPTIONS "")
