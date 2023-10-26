@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.models.model_utils &mdash; Intel® Extension for Transformers 0.1.dev1+ga237f23 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.models.model_utils &mdash; Intel® Extension for Transformers 0.1.dev1+ged95e3c documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -97,7 +97,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_repo_root" title="intel_extension_for_transformers.neural_chat.models.model_utils.get_repo_root"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_repo_root</span></code></a>(model_name_or_path[, local_rank, token])</p></td>
 <td><p>Downloads the specified model checkpoint and returns the repository where it was downloaded.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files" title="intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_checkpoint_files</span></code></a>(model_name_or_path, local_rank)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files" title="intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_checkpoint_files</span></code></a>(model_name_or_path, local_rank[, ...])</p></td>
 <td><p>Gets the list of files for the specified model checkpoint.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json" title="intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_checkpoints_json</span></code></a>(model_name_or_path, local_rank, ...)</p></td>
@@ -128,13 +128,13 @@
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">get_checkpoint_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_rank</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">get_checkpoint_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_rank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.get_checkpoint_files" title="Link to this definition"></a></dt>
 <dd><p>Gets the list of files for the specified model checkpoint.</p>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">write_checkpoints_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_rank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoints_json</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.models.model_utils.</span></span><span class="sig-name descname"><span class="pre">write_checkpoints_json</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name_or_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">local_rank</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoints_json</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/models/model_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.models.model_utils.write_checkpoints_json" title="Link to this definition"></a></dt>
 <dd><p>Dumps metadata into a JSON file for DeepSpeed-inference.</p>
 </dd></dl>
 
@@ -274,7 +274,7 @@ If not provided, the default model is “mosaicml/mpt-7b-chat”.</p></li>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5ae71a4a60> 
+   <jinja2.runtime.BlockReference object at 0x7f131a382920> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

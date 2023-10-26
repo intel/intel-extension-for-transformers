@@ -31,12 +31,12 @@ Functions
    Downloads the specified model checkpoint and returns the repository where it was downloaded.
 
 
-.. py:function:: get_checkpoint_files(model_name_or_path, local_rank)
+.. py:function:: get_checkpoint_files(model_name_or_path, local_rank, token=None)
 
    Gets the list of files for the specified model checkpoint.
 
 
-.. py:function:: write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json)
+.. py:function:: write_checkpoints_json(model_name_or_path, local_rank, checkpoints_json, token=None)
 
    Dumps metadata into a JSON file for DeepSpeed-inference.
 
