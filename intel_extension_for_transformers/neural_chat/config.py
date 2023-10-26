@@ -18,7 +18,7 @@
 
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict
-from transformers import TrainingArguments, BitsAndBytesConfig
+from transformers import TrainingArguments
 from transformers.utils.versions import require_version
 from dataclasses import dataclass
 from .utils.common import get_device_type
@@ -27,11 +27,6 @@ from .plugins import plugins
 
 from enum import Enum, auto
 
-from intel_extension_for_transformers.transformers import (
-    MixedPrecisionConfig,
-    WeightOnlyQuantConfig,
-    BitsAndBytesConfig
-)
 class DeviceOptions(Enum):
     AUTO = auto()
     CPU = auto()
@@ -435,6 +430,11 @@ class PipelineConfig:
         self.loading_config = loading_config if loading_config is not None else \
             LoadingModelConfig(cpu_jit=True if self.device == "cpu" else False, \
                 use_hpu_graphs = True if self.device == "hpu" else False)
+        from intel_extension_for_transformers.transformers import (
+            MixedPrecisionConfig,
+            WeightOnlyQuantConfig,
+            BitsAndBytesConfig
+        )
         self.optimization_config = optimization_config if optimization_config is not None else MixedPrecisionConfig()
         assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
             f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
