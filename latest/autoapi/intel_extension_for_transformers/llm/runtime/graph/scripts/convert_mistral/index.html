@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral &mdash; Intel® Extension for Transformers 0.1.dev1+g7d14956 documentation</title>
+      <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../docs/legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../../_sources/autoapi/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral">
+<span id="intel-extension-for-transformers-llm-runtime-graph-scripts-convert-mistral"></span><h1><a class="reference internal" href="#module-intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral"><code class="xref py py-mod docutils literal notranslate"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral</span></code></a><a class="headerlink" href="#module-intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral" title="Link to this heading"></a></h1>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="classes">
+<h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.NEFileType" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.NEFileType"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NEFileType</span></code></a></p></td>
+<td><p>Generic enumeration.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.LazyUnpickler" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.LazyUnpickler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LazyUnpickler</span></code></a></p></td>
+<td><p>This takes a binary file for reading a pickle data stream.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h3>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h3>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.handle_quantization" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.handle_quantization"><code class="xref py py-obj docutils literal notranslate"><span class="pre">handle_quantization</span></code></a>(→ LazyModel)</p></td>
+<td><p>Convert a model with entries for 'foo.qweight', 'foo.scales', etc.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.bounded_parallel_map" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.bounded_parallel_map"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bounded_parallel_map</span></code></a>(→ Iterable[Out])</p></td>
+<td><p>Parallel map, but with backpressure.  If the caller doesn't call <cite>next</cite></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.nth_multifile_path" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.nth_multifile_path"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nth_multifile_path</span></code></a>(→ Optional[pathlib.Path])</p></td>
+<td><p>Given any path belonging to a multi-file model (e.g. foo.bin.1), return</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.find_multifile_paths" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.find_multifile_paths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_multifile_paths</span></code></a>(→ List[pathlib.Path])</p></td>
+<td><p>Given any path belonging to a multi-file model (e.g. foo.bin.1), return</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.load_some_model" title="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.load_some_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_some_model</span></code></a>(→ ModelPlus)</p></td>
+<td><p>Load a model of any supported format.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.NEFileType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.</span></span><span class="sig-name descname"><span class="pre">NEFileType</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.NEFileType" title="Link to this definition"></a></dt>
+<dd><p>Generic enumeration.</p>
+<p>Derive from this class to define new enumerations.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.handle_quantization">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.</span></span><span class="sig-name descname"><span class="pre">handle_quantization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">LazyModel</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">LazyModel</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.handle_quantization" title="Link to this definition"></a></dt>
+<dd><p>Convert a model with entries for ‘foo.qweight’, ‘foo.scales’, etc.
+(which resolve to UnquantizedTensors with the raw data) to one with entries
+for ‘foo.weight’ (which resolve to QuantizedTensors).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.LazyUnpickler">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.</span></span><span class="sig-name descname"><span class="pre">LazyUnpickler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IO</span><span class="p"><span class="pre">[</span></span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_base_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zip_file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">zipfile.ZipFile</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.LazyUnpickler" title="Link to this definition"></a></dt>
+<dd><p>This takes a binary file for reading a pickle data stream.</p>
+<p>The protocol version of the pickle is detected automatically, so no
+protocol argument is needed.  Bytes past the pickled object’s
+representation are ignored.</p>
+<p>The argument <em>file</em> must have two methods, a read() method that takes
+an integer argument, and a readline() method that requires no
+arguments.  Both methods should return bytes.  Thus <em>file</em> can be a
+binary file object opened for reading, an io.BytesIO object, or any
+other custom object that meets this interface.</p>
+<p>Optional keyword arguments are <em>fix_imports</em>, <em>encoding</em> and <em>errors</em>,
+which are used to control compatibility support for pickle stream
+generated by Python 2.  If <em>fix_imports</em> is True, pickle will try to
+map the old Python 2 names to the new names used in Python 3.  The
+<em>encoding</em> and <em>errors</em> tell pickle how to decode 8-bit string
+instances pickled by Python 2; these default to ‘ASCII’ and ‘strict’,
+respectively.  The <em>encoding</em> can be ‘bytes’ to read these 8-bit
+string instances as bytes objects.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.LazyUnpickler.find_class">
+<span class="sig-name descname"><span class="pre">find_class</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.LazyUnpickler.find_class" title="Link to this definition"></a></dt>
+<dd><p>Return an object from a specified module.</p>
+<p>If necessary, the module will be imported. Subclasses may override
+this method (e.g. to restrict unpickling of arbitrary classes and
+functions).</p>
+<p>This method is called whenever a class or a function object is
+needed.  Both arguments passed are str objects.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.bounded_parallel_map">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.</span></span><span class="sig-name descname"><span class="pre">bounded_parallel_map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">In</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Out</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">iterable</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">In</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concurrency</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">Out</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.bounded_parallel_map" title="Link to this definition"></a></dt>
+<dd><p>Parallel map, but with backpressure.  If the caller doesn’t call <cite>next</cite>
+fast enough, this will stop calling <cite>func</cite> at some point rather than
+letting results pile up in memory.  Specifically, there is a max of one
+output value buffered per thread.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.nth_multifile_path">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.</span></span><span class="sig-name descname"><span class="pre">nth_multifile_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pathlib.Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="../../../../../neural_chat/cli/cli_commands/index.html#intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None" title="intel_extension_for_transformers.neural_chat.cli.cli_commands.BaseCommand.None"><span class="pre">None</span></a></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.nth_multifile_path" title="Link to this definition"></a></dt>
+<dd><p>Given any path belonging to a multi-file model (e.g. foo.bin.1), return
+the nth path in the model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.find_multifile_paths">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.</span></span><span class="sig-name descname"><span class="pre">find_multifile_paths</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">pathlib.Path</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.find_multifile_paths" title="Link to this definition"></a></dt>
+<dd><p>Given any path belonging to a multi-file model (e.g. foo.bin.1), return
+the whole list of paths in the model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.load_some_model">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.</span></span><span class="sig-name descname"><span class="pre">load_some_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ModelPlus</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/llm/runtime/graph/scripts/convert_mistral.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.llm.runtime.graph.scripts.convert_mistral.load_some_model" title="Link to this definition"></a></dt>
+<dd><p>Load a model of any supported format.</p>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f820d7025f0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
