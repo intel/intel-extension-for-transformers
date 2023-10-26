@@ -73,12 +73,12 @@ python -m torch.distributed.launch --master_addr=<MASTER_ADDRESS> --nproc_per_no
 ## 3. Validated Model List
 ###  Stock PyTorch Validated model list
 
-|Dataset|Pre-trained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining 
+|Dataset|Pretrained model|PostTrainingDynamic | PostTrainingStatic | QuantizationAwareTraining 
 |---|------------------------------------|---|---|---
 |squad|distilbert-base-uncased-distilled-squad| ✅| ✅| ✅
 |squad|valhalla/longformer-base-4096-finetuned-squadv1| ✅| ✅| N/A
 ###  Intel Extension for PyTorch (IPEX) Validated model list
-|Dataset|Pre-trained model|Supported IPEX Version 
+|Dataset|Pretrained model|Supported IPEX Version 
 |---|------------------------------------|---
 |squad|distilbert-base-uncased-distilled-squad| == 1.13
 |squad|bert-large| >= 1.12
