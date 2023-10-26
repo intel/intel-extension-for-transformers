@@ -49,8 +49,9 @@ add_link_options(-fsycl -lpthread -lm -fPIC)
 file(GLOB gbits_src gbits_linear_new.cpp)
 file(GLOB xetla_linear xetla_linear.cpp)
 
+add_subdirectory(../../../runtime/graph/application/third_party/pybind11 pybind11)
 # Define our library target
-add_library(${PROJECT_NAME} SHARED ${gbits_src})
+pybind11_add_module(${PROJECT_NAME} ${gbits_src})
 add_library(xetla_linear STATIC ${xetla_linear})
 
 # gbits DPCPP need 17
@@ -66,12 +67,10 @@ target_include_directories(xetla_linear PRIVATE
 ../../../library/xetla/include
 )
 
-target_link_libraries(${PROJECT_NAME} "${TORCH_LIBRARIES}")
-target_link_libraries(${PROJECT_NAME} "${TORCH_IPEX_LIBRARIES}")
-target_link_libraries(${PROJECT_NAME} xetla_linear)
+target_link_libraries(${PROJECT_NAME} PRIVATE "${TORCH_LIBRARIES}")
+target_link_libraries(${PROJECT_NAME} PRIVATE "${TORCH_IPEX_LIBRARIES}")
+target_link_libraries(${PROJECT_NAME} PRIVATE xetla_linear)
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${Python_INCLUDE_DIRS}")
 target_include_directories(${PROJECT_NAME} PUBLIC "${TORCH_IPEX_INCLUDE_DIRS}")
 
-# Link against LibTorch
-set_property(TARGET torch_cpu PROPERTY INTERFACE_COMPILE_OPTIONS "")
