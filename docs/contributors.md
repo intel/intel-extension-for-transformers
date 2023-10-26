@@ -22,12 +22,26 @@ Thanks to all the contributors including
     <td> <img src="https://avatars.githubusercontent.com/u/38869685"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/nammbash">Niroop Ammbashankar</a></td>
    </tr>
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/24360328"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/SamanwaySadhu">Samanway Sadhu</a></td>
+   </tr>
+
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/107918818"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/jiqing-feng">Jiqing Feng</a></td>
+   </tr>
+
 
 
 </table>
 
+<br />
+<br />
+<br />
+<br />
 
-All Contributors:
+All Contributors:<br />
 <a href="https://github.com/intel/intel-extension-for-transformers/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=intel/intel-extension-for-transformers" />
 </a>
