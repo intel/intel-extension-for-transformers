@@ -46,21 +46,25 @@ from torch import nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
 
 from transformers.activations import ACT2FN
-from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast, SequenceClassifierOutputWithPast
+from transformers.modeling_outputs import (
+        BaseModelOutputWithPast,
+        CausalLMOutputWithPast,
+        SequenceClassifierOutputWithPast
+        )
 from transformers.modeling_utils import PreTrainedModel
 from transformers.utils import (
     add_start_docstrings,
     add_start_docstrings_to_model_forward,
-    is_flash_attn_available,
+    is_flash_attn_available, # pylint disable=E0611
     logging,
     replace_return_docstrings,
 )
-from transformers.models.mistral.configuration_mistral import MistralConfig
+from transformers.models.mistral.configuration_mistral import MistralConfig # pylint disable=E0401
 
 
 if is_flash_attn_available():
-    from flash_attn import flash_attn_func, flash_attn_varlen_func
-    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
+    from flash_attn import flash_attn_func, flash_attn_varlen_func   # pylint disable=E0401
+    from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # pylint disable=E0401 # noqa
 
     _flash_supports_window_size = "window_size" in list(inspect.signature(flash_attn_func).parameters)
 
@@ -382,7 +386,8 @@ class MistralFlashAttention2(MistralAttention):
 
         if not _flash_supports_window_size:
             logger.warning_once(
-                "The current flash attention version does not support sliding window attention, for a more memory efficient implementation"
+                "The current flash attention version does not support sliding window attention," +
+                "for a more memory efficient implementation"
                 " make sure to upgrade flash-attn library."
             )
 
@@ -399,7 +404,8 @@ class MistralFlashAttention2(MistralAttention):
 
                 if past_key.shape[-2] != self.config.sliding_window - 1:
                     raise ValueError(
-                        f"past key much have a shape of (`batch_size, num_heads, self.config.sliding_window-1, head_dim`), got"
+                        f"past key much have a shape of "
+                        f"(`batch_size, num_heads, self.config.sliding_window-1, head_dim`), got"
                         f" {past_key.shape}"
                     )
 
@@ -1155,7 +1161,8 @@ class MistralForCausalLM(MistralPreTrainedModel):
     """,
     MISTRAL_START_DOCSTRING,
 )
-# Copied from transformers.models.llama.modeling_llama.LlamaForSequenceClassification with Llama->Mistral, LLAMA->MISTRAL
+# Copied from transformers.models.llama.modeling_llama.LlamaForSequenceClassification with
+# Llama->Mistral, LLAMA->MISTRAL
 class MistralForSequenceClassification(MistralPreTrainedModel):
     def __init__(self, config):
         super().__init__(config)
