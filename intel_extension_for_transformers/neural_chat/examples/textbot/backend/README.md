@@ -30,10 +30,11 @@ conda install jemalloc gperftools -c conda-forge -y
 ```
 
 Install other dependencies using pip:
+>**Note**: Please make sure transformers version >= 4.34.1
 
 ```bash
+pip install -r intel_extension_for_transformers/neural_chat/requirements.txt
 pip install transformers >= 4.34.1
-pip install -r ../../../requirements.txt
 ```
 
 # Configure the textbot.yaml

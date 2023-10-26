@@ -27,5 +27,10 @@ Utilize the docker container based on docker image.
 
 ```bash
 docker run -itd --net=host --ipc=host chatbot:latest /bin/bash
-docker exec -it container_id /bin/bash
+docker exec -it <container_id> /bin/bash
+```
+
+## Run Simple Test
+```bash
+docker exec <container_id> bash -c "cd /intel-extension-for-transformers/tests; source activate neuralchat; python test_neural_engine.py"
 ```
