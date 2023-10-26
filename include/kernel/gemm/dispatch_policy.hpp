@@ -34,20 +34,20 @@ public:
     static constexpr gpu_arch arch_tag = arch_tag_;
 
     template <int>
-    int get_tile_idx(sycl::nd_item<3> &item);
+    static __XETLA_API int get_tile_idx(sycl::nd_item<3> &item);
     // get dim0 group id
     template <>
-    __XETLA_API int get_tile_idx<0>(sycl::nd_item<3> &item) {
+    static __XETLA_API int get_tile_idx<0>(sycl::nd_item<3> &item) {
         return item.get_group(0);
     }
     // get dim1 group id
     template <>
-    __XETLA_API int get_tile_idx<1>(sycl::nd_item<3> &item) {
+    static __XETLA_API int get_tile_idx<1>(sycl::nd_item<3> &item) {
         return item.get_group(1);
     }
     // get dim2 group id
     template <>
-    __XETLA_API int get_tile_idx<2>(sycl::nd_item<3> &item) {
+    static __XETLA_API int get_tile_idx<2>(sycl::nd_item<3> &item) {
         return item.get_group(2);
     }
     // correct group range, nothing will be done under this swizzle policy
@@ -65,15 +65,15 @@ public:
     static constexpr gpu_arch arch_tag = arch_tag_;
 
     template <int>
-    int get_tile_idx(sycl::nd_item<3> &item);
+    static __XETLA_API int get_tile_idx(sycl::nd_item<3> &item);
     // get dim0 group id
     template <>
-    __XETLA_API int get_tile_idx<0>(sycl::nd_item<3> &item) {
+    static __XETLA_API int get_tile_idx<0>(sycl::nd_item<3> &item) {
         return item.get_group(0);
     }
     // get transformed dim1 group id
     template <>
-    __XETLA_API int get_tile_idx<1>(sycl::nd_item<3> &item) {
+    static __XETLA_API int get_tile_idx<1>(sycl::nd_item<3> &item) {
         uint32_t group_range_n = item.get_group_range(2);
         uint32_t wg_repeat_n = group_range_n / wg_num_n;
         uint32_t repeat_id = get_2d_group_linear_id(item) / max_wg_num;
@@ -86,7 +86,7 @@ public:
     }
     // get transformed dim2 group id
     template <>
-    __XETLA_API int get_tile_idx<2>(sycl::nd_item<3> &item) {
+    static __XETLA_API int get_tile_idx<2>(sycl::nd_item<3> &item) {
         uint32_t group_range_n = item.get_group_range(2);
         uint32_t wg_repeat_n = group_range_n / wg_num_n;
         uint32_t repeat_id = get_2d_group_linear_id(item) / max_wg_num;
