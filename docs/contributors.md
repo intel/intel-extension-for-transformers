@@ -68,6 +68,11 @@
     <td><a href="https://github.com/itayariel1">Itay Ariel</a></td>
    </tr>
 
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/46982523"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/NeoZhangJianyu">Neo Zhang Jianyu</a></td>
+  </tr>
+
 </table>
 
 <br />
