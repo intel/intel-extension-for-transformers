@@ -27,6 +27,11 @@ from .plugins import plugins
 
 from enum import Enum, auto
 
+from intel_extension_for_transformers.transformers import (
+    MixedPrecisionConfig,
+    WeightOnlyQuantConfig,
+    BitsAndBytesConfig
+)
 class DeviceOptions(Enum):
     AUTO = auto()
     CPU = auto()
@@ -406,18 +411,7 @@ class LoadingModelConfig:
     use_cache: bool = True
     use_deepspeed: bool = False
     ipex_int8: bool = False
-
-@dataclass
-class WeightOnlyQuantizationConfig:
-    algorithm: str = 'RTN'
-    bits: int = 8
-    group_size: int = -1
-    scheme: str = 'sym'
-    enable_full_range: bool = True
-
-@dataclass
-class AMPConfig:
-    dtype: str = 'bfloat16'
+    use_llm_runtime: bool = False
 
 class PipelineConfig:
     def __init__(self,
@@ -441,7 +435,7 @@ class PipelineConfig:
         self.loading_config = loading_config if loading_config is not None else \
             LoadingModelConfig(cpu_jit=True if self.device == "cpu" else False, \
                 use_hpu_graphs = True if self.device == "hpu" else False)
-        self.optimization_config = optimization_config if optimization_config is not None else AMPConfig()
-        assert type(self.optimization_config) in [AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig], \
-            f"Expect optimization_config be an object of AMPConfig, WeightOnlyQuantizationConfig" + \
+        self.optimization_config = optimization_config if optimization_config is not None else MixedPrecisionConfig()
+        assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
+            f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
             " or BitsAndBytesConfig,got {type(self.optimization_config)}."

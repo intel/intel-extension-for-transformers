@@ -130,6 +130,7 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["use_cache"] = config.loading_config.use_cache
     parameters["peft_path"] = config.loading_config.peft_path
     parameters["use_deepspeed"] = config.loading_config.use_deepspeed
+    parameters["use_llm_runtime"] = config.loading_config.use_llm_runtime
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
 
@@ -150,12 +151,14 @@ def finetune_model(config: BaseFinetuningConfig):
     finetuning = Finetuning(config)
     finetuning.finetune()
 
-def optimize_model(model, config):
+def optimize_model(model, config, use_llm_runtime=False):
     """Optimize the model based on the provided configuration.
 
     Args:
-        config (OptimizationConfig): Configuration for optimizing the model.
+        model: large language model
+        config (OptimizationConfig): The configuration required for optimizing the model.
+        use_llm_runtime (bool): A boolean indicating whether to use the LLM runtime graph optimization.
     """
     optimization = Optimization(optimization_config=config)
-    model = optimization.optimize(model)
+    model = optimization.optimize(model, use_llm_runtime)
     return model

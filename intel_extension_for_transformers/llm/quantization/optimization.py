@@ -15,44 +15,58 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 from typing import Union
-from intel_extension_for_transformers.neural_chat.config import (
-    AMPConfig,
-    WeightOnlyQuantizationConfig,
+from intel_extension_for_transformers.transformers import (
+    AutoModel,
+    AutoModelForSeq2SeqLM,
+    AutoModelForCausalLM,
+    GPTBigCodeForCausalLM,
+    MixedPrecisionConfig,
+    WeightOnlyQuantConfig,
     BitsAndBytesConfig
 )
 
 class Optimization:
     def __init__(
             self,
-            optimization_config: Union[AMPConfig, WeightOnlyQuantizationConfig, BitsAndBytesConfig]
+            optimization_config: Union[MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig]
         ):
         self.optimization_config = optimization_config
 
-    def optimize(self, model):
+    def optimize(self, model, use_llm_runtime=False):
         optimized_model = model
         config = self.optimization_config
-        if isinstance(config, WeightOnlyQuantizationConfig):
-            print("Applying Weight Only Quantization.")
-            from neural_compressor import PostTrainingQuantConfig, quantization
-            op_type_dict = {
-                '.*':{ 	# re.match
-                    "weight": {
-                        'bits': config.bits, # 1-8 bits
-                        'group_size': config.group_size,  # -1 (per-channel)
-                        'scheme': config.scheme, # sym/asym
-                        'algorithm': config.algorithm, # RTN/AWQ/TEQ
-                    },
-                },
-            }
-            recipes = {"rtn_args": {"enable_full_range": config.enable_full_range}}
-            conf = PostTrainingQuantConfig(
-                approach='weight_only',
-                op_type_dict=op_type_dict,
-                recipes=recipes,
-            )
-            optimized_model = quantization.fit(
-                model,
-                conf,
-            ).model
+        if re.search("flan-t5", model.config._name_or_path, re.IGNORECASE):
+                optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
+                    model.config._name_or_path,
+                    quantization_config=config,
+                    use_llm_runtime=use_llm_runtime,
+                    trust_remote_code=True)
+        elif (
+            re.search("gpt", model.config._name_or_path, re.IGNORECASE)
+            or re.search("mpt", model.config._name_or_path, re.IGNORECASE)
+            or re.search("bloom", model.config._name_or_path, re.IGNORECASE)
+            or re.search("llama", model.config._name_or_path, re.IGNORECASE)
+            or re.search("opt", model.config._name_or_path, re.IGNORECASE)
+            or re.search("neural-chat-7b-v1", model.config._name_or_path, re.IGNORECASE)
+            or re.search("neural-chat-7b-v2", model.config._name_or_path, re.IGNORECASE)
+        ):
+            optimized_model = AutoModelForCausalLM.from_pretrained(
+                model.config._name_or_path,
+                quantization_config=config,
+                use_llm_runtime=use_llm_runtime,
+                trust_remote_code=True)
+        elif re.search("starcoder", model.config._name_or_path, re.IGNORECASE):
+            optimized_model = GPTBigCodeForCausalLM.from_pretrained(
+                model.config._name_or_path,
+                quantization_config=config,
+                use_llm_runtime=use_llm_runtime,
+                trust_remote_code=True)
+        elif re.search("chatglm", model.config._name_or_path, re.IGNORECASE):
+            optimized_model = AutoModel.from_pretrained(
+                model.config._name_or_path,
+                quantization_config=config,
+                use_llm_runtime=use_llm_runtime,
+                trust_remote_code=True)
         return optimized_model
