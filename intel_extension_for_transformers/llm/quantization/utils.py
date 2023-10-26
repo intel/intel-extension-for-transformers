@@ -23,7 +23,6 @@ from datasets import load_dataset
 from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from neural_compressor import quantization
 from neural_compressor.config import PostTrainingQuantConfig
-from transformers import default_data_collator
 
 
 torch = LazyImport("torch")
@@ -207,15 +206,47 @@ def convert_to_quantized_model(model, config, device="cpu"):
         if isinstance(calib_dataset, (str, bytes, os.PathLike)):
             calib_dataset = load_dataset(calib_dataset, split="train")
         calib_dataset = calib_dataset.shuffle(seed=42)
-        generator = torch.Generator()
-        generator.manual_seed(10)
-        sampler = torch.utils.data.RandomSampler(calib_dataset, generator=generator)
+        if config.tokenizer is None:
+            logger.error(
+                "Please provide the tokenizer or provide calib_func directly,"
+                + " the following is how to get tokenizer. \n"
+                + " from transformer import AutoTokenizer \n"
+                + " tokenizer = AutoTokenizer.from_pretrained(model_name_or_path) \n"
+            )
+            exit(0)           
+
+        def tokenize_function(examples):
+            if "prompt" in examples:
+                example = config.tokenizer(examples["prompt"])
+            elif "text" in examples:
+                example = config.tokenizer(examples["text"])
+            elif "code" in examples:
+                example = config.tokenizer(examples["code"])
+            else:
+                logger.error(
+                    "Please check dataset prompt identifier,"
+                    + " NeelNanda/pile-10k is default used calibration dataset."
+                )
+                exit(0)
+            return example
+
+        tokenized_dataset = calib_dataset.map(tokenize_function, batched=True)
+        tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+
+        def collate_batch(batch):
+            input_ids_padded = []
+            for text in batch:
+                input_ids = text["input_ids"]
+                input_ids = (
+                    input_ids[:512] if len(input_ids) > 512 else input_ids
+                )
+                input_ids_padded.append(input_ids)
+            return torch.vstack(input_ids_padded)
         calib_dataloader = torch.utils.data.DataLoader(
-            calib_dataset,
+            tokenized_dataset,
             batch_size=1,
-            sampler=sampler,
             shuffle=False,
-            collate_fn=default_data_collator,
+            collate_fn=collate_batch,
         )
     if calib_func is None and config.algorithm in ['AWQ']:
         def default_calib_func(model):
@@ -223,17 +254,12 @@ def convert_to_quantized_model(model, config, device="cpu"):
             This is the default calibration function, the dataset is NeelNanda/pile-10k,
             the default calib_iters is 100.
             """
-            for i, (input) in enumerate(calib_dataloader):
+            for i, (input_ids) in enumerate(calib_dataloader):
                 if i >= calib_iters:
                     break
-                if isinstance(input, (tuple, list)):
-                    for key in input[0]:
-                        input[0][key] = input[0][key].to(model_device)
-                    model(**input[0])
-                elif isinstance(input, dict):
-                    for key in input:
-                        input[key] = input[key].to(model_device)
-                    model(**input)
+                model(
+                    input_ids=input_ids,
+                )
         calib_func = default_calib_func
         logger.info(
             "The default calibration funcation is used, "
