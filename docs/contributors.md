@@ -3,7 +3,6 @@
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/106674601"   width = 50px height = 50px > </td> 
     <td><a href="https://github.com/bhargavshirin">Bhargav Shirin Nalamati</a></td>
-
     <td> <img src="https://avatars.githubusercontent.com/u/148626286"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/shresthasurav)">Surav Shrestha</a></td>
 </table>
