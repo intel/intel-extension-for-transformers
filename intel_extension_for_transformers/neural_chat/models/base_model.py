@@ -183,15 +183,6 @@ class BaseModel(ABC):
                             continue
                         response = plugin_instance.post_llm_inference_actions(response)
 
-        # clear plugins config
-        for key in plugins:
-            plugins[key] = {
-                "enable": False,
-                "class": None,
-                "args": {},
-                "instance": None
-            }
-
         return response
 
     def predict(self, query, config=None):
@@ -252,15 +243,6 @@ class BaseModel(ABC):
                 if plugin_instance:
                     if hasattr(plugin_instance, 'post_llm_inference_actions'):
                         response = plugin_instance.post_llm_inference_actions(response)
-
-        # clear plugins config
-        for key in plugins:
-            plugins[key] = {
-                "enable": False,
-                "class": None,
-                "args": {},
-                "instance": None
-            }
 
         return response
 
