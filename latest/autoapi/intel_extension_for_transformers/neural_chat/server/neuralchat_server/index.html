@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.server.neuralchat_server &mdash; Intel® Extension for Transformers 0.1.dev1+g4823496 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.server.neuralchat_server &mdash; Intel® Extension for Transformers 0.1.dev1+gcc01641 documentation</title>
       <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../_static/graphviz.css" type="text/css" />
@@ -94,11 +94,48 @@
 <h3>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h3>
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeuralChatServerExecutor</span></code></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor" title="intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeuralChatServerExecutor</span></code></a></p></td>
+<td><p>An abstract executor class of neuralchat server tasks.</p></td>
 </tr>
 </tbody>
 </table>
+<dl class="py class">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.server.neuralchat_server.</span></span><span class="sig-name descname"><span class="pre">NeuralChatServerExecutor</span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/neuralchat_server.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor" title="Link to this definition"></a></dt>
+<dd><p>An abstract executor class of neuralchat server tasks.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor.init">
+<span class="sig-name descname"><span class="pre">init</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/neuralchat_server.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor.init" title="Link to this definition"></a></dt>
+<dd><p>System initialization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>CfgNode</em>) – config object</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor.execute">
+<span class="sig-name descname"><span class="pre">execute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/server/neuralchat_server.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.server.neuralchat_server.NeuralChatServerExecutor.execute" title="Link to this definition"></a></dt>
+<dd><p>Command line entry. This method can only be accessed by a command line such as <cite>neuralchat textchat</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>argv</strong> (<em>List</em><em>[</em><em>str</em><em>]</em>) – Arguments from command line.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Result of the command execution. <cite>True</cite> for a success and <cite>False</cite> for a failure.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 </section>
 </section>
@@ -117,7 +154,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7fb9a0ad3760> 
+   <jinja2.runtime.BlockReference object at 0x7ff3743fa2c0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
