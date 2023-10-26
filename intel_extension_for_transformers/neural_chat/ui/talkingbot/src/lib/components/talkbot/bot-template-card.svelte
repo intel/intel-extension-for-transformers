@@ -118,7 +118,7 @@
                         type="text"
                         bind:value={name}
                         bind:this={inputEl}
-                        class="w-full text-base text-gray-600 focus-visible:outline-[#ccc] dark:text-gray-400"
+                        class="w-full text-base text-gray-600 focus-visible:outline-[#ccc]"
                     />
                 {:else} -->
                     <span>{name}</span>
