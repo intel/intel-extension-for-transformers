@@ -21,47 +21,31 @@
     <td> <img src="https://avatars.githubusercontent.com/u/36058628"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/sywangyi">Yi Wang</a></td>
   </tr>
-</table>
 
-<table>
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/43555799"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/tylertitsworth">Tyler Titsworth</a></td>
-   </tr>
-
-  <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/40050405"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/jiafuzha">Jiafu Zhang</a></td>
-   </tr>
-
-  <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/111278656"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/xiguiw">Xigui Wang</a></td>
-   </tr>
-
-  <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/88080182"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/huiyan2021">Huiyan Cao</a></td>
+
    </tr>
 
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/116312994"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/kta-intel">Kevin Ta</a></td>
-   </tr>
-
-  <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/60810276"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/JJukE">Sangjune Park</a></td>
-   </tr>
-
-  <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/53142482"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/JJukE">Hardik Kamboj</a></td>
-   </tr>
-  <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/22633385"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/eltociear">Ikko Eltociear Ashimine</a></td>
+
    </tr>
+
 
 
 </table>
