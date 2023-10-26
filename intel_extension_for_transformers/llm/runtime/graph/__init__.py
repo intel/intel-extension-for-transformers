@@ -43,7 +43,7 @@ class Model:
             import intel_extension_for_transformers.llm.runtime.graph.llama_cpp as cpp_model
         elif model_name == "mpt":
             import intel_extension_for_transformers.llm.runtime.graph.mpt_cpp as cpp_model
-        elif model_name == "gpt_bigcode":
+        elif model_name == "gpt_bigcode" or model_name == "starcoder":
             import intel_extension_for_transformers.llm.runtime.graph.starcoder_cpp as cpp_model
         elif model_name == "opt":
             import intel_extension_for_transformers.llm.runtime.graph.opt_cpp as cpp_model
