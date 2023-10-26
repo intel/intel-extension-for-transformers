@@ -140,26 +140,30 @@ static JBLAS_CODE jblas_s4fp32kblock_f32f32_forward(float* activation, SS4Fp32* 
       auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
       quanA.assign((int8_t*)workspace);
       ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
-    } else if (_cd->AVX512_VNNI() && weiptr->mBlockSize % 8 == 0) {
-      if (_m <= 32) {
-        using GemmKernel = avx512_vnni::KBlockFp32Fp32Next<WeiS4ClipFp32>;
-        static GemmKernel kernel;
-        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
-        quanA.assign((int8_t*)workspace);
-        ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
-      } else {
-        using GemmKernel = avx512_vnni::KBlockFp32Fp32<WeiS4ClipFp32>;
-        static GemmKernel kernel;
-        auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
-        quanA.assign((int8_t*)workspace);
-        ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
+    } else {
+      if (weiptr->mBlockSize % 8 == 0) {
+        if (_cd->AVX512_VNNI()) {
+          if (_m <= 32) {
+            using GemmKernel = avx512_vnni::KBlockFp32Fp32Next<WeiS4ClipFp32>;
+            static GemmKernel kernel;
+            auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
+            quanA.assign((int8_t*)workspace);
+            ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
+          } else {
+            using GemmKernel = avx512_vnni::KBlockFp32Fp32<WeiS4ClipFp32>;
+            static GemmKernel kernel;
+            auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
+            quanA.assign((int8_t*)workspace);
+            ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
+          }
+        } else if (_cd->AVX_VNNI()) {
+          using GemmKernel = avx_vnni::KBlockFp32Fp32<WeiS4ClipFp32>;
+          static GemmKernel kernel;
+          auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
+          quanA.assign((int8_t*)workspace);
+          ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
+        }
       }
-    } else if (_cd->AVX_VNNI() && weiptr->mBlockSize % 8 == 0) {
-      using GemmKernel = avx_vnni::KBlockFp32Fp32<WeiS4ClipFp32>;
-      static GemmKernel kernel;
-      auto quanA = kernel.getActivationPtr()->createStorage(_m, _k, weiptr->mBlockSize);
-      quanA.assign((int8_t*)workspace);
-      ret = kernel.compute({_m, _n, _k, activation, lda, &quanA, weiptr, output, ldo});
     }
   } else if (weiptr->mCoreType == GcCompFp32::TYPE) {
     if (_cd->AVX512F()) {
