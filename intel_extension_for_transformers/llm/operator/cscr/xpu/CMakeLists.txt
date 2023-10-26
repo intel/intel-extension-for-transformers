@@ -43,23 +43,23 @@ find_package(Python COMPONENTS Interpreter Development)
 find_package(Torch REQUIRED PATHS ${torch_path} NO_DEFAULT_PATH)
 find_package(IPEX REQUIRED PATHS ${ipex_path} NO_DEFAULT_PATH)
 
-add_compile_options(-fsycl)
-add_link_options(-fsycl -lpthread -lm)
+add_compile_options(-fsycl -fPIC)
+add_link_options(-fsycl -lpthread -lm -fPIC)
 
 file(GLOB gbits_src gbits_linear_new.cpp)
 file(GLOB xetla_linear xetla_linear.cpp)
 
 # Define our library target
 add_library(${PROJECT_NAME} SHARED ${gbits_src})
-add_library(xetla_linear SHARED ${xetla_linear})
+add_library(xetla_linear STATIC ${xetla_linear})
 
-# Enable C++20
+# gbits DPCPP need 17
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
+# Xetla Enable C++20
 set_property(TARGET xetla_linear PROPERTY CXX_STANDARD 20)
-#DPCPP need 17
 
 target_include_directories(xetla_linear PRIVATE
 ../../../library/xetla
