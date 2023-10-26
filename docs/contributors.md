@@ -9,31 +9,21 @@
     <td><a href="https://github.com/Smoothieewastaken">Smoothieewastaken</a></td>
     <td> <img src="https://avatars.githubusercontent.com/u/19263306"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/jmamou">Jonathan Mamou</a></td>
+  </tr>
 
-
-
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/38869685"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/nammbash">Niroop Ammbashankar</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/24360328"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/SamanwaySadhu">Samanway Sadhu</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/107918818"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/jiqing-feng">Jiqing Feng</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/36058628"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/sywangyi">Yi Wang</a></td>
   </tr>
 </table>
 
 <table>
-  <tr>
-    <td> <img src="https://avatars.githubusercontent.com/u/38869685"   width = 50px height = 50px > </td>
-    <td><a href="https://github.com/nammbash">Niroop Ammbashankar</a></td>
-   </tr>
-  <tr>
-    <td> <img src="https://avatars.githubusercontent.com/u/24360328"   width = 50px height = 50px > </td>
-    <td><a href="https://github.com/SamanwaySadhu">Samanway Sadhu</a></td>
-   </tr>
-
-  <tr>
-    <td> <img src="https://avatars.githubusercontent.com/u/107918818"   width = 50px height = 50px > </td>
-    <td><a href="https://github.com/jiqing-feng">Jiqing Feng</a></td>
-   </tr>
-  <tr>
-    <td> <img src="https://avatars.githubusercontent.com/u/36058628"   width = 50px height = 50px > </td>
-    <td><a href="https://github.com/sywangyi">Yi Wang</a></td>
-   </tr>
-
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/43555799"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/tylertitsworth">Tyler Titsworth</a></td>
