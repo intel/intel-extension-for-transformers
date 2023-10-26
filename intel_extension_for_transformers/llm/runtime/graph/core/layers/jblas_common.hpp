@@ -126,7 +126,8 @@ constexpr jblas::gemm::GemmCoreType GcCompInt8KBlockSet[] = {jblas::gemm::GemmCo
                                                              jblas::gemm::GemmCoreType::AVX_VNNI_1x48_KBLOCK};
 
 constexpr jblas::gemm::GemmCoreType GcCompInt8Set[] = {jblas::gemm::GemmCoreType::AMX_INT8_16x48_SS,
-                                                       jblas::gemm::GemmCoreType::AVX512_VNNI_8x48};
+                                                       jblas::gemm::GemmCoreType::AVX512_VNNI_8x48,
+                                                       jblas::gemm::GemmCoreType::AVX_VNNI_2x48};
 
 namespace custom {
 namespace epilogue {
@@ -902,28 +903,16 @@ using DynamicGemm =
                                                     jblas::gemm::kblock::GemmCore_Row_NN_1x48_AVX_VNNI_KBLOCK,
                                                     jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, Epi>;
 
-// template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
-// using DynamicGemmNext = jblas::wrapper::gemm_kblock::GemmSLauncherKBlockPackWeight<
-//     JblasAVX_VNNI, jblas::gemm::kblock::GemmCore_Row_NN_3x48_AVX_VNNI_KBLOCK,
-//     jblas::prologue::gemm::ActivationF32U8KBlockQuantize, ProB, Epi>;
-
-// template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
-// using DynamicGemmPerN = jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-//     JblasAVX_VNNI, jblas::gemm::GemmCore_Row_NN_8x48_AVX_VNNI,
-//     jblas::prologue::gemm::ActivationFp32AsymU8Quantize, ProB, Epi>;
-
+template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>
+using DynamicGemmPerN =
+    jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<JblasAVX_VNNI, jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI,
+                                                             jblas::prologue::gemm::ActivationFp32AsymU8Quantize, ProB,
+                                                             Epi>;
 using GemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
 using SiluGemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, custom::epilogue::SiluFp32>;
 using GeluGemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, custom::epilogue::GeluFp32>;
 using AddGeluGemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmSKernelDynamicS4KBlock = DynamicGemm<WeiS4ClipFp32, custom::epilogue::AddFp32>;
-
-// using GemmSKernelDynamicS4KBlockNext = DynamicGemmNext<WeiS4ClipFp32,
-// jblas::epilogue::gemm::AccumulatorWriteBackFp32>; using SiluGemmSKernelDynamicS4KBlockNext =
-// DynamicGemmNext<WeiS4ClipFp32, custom::epilogue::SiluFp32>; using GeluGemmSKernelDynamicS4KBlockNext =
-// DynamicGemmNext<WeiS4ClipFp32, custom::epilogue::GeluFp32>; using AddGeluGemmSKernelDynamicS4KBlockNext =
-// DynamicGemmNext<WeiS4ClipFp32, custom::epilogue::Add_GeluFp32>; using AddGemmSKernelDynamicS4KBlockNext =
-// DynamicGemmNext<WeiS4ClipFp32, custom::epilogue::AddFp32>;
 
 using GemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, jblas::epilogue::gemm::AccumulatorWriteBackFp32>;
 using SiluGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::SiluFp32>;
@@ -931,16 +920,15 @@ using GeluGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::
 using AddGeluGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::Add_GeluFp32>;
 using AddGemmSKernelDynamicS8KBlock = DynamicGemm<WeiS8Fp32, custom::epilogue::AddFp32>;
 
-// using GemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, jblas::epilogue::gemm::ZpDequantInt32ToFp32>;
-// using SiluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantSiluFp32>;
-// using AddGeluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
-// using AddGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantAddFp32>;
+using GemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, jblas::epilogue::gemm::ZpDequantInt32ToFp32>;
+using SiluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantSiluFp32>;
+using AddGeluGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
+using AddGemmDynamicS8PerN = DynamicGemmPerN<WeiS8Fp32PerN, custom::epilogue::ZpDequantAddFp32>;
 
-// using GemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, jblas::epilogue::gemm::ZpDequantInt32ToFp32>;
-// using SiluGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequantSiluFp32>;
-// using AddGeluGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
-// using AddGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequantAddFp32>;
-
+using GemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, jblas::epilogue::gemm::ZpDequantInt32ToFp32>;
+using SiluGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequantSiluFp32>;
+using AddGeluGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequant_Add_GeluFp32>;
+using AddGemmDynamicS4ClipPerN = DynamicGemmPerN<WeiS4ClipFp32PerN, custom::epilogue::ZpDequantAddFp32>;
 }  // namespace avx_vnni
 namespace amx_int8 {
 template <template <class GC, JBLAS_ISA ISA> class ProB, template <JBLAS_ISA ISA> class Epi>

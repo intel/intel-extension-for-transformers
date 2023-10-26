@@ -336,6 +336,36 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s8fp32pern_f32f32_forward(float* activation, SS
                             {tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1ptr->mSPtr, quanA1.mZPtr, w1ptr->mRPtr},
                             {output, ldo, quanA2.mCStep, quanA2.mSPtr, w2ptr->mSPtr, quanA2.mZPtr, w2ptr->mRPtr},
                             {tmp2, ldtmp2, quanA1.mCStep, quanA1.mSPtr, w3ptr->mSPtr, quanA1.mZPtr, w3ptr->mRPtr}});
+    } else if (_cd->AVX_VNNI()) {
+      using GemmKernel = custom::wrapper::kblock::avx_vnni::GemmDynamicS8PerN;
+      using SiluGemmKernel = custom::wrapper::kblock::avx_vnni::SiluGemmDynamicS8PerN;
+      using FusedInter = custom::wrapper::transformer::FFNFusedInterfacePerN<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,
+                            fin,
+                            fmid,
+                            fout,
+                            activation,
+                            lda,
+                            &quanA1,
+                            tmp1,
+                            ldtmp1,
+                            &quanA2,
+                            w1ptr,
+                            w2ptr,
+                            w3ptr,
+                            {tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1ptr->mSPtr, quanA1.mZPtr, w1ptr->mRPtr},
+                            {output, ldo, quanA2.mCStep, quanA2.mSPtr, w2ptr->mSPtr, quanA2.mZPtr, w2ptr->mRPtr},
+                            {tmp2, ldtmp2, quanA1.mCStep, quanA1.mSPtr, w3ptr->mSPtr, quanA1.mZPtr, w3ptr->mRPtr}});
     }
   }
   return ret;
@@ -371,6 +401,36 @@ JBLAS_CODE jblas_fusion_FFN_SiLu_s4clipfp32pern_f32f32_forward(float* activation
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::GemmDynamicS4ClipPerN;
       using SiluGemmKernel = custom::wrapper::kblock::avx512_vnni::SiluGemmDynamicS4ClipPerN;
+      using FusedInter = custom::wrapper::transformer::FFNFusedInterfacePerN<SiluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldtmp2 = fmid;
+      int ldo = fout;
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,
+                            fin,
+                            fmid,
+                            fout,
+                            activation,
+                            lda,
+                            &quanA1,
+                            tmp1,
+                            ldtmp1,
+                            &quanA2,
+                            w1ptr,
+                            w2ptr,
+                            w3ptr,
+                            {tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1ptr->mSPtr, quanA1.mZPtr, w1ptr->mRPtr},
+                            {output, ldo, quanA2.mCStep, quanA2.mSPtr, w2ptr->mSPtr, quanA2.mZPtr, w2ptr->mRPtr},
+                            {tmp2, ldtmp2, quanA1.mCStep, quanA1.mSPtr, w3ptr->mSPtr, quanA1.mZPtr, w3ptr->mRPtr}});
+    } else if (_cd->AVX_VNNI()) {
+      using GemmKernel = custom::wrapper::kblock::avx_vnni::GemmDynamicS4ClipPerN;
+      using SiluGemmKernel = custom::wrapper::kblock::avx_vnni::SiluGemmDynamicS4ClipPerN;
       using FusedInter = custom::wrapper::transformer::FFNFusedInterfacePerN<SiluGemmKernel, GemmKernel>;
       static FusedInter finter;
       int lda = fin;
@@ -920,6 +980,41 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s8fp32pern_f32f32_forward(float* activation
                             {{output, ldo, quanA2.mCStep, quanA2.mSPtr, w2tmp->mSPtr, quanA2.mZPtr, w2tmp->mRPtr},
                              b2ptr,
                              broadcast_bias ? 0 : ldo}});
+    } else if (_cd->AVX_VNNI()) {
+      using GemmKernel = custom::wrapper::kblock::avx_vnni::AddGemmDynamicS8PerN;
+      using GeluGemmKernel = custom::wrapper::kblock::avx_vnni::AddGeluGemmDynamicS8PerN;
+      using FusedInter = custom::wrapper::transformer::GeluFusedInterfacePerN<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
+      // FusedInter::Arguments::paramA paramA={activation, lda};
+      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
+      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
+      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,
+                            fin,
+                            fmid,
+                            fout,
+                            activation,
+                            lda,
+                            &quanA1,
+                            tmp1,
+                            ldtmp1,
+                            &quanA2,
+                            w1tmp,
+                            w2tmp,
+                            {{tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1tmp->mSPtr, quanA1.mZPtr, w1tmp->mRPtr},
+                             b1ptr,
+                             broadcast_bias ? 0 : ldtmp1},
+                            {{output, ldo, quanA2.mCStep, quanA2.mSPtr, w2tmp->mSPtr, quanA2.mZPtr, w2tmp->mRPtr},
+                             b2ptr,
+                             broadcast_bias ? 0 : ldo}});
     }
   }
   return ret;
@@ -979,6 +1074,41 @@ JBLAS_CODE jblas_fusion_FFN_Add_GeLu_s4clipfp32pern_f32f32_forward(float* activa
     } else if (_cd->AVX512_VNNI()) {
       using GemmKernel = custom::wrapper::kblock::avx512_vnni::AddGemmDynamicS4ClipPerN;
       using GeluGemmKernel = custom::wrapper::kblock::avx512_vnni::AddGeluGemmDynamicS4ClipPerN;
+      using FusedInter = custom::wrapper::transformer::GeluFusedInterfacePerN<GeluGemmKernel, GemmKernel>;
+      static FusedInter finter;
+      int lda = fin;
+      int ldtmp1 = fmid;
+      int ldo = fout;
+      // FusedInter::Arguments::paramA paramA={activation, lda};
+      // FusedInter::Arguments::paramW1 paramW1={w1tmp};
+      // FusedInter::Arguments::paramW2 paramW2={w2tmp};
+      // FusedInter::Arguments::param1 param1={tmp1, b1ptr, ldtmp1, ldtmp1};
+      auto quanA1 = finter.getActivationPtr()->createStorage(seq, fin);
+      quanA1.assign((int8_t*)workspace);
+      auto offset = workspace == NULL ? 0 : quanA1.mSize;
+      auto quanA2 = finter.getActivationPtr()->createStorage(seq, fmid);
+      quanA2.assign((int8_t*)workspace + offset);
+      ret = finter.compute({seq,
+                            fin,
+                            fmid,
+                            fout,
+                            activation,
+                            lda,
+                            &quanA1,
+                            tmp1,
+                            ldtmp1,
+                            &quanA2,
+                            w1tmp,
+                            w2tmp,
+                            {{tmp1, ldtmp1, quanA1.mCStep, quanA1.mSPtr, w1tmp->mSPtr, quanA1.mZPtr, w1tmp->mRPtr},
+                             b1ptr,
+                             broadcast_bias ? 0 : ldtmp1},
+                            {{output, ldo, quanA2.mCStep, quanA2.mSPtr, w2tmp->mSPtr, quanA2.mZPtr, w2tmp->mRPtr},
+                             b2ptr,
+                             broadcast_bias ? 0 : ldo}});
+    } else if (_cd->AVX_VNNI()) {
+      using GemmKernel = custom::wrapper::kblock::avx_vnni::AddGemmDynamicS4ClipPerN;
+      using GeluGemmKernel = custom::wrapper::kblock::avx_vnni::AddGeluGemmDynamicS4ClipPerN;
       using FusedInter = custom::wrapper::transformer::GeluFusedInterfacePerN<GeluGemmKernel, GemmKernel>;
       static FusedInter finter;
       int lda = fin;
