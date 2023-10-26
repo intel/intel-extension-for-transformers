@@ -42,25 +42,10 @@ model.init_from_bin("chatglm2", "ne_chatglm2_q.bin",
                     num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1) # n_keep=4, ctx_size = 15, n_discard=1 temperature=0.001, top_k=1, top_p=0.95,
 
 count = 1
-history = []
-def build_prompt(h):
-    out_prompt = ""
-    for idx in range(0, len(h), 2):
-        out_prompt += "[Round {}]\n\n问：{}\n\n答：".format(idx // 2 + 1, h[idx])
-        if idx < len(h) - 1:
-            out_prompt += "{}\n\n".format(h[idx + 1])
-    return out_prompt
-
 while True:
     print(">", end="")
     prompt = input()
-    history.append(prompt)
-    b_prompt = build_prompt(history)
-    # print(b_prompt)
+    b_prompt = "[Round {}]\n\n问：{}\n\n答：".format(count, prompt)
     inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
-    # print(inputs)
-    # print("new prompt", prompt)
-    # import pdb; pdb.set_trace()
-    outputs = model.generate(inputs, streamer=streamer, interactive=False, ignore_prompt=True)
-    history.append(tokenizer.batch_decode(outputs)[0])
-    # print(history)
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True)
+    count += 1
