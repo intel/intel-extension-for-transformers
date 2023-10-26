@@ -90,6 +90,7 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     audio = AudioSegment.from_file("tmp_audio_bytes")
     audio = audio.set_frame_rate(16000)
     # bytes to wav
+    file_name = file_name +'.wav'
     audio.export(f"{file_name}", format="wav")
     asr_result = router.handle_voice_asr_request(file_name)
     return {"asr_result": asr_result}
