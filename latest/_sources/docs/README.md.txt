@@ -1,34 +1,54 @@
-# Docs of overview and installation
-These documents provide a detailed description of the functionalities of Intel Extension for Transformers.
-[architecture.html](architecture.html) offers an overview of Intel Extension for Transformers, encompassing various architectural levels.
+# Documentation Overview and Installation
 
-You can fine install guidelines in [installation.html](installation.html).
+These documents offer a comprehensive description of Intel Extension for Transformers:
 
-# Docs of optimization and inference
+- [architecture.html](architecture.html): Provides an overview of Intel Extension for Transformers, covering various architectural levels.
+- [installation.html](installation.html): Contains installation guidelines.
 
-Optimization docs: [quantization.html](quantization.html), [pruning.html](pruning.html), [autodistillation.html](autodistillation.html), [distillation.html](distillation.html), 
+# Optimization and Inference Documentation
 
-[export.html](export.html) provides PyTorch to onnx including int8 model.
+**Optimization Documentation**:
 
-[get_started.html](get_started.html) guides you to use optimization API and sparse inference. Comprehensive API guidance is available in [API doc](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html), generated using [api_doc](api_doc) and [build_docs](build_docs). You may disregard the two mentioned folders. 
+- [quantization.html](quantization.html): Covers quantization techniques.
+- [pruning.html](pruning.html): Details the pruning process.
+- [autodistillation.html](autodistillation.html) and [distillation.html](distillation.html): Discuss distillation methods.
+- [export.html](export.html): Explains PyTorch to ONNX, including the int8 model.
+- [get_started.html](get_started.html): Guides you through using the optimization API and sparse inference.
 
-We also provide examples in [examples.html](examples.html). P.S, smoothquant, weight-only quantization and cpp inference are not in these documents. SmoothQuant: [smoothquant.html](smoothquant.html), weight-only quantization: [weightonlyquant.html](weightonlyquant.html).
+**API Documentation**:
 
-[tutorials/pytorch/](tutorials/pytorch) provides tutorials of many tasks.
+For comprehensive API guidance, visit the [API doc](https://intel.github.io/intel-extension-for-transformers/latest/docs/Welcome.html), generated using [api_doc](api_doc) and [build_docs](build_docs). You can disregard the two mentioned folders.
 
-# Docs of other functionalities
+**Examples**:
 
-These utils may help you:
-[data_augmentation.html](data_augmentation.html) does NLP datasets augmentation.
-[benchmark.html](benchmark.html) is used to measure the model performance. 
-[metrics.html](metrics.html) defines which metric will be used to measure the model.
-To measure the status of the tuning model, you can refer to [objectives.html](objectives.html).
-[pipeline.html](pipeline.html) makes it simple to use any model from the Hub for inference on tasks.
+Practical examples can be found in [examples.html](examples.html). Note that `smoothquant`, `weight-only quantization`, and `cpp inference` are not covered in these documents. For specific information on these topics:
 
-# Docs of contribution and legal
+- [smoothquant.html](smoothquant.html): SmoothQuant
+- [weightonlyquant.html](weightonlyquant.html): Weight-Only Quantization
 
-You are invited to commit your code; kindly adhere to the guidelines specified in [contributions.html](contributions.html) and maintain a positive demeanor as outlined in [code_of_conduct.html](code_of_conduct.html). The approvers for each component can be found in [component_owner.html](component_owner.html).
+**Tutorials**:
 
+Explore various tutorials for different tasks in [tutorials/pytorch/](tutorials/pytorch).
 
-[publication.html](publication.html) lists the publication related to this project, some of them can be found in [pubs/](pubs/).
-[release.html](release.html) provides links to all releases. License and legal information can be found in [legal.html](legal.html)
+# Other Functionalities Documentation
+
+**Utilities**:
+
+- [data_augmentation.html](data_augmentation.html): Describes NLP dataset augmentation.
+- [benchmark.html](benchmark.html): Explains how to measure model performance.
+- [metrics.html](metrics.html): Defines the metrics used for model measurement.
+- To measure the status of the tuning model, refer to [objectives.html](objectives.html).
+- [pipeline.html](pipeline.html): Simplifies the process of using any model from the Hub for inference on tasks.
+
+# Contribution and Legal Documentation
+
+You are invited to contribute your code. Kindly adhere to the guidelines specified in [contributions.html](contributions.html) and maintain a positive demeanor as outlined in [code_of_conduct.html](code_of_conduct.html). For component-specific approvers, refer to [component_owner.html](component_owner.html).
+
+**Publication**:
+[publication.html](publication.html) lists publications related to this project, some of which can be found in [pubs/](pubs/).
+
+**Release Information**:
+Access links to all releases in [release.html](release.html).
+
+**Legal Information**:
+For license and legal details, please consult [legal.html](legal.html).
