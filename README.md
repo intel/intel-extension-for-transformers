@@ -197,7 +197,7 @@ https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698d
 ## Acknowledgements
 * Excellent open-source projects: [bitsandbytes](https://github.com/TimDettmers/bitsandbytes), [FastChat](https://github.com/lm-sys/FastChat), [fastRAG](https://github.com/IntelLabs/fastRAG), [ggml](https://github.com/ggerganov/ggml), [gptq](https://github.com/IST-DASLab/gptq), [llama.cpp](https://github.com/ggerganov/llama.cpp), [lm-evauation-harness](https://github.com/EleutherAI/lm-evaluation-harness), [peft](https://github.com/huggingface/peft), [trl](https://github.com/huggingface/trl), [streamingllm](https://github.com/mit-han-lab/streaming-llm) and many others.
 
-* Thanks to all the contributors including [Ikko Eltociear Ashimine](https://github.com/eltociear), [Hardik Kamboj](https://github.com/hardikkamboj), [Sangjune Park](https://github.com/JJukE), [Kevin Ta](https://github.com/kta-intel), [Huiyan Cao](https://github.com/huiyan2021), [Xigui Wang](https://github.com/xiguiw), [Jiafu Zhang](https://github.com/jiafuzha), [Tyler Titsworth](https://github.com/tylertitsworth), [Yi Wang](https://github.com/sywangyi), [Samanway Sadhu](https://github.com/SamanwaySadhu), [Jiqing Feng](https://github.com/jiqing-feng), [Jonathan Mamou](https://github.com/jmamou) and [Niroop Ammbashankar](https://github.com/nammbash).
+* Thanks to all the [contributors](./docs/contributors.md).
 
 ## 💁Collaborations
 
