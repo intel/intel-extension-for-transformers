@@ -1,11 +1,15 @@
 <table>
   <tr>
-    <td> <img src="https://avatars.githubusercontent.com/u/106674601"   width = 50px height = 50px >  
-    [Bhargav Shirin Nalamati](https://github.com/bhargavshirin)</td>
+    <td> <img src="https://avatars.githubusercontent.com/u/106674601"   width = 50px height = 50px > </td> 
+    <td>[Bhargav Shirin Nalamati](https://github.com/bhargavshirin)</td>
 
-    <td><img src="https://avatars.githubusercontent.com/u/148626286"  width = 50px height = 50px > 
-    [Surav Shrestha](https://github.com/shresthasurav)</td>
    </tr> 
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/106674601"   width = 50px height = 50px > </td>
+    <td>[Bhargav Shirin Nalamati](https://github.com/bhargavshirin)</td>
+
+   </tr>
+
 </table>
 
 
