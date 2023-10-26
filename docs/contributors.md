@@ -5,19 +5,17 @@
     <td><a href="https://github.com/bhargavshirin">Bhargav Shirin Nalamati</a></td>
     <td> <img src="https://avatars.githubusercontent.com/u/148626286"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/shresthasurav)">Surav Shrestha</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/86610201"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/Smoothieewastaken">Smoothieewastaken</a></td>
+    <td> <img src="https://avatars.githubusercontent.com/u/19263306"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/jmamou">Jonathan Mamou</a></td>
+
+
+
   </tr>
 </table>
 
 <table>
-  <tr>
-    <td> <img src="https://avatars.githubusercontent.com/u/86610201"   width = 50px height = 50px > </td>
-    <td><a href="https://github.com/Smoothieewastaken">Smoothieewastaken</a></td>
-   </tr>
-  <tr>
-    <td> <img src="https://avatars.githubusercontent.com/u/19263306"   width = 50px height = 50px > </td>
-    <td><a href="https://github.com/jmamou">Jonathan Mamou</a></td>
-   </tr>
-
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/38869685"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/nammbash">Niroop Ammbashankar</a></td>
