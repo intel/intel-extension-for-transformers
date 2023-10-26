@@ -4,11 +4,11 @@
     <td> <img src="https://avatars.githubusercontent.com/u/106674601"   width = 50px height = 50px > </td> 
     <td><a href="https://github.com/bhargavshirin">Bhargav Shirin Nalamati</a></td>
 
-   </tr> 
-  <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/148626286"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/shresthasurav)">Surav Shrestha</a></td>
-   </tr>
+</table>
+
+<table>
   <tr>
     <td> <img src="https://avatars.githubusercontent.com/u/86610201"   width = 50px height = 50px > </td>
     <td><a href="https://github.com/Smoothieewastaken">Smoothieewastaken</a></td>
@@ -61,8 +61,19 @@
     <td><a href="https://github.com/kta-intel">Kevin Ta</a></td>
    </tr>
 
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/60810276"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/JJukE">Sangjune Park</a></td>
+   </tr>
 
-
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/53142482"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/JJukE">Hardik Kamboj</a></td>
+   </tr>
+  <tr>
+    <td> <img src="https://avatars.githubusercontent.com/u/22633385"   width = 50px height = 50px > </td>
+    <td><a href="https://github.com/eltociear">Ikko Eltociear Ashimine</a></td>
+   </tr>
 
 
 </table>
