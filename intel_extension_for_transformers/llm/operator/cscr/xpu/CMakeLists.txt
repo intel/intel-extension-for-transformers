@@ -39,26 +39,25 @@ else()
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
 endif()
 
-
 find_package(Python COMPONENTS Interpreter Development)
 find_package(Torch REQUIRED PATHS ${torch_path} NO_DEFAULT_PATH)
 find_package(IPEX REQUIRED PATHS ${ipex_path} NO_DEFAULT_PATH)
 
-# add_subdirectory(../../../library/gblas gblas_out)
-
 add_compile_options(-fsycl)
 add_link_options(-fsycl -lpthread -lm)
-
 
 file(GLOB gbits_src gbits_linear_new.cpp)
 file(GLOB xetla_linear xetla_linear.cpp)
 
 # Define our library target
-add_library(gbits SHARED ${gbits_src})
+add_library(${PROJECT_NAME} SHARED ${gbits_src})
 add_library(xetla_linear SHARED ${xetla_linear})
 
 # Enable C++20
-set_property(TARGET gbits PROPERTY CXX_STANDARD 17)
+set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
+set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+
 set_property(TARGET xetla_linear PROPERTY CXX_STANDARD 20)
 #DPCPP need 17
 
@@ -67,14 +66,12 @@ target_include_directories(xetla_linear PRIVATE
 ../../../library/xetla/include
 )
 
-target_link_libraries(gbits "${TORCH_LIBRARIES}")
-target_link_libraries(gbits "${TORCH_IPEX_LIBRARIES}")
-target_link_libraries(gbits xetla_linear)
+target_link_libraries(${PROJECT_NAME} "${TORCH_LIBRARIES}")
+target_link_libraries(${PROJECT_NAME} "${TORCH_IPEX_LIBRARIES}")
+target_link_libraries(${PROJECT_NAME} xetla_linear)
 
-target_include_directories(gbits PUBLIC "${Python_INCLUDE_DIRS}")
-target_include_directories(gbits PUBLIC "${TORCH_IPEX_INCLUDE_DIRS}")
+target_include_directories(${PROJECT_NAME} PUBLIC "${Python_INCLUDE_DIRS}")
+target_include_directories(${PROJECT_NAME} PUBLIC "${TORCH_IPEX_INCLUDE_DIRS}")
 
 # Link against LibTorch
-set_target_properties(gbits PROPERTIES POSITION_INDEPENDENT_CODE ON)
-set_target_properties(gbits PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET torch_cpu PROPERTY INTERFACE_COMPILE_OPTIONS "")
