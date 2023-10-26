@@ -78,13 +78,13 @@ using QKVGemmDynamicS8Fp32KBlock = jblas::wrapper::transformer::QKVGemmInterface
     jblas::utils::parallel::Parallel2DGemmKBlockFixed>;
 using QKVGemmDynamicS8Fp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_4x24_AVX_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
         jblas::prologue::weight_comp::gemm_kblcok::WeightS8ScaleFp32PerChannelN,
         jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
 using QKVGemmDynamicS4ClipFp32PerN = jblas::wrapper::transformer::QKVGemmInterfacePackWeightParallelAB<
     jblas::wrapper::gemm_pack_weight::GemmLauncherPackWeight<
-        DefaultISA, jblas::gemm::GemmCore_Row_NN_4x24_AVX_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
+        DefaultISA, jblas::gemm::GemmCore_Row_NN_2x48_AVX_VNNI, jblas::prologue::gemm::ActivationFp32AsymU8Quantize,
         jblas::prologue::weight_comp::gemm_kblcok::WeightS4ClipScaleFp32PerN,
         jblas::epilogue::gemm::ZpDequantInt32ToFp32>,
     jblas::utils::parallel::Parallel2DGemm>;
