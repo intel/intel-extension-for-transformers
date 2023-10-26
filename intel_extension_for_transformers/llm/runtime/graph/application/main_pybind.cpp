@@ -65,7 +65,11 @@ class Model {
   static int quant_model(const std::string& model_path, const std::string& out_path, const std::string& weight_dtype,
                          const std::string& alg, int group_size, const std::string& scale_dtype,
                          const std::string& compute_dtype, bool use_ggml);
-  void reset_token_end() { token_eos = false; curr_input_ids.clear();}
+  void reset_token_end() {
+    token_eos = false;
+    curr_input_ids.clear();
+  }
+
  private:
   model_context* ctx = nullptr;
   gpt_params params;

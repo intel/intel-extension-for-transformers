@@ -24,21 +24,12 @@ tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 streamer = TextStreamer(tokenizer)
 model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
 
-history = []
-def build_prompt(h):
-    out_prompt = ""
-    for idx in range(0, len(h), 2):
-        out_prompt += "[INST]{}[/INST]".format(h[idx])
-        if idx < len(h) - 1:
-            out_prompt += "{}".format(h[idx + 1])
-    return out_prompt
-
 while True:
     print("> ", end="")
     prompt = input().strip()
-    history.append(prompt)
-    b_prompt = build_prompt(history)
+    if prompt == "quit":
+        break
+    b_prompt = "[INST]{}[/INST]".format(prompt)
     inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
-    outputs = model.generate(inputs, streamer=streamer, interactive=False, ignore_prompt=True,
-                                     num_beams=1, max_new_tokens=1024, ctx_size = 2048, do_sample=True, threads=28, repetition_penalty=1.1)
-    history.append(tokenizer.batch_decode(outputs)[0])
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
+                            num_beams=1, max_new_tokens=1024, ctx_size = 2048, do_sample=True, threads=28, repetition_penalty=1.1)
