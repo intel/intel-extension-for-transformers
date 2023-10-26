@@ -119,7 +119,7 @@ elif args.sq:
                                 excluded_precisions=excluded_precisions,  # default is []
                                )
 elif args.woq:
-    quantization_config = WeightOnlyQuantConfig(compute_type="fp32", weight_type="int4_fullrange", group_size=32) #default is A32W4G32
+    quantization_config = WeightOnlyQuantConfig(compute_dtype="fp32", weight_type="int4_fullrange", group_size=32) #default is A32W4G32
 # bitsandbytes
 elif args.bitsandbytes:
     # GPU device is need for `load_in_4bit` and `load_in_8bit`.
