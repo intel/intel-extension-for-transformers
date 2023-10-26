@@ -21,18 +21,17 @@ class M(torch.nn.Module):
 llama_model_path = "fxmarty/tiny-llama-fast-tokenizer"
 
 class TestWeightOnly(unittest.TestCase):
-    
     @classmethod
     def setUpClass(cls):
-        cls.workspace = "./woq_config_tmp"
+        cls.workspace = "./woq_tmp"
         # if workspace not exist, crate it
         if not os.path.exists(cls.workspace):
             os.mkdir(cls.workspace)
-    
+
     @classmethod
     def tearDownClass(cls) -> None:
         shutil.rmtree(cls.workspace, ignore_errors=True)
-    
+
     def test_woq_config(self):
         config = WeightOnlyQuantConfig(weight_dtype="int4_fullrange", group_size=32)
         diff_res = config.to_diff_dict()
@@ -139,6 +138,20 @@ class TestWeightOnly(unittest.TestCase):
         )
         module_list = []
         for name, module in model.named_modules():
+            if isinstance(module, QuantizedLinearCPU):
+                module_list.append(name)
+        self.assertTrue(len(module_list) > 0)
+
+    def test_auto_model_saving_loading(self):
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
+        module_list = []
+        for name, module in model.named_modules():
+            if isinstance(module, QuantizedLinearCPU):
+                module_list.append(name)
+        self.assertTrue(len(module_list) > 0)
+        model.save_low_bit(self.workspace)
+        loaded_model = AutoModelForCausalLM.load_low_bit(self.workspace)
+        for name, module in loaded_model.named_modules():
             if isinstance(module, QuantizedLinearCPU):
                 module_list.append(name)
         self.assertTrue(len(module_list) > 0)

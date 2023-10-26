@@ -17,7 +17,7 @@
 import torch
 import inspect
 from functools import wraps
-torch.ops.load_library("../build/libqbits.so")
+torch.ops.load_library("../../../../libqbits.so")
 
 
 def capture_args(f):
@@ -51,6 +51,7 @@ def test(m, n, k, blocksize, compute_type, weight_type, transpose, add_bias, src
         print(raw_wei)
     compress_wei = torch.ops.weight_only_jblasop.qbits_quantize(
         raw_wei, transpose, blocksize, compute_type, weight_type)
+    compress_wei.resize_(wei_row, wei_col)
     revert_wei = torch.zeros(wei_row, wei_col, dtype=torch.float)
     torch.ops.weight_only_jblasop.qbits_dequantize(
         compress_wei, revert_wei, transpose, compute_type, weight_type)

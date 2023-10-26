@@ -18,13 +18,15 @@
 
 import logging
 import os
-import torch
 from accelerate import init_empty_weights
 from datasets import load_dataset
+from intel_extension_for_transformers.transformers.utils.utility import LazyImport
 from neural_compressor import quantization
 from neural_compressor.config import PostTrainingQuantConfig
 from transformers import default_data_collator
-from torch.utils.data import DataLoader, RandomSampler
+
+
+torch = LazyImport("torch")
 
 
 logger = logging.getLogger(__name__)
@@ -35,15 +37,16 @@ def replace_linear(
         modules_to_not_convert=None,
         current_key_name=None,
         quantization_config=None,
-        device=torch.device("cpu")
+        device="cpu",
+        empty_weights=False
 ):
-    model.to(device)
     if modules_to_not_convert is None:
         modules_to_not_convert = []
     if quantization_config.llm_int8_skip_modules:
         modules_to_not_convert = modules_to_not_convert.extend(quantization_config.llm_int8_skip_modules)
     model, is_replaced = _replace_linear(
         model, modules_to_not_convert, current_key_name, quantization_config, device=device,
+        empty_weights=empty_weights
     )
 
     if not is_replaced:
@@ -108,7 +111,8 @@ def _replace_linear(
     current_key_name=None,
     quantization_config=None,
     is_replaced=False,
-    device=torch.device("cpu")
+    device="cpu",
+    empty_weights=False
 ):
     """
     Private method that wraps the recursion for module replacement.
@@ -172,9 +176,10 @@ def _replace_linear(
                     model._modules[name].source_cls = type(module)
                     # Force requires grad to False to avoid unexpected errors
                     model._modules[name].requires_grad_(False)
-                model._modules[name].set_weights_bias(
-                    module.weight.data, None if module.bias is None else module.bias.data
-                )
+                if not empty_weights:
+                    model._modules[name].set_weights_bias(
+                        module.weight.data, None if module.bias is None else module.bias.data
+                    )
         if len(list(module.children())) > 0:
             _, is_replaced = _replace_linear(
                 module,
@@ -182,12 +187,14 @@ def _replace_linear(
                 current_key_name,
                 quantization_config,
                 is_replaced=is_replaced,
+                empty_weights=empty_weights,
             )
         # Remove the last key for recursion
         current_key_name.pop(-1)
     return model, is_replaced
 
-def convert_to_quantized_model(model, config, device=torch.device("cpu")):
+
+def convert_to_quantized_model(model, config, device="cpu"):
     if device == "xpu" or device == torch.device("xpu"):
         import intel_extension_for_pytorch
         assert hasattr(torch, "xpu") and torch.xpu.is_available(), "There is no xpu device in this system!"
@@ -202,8 +209,8 @@ def convert_to_quantized_model(model, config, device=torch.device("cpu")):
         calib_dataset = calib_dataset.shuffle(seed=42)
         generator = torch.Generator()
         generator.manual_seed(10)
-        sampler = RandomSampler(calib_dataset, generator=generator)
-        calib_dataloader = DataLoader(
+        sampler = torch.utils.data.RandomSampler(calib_dataset, generator=generator)
+        calib_dataloader = torch.utils.data.DataLoader(
             calib_dataset,
             batch_size=1,
             sampler=sampler,
