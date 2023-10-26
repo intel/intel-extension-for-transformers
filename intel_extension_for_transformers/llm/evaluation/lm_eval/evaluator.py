@@ -136,7 +136,8 @@ def evaluate(model,
     
     task_dict = get_task_dict(tasks)
     if re.search("llama", lm.model.config.model_type) or \
-                                re.search("mistral", lm.model.config.model_type):
+                re.search("mistral", lm.model.config.model_type) or \
+                re.search("baichuan", lm.model.config.model_type):
         for key, value in task_dict.items():
             if key == "lambada_openai":
                 from .tasks import lambada
