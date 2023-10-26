@@ -27,6 +27,7 @@ LLM Runtime supports the following models:
 |[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |
 |[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |
 |[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |
+|[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ |
 
 ### Code Generation
 | model name | INT8 | INT4|
@@ -61,7 +62,7 @@ cd build
 cmake ..
 cmake --build . -j
 ```
-
+Note: add compile args ```-DNE_AVX512=OFF -DNE_AVX512_VBMI=OFF -DNE_AVX512_VNNI=OFF``` to ```cmake``` when compiling it on a CPU without AVX512
 ### 2. Run LLM with Python API
 
 You can use Python API to run Hugging Face model simply. Here is the sample code:
@@ -97,8 +98,9 @@ model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq
 # Paper: https://arxiv.org/pdf/2309.17453.pdf
 # Recommend n_keep=4 to do attention sinks (four initial tokens) and n_discard=-1 to drop half rencetly tokens when meet length threshold
 outputs = model.generate(inputs, streamer=streamer, max_new_tokens=300, ctx_size=100, n_keep=4, n_discard=-1)
-
 ```
+
+https://github.com/intel/intel-extension-for-transformers/assets/109187816/1698dcda-c9ec-4f44-b159-f4e9d67ab15b
 
 Argument description of generate function:
 | Argument          |  Type       | Description                                                                             |

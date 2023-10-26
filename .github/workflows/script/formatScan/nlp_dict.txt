@@ -420,6 +420,7 @@ denseblock
 denselayer
 densenet
 DenseNet
+Demo
 deps
 DepthwiseConv
 dequant
@@ -2351,6 +2352,7 @@ dequantized
 dq
 frac
 zp
+baichuan
 Epoches
 FID
 GGML
@@ -2364,3 +2366,5 @@ electra
 ggml
 mc
 neox
+ChatBot
+Chatbots

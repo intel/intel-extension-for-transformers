@@ -47,7 +47,6 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Download ITREX code
-# RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers
 RUN mkdir -p /intel-extension-for-transformers
 WORKDIR /intel-extension-for-transformers
 COPY . /intel-extension-for-transformers
@@ -97,7 +96,7 @@ WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neura
 CMD ["/usr/sbin/sshd", "-D"]
 
 # HABANA environment
-FROM vault.habana.ai/gaudi-docker/1.11.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
+FROM vault.habana.ai/gaudi-docker/1.12.0/ubuntu22.04/habanalabs/pytorch-installer-2.0.1:latest as hpu
 
 ENV LANG=en_US.UTF-8
 ENV PYTHONPATH=/root:/usr/lib/habanalabs/
@@ -106,36 +105,42 @@ RUN apt-get update && \
     apt-get install git-lfs && \
     git-lfs install
 
-COPY ./inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
+# Download ITREX code
+RUN mkdir -p /intel-extension-for-transformers
+WORKDIR /intel-extension-for-transformers
+COPY . /intel-extension-for-transformers
+# Build ITREX
+RUN cd /intel-extension-for-transformers && \
+    sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
+    sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
+    pip install -r requirements.txt && \
+    pip install -v .
+
+COPY intel_extension_for_transformers/neural_chat/docker/inference/0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch /
 
 RUN git clone https://github.com/huggingface/optimum-habana.git && \
-    cd optimum-habana/ && git reset --hard b6edce65b70e0fadd5d5f51234700bd1144cd0b0 && pip install -e . && cd ../ && \
+    cd optimum-habana/ && git reset --hard 0fb6bb6b7bbfb06b85a6c10f113b8283aa028b02 && pip install -e . && cd ../ && \
     cd ./optimum-habana/examples/text-generation/ && \
     pip install -r requirements.txt && \
     cd / && \
     pip install peft && \
     pip install einops && \
-    pip install datasets && \
+    pip install datasets && pip list && \
     git clone https://github.com/HabanaAI/DeepSpeed.git && \
     cd DeepSpeed && \
-    git checkout -b v1.11 origin/1.11.0 && \
+    git checkout -b v1.12 origin/1.12.0 && \
     git apply /0001-fix-lm-head-overriden-issue-move-it-from-checkpoint-.patch && \ 
     pip install -e .
 
-# Download ITREX code
-ARG ITREX_VER=main
-ARG REPO=https://github.com/intel/intel-extension-for-transformers.git
-
-RUN git clone --single-branch --branch=${ITREX_VER} ${REPO} intel-extension-for-transformers && \
-    cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+# Install dependency
+RUN cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/examples/instruction_tuning/ && \
+    sed -i '/find-links https:\/\/download.pytorch.org\/whl\/torch_stable.html/d' requirements.txt && \
+    sed -i '/^torch/d;/^intel-extension-for-pytorch/d' requirements.txt && \
     pip install -r requirements.txt && \
     cd /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/ && \
-    pip install -r requirements_hpu.txt
-
-# Build ITREX
-RUN cd /intel-extension-for-transformers && pip install -r requirements.txt && pip install -v . && \
-    pip install transformers==4.32.0 && \
-    pip install accelerate==0.22.0
+    pip install -r requirements_hpu.txt && \
+    pip install transformers==4.34.1 && \
+    pip install accelerate==0.23.0
 
 WORKDIR /intel-extension-for-transformers/intel_extension_for_transformers/neural_chat/
 
