@@ -24,11 +24,6 @@ from .config import BaseFinetuningConfig
 from .config import DeviceOptions
 from .plugins import plugins
 
-def prepare_env(device):
-    if device == "hpu":
-        os.environ.setdefault("PT_HPU_LAZY_ACC_PAR_MODE", "0")
-        os.environ.setdefault("PT_HPU_ENABLE_LAZY_COLLECTIVES", "true")
-
 def build_chatbot(config: PipelineConfig=None):
     """Build the chatbot with a given configuration.
 
@@ -134,8 +129,6 @@ def build_chatbot(config: PipelineConfig=None):
     parameters["optimization_config"] = config.optimization_config
     parameters["hf_access_token"] = config.hf_access_token
 
-    # Set necessary env variables
-    prepare_env(config.device)
     adapter.load_model(parameters)
 
     return adapter
