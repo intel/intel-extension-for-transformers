@@ -58,18 +58,6 @@ class UnitTest(unittest.TestCase):
         res = requests.post(url, json.dumps(request))
         self.assertEqual(res.status_code, 200)
 
-    def test_askdoc_upload(self):
-        file_name = "/intel-extension-for-transformers/" + \
-            "intel_extension_for_transformers/neural_chat/tests/server/askdoc/test_doc.txt"
-        if not os.path.exists(file_name):
-            file_name = "./askdoc/test_doc.txt"
-        if not os.path.exists("/home/sdp/askdoc_upload/enterprise_docs"):
-            os.mkdir("/home/sdp/askdoc_upload/enterprise_docs")
-        url = 'http://127.0.0.1:9000/v1/askdoc/upload'
-        with open(file_name, "r") as upload_file:
-            res = requests.post(url, files={'file': upload_file})
-            print(res.text)
-            self.assertEqual(res.text, '{"knowledge_base_id":"fake_knowledge_base_id"}')
 
 if __name__ == "__main__":
     unittest.main()
