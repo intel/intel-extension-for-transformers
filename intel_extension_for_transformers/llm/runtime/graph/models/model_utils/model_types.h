@@ -275,6 +275,13 @@ struct model_context {
 
   model_struct model;
   model_vocab vocab;
+  // maximum num of bearable requests in current env
+  int max_request_bs = 32;  // TODO
+  // num of current execution prompts
+  int request_running_bs = 1;
+  // length of current execution tokens list
+  // first token (prefill) generation is equal to `request_running_bs`
+  // next tokens (decoding) generation may be larger than `request_running_bs`(for example, beam search)
   int batch_size = 1;
   bool beam_search = false;
   bool shift_roped_k = false;     // whether to store non-RoPEd K cache

@@ -286,17 +286,35 @@ struct beam {
   const model_context* ctx = nullptr;
   std::vector<model_token> token_ids;
   // Cumulative beam score (log-softmax here)
-  float score;
-  // record inference batch indice
-  int infer_bs_id;
+  float score = 0.0f;
+  // record related indices
+  // 0 - batch_size-1
+  // int infer_bs_idx = -1;
+  // 0 - request_bs-1
+  int request_idx = -1;
+  // 0 - num_beams-1
+  int beam_idx = -1;
+  // if stop generation (append new token_id)
+  bool done = false;
+
   // end-of-text
   const bool eos() const { return !token_ids.empty() && token_ids.back() == ctx->vocab.eos_token_id; }
+
   void print() const {
     printf("length: %d, score: %12.6f, eos: %d, tokens:\n", token_ids.size(), score, eos());
     for (const auto& id : token_ids) {
       printf("%d: %s, ", id, model_token_to_str(ctx, id));
     }
     printf("\n");
+  }
+
+  void clear() {
+    token_ids.clear();
+    score = 0.0f;
+    // infer_bs_idx = -1;
+    // request_idx = -1;
+    // beam_idx = -1;
+    done = false;
   }
 };
 
@@ -359,6 +377,10 @@ struct beam_hypotheses {
     auto const by_score = [](beam const& a, beam const& b) { return a.score < b.score; };
     return *std::max_element(beams.begin(), beams.end(), by_score);
   }
+
+  void clear() {
+    beams.clear();
+  }
 };
 
 struct logits_info;
@@ -368,8 +390,8 @@ class logits_processor {
   explicit logits_processor(model_context* lctx) : ctx(lctx), min_new_tokens(lctx->generation_conf.min_new_tokens) {}
   ~logits_processor() {}
 
-  void process(const uint32_t& cur_len, const model_vocab::id& eos_token_id);
-  void min_new_tokens_logits_process(const uint32_t& cur_len, const model_vocab::id& eos_token_id);
+  void process(const std::vector<uint32_t>& cur_lens, const model_vocab::id& eos_token_id);
+  void min_new_tokens_logits_process(const std::vector<uint32_t>& cur_lens, const model_vocab::id& eos_token_id);
 
  private:
   model_context* ctx = nullptr;
@@ -387,7 +409,8 @@ class beam_search_kv_cache_reorder {
       : ctx(lctx), n_ctx(lctx->model.hparams.n_ctx), kv_n_ctx_block(lctx->kv_n_ctx_block) {}
   virtual ~beam_search_kv_cache_reorder() {}
 
-  virtual void update(const uint32_t& n_past, const uint32_t& n_prompt_tokens,
+  virtual void update(const std::vector<uint32_t>& n_past, const std::vector<uint32_t>& n_prompt_tokens,
+                      const std::vector<int> request_running_indices,
                       const std::vector<std::tuple<int, int>>& kv_reorder_indices = {},
                       const std::vector<beam>& next_beams = {});
 
@@ -399,35 +422,44 @@ class beam_search_kv_cache_reorder {
 
 class beam_search_flow {
  public:
-  explicit beam_search_flow(model_context* lctx) : ctx(lctx), beam_size(lctx->beam_size), lp(logits_processor(lctx)) {
-    cur_beams.reserve(beam_size);
-    next_beams.reserve(beam_size);
-    cur_beams.push_back({ctx, {}, 0.0f});
+  explicit beam_search_flow(model_context* lctx, const int batch_size = 1)
+      : ctx(lctx), beam_size(lctx->beam_size), request_bs(batch_size), lp(logits_processor(lctx)) {
+    cur_beams.resize(batch_size * beam_size);
+    next_beams.resize(batch_size * beam_size);
+    for (int i = 0; i < batch_size; ++i) {
+      beam_hypos.push_back(std::move(beam_hypotheses(lctx)));
+    }
+    requests_done.assign(batch_size, false);
+    request_running_indices.reserve(batch_size);
+    n_past.assign(batch_size, 0);
+    n_prompt_tokens.assign(batch_size, 0);
   }
   ~beam_search_flow() {}
 
   // public interface
   std::vector<model_token> loop(const model_token* tokens_inp, const int& n_tokens, const int& n_threads);
+  void step(model_token* dst);  // TODO one step
 
  private:
-  std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const uint32_t& cur_len,
-                                                      const std::vector<float>& beams_score,
+  std::vector<beam_next_token> beam_top_k_next_tokens(model_context* ctx, const std::vector<float>& beams_score,
                                                       const std::vector<int>& num_beams,
                                                       const std::vector<int> beam_indices, const int& sample_scale = 2,
                                                       const int& dim = -1);
   void fill_next_beams_by_top_scores();
   std::vector<std::tuple<int, int>> update_kv_cache_reorder_indices();
-  const beam& finalize();
+  const beam& finalize(const int& request_idx);
 
   model_context* ctx = nullptr;
   const int beam_size;
+  const int request_bs;  // could be the max bs in continuous batching mechanism
   std::vector<beam> cur_beams;
   std::vector<beam> next_beams;
   std::vector<beam_hypotheses> beam_hypos;
   std::vector<bool> requests_done;
-  uint32_t n_past = 0;
+  std::vector<int> request_running_indices;
   uint32_t n_total = 0;
-  uint32_t n_prompt_tokens = 0;
+  std::vector<uint32_t> n_past;
+  std::vector<uint32_t> n_prompt_tokens;
   int num_threads = 4;  // default by 4
   logits_processor lp;
   std::shared_ptr<beam_search_kv_cache_reorder> kv_reorder;
