@@ -135,7 +135,7 @@ class TestWeightOnly(unittest.TestCase):
         self.assertTrue(len(module_list) > 0)
 
     def test_nf4_training(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_4bit=True, use_llm_runtime=False)
         peft_config = LoraConfig(
             r=8,
             lora_alpha=16,
@@ -168,7 +168,7 @@ class TestWeightOnly(unittest.TestCase):
                 self.assertTrue((lora_weights[name][1] != getattr(module.lora_B, module.active_adapter).weight).any())
 
     def test_int8_training(self):
-        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True)
+        model = AutoModelForCausalLM.from_pretrained(llama_model_path, load_in_8bit=True, use_llm_runtime=False)
         peft_config = LoraConfig(
             r=8,
             lora_alpha=16,
