@@ -19,6 +19,7 @@ import io
 import re
 import csv
 import datetime
+from datetime import timedelta, timezone
 from typing import Optional, Dict
 from fastapi import APIRouter, UploadFile, File
 from ...config import GenerationConfig
@@ -152,9 +153,13 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
                 answer: [{answer}], feedback: [{feedback_str}]''')
     question = question.replace('"', "'")
     answer = answer.replace('"', "'")
-    cur_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + answer + \
-        '", ' + str(feedback) + ', "' + cur_time + '")'
+    SHA_TZ = timezone(
+        timedelta(hours=8),
+        name='Asia/Shanghai'
+    )
+    utc_now = datetime.datetime.utcnow().replace(tzinfo=timezone.utc)
+    beijing_time = utc_now.astimezone(SHA_TZ).strftime("%Y-%m-%d %H:%M:%S")
+    sql = f'INSERT INTO feedback VALUES(null, "' + question + '", "' + answer + '", ' + str(feedback) + ', "' + beijing_time + '")'
     logger.info(f"""[askdoc - feedback] sql: {sql}""")
     try:
         with mysql_db.transaction():
