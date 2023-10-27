@@ -51,7 +51,7 @@ file(GLOB xetla_linear xetla_linear.cpp)
 
 add_subdirectory(../../../runtime/graph/application/third_party/pybind11 pybind11)
 # Define our library target
-#pybind11_add_module(${PROJECT_NAME} ${gbits_src})
+pybind11_add_module(${PROJECT_NAME} ${gbits_src})
 add_library(xetla_linear STATIC ${xetla_linear})
 
 # gbits DPCPP need 17
