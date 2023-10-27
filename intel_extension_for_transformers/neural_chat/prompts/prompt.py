@@ -115,14 +115,29 @@ register_conv_template(
     )
 )
 
+
+# Rag with threshold
+register_conv_template(
+    Conversation(
+        name="rag_with_threshold",
+        system_message="You are served as an AI agent to help the user complete a task." + \
+            " You are required to comprehend the usr query and then use the given context to" + \
+            " generate a suitable response.\n\n",
+        roles=("### User Query: ", "### Context: ", "### Chat History: ", "### Response: "),
+        sep_style=SeparatorStyle.NO_COLON_SINGLE,
+        sep="\n",
+    )
+)
+
+
 # Intent template
 register_conv_template(
     Conversation(
         name="intent",
-        system_message="Please identify the intent of the provided context." + \
+        system_message="Please identify the intent of the user query." + \
             " You may only respond with \"chitchat\" or \"QA\" without explanations" + \
             " or engaging in conversation.\n",
-        roles=("Context:", "Intent:"),
+        roles=("### User Query: ", "### Response: "),
         sep_style=SeparatorStyle.NO_COLON_SINGLE,
         sep="\n",
     )
