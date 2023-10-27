@@ -40,34 +40,35 @@ from torch.xpu.cpp_extension import DPCPPExtension, DpcppBuildExtension
 #                   '../../../library/xetla/include']
 #     )
 
-setup(
-    name='xetla_linear',
-    ext_modules=[
-        DPCPPExtension(
-                name='xetla_linear',
-                sources=['xetla_linear.cpp'],
-                extra_compile_args={'cxx': ['-std=c++20', '-fPIC' , "-fsycl"]})
-
-
-    ],
-    cmdclass={
-        'build_ext': DpcppBuildExtension
-    },
-    include_dirs=['../../../library/xetla',
-                  '../../../library/xetla/include']
-    )
-
 # setup(
-#     name='gbits_linear',
+#     name='xetla_linear',
 #     ext_modules=[
 #         DPCPPExtension(
-#                 name='gbits_linear',
-#                 sources=['gbits_linear_new.cpp'],
-#                 extra_compile_args={'cxx': ['-std=c++17', '-fPIC']},
-#                 library_dirs=["/home/sunjiwei/code/intel-extension-for-transformers/intel_extension_for_transformers/llm/operator/cscr/xpu/"],
-#                 libraries=["xetla_linear"],),
+#                 name='xetla_linear',
+#                 sources=['xetla_linear.cpp'],
+#                 extra_compile_args={'cxx': ['-std=c++20', '-fPIC' , "-fsycl"]})
+
+
 #     ],
 #     cmdclass={
 #         'build_ext': DpcppBuildExtension
 #     },
+#     include_dirs=['../../../library/xetla',
+#                   '../../../library/xetla/include']
 #     )
+
+setup(
+    name='gbits_linear',
+    ext_modules=[
+        DPCPPExtension(
+                name='gbits_linear',
+                sources=['gbits_linear_new.cpp'],
+                extra_compile_args={'cxx': ['-std=c++17', '-fPIC']},
+                library_dirs=["/home/sunjiwei/code/intel-extension-for-transformers/intel_extension_for_transformers/llm/operator/cscr/xpu/build/"],
+                libraries=["xetla_linear"],
+                ),
+    ],
+    cmdclass={
+        'build_ext': DpcppBuildExtension
+    },
+    )
