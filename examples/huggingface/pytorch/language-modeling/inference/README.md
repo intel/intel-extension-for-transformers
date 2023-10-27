@@ -1,6 +1,6 @@
 Step-by-Step
 ============
-This document describes the step-by-step instructions to run large language models(LLMs) `float32` and `bfloat16` inference on 4th Gen Intel® Xeon® Scalable Processor (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). Last word prediction accuracy is provide by [lm_eval](https://github.com/EleutherAI/lm-evaluation-harness.git).
+This document describes the step-by-step instructions to run large language models(LLMs) `float32` and `bfloat16` inference on 4th Gen Intel® Xeon® Scalable Processor (codenamed [Sapphire Rapids](https://www.intel.com/content/www/us/en/products/docs/processors/xeon-accelerated/4th-gen-xeon-scalable-processors.html)). Last word prediction accuracy is provided by [lm_eval](https://github.com/EleutherAI/lm-evaluation-harness.git).
 
 
 ## Prerequisite

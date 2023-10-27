@@ -20,7 +20,7 @@ import os
 import time
 from intel_extension_for_transformers.neural_chat.chatbot import build_chatbot
 from intel_extension_for_transformers.neural_chat.config import (
-    PipelineConfig, GenerationConfig, AMPConfig, LoadingModelConfig
+    PipelineConfig, GenerationConfig, MixedPrecisionConfig, LoadingModelConfig
 )
 
 
@@ -216,7 +216,7 @@ def main():
             peft_path=args.peft_model_path,
             use_deepspeed=True if use_deepspeed and args.habana else False,
         ),
-        optimization_config=AMPConfig(dtype=args.dtype)
+        optimization_config=MixedPrecisionConfig(dtype=args.dtype)
     )
     chatbot = build_chatbot(config)
     gen_config = GenerationConfig(
