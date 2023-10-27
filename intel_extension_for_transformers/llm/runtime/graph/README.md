@@ -27,6 +27,7 @@ LLM Runtime supports the following models:
 |[OPT-125m](https://huggingface.co/facebook/opt-125m), [OPT-350m](https://huggingface.co/facebook/opt-350m), [OPT-1.3B](https://huggingface.co/facebook/opt-1.3b), [OPT-13B](https://huggingface.co/facebook/opt-13b)| ✅ | ✅ |
 |[ChatGLM-6B](https://huggingface.co/THUDM/chatglm-6b), [ChatGLM2-6B](https://huggingface.co/THUDM/chatglm2-6b)| ✅ | ✅ |
 |[Baichuan-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan-13B-Chat), [Baichuan2-13B-Chat](https://huggingface.co/baichuan-inc/Baichuan2-13B-Chat)| ✅ | ✅ |
+|[Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-v0.1)| ✅ | ✅ |
 
 ### Code Generation
 | model name | INT8 | INT4|
@@ -234,3 +235,25 @@ Argument description of inference.py:
 ### 3. Tensor Parallelism cross nodes/sockets
 
 We support tensor parallelism strategy for distributed inference/training on multi-node and multi-socket.  You can refer to [tensor_parallelism.md](./tensor_parallelism.md) to enable this feature.
+
+### 4. Chat with LLaMA2
+```python
+from transformers import AutoTokenizer, TextStreamer
+from intel_extension_for_transformers.transformers import AutoModelForCausalLM, WeightOnlyQuantConfig
+
+model_name = "meta-llama/Llama-2-7b-chat-hf"  # or local path to model
+woq_config = WeightOnlyQuantConfig(compute_dtype="int8", weight_dtype="int4")
+tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+streamer = TextStreamer(tokenizer)
+model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=woq_config, trust_remote_code=True)
+
+while True:
+    print("> ", end="")
+    prompt = input().strip()
+    if prompt == "quit":
+        break
+    b_prompt = "[INST]{}[/INST]".format(prompt)  # prompt template for llama2
+    inputs = tokenizer(b_prompt, return_tensors="pt").input_ids
+    outputs = model.generate(inputs, streamer=streamer, interactive=True, ignore_prompt=True,
+                num_beams=1, max_new_tokens=512, ctx_size = 512, do_sample=True, threads=28, repetition_penalty=1.1)
+```

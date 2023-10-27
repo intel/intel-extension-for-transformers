@@ -37,6 +37,20 @@ def generate_qa_prompt(query, context=None, history=None):
         conv.append_message(conv.roles[1], None)
     return conv.get_prompt()
 
+def generate_qa_enterprise(query, context=None, history=None):
+    if context and history:
+        conv = PromptTemplate("rag_with_threshold")
+        conv.append_message(conv.roles[0], query)
+        conv.append_message(conv.roles[1], context)
+        conv.append_message(conv.roles[2], history)
+        conv.append_message(conv.roles[3], None)
+    else:
+        conv = PromptTemplate("rag_with_threshold")
+        conv.append_message(conv.roles[0], query)
+        conv.append_message(conv.roles[1], context)
+        conv.append_message(conv.roles[3], None)
+    return conv.get_prompt()
+
 
 def generate_prompt(query, history=None):
     if history:

@@ -40,3 +40,6 @@ lm_eval
 spacy
 neural-compressor==2.3.1
 onnxruntime==1.15.0
+pymysql
+deepface
+exifread

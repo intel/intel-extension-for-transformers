@@ -16,29 +16,28 @@
 # limitations under the License.
 
 import re
-from typing import Union
-from intel_extension_for_transformers.transformers import (
-    AutoModel,
-    AutoModelForSeq2SeqLM,
-    AutoModelForCausalLM,
-    GPTBigCodeForCausalLM,
-    MixedPrecisionConfig,
-    WeightOnlyQuantConfig,
-    BitsAndBytesConfig
-)
 
 class Optimization:
     def __init__(
             self,
-            optimization_config: Union[MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig]
+            optimization_config
         ):
         self.optimization_config = optimization_config
 
     def optimize(self, model, use_llm_runtime=False):
         optimized_model = model
+        from intel_extension_for_transformers.transformers import (
+            MixedPrecisionConfig,
+            WeightOnlyQuantConfig,
+            BitsAndBytesConfig
+        )
+        assert type(self.optimization_config) in [MixedPrecisionConfig, WeightOnlyQuantConfig, BitsAndBytesConfig], \
+            f"Expect optimization_config be an object of MixedPrecisionConfig, WeightOnlyQuantConfig" + \
+            " or BitsAndBytesConfig,got {type(self.optimization_config)}."
         config = self.optimization_config
         if re.search("flan-t5", model.config._name_or_path, re.IGNORECASE):
-                optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
+            from intel_extension_for_transformers.transformers import AutoModelForSeq2SeqLM
+            optimized_model = AutoModelForSeq2SeqLM.from_pretrained(
                     model.config._name_or_path,
                     quantization_config=config,
                     use_llm_runtime=use_llm_runtime,
@@ -52,18 +51,21 @@ class Optimization:
             or re.search("neural-chat-7b-v1", model.config._name_or_path, re.IGNORECASE)
             or re.search("neural-chat-7b-v2", model.config._name_or_path, re.IGNORECASE)
         ):
+            from intel_extension_for_transformers.transformers import AutoModelForCausalLM
             optimized_model = AutoModelForCausalLM.from_pretrained(
                 model.config._name_or_path,
                 quantization_config=config,
                 use_llm_runtime=use_llm_runtime,
                 trust_remote_code=True)
         elif re.search("starcoder", model.config._name_or_path, re.IGNORECASE):
+            from intel_extension_for_transformers.transformers import GPTBigCodeForCausalLM
             optimized_model = GPTBigCodeForCausalLM.from_pretrained(
                 model.config._name_or_path,
                 quantization_config=config,
                 use_llm_runtime=use_llm_runtime,
                 trust_remote_code=True)
         elif re.search("chatglm", model.config._name_or_path, re.IGNORECASE):
+            from intel_extension_for_transformers.transformers import AutoModel
             optimized_model = AutoModel.from_pretrained(
                 model.config._name_or_path,
                 quantization_config=config,
