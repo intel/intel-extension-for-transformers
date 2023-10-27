@@ -133,8 +133,10 @@ async def retrieval_chat(request: AskDocRequest):
                     if single_link == None:
                         continue
                     raw_link = single_link["source"]
-                    formatted_link = f"""<a style="color: blue; text-decoration: underline;"   
-                                        href="{raw_link}">{raw_link}</a><br/>"""
+                    formatted_link = f"""<a style="color: blue; text-decoration: underline; \
+                                    border: 1px solid #0068B5; padding: 8px; margin: \
+                                    8px 8px 0px 0px; border-radius: 20px;"  \
+                                    href="{raw_link}">{raw_link}</a><br/>"""
                     yield f"data: {formatted_link}\n\n"
             yield f"data: [DONE]\n\n"
     return StreamingResponse(stream_generator(), media_type="text/event-stream")
@@ -148,6 +150,8 @@ def save_chat_feedback_to_db(request: FeedbackRequest) -> None:
     feedback_str = 'dislike' if int(feedback) else 'like'
     logger.info(f'''[askdoc - feedback] feedback question: [{question}], 
                 answer: [{answer}], feedback: [{feedback_str}]''')
+    question = question.replace('"', "'")
+    answer = answer.replace('"', "'")
     sql = f"INSERT INTO feedback VALUES(null, '{question}', '{answer}', {feedback})"
     logger.info(f'[askdoc - feedback] sql: {sql}')
     try:
@@ -170,7 +174,7 @@ def get_feedback_from_db():
         feedback_list = mysql_db.fetch_all(sql)
             
     except:
-        raise Exception("""Exception occurred when querying data from MySQL, 
+        raise Exception("""Exception occurred when querying data from MySQL, \
                         please check the db session and your syntax.""")
     else:
         mysql_db._close()
