@@ -125,6 +125,8 @@ class Model:
                 self.model.reset_token_end()
             while not self.is_token_end():
                 out = self.model.generate(input_ids = input_ids.tolist()[0])
+                if len(out) == 0:
+                    break
                 streamer.put(torch.tensor([out]))
                 ret[0].extend(out)
             streamer.end()

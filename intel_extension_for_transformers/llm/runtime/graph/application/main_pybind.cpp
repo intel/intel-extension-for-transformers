@@ -68,6 +68,7 @@ class Model {
   void reset_token_end() {
     token_eos = false;
     curr_input_ids.clear();
+    generate_count = 0;
   }
 
  private:
@@ -143,6 +144,10 @@ void Model::reinit() {
 
 std::vector<model_token> Model::generate(const std::vector<model_token>& input_ids) {
   if (curr_input_ids.empty()) {
+    if (input_ids.size() > n_ctx - 4) {
+      fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, input_ids.size(), n_ctx - 4);
+      return {};
+    }
     curr_input_ids = input_ids;
   }
   for (auto item : curr_input_ids) {
@@ -168,7 +173,10 @@ std::vector<model_token> Model::generate(const std::vector<model_token>& input_i
   curr_input_ids = {next_token_id};
 
   generate_count++;
-  if (next_token_id == ctx->vocab.eos_token_id || generate_count >= params.n_predict) {
+  if (next_token_id == ctx->vocab.eos_token_id) {
+    token_eos = true;
+  }
+  if (params.n_predict > 0 && generate_count >= params.n_predict) {
     token_eos = true;
   }
 
@@ -180,6 +188,10 @@ std::vector<model_token> Model::generate_tokens(const std::vector<model_token>& 
   std::vector<model_token> output_ids;
 
   if (curr_input_ids.empty()) {
+    if (input_ids.size() > n_ctx - 4) {
+      fprintf(stderr, "%s: error: prompt is too long (%d tokens, max %d)\n", __func__, input_ids.size(), n_ctx - 4);
+      return output_ids;
+    }
     curr_input_ids = input_ids;
   }
 
@@ -211,7 +223,11 @@ std::vector<model_token> Model::generate_tokens(const std::vector<model_token>& 
     curr_input_ids = {next_token_id};
     output_ids.push_back(next_token_id);
     generate_count++;
-    if (next_token_id == ctx->vocab.eos_token_id || generate_count >= params.n_predict) {
+    if (next_token_id == ctx->vocab.eos_token_id) {
+      token_eos = true;
+      break;
+    }
+    if (params.n_predict > 0 && generate_count >= params.n_predict) {
       token_eos = true;
       break;
     }
