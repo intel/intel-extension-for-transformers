@@ -84,7 +84,6 @@ class Model:
         # clean
         os.remove(fp32_bin)
 
-
     def init_from_bin(self, model_name, model_path, **kwargs):
         self.__import_package(model_name)
         self.model = self.module.Model()
