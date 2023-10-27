@@ -52,7 +52,7 @@ Functions
    new input token_idx.
 
 
-.. py:function:: load_model(model_name, tokenizer_name, device='cpu', use_hpu_graphs=False, cpu_jit=False, ipex_int8=False, use_cache=True, peft_path=None, use_deepspeed=False, optimization_config=None, hf_access_token=None)
+.. py:function:: load_model(model_name, tokenizer_name, device='cpu', use_hpu_graphs=False, cpu_jit=False, ipex_int8=False, use_cache=True, peft_path=None, use_deepspeed=False, optimization_config=None, hf_access_token=None, use_llm_runtime=False)
 
    Load the model and initialize the tokenizer.
 

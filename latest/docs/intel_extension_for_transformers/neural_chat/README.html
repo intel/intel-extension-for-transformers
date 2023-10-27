@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+g89cf760 documentation</title>
+  <title>NeuralChat &mdash; Intel® Extension for Transformers 0.1.dev1+gdaece44 documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/graphviz.css" type="text/css" />
@@ -195,8 +195,8 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
 </pre></div>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Python code</span>
-<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span><span class="p">,</span> <span class="n">AMPConfig</span>
-<span class="n">pipeline_cfg</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span><span class="n">optimization_config</span><span class="o">=</span><span class="n">AMPConfig</span><span class="p">())</span>
+<span class="kn">from</span> <span class="nn">intel_extension_for_transformers.neural_chat</span> <span class="kn">import</span> <span class="n">build_chatbot</span><span class="p">,</span> <span class="n">MixedPrecisionConfig</span>
+<span class="n">pipeline_cfg</span> <span class="o">=</span> <span class="n">PipelineConfig</span><span class="p">(</span><span class="n">optimization_config</span><span class="o">=</span><span class="n">MixedPrecisionConfig</span><span class="p">())</span>
 <span class="n">chatbot</span> <span class="o">=</span> <span class="n">build_chatbot</span><span class="p">(</span><span class="n">pipeline_cfg</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -275,7 +275,7 @@ neuralchat<span class="w"> </span>optimize<span class="w"> </span>--base_model<s
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5fb76b6e60> 
+   <jinja2.runtime.BlockReference object at 0x7f6ca3d54070> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 

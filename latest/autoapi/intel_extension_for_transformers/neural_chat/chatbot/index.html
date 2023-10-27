@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.chatbot &mdash; Intel® Extension for Transformers 0.1.dev1+g89cf760 documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.chatbot &mdash; Intel® Extension for Transformers 0.1.dev1+gdaece44 documentation</title>
       <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../_static/graphviz.css" type="text/css" />
@@ -101,7 +101,7 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.chatbot.finetune_model" title="intel_extension_for_transformers.neural_chat.chatbot.finetune_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">finetune_model</span></code></a>(config)</p></td>
 <td><p>Finetune the model based on the provided configuration.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.chatbot.optimize_model" title="intel_extension_for_transformers.neural_chat.chatbot.optimize_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optimize_model</span></code></a>(model, config)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.chatbot.optimize_model" title="intel_extension_for_transformers.neural_chat.chatbot.optimize_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">optimize_model</span></code></a>(model, config[, use_llm_runtime])</p></td>
 <td><p>Optimize the model based on the provided configuration.</p></td>
 </tr>
 </tbody>
@@ -140,11 +140,15 @@ response = pipeline.predict(query=”Tell me about Intel Xeon Scalable Processor
 
 <dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.chatbot.optimize_model">
-<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.chatbot.</span></span><span class="sig-name descname"><span class="pre">optimize_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/chatbot.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.chatbot.optimize_model" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.chatbot.</span></span><span class="sig-name descname"><span class="pre">optimize_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_llm_runtime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/chatbot.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.chatbot.optimize_model" title="Link to this definition"></a></dt>
 <dd><p>Optimize the model based on the provided configuration.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<em>OptimizationConfig</em>) – Configuration for optimizing the model.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – large language model</p></li>
+<li><p><strong>config</strong> (<em>OptimizationConfig</em>) – The configuration required for optimizing the model.</p></li>
+<li><p><strong>use_llm_runtime</strong> (<em>bool</em>) – A boolean indicating whether to use the LLM runtime graph optimization.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -167,7 +171,7 @@ response = pipeline.predict(query=”Tell me about Intel Xeon Scalable Processor
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f5fb6dd2b90> 
+   <jinja2.runtime.BlockReference object at 0x7f6ca66cb490> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
