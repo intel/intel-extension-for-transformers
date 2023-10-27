@@ -6,3 +6,26 @@
 .. py:module:: intel_extension_for_transformers.neural_chat.server.restful.request
 
 
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   intel_extension_for_transformers.neural_chat.server.restful.request.FeedbackRequest
+
+
+
+
+.. py:class:: FeedbackRequest
+
+
+
+
+   Request class for feedback api
+   'feedback_id': set to be auto_increment, no need to pass as argument
+   'feedback': 0 for 'like', 1 for 'dislike'
+
+

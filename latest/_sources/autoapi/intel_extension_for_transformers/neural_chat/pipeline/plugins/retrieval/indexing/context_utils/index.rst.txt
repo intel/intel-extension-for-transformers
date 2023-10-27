@@ -23,6 +23,8 @@ Functions
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.read_md
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_json
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_xlsx
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_faq_xlsx
+   intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_general_xlsx
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_unstructured_data
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.laod_structured_data
    intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.get_chuck_data
@@ -67,6 +69,16 @@ Functions
 .. py:function:: load_xlsx(input)
 
    Load and process xlsx file.
+
+
+.. py:function:: load_faq_xlsx(input)
+
+   Load and process faq xlsx file.
+
+
+.. py:function:: load_general_xlsx(input)
+
+   Load and process doc xlsx file.
 
 
 .. py:function:: load_unstructured_data(input)

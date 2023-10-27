@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils &mdash; Intel® Extension for Transformers 0.1.dev1+gaf741bb documentation</title>
+  <title>intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils &mdash; Intel® Extension for Transformers 0.1.dev1+g89cf760 documentation</title>
       <link rel="stylesheet" href="../../../../../../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../../../../../../../../_static/graphviz.css" type="text/css" />
@@ -118,6 +118,12 @@
 <tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_xlsx" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_xlsx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_xlsx</span></code></a>(input)</p></td>
 <td><p>Load and process xlsx file.</p></td>
 </tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_faq_xlsx" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_faq_xlsx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_faq_xlsx</span></code></a>(input)</p></td>
+<td><p>Load and process faq xlsx file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_general_xlsx" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_general_xlsx"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_general_xlsx</span></code></a>(input)</p></td>
+<td><p>Load and process doc xlsx file.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_unstructured_data" title="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_unstructured_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_unstructured_data</span></code></a>(input)</p></td>
 <td><p>Load unstructured context.</p></td>
 </tr>
@@ -178,6 +184,18 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_faq_xlsx">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.</span></span><span class="sig-name descname"><span class="pre">load_faq_xlsx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/indexing/context_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_faq_xlsx" title="Link to this definition"></a></dt>
+<dd><p>Load and process faq xlsx file.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_general_xlsx">
+<span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.</span></span><span class="sig-name descname"><span class="pre">load_general_xlsx</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/indexing/context_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_general_xlsx" title="Link to this definition"></a></dt>
+<dd><p>Load and process doc xlsx file.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_unstructured_data">
 <span class="sig-prename descclassname"><span class="pre">intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.</span></span><span class="sig-name descname"><span class="pre">load_unstructured_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input</span></span></em><span class="sig-paren">)</span><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers/tree/master/intel_extension_for_transformers/neural_chat/pipeline/plugins/retrieval/indexing/context_utils.py"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#intel_extension_for_transformers.neural_chat.pipeline.plugins.retrieval.indexing.context_utils.load_unstructured_data" title="Link to this definition"></a></dt>
 <dd><p>Load unstructured context.</p>
@@ -213,7 +231,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   <jinja2.runtime.BlockReference object at 0x7f9357307eb0> 
+   <jinja2.runtime.BlockReference object at 0x7f5fb6c687f0> 
   <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
 
 
