@@ -114,10 +114,12 @@ class Agent_QA():
             if 'qa' not in intent.lower() and context == "":
                 print("Chat with AI Agent.")
                 prompt = generate_prompt(query)
+                links = [None]
             else:
                 print("Chat with QA agent.")
                 if self.retriever:
                     if len(context) == 0:
+                        links = [None]
                         return "Response with template.", links
                     prompt = generate_qa_enterprise(query, context)
                 else:
