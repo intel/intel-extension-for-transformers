@@ -91,8 +91,9 @@ class TestChatbotBuilder(unittest.TestCase):
                                          plugins=plugins)
         chatbot = build_chatbot(pipeline_config)
         self.assertIsNotNone(chatbot)
-        response = chatbot.predict(query="What is Intel extension for transformers?")
+        response, link = chatbot.predict(query="What is Intel extension for transformers?")
         print("response: ", response)
+        plugins.retrieval.enable = False
 
 if __name__ == '__main__':
     unittest.main()

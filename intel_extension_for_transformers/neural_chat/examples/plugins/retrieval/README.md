@@ -23,8 +23,9 @@ config = PipelineConfig(plugins=plugins)
 ```python
 from intel_extension_for_transformers.neural_chat import build_chatbot
 chatbot = build_chatbot(config)
-response = chatbot.predict("What is IDM 2.0?")
+response, link = chatbot.predict("What is IDM 2.0?")
 ```
+The obtained response is the generated response from the model and the path/link of the reference content. 
 
 ## Run the complete code
 ```shell

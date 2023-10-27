@@ -25,7 +25,7 @@ def main():
     pipeline_args = PipelineConfig(plugins=plugins)
     chatbot = build_chatbot(pipeline_args)
 
-    response = chatbot.predict(query="What is IDM 2.0?")
+    response, link = chatbot.predict(query="What is IDM 2.0?")
     print(response)
 
 if __name__ == "__main__":

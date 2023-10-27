@@ -70,9 +70,9 @@ class DocumentIndexing:
                     or filename.endswith("txt") or filename.endswith("md"):
                     content = load_unstructured_data(os.path.join(dirpath, filename))
                     if self.process:
-                        chuck = get_chuck_data(content, self.max_length, input)
+                        chuck = get_chuck_data(content, self.max_length, os.path.join(dirpath, filename))
                     else:
-                        chuck = [[content.strip(),input]]
+                        chuck = [[content.strip(), os.path.join(dirpath, filename)]]
                     paragraphs += chuck
                 elif filename.endswith("jsonl") or filename.endswith("xlsx"):
                     chuck = laod_structured_data(os.path.join(dirpath, filename), self.process, self.max_length)
