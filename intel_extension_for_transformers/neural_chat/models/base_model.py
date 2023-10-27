@@ -187,7 +187,7 @@ class BaseModel(ABC):
                             continue
                         response = plugin_instance.post_llm_inference_actions(response)
 
-        if link != []"
+        if link != []:
           return response, link
         else:
           return response
