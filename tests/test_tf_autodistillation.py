@@ -29,7 +29,7 @@ class TestAutoDistillation(unittest.TestCase):
         self.strategy = tf.distribute.MultiWorkerMirroredStrategy()
         set_seed(42)
         self.model = TFAutoModelForSequenceClassification.from_pretrained(
-            'hf-internal-testing/tiny-random-DistilBertMode')
+            'hf-internal-testing/tiny-random-distilbert')
         self.teacher_model = TFAutoModelForSequenceClassification.from_pretrained(
             'hf-internal-testing/tiny-random-DistilBertForSequenceClassification')
 
