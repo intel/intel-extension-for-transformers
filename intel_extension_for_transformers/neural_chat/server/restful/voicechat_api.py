@@ -47,6 +47,13 @@ class VoiceChatAPIRouter(APIRouter):
         except Exception as e:
             raise Exception(e)
 
+    def handle_voice_asr_chinese_request(self, filename: str) -> str:
+        chatbot = self.get_chatbot()
+        try:
+            return chatbot.asr_chinese.audio2text(filename)
+        except Exception as e:
+            raise Exception(e)
+
     async def handle_voice_chat_request(self, prompt: str, audio_output_path: Optional[str]=None) -> str:
         chatbot = self.get_chatbot()
         try:
@@ -94,6 +101,21 @@ async def handle_talkingbot_asr(file: UploadFile = File(...)):
     asr_result = router.handle_voice_asr_request(file_name)
     return {"asr_result": asr_result}
 
+@router.post("/v1/talkingbot/asr_chinese")
+async def handle_talkingbot_asr_chinese(file: UploadFile = File(...)):
+    file_name = file.filename
+    logger.info(f'Received file: {file_name}')
+    with open("tmp_audio_bytes", 'wb') as fout:
+        content = await file.read()
+        fout.write(content)
+    audio = AudioSegment.from_file("tmp_audio_bytes")
+    audio = audio.set_frame_rate(16000)
+    # bytes to wav
+    file_name = file_name + ".wav"
+    audio.export(f"{file_name}", format="wav")
+    asr_result = router.handle_voice_asr_chinese_request(file_name)
+    return {"asr_result": asr_result}
+
 
 @router.post("/v1/talkingbot/llm_tts")
 async def talkingbot(request: Request):
@@ -106,6 +128,19 @@ async def talkingbot(request: Request):
     logger.info(f'Received prompt: {text}, and use voice: {voice} knowledge_id: {knowledge_id}')
 
     return await router.handle_voice_chat_request(text, audio_output_path)
+
+@router.post("/v1/talkingbot/llm_tts_chinese")
+async def talkingbot_chinese(request: Request):
+    data = await request.json()
+    text = data["text"]
+    # voice = data["voice"]
+    # knowledge_id = data["knowledge_id"]
+    audio_output_path = data["audio_output_path"] if "audio_output_path" in data else "output_audio"
+
+    logger.info(f'Received prompt: {text}')
+
+    return await router.handle_voice_chat_request(text, audio_output_path)
+
 
 @router.post("/v1/talkingbot/create_embedding")
 async def create_speaker_embedding(file: UploadFile = File(...)):

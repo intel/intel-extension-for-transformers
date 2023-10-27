@@ -22,7 +22,7 @@ from fastchat.conversation import get_conv_template, Conversation
 from ..config import GenerationConfig
 from ..plugins import is_plugin_enabled, get_plugin_instance, get_registered_plugins, plugins
 from ..utils.common import is_audio_file
-from .model_utils import load_model, predict, predict_stream, MODELS
+from .model_utils import load_model, predict, predict_stream, predict_stream_chatglm, MODELS
 from ..prompts import PromptTemplate
 
 
@@ -153,7 +153,7 @@ class BaseModel(ABC):
                 plugin_instance = get_plugin_instance(plugin_name)
                 if plugin_instance:
                     if hasattr(plugin_instance, 'pre_llm_inference_actions'):
-                        if plugin_name == "asr" and not is_audio_file(query):
+                        if plugin_name in ["asr", "asr_chinese"] and not is_audio_file(query):
                             continue
                         if plugin_name == "retrieval":
                             response = plugin_instance.pre_llm_inference_actions(self.model_name, query)
@@ -168,7 +168,10 @@ class BaseModel(ABC):
 
         if not query_include_prompt:
             query = self.prepare_prompt(query, self.model_name, config.task)
-        response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
+        if "chatglm" in self.model_name:
+            response = predict_stream_chatglm(**construct_parameters(query, self.model_name, self.device, config))
+        else:
+            response = predict_stream(**construct_parameters(query, self.model_name, self.device, config))
 
         def is_generator(obj):
             return isinstance(obj, types.GeneratorType)
@@ -184,13 +187,13 @@ class BaseModel(ABC):
                         response = plugin_instance.post_llm_inference_actions(response)
 
         # clear plugins config
-        for key in plugins:
-            plugins[key] = {
-                "enable": False,
-                "class": None,
-                "args": {},
-                "instance": None
-            }
+        # for key in plugins:
+        #     plugins[key] = {
+        #         "enable": False,
+        #         "class": None,
+        #         "args": {},
+        #         "instance": None
+        #     }
 
         return response
 

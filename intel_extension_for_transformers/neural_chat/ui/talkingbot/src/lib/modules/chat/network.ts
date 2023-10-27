@@ -28,7 +28,7 @@ async function fetchAudio(file, voice, knowledgeId) {
 }
 
 async function fetchAudioText(file) {
-	const url = `${AUDIO_URL}/asr`
+	const url = `${AUDIO_URL}/asr_chinese`
 	const formData = new FormData()
 	formData.append('file', file)
     const init: RequestInit = {
@@ -47,7 +47,7 @@ async function fetchAudioText(file) {
 }
 
 async function fetchAudioStream(text, voice, knowledge_id) {
-	const url = `${AUDIO_URL}/llm_tts`
+	const url = `${AUDIO_URL}/llm_tts_chinese`
 	return new SSE(url, {
 		headers: { "Content-Type": "application/json" },
 		payload: JSON.stringify({ text, voice, knowledge_id }),

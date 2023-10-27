@@ -915,3 +915,14 @@ def predict(**params):
     if "### Response:" in output:
         return output.split("### Response:")[1].strip()
     return output
+
+def predict_stream_chatglm(**params):
+    model_name = (
+        params["model_name"] if "model_name" in params else "THUDM/chatglm2-6b"
+    )
+    prompt = params["prompt"]
+    model = MODELS[model_name]["model"]
+    tokenizer = MODELS[model_name]["tokenizer"]
+
+    for response, history in model.stream_chat(tokenizer, prompt, history=[]):
+        yield response
