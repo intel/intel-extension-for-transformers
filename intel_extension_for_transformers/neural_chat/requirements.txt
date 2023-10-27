@@ -40,5 +40,5 @@ lm_eval
 accelerate
 cchardet
 spacy
-neural-compressor
+neural-compressor==2.3.1
 pymysql
