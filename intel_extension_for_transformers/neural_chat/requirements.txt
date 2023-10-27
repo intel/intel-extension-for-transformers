@@ -44,4 +44,4 @@ deepface
 exifread
 spacy
 neural-compressor
-
+pymysql

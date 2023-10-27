@@ -29,6 +29,8 @@ class ChromaRetriever():
     def query_the_database(self, query):
         documents = self.retriever.get_relevant_documents(query)
         context = ""
+        links = []
         for doc in documents: 
             context = context + doc.page_content + " "
-        return context.strip()
+            links.append(doc.metadata)
+        return context.strip(), links
