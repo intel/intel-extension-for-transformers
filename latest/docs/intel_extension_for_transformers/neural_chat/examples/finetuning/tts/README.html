@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Voice Cloning by finetuning a Text-To-Speech (TTS) model &mdash; Intel® Extension for Transformers 0.1.dev1+g1447e6f documentation</title>
+      <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/css/theme.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/graphviz.css" type="text/css" />
+      <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+<script type="text/javascript">
+  // Configure TMS settings
+  window.wapProfile = 'profile-microsite'; // This is mapped by WAP authorize value
+  window.wapLocalCode = 'us-en'; // Dynamically set per localized site, see mapping table for values
+  window.wapSection = "intel-extension-for-transformers"; // WAP team will give you a unique section for your site
+  window.wapEnv = 'prod'; // environment to be use in Adobe Tags.
+  // Load TMS
+  (() => {
+        let url = 'https://www.intel.com/content/dam/www/global/wap/main/wap-microsite.js';
+        let po = document.createElement('script'); po.type = 'text/javascript'; po.async = true; po.src = url;
+        let s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  }) ();
+</script>
+
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../../../index.html" class="icon icon-home">
+            Intel® Extension for Transformers
+          </a>
+            <div class="version">
+              <a href="../../../../../../../versions.html">latest▼</a>
+              <p>Click link above to switch version</p>
+            </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../get_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../user_guide.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../example.html">Example</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../api_doc/api.html">API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../SECURITY.html">Security Policy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../release.html">Release</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../legal.html">Legal Information</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/intel/intel-extension-for-transformers">Repo</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../../../index.html">Intel® Extension for Transformers</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Voice Cloning by finetuning a Text-To-Speech (TTS) model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../../../../_sources/docs/intel_extension_for_transformers/neural_chat/examples/finetuning/tts/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="voice-cloning-by-finetuning-a-text-to-speech-tts-model">
+<h1>Voice Cloning by finetuning a Text-To-Speech (TTS) model<a class="headerlink" href="#voice-cloning-by-finetuning-a-text-to-speech-tts-model" title="Link to this heading"></a></h1>
+<p>This example shows you how to clone an arbitrary person’s voice by finetuning SpeechT5.</p>
+<section id="prepare-data">
+<h2>Prepare data<a class="headerlink" href="#prepare-data" title="Link to this heading"></a></h2>
+<p>Under this <code class="docutils literal notranslate"><span class="pre">tts_finetuning</span></code> example directory, please make sure there exist two directories: <code class="docutils literal notranslate"><span class="pre">audios/</span></code> and <code class="docutils literal notranslate"><span class="pre">texts/</span></code>,
+where the former contains all the audio files and the latter contains all the texts corresponding to each audio file.</p>
+<p>The audio and text file names should be formatted like following (We just need to make sure every audio file has the same name with its text file):</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">audios</span><span class="o">/</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="n">audio_name_0</span><span class="o">&gt;</span><span class="p">.</span><span class="n">mp3</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="n">audio_name_1</span><span class="o">&gt;</span><span class="p">.</span><span class="n">mp3</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="n">audio_name_2</span><span class="o">&gt;</span><span class="p">.</span><span class="n">mp3</span>
+<span class="w">    </span><span class="p">...</span>
+
+<span class="n">texts</span><span class="o">/</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="n">audio_name_0</span><span class="o">&gt;</span><span class="p">.</span><span class="n">txt</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="n">audio_name_1</span><span class="o">&gt;</span><span class="p">.</span><span class="n">txt</span>
+<span class="w">    </span><span class="o">&lt;</span><span class="n">audio_name_2</span><span class="o">&gt;</span><span class="p">.</span><span class="n">txt</span>
+<span class="w">    </span><span class="p">...</span>
+</pre></div>
+</div>
+<p>Users can use their own audios and corresponding texts, or they can download from the Internet. Here are the <a class="reference external" href="https://github.com/audio-samples/audio-samples.github.io/tree/master/samples/mp3/ted_speakers/FeiFeiLi">audio samples</a> that we use in this example.</p>
+<p>Then, we can prepare the texts of those audio files by just listening and writing the texts manually, or running one audio-speech-recognition (ASR) model by using Intel Extension For Transformers ASR interface:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Replace &lt;xxxxx_sample-0&gt; with your input audio name</span>
+<span class="n">python</span> <span class="n">asr</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">i</span> <span class="n">audios</span><span class="o">/&lt;</span><span class="n">xxxxx_sample</span><span class="o">-</span><span class="mi">0</span><span class="o">&gt;.</span><span class="n">mp3</span> <span class="o">-</span><span class="n">m</span> <span class="n">openai</span><span class="o">/</span><span class="n">whisper</span><span class="o">-</span><span class="n">tiny</span>
+</pre></div>
+</div>
+<p>For simplicity in this example, we have already generated the texts of the aforementioned audio samples under the <code class="docutils literal notranslate"><span class="pre">texts/</span></code> folder.</p>
+</section>
+<section id="finetuning">
+<h2>Finetuning<a class="headerlink" href="#finetuning" title="Link to this heading"></a></h2>
+<p>After preparing the dataset, we can start finetuning. We can just run the following command and the finetuned model is by default named <code class="docutils literal notranslate"><span class="pre">finetuned_model.pt</span></code>.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">finetune</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>You can change the arguments in <code class="docutils literal notranslate"><span class="pre">TTSDatasetArguments</span></code> or <code class="docutils literal notranslate"><span class="pre">TTSModelArguments</span></code> in the <code class="docutils literal notranslate"><span class="pre">finetune.py</span></code> passed to Intel Extension For Transformers TTS interface to customize your finetuning process.</p>
+</section>
+<section id="inference">
+<h2>Inference<a class="headerlink" href="#inference" title="Link to this heading"></a></h2>
+<p>Now we have our finetuned model <code class="docutils literal notranslate"><span class="pre">finetuned_model.pt</span></code>, so let us check the quality and performance of that. We can run the following command:</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="n">python</span><span class="w"> </span><span class="n">inference</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>Then you will see a prompt in the console <code class="docutils literal notranslate"><span class="pre">Write</span> <span class="pre">a</span> <span class="pre">sentence</span> <span class="pre">to</span> <span class="pre">let</span> <span class="pre">the</span> <span class="pre">talker</span> <span class="pre">speak:</span></code>, and you can enter your input text in the console and press ENTER on your keyboard to generate the speech with your finetuned voice.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Intel® Extension for Transformers, Intel.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   <jinja2.runtime.BlockReference object at 0x7f76da5048b0> 
+  <p></p><div><a href='https://www.intel.com/content/www/us/en/privacy/intel-cookie-notice.html' data-cookie-notice='true'>Cookies</a> <a href='https://www.intel.com/content/www/us/en/privacy/intel-privacy-notice.html'>| Privacy</a></div>
+
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
