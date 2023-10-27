@@ -20,11 +20,11 @@
 using namespace cl::sycl;
 using namespace gpu::xetla;
 
-//GEMM input size
-static constexpr uint32_t matrix_m = 1024;
-static constexpr uint32_t matrix_n = 512;
-static constexpr uint32_t matrix_k = 128;
-static constexpr uint32_t matrix_l = 64;
+// MLP input size
+static constexpr uint32_t matrix_m = 8192;
+static constexpr uint32_t matrix_n = 256;
+static constexpr uint32_t matrix_k = 256;
+static constexpr uint32_t matrix_l = 256;
 
 static constexpr uint32_t size_a = matrix_m * matrix_k;
 static constexpr uint32_t size_b = matrix_m * matrix_n;
@@ -47,15 +47,13 @@ int mlp_result_validate(data_type_a *A_device, data_type_b *B_device,
     auto W = alloc_host_and_copy<data_type_w>(W_device, size_w, queue);
     auto V = alloc_host_and_copy<data_type_v>(V_device, size_v, queue);
 
-    bool is_col_major_a = mem_layout_a_ == mem_layout::col_major;
-    bool is_col_major_w = mem_layout_w_ == mem_layout::col_major;
-    bool is_col_major_v = mem_layout_v_ == mem_layout::col_major;
     buff_cmp::buff_vals<data_type_b> data_layer1(B, m, n, n);
     std::vector<data_type_acc> gold_B(m * n, 0);
     get_gemm_gold<data_type_a, data_type_w, data_type_acc>(
             m, n, k, mem_layout_a_, mem_layout_w_, A, W, gold_B.data());
     std::transform(gold_B.cbegin(), gold_B.cend(), gold_B.begin(),
             [](data_type_acc b) { return b > 0.0f ? b : 0.0f; });
+
     buff_cmp::buff_vals<data_type_b, data_type_acc> other_layer1(
             gold_B.data(), m, n, n);
 
@@ -115,7 +113,7 @@ void mlp_run(uint32_t iter) {
     auto A = alloc_device_and_init<data_type_a>(
             size_a,
             [](data_type_a *data, size_t idx) {
-                data[idx] = static_cast<data_type_a>(random_float());
+                data[idx] = static_cast<data_type_a>(random_float() - 0.5f);
             },
             queue, device, context);
     auto B = alloc_device_and_init<data_type_b>(
@@ -133,31 +131,34 @@ void mlp_run(uint32_t iter) {
     auto W = alloc_device_and_init<data_type_w>(
             size_w,
             [](data_type_w *data, size_t idx) {
-                data[idx] = static_cast<data_type_w>(random_float());
+                data[idx] = static_cast<data_type_w>(random_float() - 0.5f);
             },
             queue, device, context);
     auto V = alloc_device_and_init<data_type_v>(
             size_v,
             [](data_type_v *data, size_t idx) {
-                data[idx] = static_cast<data_type_v>(random_float());
+                data[idx] = static_cast<data_type_v>(random_float() - 0.5f);
             },
             queue, device, context);
 
-    //Define the shape of workgroup and subgroup
-    //It's tunable parameters based on different input shape and hardware for better performance
-    constexpr uint32_t wg_tile_m_layer1 = 256;
+    // Define the shape of workgroup and subgroup
+    // It's tunable parameters based on different input shape and hardware for better performance
+    // For MLP we need wg_tile_n of both layer1 and layer2 to match the matrix_n of layer1 and layer2
+    // layer1 tiling config:
+    constexpr uint32_t wg_tile_m_layer1 = 128;
     constexpr uint32_t wg_tile_n_layer1 = 256;
     constexpr uint32_t sg_tile_m_layer1 = 32;
-    constexpr uint32_t sg_tile_n_layer1 = 64;
+    constexpr uint32_t sg_tile_n_layer1 = 32;
 
-    constexpr uint32_t wg_tile_m_layer2 = 256;
-    constexpr uint32_t wg_tile_n_layer2 = 32;
-    constexpr uint32_t sg_tile_m_layer2 = 16;
-    constexpr uint32_t sg_tile_n_layer2 = 16;
+    // layer2 tiling config:
+    constexpr uint32_t wg_tile_m_layer2 = wg_tile_m_layer1;
+    constexpr uint32_t wg_tile_n_layer2 = 256;
+    constexpr uint32_t sg_tile_m_layer2 = 32;
+    constexpr uint32_t sg_tile_n_layer2 = 32;
 
-    //There are implicit requirement for sg_tile_k range
+    // There are implicit requirement for sg_tile_k range
     constexpr uint32_t sg_tile_k = 32;
-    static constexpr uint32_t sync_freq = 8;
+    static constexpr uint32_t sync_freq = 1;
     static constexpr uint32_t stages = 3;
 
     // Org the compute shape for sub-matrix

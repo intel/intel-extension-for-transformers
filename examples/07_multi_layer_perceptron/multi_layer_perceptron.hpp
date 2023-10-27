@@ -283,14 +283,7 @@ public:
     /// @return Expected local range.
     static cl::sycl::range<3> get_local_range() {
         // make sure first layer and second layer use same subgroup number.
-        static_assert(
-                ((wg_tile_m_layer1 + sg_tile_m_layer1 - 1) / sg_tile_m_layer1)
-                                * ((wg_tile_n_layer1 + sg_tile_n_layer1 - 1)
-                                        / sg_tile_n_layer1)
-                        == ((wg_tile_m_layer2 + sg_tile_m_layer2 - 1)
-                                   / sg_tile_m_layer2)
-                                * ((wg_tile_n_layer2 + sg_tile_n_layer2 - 1)
-                                        / sg_tile_n_layer2),
+        static_assert(work_group_layer1_t::size == work_group_layer2_t::size,
                 "we should make sure first gemm and second gemm use same "
                 "subgroup number!");
         uint32_t local_range_m
@@ -308,15 +301,16 @@ public:
     /// @param matrix_n Is the size of the n dimension of the matrix multiplication (m x k x n).
     /// @return Expected group range.
     static cl::sycl::range<3> get_group_range(arguments_t &args) {
-        // make sure first layer and second layer use same workgroup number.
-        assert(((args.matrix_m_layer1 + wg_tile_m_layer1 - 1)
-                       / wg_tile_m_layer1)
-                == ((args.matrix_m_layer2 + wg_tile_m_layer2 - 1)
-                        / wg_tile_m_layer2));
+        // make sure first layer and second layer meet the condition to be fused.
+        static_assert(wg_tile_m_layer1 == wg_tile_m_layer2,
+                "first gemm and second gemm should have the same wg_tile_m");
+        assert(args.matrix_m_layer1 == args.matrix_m_layer2);
         assert(((args.matrix_n_layer1 + wg_tile_n_layer1 - 1)
                        / wg_tile_n_layer1)
-                == ((args.matrix_n_layer2 + wg_tile_n_layer2 - 1)
-                        / wg_tile_n_layer2));
+                        == 1
+                && ((args.matrix_n_layer2 + wg_tile_n_layer2 - 1)
+                           / wg_tile_n_layer2)
+                        == 1);
         uint32_t group_range_m = (args.matrix_m_layer1 + wg_tile_m_layer1 - 1)
                 / wg_tile_m_layer1;
         uint32_t group_range_n = (args.matrix_n_layer1 + wg_tile_n_layer1 - 1)
@@ -489,6 +483,7 @@ public:
                 epilogue_layer1_nbarr_base);
 
         // fence & barrier between two gemm
+        xetla_fence();
         xetla_nbarrier_t<work_group_layer2_t::size, work_group_layer2_t::size>
                 nbarrier_global;
         nbarrier_global.init_nbarrier(
