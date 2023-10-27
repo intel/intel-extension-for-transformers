@@ -93,15 +93,12 @@ void qbits_quantize(qbits_config_param* p, qbits_runtime_ctx* ctx) {
 
   if (initer.verbose) timer.start();
   auto do_quant = [&](typename PrologueB::StorageWeight* ptr) {
-    int8_t* buffer = jblas::utils::amalloc<int8_t>(ptr->mSize);
-    ptr->assign(buffer);
+    *(ctx->output) = torch::zeros(ptr->mSize, torch::kInt8);
+    ptr->assign(ctx->output->data_ptr<int8_t>());
     if (ctx->transpose)
       compress_kernel.packTransposeWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->k, ptr);
     else
       compress_kernel.packWeight(ctx->n, ctx->k, ctx->weight->data_ptr<float>(), ctx->n, ptr);
-    *(ctx->output) = torch::zeros(ptr->mSize, torch::kInt8);
-    ptr->serialize(ctx->output->data_ptr<int8_t>());
-    jblas::utils::afree(buffer);
   };
   if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>) {
     auto storage = compress_kernel.createStorage(ctx->n, ctx->k, ctx->blocksize);
@@ -211,7 +208,7 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
     void* workspace = jblas_workspace == nullptr ? NULL : jblas_workspace;
     size_t need_size;
     void* tmpbuf = NULL;
-    auto get_workspace = [&] {
+    auto get_workspace = [&](int need_size) {
       if (workspace != NULL) {
         TORCH_CHECK(workspace_size >= need_size,
                     "Qbits: workspace size should large than " + std::to_string(need_size) + " bytes");
@@ -224,13 +221,13 @@ void parse_paramA(qbits_config_param* p, qbits_runtime_ctx* ctx) {
     if constexpr (!perchannel_Gemmcore<typename KERNEL::GemmCore>) {
       auto quantA = gemm_kernel.getActivationPtr()->createStorage(ctx->m, ctx->k, ctx->blocksize);
       auto need_size = quantA.mSize;
-      quantA.assign(reinterpret_cast<int8_t*>(get_workspace()));
+      quantA.assign(reinterpret_cast<int8_t*>(get_workspace(need_size)));
       ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, &quantA};
       parse_paramC<KERNEL, ParamA>(p, ctx, param_a);
     } else {
       auto quantA = gemm_kernel.getActivationPtr()->createStorage(ctx->m, ctx->k);
       auto need_size = quantA.mSize;
-      quantA.assign(reinterpret_cast<int8_t*>(get_workspace()));
+      quantA.assign(reinterpret_cast<int8_t*>(get_workspace(need_size)));
       ParamA param_a = {reinterpret_cast<SrcType*>(ctx->activation->data_ptr()), ctx->lda, &quantA};
       parse_paramC<KERNEL, ParamA>(p, ctx, param_a);
     }
