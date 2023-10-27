@@ -48,6 +48,6 @@ transformers.models.bloom.modeling_bloom.BloomForCausalLM = BloomForCausalLM
 transformers.models.gpt_neox.modeling_gpt_neox.GPTNeoXForCausalLM = GPTNeoXForCausalLM
 transformers.models.opt.modeling_opt.OPTForCausalLM = OPTForCausalLM
 try:
-    transformers.models.mistral.modeling_mistral.MistralForCausalLM = MistralForCausalLM
+    transformers.models.mistral.modeling_mistral.MistralForCausalLM = MistralForCausalLM # pylint: disable=E1101
 except:
     print("Please install transformers >=4.34.0 if you want to run Mistral model.")
