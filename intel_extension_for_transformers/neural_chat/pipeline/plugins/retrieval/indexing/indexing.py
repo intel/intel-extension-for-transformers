@@ -167,3 +167,58 @@ class DocumentIndexing:
             else:
                 print("There might be some errors, please wait and try again!")
 
+
+    def KB_append(self, input):  ### inmemory documentstore please use KB construct
+        if self.retrieval_type == "dense":
+            if os.path.exists(input):
+                if os.path.isfile(input):
+                    data_collection = self.parse_document(input)
+                elif os.path.isdir(input):
+                    data_collection = self.batch_parse_document(input)
+                else:
+                    print("Please check your upload file and try again!")
+
+                documents = []
+                for data, meta in data_collection:
+                    if len(data) < 5:
+                        continue
+                    metadata = {"source": meta}
+                    new_doc = Document(page_content=data, metadata=metadata)
+                    documents.append(new_doc)
+                assert documents != [], "The given file/files cannot be loaded."
+                embedding = HuggingFaceInstructEmbeddings(model_name=self.embedding_model)
+                vectordb = Chroma.from_documents(documents=documents, embedding=embedding,
+                                                 persist_directory=self.persist_dir)
+                vectordb.persist()
+                print("The local knowledge base has been successfully built!")
+                return Chroma(persist_directory=self.persist_dir, embedding_function=embedding)
+            else:
+                print("There might be some errors, please wait and try again!")
+        else:
+            if os.path.exists(input):
+                if os.path.isfile(input):
+                    data_collection = self.parse_document(input)
+                elif os.path.isdir(input):
+                    data_collection = self.batch_parse_document(input)
+                else:
+                    print("Please check your upload file and try again!")
+
+                if self.document_store == "Elasticsearch":
+                    document_store = ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+                                                                port=9200, search_fields=["content", "title"])
+                    documents = []
+                    for data, meta in data_collection:
+                        metadata = {"source": meta}
+                        if len(data) < 5:
+                            continue
+                        new_doc = SDocument(content=data, meta=metadata)
+                        documents.append(new_doc)
+                    assert documents != [], "The given file/files cannot be loaded."
+                    document_store.write_documents(documents)
+                    print("The local knowledge base has been successfully built!")
+                    return ElasticsearchDocumentStore(host="localhost", index=self.index_name,
+                                                              port=9200, search_fields=["content", "title"])
+                else:
+                    print("Unsupported document store type, please change to Elasticsearch!")
+            else:
+                print("There might be some errors, please wait and try again!")

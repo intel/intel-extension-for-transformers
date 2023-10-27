@@ -129,8 +129,8 @@ neuralchat optimize --base_model "meta-llama/Llama-2-7b-chat-hf" --config pipeli
 
 ```python
 # Python code
-from intel_extension_for_transformers.neural_chat import build_chatbot, AMPConfig
-pipeline_cfg = PipelineConfig(optimization_config=AMPConfig())
+from intel_extension_for_transformers.neural_chat import build_chatbot, MixedPrecisionConfig
+pipeline_cfg = PipelineConfig(optimization_config=MixedPrecisionConfig())
 chatbot = build_chatbot(pipeline_cfg)
 ```
 
